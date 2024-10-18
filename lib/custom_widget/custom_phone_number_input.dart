@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class Country {
   final String name;
@@ -40,6 +41,13 @@ class CustomPhoneNumberInput extends StatefulWidget {
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
 
+  final Map<String, int> phoneNumberLengths = {
+    '+992': 9,
+    '+7': 10,
+    '+998': 9,
+    '+996': 9,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -61,8 +69,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           ),
         ),
         const SizedBox(height: 8),
-
-        // Поле для выбора кода страны и ввода номера телефона
         TextFormField(
           controller: widget.controller,
           decoration: InputDecoration(
@@ -78,12 +84,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             filled: true,
             fillColor: Color(0xffF4F7FD),
             contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-
-            // Префикс для отображения флага и кода страны внутри поля
             prefixIcon: DropdownButtonHideUnderline(
               child: DropdownButton<Country>(
                 value: selectedCountry,
-                dropdownColor: Colors.white, // Устанавливаем белый фон списка
+                dropdownColor: Colors.white,
                 items: countries.map((Country country) {
                   return DropdownMenuItem<Country>(
                     value: country,
@@ -111,9 +115,23 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
           ),
           keyboardType: TextInputType.phone,
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter
+                .digitsOnly, // Restrict input to digits only
+          ],
           onChanged: (value) {
+            final maxLength =
+                phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+
+            if (value.length > maxLength) {
+              widget.controller.text = value.substring(0, maxLength);
+              widget.controller.selection =
+                  TextSelection.fromPosition(TextPosition(offset: maxLength));
+            }
+
             // Форматирование номера телефона с кодом страны
-            final formattedNumber = (selectedCountry?.dialCode ?? '') + value;
+            final formattedNumber =
+                (selectedCountry?.dialCode ?? '') + widget.controller.text;
             if (widget.onInputChanged != null) {
               widget.onInputChanged!(
                   formattedNumber); // Передача номера с кодом страны
@@ -125,4 +143,3 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     );
   }
 }
-
