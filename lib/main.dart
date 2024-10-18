@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
+import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -41,6 +42,9 @@ class MyApp extends StatelessWidget {
         ),
          BlocProvider(
           create: (context) => LeadBloc(ApiService()), // Добавьте LeadBloc
+        ),
+         BlocProvider(
+          create: (context) => RegionBloc(ApiService()), // Добавляем RegionBloc
         ),
       ],
       child: MaterialApp(
