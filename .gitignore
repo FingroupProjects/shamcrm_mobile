@@ -1,0 +1,51 @@
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Файлы сборки
+build/
+*.apk
+*.aab
+
+# Кэш и временные файлы
+.dart_tool/
+.packages
+.pub-cache/
+pubspec.lock
+
+# Настройки IDE
+.idea/
+*.iml
+.vscode/
+
+# Конфиденциальные файлы
+*.env
+secrets.yaml
+
+# Android специфичные
+.android/
+gradle/
+local.properties
+
+# iOS специфичные
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/App.framework
+ios/Flutter/Debug.xcconfig
+ios/Flutter/Release.xcconfig
+ios/Runner/xcuserdata/
+ios/Runner/Runner.xcworkspace/
+ios/Runner/Info.plist
+ios/Runner/Runner.app
+ios/Runner.app.dSYM
+
+# Результаты тестов
+test_output/
+
+# Временные файлы редактора
+*.log
+*.tmp
+*.swp

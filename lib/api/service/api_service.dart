@@ -1,15 +1,16 @@
 import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Импортируем SharedPreferences
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
 class ApiService {
-  final String baseUrl = 'http://62.84.186.96/api';
+  // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  // final String baseUrl = 'https://shamcrm.com/api';
+  final String baseUrl = 'https://shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -43,6 +44,7 @@ class ApiService {
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
+         'Accept': 'application/json',
         if (token != null)
           'Authorization': 'Bearer $token', // Добавляем токен, если он есть
       },
@@ -64,6 +66,7 @@ class ApiService {
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     );
 
@@ -140,11 +143,31 @@ class ApiService {
   }
 
   // Метод для создания нового лида
-Future<void> createLead(String name, int leadStatusId, String phone) async {
+Future<void> createLead({
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? description,
+  int? organizationId,
+  String? waPhone,
+}) async {
   final response = await _postRequest('/lead', {
     'name': name,
     'lead_status_id': leadStatusId,
     'phone': phone,
+    if (regionId != null) 'region_id': regionId,
+    if (instaLogin != null) 'insta_login': instaLogin,
+    if (facebookLogin != null) 'facebook_login': facebookLogin,
+    if (tgNick != null) 'tg_nick': tgNick,
+    if (birthday != null) 'birthday': birthday.toIso8601String(), // Конвертация в строку
+    if (description != null) 'description': description,
+    if (organizationId != null) 'organization_id': organizationId,
+    if (waPhone != null) 'wa_phone': waPhone,
   });
 
   if (response.statusCode == 200 || response.statusCode == 201) {
@@ -153,6 +176,7 @@ Future<void> createLead(String name, int leadStatusId, String phone) async {
     throw Exception('Ошибка создания лида: ${response.body}');
   }
 }
+
 
 
 //Обновление статуса карточки в колонке
@@ -169,6 +193,24 @@ Future<void> createLead(String name, int leadStatusId, String phone) async {
   }
 }
 
+
+  // Метод для получения региона
+ Future<List<Region>> getRegion() async {
+    final response = await _getRequest('/region');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((region) => Region.fromJson(region))
+            .toList();
+      } else {
+        throw Exception('Регионов не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
 
 
   // Метод для получения список чатов

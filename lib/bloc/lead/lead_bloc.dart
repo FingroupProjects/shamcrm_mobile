@@ -14,7 +14,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<CreateLead>(_createLead);
   }
 
-  Future<void> _fetchLeadStatuses(FetchLeadStatuses event, Emitter<LeadState> emit) async {
+  Future<void> _fetchLeadStatuses(
+      FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
@@ -56,7 +57,19 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
 
     try {
-      await apiService.createLead(event.name, event.leadStatusId, event.phone);
+      await apiService.createLead(
+        name: event.name,
+        leadStatusId: event.leadStatusId,
+        phone: event.phone,
+        regionId: event.regionId,
+        instaLogin: event.instaLogin,
+        facebookLogin: event.facebookLogin,
+        tgNick: event.tgNick,
+        birthday: event.birthday,
+        description: event.description,
+        organizationId: event.organizationId,
+        waPhone: event.waPhone,
+      );
       emit(LeadSuccess('Лид создан успешно'));
       add(FetchLeads());
     } catch (e) {
