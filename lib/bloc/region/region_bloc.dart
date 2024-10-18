@@ -1,6 +1,5 @@
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/region_model.dart';
 import 'region_event.dart';
 import 'region_state.dart';
 

@@ -8,9 +8,9 @@ import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
 class ApiService {
-  // final String baseUrl = 'http://62.84.186.96/api';
+  final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  final String baseUrl = 'https://shamcrm.com/api';
+  // final String baseUrl = 'https://shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
