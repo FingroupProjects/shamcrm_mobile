@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -44,7 +45,7 @@ class ApiService {
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
-         'Accept': 'application/json',
+        'Accept': 'application/json',
         if (token != null)
           'Authorization': 'Bearer $token', // Добавляем токен, если он есть
       },
@@ -76,7 +77,6 @@ class ApiService {
     return response;
   }
 
-
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
     final response = await _postRequest('/checkDomain', {'domain': domain});
@@ -104,7 +104,6 @@ class ApiService {
       throw Exception('Не правильный Логин или Пароль: ${response.body}');
     }
   }
-
 
   // Метод для получения лидов
   Future<List<Lead>> getLeads() async {
@@ -142,60 +141,99 @@ class ApiService {
     }
   }
 
-  // Метод для создания нового лида
-Future<void> createLead({
-  required String name,
-  required int leadStatusId,
-  required String phone,
-  int? regionId,
-  String? instaLogin,
-  String? facebookLogin,
-  String? tgNick,
-  DateTime? birthday,
-  String? description,
-  int? organizationId,
-  String? waPhone,
-}) async {
-  final response = await _postRequest('/lead', {
-    'name': name,
-    'lead_status_id': leadStatusId,
-    'phone': phone,
-    if (regionId != null) 'region_id': regionId,
-    if (instaLogin != null) 'insta_login': instaLogin,
-    if (facebookLogin != null) 'facebook_login': facebookLogin,
-    if (tgNick != null) 'tg_nick': tgNick,
-    if (birthday != null) 'birthday': birthday.toIso8601String(), // Конвертация в строку
-    if (description != null) 'description': description,
-    if (organizationId != null) 'organization_id': organizationId,
-    if (waPhone != null) 'wa_phone': waPhone,
-  });
+  Future<Map<String, dynamic>> createLead({
+    required String name,
+    required int leadStatusId,
+    required String phone,
+    int? regionId,
+    String? instaLogin,
+    String? facebookLogin,
+    String? tgNick,
+    DateTime? birthday,
+    String? description,
+    int? organizationId,
+    String? waPhone,
+  }) async {
+    final response = await _postRequest('/lead', {
+      'name': name,
+      'lead_status_id': leadStatusId,
+      'phone': phone,
+      if (regionId != null) 'region_id': regionId,
+      if (instaLogin != null) 'insta_login': instaLogin,
+      if (facebookLogin != null) 'facebook_login': facebookLogin,
+      if (tgNick != null) 'tg_nick': tgNick,
+      if (birthday != null)
+        'birthday': birthday.toIso8601String(), // Конвертация в строку
+      if (description != null) 'description': description,
+      if (organizationId != null) 'organization_id': organizationId,
+      if (waPhone != null) 'wa_phone': waPhone,
+    });
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    print('Лид создан успешно.');
-  } else {
-    throw Exception('Ошибка создания лида: ${response.body}');
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Лид создан успешно.'};
+    } else if (response.statusCode == 422) {
+      // Обработка ошибки дублирования номера телефона
+      if (response.body.contains('phone')) {
+        return {
+          'success': false,
+          'message': 'Этот номер телефона уже существует.'
+        };
+      }
+      // Обработка ошибки дублирования логина Instagram
+      else if (response.body.contains('insta_login')) {
+        return {
+          'success': false,
+          'message': 'Этот логин Instagram уже используется.'
+        };
+      } else if (response.body.contains('facebook_login')) {
+        return {
+          'success': false,
+          'message': 'Этот логин facebook уже используется.'
+        };
+      } else if (response.body.contains('tg_nick')) {
+        return {
+          'success': false,
+          'message': 'Этот логин Telegram уже используется.'
+        };
+      } else if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'Не правильная дата рождения.'};
+      } else if (response.body.contains('wa_phone')) {
+        return {
+          'success': false,
+          'message': 'Этот номер Whatsapp уже существуетя.'
+        };
+      }
+      // Другие проверки...
+      else {
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания лида: ${response.body}'
+      };
+    }
   }
-}
-
-
 
 //Обновление статуса карточки в колонке
   Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-  final response = await _postRequest('/lead/changeStatus/$leadId', {
-    'position': position,
-    'status_id': statusId,
-  });
+    final response = await _postRequest('/lead/changeStatus/$leadId', {
+      'position': position,
+      'status_id': statusId,
+    });
 
-  if (response.statusCode == 200) {
-    print('Статус лида обновлен успешно.');
-  } else {
-    throw Exception('Ошибка обновления статуса лида: ${response.body}');
+    if (response.statusCode == 200) {
+      print('Статус лида обновлен успешно.');
+    } else {
+      throw Exception('Ошибка обновления статуса лида: ${response.body}');
+    }
   }
-}
-
 
   // Метод для получения региона
- Future<List<Region>> getRegion() async {
+  Future<List<Region>> getRegion() async {
     final response = await _getRequest('/region');
 
     if (response.statusCode == 200) {
@@ -212,79 +250,80 @@ Future<void> createLead({
     }
   }
 
-
   // Метод для получения список чатов
   Future<List<Chats>> getAllChats() async {
-  final token = await getToken(); // Получаем токен
-  final response = await http.get(
-    Uri.parse('$baseUrl/chat/getMyChats'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
+    final token = await getToken(); // Получаем токен
+    final response = await http.get(
+      Uri.parse('$baseUrl/chat/getMyChats'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return (data['result'] as List)
-          .map((chat) => Chats.fromJson(chat))
-          .toList();
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((chat) => Chats.fromJson(chat))
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Результат отсутствует в ответе');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
-}
-
 
 // Метод для получения сообщений по chatId
-Future<List<Message>> getMessages(int chatId) async {
-  final token = await getToken(); // Получаем токен
-  final response = await http.get(
-    Uri.parse('$baseUrl/chat/getMessages/$chatId'), // Обновите путь согласно вашему API
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
+  Future<List<Message>> getMessages(int chatId) async {
+    final token = await getToken(); // Получаем токен
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/chat/getMessages/$chatId'), // Обновите путь согласно вашему API
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return (data['result'] as List)
-          .map((msg) => Message.fromJson(msg)) // Создайте модель для сообщения
-          .toList();
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map(
+                (msg) => Message.fromJson(msg)) // Создайте модель для сообщения
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Результат отсутствует в ответе');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
-}
 
 // Метод для отправки текстового сообщения
-Future<void> sendMessage(int chatId, String message) async {
-  final response = await _postRequest('/chat/sendMessage/$chatId', {
-    'message': message,
-  });
+  Future<void> sendMessage(int chatId, String message) async {
+    final response = await _postRequest('/chat/sendMessage/$chatId', {
+      'message': message,
+    });
 
-  print('Response from sendMessage: ${response.body}'); // Добавлено для отладки
+    print(
+        'Response from sendMessage: ${response.body}'); // Добавлено для отладки
 
-  if (response.statusCode != 200) {
-    print('Ошибка отправки сообщения: ${response.body}'); // Отладка ошибок
-    throw Exception('Ошибка отправки сообщения: ${response.body}');
+    if (response.statusCode != 200) {
+      print('Ошибка отправки сообщения: ${response.body}'); // Отладка ошибок
+      throw Exception('Ошибка отправки сообщения: ${response.body}');
+    }
   }
-}
-
 
   // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Если вы используете MultipartRequest для отправки файлов, создайте метод
     // Для упрощения мы будем использовать _postRequest как пример
     final response = await _postRequest('/chat/sendFile/$chatId', {
-      'file_path': filePath, // Убедитесь, что вы используете правильные параметры
+      'file_path':
+          filePath, // Убедитесь, что вы используете правильные параметры
     });
 
     if (response.statusCode != 200) {
@@ -295,15 +334,12 @@ Future<void> sendMessage(int chatId, String message) async {
   // Метод для отправки голосового сообщения
   Future<void> sendVoice(int chatId, String voicePath) async {
     final response = await _postRequest('/chat/sendVoice/$chatId', {
-      'voice_path': voicePath, // Убедитесь, что вы используете правильные параметры
+      'voice_path':
+          voicePath, // Убедитесь, что вы используете правильные параметры
     });
 
     if (response.statusCode != 200) {
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
-
 }
-
-
-

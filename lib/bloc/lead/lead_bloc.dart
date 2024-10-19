@@ -51,13 +51,16 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
   Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
+
+    // Проверка подключения к интернету
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
       return;
     }
 
     try {
-      await apiService.createLead(
+      // Вызов метода создания лида
+      final result = await apiService.createLead(
         name: event.name,
         leadStatusId: event.leadStatusId,
         phone: event.phone,
@@ -70,9 +73,17 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         organizationId: event.organizationId,
         waPhone: event.waPhone,
       );
-      emit(LeadSuccess('Лид создан успешно'));
-      add(FetchLeads());
+
+      // Если успешно, то обновляем состояние
+      if (result['success']) {
+        emit(LeadSuccess('Лид создан успешно'));
+        add(FetchLeads());
+      } else {
+        // Если есть ошибка, отображаем сообщение об ошибке
+        emit(LeadError(result['message']));
+      }
     } catch (e) {
+      // Логирование ошибки
       emit(LeadError('Ошибка создания лида: ${e.toString()}'));
     }
   }
