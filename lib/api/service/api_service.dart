@@ -9,9 +9,9 @@ import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
 class ApiService {
-  final String baseUrl = 'http://62.84.186.96/api';
+  // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  // final String baseUrl = 'https://shamcrm.com/api';
+  final String baseUrl = 'https://shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -106,8 +106,8 @@ class ApiService {
   }
 
   // Метод для получения лидов
-  Future<List<Lead>> getLeads() async {
-    final response = await _getRequest('/lead?lead_status_id');
+  Future<List<Lead>> getLeads(int leadStatusId) async {
+    final response = await _getRequest('/lead?lead_status_id=$leadStatusId');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -200,7 +200,7 @@ class ApiService {
       } else if (response.body.contains('wa_phone')) {
         return {
           'success': false,
-          'message': 'Этот номер Whatsapp уже существуетя.'
+          'message': 'Этот номер Whatsapp уже существует.'
         };
       }
       // Другие проверки...

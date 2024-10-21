@@ -2,7 +2,11 @@ abstract class LeadEvent {}
 
 class FetchLeadStatuses extends LeadEvent {}
 
-class FetchLeads extends LeadEvent {}
+class FetchLeads extends LeadEvent {
+  final int statusId;
+
+  FetchLeads(this.statusId);
+}
 
 class CreateLead extends LeadEvent {
   final String name;

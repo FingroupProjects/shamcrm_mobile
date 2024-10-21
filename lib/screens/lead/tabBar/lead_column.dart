@@ -17,7 +17,7 @@ class LeadColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LeadBloc(ApiService())..add(FetchLeads()),
+      create: (context) => LeadBloc(ApiService())..add(FetchLeads(statusId)),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: BlocBuilder<LeadBloc, LeadState>(
@@ -29,6 +29,7 @@ class LeadColumn extends StatelessWidget {
               final leads = state.leads
                   .where((lead) => lead.statusId == statusId)
                   .toList(); // Filter by statusId
+              print('Отфильтровано лидов: ${leads.length}');
 
               if (leads.isEmpty) {
                 return Center(child: Text('Нет лидов для выбранного статуса'));
@@ -48,9 +49,8 @@ class LeadColumn extends StatelessWidget {
                             lead: leads[index],
                             title: title,
                             onStatusUpdated: () {
-                              context
-                                  .read<LeadBloc>()
-                                  .add(FetchLeads()); // Обновляем список лидов
+                              context.read<LeadBloc>().add(FetchLeads(
+                                  statusId)); // Передаем statusId для обновления списка лидов
                             },
                           ),
                         );

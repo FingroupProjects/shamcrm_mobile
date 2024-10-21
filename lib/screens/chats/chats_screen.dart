@@ -13,7 +13,8 @@ class ChatsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: FutureBuilder<List<Chats>>(
-        future: apiService.getAllChats(), // Использование метода для получения чатов
+        future: apiService
+            .getAllChats(), // Использование метода для получения чатов
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -33,7 +34,8 @@ class ChatsScreen extends StatelessWidget {
                 onTap: () async {
                   if (!isNavigating) {
                     isNavigating = true;
-                    final messages = await apiService.getMessages(chat.id); // Использование метода для получения сообщений
+                    final messages = await apiService.getMessages(chat
+                        .id); // Использование метода для получения сообщений
                     Navigator.push(
                       context,
                       MaterialPageRoute(
