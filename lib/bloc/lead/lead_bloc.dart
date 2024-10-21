@@ -42,7 +42,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
 
     try {
-      final leads = await apiService.getLeads();
+      final leads = await apiService.getLeads(event.statusId);
       emit(LeadDataLoaded(leads));
     } catch (e) {
       emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
@@ -77,7 +77,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       // Если успешно, то обновляем состояние
       if (result['success']) {
         emit(LeadSuccess('Лид создан успешно'));
-        add(FetchLeads());
+        // Передаем статус лида (event.leadStatusId) в событие FetchLeads
+        add(FetchLeads(event.leadStatusId));
       } else {
         // Если есть ошибка, отображаем сообщение об ошибке
         emit(LeadError(result['message']));
