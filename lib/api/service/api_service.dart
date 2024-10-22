@@ -141,6 +141,7 @@ class ApiService {
     }
   }
 
+// Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({
     required String name,
     required int leadStatusId,
@@ -177,6 +178,12 @@ class ApiService {
         return {
           'success': false,
           'message': 'Этот номер телефона уже существует.'
+        };
+      }
+      if (response.body.contains('name')) {
+        return {
+          'success': false,
+          'message': 'Введите хотябы 5 символов!.'
         };
       }
       // Обработка ошибки дублирования логина Instagram

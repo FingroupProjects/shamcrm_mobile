@@ -17,6 +17,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   Future<void> _fetchLeadStatuses(
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
+
+    await Future.delayed(Duration(milliseconds: 500)); // Небольшая задержка
+
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
       return;
