@@ -3,8 +3,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/screens/lead/lead_screen.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -94,8 +92,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                 backgroundColor: Colors.green,
               ),
             );
-
-// Ожидайте завершения и после этого закрывайте экран
             Navigator.pop(context, widget.statusId);
             context.read<LeadBloc>().add(FetchLeadStatuses());
           }

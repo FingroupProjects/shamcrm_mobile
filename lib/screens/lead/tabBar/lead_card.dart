@@ -30,8 +30,7 @@ class _LeadCardState extends State<LeadCard> {
     // Преобразуем строку в объект DateTime
     DateTime dateTime = DateTime.parse(dateString);
     // Форматируем дату
-    return DateFormat('yyyy-MM-dd').format(dateTime); // Формат ГГГГ-ММ-ДД
-    // return DateFormat('MM/dd/yyyy').format(dateTime); // Для формата ММ/ДД/ГГГГ
+    return DateFormat('dd-MM-yyyy').format(dateTime); // Формат ГГГГ-ММ-ДД
   }
 
   final Map<String, String> sourceIcons = {
