@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
@@ -7,11 +6,14 @@ import 'lead_state.dart';
 
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
+  bool allLeadsFetched =false; // Переменная для отслеживания статуса завершения загрузки лидов
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
     on<FetchLeads>(_fetchLeads);
     on<CreateLead>(_createLead);
+    on<FetchMoreLeads>(
+        _fetchMoreLeads); 
   }
 
   Future<void> _fetchLeadStatuses(
@@ -37,6 +39,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
+  // Метод для загрузки лидов
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     if (!await _checkInternetConnection()) {
@@ -46,9 +49,38 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
     try {
       final leads = await apiService.getLeads(event.statusId);
-      emit(LeadDataLoaded(leads));
+      allLeadsFetched = leads.isEmpty; // Если лидов нет, устанавливаем флаг
+      emit(LeadDataLoaded(leads,
+          currentPage: 1)); // Устанавливаем текущую страницу на 1
     } catch (e) {
       emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _fetchMoreLeads(
+      FetchMoreLeads event, Emitter<LeadState> emit) async {
+    if (allLeadsFetched)
+      return; // Если все лиды уже загружены, ничего не делаем
+
+    if (!await _checkInternetConnection()) {
+      emit(LeadError('Нет подключения к интернету'));
+      return;
+    }
+
+    try {
+      final leads = await apiService.getLeads(event.statusId,
+          page: event.currentPage + 1);
+      if (leads.isEmpty) {
+        allLeadsFetched = true; // Если пришли пустые данные, устанавливаем флаг
+        return; // Выходим, так как данных больше нет
+      }
+      if (state is LeadDataLoaded) {
+        final currentState = state as LeadDataLoaded;
+        emit(currentState.merge(leads)); // Объединяем старые и новые лиды
+      }
+    } catch (e) {
+      emit(LeadError(
+          'Не удалось загрузить дополнительные лиды: ${e.toString()}'));
     }
   }
 

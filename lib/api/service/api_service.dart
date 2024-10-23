@@ -106,8 +106,10 @@ class ApiService {
   }
 
   // Метод для получения лидов
-  Future<List<Lead>> getLeads(int leadStatusId) async {
-    final response = await _getRequest('/lead?lead_status_id=$leadStatusId');
+  Future<List<Lead>> getLeads(int leadStatusId,
+      {int page = 1, int perPage = 20}) async {
+    final response = await _getRequest(
+        '/lead?lead_status_id=$leadStatusId&page=$page&per_page=$perPage');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -174,17 +176,21 @@ class ApiService {
       return {'success': true, 'message': 'Лид создан успешно.'};
     } else if (response.statusCode == 422) {
       // Обработка ошибки дублирования номера телефона
-      if (response.body.contains('phone')) {
+      if (response.body.contains('The phone has already been taken.')) {
         return {
           'success': false,
           'message': 'Этот номер телефона уже существует.'
         };
       }
-      if (response.body.contains('name')) {
+      if (response.body.contains('validation.phone')) {
         return {
           'success': false,
-          'message': 'Введите хотябы 5 символов!.'
+          'message':
+              'Неправильный номер телефона. Проверьте формат и количество цифр.'
         };
+      }
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
       }
       // Обработка ошибки дублирования логина Instagram
       else if (response.body.contains('insta_login')) {

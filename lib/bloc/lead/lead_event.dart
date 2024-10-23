@@ -8,18 +8,25 @@ class FetchLeads extends LeadEvent {
   FetchLeads(this.statusId);
 }
 
+class FetchMoreLeads extends LeadEvent {
+  final int statusId;
+  final int currentPage;
+
+  FetchMoreLeads(this.statusId, this.currentPage);
+}
+
 class CreateLead extends LeadEvent {
   final String name;
   final int leadStatusId;
   final String phone;
-  final int? regionId; // добавлено
-  final String? instaLogin; // добавлено
-  final String? facebookLogin; // добавлено
-  final String? tgNick; // добавлено
-  final DateTime? birthday; // добавлено
-  final String? description; // добавлено
-  final int? organizationId; // добавлено
-  final String? waPhone; // добавлено
+  final int? regionId;
+  final String? instaLogin;
+  final String? facebookLogin;
+  final String? tgNick;
+  final DateTime? birthday;
+  final String? description;
+  final int? organizationId;
+  final String? waPhone;
 
   CreateLead({
     required this.name,
