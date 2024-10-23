@@ -7,9 +7,9 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 
 class LeadScreen extends StatefulWidget {
-  final int? initialStatusId; 
+  final int? initialStatusId;
 
-  LeadScreen({this.initialStatusId}); 
+  LeadScreen({this.initialStatusId});
   @override
   _LeadScreenState createState() => _LeadScreenState();
 }
@@ -24,12 +24,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     super.initState();
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeadStatuses());
-
-    // // Add the following code
-    // if (widget.initialStatusId != null) {
-    //   leadBloc.add(FetchLeads(widget
-    //       .initialStatusId!)); // Fetch leads for the given status if needed
-    // }
   }
 
   @override

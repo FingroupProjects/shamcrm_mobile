@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -124,6 +123,19 @@ class ApiService {
       throw Exception('Ошибка загрузки лидов: ${response.body}');
     }
   }
+
+// Метод для получения информации о Лида
+Future<Lead> fetchLeadDetails(int leadId) async {
+  final response = await http.get(Uri.parse('lead/$leadId'));
+
+  if (response.statusCode == 200) {
+    return Lead.fromJson(json.decode(response.body));
+  } else {
+    throw Exception('Failed to load lead');
+  }
+}
+
+
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
