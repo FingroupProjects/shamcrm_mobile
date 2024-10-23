@@ -52,7 +52,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: Image.asset(
+            'assets/icons/arrow-left.png', // Укажите путь к вашей иконке
+            width: 24, // Задайте размер иконки
+            height: 24,
+          ),
           onPressed: () {
             Navigator.pop(context, widget.statusId);
             context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -63,7 +67,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             Text(
               'Создание Лида',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 color: Color(0xff1E2E52),
