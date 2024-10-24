@@ -124,6 +124,31 @@ class ApiService {
       throw Exception('Ошибка загрузки лидов: ${response.body}');
     }
   }
+  // Добавление метода для отправки токена устройства
+Future<void> sendDeviceToken(String deviceToken) async {
+  final token = await getToken(); // Получаем токен пользователя (если он есть)
+
+  final response = await http.post(
+    Uri.parse('$baseUrl/add-fcm-token'), // Используем правильный путь
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+    body: json.encode({
+      'type': 'mobile', // Указываем тип устройства
+      'token': deviceToken, // Передаем FCM-токен устройства
+    }),
+  );
+
+  if (response.statusCode == 200) {
+    print('FCM-токен успешно отправлен!');
+  } else {
+    print('Ошибка при отправке FCM-токена: ${response.statusCode}');
+    throw Exception('Ошибка: ${response.body}');
+  }
+}
+
 
 // Метод для получения Истории Лида
 Future<List<LeadHistory>> getLeadHistory(int leadId) async {
@@ -397,7 +422,7 @@ Future<Chats> getChatById(int chatId) async {
 
 // Метод для получения всех чатов
 Future<List<Chats>> getChats() async {
-  final response = await _getRequest('/chat/getMyChats');
+  final response = await _getRequest('/chat/getMessages/2');
 
   if (response.statusCode == 200) {
     final data = json.decode(response.body);

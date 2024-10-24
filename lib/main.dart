@@ -36,6 +36,17 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+// Получаем FCM-токен
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  if (fcmToken != null) {
+    print('FCM-токен: $fcmToken');
+
+    // Отправляем FCM-токен на сервер
+    ApiService apiService = ApiService();
+    await apiService.sendDeviceToken(fcmToken);
+  } else {
+    print('Не удалось получить FCM-токен');
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
