@@ -1,6 +1,9 @@
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:flutter/material.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
+  final String leadId;
   final String leadName;
   final String leadStatus;
   final String? region;
@@ -12,6 +15,7 @@ class LeadDetailsScreen extends StatefulWidget {
   final String? description;
 
   LeadDetailsScreen({
+    required this.leadId,
     required this.leadName,
     required this.leadStatus,
     this.region,
@@ -27,19 +31,14 @@ class LeadDetailsScreen extends StatefulWidget {
   _LeadDetailsScreenState createState() => _LeadDetailsScreenState();
 }
 
-class _LeadDetailsScreenState extends State<LeadDetailsScreen>
-    with SingleTickerProviderStateMixin {
-  // Состояния для сворачивания
-  bool isActionHistoryExpanded = false;
-  bool isNotesExpanded = false;
-
+class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
 
   @override
   void initState() {
     super.initState();
-
     details = [
+      {'label': 'ID лида:', 'value': widget.leadId},
       {'label': 'ФИО клиента:', 'value': widget.leadName},
       {'label': 'Статус:', 'value': widget.leadStatus},
       {'label': 'Регион:', 'value': widget.region ?? 'Не указано'},
@@ -52,17 +51,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen>
     ];
   }
 
-  final List<String> actionHistory = [
-    'Создан новый лид',
-    'Добавлена заметка',
-    'Изменен статус на активен',
-  ];
-
-  final List<String> notes = [
-    'Заметка 1: Встреча назначена на 10:00',
-    'Заметка 2: Ожидается звонок от клиента',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,27 +62,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen>
           children: [
             _buildDetailsList(),
             SizedBox(height: 16),
-            _buildExpandableActionContainer(
-              'История действий',
-              actionHistory,
-              isActionHistoryExpanded,
-              () {
-                setState(() {
-                  isActionHistoryExpanded = !isActionHistoryExpanded;
-                });
-              },
-            ),
+            ActionHistoryWidget(leadId: int.parse(widget.leadId)),
             SizedBox(height: 16),
-            _buildExpandableActionContainer(
-              'Заметки',
-              notes,
-              isNotesExpanded,
-              () {
-                setState(() {
-                  isNotesExpanded = !isNotesExpanded;
-                });
-              },
-            ),
+            NotesWidget(notes: [
+              'Заметка 1: Встреча назначена на 10:00',
+              'Заметка 2: Ожидается звонок от клиента',
+            ]), // Вызов виджета заметок
           ],
         ),
       ),
@@ -108,8 +81,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen>
       elevation: 0,
       leading: IconButton(
         icon: Image.asset(
-          'assets/icons/arrow-left.png', // Укажите путь к вашей иконке
-          width: 24, // Задайте размер иконки
+          'assets/icons/arrow-left.png',
+          width: 24,
           height: 24,
         ),
         onPressed: () {
@@ -147,8 +120,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen>
 
   Widget _buildDetailItem(String label, String value) {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start, // Выравнивание по верхнему краю
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
         SizedBox(width: 8),
@@ -180,70 +152,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen>
         fontWeight: FontWeight.w500,
         color: Color(0xfff1E2E52),
       ),
-      // maxLines: 10,
-      overflow: TextOverflow.visible, // Сделать текст видимым, если он длиннее
-    );
-  }
-
-  Widget _buildExpandableActionContainer(
-      String title, List<String> items, bool isExpanded, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
-        decoration: BoxDecoration(
-          color: Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xfff1E2E52),
-                  ),
-                ),
-                Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isExpanded)
-                    ...items.map((item) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Text(
-                            item,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xfff1E2E52),
-                            ),
-                            // maxLines: 2,
-                            overflow: TextOverflow.visible,
-                          ),
-                        )),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      overflow: TextOverflow.visible,
     );
   }
 }

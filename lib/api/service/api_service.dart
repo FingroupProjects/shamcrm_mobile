@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
@@ -124,18 +125,34 @@ class ApiService {
     }
   }
 
-// Метод для получения информации о Лида
-Future<Lead> fetchLeadDetails(int leadId) async {
-  final response = await http.get(Uri.parse('lead/$leadId'));
+// Метод для получения Истории Лида
+Future<List<LeadHistory>> getLeadHistory(int leadId) async {
+  try {
+    final token = await getToken(); // Получаем токен
+    final response = await http.get(
+      Uri.parse('$baseUrl/lead/history/$leadId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
-  if (response.statusCode == 200) {
-    return Lead.fromJson(json.decode(response.body));
-  } else {
-    throw Exception('Failed to load lead');
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}'); // Логирование ответа
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final List<dynamic> jsonList = decodedJson['result']['history'];
+      return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
+    } else {
+      print('Failed to load lead history: ${response.statusCode}'); // Логирование ошибки
+      throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error occurred: $e'); // Логирование исключений
+    throw Exception('Ошибка загрузки истории лида: $e');
   }
 }
-
-
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
