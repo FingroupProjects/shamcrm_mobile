@@ -15,19 +15,31 @@ class LeadHistory {
 
   factory LeadHistory.fromJson(Map<String, dynamic> json) {
     try {
+      // Проверка на наличие необходимых полей
+      final userJson = json['user'];
+      if (userJson == null) {
+        throw FormatException('User data is null');
+      }
+
       return LeadHistory(
-        id: json['id'],
-        user: User.fromJson(json['user']),
-        status: json['status'],
-        date: DateTime.parse(json['date']),
+        id: json['id'] ?? 0,
+        user: User.fromJson(userJson),
+        status: json['status'] ?? '', 
+        date: json['date'] != null
+            ? DateTime.parse(json['date'])
+            : DateTime.now(),
         changes: _parseChanges(json['changes']),
       );
     } catch (e) {
       print('Ошибка при парсинге LeadHistory: $e');
       return LeadHistory(
         id: 0,
-        user: User(id: 0, name: '', email: '', phone: ''),
-        status: '',
+        user: User(
+            id: 0,
+            name: 'Не указано',
+            email: 'Не указано',
+            phone: 'Не указано'),
+        status: 'Не указано',
         date: DateTime.now(),
         changes: null,
       );
@@ -41,7 +53,7 @@ class LeadHistory {
         return Changes.fromJson(body);
       }
     }
-    return null; 
+    return null;
   }
 }
 
@@ -60,10 +72,10 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указано', 
+      email: json['email'] ?? 'Не указано', 
+      phone: json['phone'] ?? 'Не указано', 
     );
   }
 }
