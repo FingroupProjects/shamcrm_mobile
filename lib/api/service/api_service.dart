@@ -126,33 +126,34 @@ class ApiService {
   }
 
 // Метод для получения Истории Лида
-Future<List<LeadHistory>> getLeadHistory(int leadId) async {
-  try {
-    final token = await getToken(); // Получаем токен
-    final response = await http.get(
-      Uri.parse('$baseUrl/lead/history/$leadId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+  Future<List<LeadHistory>> getLeadHistory(int leadId) async {
+    try {
+      final token = await getToken(); // Получаем токен
+      final response = await http.get(
+        Uri.parse('$baseUrl/lead/history/$leadId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}'); // Логирование ответа
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}'); // Логирование ответа
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      final List<dynamic> jsonList = decodedJson['result']['history'];
-      return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
-    } else {
-      print('Failed to load lead history: ${response.statusCode}'); // Логирование ошибки
-      throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result']['history'];
+        return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
+      } else {
+        print(
+            'Failed to load lead history: ${response.statusCode}'); // Логирование ошибки
+        throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e'); // Логирование исключений
+      throw Exception('Ошибка загрузки истории лида: $e');
     }
-  } catch (e) {
-    print('Error occurred: $e'); // Логирование исключений
-    throw Exception('Ошибка загрузки истории лида: $e');
   }
-}
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
