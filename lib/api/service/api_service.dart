@@ -384,4 +384,33 @@ Future<List<LeadHistory>> getLeadHistory(int leadId) async {
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+  // Метод для получения чата по ID
+Future<Chats> getChatById(int chatId) async {
+  final response = await _getRequest('/chat/$chatId');
+
+  if (response.statusCode == 200) {
+    return Chats.fromJson(json.decode(response.body));
+  } else {
+    throw Exception('Ошибка получения чата: ${response.body}');
+  }
 }
+
+// Метод для получения всех чатов
+Future<List<Chats>> getChats() async {
+  final response = await _getRequest('/chat/getMyChats');
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List).map((chat) => Chats.fromJson(chat)).toList();
+    } else {
+      throw Exception('Нет данных о чатах в ответе');
+    }
+  } else {
+    throw Exception('Ошибка получения чатов: ${response.body}');
+  }
+}
+
+  // getMessages(int id) {}
+}
+
