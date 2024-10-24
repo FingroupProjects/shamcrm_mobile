@@ -1,4 +1,3 @@
-// action_history_widget.dart
 import 'package:crm_task_manager/bloc/history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history/history_event.dart';
 import 'package:crm_task_manager/bloc/history/history_state.dart';
@@ -61,7 +60,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.only(right: 16, left: 16, top: 16,bottom: 8),
+        padding: EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
           color: Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
@@ -72,8 +71,15 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
             _buildTitleRow(title),
             SizedBox(height: 8),
             AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              child: isExpanded ? _buildItemList(items) : SizedBox.shrink(),
+              duration: const Duration(milliseconds: 200),
+              child: isExpanded
+                  ? SizedBox(
+                      height: 250, // Ограничиваем высоту для прокрутки
+                      child: SingleChildScrollView(
+                        child: _buildItemList(items),
+                      ),
+                    )
+                  : SizedBox.shrink(),
             ),
           ],
         ),
@@ -137,8 +143,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       ),
     );
   }
-
-  Row _buildStatusRow(String status, String userName) {
+ Row _buildStatusRow(String status, String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -151,7 +156,6 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
             ),
-            overflow: TextOverflow.visible,
           ),
         ),
         SizedBox(width: 8),
@@ -168,39 +172,55 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     );
   }
 
-  Column _buildAdditionalDetails(List<String> details) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: details.where((detail) => detail.isNotEmpty).map((detail) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [Text(detail)],
-        );
-      }).toList(),
-    );
-  }
 
-List<String> _buildActionHistoryItems(List<LeadHistory> history) {
-  return history.map((entry) {
-    final changes = entry.changes;
-    final formattedDate =
-        DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-    String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
-
-    if (changes != null) {
-      // Форматируем изменения в виде строк
-     if (changes.positionNewValue != null && changes.positionPreviousValue != null) {
-        actionDetail +=
-            '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
-      }
-      if (changes.leadStatusNewValue != null && changes.leadStatusPreviousValue != null) {
-        actionDetail +=
-            '\nСтатус клиента: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
-      }
-      
-    }
-
-    return actionDetail;
-  }).toList();
+Column _buildAdditionalDetails(List<String> details) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: details.where((detail) => detail.isNotEmpty).map((detail) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Expanded( 
+            child: Text(
+              detail,
+              style: TextStyle(
+                fontSize: 14, 
+                fontFamily: 'Gilroy', 
+                fontWeight: FontWeight.w400,
+                color: Color(0xff1E2E52), 
+              ),
+              // maxLines: 2, 
+              // overflow: TextOverflow.ellipsis, 
+            ),
+          ),
+        ],
+      );
+    }).toList(),
+  );
 }
+
+
+  List<String> _buildActionHistoryItems(List<LeadHistory> history) {
+    return history.map((entry) {
+      final changes = entry.changes;
+      final formattedDate =
+          DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+      String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
+
+      if (changes != null) {
+        if (changes.positionNewValue != null &&
+            changes.positionPreviousValue != null) {
+          actionDetail +=
+              '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
+        }
+        if (changes.leadStatusNewValue != null &&
+            changes.leadStatusPreviousValue != null) {
+          actionDetail +=
+              '\nСтатус клиента: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
+        }
+      }
+
+      return actionDetail;
+    }).toList();
+  }
 }
