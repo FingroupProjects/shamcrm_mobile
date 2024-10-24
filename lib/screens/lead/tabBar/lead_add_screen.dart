@@ -295,7 +295,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         buttonColor: Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
-                          Navigator.pop(context);
+                          Navigator.pop(context, widget.statusId);
+                          context.read<LeadBloc>().add(FetchLeadStatuses());
                         },
                       ),
                     ),

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
@@ -45,6 +46,9 @@ class MyApp extends StatelessWidget {
         ),
          BlocProvider(
           create: (context) => RegionBloc(ApiService()), // Добавляем RegionBloc
+        ),
+         BlocProvider(
+          create: (context) => HistoryBloc(ApiService()), // Добавляем RegionBloc
         ),
       ],
       child: MaterialApp(

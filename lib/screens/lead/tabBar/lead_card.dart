@@ -53,6 +53,7 @@ class _LeadCardState extends State<LeadCard> {
           context,
           MaterialPageRoute(
             builder: (context) => LeadDetailsScreen(
+              leadId: widget.lead.id.toString(), // Добавьте это
               leadName: widget.lead.name ?? 'Без имени',
               leadStatus: dropdownValue,
               region: widget.lead.region?.name,
