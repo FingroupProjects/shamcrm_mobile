@@ -5,21 +5,21 @@ class AppStyles {
     fontSize: 16,
     fontWeight: FontWeight.w600,
     fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52), // Исправленный цвет (без лишней 'f')
+    color: Color(0xfff1E2E52),
   );
 
   static const TextStyle chatMessageStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     fontFamily: 'Gilroy',
-    color: Color(0xff99A4BA),
+    color: Color(0xfff99A4BA),
   );
 
   static const TextStyle chatTimeStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     fontFamily: 'Gilroy',
-    color: Color(0xff99A4BA),
+    color: Color(0xfff99A4BA),
   );
 }
 
@@ -28,26 +28,11 @@ class ChatItem {
   final String message;
   final String time;
   final String avatar;
-  final String icon; // Поле для иконки
+  final String icon; // Добавлено поле для иконки
 
-  ChatItem({
-    required this.name,
-    required this.message,
-    required this.time,
-    required this.avatar,
-    required this.icon,
-  });
+  ChatItem(this.name, this.message, this.time, this.avatar, this.icon);
 
-  // Метод для создания ChatItem из JSON
-  factory ChatItem.fromJson(Map<String, dynamic> json) {
-    return ChatItem(
-      name: json['name'] ?? '',
-      message: json['message'] ?? '',
-      time: json['time'] ?? '',
-      avatar: json['avatar'] ?? 'assets/default_avatar.png', // Файл по умолчанию
-      icon: json['icon'] ?? 'assets/default_icon.png', // Файл по умолчанию
-    );
-  }
+  get id => null;
 }
 
 class ChatListItem extends StatelessWidget {
@@ -62,7 +47,7 @@ class ChatListItem extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.white, // Укажите желаемый цвет фона
             backgroundImage: AssetImage(chatItem.avatar),
             radius: 24,
           ),
@@ -73,12 +58,13 @@ class ChatListItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    // Здесь добавлено использование иконки
                     Image.asset(
                       chatItem.icon, // Используем поле иконки
                       width: 20,
                       height: 20,
                     ),
-                    SizedBox(width: 4),
+                    SizedBox(width: 4), // Отступ между иконкой и текстом
                     Text(
                       chatItem.name,
                       style: AppStyles.chatNameStyle,
