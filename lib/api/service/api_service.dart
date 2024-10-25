@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Импортируем SharedPreferences
@@ -152,6 +153,19 @@ class ApiService {
     } catch (e) {
       print('Error occurred: $e'); // Логирование исключений
       throw Exception('Ошибка загрузки истории лида: $e');
+    }
+  }
+
+// Метод для получения Заметки Лида
+  Future<List<Notes>> getLeadNotes(int leadId) async {
+    final response = await _getRequest('/notices/$leadId');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result']['data'] as List)
+          .map((note) => Notes.fromJson(note))
+          .toList();
+    } else {
+      throw Exception('Failed to load notes');
     }
   }
 

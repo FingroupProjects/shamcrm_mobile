@@ -64,10 +64,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             SizedBox(height: 16),
             ActionHistoryWidget(leadId: int.parse(widget.leadId)),
             SizedBox(height: 16),
-            NotesWidget(notes: [
-              'Заметка 1: Встреча назначена на 10:00',
-              'Заметка 2: Ожидается звонок от клиента',
-            ]), // Вызов виджета заметок
+            NotesWidget(leadId: int.parse(widget.leadId)),
           ],
         ),
       ),

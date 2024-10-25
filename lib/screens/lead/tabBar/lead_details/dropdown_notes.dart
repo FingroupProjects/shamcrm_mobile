@@ -1,10 +1,15 @@
-// notes_widget.dart
+import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/notes/notes_event.dart';
+import 'package:crm_task_manager/bloc/notes/notes_state.dart';
+import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class NotesWidget extends StatefulWidget {
-  final List<String> notes;
+  final int leadId;
 
-  NotesWidget({required this.notes});
+  NotesWidget({required this.leadId});
 
   @override
   _NotesWidgetState createState() => _NotesWidgetState();
@@ -12,29 +17,38 @@ class NotesWidget extends StatefulWidget {
 
 class _NotesWidgetState extends State<NotesWidget> {
   bool isNotesExpanded = false;
+  List<Notes> notes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<NotesBloc>().add(FetchNotes(widget.leadId));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _buildExpandableNotesContainer(
-      'Заметки',
-      widget.notes,
-      isNotesExpanded,
-      () {
-        setState(() {
-          isNotesExpanded = !isNotesExpanded;
-        });
+    return BlocBuilder<NotesBloc, NotesState>(
+      builder: (context, state) {
+        if (state is NotesLoading) {
+          // return Center(child: CircularProgressIndicator());
+        } else if (state is NotesLoaded) {
+          notes = state.notes;
+        } else if (state is NotesError) {
+          return Center(child: Text(state.message));
+        }
+
+        return _buildExpandableNotesContainer(notes);
       },
     );
   }
 
-  Widget _buildExpandableNotesContainer(
-    String title,
-    List<String> items,
-    bool isExpanded,
-    VoidCallback onTap,
-  ) {
+  Widget _buildExpandableNotesContainer(List<Notes> notes) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        setState(() {
+          isNotesExpanded = !isNotesExpanded;
+        });
+      },
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
@@ -44,11 +58,12 @@ class _NotesWidgetState extends State<NotesWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTitleRow(title),
+            _buildTitleRow('Заметки'),
             SizedBox(height: 8),
             AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              child: isExpanded ? _buildItemList(items) : SizedBox.shrink(),
+              duration: const Duration(milliseconds: 200),
+              child:
+                  isNotesExpanded ? _buildItemList(notes) : SizedBox.shrink(),
             ),
           ],
         ),
@@ -78,14 +93,16 @@ class _NotesWidgetState extends State<NotesWidget> {
     );
   }
 
-  Column _buildItemList(List<String> items) {
+  Column _buildItemList(List<Notes> notes) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) {
+      children: notes.map((note) {
+        final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(note.date);
+
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Text(
-            item,
+            '${note.body} - $formattedDate',
             style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
