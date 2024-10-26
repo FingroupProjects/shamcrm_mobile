@@ -1,4 +1,3 @@
-// notes_state.dart
 import 'package:crm_task_manager/models/notes_model.dart';
 
 abstract class NotesState {}
@@ -17,4 +16,10 @@ class NotesError extends NotesState {
   final String message;
 
   NotesError(this.message);
+}
+
+class NotesSuccess extends NotesState {
+  final String message;
+
+  NotesSuccess(this.message);
 }
