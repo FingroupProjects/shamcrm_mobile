@@ -89,6 +89,19 @@ class ApiService {
     }
   }
 
+ // Метод для сохранения домена
+  Future<void> saveDomainChecked(bool value) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('domainChecked', value); // Сохраняем статус проверки домена
+}
+
+ // Метод для проверки домена из SharedPreferences
+Future<bool> isDomainChecked() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('domainChecked') ?? false; // Проверяем статус или возвращаем false
+}
+
+
   // Метод для проверки логина и пароля
   Future<LoginResponse> login(LoginModel loginModel) async {
     final response = await _postRequest('/login', loginModel.toJson());

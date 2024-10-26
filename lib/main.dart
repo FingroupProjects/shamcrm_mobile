@@ -8,17 +8,16 @@ import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart'; 
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/home_screen.dart';  // Главный экран
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // // Обязательно инициализируем Flutter binding, чтобы плагин мог корректно работать
-  // WidgetsFlutterBinding.ensureInitialized();
 
-  // // // Пример инициализации плеера (опционально, если требуется инициализация заранее)
-  // final AudioPlayer audioPlayer = AudioPlayer();
+  final apiService = ApiService();
+  final bool isDomainChecked = await apiService.isDomainChecked();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -27,41 +26,47 @@ void main() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-  
-  runApp(MyApp());
+
+  runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
 }
 
 class MyApp extends StatelessWidget {
+  final ApiService apiService;
+  final bool isDomainChecked;
+
+  const MyApp({required this.apiService, required this.isDomainChecked});
+
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    return MultiProvider(
       providers: [
+        Provider<ApiService>.value(value: apiService),
         BlocProvider(
-          create: (context) => DomainBloc(ApiService()),
+          create: (context) => DomainBloc(apiService),
         ),
         BlocProvider(
-          create: (context) => LoginBloc(ApiService()), // Добавьте LoginBloc
+          create: (context) => LoginBloc(apiService),
         ),
-         BlocProvider(
-          create: (context) => LeadBloc(ApiService()), // Добавьте LeadBloc
+        BlocProvider(
+          create: (context) => LeadBloc(apiService),
         ),
-         BlocProvider(
-          create: (context) => RegionBloc(ApiService()), // Добавляем RegionBloc
+        BlocProvider(
+          create: (context) => RegionBloc(apiService),
         ),
-         BlocProvider(
-          create: (context) => HistoryBloc(ApiService()), // Добавляем RegionBloc
+        BlocProvider(
+          create: (context) => HistoryBloc(apiService),
         ),
-         BlocProvider(
-          create: (context) => NotesBloc(ApiService()), // Добавляем RegionBloc
+        BlocProvider(
+          create: (context) => NotesBloc(apiService),
         ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'CRM TASK MANAGER',
         routes: {
-          '/': (context) => AuthScreen(),  // Экран для проверки домена
-          '/login': (context) => LoginScreen(),  // Экран логина
-          '/home': (context) => HomeScreen(),  // Главный экран после успешного входа
+          '/': (context) => isDomainChecked ? LoginScreen() : AuthScreen(),
+          '/login': (context) => LoginScreen(),
+          '/home': (context) => HomeScreen(),
         },
       ),
     );
