@@ -6,3 +6,14 @@ class FetchNotes extends NotesEvent {
 
   FetchNotes(this.leadId);
 }
+class CreateNotes extends NotesEvent {
+  final String body;
+  final int leadId;
+  final DateTime? date;
+
+  CreateNotes({
+    required this.body,
+    required this.leadId,
+    this.date,
+  });
+}

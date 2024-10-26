@@ -89,18 +89,19 @@ class ApiService {
     }
   }
 
- // Метод для сохранения домена
+  // Метод для сохранения домена
   Future<void> saveDomainChecked(bool value) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setBool('domainChecked', value); // Сохраняем статус проверки домена
-}
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(
+        'domainChecked', value); // Сохраняем статус проверки домена
+  }
 
- // Метод для проверки домена из SharedPreferences
-Future<bool> isDomainChecked() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getBool('domainChecked') ?? false; // Проверяем статус или возвращаем false
-}
-
+  // Метод для проверки домена из SharedPreferences
+  Future<bool> isDomainChecked() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('domainChecked') ??
+        false; // Проверяем статус или возвращаем false
+  }
 
   // Метод для проверки логина и пароля
   Future<LoginResponse> login(LoginModel loginModel) async {
@@ -139,6 +140,24 @@ Future<bool> isDomainChecked() async {
     }
   }
 
+  // Метод для получения статусов лидов
+  Future<List<LeadStatus>> getLeadStatuses() async {
+    final response = await _getRequest('/lead/statuses');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((status) => LeadStatus.fromJson(status))
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
 // Метод для получения Истории Лида
   Future<List<LeadHistory>> getLeadHistory(int leadId) async {
     try {
@@ -170,7 +189,7 @@ Future<bool> isDomainChecked() async {
   }
 
 // Метод для получения Заметки Лида
-Future<List<Notes>> getLeadNotes(int leadId) async {
+  Future<List<Notes>> getLeadNotes(int leadId) async {
     final response = await _getRequest('/notices/$leadId');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -181,21 +200,42 @@ Future<List<Notes>> getLeadNotes(int leadId) async {
       throw Exception('Failed to load notes');
     }
   }
-  // Метод для получения статусов лидов
-  Future<List<LeadStatus>> getLeadStatuses() async {
-    final response = await _getRequest('/lead/statuses');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return (data['result'] as List)
-            .map((status) => LeadStatus.fromJson(status))
-            .toList();
+  // Метод для Создания Заметки Лида
+  Future<Map<String, dynamic>> createNotes({
+    required String body,
+    required int leadId,
+    DateTime? date,
+  }) async {
+    date ??= DateTime.now();
+
+    final response = await _postRequest('/notices', {
+      'body': body,
+      'lead_id': leadId,
+      'date': date.toIso8601String(),
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Заметка создана успешно.'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('body.')) {
+        return {
+          'success': false,
+          'message': 'Ошибка! Поля не может быть пустым.'
+        };
+      } else if (response.body.contains('date')) {
+        return {'success': false, 'message': 'Не правильная дата.'};
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      return {
+        'success': false,
+        'message': 'Ошибка создания Заметки: ${response.body}'
+      };
     }
   }
 
