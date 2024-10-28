@@ -35,3 +35,11 @@ class UpdateNotes extends NotesEvent {
     this.sendNotification = false,
   });
 }
+
+class DeleteNote extends NotesEvent {
+  final int noteId;
+  final int leadId; // Include leadId to fetch notes after deletion
+
+  DeleteNote(this.noteId, this.leadId);
+}
+

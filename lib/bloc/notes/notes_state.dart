@@ -23,3 +23,9 @@ class NotesSuccess extends NotesState {
 
   NotesSuccess(this.message);
 }
+
+class NotesDeleted extends NotesState {
+  final String message;
+
+  NotesDeleted(this.message);
+}
