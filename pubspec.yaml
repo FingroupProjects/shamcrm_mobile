@@ -4,7 +4,7 @@ description: "A new Flutter project."
 version: 1.0.5+6
 
 environment:
-  sdk: ^3.5.3
+  sdk: ^3.5.2
 
 
 dependencies:
@@ -22,15 +22,24 @@ dependencies:
   intl: ^0.19.0
   open_file: ^3.5.9
   path_provider: ^2.1.4
+  dart_pusher_channels: ^1.2.3
+  social_media_recorder: ^1.1.13
   # audio_waveforms: ^1.0.5 
   # pusher_websocket_flutter: ^0.2.0 # Check for the latest version
-
   # pusher_channels_flutter: ^2.2.1
   # pusher_client: ^2.0.0
   # flutter_pusher: ^1.0.3 
   # web_socket_channel: ^3.0.1
   # socket_io_client: ^3.0.0
+
+  flutter_secure_storage: ^9.2.2
+  dio: ^5.7.0
+  chat_bubbles: ^1.6.0
+  just_audio: ^0.9.18
+  audioplayers: ^6.1.0
+
   # flutter_secure_storage: ^9.2.2
+
   # pusher_client_fixed: ^0.0.4+2
   # laravel_flutter_pusher_plus: ^1.0.2
   # json_annotation: ^4.9.0
