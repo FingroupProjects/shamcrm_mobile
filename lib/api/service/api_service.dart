@@ -37,6 +37,25 @@ class ApiService {
     await _removeToken(); // Удаляем токен при логауте
   }
 
+// Метод для выполнения GET-запросов
+  Future<http.Response> _getRequest(String path) async {
+    final token = await getToken(); // Получаем токен перед запросом
+
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    print('Статус ответа: ${response.statusCode}');
+    print('Тело ответа: ${response.body}');
+
+    return response;
+  }
+
   // Метод для выполнения POST-запросов
   Future<http.Response> _postRequest(
       String path, Map<String, dynamic> body) async {
@@ -81,11 +100,11 @@ class ApiService {
     return response;
   }
 
-// Метод для выполнения GET-запросов
-  Future<http.Response> _getRequest(String path) async {
+  // Метод для выполнения DELETE-запросов
+  Future<http.Response> _deleteRequest(String path) async {
     final token = await getToken(); // Получаем токен перед запросом
 
-    final response = await http.get(
+    final response = await http.delete(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Authorization': 'Bearer $token',
@@ -303,6 +322,19 @@ class ApiService {
       };
     }
   }
+
+// Метод для Удаления Заметки Лида
+Future<Map<String, dynamic>> deleteNotes(int noteId) async {
+  final response = await _deleteRequest('/notices/$noteId');
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete note: ${response.body}');
+  }
+}
+
+
 
 // Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({

@@ -3,8 +3,9 @@ import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes_dropdown.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/edit_notes_dropdown.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_notes.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/edit_notes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -117,6 +118,12 @@ class _NotesWidgetState extends State<NotesWidget> {
                     ],
                   ),
                 ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                  onPressed: () {
+                    _showDeleteNoteDialog(note);
+                  },
+                ),
               ],
             ),
           ),
@@ -177,6 +184,15 @@ class _NotesWidgetState extends State<NotesWidget> {
       backgroundColor: Colors.white,
       builder: (BuildContext context) {
         return EditNotesDialog(leadId: widget.leadId, note: note);
+      },
+    );
+  }
+
+  void _showDeleteNoteDialog(Notes note) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteNoteDialog(note: note, leadId: widget.leadId);
       },
     );
   }

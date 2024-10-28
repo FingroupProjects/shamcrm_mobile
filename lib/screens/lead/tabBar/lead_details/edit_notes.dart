@@ -1,26 +1,36 @@
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
+import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:intl/intl.dart';
 
-class CreateNotesDialog extends StatefulWidget {
+class EditNotesDialog extends StatefulWidget {
   final int leadId;
+  final Notes note;
 
-  CreateNotesDialog({required this.leadId});
+  EditNotesDialog({required this.leadId, required this.note});
 
   @override
-  _CreateNotesDialogState createState() => _CreateNotesDialogState();
+  _EditNotesDialogState createState() => _EditNotesDialogState();
 }
 
-class _CreateNotesDialogState extends State<CreateNotesDialog> {
+class _EditNotesDialogState extends State<EditNotesDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
   bool _sendPushNotification = false;
+
+  @override
+  void initState() {
+    super.initState();
+    bodyController.text = widget.note.body;
+    dateController.text = DateFormat('dd/MM/yyyy HH:mm')
+        .format(DateTime.parse(widget.note.date!));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +42,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Добавить заметку',
+              'Редактировать заметку',
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -57,6 +67,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
             CustomTextFieldDate(
               controller: dateController,
               label: 'Дата',
+              withTime: true, // только дата
             ),
             SizedBox(height: 16),
             Row(
@@ -116,18 +127,21 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   DateTime? date;
                   if (dateString != null && dateString.isNotEmpty) {
                     try {
-                      date = DateFormat('dd/MM/yyyy').parse(dateString);
+                      date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                              'Введите корректную дату в формате ДД/ММ/ГГГГ'),
+                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ ЧЧ:ММ'),
                         ),
                       );
                       return;
                     }
                   }
-                  context.read<NotesBloc>().add(CreateNotes(
+                  print(
+                      'Обновление заметки: noteId: ${widget.note.id}, body: $body, date: $date, sendPush: $_sendPushNotification');
+                  context.read<NotesBloc>().add(UpdateNotes(
+                        noteId: widget.note.id,
                         leadId: widget.leadId,
                         body: body,
                         date: date,

@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
-import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -8,29 +7,20 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 
-class EditNotesDialog extends StatefulWidget {
+class CreateNotesDialog extends StatefulWidget {
   final int leadId;
-  final Notes note;
 
-  EditNotesDialog({required this.leadId, required this.note});
+  CreateNotesDialog({required this.leadId});
 
   @override
-  _EditNotesDialogState createState() => _EditNotesDialogState();
+  _CreateNotesDialogState createState() => _CreateNotesDialogState();
 }
 
-class _EditNotesDialogState extends State<EditNotesDialog> {
+class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
   bool _sendPushNotification = false;
-
-  @override
-  void initState() {
-    super.initState();
-    bodyController.text = widget.note.body;
-    dateController.text =
-        DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.note.date!));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +32,7 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Редактировать заметку',
+              'Добавить заметку',
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -67,17 +57,16 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
             CustomTextFieldDate(
               controller: dateController,
               label: 'Дата',
+              withTime: true,
             ),
             SizedBox(height: 16),
-            // Добавление чекбокса и текста
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _sendPushNotification =
-                          !_sendPushNotification; // Переключаем состояние чекбокса
+                      _sendPushNotification = !_sendPushNotification;
                     });
                   },
                   child: Container(
@@ -116,7 +105,6 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
                 ),
               ],
             ),
-
             SizedBox(height: 16),
             CustomButton(
               buttonText: 'Сохранить',
@@ -129,20 +117,18 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
                   DateTime? date;
                   if (dateString != null && dateString.isNotEmpty) {
                     try {
-                      date = DateFormat('dd/MM/yyyy').parse(dateString);
+                      date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                              'Введите корректную дату в формате ДД/ММ/ГГГГ'),
+                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ ЧЧ:ММ'),
                         ),
                       );
                       return;
                     }
                   }
-                  print('Обновление заметки: noteId: ${widget.note.id}, body: $body, date: $date, sendPush: $_sendPushNotification');
-                  context.read<NotesBloc>().add(UpdateNotes(
-                        noteId: widget.note.id,
+                  context.read<NotesBloc>().add(CreateNotes(
                         leadId: widget.leadId,
                         body: body,
                         date: date,
