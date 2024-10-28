@@ -329,17 +329,15 @@ class ApiService {
   }
 
 // Метод для Удаления Заметки Лида
-Future<Map<String, dynamic>> deleteNotes(int noteId) async {
-  final response = await _deleteRequest('/notices/$noteId');
+  Future<Map<String, dynamic>> deleteNotes(int noteId) async {
+    final response = await _deleteRequest('/notices/$noteId');
 
-  if (response.statusCode == 200) {
-    return {'result': 'Success'};
-  } else {
-    throw Exception('Failed to delete note: ${response.body}');
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete note: ${response.body}');
+    }
   }
-}
-
-
 
 // Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({
