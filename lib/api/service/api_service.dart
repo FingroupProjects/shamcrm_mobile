@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Импортируем SharedPreferences
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
+import '../../utils/global_fun.dart';
+// final String baseUrl = 'http://62.84.186.96/api';
+final String baseUrl = 'https://shamcrm.com/api';
+
 
 class ApiService {
-  final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  // final String baseUrl = 'https://shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -236,7 +240,43 @@ Future<void> sendMessage(int chatId, String message) async {
   }
 }
 
+// -------------------------------
 
+// Метод для отправки audio file
+  Future<void> sendChatAudioFile(int chatId, String pathAudio) async {
+    final token = await getToken(); // Получаем токен
+    String requestUrl = '$baseUrl/chat/sendVoice/$chatId';
+
+    Dio dio = Dio();
+    try {
+      FormData formData = FormData.fromMap({
+        'voice': await MultipartFile.fromFile(pathAudio)
+      });
+
+      var response = await dio.post(
+          requestUrl,
+          data: formData,
+          options: Options(
+            headers: {
+              "Authorization": "Bearer $token",
+              "Accept": "application/json",
+            },
+            contentType: 'multipart/form-data',
+          )
+      );
+      print('response.statusCode: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        print('Audio message sent successfully!');
+      } else {
+        print('Error sending audio message: ${response.data}');
+        throw Exception('Error sending audio message: ${response.data}');
+      }
+    } catch (e) {
+      print('Exception caught: $e');
+      throw Exception('Failed to send audio message due to an exception: $e');
+    }
+  }
   // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Если вы используете MultipartRequest для отправки файлов, создайте метод
