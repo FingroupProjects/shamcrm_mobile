@@ -7,6 +7,9 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 
 class LeadScreen extends StatefulWidget {
+  final int? initialStatusId;
+
+  LeadScreen({this.initialStatusId});
   @override
   _LeadScreenState createState() => _LeadScreenState();
 }
@@ -14,6 +17,7 @@ class LeadScreen extends StatefulWidget {
 class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   List<String> _tabTitles = [];
+  int _currentTabIndex = 0; // Track the current tab index
 
   @override
   void initState() {
@@ -69,7 +73,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           child: Text(
             _tabTitles[index],
             style: TaskStyles.tabTextStyle.copyWith(
-              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+              color:
+                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
             ),
           ),
         ),
@@ -82,16 +87,34 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       listener: (context, state) {
         if (state is LeadLoaded) {
           setState(() {
-            _tabTitles = state.leadStatuses.map((status) => status.title).toList();
-            _tabController = TabController(length: _tabTitles.length, vsync: this);
-            _tabController.addListener(() => setState(() {}));
+            _tabTitles =
+                state.leadStatuses.map((status) => status.title).toList();
+            _tabController =
+                TabController(length: _tabTitles.length, vsync: this);
+            _tabController.addListener(() {
+              setState(() {
+                _currentTabIndex =
+                    _tabController.index; // Store the current tab index
+              });
+            });
+
+            // Set initial tab index based on the passed status ID
+            int initialIndex = state.leadStatuses
+                .indexWhere((status) => status.id == widget.initialStatusId);
+            if (initialIndex != -1) {
+              _tabController.index = initialIndex;
+              _currentTabIndex = initialIndex;
+            } else {
+              _tabController.index = _currentTabIndex;
+            }
           });
         }
       },
       child: BlocBuilder<LeadBloc, LeadState>(
         builder: (context, state) {
           if (state is LeadLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return const Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is LeadLoaded) {
             return _tabTitles.isNotEmpty
                 ? TabBarView(

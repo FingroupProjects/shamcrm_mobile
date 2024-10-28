@@ -337,6 +337,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
+
   void _changeSeek(double value) {
     setState(() {
       audioPlayer.seek(new Duration(seconds: value.toInt()));
@@ -452,3 +453,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   */
 
 }
+
+}
+
+
+

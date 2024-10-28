@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/lead_model.dart'; // Import your LeadStatus model
@@ -58,7 +59,7 @@ void DropdownBottomSheet(
                                     status.id; // Присваиваем id статуса
                               });
                             },
-                            child: _buildDropDownStyles(
+                            child: buildDropDownStyles(
                               text: status.title,
                               isSelected: selectedValue == status.title,
                             ),
@@ -90,66 +91,12 @@ void DropdownBottomSheet(
                     }
                   },
                 ),
+                SizedBox(height: 16)
               ],
             ),
           );
         },
       );
     },
-  );
-}
-
-const Color backgroundColor = Color(0xFFF4F7FD);
-const Color textColor = Color(0xFFf1E2E52);
-const TextStyle titleStyle = TextStyle(
-  fontSize: 16,
-  fontWeight: FontWeight.w500,
-  fontFamily: 'Gilroy',
-  color: textColor,
-);
-
-Widget _buildDropDownStyles({required String text, required bool isSelected}) {
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 7),
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: backgroundColor,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isSelected ? Color(0xfff4F40EC) : Colors.transparent,
-            border: Border.all(
-              color: isSelected ? Colors.transparent : Color(0xfff99A4BA),
-              width: 2,
-            ),
-          ),
-          child: isSelected
-              ? const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 16,
-                )
-              : Container(),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: titleStyle,
-          ),
-        ),
-        Image.asset(
-          'assets/icons/arrow-right.png',
-          width: 16,
-          height: 16,
-        ),
-      ],
-    ),
   );
 }
