@@ -6,6 +6,13 @@ class FetchNotes extends NotesEvent {
   FetchNotes(this.leadId);
 }
 
+class FetchMoreNotes extends NotesEvent {
+  final int leadId;
+  final int currentPage;
+
+  FetchMoreNotes(this.leadId, this.currentPage);
+}
+
 class CreateNotes extends NotesEvent {
   final String body;
   final int leadId;
@@ -38,8 +45,7 @@ class UpdateNotes extends NotesEvent {
 
 class DeleteNote extends NotesEvent {
   final int noteId;
-  final int leadId; // Include leadId to fetch notes after deletion
+  final int leadId;
 
   DeleteNote(this.noteId, this.leadId);
 }
-

@@ -5,25 +5,54 @@ import 'notes_state.dart';
 
 class NotesBloc extends Bloc<NotesEvent, NotesState> {
   final ApiService apiService;
+  bool allNotesFetched = false; 
 
   NotesBloc(this.apiService) : super(NotesInitial()) {
-    on<FetchNotes>((event, emit) async {
-      emit(NotesLoading());
-      try {
-        final notes = await apiService.getLeadNotes(event.leadId);
-        emit(NotesLoaded(notes));
-      } catch (e) {
-        emit(NotesError('Ошибка загрузки заметок'));
-      }
-    });
-
+    on<FetchNotes>(_fetchNotes); 
+    on<FetchMoreNotes>(_fetchMoreNotes);
     on<CreateNotes>(_createNotes);
     on<UpdateNotes>(_updateNotes);
-    on<DeleteNote>(_deleteNote); // Add the DeleteNote event handler
+    on<DeleteNote>(_deleteNote);
+  }
+
+  Future<void> _fetchNotes(FetchNotes event, Emitter<NotesState> emit) async {
+    emit(NotesLoading());
+
+    try {
+      final notes = await apiService.getLeadNotes(event.leadId);
+      allNotesFetched = notes.isEmpty; 
+      emit(NotesLoaded(notes,
+          currentPage: 1)); 
+    } catch (e) {
+      emit(NotesError('Не удалось загрузить заметки: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _fetchMoreNotes(
+      FetchMoreNotes event, Emitter<NotesState> emit) async {
+    if (allNotesFetched)
+      return; 
+
+    try {
+      final notes = await apiService.getLeadNotes(event.leadId,
+          page: event.currentPage + 1);
+      if (notes.isEmpty) {
+        allNotesFetched = true; 
+        return; 
+      }
+      if (state is NotesLoaded) {
+        final currentState = state as NotesLoaded;
+        emit(currentState.merge(notes));
+      }
+    } catch (e) {
+      emit(NotesError(
+          'Не удалось загрузить дополнительные заметки: ${e.toString()}'));
+    }
   }
 
   Future<void> _createNotes(CreateNotes event, Emitter<NotesState> emit) async {
     emit(NotesLoading());
+
     try {
       final result = await apiService.createNotes(
         body: event.body,
@@ -45,6 +74,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
 
   Future<void> _updateNotes(UpdateNotes event, Emitter<NotesState> emit) async {
     emit(NotesLoading());
+
     try {
       final result = await apiService.updateNotes(
         noteId: event.noteId,
@@ -56,34 +86,28 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
 
       if (result['success']) {
         emit(NotesSuccess('Заметка обновлена успешно'));
-        add(FetchNotes(event.leadId));
+        add(FetchNotes(event.leadId)); // Перезагрузка заметок после обновления
       } else {
         emit(NotesError(result['message']));
       }
     } catch (e) {
-      print("Error during update: ${e.toString()}");
       emit(NotesError('Ошибка обновления заметки: ${e.toString()}'));
     }
   }
 
-Future<void> _deleteNote(DeleteNote event, Emitter<NotesState> emit) async {
-  emit(NotesLoading());
-  try {
-    print('Attempting to delete note with ID: ${event.noteId}');
-    final response = await apiService.deleteNotes(event.noteId);
-    print('Delete response: $response');
+  Future<void> _deleteNote(DeleteNote event, Emitter<NotesState> emit) async {
+    emit(NotesLoading());
 
-    if (response['result'] == 'Success') {
-      emit(NotesDeleted('Заметка удалена успешно'));
-      add(FetchNotes(event.leadId)); // Перезагружаем заметки после удаления
-    } else {
-      emit(NotesError('Ошибка удаления заметки'));
+    try {
+      final response = await apiService.deleteNotes(event.noteId);
+      if (response['result'] == 'Success') {
+        emit(NotesDeleted('Заметка удалена успешно'));
+        add(FetchNotes(event.leadId)); // Перезагрузка заметок после удаления
+      } else {
+        emit(NotesError('Ошибка удаления заметки'));
+      }
+    } catch (e) {
+      emit(NotesError('Ошибка удаления заметки: ${e.toString()}'));
     }
-  } catch (e) {
-    print('Error during note deletion: ${e.toString()}');
-    emit(NotesError('Ошибка удаления заметки: ${e.toString()}'));
   }
-}
-
-
 }

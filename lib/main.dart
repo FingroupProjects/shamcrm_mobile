@@ -8,7 +8,7 @@ import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';

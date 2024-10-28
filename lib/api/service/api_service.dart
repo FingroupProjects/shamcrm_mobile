@@ -5,7 +5,7 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // Импортируем SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart'; 
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
@@ -229,16 +229,18 @@ class ApiService {
     }
   }
 
-// Метод для получения Заметки Лида
-  Future<List<Notes>> getLeadNotes(int leadId) async {
-    final response = await _getRequest('/notices/$leadId');
+// Метод для получения Заметок с Пагинацией
+  Future<List<Notes>> getLeadNotes(int leadId,
+      {int page = 1, int perPage = 20}) async {
+    final response =
+        await _getRequest('/notices/$leadId?page=$page&per_page=$perPage');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return (data['result']['data'] as List)
           .map((note) => Notes.fromJson(note))
           .toList();
     } else {
-      throw Exception('Failed to load notes');
+      throw Exception('Ошибка загрузки заметок');
     }
   }
 
@@ -324,17 +326,15 @@ class ApiService {
   }
 
 // Метод для Удаления Заметки Лида
-Future<Map<String, dynamic>> deleteNotes(int noteId) async {
-  final response = await _deleteRequest('/notices/$noteId');
+  Future<Map<String, dynamic>> deleteNotes(int noteId) async {
+    final response = await _deleteRequest('/notices/$noteId');
 
-  if (response.statusCode == 200) {
-    return {'result': 'Success'};
-  } else {
-    throw Exception('Failed to delete note: ${response.body}');
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete note: ${response.body}');
+    }
   }
-}
-
-
 
 // Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({

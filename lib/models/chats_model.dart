@@ -68,6 +68,11 @@ class Message {
   final String type;
   final String? filePath;
   final bool isMyMessage;
+  bool isPlaying; // Oynash holati uchun
+  bool isPause;   // Tanaffus holati uchun
+  Duration duration;
+  Duration position;
+
 
 
   Message({
@@ -76,6 +81,10 @@ class Message {
     required this.type,
     this.filePath,
     required this.isMyMessage,
+    this.isPlaying = false, // Standart false qilib olamiz
+    this.isPause = false,   // Standart false qilib olamiz
+    this.duration = const Duration(),
+    this.position = const Duration(),
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {

@@ -5,10 +5,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:enableOnBackInvokedCallback="true"
         android:label="crm_task_manager"
+        android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
         android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="true"

@@ -365,16 +365,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               ),
             ),
           ),
-          InputField(
-            onSend: _onSend,
-            onAttachFile: () {
-              print('Attach file triggered');
-            },
-            onRecordVoice: () {
-              print('Record voice triggered');
-            },
-            messageController: _messageController,
-          ),
+          // InputField(
+          //   onSend: _onSend,
+          //   onAttachFile: () {
+          //     print('Attach file triggered');
+          //   },
+          //   onRecordVoice: () {
+          //     print('Record voice triggered');
+          //   },
+          //   messageController: _messageController,
+          // ),
         ],
       ),
     );
@@ -404,5 +404,4 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 }
-
 
