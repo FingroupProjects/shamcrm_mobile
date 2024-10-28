@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes_dropdown.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/edit_notes_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -75,45 +76,49 @@ class _NotesWidgetState extends State<NotesWidget> {
   }
 
   Widget _buildNoteItem(Notes note) {
-// Предполагается, что note.date — это строка, которая содержит дату в формате ISO 8601.
     final formattedDate = note.date != null
         ? DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse(note.date!))
         : 'Не указано';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: TaskCardStyles.taskCardDecoration,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Image.asset(
-                'assets/icons/leads/notes.png',
-                width: 24,
-                height: 24,
-                color: Color(0xff1E2E52),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      note.body,
-                      style: TaskCardStyles.titleStyle,
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      formattedDate,
-                      style: TaskCardStyles.priorityStyle.copyWith(
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ],
+    return GestureDetector(
+      onTap: () {
+        _showEditNoteDialog(note);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Container(
+          decoration: TaskCardStyles.taskCardDecoration,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/icons/leads/notes.png',
+                  width: 24,
+                  height: 24,
+                  color: Color(0xff1E2E52),
                 ),
-              ),
-            ],
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        note.body,
+                        style: TaskCardStyles.titleStyle,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        formattedDate,
+                        style: TaskCardStyles.priorityStyle.copyWith(
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -162,6 +167,16 @@ class _NotesWidgetState extends State<NotesWidget> {
       backgroundColor: Colors.white,
       builder: (BuildContext context) {
         return CreateNotesDialog(leadId: widget.leadId);
+      },
+    );
+  }
+
+  void _showEditNoteDialog(Notes note) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (BuildContext context) {
+        return EditNotesDialog(leadId: widget.leadId, note: note);
       },
     );
   }

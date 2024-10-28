@@ -59,6 +59,28 @@ class ApiService {
     return response;
   }
 
+// Метод для выполнения PATCH-запросов
+  Future<http.Response> _patchRequest(
+      String path, Map<String, dynamic> body) async {
+    final token = await getToken(); // Получаем токен перед запросом
+
+    final response = await http.patch(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+      },
+      body: json.encode(body),
+    );
+
+    print('Статус ответа: ${response.statusCode}');
+    print('Тело ответа: ${response.body}');
+
+    return response;
+  }
+
 // Метод для выполнения GET-запросов
   Future<http.Response> _getRequest(String path) async {
     final token = await getToken(); // Получаем токен перед запросом
@@ -206,6 +228,7 @@ class ApiService {
     required String body,
     required int leadId,
     DateTime? date,
+    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
 
@@ -213,6 +236,7 @@ class ApiService {
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
+      'send_notification': sendNotification ? 1 : 0,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -235,6 +259,47 @@ class ApiService {
       return {
         'success': false,
         'message': 'Ошибка создания Заметки: ${response.body}'
+      };
+    }
+  }
+
+  // Метод для Редактирование Заметки Лида
+  Future<Map<String, dynamic>> updateNotes({
+    required int noteId,
+    required int leadId,
+    required String body,
+    DateTime? date,
+    bool sendNotification = false,
+  }) async {
+    date ??= DateTime.now();
+
+    final response = await _patchRequest('/notices/$noteId', {
+      'body': body,
+      'lead_id': leadId,
+      'date': date.toIso8601String(),
+      'send_notification': sendNotification ? 1 : 0,
+    });
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'Заметка обновлена успешно.'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('body.')) {
+        return {
+          'success': false,
+          'message': 'Ошибка! Поля не может быть пустым.'
+        };
+      } else if (response.body.contains('date')) {
+        return {'success': false, 'message': 'Не правильная дата.'};
+      } else {
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка обновления Заметки: ${response.body}'
       };
     }
   }
