@@ -35,7 +35,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   String? selectedRegion;
   String selectedDialCode = ''; // Для хранения кода страны
-  String selectedDialCodeWhatsapp = ''; // Для хранения кода страны
+  String selectedDialCodeWhatsapp = ''; 
 
   @override
   void initState() {
@@ -53,8 +53,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Image.asset(
-            'assets/icons/arrow-left.png', // Укажите путь к вашей иконке
-            width: 24, // Задайте размер иконки
+            'assets/icons/arrow-left.png',
+            width: 24, 
             height: 24,
           ),
           onPressed: () {
@@ -118,7 +118,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
                           }
-                          return null; // Поле заполнено корректно
+                          return null; 
                         },
                       ),
                       const SizedBox(height: 8),
@@ -126,14 +126,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         controller: phoneController,
                         onInputChanged: (String number) {
                           setState(() {
-                            selectedDialCode = number; // Сохраняем код страны
+                            selectedDialCode = number; 
                           });
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
                           }
-                          return null; // Поле заполнено корректно
+                          return null; 
                         },
                         label: 'Телефон',
                       ),
