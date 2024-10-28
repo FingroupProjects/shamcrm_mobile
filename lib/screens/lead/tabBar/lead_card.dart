@@ -150,15 +150,15 @@ class _LeadCardState extends State<LeadCard> {
                       height: 28,
                     ),
                     const SizedBox(width: 18),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 2),
-                      decoration: TaskCardStyles.priorityContainerDecoration,
-                      child: const Text(
-                        'Высокая',
-                        style: TaskCardStyles.priorityStyle,
-                      ),
-                    ),
+                    // Container(
+                    //   padding: const EdgeInsets.symmetric(
+                    //       horizontal: 4, vertical: 2),
+                    //   decoration: TaskCardStyles.priorityContainerDecoration,
+                    //   child: const Text(
+                    //     'Высокая',
+                    //     style: TaskCardStyles.priorityStyle,
+                    //   ),
+                    // ),
                   ],
                 ),
                 const SizedBox(height: 8),

@@ -1,12 +1,9 @@
+import 'dart:convert';
 import 'dart:async';
-import 'dart:io';
-import 'package:chat_bubbles/bubbles/bubble_normal_audio.dart';
-import 'package:chat_bubbles/bubbles/bubble_special_one.dart';
-import 'package:crm_task_manager/models/msg_data_in_socket.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'dart:io'; // Importing WebSocket from dart:io
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/api_service_chats.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
@@ -38,114 +35,215 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   WebSocket? _webSocket;
-  late StreamSubscription<ChannelReadEvent> chatSubscribtion;
-  late PusherChannelsClient socketClient;
-  late AudioPlayer audioPlayer;
-  bool isPlaying = false;
-  bool isLoading = false;
-  bool isPause = false;
-
-  List<Message> messages = [];
 
   @override
   void initState() {
-    messages = widget.messages;
-    audioPlayer = AudioPlayer(); // AudioPlayer obyektini yaratamiz
-    setUpServices();
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
-
-    // _connectWebSocket();
+    _connectWebSocket();
   }
 
+  Future<void> _connectWebSocket() async {
+    try {
+      print('1. Начало процесса подключения WebSocket');
 
-  Future<void> setUpServices() async {
-    print('--------------------------- start socket:::::::');
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+      final prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
 
-    final customOptions = PusherChannelsOptions.custom(
-      // You may also apply the given metadata in your custom uri
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
+      if (token == null) {
+        print('2. Ошибка: Token is null. Please log in again.');
+        throw Exception('Token is null. Please log in again.');
+      } else {
+        print('2. Токен успешно загружен: $token');
+      }
 
-    socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        // here you can handle connection errors.
-        // refresh callback enables to reconnect the client
-        print(exception);
-        // refresh();
-      },
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
-      ),
-    );
+      // Получение socket_id через WebSocket
+      final socketId = await _getSocketId(token);
+      print('3. Получен socket_id: $socketId'); // Логируем socket_id
 
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint:
-            Uri.parse('https://shamcrm.com/broadcasting/auth'),
-        headers: {'Authorization': 'Bearer $token'},
-        onAuthFailed: (exception, trace) {
-          print(exception);
+      // Аутентификация через HTTP-запрос
+      print('4. Начало процесса аутентификации на /broadcasting/auth');
+      print('4.1. Отправка тела запроса: ${jsonEncode({
+            'socket_id': socketId,
+            'channel_name': 'presence-chat.${widget.chatId}'
+          })}');
+
+      final response = await http.post(
+        Uri.parse('http://62.84.186.96/broadcasting/auth'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-      ),
-    );
+        body: jsonEncode({
+          'socket_id': socketId,
+          'channel_name': 'presence-chat.${widget.chatId}',
+        }),
+      );
 
-    socketClient.onConnectionEstablished.listen((_) {
-      print('--------------------------- connected socket:::::::');
+      print(
+          '4.2. Получен ответ: ${response.statusCode} ${response.body}'); // Логируем статус ответа и тело
 
-      myPresenceChannel.subscribeIfNotUnsubscribed();
+      if (response.statusCode != 200) {
+        print('4.3. Ошибка аутентификации: ${response.body}');
+        throw Exception('Ошибка аутентификации: ${response.body}');
+      } else {
+        print('4.3. Аутентификация прошла успешно');
+      }
 
-      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) {
-        MessageSocketData mm = messageSocketDataFromJson(event.data);
-        print(event.data);
-        print(event.channelName);
-        print('--------');
-        print(mm.message);
-        print('--------');
+      // Подключение к WebSocket серверу
+      print('5. Подключение к серверу WebSocket');
+      _webSocket = await WebSocket.connect(
+        'ws://62.84.186.96:6001/app/app-key?protocol=7&version=7&flash=false',
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-        if (mm.message!.isMyMessage! == true) {
-          Message msg = Message(
-              id: mm.message!.id!,
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              isMyMessage: mm.message!.isMyMessage!);
-          setState(() {
-            messages.insert(0, msg);
-          });
-          _scrollToBottom();
-        }
+      print('5.1. WebSocket успешно подключен');
+
+      // Подписка на канал после успешного подключения
+
+      final subscriptionMessage = jsonEncode({
+        'event': 'pusher:subscribe',
+        'data': {
+          'channel': 'presence-chat.${widget.chatId}',
+          // 'token': 'Bearer $token', // Добавляем токен в данные подписки
+        },
       });
-    });
+
+      print('5.2. Подписка на канал с сообщением: $subscriptionMessage');
+      _webSocket!.add(subscriptionMessage);
+
+      print('5.3. Подписка на канал presence-chat.${widget.chatId} отправлена');
+
+      // Обработка входящих сообщений
+      _webSocket!.listen(
+        (data) {
+          print('Получено новое сообщение: $data');
+          _handleIncomingMessage(data);
+
+          // Handling successful subscription event
+          if (data.contains('pusher:subscription_succeeded')) {
+            print('Subscription to channel ${widget.chatId} succeeded.');
+          }
+        },
+        onError: (error) {
+          print('Ошибка WebSocket: $error');
+        },
+        onDone: () {
+          print('Соединение с WebSocket закрыто');
+        },
+      );
+    } catch (e) {
+      print('Ошибка подключения к WebSocket: $e');
+    }
+  }
+
+  Future<String> _getSocketId(String token) async {
+    String socketId = '';
+
+    // Примерная логика получения socket_id
+    try {
+      // Подключение к WebSocket для получения socket_id
+      final url =
+          'ws://62.84.186.96:6001/app/app-key?protocol=7&version=7&flash=false';
+      final channel = await WebSocket.connect(url, headers: {
+        'Authorization': 'Bearer $token',
+      });
+
+      final completer = Completer<String>();
+      channel.listen((message) {
+        try {
+          final data = jsonDecode(message);
+          if (data['event'] == 'pusher:connection_established' &&
+              data['data'] is String) {
+            final dataMap = jsonDecode(data['data']);
+            socketId = dataMap['socket_id'];
+            print('Получен socket_id: $socketId');
+            completer.complete(socketId);
+          }
+        } catch (e) {
+          print('Ошибка обработки сообщения: $e');
+        }
+      }, onError: (error) {
+        print('Ошибка WebSocket: $error');
+        completer.completeError(error);
+      });
+
+      socketId =
+          await completer.future.timeout(Duration(seconds: 10), onTimeout: () {
+        throw Exception('Таймаут при получении socket_id');
+      });
+      channel.close();
+    } catch (e) {
+      print('Ошибка получения socket_id: $e');
+      throw e;
+    }
+
+    return socketId;
+  }
+
+  // Метод для обработки входящих сообщений
+  void _handleIncomingMessage(dynamic messageJson) {
+    print('Начало обработки входящего сообщения');
+
+    // Проверка, что сообщение не null, не пустое и валидное
+    if (messageJson == null || messageJson.isEmpty) {
+      print('Ошибка: пустое или null сообщение');
+      return;
+    }
 
     try {
-      await socketClient.connect();
+      // Попытка декодирования JSON
+      final messageData = jsonDecode(messageJson);
+
+      // Игнорирование системных сообщений (pusher:subscription_succeeded и т.д.)
+      if (messageData['event'].startsWith('pusher:')) {
+        print('Системное сообщение Pusher: ${messageData['event']}');
+        return;
+      }
+
+      // Обработка пользовательских событий, например, new_message
+      if (messageData['event'] == 'new_message' &&
+          messageData.containsKey('data')) {
+        final data = messageData['data'];
+        if (data.containsKey('text') && data.containsKey('id')) {
+          setState(() {
+            widget.messages.insert(
+              0,
+              Message(
+                id: data['id'],
+                text: data['text'],
+                type: data['type'] ?? 'text',
+                isMyMessage: data['isMyMessage'] ?? false,
+              ),
+            );
+          });
+          _scrollToBottom();
+        } else {
+          print('Ошибка: Неверная структура сообщения: $data');
+        }
+      }
     } catch (e) {
-      print(e);
+      // Логирование ошибки
+      print('Ошибка обработки сообщения: $e');
     }
   }
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        // Endiga scroll qilish uchun maxScrollExtent dan foydalanamiz
+        _scrollController.position.minScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
   }
 
-  Future<void> _onSendInButton() async {
+  Future<void> _onSend() async {
     print('9. Начало отправки сообщения');
 
     final messageText = _messageController.text.trim();
@@ -163,7 +261,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         print('9.3. Сообщение успешно отправлено через API');
 
         // 3. Отправить сообщение в WebSocket
-        // _sendMessageToWebSocket(messageText);
+        _sendMessageToWebSocket(messageText);
       } catch (e) {
         print('9.4. Ошибка отправки сообщения через API: $e');
       }
@@ -174,7 +272,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   void _addMessageToLocalList(String messageText, bool isMyMessage) {
     setState(() {
-      messages.insert(
+      widget.messages.insert(
         0,
         Message(
           id: DateTime.now().millisecondsSinceEpoch,
@@ -188,14 +286,32 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     _scrollToBottom();
   }
 
+  void _sendMessageToWebSocket(String messageText) {
+    final messagePayload = {
+      'event': 'client-new_message', // Это должно быть событие клиентского типа
+      'data': {
+        'chatId': widget.chatId,
+        'text': messageText,
+        'isMyMessage': true,
+      },
+    };
+
+    print('Отправка сообщения в WebSocket: $messagePayload');
+
+    try {
+      _webSocket?.add(jsonEncode(messagePayload));
+    } catch (e) {
+      print('Ошибка при отправке сообщения в WebSocket: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка отправки сообщения: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
-    chatSubscribtion.cancel();
     _scrollController.dispose();
-    audioPlayer.dispose(); // AudioPlayer obyektini yo'q qilamiz
-
     _messageController.dispose();
-    socketClient.dispose();
     _webSocket
         ?.close(); // Закрытие WebSocket соединения при уничтожении виджета
     super.dispose();
@@ -240,40 +356,25 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView.builder(
                 controller: _scrollController,
-                // key: UniqueKey(),
-                itemCount: messages.length,
+                itemCount: widget.messages.length,
                 reverse: true,
                 itemBuilder: (context, index) {
-                  final message = messages[index];
+                  final message = widget.messages[index];
                   return _buildMessageBubble(message);
                 },
               ),
             ),
           ),
-          InputField(
-            onSend: _onSendInButton,
-            onAttachFile: () {
-              print('Attach file triggered');
-            },
-            onRecordVoice: () {
-              print('Record voice triggered');
-            },
-            messageController: _messageController,
-            sendRequestFunction: (File soundFile, String time) async {
-              File sound = soundFile;
-
-              print("the current path is ${soundFile.path}");
-
-              // sendCahtAudioFile
-              print('9.2. Отправка сообщения через API');
-              await widget.apiService
-                  .sendChatAudioFile(widget.chatId, sound.path);
-
-              print('added aduio -----');
-              // 2. Добавить сообщение в локальный список
-              // _addMessageToLocalList(messageText, true);
-            },
-          ),
+          // InputField(
+          //   onSend: _onSend,
+          //   onAttachFile: () {
+          //     print('Attach file triggered');
+          //   },
+          //   onRecordVoice: () {
+          //     print('Record voice triggered');
+          //   },
+          //   messageController: _messageController,
+          // ),
         ],
       ),
     );
@@ -282,21 +383,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Widget _buildMessageBubble(Message message) {
     switch (message.type) {
       case 'text':
-        MessageBubble(
-          message: message.text,
-          time: "14:32", // Динамическое время
-          isSender: message.isMyMessage,
-        );
-        return BubbleSpecialOne(
-          text: message.text,
-          isSender: message.isMyMessage,
-          color: message.isMyMessage
-          ? ChatSmsStyles.messageBubbleSenderColor
-          : ChatSmsStyles.messageBubbleReceiverColor,
-          textStyle: message.isMyMessage
-          ? ChatSmsStyles.senderMessageTextStyle
-          : ChatSmsStyles.receiverMessageTextStyle,
-        );
         return MessageBubble(
           message: message.text,
           time: "14:32", // Динамическое время
@@ -313,148 +399,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 .downloadAndOpenFile(message.filePath!);
           },
         );
-
-      case 'voice':
-        return BubbleNormalAudio(
-          color: message.isMyMessage
-              ? ChatSmsStyles.messageBubbleSenderColor
-              : ChatSmsStyles.messageBubbleReceiverColor,
-          duration: message.duration.inSeconds.toDouble(),  // Davomiylik to'g'ri o'rnatiladi
-          position: message.position.inSeconds.toDouble().clamp(0.0, message.duration.inSeconds.toDouble()), // Hozirgi pozitsiya
-          isPlaying: message.isPlaying,
-          isSender: false,
-          isLoading: isLoading,
-          textStyle: message.isMyMessage
-              ? ChatSmsStyles.senderMessageTextStyle
-              : ChatSmsStyles.receiverMessageTextStyle,
-          isPause: message.isPause,
-          onSeekChanged: _changeSeek,
-          onPlayPauseButtonClick: () => _playAudio(message),
-          sent: false,
-        );
       default:
         return Container(); // Для неизвестных типов сообщений
     }
   }
-
-
-  void _changeSeek(double value) {
-    setState(() {
-      audioPlayer.seek(new Duration(seconds: value.toInt()));
-    });
-  }
-
-  void _playAudio(Message message) async {
-    final url = '${baseUrl.replaceAll('/api', '',)}/storage/${message.filePath}';
-    print('audio url: $url');
-
-    try {
-      await audioPlayer.setUrl(url);
-
-      // Tinglash davomida davomiylikni olish
-      audioPlayer.durationStream.listen((Duration? d) {
-        setState(() {
-          if (d != null) {
-            message.duration = d;  // To'g'ri davomiylikni o'rnatamiz
-          } else {
-            message.duration = Duration(seconds: 0); // Null bo'lsa, 0 ga o'rnatamiz
-          }
-        });
-      });
-
-      if (message.isPause) {
-        // Agar oldin to'xtatilgan bo'lsa, davom ettiramiz
-        await audioPlayer.play();
-        setState(() {
-          message.isPlaying = true;
-          message.isPause = false;
-        });
-      } else if (message.isPlaying) {
-        // Agar o'ynayotgan bo'lsa, to'xtatamiz
-        await audioPlayer.pause();
-        setState(() {
-          message.isPlaying = false;
-          message.isPause = true;
-        });
-      } else {
-        // Yangi audio o'ynash
-        await audioPlayer.play();
-        setState(() {
-          message.isPlaying = true;
-        });
-      }
-
-      // Har bir xabar uchun pozitsiyani yangilash
-      audioPlayer.positionStream.listen((Duration p) {
-        setState(() {
-          message.position = p;
-        });
-      });
-
-      // Audio tugaganda
-      audioPlayer.playerStateStream.listen((PlayerState state) {
-        if (state.processingState == ProcessingState.completed) {
-          setState(() {
-            message.isPlaying = false;
-            message.isPause = false;
-            message.position = Duration();
-          });
-        }
-      });
-    } catch (e) {
-      print("Audio o'ynatishda xato: $e");
-    }
-  }
-  /*
-  void _playAudio(String audioPathUrl) async {
-    final url =
-        '$baseUrl/storage/$audioPathUrl';
-    if (isPause) {
-      await audioPlayer.resume();
-      setState(() {
-        isPlaying = true;
-        isPause = false;
-      });
-    } else if (isPlaying) {
-      await audioPlayer.pause();
-      setState(() {
-        isPlaying = false;
-        isPause = true;
-      });
-    } else {
-      setState(() {
-        isLoading = true;
-      });
-      await audioPlayer.play(UrlSource(url));
-      setState(() {
-        isPlaying = true;
-      });
-    }
-
-    audioPlayer.onDurationChanged.listen((Duration d) {
-      setState(() {
-        duration = d;
-        isLoading = false;
-      });
-    });
-    audioPlayer.onPositionChanged.listen((Duration p) {
-      setState(() {
-        position = p;
-      });
-    });
-    audioPlayer.onPlayerComplete.listen((event) {
-      setState(() {
-        isPlaying = false;
-        duration =  Duration();
-        position =  Duration();
-      });
-    });
-  }
-  */
-
 }
-
-}
-
-
 

@@ -21,11 +21,30 @@ class NotesWidget extends StatefulWidget {
 
 class _NotesWidgetState extends State<NotesWidget> {
   List<Notes> notes = [];
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     context.read<NotesBloc>().add(FetchNotes(widget.leadId));
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
+        !context.read<NotesBloc>().allNotesFetched) {
+      context
+          .read<NotesBloc>()
+          .add(FetchMoreNotes(widget.leadId, (notes.length / 20).ceil()));
+    }
   }
 
   @override
@@ -33,7 +52,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     return BlocBuilder<NotesBloc, NotesState>(
       builder: (context, state) {
         if (state is NotesLoading) {
-          // return Center(child: CircularProgressIndicator());
+          // return const Center(child: CircularProgressIndicator());
         } else if (state is NotesLoaded) {
           notes = state.notes;
         } else if (state is NotesError) {
@@ -47,11 +66,10 @@ class _NotesWidgetState extends State<NotesWidget> {
 
   Widget _buildNotesList(List<Notes> notes) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTitleRow('Заметки'),
         SizedBox(height: 8),
-        ...notes.map((note) => _buildNoteItem(note)).toList(),
         if (notes.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -70,6 +88,17 @@ class _NotesWidgetState extends State<NotesWidget> {
                   textAlign: TextAlign.start,
                 ),
               ),
+            ),
+          )
+        else
+          Container(
+            height: 280,
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                return _buildNoteItem(notes[index]);
+              },
             ),
           ),
       ],

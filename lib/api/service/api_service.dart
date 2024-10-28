@@ -2,19 +2,14 @@ import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:dio/dio.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Импортируем SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart'; 
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
-import '../../utils/global_fun.dart';
-
 
 class ApiService {
-
   // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
   final String baseUrl = 'https://shamcrm.com/api';
@@ -234,16 +229,18 @@ class ApiService {
     }
   }
 
-// Метод для получения Заметки Лида
-  Future<List<Notes>> getLeadNotes(int leadId) async {
-    final response = await _getRequest('/notices/$leadId');
+// Метод для получения Заметок с Пагинацией
+  Future<List<Notes>> getLeadNotes(int leadId,
+      {int page = 1, int perPage = 20}) async {
+    final response =
+        await _getRequest('/notices/$leadId?page=$page&per_page=$perPage');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return (data['result']['data'] as List)
           .map((note) => Notes.fromJson(note))
           .toList();
     } else {
-      throw Exception('Failed to load notes');
+      throw Exception('Ошибка загрузки заметок');
     }
   }
 
@@ -523,45 +520,6 @@ class ApiService {
     if (response.statusCode != 200) {
       print('Ошибка отправки сообщения: ${response.body}'); // Отладка ошибок
       throw Exception('Ошибка отправки сообщения: ${response.body}');
-    }
-  }
-
-
-// -------------------------------
-
-// Метод для отправки audio file
-  Future<void> sendChatAudioFile(int chatId, String pathAudio) async {
-    final token = await getToken(); // Получаем токен
-    String requestUrl = '$baseUrl/chat/sendVoice/$chatId';
-
-    Dio dio = Dio();
-    try {
-      FormData formData = FormData.fromMap({
-        'voice': await MultipartFile.fromFile(pathAudio)
-      });
-
-      var response = await dio.post(
-          requestUrl,
-          data: formData,
-          options: Options(
-            headers: {
-              "Authorization": "Bearer $token",
-              "Accept": "application/json",
-            },
-            contentType: 'multipart/form-data',
-          )
-      );
-      print('response.statusCode: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        print('Audio message sent successfully!');
-      } else {
-        print('Error sending audio message: ${response.data}');
-        throw Exception('Error sending audio message: ${response.data}');
-      }
-    } catch (e) {
-      print('Exception caught: $e');
-      throw Exception('Failed to send audio message due to an exception: $e');
     }
   }
 
