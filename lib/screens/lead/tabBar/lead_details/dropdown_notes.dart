@@ -75,17 +75,19 @@ class _NotesWidgetState extends State<NotesWidget> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
               decoration: TaskCardStyles.taskCardDecoration,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Пока здесь нет заметок',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xfff1E2E52),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Пока здесь нет заметок',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xfff1E2E52),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.start,
                 ),
               ),
             ),
