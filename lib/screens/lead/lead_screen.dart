@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -51,15 +52,35 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ? SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: List.generate(_tabTitles.length, (index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: _buildTabButton(index),
-                );
-              }),
+              children: [
+                ...List.generate(_tabTitles.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: _buildTabButton(index),
+                  );
+                }),
+                IconButton(
+                  icon: Image.asset('assets/icons/tabBar/add_black.png',
+                      width: 24, height: 24),
+                  onPressed: _addNewTab,
+                ),
+              ],
             ),
           )
         : const SizedBox();
+  }
+
+  void _addNewTab() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) => CreateStatusDialog(),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _tabTitles.add(result);
+      });
+    }
   }
 
   Widget _buildTabButton(int index) {

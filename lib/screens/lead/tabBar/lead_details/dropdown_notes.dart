@@ -94,7 +94,7 @@ class _NotesWidgetState extends State<NotesWidget> {
           )
         else
           Container(
-            height: 280,
+            height: 300,
             child: ListView.builder(
               controller: _scrollController,
               itemCount: notes.length,

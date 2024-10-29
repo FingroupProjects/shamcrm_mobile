@@ -42,3 +42,13 @@ class CreateLead extends LeadEvent {
     this.waPhone,
   });
 }
+
+class CreateLeadStatus extends LeadEvent {
+  final String title;
+  final String color;
+
+  CreateLeadStatus({
+    required this.title,
+    required this.color,
+  });
+}
