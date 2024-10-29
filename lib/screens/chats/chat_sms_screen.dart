@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
-import 'dart:io'; // Importing WebSocket from dart:io
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -365,16 +365,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               ),
             ),
           ),
-          // InputField(
-          //   onSend: _onSend,
-          //   onAttachFile: () {
-          //     print('Attach file triggered');
-          //   },
-          //   onRecordVoice: () {
-          //     print('Record voice triggered');
-          //   },
-          //   messageController: _messageController,
-          // ),
+          InputField(
+            onSend: _onSend,
+            onAttachFile: () {
+              print('Attach file triggered');
+            },
+            onRecordVoice: () {
+              print('Record voice triggered');
+            },
+            messageController: _messageController,
+          ),
         ],
       ),
     );
@@ -404,4 +404,5 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 }
+
 
