@@ -1,11 +1,12 @@
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
   final String leadName;
-  final String leadStatus;
+  final String leadStatus; 
   final String? region;
   final String? birthday;
   final String? instagram;
@@ -17,7 +18,7 @@ class LeadDetailsScreen extends StatefulWidget {
   LeadDetailsScreen({
     required this.leadId,
     required this.leadName,
-    required this.leadStatus,
+    required this.leadStatus, 
     this.region,
     this.birthday,
     this.instagram,
@@ -95,6 +96,37 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           color: Color(0xff1E2E52),
         ),
       ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LeadEditScreen(
+                    leadId: int.parse(widget.leadId),
+                    leadName: widget.leadName,
+                    leadStatus: widget.leadStatus,
+                    region: widget.region,
+                    birthday: widget.birthday,
+                    instagram: widget.instagram,
+                    facebook: widget.facebook,
+                    telegram: widget.telegram,
+                    phone: widget.phone,
+                    description: widget.description,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

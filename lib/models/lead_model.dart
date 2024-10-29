@@ -46,17 +46,17 @@ class Lead {
           : 0,
       region: json['region'] != null && json['region'] is Map<String, dynamic>
           ? Region.fromJson(json['region'])
-          : null, // Ensure region is processed correctly
-      birthday: json['birthday'] is String ? json['birthday'] : 'Не указано',
+          : null, 
+      birthday: json['birthday'] is String ? json['birthday'] : '',
       instagram:
-          json['insta_login'] is String ? json['insta_login'] : 'Не указано',
+          json['insta_login'] is String ? json['insta_login'] : '',
       facebook: json['facebook_login'] is String
           ? json['facebook_login']
-          : 'Не указано',
-      telegram: json['tg_nick'] is String ? json['tg_nick'] : 'Не указано',
-      phone: json['phone'] is String ? json['phone'] : 'Не указано',
+          : '',
+      telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
+      phone: json['phone'] is String ? json['phone'] : '',
       description:
-          json['description'] is String ? json['description'] : 'Не указано',
+          json['description'] is String ? json['description'] : '',
     );
   }
 }
