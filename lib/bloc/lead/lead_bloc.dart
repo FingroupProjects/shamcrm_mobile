@@ -6,14 +6,15 @@ import 'lead_state.dart';
 
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
-  bool allLeadsFetched =false; // Переменная для отслеживания статуса завершения загрузки лидов
+  bool allLeadsFetched =
+      false; // Переменная для отслеживания статуса завершения загрузки лидов
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
     on<FetchLeads>(_fetchLeads);
     on<CreateLead>(_createLead);
-    on<FetchMoreLeads>(
-        _fetchMoreLeads); 
+    on<FetchMoreLeads>(_fetchMoreLeads);
+    on<CreateLeadStatus>(_createLeadStatus);
   }
 
   Future<void> _fetchLeadStatuses(
@@ -130,6 +131,30 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException {
       return false;
+    }
+  }
+
+  Future<void> _createLeadStatus(
+      CreateLeadStatus event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+
+    if (!await _checkInternetConnection()) {
+      emit(LeadError('Нет подключения к интернету'));
+      return;
+    }
+
+    try {
+      final result =
+          await apiService.createLeadStatus(event.title, event.color);
+
+      if (result['success']) {
+        emit(LeadSuccess(result['message']));
+        add(FetchLeadStatuses()); 
+      } else {
+        emit(LeadError(result['message']));
+      }
+    } catch (e) {
+      emit(LeadError('Ошибка создания статуса лида: ${e.toString()}'));
     }
   }
 }

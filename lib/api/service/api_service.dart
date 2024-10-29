@@ -5,7 +5,7 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
@@ -196,6 +196,24 @@ class ApiService {
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  // Метод для создания Cтатуса Лида
+  Future<Map<String, dynamic>> createLeadStatus(
+      String title, String color) async {
+    final response = await _postRequest('/lead-status', {
+      'title': title,
+      'color': color,
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Статус лида создан успешно'};
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания статуса лида: ${response.body}'
+      };
     }
   }
 

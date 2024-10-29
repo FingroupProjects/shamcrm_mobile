@@ -151,7 +151,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
           child: Text(
             status,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
@@ -162,7 +162,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Text(
           userName,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
             color: Color(0xfff1E2E52),
