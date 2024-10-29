@@ -1,25 +1,19 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
-import 'package:social_media_recorder/audio_encoder_type.dart';
-import 'package:social_media_recorder/screen/social_media_recorder.dart';
 
 class InputField extends StatelessWidget {
   final Function onSend;
   final Function onAttachFile;
   final Function onRecordVoice;
   final TextEditingController messageController; // Контроллер для поля ввода
-  final Function(File soundFile, String time) sendRequestFunction;
 
-  InputField(
-      {Key? key,
-      required this.onSend,
-      required this.onAttachFile,
-      required this.onRecordVoice,
-      required this.messageController,
-      required this.sendRequestFunction})
-      : super(key: key);
+  const InputField({
+    Key? key,
+    required this.onSend,
+    required this.onAttachFile,
+    required this.onRecordVoice,
+    required this.messageController,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -71,46 +65,25 @@ class InputField extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(width: 8),
-          MediaQuery(
-              data:  MediaQueryData(
-                size: Size(300, 400),
+          IconButton(
+            icon: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: ChatSmsStyles.inputBackgroundColor,
+                borderRadius: BorderRadius.circular(8),
               ),
-            child: SocialMediaRecorder(
-
-              startRecording: () {
-                // function called when start recording
-              },
-              stopRecording: (_time) {
-                // function called when stop recording, return the recording time
-              },
-              sendRequestFunction: sendRequestFunction,
-              encode: AudioEncoderType.AAC,
-
-              radius: BorderRadius.circular(12),
-
+              padding: const EdgeInsets.all(12),
+              child: Image.asset(
+                'assets/icons/chats/microphone.png',
+                width: 20,
+                height: 20,
+              ),
             ),
+            onPressed: () {
+              onRecordVoice();
+            },
           ),
-
-          // IconButton(
-          //   icon: Container(
-          //     width: 48,
-          //     height: 48,
-          //     decoration: BoxDecoration(
-          //       color: ChatSmsStyles.inputBackgroundColor,
-          //       borderRadius: BorderRadius.circular(8),
-          //     ),
-          //     padding: const EdgeInsets.all(12),
-          //     child: Image.asset(
-          //       'assets/icons/chats/microphone.png',
-          //       width: 20,
-          //       height: 20,
-          //     ),
-          //   ),
-          //   onPressed: () {
-          //     onRecordVoice();
-          //   },
-          // ),
           IconButton(
             icon: Container(
               width: 48,
