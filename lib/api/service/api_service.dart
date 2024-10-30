@@ -441,6 +441,60 @@ class ApiService {
       };
     }
   }
+  // Метод для Обновления Лида
+Future<Map<String, dynamic>> updateLead({
+  required int leadId,
+  required String name,
+  required int leadStatusId,
+  required String phone,
+  int? regionId,
+  String? instaLogin,
+  String? facebookLogin,
+  String? tgNick,
+  DateTime? birthday,
+  String? description,
+  int? organizationId,
+  String? waPhone,
+}) async {
+  final response = await _patchRequest('/lead/$leadId', {
+    'name': name,
+    'lead_status_id': leadStatusId,
+    'phone': phone,
+    if (regionId != null) 'region_id': regionId,
+    if (instaLogin != null) 'insta_login': instaLogin,
+    if (facebookLogin != null) 'facebook_login': facebookLogin,
+    if (tgNick != null) 'tg_nick': tgNick,
+    if (birthday != null) 'birthday': birthday.toIso8601String(),
+    if (description != null) 'description': description,
+    if (organizationId != null) 'organization_id': organizationId,
+    if (waPhone != null) 'wa_phone': waPhone,
+  });
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'Лид обновлен успешно.'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('phone')) {
+      return {
+        'success': false,
+        'message': 'Неправильный номер телефона. Проверьте формат и количество цифр.'
+      };
+    }
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+    }
+    // Другие проверки на ошибки...
+    return {
+      'success': false,
+      'message': 'Неизвестная ошибка: ${response.body}'
+    };
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка обновления лида: ${response.body}'
+    };
+  }
+}
+
 
 //Обновление статуса карточки в колонке
   Future<void> updateLeadStatus(int leadId, int position, int statusId) async {

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_event.dart';
@@ -6,9 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:intl/intl.dart';
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
@@ -21,11 +22,13 @@ class LeadEditScreen extends StatefulWidget {
   final String? telegram;
   final String? phone;
   final String? description;
+  final int statusId;
 
   LeadEditScreen({
     required this.leadId,
     required this.leadName,
     required this.leadStatus,
+    required this.statusId,
     this.region,
     this.birthday,
     this.instagram,
@@ -50,7 +53,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
-  String selectedDialCode = '';
+  bool isUpdated = false;
 
   @override
   void initState() {
@@ -62,7 +65,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     telegramController.text = widget.telegram ?? '';
     birthdayController.text = widget.birthday ?? '';
     descriptionController.text = widget.description ?? '';
-
     selectedRegion = widget.region;
 
     context.read<RegionBloc>().add(FetchRegions());
@@ -82,7 +84,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             width: 24,
             height: 24,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, null),
         ),
         title: const Text(
           'Редактирование Лида',
@@ -100,21 +102,33 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                duration: Duration(seconds: 3),
+                duration: const Duration(seconds: 3),
                 backgroundColor: Colors.red,
               ),
             );
+          } else if (state is LeadSuccess) {
+            isUpdated = true;
+            final updatedLead = {
+              'leadName': titleController.text,
+              'leadStatus': widget.leadStatus,
+              'statusId': widget.statusId,
+              'region': selectedRegion,
+              'birthday': birthdayController.text,
+              'instagram': instaLoginController.text,
+              'facebook': facebookLoginController.text,
+              'telegram': telegramController.text,
+              'phone': phoneController.text,
+              'description': descriptionController.text,
+            };
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Лид успешно обновлен'),
+                duration: const Duration(seconds: 3),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context, updatedLead);
           }
-          // else if (state is LeadUpdated) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text('Лид успешно обновлен'),
-          //       duration: Duration(seconds: 3),
-          //       backgroundColor: Colors.green,
-          //     ),
-          //   );
-          //   Navigator.pop(context);
-          // }
         },
         child: Form(
           key: _formKey,
@@ -135,27 +149,23 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             : null,
                       ),
                       const SizedBox(height: 8),
-                      CustomPhoneNumberInput(
+                      CustomTextField(
                         controller: phoneController,
-                        onInputChanged: (String number) {
-                          setState(() => selectedDialCode = number);
-                        },
+                        hintText: 'Введите номер телефона',
+                        label: 'Телефон',
                         validator: (value) => value!.isEmpty
                             ? 'Поле обязательно для заполнения'
                             : null,
-                        label: 'Телефон',
                       ),
                       const SizedBox(height: 8),
-                      // Добавление RegionWidget для выбора региона
                       RegionWidget(
                         selectedRegion: selectedRegion,
                         onChanged: (String? newValue) {
                           setState(() {
-                            selectedRegion = newValue; // Обновляем состояние
+                            selectedRegion = newValue;
                           });
                         },
                       ),
-
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,
@@ -200,34 +210,52 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     Expanded(
                       child: CustomButton(
                         buttonText: 'Отмена',
-                        buttonColor: Color(0xffF4F7FD),
+                        buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(context, null),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: CustomButton(
                         buttonText: 'Сохранить',
-                        buttonColor: Color(0xff4759FF),
+                        buttonColor: const Color(0xff4759FF),
                         textColor: Colors.white,
                         onPressed: () {
-                          // if (_formKey.currentState!.validate()) {
-                          //   final leadBloc = context.read<LeadBloc>();
-                          //   leadBloc.add(UpdateLead(
-                          //     id: widget.leadId,
-                          //     name: titleController.text,
-                          //     phone: selectedDialCode,
-                          //     regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
-                          //     instaLogin: instaLoginController.text,
-                          //     facebookLogin: facebookLoginController.text,
-                          //     tgNick: telegramController.text,
-                          //     birthday: birthdayController.text.isNotEmpty
-                          //         ? DateFormat('dd/MM/yyyy').parse(birthdayController.text)
-                          //         : null,
-                          //     description: descriptionController.text,
-                          //   ));
-                          // }
+                          if (_formKey.currentState!.validate()) {
+                            DateTime? birthday;
+                            if (birthdayController.text.isNotEmpty) {
+                              try {
+                                birthday = DateFormat('dd/MM/yyyy')
+                                    .parse(birthdayController.text);
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Введите корректную дату рождения в формате ДД/ММ/ГГГГ'),
+                                  ),
+                                );
+                                return;
+                              }
+                            }
+
+                            final leadBloc = context.read<LeadBloc>();
+                            leadBloc.add(UpdateLead(
+                              leadId: widget.leadId,
+                              name: titleController.text,
+                              phone: phoneController.text,
+                              regionId: selectedRegion != null
+                                  ? int.parse(selectedRegion!)
+                                  : null,
+                              instaLogin: instaLoginController.text,
+                              facebookLogin: facebookLoginController.text,
+                              tgNick: telegramController.text,
+                              birthday: birthday,
+                              description: descriptionController.text,
+                              leadStatusId: widget.statusId,
+                              organizationId: 1,
+                            ));
+                          }
                         },
                       ),
                     ),

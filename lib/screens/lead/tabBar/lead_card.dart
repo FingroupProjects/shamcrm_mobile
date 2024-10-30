@@ -8,11 +8,13 @@ import 'package:intl/intl.dart';
 class LeadCard extends StatefulWidget {
   final Lead lead;
   final String title;
-  final VoidCallback onStatusUpdated; 
+  final int statusId;
+  final VoidCallback onStatusUpdated;
 
   LeadCard({
     required this.lead,
     required this.title,
+    required this.statusId,
     required this.onStatusUpdated,
   });
 
@@ -31,7 +33,7 @@ class _LeadCardState extends State<LeadCard> {
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
-    return DateFormat('dd-MM-yyyy').format(dateTime); 
+    return DateFormat('dd-MM-yyyy').format(dateTime);
   }
 
   final Map<String, String> sourceIcons = {
@@ -44,9 +46,8 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath = sourceIcons[widget.lead.source?.name] ??
-        'assets/images/avatar.png'; 
-
+    String iconPath =
+        sourceIcons[widget.lead.source?.name] ?? 'assets/images/avatar.png';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -56,6 +57,7 @@ class _LeadCardState extends State<LeadCard> {
               leadId: widget.lead.id.toString(),
               leadName: widget.lead.name ?? 'Без имени',
               leadStatus: dropdownValue,
+              statusId: widget.statusId,
               region: widget.lead.region?.name,
               birthday: widget.lead.birthday,
               instagram: widget.lead.instagram,
@@ -96,8 +98,7 @@ class _LeadCardState extends State<LeadCard> {
                       setState(() {
                         dropdownValue = newValue;
                       });
-                      widget
-                          .onStatusUpdated(); 
+                      widget.onStatusUpdated();
                     }, widget.lead);
                   },
                   child: Container(
@@ -106,10 +107,10 @@ class _LeadCardState extends State<LeadCard> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Color(0xff1E2E52), 
-                          width: 0.2, 
+                          color: Color(0xff1E2E52),
+                          width: 0.2,
                         ),
-                        borderRadius: BorderRadius.circular(8), 
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
@@ -124,12 +125,11 @@ class _LeadCardState extends State<LeadCard> {
                               color: Color(0xff1E2E52),
                             ),
                           ),
-                          const SizedBox(
-                              width: 8),
+                          const SizedBox(width: 8),
                           Image.asset(
                             'assets/icons/tabBar/dropdown.png',
-                            width: 20, 
-                            height: 20, 
+                            width: 20,
+                            height: 20,
                           ),
                         ],
                       ),
