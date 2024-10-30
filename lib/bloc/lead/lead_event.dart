@@ -42,6 +42,36 @@ class CreateLead extends LeadEvent {
     this.waPhone,
   });
 }
+class UpdateLead extends LeadEvent {
+  final int leadId;
+  final String name;
+  final int leadStatusId;
+  final String phone;
+  final int? regionId;
+  final String? instaLogin;
+  final String? facebookLogin;
+  final String? tgNick;
+  final DateTime? birthday;
+  final String? description;
+  final int? organizationId;
+  final String? waPhone;
+
+  UpdateLead({
+    required this.leadId,
+    required this.name,
+    required this.leadStatusId,
+    required this.phone,
+    this.regionId,
+    this.instaLogin,
+    this.facebookLogin,
+    this.tgNick,
+    this.birthday,
+    this.description,
+    this.organizationId,
+    this.waPhone,
+  });
+}
+
 
 class CreateLeadStatus extends LeadEvent {
   final String title;

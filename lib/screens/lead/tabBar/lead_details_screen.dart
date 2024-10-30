@@ -1,24 +1,30 @@
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
-  final String leadName;
-  final String leadStatus; 
-  final String? region;
-  final String? birthday;
-  final String? instagram;
-  final String? facebook;
-  final String? telegram;
-  final String? phone;
-  final String? description;
+  String leadName;
+  String leadStatus;
+  int statusId;
+  String? region;
+  String? birthday;
+  String? instagram;
+  String? facebook;
+  String? telegram;
+  String? phone;
+  String? description;
 
   LeadDetailsScreen({
     required this.leadId,
     required this.leadName,
-    required this.leadStatus, 
+    required this.leadStatus,
+    required this.statusId,
     this.region,
     this.birthday,
     this.instagram,
@@ -38,10 +44,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _updateDetails();
+  }
+
+  void _updateDetails() {
     details = [
       {'label': 'ID лида:', 'value': widget.leadId},
       {'label': 'ФИО клиента:', 'value': widget.leadName},
       {'label': 'Статус:', 'value': widget.leadStatus},
+      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
       {'label': 'Регион:', 'value': widget.region ?? 'Не указано'},
       {'label': 'Дата рождения:', 'value': widget.birthday ?? 'Не указано'},
       {'label': 'Instagram:', 'value': widget.instagram ?? 'Не указано'},
@@ -54,19 +65,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(context, 'Просмотр лида'),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _buildDetailsList(),
-            SizedBox(height: 16),
-            ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-            SizedBox(height: 16),
-            NotesWidget(leadId: int.parse(widget.leadId)),
-          ],
+    return BlocListener<LeadBloc, LeadState>(
+      listener: (context, state) {
+        if (state is LeadSuccess) {
+          _updateDetails();
+          setState(() {});
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(context, 'Просмотр лида'),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+              _buildDetailsList(),
+              const SizedBox(height: 16),
+              ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+              const SizedBox(height: 16),
+              NotesWidget(leadId: int.parse(widget.leadId)),
+            ],
+          ),
         ),
       ),
     );
@@ -105,14 +124,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               width: 24,
               height: 24,
             ),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final updatedLead = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => LeadEditScreen(
                     leadId: int.parse(widget.leadId),
                     leadName: widget.leadName,
                     leadStatus: widget.leadStatus,
+                    statusId: widget.statusId,
                     region: widget.region,
                     birthday: widget.birthday,
                     instagram: widget.instagram,
@@ -123,6 +143,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   ),
                 ),
               );
+
+              if (updatedLead != null) {
+                context.read<LeadBloc>().add(FetchLeadStatuses());
+                setState(() {
+                  widget.leadName = updatedLead['leadName'];
+                  widget.leadStatus = updatedLead['leadStatus'];
+                  widget.statusId = updatedLead['statusId'];
+                  widget.region = updatedLead['region'];
+                  widget.birthday = updatedLead['birthday'];
+                  widget.instagram = updatedLead['instagram'];
+                  widget.facebook = updatedLead['facebook'];
+                  widget.telegram = updatedLead['telegram'];
+                  widget.phone = updatedLead['phone'];
+                  widget.description = updatedLead['description'];
+                });
+                _updateDetails();
+              }
             },
           ),
         ),

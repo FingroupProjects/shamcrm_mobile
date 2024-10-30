@@ -15,6 +15,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<CreateLead>(_createLead);
     on<FetchMoreLeads>(_fetchMoreLeads);
     on<CreateLeadStatus>(_createLeadStatus);
+    on<UpdateLead>(_updateLead);
+
   }
 
   Future<void> _fetchLeadStatuses(
@@ -133,6 +135,44 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       return false;
     }
   }
+  
+Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
+  emit(LeadLoading());
+
+  // Проверка подключения к интернету
+  if (!await _checkInternetConnection()) {
+    emit(LeadError('Нет подключения к интернету'));
+    return;
+  }
+
+  try {
+    // Вызов метода обновления лида
+    final result = await apiService.updateLead(
+      leadId: event.leadId,
+      name: event.name,
+      leadStatusId: event.leadStatusId,
+      phone: event.phone,
+      regionId: event.regionId,
+      instaLogin: event.instaLogin,
+      facebookLogin: event.facebookLogin,
+      tgNick: event.tgNick,
+      birthday: event.birthday,
+      description: event.description,
+      organizationId: event.organizationId,
+      waPhone: event.waPhone,
+    );
+
+    // Если успешно, то обновляем состояние
+    if (result['success']) {
+      emit(LeadSuccess('Лид обновлен успешно'));
+      add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
+    } else {
+      emit(LeadError(result['message']));
+    }
+  } catch (e) {
+    emit(LeadError('Ошибка обновления лида: ${e.toString()}'));
+  }
+}
 
   Future<void> _createLeadStatus(
       CreateLeadStatus event, Emitter<LeadState> emit) async {
