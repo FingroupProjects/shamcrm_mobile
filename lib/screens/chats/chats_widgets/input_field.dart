@@ -63,9 +63,7 @@ class InputField extends StatelessWidget {
                   child: IconButton(
                     icon: Image.asset('assets/icons/chats/file.png',
                         width: 20, height: 20),
-                    onPressed: () {
-                      onAttachFile();
-                    },
+                    onPressed: onAttachFile(),
                   ),
                 ),
               ],

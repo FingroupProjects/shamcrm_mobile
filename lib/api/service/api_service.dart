@@ -277,6 +277,46 @@ Future<void> sendMessage(int chatId, String message) async {
       throw Exception('Failed to send audio message due to an exception: $e');
     }
   }
+
+
+// Метод для отправки audio file
+  Future<void> sendChatFile(int chatId, String pathFile) async {
+    final token = await getToken(); // Получаем токен
+    String requestUrl = '$baseUrl/chat/sendFile/$chatId';
+
+    Dio dio = Dio();
+    try {
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(pathFile)
+      });
+
+      var response = await dio.post(
+          requestUrl,
+          data: formData,
+          options: Options(
+            headers: {
+              "Authorization": "Bearer $token",
+              "Accept": "application/json",
+            },
+            contentType: 'multipart/form-data',
+          )
+      );
+      print('response.statusCode: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        print('Audio message sent successfully!');
+      } else {
+        print('Error sending audio message: ${response.data}');
+        throw Exception('Error sending audio message: ${response.data}');
+      }
+    } catch (e) {
+      print('Exception caught: $e');
+      throw Exception('Failed to send audio message due to an exception: $e');
+    }
+  }
+
+
+
   // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Если вы используете MultipartRequest для отправки файлов, создайте метод

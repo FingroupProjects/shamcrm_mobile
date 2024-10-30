@@ -4,6 +4,7 @@ import 'package:chat_bubbles/bubbles/bubble_normal_audio.dart';
 import 'package:chat_bubbles/bubbles/bubble_special_one.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -159,7 +160,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         await widget.apiService.sendMessage(widget.chatId, messageText);
 
         // 2. Добавить сообщение в локальный список
-        _addMessageToLocalList(messageText, true);
+        // _addMessageToLocalList(messageText, true);
         print('9.3. Сообщение успешно отправлено через API');
 
         // 3. Отправить сообщение в WebSocket
@@ -252,8 +253,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           ),
           InputField(
             onSend: _onSendInButton,
-            onAttachFile: () {
+            onAttachFile: () async {
               print('Attach file triggered');
+
+              FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
+
+              if (result != null) {
+                List<File> files = result.paths.map((path) => File(path!)).toList();
+              } else {
+                // User canceled the picker
+              }
             },
             onRecordVoice: () {
               print('Record voice triggered');
@@ -404,51 +413,5 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       print("Audio o'ynatishda xato: $e");
     }
   }
-  /*
-  void _playAudio(String audioPathUrl) async {
-    final url =
-        '$baseUrl/storage/$audioPathUrl';
-    if (isPause) {
-      await audioPlayer.resume();
-      setState(() {
-        isPlaying = true;
-        isPause = false;
-      });
-    } else if (isPlaying) {
-      await audioPlayer.pause();
-      setState(() {
-        isPlaying = false;
-        isPause = true;
-      });
-    } else {
-      setState(() {
-        isLoading = true;
-      });
-      await audioPlayer.play(UrlSource(url));
-      setState(() {
-        isPlaying = true;
-      });
-    }
-
-    audioPlayer.onDurationChanged.listen((Duration d) {
-      setState(() {
-        duration = d;
-        isLoading = false;
-      });
-    });
-    audioPlayer.onPositionChanged.listen((Duration p) {
-      setState(() {
-        position = p;
-      });
-    });
-    audioPlayer.onPlayerComplete.listen((event) {
-      setState(() {
-        isPlaying = false;
-        duration =  Duration();
-        position =  Duration();
-      });
-    });
-  }
-  */
 
 }
