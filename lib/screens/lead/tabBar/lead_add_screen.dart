@@ -135,7 +135,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         label: 'Телефон',
                       ),
                       const SizedBox(height: 8),
-                      // Используйте RegionWidget здесь
                       RegionWidget(
                         selectedRegion: selectedRegion,
                         onChanged: (String? newValue) {
@@ -191,7 +190,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
@@ -215,37 +215,61 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           if (_formKey.currentState!.validate()) {
                             final String name = titleController.text;
                             final String phone = selectedDialCode;
-                            final String? instaLogin = instaLoginController.text.isEmpty ? null : instaLoginController.text;
-                            final String? facebookLogin = facebookLoginController.text.isEmpty ? null : facebookLoginController.text;
-                            final String? tgNick = tgNickController.text.isEmpty ? null : tgNickController.text;
-                            final String? whatsapp = whatsappController.text.isEmpty || selectedDialCodeWhatsapp.isEmpty ? null : selectedDialCodeWhatsapp;
-                            final String? birthdayString = birthdayController.text.isEmpty ? null : birthdayController.text;
-                            final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+                            final String? instaLogin =
+                                instaLoginController.text.isEmpty
+                                    ? null
+                                    : instaLoginController.text;
+                            final String? facebookLogin =
+                                facebookLoginController.text.isEmpty
+                                    ? null
+                                    : facebookLoginController.text;
+                            final String? tgNick = tgNickController.text.isEmpty
+                                ? null
+                                : tgNickController.text;
+                            final String? whatsapp =
+                                whatsappController.text.isEmpty ||
+                                        selectedDialCodeWhatsapp.isEmpty
+                                    ? null
+                                    : selectedDialCodeWhatsapp;
+                            final String? birthdayString =
+                                birthdayController.text.isEmpty
+                                    ? null
+                                    : birthdayController.text;
+                            final String? description =
+                                descriptionController.text.isEmpty
+                                    ? null
+                                    : descriptionController.text;
 
                             DateTime? birthday;
-                            if (birthdayString != null && birthdayString.isNotEmpty) {
+                            if (birthdayString != null &&
+                                birthdayString.isNotEmpty) {
                               try {
-                                birthday = DateFormat('dd/MM/yyyy').parse(birthdayString);
+                                birthday = DateFormat('dd/MM/yyyy')
+                                    .parse(birthdayString);
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Введите корректную дату рождения в формате ДД/ММ/ГГГГ')),
+                                  SnackBar(
+                                      content: Text(
+                                          'Введите корректную дату рождения в формате ДД/ММ/ГГГГ')),
                                 );
                                 return;
                               }
                             }
                             context.read<LeadBloc>().add(CreateLead(
-                              name: name,
-                              leadStatusId: widget.statusId,
-                              phone: phone,
-                              regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
-                              organizationId: 1,
-                              instaLogin: instaLogin,
-                              facebookLogin: facebookLogin,
-                              tgNick: tgNick,
-                              waPhone: whatsapp,
-                              birthday: birthday,
-                              description: description,
-                            ));
+                                  name: name,
+                                  leadStatusId: widget.statusId,
+                                  phone: phone,
+                                  regionId: selectedRegion != null
+                                      ? int.parse(selectedRegion!)
+                                      : null,
+                                  organizationId: 1,
+                                  instaLogin: instaLogin,
+                                  facebookLogin: facebookLogin,
+                                  tgNick: tgNick,
+                                  waPhone: whatsapp,
+                                  birthday: birthday,
+                                  description: description,
+                                ));
                           }
                         },
                       ),

@@ -112,7 +112,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               'leadName': titleController.text,
               'leadStatus': widget.leadStatus,
               'statusId': widget.statusId,
-              'region': selectedRegion,
+              'regionId': selectedRegion,
               'birthday': birthdayController.text,
               'instagram': instaLoginController.text,
               'facebook': facebookLoginController.text,
@@ -231,8 +231,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(
-                                        'Введите корректную дату рождения в формате ДД/ММ/ГГГГ'),
+                                    content: Text('Ошибка: ${e.toString()}'),
                                   ),
                                 );
                                 return;
@@ -240,6 +239,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             }
 
                             final leadBloc = context.read<LeadBloc>();
+                            context.read<LeadBloc>().add(FetchLeadStatuses());
                             leadBloc.add(UpdateLead(
                               leadId: widget.leadId,
                               name: titleController.text,
