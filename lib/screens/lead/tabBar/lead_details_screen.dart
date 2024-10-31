@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/bloc/history/history_bloc.dart';
+import 'package:crm_task_manager/bloc/history/history_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
@@ -6,6 +8,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -13,6 +16,7 @@ class LeadDetailsScreen extends StatefulWidget {
   String leadStatus;
   int statusId;
   String? region;
+  int? regionId;
   String? birthday;
   String? instagram;
   String? facebook;
@@ -26,6 +30,7 @@ class LeadDetailsScreen extends StatefulWidget {
     required this.leadStatus,
     required this.statusId,
     this.region,
+    this.regionId,
     this.birthday,
     this.instagram,
     this.facebook,
@@ -54,6 +59,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Статус:', 'value': widget.leadStatus},
       // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
       {'label': 'Регион:', 'value': widget.region ?? 'Не указано'},
+      // {'label': 'ID региона:', 'value': widget.regionId?.toString() ?? 'Не указано'},
       {'label': 'Дата рождения:', 'value': widget.birthday ?? 'Не указано'},
       {'label': 'Instagram:', 'value': widget.instagram ?? 'Не указано'},
       {'label': 'Facebook:', 'value': widget.facebook ?? 'Не указано'},
@@ -117,52 +123,57 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-              final updatedLead = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LeadEditScreen(
-                    leadId: int.parse(widget.leadId),
-                    leadName: widget.leadName,
-                    leadStatus: widget.leadStatus,
-                    statusId: widget.statusId,
-                    region: widget.region,
-                    birthday: widget.birthday,
-                    instagram: widget.instagram,
-                    facebook: widget.facebook,
-                    telegram: widget.telegram,
-                    phone: widget.phone,
-                    description: widget.description,
-                  ),
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
                 ),
-              );
+                onPressed: () async {
+                  final formattedBirthday =
+                      (widget.birthday != null && widget.birthday!.isNotEmpty)
+                          ? DateFormat('dd/MM/yyyy')
+                              .format(DateTime.parse(widget.birthday!))
+                          : null;
 
-              if (updatedLead != null) {
-                context.read<LeadBloc>().add(FetchLeadStatuses());
-                setState(() {
-                  widget.leadName = updatedLead['leadName'];
-                  widget.leadStatus = updatedLead['leadStatus'];
-                  widget.statusId = updatedLead['statusId'];
-                  widget.region = updatedLead['region'];
-                  widget.birthday = updatedLead['birthday'];
-                  widget.instagram = updatedLead['instagram'];
-                  widget.facebook = updatedLead['facebook'];
-                  widget.telegram = updatedLead['telegram'];
-                  widget.phone = updatedLead['phone'];
-                  widget.description = updatedLead['description'];
-                });
-                _updateDetails();
-              }
-            },
-          ),
-        ),
+                  final updatedLead = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LeadEditScreen(
+                        leadId: int.parse(widget.leadId),
+                        leadName: widget.leadName,
+                        leadStatus: widget.leadStatus,
+                        statusId: widget.statusId,
+                        region: widget.regionId?.toString(),
+                        birthday: formattedBirthday,
+                        instagram: widget.instagram,
+                        facebook: widget.facebook,
+                        telegram: widget.telegram,
+                        phone: widget.phone,
+                        description: widget.description,
+                      ),
+                    ),
+                  );
+
+                  if (updatedLead != null) {
+                    context.read<LeadBloc>().add(FetchLeadStatuses());
+                    context.read<HistoryBloc>().add(FetchLeadHistory(int.parse(widget.leadId)));
+                    setState(() {
+                      widget.leadName = updatedLead['leadName'];
+                      widget.leadStatus = updatedLead['leadStatus'];
+                      widget.statusId = updatedLead['statusId'];
+                      widget.regionId = updatedLead['region'];
+                      widget.birthday = updatedLead['birthday'];
+                      widget.instagram = updatedLead['instagram'];
+                      widget.facebook = updatedLead['facebook'];
+                      widget.telegram = updatedLead['telegram'];
+                      widget.phone = updatedLead['phone'];
+                      widget.description = updatedLead['description'];
+                    });
+                    _updateDetails();
+                  }
+                })),
       ],
     );
   }

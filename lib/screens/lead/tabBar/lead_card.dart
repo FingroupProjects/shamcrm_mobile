@@ -59,6 +59,7 @@ class _LeadCardState extends State<LeadCard> {
               leadStatus: dropdownValue,
               statusId: widget.statusId,
               region: widget.lead.region?.name,
+              regionId: widget.lead.region?.id,
               birthday: widget.lead.birthday,
               instagram: widget.lead.instagram,
               facebook: widget.lead.facebook,
