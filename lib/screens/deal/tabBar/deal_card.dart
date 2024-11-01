@@ -1,28 +1,27 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class LeadCard extends StatefulWidget {
-  final Lead lead;
+class DealCard extends StatefulWidget {
+  final Deal deal;
   final String title;
   final int statusId;
   final VoidCallback onStatusUpdated;
 
-  LeadCard({
-    required this.lead,
+  DealCard({
+    required this.deal,
     required this.title,
     required this.statusId,
     required this.onStatusUpdated,
   });
 
   @override
-  _LeadCardState createState() => _LeadCardState();
+  _DealCardState createState() => _DealCardState();
 }
 
-class _LeadCardState extends State<LeadCard> {
+class _DealCardState extends State<DealCard> {
   late String dropdownValue;
 
   @override
@@ -46,31 +45,31 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath =
-        sourceIcons[widget.lead.source?.name] ?? 'assets/images/avatar.png';
+    // String iconPath =
+    //     sourceIcons[widget.deal.source?.name] ?? 'assets/images/avatar.png';
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LeadDetailsScreen(
-              leadId: widget.lead.id.toString(),
-              leadName: widget.lead.name ?? 'Без имени',
-              leadStatus: dropdownValue,
-              statusId: widget.statusId,
-              region: widget.lead.region?.name,
-              regionId: widget.lead.region?.id,
-              manager: widget.lead.manager?.name,
-              managerId: widget.lead.manager?.id,
-              birthday: widget.lead.birthday,
-              instagram: widget.lead.instagram,
-              facebook: widget.lead.facebook,
-              telegram: widget.lead.telegram,
-              phone: widget.lead.phone,
-              description: widget.lead.description,
-            ),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => LeadDetailsScreen(
+        //       leadId: widget.lead.id.toString(),
+        //       leadName: widget.lead.name ?? 'Без имени',
+        //       leadStatus: dropdownValue,
+        //       statusId: widget.statusId,
+        //       region: widget.lead.region?.name,
+        //       regionId: widget.lead.region?.id,
+        //       manager: widget.lead.manager?.name,
+        //       managerId: widget.lead.manager?.id,
+        //       birthday: widget.lead.birthday,
+        //       instagram: widget.lead.instagram,
+        //       facebook: widget.lead.facebook,
+        //       telegram: widget.lead.telegram,
+        //       phone: widget.lead.phone,
+        //       description: widget.lead.description,
+        //     ),
+        //   ),
+        // );
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -79,7 +78,7 @@ class _LeadCardState extends State<LeadCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.lead.name ?? 'Без имени',
+              widget.deal.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
             ),
             const SizedBox(height: 5),
@@ -102,7 +101,7 @@ class _LeadCardState extends State<LeadCard> {
                         dropdownValue = newValue;
                       });
                       widget.onStatusUpdated();
-                    }, widget.lead);
+                    }, widget.deal);
                   },
                   child: Container(
                     padding:
@@ -147,11 +146,11 @@ class _LeadCardState extends State<LeadCard> {
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      iconPath,
-                      width: 28,
-                      height: 28,
-                    ),
+                    // Image.asset(
+                    //   iconPath,
+                    //   width: 28,
+                    //   height: 28,
+                    // ),
                     const SizedBox(width: 18),
                     // Container(
                     //   padding: const EdgeInsets.symmetric(
@@ -175,15 +174,15 @@ class _LeadCardState extends State<LeadCard> {
                           height: 17,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          ' ${widget.lead.messageAmount ?? 0}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
+                        // Text(
+                        //   ' ${widget.deal.messageAmount ?? 0}',
+                        //   style: const TextStyle(
+                        //     fontSize: 12,
+                        //     fontFamily: 'Gilroy',
+                        //     fontWeight: FontWeight.w500,
+                        //     color: Color(0xff99A4BA),
+                        //   ),
+                        // ),
                       ],
                     ),
                     const SizedBox(width: 16),
@@ -196,7 +195,7 @@ class _LeadCardState extends State<LeadCard> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          ' ${formatDate(widget.lead.createdAt ?? 'Неизвестно')}',
+                          ' ${formatDate(widget.deal.startDate ?? 'Неизвестно')}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',
