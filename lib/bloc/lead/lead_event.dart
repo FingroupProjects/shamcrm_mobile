@@ -20,6 +20,7 @@ class CreateLead extends LeadEvent {
   final int leadStatusId;
   final String phone;
   final int? regionId;
+  final int? managerId;
   final String? instaLogin;
   final String? facebookLogin;
   final String? tgNick;
@@ -33,6 +34,7 @@ class CreateLead extends LeadEvent {
     required this.leadStatusId,
     required this.phone,
     this.regionId,
+    this.managerId,
     this.instaLogin,
     this.facebookLogin,
     this.tgNick,
@@ -48,6 +50,7 @@ class UpdateLead extends LeadEvent {
   final int leadStatusId;
   final String phone;
   final int? regionId;
+  final int? managerId;
   final String? instaLogin;
   final String? facebookLogin;
   final String? tgNick;
@@ -62,6 +65,7 @@ class UpdateLead extends LeadEvent {
     required this.leadStatusId,
     required this.phone,
     this.regionId,
+    this.managerId,
     this.instaLogin,
     this.facebookLogin,
     this.tgNick,

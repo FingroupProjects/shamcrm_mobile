@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_event.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,7 @@ class LeadEditScreen extends StatefulWidget {
   final String leadName;
   final String leadStatus;
   final String? region;
+  final String? manager;
   final String? birthday;
   final String? instagram;
   final String? facebook;
@@ -30,6 +32,7 @@ class LeadEditScreen extends StatefulWidget {
     required this.leadStatus,
     required this.statusId,
     this.region,
+    this.manager,
     this.birthday,
     this.instagram,
     this.facebook,
@@ -53,6 +56,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
+  String? selectedManager;
   bool isUpdated = false;
 
   @override
@@ -66,6 +70,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     birthdayController.text = widget.birthday ?? '';
     descriptionController.text = widget.description ?? '';
     selectedRegion = widget.region;
+    selectedManager = widget.manager;
 
     context.read<RegionBloc>().add(FetchRegions());
   }
@@ -112,7 +117,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               'leadName': titleController.text,
               'leadStatus': widget.leadStatus,
               'statusId': widget.statusId,
-              'regionId': selectedRegion,
+              'region': selectedRegion,
+              'manager': selectedManager,
               'birthday': birthdayController.text,
               'instagram': instaLoginController.text,
               'facebook': facebookLoginController.text,
@@ -163,6 +169,15 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         onChanged: (String? newValue) {
                           setState(() {
                             selectedRegion = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      ManagerWidget(
+                        selectedManager: selectedManager,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedManager = newValue;
                           });
                         },
                       ),
@@ -246,6 +261,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               phone: phoneController.text,
                               regionId: selectedRegion != null
                                   ? int.parse(selectedRegion!)
+                                  : null,
+                              managerId: selectedManager != null
+                                  ? int.parse(selectedManager!)
                                   : null,
                               instaLogin: instaLoginController.text,
                               facebookLogin: facebookLoginController.text,
