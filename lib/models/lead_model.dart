@@ -4,7 +4,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 class Lead {
   final int id;
   final String name;
-  final Source? source; 
+  final Source? source;
   final int messageAmount;
   final String? createdAt;
   final int statusId;
@@ -34,7 +34,7 @@ class Lead {
     this.description,
   });
 
-  factory Lead.fromJson(Map<String, dynamic> json) {
+  factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
     return Lead(
       id: json['id'] is int ? json['id'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
@@ -43,26 +43,20 @@ class Lead {
           : null,
       messageAmount: json['message_amount'] is int ? json['message_amount'] : 0,
       createdAt: json['created_at'] is String ? json['created_at'] : null,
-      statusId: json['leadStatus'] != null &&
-              json['leadStatus'] is Map<String, dynamic>
-          ? (json['leadStatus']['id'] is int ? json['leadStatus']['id'] : 0)
-          : 0,
+      statusId: leadStatusId,
       region: json['region'] != null && json['region'] is Map<String, dynamic>
           ? Region.fromJson(json['region'])
-          : null, 
-      manager: json['manager'] != null && json['manager'] is Map<String, dynamic>
-          ? Manager.fromJson(json['manager'])
-          : null, 
+          : null,
+      manager:
+          json['manager'] != null && json['manager'] is Map<String, dynamic>
+              ? Manager.fromJson(json['manager'])
+              : null,
       birthday: json['birthday'] is String ? json['birthday'] : '',
-      instagram:
-          json['insta_login'] is String ? json['insta_login'] : '',
-      facebook: json['facebook_login'] is String
-          ? json['facebook_login']
-          : '',
+      instagram: json['insta_login'] is String ? json['insta_login'] : '',
+      facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
-      description:
-          json['description'] is String ? json['description'] : '',
+      description: json['description'] is String ? json['description'] : '',
     );
   }
 }

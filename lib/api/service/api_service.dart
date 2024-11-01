@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -37,6 +38,8 @@ class ApiService {
   Future<void> logout() async {
     await _removeToken(); // Удаляем токен при логауте
   }
+
+  //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
 // Метод для выполнения GET-запросов
   Future<http.Response> _getRequest(String path) async {
@@ -119,6 +122,9 @@ class ApiService {
 
     return response;
   }
+  //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
+
+  //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
@@ -145,6 +151,10 @@ class ApiService {
         false; // Проверяем статус или возвращаем false
   }
 
+  //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
+
+  //_________________________________ START___API__LOGIN____________________________________________//
+
   // Метод для проверки логина и пароля
   Future<LoginResponse> login(LoginModel loginModel) async {
     final response = await _postRequest('/login', loginModel.toJson());
@@ -161,6 +171,9 @@ class ApiService {
       throw Exception('Не правильный Логин или Пароль: ${response.body}');
     }
   }
+  //_________________________________ END___API__LOGIN____________________________________________//
+
+  //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
   // Метод для получения лидов
   Future<List<Lead>> getLeads(int leadStatusId,
@@ -172,7 +185,7 @@ class ApiService {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
         return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json))
+            .map((json) => Lead.fromJson(json, leadStatusId))
             .toList();
       } else {
         throw Exception('Нет данных о лидах в ответе');
@@ -215,6 +228,20 @@ class ApiService {
         'success': false,
         'message': 'Ошибка создания статуса лида: ${response.body}'
       };
+    }
+  }
+
+//Обновление статуса карточки Лида  в колонке
+  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+    final response = await _postRequest('/lead/changeStatus/$leadId', {
+      'position': position,
+      'status_id': statusId,
+    });
+
+    if (response.statusCode == 200) {
+      print('Статус лида обновлен успешно.');
+    } else {
+      throw Exception('Ошибка обновления статуса лида: ${response.body}');
     }
   }
 
@@ -444,74 +471,61 @@ class ApiService {
       };
     }
   }
+
   // Метод для Обновления Лида
-Future<Map<String, dynamic>> updateLead({
-  required int leadId,
-  required String name,
-  required int leadStatusId,
-  required String phone,
-  int? regionId,
-  int? managerId,
-  String? instaLogin,
-  String? facebookLogin,
-  String? tgNick,
-  DateTime? birthday,
-  String? description,
-  int? organizationId,
-  String? waPhone,
-}) async {
-  final response = await _patchRequest('/lead/$leadId', {
-    'name': name,
-    'lead_status_id': leadStatusId,
-    'phone': phone,
-    if (regionId != null) 'region_id': regionId,
-    if (managerId != null) 'manager_id': managerId,
-    if (instaLogin != null) 'insta_login': instaLogin,
-    if (facebookLogin != null) 'facebook_login': facebookLogin,
-    if (tgNick != null) 'tg_nick': tgNick,
-    if (birthday != null) 'birthday': birthday.toIso8601String(),
-    if (description != null) 'description': description,
-    if (organizationId != null) 'organization_id': organizationId,
-    if (waPhone != null) 'wa_phone': waPhone,
-  });
-
-  if (response.statusCode == 200) {
-    return {'success': true, 'message': 'Лид обновлен успешно.'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('phone')) {
-      return {
-        'success': false,
-        'message': 'Неправильный номер телефона. Проверьте формат и количество цифр.'
-      };
-    }
-    if (response.body.contains('name')) {
-      return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
-    }
-    // Другие проверки на ошибки...
-    return {
-      'success': false,
-      'message': 'Неизвестная ошибка: ${response.body}'
-    };
-  } else {
-    return {
-      'success': false,
-      'message': 'Ошибка обновления лида: ${response.body}'
-    };
-  }
-}
-
-
-//Обновление статуса карточки в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-    final response = await _postRequest('/lead/changeStatus/$leadId', {
-      'position': position,
-      'status_id': statusId,
+  Future<Map<String, dynamic>> updateLead({
+    required int leadId,
+    required String name,
+    required int leadStatusId,
+    required String phone,
+    int? regionId,
+    int? managerId,
+    String? instaLogin,
+    String? facebookLogin,
+    String? tgNick,
+    DateTime? birthday,
+    String? description,
+    int? organizationId,
+    String? waPhone,
+  }) async {
+    final response = await _patchRequest('/lead/$leadId', {
+      'name': name,
+      'lead_status_id': leadStatusId,
+      'phone': phone,
+      if (regionId != null) 'region_id': regionId,
+      if (managerId != null) 'manager_id': managerId,
+      if (instaLogin != null) 'insta_login': instaLogin,
+      if (facebookLogin != null) 'facebook_login': facebookLogin,
+      if (tgNick != null) 'tg_nick': tgNick,
+      if (birthday != null) 'birthday': birthday.toIso8601String(),
+      if (description != null) 'description': description,
+      if (organizationId != null) 'organization_id': organizationId,
+      if (waPhone != null) 'wa_phone': waPhone,
     });
 
     if (response.statusCode == 200) {
-      print('Статус лида обновлен успешно.');
+      return {'success': true, 'message': 'Лид обновлен успешно.'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('phone')) {
+        return {
+          'success': false,
+          'message':
+              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+        };
+      }
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+      }
+      // Другие проверки на ошибки...
+      return {
+        'success': false,
+        'message': 'Неизвестная ошибка: ${response.body}'
+      };
     } else {
-      throw Exception('Ошибка обновления статуса лида: ${response.body}');
+      return {
+        'success': false,
+        'message': 'Ошибка обновления лида: ${response.body}'
+      };
     }
   }
 
@@ -535,25 +549,99 @@ Future<Map<String, dynamic>> updateLead({
 
   // Метод для получения Менеджера
   Future<List<Manager>> getManager() async {
-  final response = await _getRequest('/manager');
+    final response = await _getRequest('/manager');
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('Тело ответа: $data'); // Для отладки
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); // Для отладки
 
-    if (data['result'] != null && data['result']['data'] != null) {
-      return (data['result']['data'] as List)
-          .map((manager) => Manager.fromJson(manager))
-          .toList();
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((manager) => Manager.fromJson(manager))
+            .toList();
+      } else {
+        throw Exception('Менеджеров не найдено');
+      }
     } else {
-      throw Exception('Менеджеров не найдено');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
-}
 
+  //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
+  //_________________________________ START___API__SCREEN__DEAL____________________________________________//
+
+  // Метод для получения Сделок
+  Future<List<Deal>> getDeals(int dealStatusId,
+      {int page = 1, int perPage = 20}) async {
+    final response = await _getRequest(
+        '/deal?deal_status_id=$dealStatusId&page=$page&per_page=$perPage');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => Deal.fromJson(json, dealStatusId))
+            .toList();
+      } else {
+        throw Exception('Нет данных о сделках в ответе');
+      }
+    } else {
+      throw Exception('Ошибка загрузки сделок: ${response.body}');
+    }
+  }
+
+  // Метод для получения статусов Сделок
+  Future<List<DealStatus>> getDealStatuses() async {
+    final response = await _getRequest('/deal/statuses');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((status) => DealStatus.fromJson(status))
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+// Метод для создания Cтатуса Сделки
+  Future<Map<String, dynamic>> createDealStatus(
+      String title, String color) async {
+    final response = await _postRequest('/deal-status', {
+      'title': title,
+      'color': color,
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Статус сделки создан успешно'};
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания статуса сделки: ${response.body}'
+      };
+    }
+  }
+
+  //Обновление статуса карточки Сделки  в колонке
+  Future<void> updateDealStatus(int dealId, int position, int statusId) async {
+    final response = await _postRequest('/deal/changeStatus/$dealId', {
+      'position': position,
+      'status_id': statusId,
+    });
+
+    if (response.statusCode == 200) {
+      print('Статус сделки обновлен успешно.');
+    } else {
+      throw Exception('Ошибка обновления статуса сделки: ${response.body}');
+    }
+  }
+
+  //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
 
   // Метод для получения список чатов
   Future<List<Chats>> getAllChats() async {
