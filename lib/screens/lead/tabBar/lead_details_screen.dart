@@ -17,6 +17,8 @@ class LeadDetailsScreen extends StatefulWidget {
   int statusId;
   String? region;
   int? regionId;
+  String? manager;
+  int? managerId;
   String? birthday;
   String? instagram;
   String? facebook;
@@ -31,6 +33,8 @@ class LeadDetailsScreen extends StatefulWidget {
     required this.statusId,
     this.region,
     this.regionId,
+    this.manager,
+    this.managerId,
     this.birthday,
     this.instagram,
     this.facebook,
@@ -59,6 +63,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Статус:', 'value': widget.leadStatus},
       // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
       {'label': 'Регион:', 'value': widget.region ?? 'Не указано'},
+      {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
       // {'label': 'ID региона:', 'value': widget.regionId?.toString() ?? 'Не указано'},
       {'label': 'Дата рождения:', 'value': widget.birthday ?? 'Не указано'},
       {'label': 'Instagram:', 'value': widget.instagram ?? 'Не указано'},
@@ -146,6 +151,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         leadStatus: widget.leadStatus,
                         statusId: widget.statusId,
                         region: widget.regionId?.toString(),
+                        manager: widget.managerId?.toString(),
                         birthday: formattedBirthday,
                         instagram: widget.instagram,
                         facebook: widget.facebook,
@@ -163,7 +169,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       widget.leadName = updatedLead['leadName'];
                       widget.leadStatus = updatedLead['leadStatus'];
                       widget.statusId = updatedLead['statusId'];
-                      widget.regionId = updatedLead['region'];
+                      widget.regionId = updatedLead['regionId'];
+                      widget.managerId = updatedLead['managerId'];
                       widget.birthday = updatedLead['birthday'];
                       widget.instagram = updatedLead['instagram'];
                       widget.facebook = updatedLead['facebook'];

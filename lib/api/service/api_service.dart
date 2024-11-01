@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:http/http.dart' as http;
@@ -360,6 +361,7 @@ class ApiService {
     required int leadStatusId,
     required String phone,
     int? regionId,
+    int? managerId,
     String? instaLogin,
     String? facebookLogin,
     String? tgNick,
@@ -373,6 +375,7 @@ class ApiService {
       'lead_status_id': leadStatusId,
       'phone': phone,
       if (regionId != null) 'region_id': regionId,
+      if (managerId != null) 'manager_id': managerId,
       if (instaLogin != null) 'insta_login': instaLogin,
       if (facebookLogin != null) 'facebook_login': facebookLogin,
       if (tgNick != null) 'tg_nick': tgNick,
@@ -448,6 +451,7 @@ Future<Map<String, dynamic>> updateLead({
   required int leadStatusId,
   required String phone,
   int? regionId,
+  int? managerId,
   String? instaLogin,
   String? facebookLogin,
   String? tgNick,
@@ -461,6 +465,7 @@ Future<Map<String, dynamic>> updateLead({
     'lead_status_id': leadStatusId,
     'phone': phone,
     if (regionId != null) 'region_id': regionId,
+    if (managerId != null) 'manager_id': managerId,
     if (instaLogin != null) 'insta_login': instaLogin,
     if (facebookLogin != null) 'facebook_login': facebookLogin,
     if (tgNick != null) 'tg_nick': tgNick,
@@ -527,6 +532,28 @@ Future<Map<String, dynamic>> updateLead({
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
+
+  // Метод для получения Менеджера
+  Future<List<Manager>> getManager() async {
+  final response = await _getRequest('/manager');
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Тело ответа: $data'); // Для отладки
+
+    if (data['result'] != null && data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((manager) => Manager.fromJson(manager))
+          .toList();
+    } else {
+      throw Exception('Менеджеров не найдено');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+
 
   // Метод для получения список чатов
   Future<List<Chats>> getAllChats() async {

@@ -1,8 +1,11 @@
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +36,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
+  String? selectedManager;
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
 
@@ -40,6 +44,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   void initState() {
     super.initState();
     context.read<RegionBloc>().add(FetchRegions());
+    context.read<ManagerBloc>().add(FetchManagers());
   }
 
   @override
@@ -140,6 +145,15 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         onChanged: (String? newValue) {
                           setState(() {
                             selectedRegion = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      ManagerWidget(
+                        selectedManager: selectedManager,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedManager = newValue;
                           });
                         },
                       ),
@@ -261,6 +275,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                   phone: phone,
                                   regionId: selectedRegion != null
                                       ? int.parse(selectedRegion!)
+                                      : null,
+                                  managerId: selectedManager != null
+                                      ? int.parse(selectedManager!)
                                       : null,
                                   organizationId: 1,
                                   instaLogin: instaLogin,
