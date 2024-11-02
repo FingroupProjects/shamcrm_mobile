@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -62,7 +63,8 @@ class DealColumn extends StatelessWidget {
                                     .read<DealBloc>()
                                     .add(FetchDeals(statusId));
                               },
-                            ));
+                            )
+                            );
                       },
                     ),
                   ),
@@ -76,12 +78,12 @@ class DealColumn extends StatelessWidget {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => DealAddScreen(statusId: statusId),
-            //   ),
-            // );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DealAddScreen(statusId: statusId),
+              ),
+            );
           },
           backgroundColor: Color(0xff1E2E52),
           child:

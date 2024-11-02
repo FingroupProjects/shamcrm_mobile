@@ -12,7 +12,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
     on<FetchDeals>(_fetchDeals);
-    // on<CreateLead>(_createLead);
+    on<CreateDeal>(_createDeal);
     on<FetchMoreDeals>(_fetchMoreDeals);
     on<CreateDealStatus>(_createDealStatus);
     // on<UpdateDeal>(_updateDeal);
@@ -83,7 +83,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       }
     } catch (e) {
       emit(DealError(
-          'Не удалось загрузить дополнительные лиды: ${e.toString()}'));
+          'Не удалось загрузить дополнительные сделки: ${e.toString()}'));
     }
   }
 
@@ -111,85 +111,73 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-//   Future<void> _createLead(CreateLead event, Emitter<LeadState> emit) async {
-//     emit(LeadLoading());
+  Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
+    emit(DealLoading());
 
-//     // Проверка подключения к интернету
-//     if (!await _checkInternetConnection()) {
-//       emit(LeadError('Нет подключения к интернету'));
-//       return;
-//     }
+    // Проверка подключения к интернету
+    if (!await _checkInternetConnection()) {
+      emit(DealError('Нет подключения к интернету'));
+      return;
+    }
 
-//     try {
-//       // Вызов метода создания лида
-//       final result = await apiService.createLead(
-//         name: event.name,
-//         leadStatusId: event.leadStatusId,
-//         phone: event.phone,
-//         regionId: event.regionId,
-//         managerId: event.managerId,
-//         instaLogin: event.instaLogin,
-//         facebookLogin: event.facebookLogin,
-//         tgNick: event.tgNick,
-//         birthday: event.birthday,
-//         description: event.description,
-//         organizationId: event.organizationId,
-//         waPhone: event.waPhone,
-//       );
+    try {
+      // Вызов метода создания лида
+      final result = await apiService.createDeal(
+        name: event.name,
+        dealStatusId: event.dealStatusId,
+        managerId: event.managerId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        sum:event.sum,
+        description: event.description,
+        organizationId: event.organizationId,
+      );
 
-//       // Если успешно, то обновляем состояние
-//       if (result['success']) {
-//         emit(LeadSuccess('Лид создан успешно'));
-//         // Передаем статус лида (event.leadStatusId) в событие FetchLeads
-//         add(FetchLeads(event.leadStatusId));
-//       } else {
-//         // Если есть ошибка, отображаем сообщение об ошибке
-//         emit(LeadError(result['message']));
-//       }
-//     } catch (e) {
-//       // Логирование ошибки
-//       emit(LeadError('Ошибка создания лида: ${e.toString()}'));
-//     }
-//   }
+      // Если успешно, то обновляем состояние
+      if (result['success']) {
+        emit(DealSuccess('Сделка создан успешно'));
+        add(FetchDeals(event.dealStatusId));
+      } else {
+        // Если есть ошибка, отображаем сообщение об ошибке
+        emit(DealError(result['message']));
+      }
+    } catch (e) {
+      // Логирование ошибки
+      emit(DealError('Ошибка создания сделки: ${e.toString()}'));
+    }
+  }
 
  
   
-// Future<void> _updateLead(UpdateLead event, Emitter<LeadState> emit) async {
-//   emit(LeadLoading());
+// Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
+//   emit(DealLoading());
 
 //   // Проверка подключения к интернету
 //   if (!await _checkInternetConnection()) {
-//     emit(LeadError('Нет подключения к интернету'));
+//     emit(DealError('Нет подключения к интернету'));
 //     return;
 //   }
 
 //   try {
 //     // Вызов метода обновления лида
-//     final result = await apiService.updateLead(
-//       leadId: event.leadId,
+//     final result = await apiService.updateDeal(
+//       dealId: event.dealId,
 //       name: event.name,
-//       leadStatusId: event.leadStatusId,
-//       phone: event.phone,
-//       regionId: event.regionId,
+//       dealStatusId: event.dealStatusId,
 //       managerId: event.managerId,
-//       instaLogin: event.instaLogin,
-//       facebookLogin: event.facebookLogin,
-//       tgNick: event.tgNick,
-//       birthday: event.birthday,
 //       description: event.description,
 //       organizationId: event.organizationId,
-//       waPhone: event.waPhone,
 //     );
 
 //     // Если успешно, то обновляем состояние
 //     if (result['success']) {
-//       emit(LeadSuccess('Лид обновлен успешно'));
-//       add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
+//       emit(DealSuccess('Лид обновлен успешно'));
+//       add(FetchDeal(event.dealStatusId)); // Обновляем список лидов
 //     } else {
-//       emit(LeadError(result['message']));
+//       emit(DealError(result['message']));
 //     }
 //   } catch (e) {
-//     emit(LeadError('Ошибка обновления лида: ${e.toString()}'));
+//     emit(DealError('Ошибка обновления лида: ${e.toString()}'));
 //   }
 // }
 

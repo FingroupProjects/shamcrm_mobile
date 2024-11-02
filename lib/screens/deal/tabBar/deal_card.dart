@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -45,31 +46,25 @@ class _DealCardState extends State<DealCard> {
 
   @override
   Widget build(BuildContext context) {
-    // String iconPath =
-    //     sourceIcons[widget.deal.source?.name] ?? 'assets/images/avatar.png';
     return GestureDetector(
       onTap: () {
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => LeadDetailsScreen(
-        //       leadId: widget.lead.id.toString(),
-        //       leadName: widget.lead.name ?? 'Без имени',
-        //       leadStatus: dropdownValue,
-        //       statusId: widget.statusId,
-        //       region: widget.lead.region?.name,
-        //       regionId: widget.lead.region?.id,
-        //       manager: widget.lead.manager?.name,
-        //       managerId: widget.lead.manager?.id,
-        //       birthday: widget.lead.birthday,
-        //       instagram: widget.lead.instagram,
-        //       facebook: widget.lead.facebook,
-        //       telegram: widget.lead.telegram,
-        //       phone: widget.lead.phone,
-        //       description: widget.lead.description,
-        //     ),
-        //   ),
-        // );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DealDetailsScreen(
+              dealId: widget.deal.id.toString(),
+              dealName: widget.deal.name ?? 'Без имени',
+              startDate: widget.deal.startDate,
+              endDate: widget.deal.endDate,
+              sum: widget.deal.sum,
+              dealStatus: dropdownValue,
+              statusId: widget.statusId,
+              manager: widget.deal.manager?.name,
+              managerId: widget.deal.manager?.id,
+              description: widget.deal.description,
+            ),
+          ),
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -144,48 +139,9 @@ class _DealCardState extends State<DealCard> {
             const SizedBox(height: 8),
             Column(
               children: [
-                Row(
-                  children: [
-                    // Image.asset(
-                    //   iconPath,
-                    //   width: 28,
-                    //   height: 28,
-                    // ),
-                    const SizedBox(width: 18),
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: 4, vertical: 2),
-                    //   decoration: TaskCardStyles.priorityContainerDecoration,
-                    //   child: const Text(
-                    //     'Высокая',
-                    //     style: TaskCardStyles.priorityStyle,
-                    //   ),
-                    // ),
-                  ],
-                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/icons/tabBar/sms.png',
-                          width: 17,
-                          height: 17,
-                        ),
-                        const SizedBox(width: 4),
-                        // Text(
-                        //   ' ${widget.deal.messageAmount ?? 0}',
-                        //   style: const TextStyle(
-                        //     fontSize: 12,
-                        //     fontFamily: 'Gilroy',
-                        //     fontWeight: FontWeight.w500,
-                        //     color: Color(0xff99A4BA),
-                        //   ),
-                        // ),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
                     Row(
                       children: [
                         Image.asset(

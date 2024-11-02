@@ -382,7 +382,7 @@ class ApiService {
     }
   }
 
-// Метод для Создания Лида
+  // Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({
     required String name,
     required int leadStatusId,
@@ -640,6 +640,93 @@ class ApiService {
       throw Exception('Ошибка обновления статуса сделки: ${response.body}');
     }
   }
+
+  // Метод для Создания Лида
+  Future<Map<String, dynamic>> createDeal({
+    required String name,
+    required int dealStatusId,
+    int? managerId,
+    DateTime? startDate,
+    DateTime? endDate,
+    required String sum,
+    String? description,
+    int? organizationId,
+  }) async {
+    final response = await _postRequest('/deal', {
+      'name': name,
+      'deal_status_id': dealStatusId,
+      if (managerId != null) 'manager_id': managerId,
+      if (startDate != null) 'startDate': startDate.toIso8601String(),
+      if (endDate != null) 'endDate': endDate.toIso8601String(),
+      'sum': sum,
+      if (description != null) 'description': description,
+      if (organizationId != null) 'organization_id': organizationId,
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Сделка создан успешно.'};
+    } else if (response.statusCode == 422) {
+      // Обработка ошибки дублирования номера телефона
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
+      }
+      // Обработка ошибки дублирования логина Instagram
+      // else if (response.body.contains('insta_login')) {
+      //   return {
+      //     'success': false,
+      //     'message': 'Этот логин Instagram уже используется.'
+      //   };
+      // }
+      // Другие проверки...
+      else {
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания лида: ${response.body}'
+      };
+    }
+  }
+
+  // // Метод для Обновления Лида
+  // Future<Map<String, dynamic>> updateDeal({
+  //   required int dealId,
+  //   required String name,
+  //   required int dealStatusId,
+  //   int? managerId,
+  //   String? description,
+  //   int? organizationId,
+  // }) async {
+  //   final response = await _patchRequest('/deal/$dealId', {
+  //     'name': name,
+  //     'deal_status_id': dealStatusId,
+  //     if (managerId != null) 'manager_id': managerId,
+  //     if (description != null) 'description': description,
+  //     if (organizationId != null) 'organization_id': organizationId,
+  //   });
+
+  //   if (response.statusCode == 200) {
+  //     return {'success': true, 'message': 'Сделка обновлен успешно.'};
+  //   } else if (response.statusCode == 422) {
+  //     if (response.body.contains('name')) {
+  //       return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+  //     }
+  //     // Другие проверки на ошибки...
+  //     return {
+  //       'success': false,
+  //       'message': 'Неизвестная ошибка: ${response.body}'
+  //     };
+  //   } else {
+  //     return {
+  //       'success': false,
+  //       'message': 'Ошибка обновления лида: ${response.body}'
+  //     };
+  //   }
+  // }
 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
 

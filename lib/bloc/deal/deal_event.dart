@@ -25,66 +25,43 @@ class CreateDealStatus extends DealEvent {
   });
 }
 
-// class CreateLead extends LeadEvent {
-//   final String name;
-//   final int leadStatusId;
-//   final String phone;
-//   final int? regionId;
-//   final int? managerId;
-//   final String? instaLogin;
-//   final String? facebookLogin;
-//   final String? tgNick;
-//   final DateTime? birthday;
-//   final String? description;
-//   final int? organizationId;
-//   final String? waPhone;
+class CreateDeal extends DealEvent {
+  final String name;
+  final int dealStatusId;
+  final int? managerId;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String sum;
 
-//   CreateLead({
-//     required this.name,
-//     required this.leadStatusId,
-//     required this.phone,
-//     this.regionId,
-//     this.managerId,
-//     this.instaLogin,
-//     this.facebookLogin,
-//     this.tgNick,
-//     this.birthday,
-//     this.description,
-//     this.organizationId,
-//     this.waPhone,
-//   });
-// }
-// class UpdateLead extends LeadEvent {
-//   final int leadId;
-//   final String name;
-//   final int leadStatusId;
-//   final String phone;
-//   final int? regionId;
-//   final int? managerId;
-//   final String? instaLogin;
-//   final String? facebookLogin;
-//   final String? tgNick;
-//   final DateTime? birthday;
-//   final String? description;
-//   final int? organizationId;
-//   final String? waPhone;
+  final String? description;
+  final int? organizationId;
 
-//   UpdateLead({
-//     required this.leadId,
-//     required this.name,
-//     required this.leadStatusId,
-//     required this.phone,
-//     this.regionId,
-//     this.managerId,
-//     this.instaLogin,
-//     this.facebookLogin,
-//     this.tgNick,
-//     this.birthday,
-//     this.description,
-//     this.organizationId,
-//     this.waPhone,
-//   });
-// }
+  CreateDeal({
+    required this.name,
+    required this.dealStatusId,
+    this.managerId,
+    this.startDate,
+    this.endDate,
+    required this.sum,
+    this.description,
+    this.organizationId,
+  });
+}
 
+class UpdateDeal extends DealEvent {
+  final int dealId;
+  final String name;
+  final int dealStatusId;
+  final int? managerId;
+  final String? description;
+  final int? organizationId;
 
-
+  UpdateDeal({
+    required this.dealId,
+    required this.name,
+    required this.dealStatusId,
+    this.managerId,
+    this.description,
+    this.organizationId,
+  });
+}
