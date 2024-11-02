@@ -1,10 +1,10 @@
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
-import 'package:crm_task_manager/screens/clients/clients_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart'; // Импортируйте экран профиля
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
+import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Добавьте экран профиля в список виджетов
   final List<Widget> _widgetOptions = <Widget>[
     DashboardScreen(),
-    ClientsScreen(),
+    TaskScreen(),
     LeadScreen(),
     ChatsScreen(),
     DealScreen(),
