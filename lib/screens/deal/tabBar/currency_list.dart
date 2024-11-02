@@ -37,15 +37,31 @@ class _CurrencyWidgetState extends State<CurrencyWidget> {
             ),
           ];
         } else if (state is CurrencyLoaded) {
-          print('Список валют: ${state.currencies}');
-          dropdownItems =
-              state.currencies.map<DropdownMenuItem<String>>((Currency currency) {
-            return DropdownMenuItem<String>(
-              value: currency.id.toString(),
-              child: Text(currency.name),
-            );
-          }).toList();
+          if (state.currencies.isEmpty) {
+            dropdownItems = [
+              DropdownMenuItem(
+                value: null,
+                child: Text(
+                  'Нет валют',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            ];
+          } else {
+            dropdownItems = state.currencies.map<DropdownMenuItem<String>>((Currency currency) {
+              return DropdownMenuItem<String>(
+                value: currency.id.toString(),
+                child: Text(currency.name),
+              );
+            }).toList();
+          }
         }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -65,8 +81,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButtonFormField<String>(
-                value: dropdownItems
-                        .any((item) => item.value == widget.selectedCurrency)
+                value: dropdownItems.any((item) => item.value == widget.selectedCurrency)
                     ? widget.selectedCurrency
                     : null,
                 hint: const Text(

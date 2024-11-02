@@ -178,16 +178,42 @@ class ApiService {
   //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
   // Метод для получения лидов
-  Future<List<Lead>> getLeads(int leadStatusId,
+  // Future<List<Lead>> getLeads(int leadStatusId,
+  //     {int page = 1, int perPage = 20}) async {
+  //   final response = await _getRequest(
+  //       '/lead?lead_status_id=$leadStatusId&page=$page&per_page=$perPage');
+
+  //   if (response.statusCode == 200) {
+  //     final data = json.decode(response.body);
+  //     if (data['result']['data'] != null) {
+  //       return (data['result']['data'] as List)
+  //           .map((json) => Lead.fromJson(json, leadStatusId))
+  //           .toList();
+  //     } else {
+  //       throw Exception('Нет данных о лидах в ответе');
+  //     }
+  //   } else {
+  //     throw Exception('Ошибка загрузки лидов: ${response.body}');
+  //   }
+  // }
+
+    // Метод для получения лидов
+  Future<List<Lead>> getLeads(int? leadStatusId,
       {int page = 1, int perPage = 20}) async {
-    final response = await _getRequest(
-        '/lead?lead_status_id=$leadStatusId&page=$page&per_page=$perPage');
+    String path = '/lead';
+    if (leadStatusId != null) {
+      path += '?lead_status_id=$leadStatusId&page=$page&per_page=$perPage';
+    } else {
+      path += '?page=$page&per_page=$perPage';
+    }
+
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
         return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId))
+            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();
       } else {
         throw Exception('Нет данных о лидах в ответе');
@@ -727,14 +753,13 @@ class ApiService {
   //   }
   // }
 
-  
   // Метод для получения Валюта
   Future<List<Currency>> getCurrency() async {
     final response = await _getRequest('/currency');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Тело ответа: $data'); 
+      print('Тело ответа: $data');
 
       if (data['result'] != null && data['result']['data'] != null) {
         return (data['result']['data'] as List)
@@ -770,6 +795,7 @@ class ApiService {
       throw Exception('Ошибка загрузки задач: ${response.body}');
     }
   }
+
   // Метод для получения статусов Сделок
   Future<List<TaskStatus>> getTaskStatuses() async {
     final response = await _getRequest('/task-status');
@@ -787,6 +813,7 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
+
 //Обновление статуса карточки Сделки  в колонке
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
     final response = await _postRequest('/task/changeStatus/$taskId', {
@@ -816,7 +843,6 @@ class ApiService {
   //     if (endDate != null) 'endDate': endDate.toIso8601String(),
   //     if (description != null) 'description': description,
   //   });
-
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 

@@ -42,7 +42,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void initState() {
     super.initState();
     context.read<ManagerBloc>().add(FetchManagers());
-    context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+    // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+    context.read<LeadBloc>().add(FetchAllLeads()); 
     context.read<CurrencyBloc>().add(FetchCurrencies());
   }
 
@@ -278,15 +279,16 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   sum: sum,
                                   description: description,
                                 ));
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Все обязательные поля должны быть заполнены.'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
+                          } 
+                          // else {
+                          //   ScaffoldMessenger.of(context).showSnackBar(
+                          //     SnackBar(
+                          //       content: Text(
+                          //           'Все обязательные поля должны быть заполнены.'),
+                          //       backgroundColor: Colors.red,
+                          //     ),
+                          //   );
+                          // }
                         },
                       ),
                     ),
