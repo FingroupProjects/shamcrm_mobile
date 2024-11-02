@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/manager_model.dart';
+
 class Deal {
   final int id;
   final String name;
@@ -6,6 +8,7 @@ class Deal {
   final String? description;
   final String sum;
   final int statusId;
+  final Manager? manager;
   final List<DealCustomField> dealCustomFields;
 
   Deal({
@@ -16,6 +19,7 @@ class Deal {
     this.description,
     required this.sum,
     required this.statusId,
+    this.manager,
     required this.dealCustomFields,
   });
 
@@ -28,6 +32,10 @@ class Deal {
       description: json['description'] is String ? json['description'] : '',
       sum: json['sum'] is String ? json['sum'] : '0.00',
       statusId: dealStatusId,
+      manager:
+          json['manager'] != null && json['manager'] is Map<String, dynamic>
+              ? Manager.fromJson(json['manager'])
+              : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
               ?.map((field) => DealCustomField.fromJson(field))
               .toList() ??
