@@ -16,7 +16,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<FetchMoreDeals>(_fetchMoreDeals);
     on<CreateDealStatus>(_createDealStatus);
     // on<UpdateDeal>(_updateDeal);
-
   }
 
   Future<void> _fetchDealStatuses(
@@ -87,7 +86,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-   Future<void> _createDealStatus(
+  Future<void> _createDealStatus(
       CreateDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
@@ -102,7 +101,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
-        add(FetchDealStatuses()); 
+        add(FetchDealStatuses());
       } else {
         emit(DealError(result['message']));
       }
@@ -128,9 +127,11 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         managerId: event.managerId,
         startDate: event.startDate,
         endDate: event.endDate,
-        sum:event.sum,
+        sum: event.sum,
         description: event.description,
         organizationId: event.organizationId,
+        leadId: event.leadId,
+        currencyId: event.currencyId, 
       );
 
       // Если успешно, то обновляем состояние
@@ -147,8 +148,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
- 
-  
 // Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
 //   emit(DealLoading());
 
@@ -180,8 +179,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 //     emit(DealError('Ошибка обновления лида: ${e.toString()}'));
 //   }
 // }
-
- 
 
   Future<bool> _checkInternetConnection() async {
     try {

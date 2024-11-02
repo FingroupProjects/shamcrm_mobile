@@ -1,11 +1,17 @@
+import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
+import 'package:crm_task_manager/bloc/currency/currency_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/manager_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,11 +35,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedManager;
+  String? selectedLead;
+  String? selectedCurrency;
 
   @override
   void initState() {
     super.initState();
     context.read<ManagerBloc>().add(FetchManagers());
+    context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+    context.read<CurrencyBloc>().add(FetchCurrencies());
   }
 
   @override
@@ -113,11 +123,29 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      LeadWidget(
+                        selectedLead: selectedLead,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedLead = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       ManagerWidget(
                         selectedManager: selectedManager,
                         onChanged: (String? newValue) {
                           setState(() {
                             selectedManager = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      CurrencyWidget(
+                        selectedCurrency: selectedCurrency,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedCurrency = newValue;
                           });
                         },
                       ),
@@ -180,7 +208,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         buttonColor: Color(0xff4759FF),
                         textColor: Colors.white,
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
+                          if (_formKey.currentState!.validate() &&
+                              selectedManager != null &&
+                              selectedLead != null) {
                             final String name = titleController.text;
 
                             final String? startDateString =
@@ -232,11 +262,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                 return;
                               }
                             }
+
+                            // Создание сделки
                             context.read<DealBloc>().add(CreateDeal(
                                   name: name,
                                   dealStatusId: widget.statusId,
-                                  managerId: selectedManager != null
-                                      ? int.parse(selectedManager!)
+                                  managerId: int.parse(selectedManager!),
+                                  leadId: int.parse(selectedLead!),
+                                  currencyId: selectedCurrency != null
+                                      ? int.parse(selectedCurrency!)
                                       : null,
                                   organizationId: 1,
                                   startDate: startDate,
@@ -244,6 +278,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   sum: sum,
                                   description: description,
                                 ));
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Все обязательные поля должны быть заполнены.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         },
                       ),
