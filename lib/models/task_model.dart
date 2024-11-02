@@ -1,5 +1,3 @@
-import 'package:crm_task_manager/models/manager_model.dart';
-
 class Task {
   final int id;
   final String name;
@@ -32,21 +30,15 @@ class Task {
 }
 
 
-
-
 class TaskStatus {
   final int id;
   final String name;
   // final String needs_permission;
-  final String? createdAt;
-  final String? updatedAt;
 
   TaskStatus( {
     required this.id,
     required this.name,
     // required this.needs_permission,
-    this.createdAt,
-    this.updatedAt,
     
   });
 

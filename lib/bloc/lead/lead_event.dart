@@ -15,6 +15,18 @@ class FetchMoreLeads extends LeadEvent {
   FetchMoreLeads(this.statusId, this.currentPage);
 }
 
+class FetchAllLeads extends LeadEvent {}
+
+class CreateLeadStatus extends LeadEvent {
+  final String title;
+  final String color;
+
+  CreateLeadStatus({
+    required this.title,
+    required this.color,
+  });
+}
+
 class CreateLead extends LeadEvent {
   final String name;
   final int leadStatusId;
@@ -77,12 +89,3 @@ class UpdateLead extends LeadEvent {
 }
 
 
-class CreateLeadStatus extends LeadEvent {
-  final String title;
-  final String color;
-
-  CreateLeadStatus({
-    required this.title,
-    required this.color,
-  });
-}

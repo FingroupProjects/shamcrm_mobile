@@ -66,11 +66,12 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => NotesBloc(apiService),
         ),
-         BlocProvider(
+        BlocProvider(
           create: (context) => DealBloc(apiService),
         ),
-         BlocProvider(
+        BlocProvider(
           create: (context) => CurrencyBloc(apiService),
+        ),
         BlocProvider(
           create: (context) => TaskBloc(apiService),
         ),

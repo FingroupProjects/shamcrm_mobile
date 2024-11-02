@@ -37,14 +37,29 @@ class _ManagerWidgetState extends State<ManagerWidget> {
             ),
           ];
         } else if (state is ManagerLoaded) {
-          print('Список менеджеров: ${state.managers}');
-          dropdownItems =
-              state.managers.map<DropdownMenuItem<String>>((Manager manager) {
-            return DropdownMenuItem<String>(
-              value: manager.id.toString(),
-              child: Text(manager.name),
-            );
-          }).toList();
+          if (state.managers.isEmpty) {
+            dropdownItems = [
+              DropdownMenuItem(
+                value: null,
+                child: Text(
+                  'Нет менеджеров',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            ];
+          } else {
+            dropdownItems = state.managers.map<DropdownMenuItem<String>>((Manager manager) {
+              return DropdownMenuItem<String>(
+                value: manager.id.toString(),
+                child: Text(manager.name),
+              );
+            }).toList();
+          }
         }
 
         return Column(
@@ -66,8 +81,7 @@ class _ManagerWidgetState extends State<ManagerWidget> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButtonFormField<String>(
-                value: dropdownItems
-                        .any((item) => item.value == widget.selectedManager)
+                value: dropdownItems.any((item) => item.value == widget.selectedManager)
                     ? widget.selectedManager
                     : null,
                 hint: const Text(
