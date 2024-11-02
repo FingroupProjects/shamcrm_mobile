@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
@@ -613,7 +614,7 @@ class ApiService {
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
       String title, String color) async {
-    final response = await _postRequest('/deal-status', {
+    final response = await _postRequest('/deal/statuses', {
       'title': title,
       'color': color,
     });
@@ -642,7 +643,7 @@ class ApiService {
     }
   }
 
-  // Метод для Создания Лида
+  // Метод для Создания Сделки
   Future<Map<String, dynamic>> createDeal({
     required String name,
     required int dealStatusId,
@@ -652,6 +653,8 @@ class ApiService {
     required String sum,
     String? description,
     int? organizationId,
+    int? leadId,
+    int? currencyId,
   }) async {
     final response = await _postRequest('/deal', {
       'name': name,
@@ -662,6 +665,8 @@ class ApiService {
       'sum': sum,
       if (description != null) 'description': description,
       if (organizationId != null) 'organization_id': organizationId,
+      if (leadId != null) 'lead_id': leadId,
+      if (currencyId != null) 'currency_id': currencyId,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -671,13 +676,6 @@ class ApiService {
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
       }
-      // Обработка ошибки дублирования логина Instagram
-      // else if (response.body.contains('insta_login')) {
-      //   return {
-      //     'success': false,
-      //     'message': 'Этот логин Instagram уже используется.'
-      //   };
-      // }
       // Другие проверки...
       else {
         return {
@@ -728,6 +726,27 @@ class ApiService {
   //     };
   //   }
   // }
+
+  
+  // Метод для получения Валюта
+  Future<List<Currency>> getCurrency() async {
+    final response = await _getRequest('/currency');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); 
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((currency) => Currency.fromJson(currency))
+            .toList();
+      } else {
+        throw Exception('Валюты не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//

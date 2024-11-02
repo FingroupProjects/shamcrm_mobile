@@ -32,9 +32,10 @@ class CreateDeal extends DealEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final String sum;
-
   final String? description;
   final int? organizationId;
+  final int? leadId;         
+  final int? currencyId;     
 
   CreateDeal({
     required this.name,
@@ -45,8 +46,11 @@ class CreateDeal extends DealEvent {
     required this.sum,
     this.description,
     this.organizationId,
+    this.leadId,             
+    this.currencyId,         
   });
 }
+
 
 class UpdateDeal extends DealEvent {
   final int dealId;
