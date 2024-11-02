@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
@@ -748,6 +749,76 @@ class ApiService {
   }
 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
+  //_________________________________ START___API__SCREEN__TASK____________________________________________//
+
+// Метод для получения Сделок
+  Future<List<Task>> getTasks(int taskStatusId,
+      {int page = 1, int perPage = 20}) async {
+    final response = await _getRequest(
+        '/task?task_status_id=$taskStatusId&page=$page&per_page=$perPage');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId))
+            .toList();
+      } else {
+        throw Exception('Нет данных о задачах в ответе');
+      }
+    } else {
+      throw Exception('Ошибка загрузки задач: ${response.body}');
+    }
+  }
+  // Метод для получения статусов Сделок
+  Future<List<TaskStatus>> getTaskStatuses() async {
+    final response = await _getRequest('/task-status');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((status) => TaskStatus.fromJson(status))
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+//Обновление статуса карточки Сделки  в колонке
+  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+    final response = await _postRequest('/task/changeStatus/$taskId', {
+      'position': position,
+      'status_id': statusId,
+    });
+
+    if (response.statusCode == 200) {
+      print('Статус сделки обновлен успешно.');
+    } else {
+      throw Exception('Ошибка обновления статуса сделки: ${response.body}');
+    }
+  }
+
+  // // Метод для Создания Задачи
+  // Future<Map<String, dynamic>> createTask({
+  //   required String name,
+  //   required int taskStatusId,
+  //   DateTime? startDate,
+  //   DateTime? endDate,
+  //   String? description,
+  // }) async {
+  //   final response = await _postRequest('/task', {
+  //     'name': name,
+  //     'task_status_id': taskStatusId,
+  //     if (startDate != null) 'startDate': startDate.toIso8601String(),
+  //     if (endDate != null) 'endDate': endDate.toIso8601String(),
+  //     if (description != null) 'description': description,
+  //   });
+
+
+  //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов
   Future<List<Chats>> getAllChats() async {
