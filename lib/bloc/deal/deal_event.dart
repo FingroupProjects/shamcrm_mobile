@@ -24,7 +24,6 @@ class CreateDealStatus extends DealEvent {
     required this.color,
   });
 }
-
 class CreateDeal extends DealEvent {
   final String name;
   final int dealStatusId;
@@ -37,6 +36,7 @@ class CreateDeal extends DealEvent {
   final int? dealtypeId;
   final int? leadId;         
   final int? currencyId;     
+  final List<Map<String, String>>? customFields;
 
   CreateDeal({
     required this.name,
@@ -50,8 +50,11 @@ class CreateDeal extends DealEvent {
     this.dealtypeId,
     this.leadId,             
     this.currencyId,         
+    this.customFields,
   });
 }
+
+
 
 
 class UpdateDeal extends DealEvent {
