@@ -130,6 +130,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         sum: event.sum,
         description: event.description,
         organizationId: event.organizationId,
+        dealtypeId: event.dealtypeId,
         leadId: event.leadId,
         currencyId: event.currencyId, 
       );

@@ -34,6 +34,7 @@ class CreateDeal extends DealEvent {
   final String sum;
   final String? description;
   final int? organizationId;
+  final int? dealtypeId;
   final int? leadId;         
   final int? currencyId;     
 
@@ -46,6 +47,7 @@ class CreateDeal extends DealEvent {
     required this.sum,
     this.description,
     this.organizationId,
+    this.dealtypeId,
     this.leadId,             
     this.currencyId,         
   });

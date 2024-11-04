@@ -679,6 +679,7 @@ class ApiService {
     required String sum,
     String? description,
     int? organizationId,
+    int? dealtypeId,
     int? leadId,
     int? currencyId,
   }) async {
@@ -686,11 +687,12 @@ class ApiService {
       'name': name,
       'deal_status_id': dealStatusId,
       if (managerId != null) 'manager_id': managerId,
-      if (startDate != null) 'startDate': startDate.toIso8601String(),
-      if (endDate != null) 'endDate': endDate.toIso8601String(),
+      if (startDate != null) 'start_date': startDate.toIso8601String(),
+      if (endDate != null) 'end_date': endDate.toIso8601String(),
       'sum': sum,
       if (description != null) 'description': description,
       if (organizationId != null) 'organization_id': organizationId,
+      if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
       if (currencyId != null) 'currency_id': currencyId,
     });
