@@ -8,9 +8,11 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/manager_list.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +39,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   String? selectedManager;
   String? selectedLead;
   String? selectedCurrency;
+  List<CustomField> customFields = [];
 
   @override
   void initState() {
@@ -44,6 +47,25 @@ class _DealAddScreenState extends State<DealAddScreen> {
     context.read<ManagerBloc>().add(FetchManagers());
     context.read<LeadBloc>().add(FetchAllLeads());
     context.read<CurrencyBloc>().add(FetchCurrencies());
+  }
+
+  void _addCustomField(String fieldName) {
+    setState(() {
+      customFields.add(CustomField(fieldName: fieldName));
+    });
+  }
+
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddCustomFieldDialog(
+          onAddField: (fieldName) {
+            _addCustomField(fieldName);
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -192,7 +214,29 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                      CustomButton(
+                        buttonText: 'Добавить поле',
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
+                      ),
                     ],
                   ),
                 ),
@@ -274,8 +318,17 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                 return;
                               }
                             }
-
                             // Создание сделки
+                            List<Map<String, String>> customFieldMap = [];
+                            for (var field in customFields) {
+                              String fieldName = field.fieldName.trim();
+                              String fieldValue = field.controller.text.trim();
+                              if (fieldName.isNotEmpty &&
+                                  fieldValue.isNotEmpty) {
+                                customFieldMap.add({fieldName: fieldValue});
+                              }
+                            }
+
                             context.read<DealBloc>().add(CreateDeal(
                                   name: name,
                                   dealStatusId: widget.statusId,
@@ -290,17 +343,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   endDate: endDate,
                                   sum: sum,
                                   description: description,
+                                  customFields: customFieldMap,
                                 ));
                           }
-                          // else {
-                          //   ScaffoldMessenger.of(context).showSnackBar(
-                          //     SnackBar(
-                          //       content: Text(
-                          //           'Все обязательные поля должны быть заполнены.'),
-                          //       backgroundColor: Colors.red,
-                          //     ),
-                          //   );
-                          // }
                         },
                       ),
                     ),
@@ -313,4 +358,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
       ),
     );
   }
+}
+
+class CustomField {
+  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+
+  CustomField({required this.fieldName});
 }

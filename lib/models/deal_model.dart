@@ -25,17 +25,14 @@ class Deal {
 
   factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
     return Deal(
-      id: json['id'] is int ? json['id'] : 0,
-      name: json['name'] is String ? json['name'] : 'Без имени',
-      startDate: json['start_date'] is String ? json['start_date'] : null,
-      endDate: json['end_date'] is String ? json['end_date'] : null,
-      description: json['description'] is String ? json['description'] : '',
-      sum: json['sum'] is String ? json['sum'] : '0.00',
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Без имени',
+      startDate: json['start_date'],
+      endDate: json['end_date'],
+      description: json['description'] ?? '',
+      sum: json['sum'] ?? '0.00',
       statusId: dealStatusId,
-      manager:
-          json['manager'] != null && json['manager'] is Map<String, dynamic>
-              ? Manager.fromJson(json['manager'])
-              : null,
+      manager: json['manager'] != null ? Manager.fromJson(json['manager']) : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
               ?.map((field) => DealCustomField.fromJson(field))
               .toList() ??
@@ -48,18 +45,21 @@ class DealCustomField {
   final int id;
   final String key;
   final String value;
+  final String name;
 
   DealCustomField({
     required this.id,
     required this.key,
     required this.value,
+    required this.name,
   });
 
   factory DealCustomField.fromJson(Map<String, dynamic> json) {
     return DealCustomField(
-      id: json['id'] is int ? json['id'] : 0,
-      key: json['key'] is String ? json['key'] : '',
-      value: json['value'] is String ? json['value'] : '',
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
+      name: json['name'] ?? '',
     );
   }
 }
