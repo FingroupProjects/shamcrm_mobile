@@ -61,7 +61,12 @@ class _DealCardState extends State<DealCard> {
               statusId: widget.statusId,
               manager: widget.deal.manager?.name,
               managerId: widget.deal.manager?.id,
+              currency: widget.deal.currency?.name,
+              currencyId: widget.deal.currency?.id,
+              lead: widget.deal.lead?.name,
+              leadId: widget.deal.lead?.id,
               description: widget.deal.description,
+              dealCustomFields: widget.deal.dealCustomFields, 
             ),
           ),
         );

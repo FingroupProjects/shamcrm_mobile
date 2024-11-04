@@ -1,31 +1,42 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DealDetailsScreen extends StatefulWidget {
   final String dealId;
-  String dealName;
-  String dealStatus;
-  int statusId;
-  String? manager;
-  int? managerId;
-  String? description;
-  String? startDate;
-  String? endDate;
-  String? sum;
+  final String dealName;
+  final String? startDate;
+  final String? endDate;
+  final String sum;
+  final String dealStatus;
+  final int statusId;
+  final String? manager;
+  final int? managerId;
+  final String? currency;
+  final int? currencyId;
+  final String? lead;
+  final int? leadId;
+  final String? description;
+  final List<DealCustomField> dealCustomFields;
 
   DealDetailsScreen({
-    required this.dealId,
+ required this.dealId,
     required this.dealName,
+    this.startDate,
+    this.endDate,
+    required this.sum,
     required this.dealStatus,
     required this.statusId,
     this.manager,
     this.managerId,
+    this.currency,
+    this.currencyId,
+    this.lead,
+    this.leadId,
     this.description,
-    this.startDate,
-    this.endDate,
-    this.sum,
+    required this.dealCustomFields,
   });
 
   @override
@@ -41,6 +52,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     _updateDetails();
   }
 
+
   void _updateDetails() {
     details = [
       {'label': 'ID Сделки:', 'value': widget.dealId},
@@ -48,13 +60,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       // {'label': 'Статус:', 'value': widget.dealStatus},
       // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
       {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'Клиент:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'Валюта:', 'value': widget.manager ?? 'Не указано'},
+      {'label': 'Валюта:', 'value': widget.currency ?? 'Не указано'},
+      {'label': 'Клиент:', 'value': widget.lead ?? 'Не указано'},
       {'label': 'Дата начало:', 'value': widget.startDate ?? 'Не указано'},
       {'label': 'Дата окончание:', 'value': widget.endDate ?? 'Не указано'},
       {'label': 'Сумма:', 'value': widget.sum ?? 'Не указано'},
       {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
     ];
+      // Adding deal custom fields to details
+  for (var field in widget.dealCustomFields) {
+    details.add({'label': field.key, 'value': field.value});
+  }
   }
 
   @override

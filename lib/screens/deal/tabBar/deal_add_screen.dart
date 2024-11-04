@@ -301,7 +301,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                 return;
                               }
                             }
-
                             DateTime? endDate;
                             if (endDateString != null &&
                                 endDateString.isNotEmpty) {
