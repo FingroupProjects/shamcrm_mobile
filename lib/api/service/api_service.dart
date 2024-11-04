@@ -197,7 +197,7 @@ class ApiService {
   //   }
   // }
 
-    // Метод для получения лидов
+  // Метод для получения лидов
   Future<List<Lead>> getLeads(int? leadStatusId,
       {int page = 1, int perPage = 20}) async {
     String path = '/lead';
@@ -668,101 +668,127 @@ class ApiService {
       throw Exception('Ошибка обновления статуса сделки: ${response.body}');
     }
   }
-Future<Map<String, dynamic>> createDeal({
-  required String name,
-  required int dealStatusId,
-  int? managerId,
-  DateTime? startDate,
-  DateTime? endDate,
-  required String sum,
-  String? description,
-  int? organizationId,
-  int? dealtypeId,
-  int? leadId,
-  int? currencyId,
-  List<Map<String, String>>? customFields,
-}) async {
-  final requestBody = {
-    'name': name,
-    'deal_status_id': dealStatusId,
-    if (managerId != null) 'manager_id': managerId,
-    if (startDate != null) 'start_date': startDate.toIso8601String(),
-    if (endDate != null) 'end_date': endDate.toIso8601String(),
-    'sum': sum,
-    if (description != null) 'description': description,
-    if (organizationId != null) 'organization_id': organizationId,
-    if (dealtypeId != null) 'deal_type_id': dealtypeId,
-    if (leadId != null) 'lead_id': leadId,
-    if (currencyId != null) 'currency_id': currencyId,
-    // Здесь добавляем deal_custom_fields
-    'deal_custom_fields': customFields?.map((field) {
-      // Изменяем структуру для соответствия новому формату
-      return {
-        'key': field.keys.first,
-        'value': field.values.first,
-      };
-    }).toList() ?? [],
-  };
 
-  final response = await _postRequest('/deal', requestBody);
+// Метод для создания Сделки
+  Future<Map<String, dynamic>> createDeal({
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? organizationId,
+    int? dealtypeId,
+    required int? leadId,
+    required int? currencyId,
+    List<Map<String, String>>? customFields,
+  }) async {
+    final requestBody = {
+      'name': name,
+      'deal_status_id': dealStatusId,
+      if (managerId != null) 'manager_id': managerId,
+      if (startDate != null) 'start_date': startDate.toIso8601String(),
+      if (endDate != null) 'end_date': endDate.toIso8601String(),
+      'sum': sum,
+      if (description != null) 'description': description,
+      if (organizationId != null) 'organization_id': organizationId,
+      if (dealtypeId != null) 'deal_type_id': dealtypeId,
+      if (leadId != null) 'lead_id': leadId,
+      if (currencyId != null) 'currency_id': currencyId,
+      // Здесь добавляем deal_custom_fields
+      'deal_custom_fields': customFields?.map((field) {
+            // Изменяем структуру для соответствия новому формату
+            return {
+              'key': field.keys.first,
+              'value': field.values.first,
+            };
+          }).toList() ??
+          [],
+    };
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'Сделка создана успешно.'};
-  } else if (response.statusCode == 422) {
-    // Обработка ошибки дублирования номера телефона
-    if (response.body.contains('name')) {
-      return {'success': false, 'message': 'Введите хотя бы 3 символа!.'};
+    final response = await _postRequest('/deal', requestBody);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Сделка создана успешно.'};
+    } else if (response.statusCode == 422) {
+      // Обработка ошибки дублирования номера телефона
+      if (response.body.contains('name')) {
+        return {'success': false, 'message': 'Введите хотя бы 3 символа!.'};
+      } else {
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
+      }
     } else {
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Ошибка создания лида: ${response.body}'
       };
     }
-  } else {
-    return {
-      'success': false,
-      'message': 'Ошибка создания лида: ${response.body}'
-    };
   }
-}
 
+  // Метод для обновления сделки
+  Future<Map<String, dynamic>> updateDeal({
+    required int dealId,
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? organizationId,
+    int? dealtypeId,
+    required int? leadId,
+    required int? currencyId,
+    List<Map<String, String>>? customFields,
+  }) async {
+    final response = await _patchRequest('/deal/$dealId', {
+      'name': name,
+      'deal_status_id': dealStatusId,
+      if (managerId != null) 'manager_id': managerId,
+      if (startDate != null) 'start_date': startDate.toIso8601String(),
+      if (endDate != null) 'end_date': endDate.toIso8601String(),
+      'sum': sum,
+      if (description != null) 'description': description,
+      if (organizationId != null) 'organization_id': organizationId,
+      if (dealtypeId != null) 'deal_type_id': dealtypeId,
+      if (leadId != null) 'lead_id': leadId,
+      if (currencyId != null) 'currency_id': currencyId,
+      'deal_custom_fields': customFields?.map((field) {
+            return {
+              'key': field.keys.first,
+              'value': field.values.first,
+            };
+          }).toList() ??
+          [],
+    });
 
-
-  // // Метод для Обновления Лида
-  // Future<Map<String, dynamic>> updateDeal({
-  //   required int dealId,
-  //   required String name,
-  //   required int dealStatusId,
-  //   int? managerId,
-  //   String? description,
-  //   int? organizationId,
-  // }) async {
-  //   final response = await _patchRequest('/deal/$dealId', {
-  //     'name': name,
-  //     'deal_status_id': dealStatusId,
-  //     if (managerId != null) 'manager_id': managerId,
-  //     if (description != null) 'description': description,
-  //     if (organizationId != null) 'organization_id': organizationId,
-  //   });
-
-  //   if (response.statusCode == 200) {
-  //     return {'success': true, 'message': 'Сделка обновлен успешно.'};
-  //   } else if (response.statusCode == 422) {
-  //     if (response.body.contains('name')) {
-  //       return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
-  //     }
-  //     // Другие проверки на ошибки...
-  //     return {
-  //       'success': false,
-  //       'message': 'Неизвестная ошибка: ${response.body}'
-  //     };
-  //   } else {
-  //     return {
-  //       'success': false,
-  //       'message': 'Ошибка обновления лида: ${response.body}'
-  //     };
-  //   }
-  // }
+    // Обработка ответа
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'Сделка обновлена успешно.'};
+    } else if (response.statusCode == 422) {
+      // Дополнительные проверки на ошибочные поля
+      if (response.body.contains('"name"')) {
+        return {
+          'success': false,
+          'message': 'Название должно содержать не менее 3 символов.'
+        };
+      }
+      // Другие возможные проверки...
+      return {
+        'success': false,
+        'message': 'Ошибка валидации данных: ${response.body}'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка обновления сделки: ${response.body}'
+      };
+    }
+  }
 
   // Метод для получения Валюта
   Future<List<Currency>> getCurrency() async {

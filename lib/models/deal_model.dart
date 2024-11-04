@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/currency_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 
 class Deal {
@@ -9,6 +11,8 @@ class Deal {
   final String sum;
   final int statusId;
   final Manager? manager;
+  final Currency? currency;
+  final Lead? lead;
   final List<DealCustomField> dealCustomFields;
 
   Deal({
@@ -20,6 +24,8 @@ class Deal {
     required this.sum,
     required this.statusId,
     this.manager,
+    this.currency,
+    this.lead,
     required this.dealCustomFields,
   });
 
@@ -33,10 +39,11 @@ class Deal {
       sum: json['sum'] ?? '0.00',
       statusId: dealStatusId,
       manager: json['manager'] != null ? Manager.fromJson(json['manager']) : null,
+      currency: json['currency'] != null ? Currency.fromJson(json['currency']) : null,
+      lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
               ?.map((field) => DealCustomField.fromJson(field))
-              .toList() ??
-          [],
+              .toList() ?? [],
     );
   }
 }
@@ -45,13 +52,11 @@ class DealCustomField {
   final int id;
   final String key;
   final String value;
-  final String name;
 
   DealCustomField({
     required this.id,
     required this.key,
     required this.value,
-    required this.name,
   });
 
   factory DealCustomField.fromJson(Map<String, dynamic> json) {
@@ -59,7 +64,6 @@ class DealCustomField {
       id: json['id'] ?? 0,
       key: json['key'] ?? '',
       value: json['value'] ?? '',
-      name: json['name'] ?? '',
     );
   }
 }

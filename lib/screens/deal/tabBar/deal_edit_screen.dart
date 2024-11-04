@@ -179,18 +179,18 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             //   }
                             // }
 
-                            final leadBloc = context.read<DealBloc>();
-                            context.read<DealBloc>().add(FetchDealStatuses());
-                            leadBloc.add(UpdateDeal(
-                              dealId: widget.dealId,
-                              name: titleController.text,
-                              managerId: selectedManager != null
-                                  ? int.parse(selectedManager!)
-                                  : null,
-                              description: descriptionController.text,
-                              dealStatusId: widget.statusId,
-                              organizationId: 1,
-                            ));
+                            // final leadBloc = context.read<DealBloc>();
+                            // context.read<DealBloc>().add(FetchDealStatuses());
+                            // leadBloc.add(UpdateDeal(
+                            //   dealId: widget.dealId,
+                            //   name: titleController.text,
+                            //   managerId: selectedManager != null
+                            //       ? int.parse(selectedManager!)
+                            //       : null,
+                            //   description: descriptionController.text,
+                            //   dealStatusId: widget.statusId,
+                            //   organizationId: 1,
+                            // ));
                           }
                         },
                       ),
