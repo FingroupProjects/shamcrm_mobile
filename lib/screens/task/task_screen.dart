@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
 // import 'package:crm_task_manager/screens/task/tabBar/task_status_add.dart';
 import 'package:flutter/material.dart';
@@ -71,16 +72,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   void _addNewTab() async {
-    // final result = await showDialog<String>(
-    //   context: context,
-    //   builder: (BuildContext context) => CreateStatusDialog(),
-    // );
+    final result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) => CreateStatusDialog(),
+    );
 
-    // if (result != null && result.isNotEmpty) {
-    //   setState(() {
-    //     _tabTitles.add(result);
-    //   });
-    // }
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _tabTitles.add(result);
+      });
+    }
   }
 
   Widget _buildTabButton(int index) {

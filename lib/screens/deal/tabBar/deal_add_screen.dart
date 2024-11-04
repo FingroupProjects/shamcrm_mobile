@@ -55,7 +55,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             context.read<DealBloc>().add(FetchDealStatuses());
           },
         ),
-        title: const Row(
+        name: const Row(
           children: [
             Text(
               'Новая сделка',

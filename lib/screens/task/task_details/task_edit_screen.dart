@@ -34,6 +34,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController selectedUserId = TextEditingController();
+  final TextEditingController selectedProjectId = TextEditingController();
+  final TextEditingController selectedEndDate = TextEditingController();
+  final TextEditingController selectedStartDate = TextEditingController();
+
 
   String? selectedPriority = 'Обычный';
   String? selectedProject;
@@ -360,16 +365,19 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     }
                   }
 
-                  context.read<TaskBloc>().add(
-                    UpdateTask(
-                      taskId: widget.taskId,
-                      name: nameController.text,
-                      description: descriptionController.text,
-                      taskStatusId: widget.statusId,
-                      organizationId: 1,
-                      
-                    ),
-                  );
+                 context.read<TaskBloc>().add(
+      UpdateTask(
+        taskId: widget.taskId,
+        name: nameController.text,
+        statusId: widget.statusId,  
+        priority: selectedPriority,  
+        startDate: startDate,  // Передаем преобразованное значение
+        endDate: endDate,      // Передаем преобразованное значение
+        projectId: int.tryParse(selectedProjectId.text), // Преобразование в int
+        userId: int.tryParse(selectedUserId.text),        // Преобразование в int
+        description: descriptionController.text,
+      ),
+    );
                 }
               },
             ),

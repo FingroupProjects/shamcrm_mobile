@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/manager_model.dart';
 
 class Task {
   final int id;
@@ -29,6 +28,8 @@ class Task {
       
     );
   }
+
+  String? get priority => null;
 }
 
 

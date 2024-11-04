@@ -296,30 +296,69 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: CustomButton(
-              buttonText: 'Добавить',
-              buttonColor: Color(0xff4759FF),
-              textColor: Colors.white,
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final String name = nameController.text;
-                  final String? startDate = startDateController.text.isEmpty
-                      ? null
-                      : startDateController.text;
-                  final String? endDate = endDateController.text.isEmpty
-                      ? null
-                      : endDateController.text;
-                  final String? description = descriptionController.text.isEmpty
-                      ? null
-                      : descriptionController.text;
-                }
-              },
-            ),
+         const SizedBox(width: 16),
+Expanded(
+  child: CustomButton(
+    buttonText: 'Добавить',
+    buttonColor: Color(0xff4759FF),
+    textColor: Colors.white,
+    onPressed: () {
+      if (_formKey.currentState!.validate()) {
+        final String name = nameController.text;
+        DateTime? startDate;
+        DateTime? endDate;
+        
+        // Парсинг дат из текстовых полей
+        if (startDateController.text.isNotEmpty) {
+          try {
+            startDate = DateFormat('dd/MM/yyyy HH:mm').parse(startDateController.text);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Ошибка в дате начала: ${e.toString()}'),
+              ),
+            );
+            return;
+          }
+        }
+
+        if (endDateController.text.isNotEmpty) {
+          try {
+            endDate = DateFormat('dd/MM/yyyy HH:mm').parse(endDateController.text);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Ошибка в дате окончания: ${e.toString()}'),
+              ),
+            );
+            return;
+          }
+        }
+
+        final String? description = descriptionController.text.isEmpty
+            ? null
+            : descriptionController.text;
+
+        context.read<TaskBloc>().add(
+          CreateTask(
+            name: name,
+            statusId: widget.statusId,
+            priority: selectedPriority,
+            startDate: startDate,
+            endDate: endDate,
+            projectId: selectedProject != null ? int.parse(selectedProject!) : null,
+            userId: selectedUser != null ? int.parse(selectedUser!) : null,
+            description: description,
           ),
-        ],
-      ),
-    );
-  }
-}
+        );
+      }
+    },
+  ),
+),
+
+],));}}
+        
+    
+  
+
+  

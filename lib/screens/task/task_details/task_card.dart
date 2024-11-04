@@ -7,13 +7,13 @@ import 'package:intl/intl.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
-  final String title;
+  final String name;
   final int statusId;
   final VoidCallback onStatusUpdated;
 
   TaskCard({
     required this.task,
-    required this.title,
+    required this.name,
     required this.statusId,
     required this.onStatusUpdated,
   });
@@ -28,21 +28,13 @@ class _TaskCardState extends State<TaskCard> {
   @override
   void initState() {
     super.initState();
-    dropdownValue = widget.title;
+    dropdownValue = widget.name;
   }
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
     return DateFormat('dd-MM-yyyy').format(dateTime);
   }
-
-  final Map<String, String> sourceIcons = {
-    'telegram_account': 'assets/icons/leads/telegram.png',
-    'telegram_bot': 'assets/icons/leads/telegram.png',
-    'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/facebook.png',
-    'instagram': 'assets/icons/leads/instagram.png',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +50,6 @@ class _TaskCardState extends State<TaskCard> {
               endDate: widget.task.endDate,
               taskStatus: dropdownValue,
               statusId: widget.statusId,
-             
               description: widget.task.description,
             ),
           ),
@@ -66,15 +57,39 @@ class _TaskCardState extends State<TaskCard> {
       },
       child: Container(
         padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: TaskCardStyles.taskCardDecoration,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.task.name ?? 'Без имени',
-              style: TaskCardStyles.titleStyle,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.task.name ?? 'Без имени',
+                    style: TaskCardStyles.titleStyle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(widget.task.priority),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _getPriorityText(widget.task.priority),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 12),
             Row(
               children: [
                 const Text(
@@ -83,90 +98,121 @@ class _TaskCardState extends State<TaskCard> {
                     fontSize: 14,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w400,
-                    color: Color(0xfff99A4BA),
+                    color: Color(0xff99A4BA),
                   ),
                 ),
                 GestureDetector(
                   onTap: () {
-                    DropdownBottomSheet(context, dropdownValue,
-                        (String newValue) {
-                      setState(() {
-                        dropdownValue = newValue;
-                      });
-                      widget.onStatusUpdated();
-                    }, widget.task);
+                    DropdownBottomSheet(
+                      context,
+                      dropdownValue,
+                      (String newValue) {
+                        setState(() {
+                          dropdownValue = newValue;
+                        });
+                        widget.onStatusUpdated();
+                      },
+                      widget.task,
+                    );
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Color(0xff1E2E52),
-                          width: 0.2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xff1E2E52),
+                        width: 0.2,
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      child: Row(
-                        children: [
-                          Text(
-                            dropdownValue,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Image.asset(
-                            'assets/icons/tabBar/dropdown.png',
-                            width: 20,
-                            height: 20,
-                          ),
-                        ],
-                      ),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Column(
-              children: [
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Row(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.asset(
-                          'assets/icons/tabBar/date.png',
-                          width: 17,
-                          height: 17,
-                        ),
-                        const SizedBox(width: 4),
                         Text(
-                          ' ${formatDate(widget.task.startDate ?? 'Неизвестно')}',
+                          dropdownValue,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
+                            color: Color(0xff1E2E52),
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        Image.asset(
+                          'assets/icons/tabBar/dropdown.png',
+                          width: 20,
+                          height: 20,
                         ),
                       ],
                     ),
-                    const Spacer(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Row(
+                  children: [
+                    Image.asset(
+                      'assets/icons/tabBar/date.png',
+                      width: 17,
+                      height: 17,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      formatDate(widget.task.startDate ?? DateTime.now().toString()),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
                   ],
                 ),
+                const SizedBox(width: 16),
+                if (widget.task.endDate != null)
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/icons/tabBar/date.png',
+                        width: 17,
+                        height: 17,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        formatDate(widget.task.endDate!),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getPriorityColor(String? priority) {
+    switch (priority?.toLowerCase()) {
+      case 'критический':
+        return Colors.red;
+      case 'высокий':
+        return Colors.orange;
+      case 'обычный':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getPriorityText(String? priority) {
+    return priority ?? 'Обычный';
   }
 }

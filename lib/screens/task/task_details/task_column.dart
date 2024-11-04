@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 // import 'package:crm_task_manager/screens/task/tabBar/task_add_screen.dart';
 // import 'package:crm_task_manager/screens/task/tabBar/task_card.dart';
 import 'package:flutter/material.dart';
@@ -55,16 +56,16 @@ class TaskColumn extends StatelessWidget {
                         return Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
-                            // child: TaskCard(
-                            //   task: tasks[index],
-                            //   title: title,
-                            //   statusId: statusId,
-                            //   onStatusUpdated: () {
-                            //     context
-                            //         .read<TaskBloc>()
-                            //         .add(FetchTasks(statusId));
-                            //   },
-                            // )
+                            child: TaskCard(
+                              task: tasks[index],
+                              name: name,
+                              statusId: statusId,
+                              onStatusUpdated: () {
+                                context
+                                    .read<TaskBloc>()
+                                    .add(FetchTasks(statusId));
+                              },
+                            )
                             );
                       },
                     ),

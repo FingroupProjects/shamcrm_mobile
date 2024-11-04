@@ -165,7 +165,7 @@ class ApiService {
       final loginResponse = LoginResponse.fromJson(data);
 
       // Сохраняем токен после успешного логина
-      await _saveToken(loginResponse.token!);
+      await _saveToken(loginResponse.token);
 
       return loginResponse;
     } else {
@@ -732,7 +732,7 @@ class ApiService {
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-// Метод для получения Сделок
+// Метод для получения Задачи
   Future<List<Task>> getTasks(int taskStatusId,
       {int page = 1, int perPage = 20}) async {
     final response = await _getRequest(
@@ -751,7 +751,7 @@ class ApiService {
       throw Exception('Ошибка загрузки задач: ${response.body}');
     }
   }
-  // Метод для получения статусов Сделок
+  // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final response = await _getRequest('/task-status');
 
@@ -768,7 +768,7 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
-//Обновление статуса карточки Сделки  в колонке
+//Обновление статуса карточки задачи  в колонке
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
     final response = await _postRequest('/task/changeStatus/$taskId', {
       'position': position,
@@ -776,27 +776,148 @@ class ApiService {
     });
 
     if (response.statusCode == 200) {
-      print('Статус сделки обновлен успешно.');
+      print('Статус задачи обновлен успешно.');
     } else {
-      throw Exception('Ошибка обновления статуса сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
     }
   }
+// Метод для Создания Задачи
+  Future<Map<String, dynamic>> createTask({
+  required String name,
+  required int statusId,
+  String? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  int? userId,
+  String? description,
+}) async {
+  final response = await _postRequest('/task', {
+    'name': name,
+    'status_id': statusId,
+    if (priority != null) 'priority': priority,
+    if (startDate != null) 'start_date': startDate.toIso8601String(),
+    if (endDate != null) 'end_date': endDate.toIso8601String(),
+    if (projectId != null) 'project_id': projectId,
+    if (userId != null) 'user_id': userId,
+    if (description != null) 'description': description,
+  });
 
-  // // Метод для Создания Задачи
-  // Future<Map<String, dynamic>> createTask({
-  //   required String name,
-  //   required int taskStatusId,
-  //   DateTime? startDate,
-  //   DateTime? endDate,
-  //   String? description,
-  // }) async {
-  //   final response = await _postRequest('/task', {
-  //     'name': name,
-  //     'task_status_id': taskStatusId,
-  //     if (startDate != null) 'startDate': startDate.toIso8601String(),
-  //     if (endDate != null) 'endDate': endDate.toIso8601String(),
-  //     if (description != null) 'description': description,
-  //   });
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Задача создана успешно.'};
+  } else if (response.statusCode == 422) {
+    // Обработка ошибок валидации
+    if (response.body.contains('name')) {
+      return {
+        'success': false,
+        'message': 'Название задачи должно содержать минимум 3 символа.'
+      };
+    }
+    if (response.body.contains('start_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты начала.'
+      };
+    }
+    if (response.body.contains('end_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты окончания.'
+      };
+    }
+    if (response.body.contains('project_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный проект не существует.'
+      };
+    }
+    if (response.body.contains('user_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный пользователь не существует.'
+      };
+    }
+    
+    return {
+      'success': false,
+      'message': 'Неизвестная ошибка валидации: ${response.body}'
+    };
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка создания задачи: ${response.body}'
+    };
+  }
+}
+
+Future<Map<String, dynamic>> updateTask({
+  required int taskId,
+  required String name,
+  required int statusId,
+  String? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  int? userId,
+  String? description,
+}) async {
+  final response = await _patchRequest('/task/$taskId', {
+    'name': name,
+    'status_id': statusId,
+    if (priority != null) 'priority': priority,
+    if (startDate != null) 'start_date': startDate.toIso8601String(),
+    if (endDate != null) 'end_date': endDate.toIso8601String(),
+    if (projectId != null) 'project_id': projectId,
+    if (userId != null) 'user_id': userId,
+    if (description != null) 'description': description,
+  });
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'Задача обновлена успешно.'};
+  } else if (response.statusCode == 422) {
+    // Обработка ошибок валидации
+    if (response.body.contains('name')) {
+      return {
+        'success': false,
+        'message': 'Название задачи должно содержать минимум 3 символа.'
+      };
+    }
+    if (response.body.contains('start_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты начала.'
+      };
+    }
+    if (response.body.contains('end_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты окончания.'
+      };
+    }
+    if (response.body.contains('project_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный проект не существует.'
+      };
+    }
+    if (response.body.contains('user_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный пользователь не существует.'
+      };
+    }
+    
+    return {
+      'success': false,
+      'message': 'Неизвестная ошибка валидации: ${response.body}'
+    };
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка обновления задачи: ${response.body}'
+    };
+  }
+}
 
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
