@@ -4,12 +4,14 @@ import 'package:intl/intl.dart';
 class CustomTextFieldDate extends StatelessWidget {
   final TextEditingController controller;
   final String label;
-  final bool withTime; 
+  final bool withTime;
+  final String? Function(String?)? validator;
 
   CustomTextFieldDate({
     required this.controller,
     required this.label,
-    this.withTime = false, 
+    this.withTime = false,
+    this.validator,
   });
 
   Future<void> _selectDate(BuildContext context) async {
@@ -83,8 +85,9 @@ class CustomTextFieldDate extends StatelessWidget {
         GestureDetector(
           onTap: () => _selectDate(context),
           child: AbsorbPointer(
-            child: TextField(
+            child: TextFormField(
               controller: controller,
+              validator: validator, // Use the validator here
               decoration: InputDecoration(
                 hintText: withTime ? '__/__/____ __:__' : '__/__/____',
                 hintStyle: TextStyle(fontSize: 12),

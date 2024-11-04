@@ -42,8 +42,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void initState() {
     super.initState();
     context.read<ManagerBloc>().add(FetchManagers());
-    // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
-    context.read<LeadBloc>().add(FetchAllLeads()); 
+    context.read<LeadBloc>().add(FetchAllLeads());
     context.read<CurrencyBloc>().add(FetchCurrencies());
   }
 
@@ -155,12 +154,24 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         controller: startDateController,
                         label: 'Дата начало',
                         withTime: false,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'Дата окончание',
                         withTime: false,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -274,12 +285,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                       ? int.parse(selectedCurrency!)
                                       : null,
                                   organizationId: 1,
+                                  dealtypeId: 1,
                                   startDate: startDate,
                                   endDate: endDate,
                                   sum: sum,
                                   description: description,
                                 ));
-                          } 
+                          }
                           // else {
                           //   ScaffoldMessenger.of(context).showSnackBar(
                           //     SnackBar(
