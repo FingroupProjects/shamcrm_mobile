@@ -142,37 +142,42 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-// Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
-//   emit(DealLoading());
+Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
+  emit(DealLoading());
 
-//   // Проверка подключения к интернету
-//   if (!await _checkInternetConnection()) {
-//     emit(DealError('Нет подключения к интернету'));
-//     return;
-//   }
+  if (!await _checkInternetConnection()) {
+    emit(DealError('Нет подключения к интернету'));
+    return;
+  }
 
-//   try {
-//     // Вызов метода обновления лида
-//     final result = await apiService.updateDeal(
-//       dealId: event.dealId,
-//       name: event.name,
-//       dealStatusId: event.dealStatusId,
-//       managerId: event.managerId,
-//       description: event.description,
-//       organizationId: event.organizationId,
-//     );
+  try {
+    final result = await apiService.updateDeal(
+      dealId: event.dealId,
+      name: event.name,
+      dealStatusId: event.dealStatusId,
+      managerId: event.managerId,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      sum: event.sum,
+      description: event.description,
+      organizationId: event.organizationId,
+      dealtypeId: event.dealtypeId,
+      leadId: event.leadId,
+      currencyId: event.currencyId,
+      customFields: event.customFields,
+    );
 
-//     // Если успешно, то обновляем состояние
-//     if (result['success']) {
-//       emit(DealSuccess('Лид обновлен успешно'));
-//       add(FetchDeal(event.dealStatusId)); // Обновляем список лидов
-//     } else {
-//       emit(DealError(result['message']));
-//     }
-//   } catch (e) {
-//     emit(DealError('Ошибка обновления лида: ${e.toString()}'));
-//   }
-// }
+    if (result['success']) {
+      emit(DealSuccess('Сделка обновлена успешно'));
+      add(FetchDeals(event.dealStatusId)); 
+    } else {
+      emit(DealError(result['message']));
+    }
+  } catch (e) {
+    emit(DealError('Ошибка обновления сделки: ${e.toString()}'));
+  }
+}
+
 
   Future<bool> _checkInternetConnection() async {
     try {

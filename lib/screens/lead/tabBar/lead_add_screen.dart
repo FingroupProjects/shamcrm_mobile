@@ -1,12 +1,18 @@
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_event.dart';
+import 'package:crm_task_manager/bloc/project/project_bloc.dart';
+import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -37,6 +43,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   String? selectedRegion;
   String? selectedManager;
+  String? selectedProject;
+  String? selectedUser;
+
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
 
@@ -45,6 +54,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     super.initState();
     context.read<RegionBloc>().add(FetchRegions());
     context.read<ManagerBloc>().add(FetchManagers());
+    context.read<ProjectBloc>().add(FetchProjects());
+    context.read<UserTaskBloc>().add(FetchUsers());
+
+
   }
 
   @override
@@ -154,6 +167,24 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         onChanged: (String? newValue) {
                           setState(() {
                             selectedManager = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      ProjectWidget(
+                        selectedProject: selectedProject,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedProject = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      UserWidget(
+                        selectedUser: selectedUser,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedUser = newValue;
                           });
                         },
                       ),

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -14,6 +16,8 @@ class TaskEditScreen extends StatefulWidget {
   final String taskStatus;
   final String? description;
   final int statusId;
+  final String? user;
+  final String? project;
 
   const TaskEditScreen({
     Key? key,
@@ -22,6 +26,8 @@ class TaskEditScreen extends StatefulWidget {
     required this.taskStatus,
     required this.statusId,
     this.description,
+    this.project,
+    this.user,
   }) : super(key: key);
 
   @override
@@ -141,10 +147,24 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         controller: endDateController,
                         label: 'До',
                       ),
-                      const SizedBox(height: 16),
-                      _buildProjectDropdown(),
-                      const SizedBox(height: 16),
-                      _buildUserDropdown(),
+                      const SizedBox(height: 8),
+                      ProjectWidget(
+                        selectedProject: selectedProject,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedProject = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      UserWidget(
+                        selectedUser: selectedUser,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedUser = newValue;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: descriptionController,
@@ -227,40 +247,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     );
   }
 
-  Widget _buildProjectDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Проект',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: selectedProject,
-            hint: const Text('Выберите проект'),
-            items: [], // Здесь добавьте ваши элементы проекта
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedProject = newValue;
-              });
-            },
-            decoration: _inputDecoration(),
-          ),
-        ),
-      ],
-    );
-  }
+ 
+  
 
   Widget _buildUserDropdown() {
     return Column(

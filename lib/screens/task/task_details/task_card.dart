@@ -10,12 +10,22 @@ class TaskCard extends StatefulWidget {
   final String name;
   final int statusId;
   final VoidCallback onStatusUpdated;
+  final String? project;
+  final int? projectId;
+  final int? user;
+  final int? userId;
+
+
 
   TaskCard({
     required this.task,
     required this.name,
     required this.statusId,
     required this.onStatusUpdated,
+    this.project,
+    this.projectId,
+    this.user,
+    this.userId
   });
 
   @override
@@ -48,6 +58,7 @@ class _TaskCardState extends State<TaskCard> {
               taskName: widget.task.name ?? 'Без имени',
               startDate: widget.task.startDate,
               endDate: widget.task.endDate,
+              
               taskStatus: dropdownValue,
               statusId: widget.statusId,
               description: widget.task.description,
@@ -208,7 +219,7 @@ class _TaskCardState extends State<TaskCard> {
       case 'обычный':
         return Colors.green;
       default:
-        return Colors.grey;
+        return Colors.green;
     }
   }
 

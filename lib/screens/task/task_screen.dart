@@ -3,7 +3,6 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
-// import 'package:crm_task_manager/screens/task/tabBar/task_status_add.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
@@ -110,13 +109,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (state is TaskLoaded) {
           setState(() {
             _tabTitles =
-                state.taskStatuses.map((status) => status.name).toList();
+                state.taskStatuses.map((status) => status.taskStatus.name).toList();
             _tabController =
                 TabController(length: _tabTitles.length, vsync: this);
             _tabController.addListener(() {
               setState(() {
-                _currentTabIndex =
-                    _tabController.index; 
+                _currentTabIndex = _tabController.index;
               });
             });
 
@@ -141,8 +139,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 ? TabBarView(
                     controller: _tabController,
                     children: List.generate(_tabTitles.length, (index) {
-                      final statusId = state.taskStatuses[index].id;
-                      final name = state.taskStatuses[index].name;
+                      final taskStatus = state.taskStatuses[index];
+                      final statusId = taskStatus.id;
+                      final name = taskStatus.taskStatus.name;
 
                       return TaskColumn(statusId: statusId, name: name);
                     }),

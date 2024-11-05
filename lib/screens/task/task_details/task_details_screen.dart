@@ -12,8 +12,11 @@ class TaskDetailsScreen extends StatefulWidget {
   String taskName;
   String taskStatus;
   int statusId;
-  String? manager;
-  int? managerId;
+  String? project;
+  int? projectId;
+  String? user;
+  int? userId;
+  String? projectName;
   String? description;
   String? startDate;
   String? endDate;
@@ -24,12 +27,15 @@ class TaskDetailsScreen extends StatefulWidget {
     required this.taskName,
     required this.taskStatus,
     required this.statusId,
-    this.manager,
-    this.managerId,
+    this.project,
+    this.projectId,
+    this.user,
+    this.userId,
     this.description,
     this.startDate,
     this.endDate,
     this.sum,
+    this.projectName,
   });
 
   @override
@@ -46,18 +52,17 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   void _updateDetails() {
-  details = [
-    {'label': 'ID Задачи:', 'value': widget.taskId},
-    {'label': 'Название задачи:', 'value': widget.taskName},
-    {'label': 'До:', 'value': widget.endDate ?? 'Не указано'},
-    {'label': 'От:', 'value': widget.startDate ?? 'Не указано'},
-    {'label': 'Статус:', 'value': widget.taskStatus ?? 'Не указано'},
-    // {'label': 'Проект:', 'value': widget.projectName ?? 'Не указано'},
-    // {'label': 'Пользователь:', 'value': widget.user ?? 'Не указано'},
-    {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
-  ];
-}
-
+    details = [
+      {'label': 'ID Задачи:', 'value': widget.taskId},
+      {'label': 'Название задачи:', 'value': widget.taskName},
+      {'label': 'До:', 'value': widget.endDate ?? 'Не указано'},
+      {'label': 'От:', 'value': widget.startDate ?? 'Не указано'},
+      {'label': 'Статус:', 'value': widget.taskStatus ?? 'Не указано'},
+      {'label': 'Проект:', 'value': widget.project ?? 'Не указано'},
+      {'label': 'Пользователь:', 'value': widget.user ?? 'Не указано'},
+      {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +124,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   height: 24,
                 ),
                 onPressed: () async {
-
                   final updatedTask = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -127,6 +131,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         taskId: int.parse(widget.taskId),
                         taskName: widget.taskName,
                         taskStatus: widget.taskStatus,
+                        project: widget.projectId?.toString(),
+                        user: widget.userId?.toString(),
                         statusId: widget.statusId,
                         description: widget.description,
                       ),
@@ -140,7 +146,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       widget.taskName = updatedTask['taskName'];
                       widget.taskStatus = updatedTask['taskStatus'];
                       widget.statusId = updatedTask['statusId'];
-                     
+                      widget.projectId = updatedTask['projectId'];
+                      widget.user = updatedTask['user'];
+                      widget.userId = updatedTask['userId'];
+                      widget.project = updatedTask['project'];
+
                       widget.description = updatedTask['description'];
                     });
                     _updateDetails();
