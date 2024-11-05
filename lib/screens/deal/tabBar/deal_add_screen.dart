@@ -1,11 +1,19 @@
+import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
+import 'package:crm_task_manager/bloc/currency/currency_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/manager_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,11 +37,35 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedManager;
+  String? selectedLead;
+  String? selectedCurrency;
+  List<CustomField> customFields = [];
 
   @override
   void initState() {
     super.initState();
     context.read<ManagerBloc>().add(FetchManagers());
+    context.read<LeadBloc>().add(FetchAllLeads());
+    context.read<CurrencyBloc>().add(FetchCurrencies());
+  }
+
+  void _addCustomField(String fieldName) {
+    setState(() {
+      customFields.add(CustomField(fieldName: fieldName));
+    });
+  }
+
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddCustomFieldDialog(
+          onAddField: (fieldName) {
+            _addCustomField(fieldName);
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -113,6 +145,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      LeadWidget(
+                        selectedLead: selectedLead,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedLead = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       ManagerWidget(
                         selectedManager: selectedManager,
                         onChanged: (String? newValue) {
@@ -122,16 +163,37 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      CurrencyWidget(
+                        selectedCurrency: selectedCurrency,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedCurrency = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'Дата начало',
                         withTime: false,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'Дата окончание',
                         withTime: false,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -152,7 +214,29 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                      CustomButton(
+                        buttonText: 'Добавить поле',
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
+                      ),
                     ],
                   ),
                 ),
@@ -180,7 +264,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         buttonColor: Color(0xff4759FF),
                         textColor: Colors.white,
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
+                          if (_formKey.currentState!.validate() &&
+                              selectedManager != null &&
+                              selectedLead != null) {
                             final String name = titleController.text;
 
                             final String? startDateString =
@@ -232,17 +318,32 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                 return;
                               }
                             }
+                            // Создание сделки
+                            List<Map<String, String>> customFieldMap = [];
+                            for (var field in customFields) {
+                              String fieldName = field.fieldName.trim();
+                              String fieldValue = field.controller.text.trim();
+                              if (fieldName.isNotEmpty &&
+                                  fieldValue.isNotEmpty) {
+                                customFieldMap.add({fieldName: fieldValue});
+                              }
+                            }
+
                             context.read<DealBloc>().add(CreateDeal(
                                   name: name,
                                   dealStatusId: widget.statusId,
-                                  managerId: selectedManager != null
-                                      ? int.parse(selectedManager!)
+                                  managerId: int.parse(selectedManager!),
+                                  leadId: int.parse(selectedLead!),
+                                  currencyId: selectedCurrency != null
+                                      ? int.parse(selectedCurrency!)
                                       : null,
                                   organizationId: 1,
+                                  dealtypeId: 1,
                                   startDate: startDate,
                                   endDate: endDate,
                                   sum: sum,
                                   description: description,
+                                  customFields: customFieldMap,
                                 ));
                           }
                         },
@@ -257,4 +358,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
       ),
     );
   }
+}
+
+class CustomField {
+  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+
+  CustomField({required this.fieldName});
 }

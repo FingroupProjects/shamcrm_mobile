@@ -1,27 +1,26 @@
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_state.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
 
-class ManagerWidget extends StatefulWidget {
-  final String? selectedManager;
+class LeadWidget extends StatefulWidget {
+  final String? selectedLead;
   final ValueChanged<String?> onChanged;
 
-  ManagerWidget({required this.selectedManager, required this.onChanged});
+  LeadWidget({required this.selectedLead, required this.onChanged});
 
   @override
-  _ManagerWidgetState createState() => _ManagerWidgetState();
+  _LeadWidgetState createState() => _LeadWidgetState();
 }
 
-class _ManagerWidgetState extends State<ManagerWidget> {
+class _LeadWidgetState extends State<LeadWidget> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ManagerBloc, ManagerState>(
+    return BlocBuilder<LeadBloc, LeadState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
-
-        if (state is ManagerLoading) {
+        if (state is LeadLoading) {
           dropdownItems = [
             DropdownMenuItem(
               value: null,
@@ -36,37 +35,19 @@ class _ManagerWidgetState extends State<ManagerWidget> {
               ),
             ),
           ];
-        } else if (state is ManagerLoaded) {
-          if (state.managers.isEmpty) {
-            dropdownItems = [
-              DropdownMenuItem(
-                value: null,
-                child: Text(
-                  'Нет менеджеров',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-            ];
-          } else {
-            dropdownItems = state.managers.map<DropdownMenuItem<String>>((Manager manager) {
-              return DropdownMenuItem<String>(
-                value: manager.id.toString(),
-                child: Text(manager.name),
-              );
-            }).toList();
-          }
+        } else if (state is LeadDataLoaded) {
+          dropdownItems = state.leads.map<DropdownMenuItem<String>>((Lead lead) {
+            return DropdownMenuItem<String>(
+              value: lead.id.toString(),
+              child: Text(lead.name),
+            );
+          }).toList();
         }
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Менеджер',
+              'Лиды',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -81,11 +62,11 @@ class _ManagerWidgetState extends State<ManagerWidget> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedManager)
-                    ? widget.selectedManager
+                value: dropdownItems.any((item) => item.value == widget.selectedLead)
+                    ? widget.selectedLead
                     : null,
                 hint: const Text(
-                  'Выберите менеджера',
+                  'Выберите лида',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -122,6 +103,7 @@ class _ManagerWidgetState extends State<ManagerWidget> {
                   width: 16,
                   height: 16,
                 ),
+                menuMaxHeight: 300,
               ),
             ),
           ],

@@ -33,30 +33,51 @@ class Task {
 }
 
 
-
-
 class TaskStatus {
   final int id;
   final String name;
-  // final String needs_permission;
-  final String? createdAt;
-  final String? updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
-  TaskStatus( {
+  TaskStatus({
     required this.id,
     required this.name,
-    // required this.needs_permission,
     this.createdAt,
     this.updatedAt,
-    
   });
 
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
     return TaskStatus(
-      id: json['id'] is int ? json['id'] : 0,
+      id: json['id'],
       name: json['name'] is String ? json['name'] : 'Без имени',
-      // needs_permission: json['needs_permission'] is String ? json['needs_permission'] : null,
-    
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
     );
   }
 }
+
+class Project {
+  final int id;
+  final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  Project({
+    required this.id,
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  factory Project.fromJson(Map<String, dynamic> json) {
+    return Project(
+      id: json['id'],
+      name: json['name'],
+      startDate: DateTime.parse(json['start_date']),
+      endDate: DateTime.parse(json['end_date']),
+    );
+  }
+}
+
+
+

@@ -16,14 +16,13 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<FetchMoreDeals>(_fetchMoreDeals);
     on<CreateDealStatus>(_createDealStatus);
     // on<UpdateDeal>(_updateDeal);
-
   }
 
   Future<void> _fetchDealStatuses(
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    await Future.delayed(Duration(milliseconds: 500)); // Небольшая задержка
+    await Future.delayed(Duration(milliseconds: 800));
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
@@ -42,7 +41,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-  // Метод для загрузки лидов
+  // Метод для загрузки сделок
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     emit(DealLoading());
     if (!await _checkInternetConnection()) {
@@ -74,8 +73,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       final deals = await apiService.getDeals(event.statusId,
           page: event.currentPage + 1);
       if (deals.isEmpty) {
-        allDealsFetched = true; // Если пришли пустые данные, устанавливаем флаг
-        return; // Выходим, так как данных больше нет
+        allDealsFetched = true;
+        return;
       }
       if (state is DealDataLoaded) {
         final currentState = state as DealDataLoaded;
@@ -87,7 +86,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-   Future<void> _createDealStatus(
+  Future<void> _createDealStatus(
       CreateDealStatus event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
@@ -102,7 +101,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
-        add(FetchDealStatuses()); 
+        add(FetchDealStatuses());
       } else {
         emit(DealError(result['message']));
       }
@@ -113,42 +112,36 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
   Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
-
-    // Проверка подключения к интернету
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
       return;
     }
-
     try {
-      // Вызов метода создания лида
       final result = await apiService.createDeal(
         name: event.name,
         dealStatusId: event.dealStatusId,
         managerId: event.managerId,
         startDate: event.startDate,
         endDate: event.endDate,
-        sum:event.sum,
+        sum: event.sum,
         description: event.description,
         organizationId: event.organizationId,
+        dealtypeId: event.dealtypeId,
+        leadId: event.leadId,
+        currencyId: event.currencyId,
+        customFields: event.customFields,
       );
-
-      // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(DealSuccess('Сделка создан успешно'));
+        emit(DealSuccess('Сделка создана успешно'));
         add(FetchDeals(event.dealStatusId));
       } else {
-        // Если есть ошибка, отображаем сообщение об ошибке
         emit(DealError(result['message']));
       }
     } catch (e) {
-      // Логирование ошибки
       emit(DealError('Ошибка создания сделки: ${e.toString()}'));
     }
   }
 
- 
-  
 // Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
 //   emit(DealLoading());
 
@@ -180,8 +173,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 //     emit(DealError('Ошибка обновления лида: ${e.toString()}'));
 //   }
 // }
-
- 
 
   Future<bool> _checkInternetConnection() async {
     try {

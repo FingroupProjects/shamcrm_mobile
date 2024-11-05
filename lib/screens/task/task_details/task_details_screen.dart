@@ -5,6 +5,8 @@ import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'dropdown_history_task.dart';
+
 class TaskDetailsScreen extends StatefulWidget {
   final String taskId;
   String taskName;
@@ -44,20 +46,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   void _updateDetails() {
-    details = [
-      {'label': 'ID Задачи:', 'value': widget.taskId},
-      {'label': 'Имя задачи:', 'value': widget.taskName},
-      // {'label': 'Статус:', 'value': widget.taskStatus},
-      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
-      {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'Клиент:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'Валюта:', 'value': widget.manager ?? 'Не указано'},
-      {'label': 'Дата начало:', 'value': widget.startDate ?? 'Не указано'},
-      {'label': 'Дата окончание:', 'value': widget.endDate ?? 'Не указано'},
-      // {'label': 'Сумма:', 'value': widget.sum ?? 'Не указано'},
-      {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
-    ];
-  }
+  details = [
+    {'label': 'ID Задачи:', 'value': widget.taskId},
+    {'label': 'Название задачи:', 'value': widget.taskName},
+    {'label': 'До:', 'value': widget.endDate ?? 'Не указано'},
+    {'label': 'От:', 'value': widget.startDate ?? 'Не указано'},
+    {'label': 'Статус:', 'value': widget.taskStatus ?? 'Не указано'},
+    // {'label': 'Проект:', 'value': widget.projectName ?? 'Не указано'},
+    // {'label': 'Пользователь:', 'value': widget.user ?? 'Не указано'},
+    {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
+  ];
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -70,14 +70,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: _buildAppBar(context, 'Просмотр Сделки'),
+        appBar: _buildAppBar(context, 'Просмотр Задачи'),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
               _buildDetailsList(),
               const SizedBox(height: 16),
-              // ActionHistoryWidget(taskId: int.parse(widget.taskId)),
+              ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
             ],
           ),
         ),

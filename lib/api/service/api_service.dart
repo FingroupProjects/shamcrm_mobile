@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
+import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
@@ -177,16 +179,42 @@ class ApiService {
   //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
   // Метод для получения лидов
-  Future<List<Lead>> getLeads(int leadStatusId,
+  // Future<List<Lead>> getLeads(int leadStatusId,
+  //     {int page = 1, int perPage = 20}) async {
+  //   final response = await _getRequest(
+  //       '/lead?lead_status_id=$leadStatusId&page=$page&per_page=$perPage');
+
+  //   if (response.statusCode == 200) {
+  //     final data = json.decode(response.body);
+  //     if (data['result']['data'] != null) {
+  //       return (data['result']['data'] as List)
+  //           .map((json) => Lead.fromJson(json, leadStatusId))
+  //           .toList();
+  //     } else {
+  //       throw Exception('Нет данных о лидах в ответе');
+  //     }
+  //   } else {
+  //     throw Exception('Ошибка загрузки лидов: ${response.body}');
+  //   }
+  // }
+
+    // Метод для получения лидов
+  Future<List<Lead>> getLeads(int? leadStatusId,
       {int page = 1, int perPage = 20}) async {
-    final response = await _getRequest(
-        '/lead?lead_status_id=$leadStatusId&page=$page&per_page=$perPage');
+    String path = '/lead';
+    if (leadStatusId != null) {
+      path += '?lead_status_id=$leadStatusId&page=$page&per_page=$perPage';
+    } else {
+      path += '?page=$page&per_page=$perPage';
+    }
+
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
         return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId))
+            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();
       } else {
         throw Exception('Нет данных о лидах в ответе');
@@ -613,7 +641,7 @@ class ApiService {
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
       String title, String color) async {
-    final response = await _postRequest('/deal-status', {
+    final response = await _postRequest('/deal/statuses', {
       'title': title,
       'color': color,
     });
@@ -641,57 +669,65 @@ class ApiService {
       throw Exception('Ошибка обновления статуса сделки: ${response.body}');
     }
   }
+Future<Map<String, dynamic>> createDeal({
+  required String name,
+  required int dealStatusId,
+  int? managerId,
+  DateTime? startDate,
+  DateTime? endDate,
+  required String sum,
+  String? description,
+  int? organizationId,
+  int? dealtypeId,
+  int? leadId,
+  int? currencyId,
+  List<Map<String, String>>? customFields,
+}) async {
+  final requestBody = {
+    'name': name,
+    'deal_status_id': dealStatusId,
+    if (managerId != null) 'manager_id': managerId,
+    if (startDate != null) 'start_date': startDate.toIso8601String(),
+    if (endDate != null) 'end_date': endDate.toIso8601String(),
+    'sum': sum,
+    if (description != null) 'description': description,
+    if (organizationId != null) 'organization_id': organizationId,
+    if (dealtypeId != null) 'deal_type_id': dealtypeId,
+    if (leadId != null) 'lead_id': leadId,
+    if (currencyId != null) 'currency_id': currencyId,
+    // Здесь добавляем deal_custom_fields
+    'deal_custom_fields': customFields?.map((field) {
+      // Изменяем структуру для соответствия новому формату
+      return {
+        'key': field.keys.first,
+        'value': field.values.first,
+      };
+    }).toList() ?? [],
+  };
 
-  // Метод для Создания Лида
-  Future<Map<String, dynamic>> createDeal({
-    required String name,
-    required int dealStatusId,
-    int? managerId,
-    DateTime? startDate,
-    DateTime? endDate,
-    required String sum,
-    String? description,
-    int? organizationId,
-  }) async {
-    final response = await _postRequest('/deal', {
-      'name': name,
-      'deal_status_id': dealStatusId,
-      if (managerId != null) 'manager_id': managerId,
-      if (startDate != null) 'startDate': startDate.toIso8601String(),
-      if (endDate != null) 'endDate': endDate.toIso8601String(),
-      'sum': sum,
-      if (description != null) 'description': description,
-      if (organizationId != null) 'organization_id': organizationId,
-    });
+  final response = await _postRequest('/deal', requestBody);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Сделка создан успешно.'};
-    } else if (response.statusCode == 422) {
-      // Обработка ошибки дублирования номера телефона
-      if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
-      }
-      // Обработка ошибки дублирования логина Instagram
-      // else if (response.body.contains('insta_login')) {
-      //   return {
-      //     'success': false,
-      //     'message': 'Этот логин Instagram уже используется.'
-      //   };
-      // }
-      // Другие проверки...
-      else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
-        };
-      }
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Сделка создана успешно.'};
+  } else if (response.statusCode == 422) {
+    // Обработка ошибки дублирования номера телефона
+    if (response.body.contains('name')) {
+      return {'success': false, 'message': 'Введите хотя бы 3 символа!.'};
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания лида: ${response.body}'
+        'message': 'Неизвестная ошибка: ${response.body}'
       };
     }
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка создания лида: ${response.body}'
+    };
   }
+}
+
+
 
   // // Метод для Обновления Лида
   // Future<Map<String, dynamic>> updateDeal({
@@ -729,6 +765,26 @@ class ApiService {
   //   }
   // }
 
+  // Метод для получения Валюта
+  Future<List<Currency>> getCurrency() async {
+    final response = await _getRequest('/currency');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data');
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((currency) => Currency.fromJson(currency))
+            .toList();
+      } else {
+        throw Exception('Валюты не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
@@ -752,6 +808,8 @@ class ApiService {
     }
   }
   // Метод для получения статусов Задач
+
+  // Метод для получения статусов Сделок
   Future<List<TaskStatus>> getTaskStatuses() async {
     final response = await _getRequest('/task-status');
 
@@ -768,7 +826,8 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
-//Обновление статуса карточки задачи  в колонке
+
+//Обновление статуса карточки Сделки  в колонке
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
     final response = await _postRequest('/task/changeStatus/$taskId', {
       'position': position,
@@ -918,6 +977,35 @@ Future<Map<String, dynamic>> updateTask({
     };
   }
 }
+// Метод для получения Истории Задачи
+  Future<List<TaskHistory>> getTaskHistory(int taskId) async {
+    try {
+      final token = await getToken(); // Получаем токен
+      final response = await http.get(
+        Uri.parse('$baseUrl/task/history/$taskId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}'); // Логирование ответа
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result']['history'];
+        return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
+      } else {
+        print(
+            'Failed to load task history: ${response.statusCode}'); // Логирование ошибки
+        throw Exception('Ошибка загрузки истории задач: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e'); // Логирование исключений
+      throw Exception('Ошибка загрузки истории задач: $e');
+    }
+  }
 
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//

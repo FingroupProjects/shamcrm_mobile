@@ -1,27 +1,27 @@
+import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
+import 'package:crm_task_manager/bloc/currency/currency_state.dart';
+import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_state.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
 
-class ManagerWidget extends StatefulWidget {
-  final String? selectedManager;
+class CurrencyWidget extends StatefulWidget {
+  final String? selectedCurrency;
   final ValueChanged<String?> onChanged;
 
-  ManagerWidget({required this.selectedManager, required this.onChanged});
+  CurrencyWidget({required this.selectedCurrency, required this.onChanged});
 
   @override
-  _ManagerWidgetState createState() => _ManagerWidgetState();
+  _CurrencyWidgetState createState() => _CurrencyWidgetState();
 }
 
-class _ManagerWidgetState extends State<ManagerWidget> {
+class _CurrencyWidgetState extends State<CurrencyWidget> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ManagerBloc, ManagerState>(
+    return BlocBuilder<CurrencyBloc, CurrencyState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
 
-        if (state is ManagerLoading) {
+        if (state is CurrencyLoading) {
           dropdownItems = [
             DropdownMenuItem(
               value: null,
@@ -36,13 +36,13 @@ class _ManagerWidgetState extends State<ManagerWidget> {
               ),
             ),
           ];
-        } else if (state is ManagerLoaded) {
-          if (state.managers.isEmpty) {
+        } else if (state is CurrencyLoaded) {
+          if (state.currencies.isEmpty) {
             dropdownItems = [
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                  'Нет менеджеров',
+                  'Нет валют',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -53,10 +53,10 @@ class _ManagerWidgetState extends State<ManagerWidget> {
               ),
             ];
           } else {
-            dropdownItems = state.managers.map<DropdownMenuItem<String>>((Manager manager) {
+            dropdownItems = state.currencies.map<DropdownMenuItem<String>>((Currency currency) {
               return DropdownMenuItem<String>(
-                value: manager.id.toString(),
-                child: Text(manager.name),
+                value: currency.id.toString(),
+                child: Text(currency.name),
               );
             }).toList();
           }
@@ -66,7 +66,7 @@ class _ManagerWidgetState extends State<ManagerWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Менеджер',
+              'Валюта',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -81,11 +81,11 @@ class _ManagerWidgetState extends State<ManagerWidget> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedManager)
-                    ? widget.selectedManager
+                value: dropdownItems.any((item) => item.value == widget.selectedCurrency)
+                    ? widget.selectedCurrency
                     : null,
                 hint: const Text(
-                  'Выберите менеджера',
+                  'Выберите валюту',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
