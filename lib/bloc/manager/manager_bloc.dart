@@ -13,7 +13,7 @@ class ManagerBloc extends Bloc<ManagerEvent, ManagerState> {
         final managers = await apiService.getManager();
         emit(ManagerLoaded(managers));
       } catch (e) {
-        emit(ManagerError('Ошибка при загрузке Менеджеров'));
+        emit(ManagerError('Ошибка при загрузке Менеджеров: $e'));
       }
     });
   }

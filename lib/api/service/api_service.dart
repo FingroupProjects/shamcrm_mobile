@@ -733,65 +733,64 @@ class ApiService {
   }
 
   // Метод для обновления сделки
-  Future<Map<String, dynamic>> updateDeal({
-    required int dealId,
-    required String name,
-    required int dealStatusId,
-    required int? managerId,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required String sum,
-    String? description,
-    int? organizationId,
-    int? dealtypeId,
-    required int? leadId,
-    required int? currencyId,
-    List<Map<String, String>>? customFields,
-  }) async {
-    final response = await _patchRequest('/deal/$dealId', {
-      'name': name,
-      'deal_status_id': dealStatusId,
-      if (managerId != null) 'manager_id': managerId,
-      if (startDate != null) 'start_date': startDate.toIso8601String(),
-      if (endDate != null) 'end_date': endDate.toIso8601String(),
-      'sum': sum,
-      if (description != null) 'description': description,
-      if (organizationId != null) 'organization_id': organizationId,
-      if (dealtypeId != null) 'deal_type_id': dealtypeId,
-      if (leadId != null) 'lead_id': leadId,
-      if (currencyId != null) 'currency_id': currencyId,
-      'deal_custom_fields': customFields?.map((field) {
-            return {
-              'key': field.keys.first,
-              'value': field.values.first,
-            };
-          }).toList() ??
-          [],
-    });
-
-    // Обработка ответа
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Сделка обновлена успешно.'};
-    } else if (response.statusCode == 422) {
-      // Дополнительные проверки на ошибочные поля
-      if (response.body.contains('"name"')) {
-        return {
-          'success': false,
-          'message': 'Название должно содержать не менее 3 символов.'
-        };
-      }
-      // Другие возможные проверки...
+Future<Map<String, dynamic>> updateDeal({
+  required int dealId,
+  required String name,
+  required int dealStatusId,
+  required int? managerId,
+  required DateTime? startDate,
+  required DateTime? endDate,
+  required String sum,
+  String? description,
+  int? organizationId,
+  int? dealtypeId,
+  required int? leadId,
+  required int? currencyId,
+  List<Map<String, String>>? customFields,
+}) async {
+  final response = await _patchRequest('/deal/$dealId', {
+    'name': name,
+    'deal_status_id': dealStatusId,
+    if (managerId != null) 'manager_id': managerId,
+    if (startDate != null) 'start_date': startDate.toIso8601String(),
+    if (endDate != null) 'end_date': endDate.toIso8601String(),
+    'sum': sum,
+    if (description != null) 'description': description,
+    if (organizationId != null) 'organization_id': organizationId,
+    if (dealtypeId != null) 'deal_type_id': dealtypeId,
+    if (leadId != null) 'lead_id': leadId,
+    if (currencyId != null) 'currency_id': currencyId,
+    'deal_custom_fields': customFields?.map((field) {
       return {
-        'success': false,
-        'message': 'Ошибка валидации данных: ${response.body}'
+        'key': field.keys.first,
+        'value': field.values.first,
       };
-    } else {
+    }).toList() ?? [],
+  });
+
+  // Обработка ответа
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'Сделка обновлена успешно.'};
+  } else if (response.statusCode == 422) {
+    if (response.body.contains('"name"')) {
       return {
         'success': false,
-        'message': 'Ошибка обновления сделки: ${response.body}'
+        'message': 'Название должно содержать не менее 3 символов.'
       };
     }
+    // Дополнительные проверки на другие поля могут быть добавлены здесь...
+    return {
+      'success': false,
+      'message': 'Ошибка валидации данных: ${response.body}'
+    };
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка обновления сделки: ${response.body}'
+    };
   }
+}
+
 
   // Метод для получения Валюта
   Future<List<Currency>> getCurrency() async {

@@ -1,28 +1,31 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class DealDetailsScreen extends StatefulWidget {
   final String dealId;
-  final String dealName;
-  final String? startDate;
-  final String? endDate;
-  final String sum;
-  final String dealStatus;
-  final int statusId;
-  final String? manager;
-  final int? managerId;
-  final String? currency;
-  final int? currencyId;
-  final String? lead;
-  final int? leadId;
-  final String? description;
-  final List<DealCustomField> dealCustomFields;
+  String dealName;
+  String? startDate;
+  String? endDate;
+  String sum;
+  String dealStatus;
+  int statusId;
+  String? manager;
+  int? managerId;
+  String? currency;
+  int? currencyId;
+  String? lead;
+  int? leadId;
+  String? description;
+  List<DealCustomField> dealCustomFields;
 
   DealDetailsScreen({
- required this.dealId,
+    required this.dealId,
     required this.dealName,
     this.startDate,
     this.endDate,
@@ -52,25 +55,32 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     _updateDetails();
   }
 
-
   void _updateDetails() {
+    String formatDate(String? dateString) {
+      if (dateString == null || dateString.isEmpty) return 'Не указано';
+      try {
+        final parsedDate = DateTime.parse(dateString);
+        return DateFormat('dd/MM/yyyy').format(parsedDate);
+      } catch (e) {
+        return 'Неверный формат';
+      }
+    }
+
     details = [
       {'label': 'ID Сделки:', 'value': widget.dealId},
       {'label': 'Имя сделки:', 'value': widget.dealName},
-      // {'label': 'Статус:', 'value': widget.dealStatus},
-      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
       {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
       {'label': 'Валюта:', 'value': widget.currency ?? 'Не указано'},
       {'label': 'Клиент:', 'value': widget.lead ?? 'Не указано'},
-      {'label': 'Дата начало:', 'value': widget.startDate ?? 'Не указано'},
-      {'label': 'Дата окончание:', 'value': widget.endDate ?? 'Не указано'},
+      {'label': 'Дата начала:', 'value': formatDate(widget.startDate)},
+      {'label': 'Дата окончания:', 'value': formatDate(widget.endDate)},
       {'label': 'Сумма:', 'value': widget.sum ?? 'Не указано'},
       {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
     ];
-      // Adding deal custom fields to details
-  for (var field in widget.dealCustomFields) {
-    details.add({'label': field.key, 'value': field.value});
-  }
+
+    for (var field in widget.dealCustomFields) {
+      details.add({'label': field.key, 'value': field.value});
+    }
   }
 
   @override
@@ -125,59 +135,64 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       ),
       actions: [
         Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/edit.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () async {
-                  // final formattedBirthday =
-                  //     (widget.birthday != null && widget.birthday!.isNotEmpty)
-                  //         ? DateFormat('dd/MM/yyyy')
-                  //             .format(DateTime.parse(widget.birthday!))
-                  //         : null;
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+              icon: Image.asset(
+                'assets/icons/edit.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () async {
+                final startDateString =
+                    widget.startDate != null && widget.startDate!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(widget.startDate!))
+                        : null;
+                final endDateString =
+                    widget.endDate != null && widget.endDate!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(widget.endDate!))
+                        : null;
 
-                  // final updatedLead = await Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //     builder: (context) => DealEditScreen(
-                  //       dealId: int.parse(widget.dealId),
-                  //       leadName: widget.leadName,
-                  //       leadStatus: widget.leadStatus,
-                  //       statusId: widget.statusId,
-                  //       region: widget.regionId?.toString(),
-                  //       manager: widget.managerId?.toString(),
-                  //       birthday: formattedBirthday,
-                  //       instagram: widget.instagram,
-                  //       facebook: widget.facebook,
-                  //       telegram: widget.telegram,
-                  //       phone: widget.phone,
-                  //       description: widget.description,
-                  //     ),
-                  //   ),
-                  // );
+                final updatedDeal = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DealEditScreen(
+                      dealId: int.parse(widget.dealId),
+                      dealName: widget.dealName,
+                      dealStatus: widget.dealStatus,
+                      statusId: widget.statusId,
+                      manager: widget.managerId?.toString(),
+                      currency: widget.currencyId?.toString(),
+                      lead: widget.leadId?.toString(),
+                      startDate: startDateString,
+                      endDate: endDateString,
+                      sum: widget.sum,
+                      description: widget.description,
+                      dealCustomFields: widget.dealCustomFields,
+                    ),
+                  ),
+                );
 
-                  // if (updatedLead != null) {
-                  //   context.read<DealBloc>().add(FetchDealStatuses());
-                  //   // context.read<HistoryBloc>().add(FetchLeadHistory(int.parse(widget.leadId)));
-                  //   setState(() {
-                  //     widget.leadName = updatedLead['leadName'];
-                  //     widget.leadStatus = updatedLead['leadStatus'];
-                  //     widget.statusId = updatedLead['statusId'];
-                  //     widget.regionId = updatedLead['regionId'];
-                  //     widget.managerId = updatedLead['managerId'];
-                  //     widget.birthday = updatedLead['birthday'];
-                  //     widget.instagram = updatedLead['instagram'];
-                  //     widget.facebook = updatedLead['facebook'];
-                  //     widget.telegram = updatedLead['telegram'];
-                  //     widget.phone = updatedLead['phone'];
-                  //     widget.description = updatedLead['description'];
-                  //   });
-                  //   _updateDetails();
-                  // }
-                })),
+                if (updatedDeal != null) {
+                  context.read<DealBloc>().add(FetchDealStatuses());
+                  setState(() {
+                    widget.dealName = updatedDeal['dealName'];
+                    widget.dealStatus = updatedDeal['dealStatus'];
+                    widget.statusId = updatedDeal['statusId'];
+                    widget.managerId = updatedDeal['managerId'];
+                    widget.currencyId = updatedDeal['currencyId'];
+                    widget.leadId = updatedDeal['leadId'];
+                    widget.endDate = updatedDeal['endDate'];
+                    widget.sum = updatedDeal['sum'];
+                    widget.description = updatedDeal['description'];
+                    widget.dealCustomFields = updatedDeal['customFields'];
+                  });
+
+                  _updateDetails();
+                }
+              }),
+        ),
       ],
     );
   }
@@ -237,3 +252,5 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 }
+      // {'label': 'Статус:', 'value': widget.dealStatus},
+      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},

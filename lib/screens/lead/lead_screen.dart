@@ -47,28 +47,27 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCustomTabBar() {
-    return _tabTitles.isNotEmpty
-        ? SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ...List.generate(_tabTitles.length, (index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _buildTabButton(index),
-                  );
-                }),
-                IconButton(
-                  icon: Image.asset('assets/icons/tabBar/add_black.png',
-                      width: 24, height: 24),
-                  onPressed: _addNewTab,
-                ),
-              ],
-            ),
-          )
-        : const SizedBox();
-  }
+Widget _buildCustomTabBar() {
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: [
+        ...List.generate(_tabTitles.length, (index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _buildTabButton(index),
+          );
+        }),
+        IconButton(
+          icon: Image.asset('assets/icons/tabBar/add_black.png',
+              width: 24, height: 24),
+          onPressed: _addNewTab,
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _addNewTab() async {
     final result = await showDialog<String>(

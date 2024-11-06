@@ -86,3 +86,4 @@ class UpdateDeal extends DealEvent {
     this.customFields,
   });
 }
+

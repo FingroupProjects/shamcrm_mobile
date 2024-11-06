@@ -57,15 +57,17 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => LeadBloc(apiService),
         ),
-        
-        BlocProvider(
-          create: (context) => RegionBloc(apiService),
-        ),
         BlocProvider(
           create: (context) => HistoryBloc(apiService),
         ),
         BlocProvider(
           create: (context) => NotesBloc(apiService),
+        ),
+          BlocProvider(
+          create: (context) => ManagerBloc(apiService),
+        ),
+         BlocProvider(
+          create: (context) => RegionBloc(apiService),
         ),
         BlocProvider(
           create: (context) => DealBloc(apiService),
@@ -75,12 +77,6 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => TaskBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => HistoryBlocTask(apiService),
-        ),
-        BlocProvider(
-          create: (context) => ManagerBloc(apiService),
         ),
         BlocProvider(
           create: (context) => ProjectBloc(apiService),
