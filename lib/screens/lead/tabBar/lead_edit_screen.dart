@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_event.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
@@ -72,6 +74,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedRegion = widget.region;
     selectedManager = widget.manager;
 
+    context.read<ManagerBloc>().add(FetchManagers());
     context.read<RegionBloc>().add(FetchRegions());
   }
 

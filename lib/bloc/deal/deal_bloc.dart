@@ -15,7 +15,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<CreateDeal>(_createDeal);
     on<FetchMoreDeals>(_fetchMoreDeals);
     on<CreateDealStatus>(_createDealStatus);
-    // on<UpdateDeal>(_updateDeal);
+    on<UpdateDeal>(_updateDeal);
   }
 
   Future<void> _fetchDealStatuses(
@@ -142,42 +142,41 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
-  emit(DealLoading());
+  Future<void> _updateDeal(UpdateDeal event, Emitter<DealState> emit) async {
+    emit(DealLoading());
 
-  if (!await _checkInternetConnection()) {
-    emit(DealError('Нет подключения к интернету'));
-    return;
-  }
-
-  try {
-    final result = await apiService.updateDeal(
-      dealId: event.dealId,
-      name: event.name,
-      dealStatusId: event.dealStatusId,
-      managerId: event.managerId,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      sum: event.sum,
-      description: event.description,
-      organizationId: event.organizationId,
-      dealtypeId: event.dealtypeId,
-      leadId: event.leadId,
-      currencyId: event.currencyId,
-      customFields: event.customFields,
-    );
-
-    if (result['success']) {
-      emit(DealSuccess('Сделка обновлена успешно'));
-      add(FetchDeals(event.dealStatusId)); 
-    } else {
-      emit(DealError(result['message']));
+    if (!await _checkInternetConnection()) {
+      emit(DealError('Нет подключения к интернету'));
+      return;
     }
-  } catch (e) {
-    emit(DealError('Ошибка обновления сделки: ${e.toString()}'));
-  }
-}
 
+    try {
+      final result = await apiService.updateDeal(
+        dealId: event.dealId,
+        name: event.name,
+        dealStatusId: event.dealStatusId,
+        managerId: event.managerId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        sum: event.sum,
+        description: event.description,
+        organizationId: event.organizationId,
+        dealtypeId: event.dealtypeId,
+        leadId: event.leadId,
+        currencyId: event.currencyId,
+        customFields: event.customFields,
+      );
+
+      if (result['success']) {
+        emit(DealSuccess('Сделка обновлена успешно'));
+        add(FetchDeals(event.dealStatusId));
+      } else {
+        emit(DealError(result['message']));
+      }
+    } catch (e) {
+      emit(DealError('Ошибка обновления сделки: ${e.toString()}'));
+    }
+  }
 
   Future<bool> _checkInternetConnection() async {
     try {
