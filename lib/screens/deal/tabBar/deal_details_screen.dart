@@ -124,7 +124,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           Navigator.pop(context);
         },
       ),
-      title: Text(
+      name: Text(
         title,
         style: TextStyle(
           fontSize: 18,

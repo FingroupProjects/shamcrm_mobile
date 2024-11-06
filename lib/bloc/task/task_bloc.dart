@@ -6,24 +6,22 @@ import 'task_state.dart';
 
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiService apiService;
-  bool allTasksFetched =
-      false; // Переменная для отслеживания статуса завершения загрузки сделок
+  bool allTasksFetched = false;
 
   TaskBloc(this.apiService) : super(TaskInitial()) {
     on<FetchTaskStatuses>(_fetchTaskStatuses);
     on<FetchTasks>(_fetchTasks);
-    // on<CreateTask>(_createTask);
+    on<CreateTask>(_createTask);
     on<FetchMoreTasks>(_fetchMoreTasks);
-    // on<CreateTaskStatus>(_createTaskStatus);
+    on<CreateTaskStatus>(_createTaskStatus);
     on<UpdateTask>(_updateTask);
-
   }
 
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
-    await Future.delayed(Duration(milliseconds: 500)); // Небольшая задержка
+    await Future.delayed(Duration(milliseconds: 500));
 
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
@@ -42,7 +40,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  // Метод для загрузки лидов
   Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
     if (!await _checkInternetConnection()) {
@@ -52,18 +49,16 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     try {
       final tasks = await apiService.getTasks(event.statusId);
-      allTasksFetched = tasks.isEmpty; // Если сделок нет, устанавливаем флаг
-      emit(TaskDataLoaded(tasks,
-          currentPage: 1)); // Устанавливаем текущую страницу на 1
+      allTasksFetched = tasks.isEmpty;
+      emit(TaskDataLoaded(tasks, currentPage: 1));
     } catch (e) {
-      emit(TaskError('Не удалось загрузить лиды: ${e.toString()}'));
+      emit(TaskError('Не удалось загрузить задачи: ${e.toString()}'));
     }
   }
 
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {
-    if (allTasksFetched)
-      return; // Если все сделки уже загружены, ничего не делаем
+    if (allTasksFetched) return;
 
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
@@ -74,111 +69,104 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final tasks = await apiService.getTasks(event.statusId,
           page: event.currentPage + 1);
       if (tasks.isEmpty) {
-        allTasksFetched = true; // Если пришли пустые данные, устанавливаем флаг
-        return; // Выходим, так как данных больше нет
+        allTasksFetched = true;
+        return;
       }
       if (state is TaskDataLoaded) {
         final currentState = state as TaskDataLoaded;
-        emit(currentState.merge(tasks)); // Объединяем старые и новые сделки
+        emit(currentState.merge(tasks));
       }
     } catch (e) {
       emit(TaskError(
-          'Не удалось загрузить дополнительные сделки: ${e.toString()}'));
+          'Не удалось загрузить дополнительные задачи: ${e.toString()}'));
     }
   }
 
-  //  Future<void> _createTaskStatus(
-  //     CreateTaskStatus event, Emitter<TaskState> emit) async {
-  //   emit(TaskLoading());
+  Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
 
-  //   if (!await _checkInternetConnection()) {
-  //     emit(TaskError('Нет подключения к интернету'));
-  //     return;
-  //   }
+    if (!await _checkInternetConnection()) {
+      emit(TaskError('Нет подключения к интернету'));
+      return;
+    }
 
-  //   try {
-  //     final result =
-  //         await apiService.createTaskStatus(event.name, event.color);
+    try {
+      final result = await apiService.createTask(
+        name: event.name,
+        statusId: event.statusId,
+        priority: event.priority,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        projectId: event.projectId,
+        userId: event.userId,
+        description: event.description,
+      );
 
-  //     if (result['success']) {
-  //       emit(TaskSuccess(result['message']));
-  //       add(FetchTaskStatuses()); 
-  //     } else {
-  //       emit(TaskError(result['message']));
-  //     }
-  //   } catch (e) {
-  //     emit(TaskError('Ошибка создания статуса Сделки: ${e.toString()}'));
-  //   }
-  // }
-
-  // Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
-  //   emit(TaskLoading());
-
-  //   // Проверка подключения к интернету
-  //   if (!await _checkInternetConnection()) {
-  //     emit(TaskError('Нет подключения к интернету'));
-  //     return;
-  //   }
-
-  //   try {
-  //     // Вызов метода создания лида
-  //     final result = await apiService.createTask(
-  //       name: event.name,
-  //       taskStatusId: event.taskStatusId,
-  //       startDate: event.startDate,
-  //       endDate: event.endDate,
-  //       description: event.description,
-  //     );
-
-  //     // Если успешно, то обновляем состояние
-  //     if (result['success']) {
-  //       emit(TaskSuccess('Сделка создан успешно'));
-  //       add(FetchTasks(event.taskStatusId));
-  //     } else {
-  //       // Если есть ошибка, отображаем сообщение об ошибке
-  //       emit(TaskError(result['message']));
-  //     }
-  //   } catch (e) {
-  //     // Логирование ошибки
-  //     emit(TaskError('Ошибка создания сделки: ${e.toString()}'));
-  //   }
-  // }
-
- 
-  
-Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
-  emit(TaskLoading());
-
-  // Проверка подключения к интернету
-  if (!await _checkInternetConnection()) {
-    emit(TaskError('Нет подключения к интернету'));
-    return;
+      if (result['success']) {
+        emit(TaskSuccess('Задача создана успешно'));
+        add(FetchTasks(event.statusId));
+      } else {
+        emit(TaskError(result['message']));
+      }
+    } catch (e) {
+      emit(TaskError('Ошибка создания задачи: ${e.toString()}'));
+    }
   }
 
-  // try {
-  //   // Вызов метода обновления лида
-  //   final result = await apiService.updateTask(
-  //     taskId: event.taskId,
-  //     name: event.name,
-  //     taskStatusId: event.taskStatusId,
-  //     managerId: event.managerId,
-  //     description: event.description,
-  //     organizationId: event.organizationId,
-  //   );
+  Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
 
-  //   // Если успешно, то обновляем состояние
-  //   if (result['success']) {
-  //     emit(TaskSuccess('Лид обновлен успешно'));
-  //     // add(FetchTask(event.taskStatusId)); // Обновляем список лидов
-  //   } else {
-  //     emit(TaskError(result['message']));
-  //   }
-  // } catch (e) {
-  //   emit(TaskError('Ошибка обновления лида: ${e.toString()}'));
-  // }
-}
+    if (!await _checkInternetConnection()) {
+      emit(TaskError('Нет подключения к интернету'));
+      return;
+    }
 
- 
+    try {
+      final result = await apiService.updateTask(
+        taskId: event.taskId,
+        name: event.name,
+        statusId: event.statusId,
+        priority: event.priority,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        projectId: event.projectId,
+        userId: event.userId,
+        description: event.description,
+      );
+
+      if (result['success']) {
+        emit(TaskSuccess('Задача обновлена успешно'));
+        add(FetchTasks(event.statusId));
+      } else {
+        emit(TaskError(result['message']));
+      }
+    } catch (e) {
+      emit(TaskError('Ошибка обновления задачи: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _createTaskStatus(
+      CreateTaskStatus event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
+
+    if (!await _checkInternetConnection()) {
+      emit(TaskError('Нет подключения к интернету'));
+      return;
+    }
+
+    // try {
+    //   final result = await apiService.createTaskStatus(event.name, event.color);
+
+    //   if (result['success']) {
+    //     emit(TaskSuccess(result['message']));
+    //     add(FetchTaskStatuses());
+    //   } else {
+    //     emit(TaskError(result['message']));
+    //   }
+    // } catch (e) {
+    //   emit(TaskError('Ошибка создания статуса задачи: ${e.toString()}'));
+    // }
+  }
 
   Future<bool> _checkInternetConnection() async {
     try {

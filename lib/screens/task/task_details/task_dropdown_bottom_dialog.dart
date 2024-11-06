@@ -53,15 +53,13 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue =
-                                    status.name; 
-                                selectedStatusId =
-                                    status.id; 
+                                selectedValue = status.taskStatus.name; // Изменено
+                                selectedStatusId = status.taskStatus.id; // Изменено
                               });
                             },
                             child: buildDropDownStyles(
-                              text: status.name,
-                              isSelected: selectedValue == status.name,
+                              text: status.taskStatus.name, // Изменено
+                              isSelected: selectedValue == status.taskStatus.name, // Изменено
                             ),
                           );
                         }).toList(),
@@ -82,14 +80,14 @@ void DropdownBottomSheet(
                         Navigator.pop(context);
                         onSelect(selectedValue);
                       }).catchError((error) {
-                        print('Ошибка обновления статуса сделки: $error');
+                        print('Ошибка обновления статуса задачи: $error');
                       });
                     } else {
                       print('Статус не выбран');
                     }
                   },
                 ),
-                SizedBox(height: 16)
+                SizedBox(height: 16),
               ],
             ),
           );
