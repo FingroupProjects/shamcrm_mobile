@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -110,10 +112,24 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         controller: endDateController,
                         label: 'До',
                       ),
-                      const SizedBox(height: 16),
-                      _buildProjectDropdown(),
-                      const SizedBox(height: 16),
-                      _buildUserDropdown(),
+                      const SizedBox(height: 8),
+                      ProjectWidget(
+                        selectedProject: selectedProject,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedProject = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      UserWidget(
+                        selectedUser: selectedUser,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedUser = newValue;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: descriptionController,
@@ -196,76 +212,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     );
   }
 
-  Widget _buildProjectDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Проект',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: selectedProject,
-            hint: const Text('Выберите проект'),
-            items: [], // Здесь добавьте ваши элементы проекта
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedProject = newValue;
-              });
-            },
-            decoration: _inputDecoration(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUserDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Пользователь',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: selectedUser,
-            hint: const Text('Выберите пользователя'),
-            items: [], // Здесь добавьте ваши элементы пользователя
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedUser = newValue;
-              });
-            },
-            decoration: _inputDecoration(),
-          ),
-        ),
-      ],
-    );
-  }
-
   InputDecoration _inputDecoration() {
     return InputDecoration(
       border: OutlineInputBorder(
@@ -285,41 +231,86 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   Widget _buildActionButtons(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-      child: Row(
-        children: [
-          Expanded(
-            child: CustomButton(
-              buttonText: 'Отмена',
-              buttonColor: Color(0xffF4F7FD),
-              textColor: Colors.black,
-              onPressed: () => Navigator.pop(context),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+        child: Row(
+          children: [
+            Expanded(
+              child: CustomButton(
+                buttonText: 'Отмена',
+                buttonColor: Color(0xffF4F7FD),
+                textColor: Colors.black,
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: CustomButton(
-              buttonText: 'Добавить',
-              buttonColor: Color(0xff4759FF),
-              textColor: Colors.white,
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final String name = nameController.text;
-                  final String? startDate = startDateController.text.isEmpty
-                      ? null
-                      : startDateController.text;
-                  final String? endDate = endDateController.text.isEmpty
-                      ? null
-                      : endDateController.text;
-                  final String? description = descriptionController.text.isEmpty
-                      ? null
-                      : descriptionController.text;
-                }
-              },
+            const SizedBox(width: 16),
+            Expanded(
+              child: CustomButton(
+                buttonText: 'Добавить',
+                buttonColor: Color(0xff4759FF),
+                textColor: Colors.white,
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final String name = nameController.text;
+                    DateTime? startDate;
+                    DateTime? endDate;
+
+                    // Парсинг дат из текстовых полей
+                    if (startDateController.text.isNotEmpty) {
+                      try {
+                        startDate = DateFormat('dd/MM/yyyy HH:mm')
+                            .parse(startDateController.text);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('Ошибка в дате начала: ${e.toString()}'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    if (endDateController.text.isNotEmpty) {
+                      try {
+                        endDate = DateFormat('dd/MM/yyyy HH:mm')
+                            .parse(endDateController.text);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Ошибка в дате окончания: ${e.toString()}'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    final String? description =
+                        descriptionController.text.isEmpty
+                            ? null
+                            : descriptionController.text;
+
+                    context.read<TaskBloc>().add(
+                          CreateTask(
+                            name: name,
+                            statusId: widget.statusId,
+                            priority: selectedPriority,
+                            startDate: startDate,
+                            endDate: endDate,
+                            projectId: selectedProject != null
+                                ? int.parse(selectedProject!)
+                                : null,
+                            userId: selectedUser != null
+                                ? int.parse(selectedUser!)
+                                : null,
+                            description: description,
+                          ),
+                        );
+                  }
+                },
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ));
   }
 }

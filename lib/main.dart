@@ -3,12 +3,15 @@ import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history/history_bloc.dart';
+import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,7 +78,12 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TaskBloc(apiService),
         ),
-      
+        BlocProvider(
+          create: (context) => ProjectBloc(apiService),
+        ),
+        BlocProvider(
+          create: (context) => UserTaskBloc(apiService),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

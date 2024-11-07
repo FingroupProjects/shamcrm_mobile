@@ -27,41 +27,46 @@ class CreateTaskStatus extends TaskEvent {
 
 class CreateTask extends TaskEvent {
   final String name;
-  final int taskStatusId;
-  final int? managerId;
+  final int statusId;
+  final String? priority;
   final DateTime? startDate;
   final DateTime? endDate;
-  final String sum;
-
+  final int? projectId;
+  final int? userId;
   final String? description;
-  final int? organizationId;
 
   CreateTask({
     required this.name,
-    required this.taskStatusId,
-    this.managerId,
+    required this.statusId,
+    this.priority,
     this.startDate,
     this.endDate,
-    required this.sum,
+    this.projectId,
+    this.userId,
     this.description,
-    this.organizationId,
   });
 }
 
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
-  final int taskStatusId;
-  final int? managerId;
+  final int statusId;
+  final String? priority;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final int? projectId;
+  final int? userId;
   final String? description;
-  final int? organizationId;
 
   UpdateTask({
     required this.taskId,
     required this.name,
-    required this.taskStatusId,
-    this.managerId,
+    required this.statusId,
+    this.priority,
+    this.startDate,
+    this.endDate,
+    this.projectId,
+    this.userId,
     this.description,
-    this.organizationId,
   });
 }
