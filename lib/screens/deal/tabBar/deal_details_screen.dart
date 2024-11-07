@@ -146,7 +146,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           context.read<DealBloc>().add(FetchDealStatuses());
         },
       ),
-      title: Text(
+      name: Text(
         title,
         style: TextStyle(
           fontSize: 18,

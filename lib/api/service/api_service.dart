@@ -3,11 +3,14 @@ import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
+import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
+import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
@@ -166,7 +169,7 @@ class ApiService {
       final loginResponse = LoginResponse.fromJson(data);
 
       // Сохраняем токен после успешного логина
-      await _saveToken(loginResponse.token!);
+      await _saveToken(loginResponse.token);
 
       return loginResponse;
     } else {
@@ -812,7 +815,7 @@ class ApiService {
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-// Метод для получения Сделок
+// Метод для получения Задачи
   Future<List<Task>> getTasks(int taskStatusId,
       {int page = 1, int perPage = 20}) async {
     final response = await _getRequest(
@@ -831,6 +834,7 @@ class ApiService {
       throw Exception('Ошибка загрузки задач: ${response.body}');
     }
   }
+  // Метод для получения статусов Задач
 
   // Метод для получения статусов Сделок
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -858,28 +862,216 @@ class ApiService {
     });
 
     if (response.statusCode == 200) {
-      print('Статус сделки обновлен успешно.');
+      print('Статус задачи обновлен успешно.');
     } else {
-      throw Exception('Ошибка обновления статуса сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+    }
+  }
+// Метод для Создания Задачи
+  Future<Map<String, dynamic>> createTask({
+  required String name,
+  required int statusId,
+  String? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  int? userId,
+  String? description,
+}) async {
+  final response = await _postRequest('/task', {
+    'name': name,
+    'status_id': statusId,
+    if (priority != null) 'priority': priority,
+    if (startDate != null) 'start_date': startDate.toIso8601String(),
+    if (endDate != null) 'end_date': endDate.toIso8601String(),
+    if (projectId != null) 'project_id': projectId,
+    if (userId != null) 'user_id': userId,
+    if (description != null) 'description': description,
+  });
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'Задача создана успешно.'};
+  } else if (response.statusCode == 422) {
+    // Обработка ошибок валидации
+    if (response.body.contains('name')) {
+      return {
+        'success': false,
+        'message': 'Название задачи должно содержать минимум 3 символа.'
+      };
+    }
+    if (response.body.contains('start_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты начала.'
+      };
+    }
+    if (response.body.contains('end_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты окончания.'
+      };
+    }
+    if (response.body.contains('project_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный проект не существует.'
+      };
+    }
+    if (response.body.contains('user_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный пользователь не существует.'
+      };
+    }
+    
+    return {
+      'success': false,
+      'message': 'Неизвестная ошибка валидации: ${response.body}'
+    };
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка создания задачи: ${response.body}'
+    };
+  }
+}
+
+Future<Map<String, dynamic>> updateTask({
+  required int taskId,
+  required String name,
+  required int statusId,
+  String? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  int? userId,
+  String? description,
+}) async {
+  final response = await _patchRequest('/task/$taskId', {
+    'name': name,
+    'status_id': statusId,
+    if (priority != null) 'priority': priority,
+    if (startDate != null) 'start_date': startDate.toIso8601String(),
+    if (endDate != null) 'end_date': endDate.toIso8601String(),
+    if (projectId != null) 'project_id': projectId,
+    if (userId != null) 'user_id': userId,
+    if (description != null) 'description': description,
+  });
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'Задача обновлена успешно.'};
+  } else if (response.statusCode == 422) {
+    // Обработка ошибок валидации
+    if (response.body.contains('name')) {
+      return {
+        'success': false,
+        'message': 'Название задачи должно содержать минимум 3 символа.'
+      };
+    }
+    if (response.body.contains('start_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты начала.'
+      };
+    }
+    if (response.body.contains('end_date')) {
+      return {
+        'success': false,
+        'message': 'Неверный формат даты окончания.'
+      };
+    }
+    if (response.body.contains('project_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный проект не существует.'
+      };
+    }
+    if (response.body.contains('user_id')) {
+      return {
+        'success': false,
+        'message': 'Указанный пользователь не существует.'
+      };
+    }
+    
+    return {
+      'success': false,
+      'message': 'Неизвестная ошибка валидации: ${response.body}'
+    };
+  } else {
+    return {
+      'success': false,
+      'message': 'Ошибка обновления задачи: ${response.body}'
+    };
+  }
+}
+// Метод для получения Истории Задачи
+  Future<List<TaskHistory>> getTaskHistory(int taskId) async {
+    try {
+      final token = await getToken(); // Получаем токен
+      final response = await http.get(
+        Uri.parse('$baseUrl/task/history/$taskId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}'); // Логирование ответа
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result']['history'];
+        return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
+      } else {
+        print(
+            'Failed to load task history: ${response.statusCode}'); // Логирование ошибки
+        throw Exception('Ошибка загрузки истории задач: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e'); // Логирование исключений
+      throw Exception('Ошибка загрузки истории задач: $e');
     }
   }
 
-  // // Метод для Создания Задачи
-  // Future<Map<String, dynamic>> createTask({
-  //   required String name,
-  //   required int taskStatusId,
-  //   DateTime? startDate,
-  //   DateTime? endDate,
-  //   String? description,
-  // }) async {
-  //   final response = await _postRequest('/task', {
-  //     'name': name,
-  //     'task_status_id': taskStatusId,
-  //     if (startDate != null) 'startDate': startDate.toIso8601String(),
-  //     if (endDate != null) 'endDate': endDate.toIso8601String(),
-  //     if (description != null) 'description': description,
-  //   });
+// Метод для получения Проекта
+  Future<List<Project>> getProject() async {
+    final response = await _getRequest('/project');
 
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); // Для отладки
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((project) => Project.fromJson(project))
+            .toList();
+      } else {
+        throw Exception('Проектов не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+  // Метод для получения Пользователя
+  Future<List<UserTask>> getUserTask() async {
+    final response = await _getRequest('/user');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); // Для отладки
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((user) => UserTask.fromJson(user))
+            .toList();
+      } else {
+        throw Exception('Пользователей не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов

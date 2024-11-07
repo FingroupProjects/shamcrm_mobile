@@ -1,15 +1,22 @@
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   final String taskId;
   String taskName;
   String taskStatus;
   int statusId;
-  String? manager;
-  int? managerId;
+  String? project;
+  int? projectId;
+  String? user;
+  int? userId;
+  String? projectName;
   String? description;
   String? startDate;
   String? endDate;
@@ -20,12 +27,15 @@ class TaskDetailsScreen extends StatefulWidget {
     required this.taskName,
     required this.taskStatus,
     required this.statusId,
-    this.manager,
-    this.managerId,
+    this.project,
+    this.projectId,
+    this.user,
+    this.userId,
     this.description,
     this.startDate,
     this.endDate,
     this.sum,
+    this.projectName,
   });
 
   @override
@@ -43,16 +53,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   void _updateDetails() {
     details = [
-      {'label': 'ID Сделки:', 'value': widget.taskId},
-      {'label': 'Имя сделки:', 'value': widget.taskName},
-      // {'label': 'Статус:', 'value': widget.taskStatus},
-      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
-      {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'Клиент:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'Валюта:', 'value': widget.manager ?? 'Не указано'},
-      {'label': 'Дата начало:', 'value': widget.startDate ?? 'Не указано'},
-      {'label': 'Дата окончание:', 'value': widget.endDate ?? 'Не указано'},
-      {'label': 'Сумма:', 'value': widget.sum ?? 'Не указано'},
+      {'label': 'ID Задачи:', 'value': widget.taskId},
+      {'label': 'Название задачи:', 'value': widget.taskName},
+      {'label': 'До:', 'value': widget.endDate ?? 'Не указано'},
+      {'label': 'От:', 'value': widget.startDate ?? 'Не указано'},
+      {'label': 'Статус:', 'value': widget.taskStatus ?? 'Не указано'},
+      {'label': 'Проект:', 'value': widget.project ?? 'Не указано'},
+      {'label': 'Пользователь:', 'value': widget.user ?? 'Не указано'},
       {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
     ];
   }
@@ -68,14 +75,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: _buildAppBar(context, 'Просмотр Сделки'),
+        appBar: _buildAppBar(context, 'Просмотр Задачи'),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
               _buildDetailsList(),
               const SizedBox(height: 16),
-              // ActionHistoryWidget(taskId: int.parse(widget.taskId)),
+              ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
             ],
           ),
         ),
@@ -83,7 +90,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, String title) {
+  AppBar _buildAppBar(BuildContext context, String name) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -98,8 +105,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           Navigator.pop(context);
         },
       ),
-      title: Text(
-        title,
+      name: Text(
+        name,
         style: TextStyle(
           fontSize: 18,
           fontFamily: 'Gilroy',
@@ -117,50 +124,37 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   height: 24,
                 ),
                 onPressed: () async {
-                  // final formattedBirthday =
-                  //     (widget.birthday != null && widget.birthday!.isNotEmpty)
-                  //         ? DateFormat('dd/MM/yyyy')
-                  //             .format(DateTime.parse(widget.birthday!))
-                  //         : null;
+                  final updatedTask = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TaskEditScreen(
+                        taskId: int.parse(widget.taskId),
+                        taskName: widget.taskName,
+                        taskStatus: widget.taskStatus,
+                        project: widget.projectId?.toString(),
+                        user: widget.userId?.toString(),
+                        statusId: widget.statusId,
+                        description: widget.description,
+                      ),
+                    ),
+                  );
 
-                  // final updatedLead = await Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //     builder: (context) => TaskEditScreen(
-                  //       taskId: int.parse(widget.taskId),
-                  //       leadName: widget.leadName,
-                  //       leadStatus: widget.leadStatus,
-                  //       statusId: widget.statusId,
-                  //       region: widget.regionId?.toString(),
-                  //       manager: widget.managerId?.toString(),
-                  //       birthday: formattedBirthday,
-                  //       instagram: widget.instagram,
-                  //       facebook: widget.facebook,
-                  //       telegram: widget.telegram,
-                  //       phone: widget.phone,
-                  //       description: widget.description,
-                  //     ),
-                  //   ),
-                  // );
+                  if (updatedTask != null) {
+                    context.read<TaskBloc>().add(FetchTaskStatuses());
+                    // context.read<HistoryBloc>().add(FetchLeadHistory(int.parse(widget.leadId)));
+                    setState(() {
+                      widget.taskName = updatedTask['taskName'];
+                      widget.taskStatus = updatedTask['taskStatus'];
+                      widget.statusId = updatedTask['statusId'];
+                      widget.projectId = updatedTask['projectId'];
+                      widget.user = updatedTask['user'];
+                      widget.userId = updatedTask['userId'];
+                      widget.project = updatedTask['project'];
 
-                  // if (updatedLead != null) {
-                  //   context.read<TaskBloc>().add(FetchTaskStatuses());
-                  //   // context.read<HistoryBloc>().add(FetchLeadHistory(int.parse(widget.leadId)));
-                  //   setState(() {
-                  //     widget.leadName = updatedLead['leadName'];
-                  //     widget.leadStatus = updatedLead['leadStatus'];
-                  //     widget.statusId = updatedLead['statusId'];
-                  //     widget.regionId = updatedLead['regionId'];
-                  //     widget.managerId = updatedLead['managerId'];
-                  //     widget.birthday = updatedLead['birthday'];
-                  //     widget.instagram = updatedLead['instagram'];
-                  //     widget.facebook = updatedLead['facebook'];
-                  //     widget.telegram = updatedLead['telegram'];
-                  //     widget.phone = updatedLead['phone'];
-                  //     widget.description = updatedLead['description'];
-                  //   });
-                  //   _updateDetails();
-                  // }
+                      widget.description = updatedTask['description'];
+                    });
+                    _updateDetails();
+                  }
                 })),
       ],
     );

@@ -180,4 +180,3 @@ class _DealCardState extends State<DealCard> {
   }
 }
 
-

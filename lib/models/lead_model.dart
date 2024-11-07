@@ -90,5 +90,5 @@ class LeadStatus {
       title: json['title'],
       leadsCount: json['leads_count'],
     );
-  }
+  } 
 }
