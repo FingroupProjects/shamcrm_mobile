@@ -38,9 +38,7 @@ class DealColumn extends StatelessWidget {
                 if (_scrollController.position.pixels ==
                         _scrollController.position.maxScrollExtent &&
                     !context.read<DealBloc>().allDealsFetched) {
-                  context
-                      .read<DealBloc>()
-                      .add(FetchMoreDeals(statusId, state.currentPage));
+                  context.read<DealBloc>().add(FetchMoreDeals(statusId, state.currentPage));
                 }
               });
               return Column(
