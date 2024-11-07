@@ -105,7 +105,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           Navigator.pop(context);
         },
       ),
-      name: Text(
+      title: Text(
         name,
         style: TextStyle(
           fontSize: 18,
