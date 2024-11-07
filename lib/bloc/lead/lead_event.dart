@@ -93,3 +93,8 @@ class DeleteLead extends LeadEvent {
 
   DeleteLead(this.leadId);
 }
+class DeleteLeadStatuses extends LeadEvent {
+  final int leadStatusId;
+
+  DeleteLeadStatuses(this.leadStatusId);
+}

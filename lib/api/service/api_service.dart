@@ -601,6 +601,17 @@ class ApiService {
     }
   }
 
+  // Метод для Удаления Статуса Лида
+  Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
+    final response = await _deleteRequest('/lead-status/$leadStatusId');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete leadStatus: ${response.body}');
+    }
+  }
+
   // Метод для получения региона
   Future<List<Region>> getRegion() async {
     final response = await _getRequest('/region');
