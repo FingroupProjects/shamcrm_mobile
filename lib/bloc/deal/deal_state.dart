@@ -36,3 +36,9 @@ class DealSuccess extends DealState {
 
   DealSuccess(this.message);
 }
+
+class DealDeleted extends DealState {
+  final String message;
+
+  DealDeleted(this.message);
+}

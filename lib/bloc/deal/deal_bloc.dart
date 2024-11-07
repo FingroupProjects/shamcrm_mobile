@@ -6,8 +6,7 @@ import 'deal_state.dart';
 
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
-  bool allDealsFetched =
-      false; // Переменная для отслеживания статуса завершения загрузки сделок
+  bool allDealsFetched =false; // Переменная для отслеживания статуса завершения загрузки сделок
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
@@ -16,6 +15,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<FetchMoreDeals>(_fetchMoreDeals);
     on<CreateDealStatus>(_createDealStatus);
     on<UpdateDeal>(_updateDeal);
+    on<DeleteDeal>(_deleteDeal);
+
   }
 
   Future<void> _fetchDealStatuses(
@@ -184,6 +185,22 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException {
       return false;
+    }
+  }
+
+  Future<void> _deleteDeal(DeleteDeal event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+
+    try {
+      final response = await apiService.deleteDeal(event.dealId);
+      if (response['result'] == 'Success') {
+        emit(DealDeleted('Сделка удалена успешно'));
+        add(FetchDeals(event.dealId)); // Перезагрузка лида после удаления
+      } else {
+        emit(DealError('Ошибка удаления сделки'));
+      }
+    } catch (e) {
+      emit(DealError('Ошибка удаления сделки: ${e.toString()}'));
     }
   }
 }

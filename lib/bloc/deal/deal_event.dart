@@ -87,3 +87,8 @@ class UpdateDeal extends DealEvent {
   });
 }
 
+class DeleteDeal extends DealEvent {
+  final int dealId;
+
+  DeleteDeal(this.dealId);
+}
