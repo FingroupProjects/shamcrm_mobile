@@ -16,6 +16,7 @@ class Lead {
   final String? telegram;
   final String? phone;
   final String? description;
+  final LeadStatus? leadStatus;
 
   Lead({
     required this.id,
@@ -32,6 +33,7 @@ class Lead {
     this.telegram,
     this.phone,
     this.description,
+    this.leadStatus,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -57,6 +59,10 @@ class Lead {
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
       description: json['description'] is String ? json['description'] : '',
+      leadStatus: json['leadStatus'] != null &&
+              json['leadStatus'] is Map<String, dynamic>
+          ? LeadStatus.fromJson(json['leadStatus'])
+          : null,
     );
   }
 }
@@ -76,19 +82,19 @@ class Source {
 class LeadStatus {
   final int id;
   final String title;
-  final int leadsCount;
+  final String? color;
 
   LeadStatus({
     required this.id,
     required this.title,
-    required this.leadsCount,
+    this.color,
   });
 
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
     return LeadStatus(
       id: json['id'],
-      title: json['title'],
-      leadsCount: json['leads_count'],
+      title: json['title'] ?? json['name'] ?? 'Не указан', 
+      color: json['color'],
     );
-  } 
+  }
 }

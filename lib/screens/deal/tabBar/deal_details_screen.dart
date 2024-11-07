@@ -16,7 +16,6 @@ class DealDetailsScreen extends StatefulWidget {
   final String dealStatus;
   final int statusId;
   final String? manager;
-  final int? managerId;
   final String? currency;
   final int? currencyId;
   final String? lead;
@@ -33,7 +32,6 @@ class DealDetailsScreen extends StatefulWidget {
     required this.dealStatus,
     required this.statusId,
     this.manager,
-    this.managerId,
     this.currency,
     this.currencyId,
     this.lead,
@@ -122,7 +120,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             } else if (state is DealError) {
               return Center(child: Text('Ошибка: ${state.message}'));
             }
-            return Center(child: Text('Неизвестное состояние'));
+            return Center(child: Text(''));
           },
         ),
       ),

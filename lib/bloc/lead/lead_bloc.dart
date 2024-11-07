@@ -18,6 +18,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<CreateLeadStatus>(_createLeadStatus);
     on<UpdateLead>(_updateLead);
     on<FetchAllLeads>(_fetchAllLeads);
+    on<DeleteLead>(_deleteLead);
   }
 
   // Метод для загрузки всех лидов
@@ -217,6 +218,23 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     } catch (e) {
       emit(LeadError('Ошибка создания статуса лида: ${e.toString()}'));
+    }
+  }
+
+
+   Future<void> _deleteLead(DeleteLead event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+
+    try {
+      final response = await apiService.deleteLead(event.leadId);
+      if (response['result'] == 'Success') {
+        emit(LeadDeleted('Лид удалена успешно'));
+        add(FetchLeads(event.leadId)); // Перезагрузка лида после удаления
+      } else {
+        emit(LeadError('Ошибка удаления лида'));
+      }
+    } catch (e) {
+      emit(LeadError('Ошибка удаления лида: ${e.toString()}'));
     }
   }
 }

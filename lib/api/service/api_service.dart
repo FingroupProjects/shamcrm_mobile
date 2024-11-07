@@ -537,7 +537,13 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'success': true, 'message': 'Лид обновлен успешно.'};
     } else if (response.statusCode == 422) {
-      if (response.body.contains('phone')) {
+      if (response.body.contains('The phone has already been taken.')) {
+        return {
+          'success': false,
+          'message': 'Этот номер телефона уже существует.'
+        };
+      }
+      if (response.body.contains('validation.phone')) {
         return {
           'success': false,
           'message':
@@ -545,7 +551,31 @@ class ApiService {
         };
       }
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
+      }
+      // Обработка ошибки дублирования логина Instagram
+      else if (response.body.contains('insta_login')) {
+        return {
+          'success': false,
+          'message': 'Этот логин Instagram уже используется.'
+        };
+      } else if (response.body.contains('facebook_login')) {
+        return {
+          'success': false,
+          'message': 'Этот логин facebook уже используется.'
+        };
+      } else if (response.body.contains('tg_nick')) {
+        return {
+          'success': false,
+          'message': 'Этот логин Telegram уже используется.'
+        };
+      } else if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'Не правильная дата рождения.'};
+      } else if (response.body.contains('wa_phone')) {
+        return {
+          'success': false,
+          'message': 'Этот номер Whatsapp уже существует.'
+        };
       }
       // Другие проверки на ошибки...
       return {
@@ -557,6 +587,17 @@ class ApiService {
         'success': false,
         'message': 'Ошибка обновления лида: ${response.body}'
       };
+    }
+  }
+
+  // Метод для Удаления Лида
+  Future<Map<String, dynamic>> deleteLead(int leadId) async {
+    final response = await _deleteRequest('/lead/$leadId');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete lead: ${response.body}');
     }
   }
 
