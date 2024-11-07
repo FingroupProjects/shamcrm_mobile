@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import 'dropdown_history_task.dart';
 
@@ -45,6 +46,16 @@ class TaskDetailsScreen extends StatefulWidget {
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   List<Map<String, String>> details = [];
 
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'Не указано';
+    try {
+      final date = DateTime.parse(dateString);
+      return DateFormat('dd.MM.yyyy').format(date);
+    } catch (e) {
+      return dateString;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,10 +66,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     details = [
       {'label': 'ID Задачи:', 'value': widget.taskId},
       {'label': 'Название задачи:', 'value': widget.taskName},
-      {'label': 'До:', 'value': widget.endDate ?? 'Не указано'},
-      {'label': 'От:', 'value': widget.startDate ?? 'Не указано'},
-      {'label': 'Статус:', 'value': widget.taskStatus ?? 'Не указано'},
-      {'label': 'Проект:', 'value': widget.project ?? 'Не указано'},
+      {'label': 'Дата создания:', 'value': formatDate(widget.startDate)},
+      {'label': 'Срок выполнения:', 'value': formatDate(widget.endDate)},
+      {'label': 'Статус:', 'value': widget.taskStatus},
+      {'label': 'Проект:', 'value': widget.projectName ?? widget.project ?? 'Не указано'},
       {'label': 'Пользователь:', 'value': widget.user ?? 'Не указано'},
       {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
     ];
@@ -90,7 +101,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, String name) {
+  AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -105,8 +116,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           Navigator.pop(context);
         },
       ),
-      name: Text(
-        name,
+      title: Text(
+        title,
         style: TextStyle(
           fontSize: 18,
           fontFamily: 'Gilroy',
@@ -116,46 +127,51 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       ),
       actions: [
         Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/edit.png',
-                  width: 24,
-                  height: 24,
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              final updatedTask = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TaskEditScreen(
+                    taskId: int.parse(widget.taskId),
+                    taskName: widget.taskName,
+                    taskStatus: widget.taskStatus,
+                    project: widget.projectId?.toString(),
+                    user: widget.userId?.toString(),
+                    statusId: widget.statusId,
+                    description: widget.description,
+                    startDate: widget.startDate,
+                    endDate: widget.endDate,
+                  ),
                 ),
-                onPressed: () async {
-                  final updatedTask = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TaskEditScreen(
-                        taskId: int.parse(widget.taskId),
-                        taskName: widget.taskName,
-                        taskStatus: widget.taskStatus,
-                        project: widget.projectId?.toString(),
-                        user: widget.userId?.toString(),
-                        statusId: widget.statusId,
-                        description: widget.description,
-                      ),
-                    ),
-                  );
+              );
 
-                  if (updatedTask != null) {
-                    context.read<TaskBloc>().add(FetchTaskStatuses());
-                    // context.read<HistoryBloc>().add(FetchLeadHistory(int.parse(widget.leadId)));
-                    setState(() {
-                      widget.taskName = updatedTask['taskName'];
-                      widget.taskStatus = updatedTask['taskStatus'];
-                      widget.statusId = updatedTask['statusId'];
-                      widget.projectId = updatedTask['projectId'];
-                      widget.user = updatedTask['user'];
-                      widget.userId = updatedTask['userId'];
-                      widget.project = updatedTask['project'];
-
-                      widget.description = updatedTask['description'];
-                    });
-                    _updateDetails();
-                  }
-                })),
+              if (updatedTask != null) {
+                context.read<TaskBloc>().add(FetchTaskStatuses());
+                setState(() {
+                  widget.taskName = updatedTask['taskName'];
+                  widget.taskStatus = updatedTask['taskStatus'];
+                  widget.statusId = updatedTask['statusId'];
+                  widget.projectId = updatedTask['projectId'];
+                  widget.projectName = updatedTask['project'];
+                  widget.user = updatedTask['user'];
+                  widget.userId = updatedTask['userId'];
+                  widget.project = updatedTask['project'];
+                  widget.description = updatedTask['description'];
+                  widget.startDate = updatedTask['startDate'];
+                  widget.endDate = updatedTask['endDate'];
+                });
+                _updateDetails();
+              }
+            }
+          ),
+        ),
       ],
     );
   }

@@ -84,6 +84,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => UserTaskBloc(apiService),
         ),
+        BlocProvider(
+          create: (context) => HistoryBlocTask(apiService),
+        ),
+        
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

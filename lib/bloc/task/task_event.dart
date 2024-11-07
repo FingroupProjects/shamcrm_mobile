@@ -28,6 +28,7 @@ class CreateTaskStatus extends TaskEvent {
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
+  final int? taskStatusId;
   final String? priority;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -38,6 +39,7 @@ class CreateTask extends TaskEvent {
   CreateTask({
     required this.name,
     required this.statusId,
+    required this.taskStatusId,
     this.priority,
     this.startDate,
     this.endDate,
@@ -57,6 +59,8 @@ class UpdateTask extends TaskEvent {
   final int? projectId;
   final int? userId;
   final String? description;
+  final int taskStatusId;
+  final String message;
 
   UpdateTask({
     required this.taskId,
@@ -68,5 +72,7 @@ class UpdateTask extends TaskEvent {
     this.projectId,
     this.userId,
     this.description,
+    required this.taskStatusId,
+    required this.message,
   });
 }

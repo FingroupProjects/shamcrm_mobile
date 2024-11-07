@@ -1,3 +1,9 @@
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_event.dart';
+import 'package:crm_task_manager/bloc/project/project_bloc.dart';
+import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +24,8 @@ class TaskEditScreen extends StatefulWidget {
   final int statusId;
   final String? user;
   final String? project;
+  final String? startDate;
+  final String? endDate;
 
   const TaskEditScreen({
     Key? key,
@@ -28,6 +36,8 @@ class TaskEditScreen extends StatefulWidget {
     this.description,
     this.project,
     this.user,
+    this.startDate,
+    this.endDate,
   }) : super(key: key);
 
   @override
@@ -37,6 +47,7 @@ class TaskEditScreen extends StatefulWidget {
 class _TaskEditScreenState extends State<TaskEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController messageController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -45,20 +56,19 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController selectedEndDate = TextEditingController();
   final TextEditingController selectedStartDate = TextEditingController();
 
-
   String? selectedPriority = 'Обычный';
   String? selectedProject;
   String? selectedUser;
   bool isUpdated = false;
-
-  final List<String> priorityLevels = ['Обычный', 'Критический', 'Сложный'];
-
   @override
   void initState() {
     super.initState();
-    nameController.text = widget.taskName;
-    descriptionController.text = widget.description ?? '';
+    context.read<ManagerBloc>().add(FetchManagers());
+    context.read<ProjectBloc>().add(FetchProjects());
+    context.read<UserTaskBloc>().add(FetchUsers());
   }
+
+  final List<String> priorityLevels = ['Обычный', 'Критический', 'Сложный'];
 
   @override
   Widget build(BuildContext context) {
@@ -203,52 +213,56 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             color: const Color(0xFFF4F7FD),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: DropdownButtonFormField<String>(
-            value: selectedPriority,
-            items: priorityLevels.map((String priority) {
-              Color priorityColor;
-              switch (priority) {
-                case 'Критический':
-                  priorityColor = Colors.red;
-                  break;
-                case 'Сложный':
-                  priorityColor = Colors.yellow;
-                  break;
-                default:
-                  priorityColor = Colors.green;
-              }
-              return DropdownMenuItem(
-                value: priority,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: priorityColor,
-                        shape: BoxShape.circle,
+          child: Theme(
+            // Обернул в Theme чтобы изменить цвет выпадающего меню на белый
+            data: Theme.of(context).copyWith(
+              canvasColor:
+                  Colors.white, // Устанавливаем белый фон для выпадающего меню
+            ),
+            child: DropdownButtonFormField<String>(
+              value: selectedPriority,
+              items: priorityLevels.map((String priority) {
+                Color priorityColor;
+                switch (priority) {
+                  case 'Критический':
+                    priorityColor = Colors.red;
+                    break;
+                  case 'Сложный':
+                    priorityColor = Colors.yellow;
+                    break;
+                  default:
+                    priorityColor = Colors.green;
+                }
+                return DropdownMenuItem(
+                  value: priority,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: priorityColor,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(priority),
-                  ],
-                ),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedPriority = newValue;
-              });
-            },
-            decoration: _inputDecoration(),
+                      const SizedBox(width: 8),
+                      Text(priority),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedPriority = newValue;
+                });
+              },
+              decoration: _inputDecoration(),
+            ),
           ),
-        ),
+        )
       ],
     );
   }
-
- 
-  
 
   Widget _buildUserDropdown() {
     return Column(
@@ -269,18 +283,25 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             color: const Color(0xFFF4F7FD),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: DropdownButtonFormField<String>(
-            value: selectedUser,
-            hint: const Text('Выберите пользователя'),
-            items: [], // Здесь добавьте ваши элементы пользователя
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedUser = newValue;
-              });
-            },
-            decoration: _inputDecoration(),
+          child: Theme(
+            // Обернул в Theme чтобы изменить цвет выпадающего меню на белый
+            data: Theme.of(context).copyWith(
+              canvasColor:
+                  Colors.white, // Устанавливаем белый фон для выпадающего меню
+            ),
+            child: DropdownButtonFormField<String>(
+              value: selectedUser,
+              hint: const Text('Выберите пользователя'),
+              items: [], // Здесь добавьте ваши элементы пользователя
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedUser = newValue;
+                });
+              },
+              decoration: _inputDecoration(),
+            ),
           ),
-        ),
+        )
       ],
     );
   }
@@ -324,7 +345,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   DateTime? startDate, endDate;
-                  
+
                   if (startDateController.text.isNotEmpty) {
                     try {
                       startDate = DateFormat('dd/MM/yyyy HH:mm')
@@ -332,7 +353,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Ошибка в дате начала: ${e.toString()}'),
+                          content:
+                              Text('Ошибка в дате начала: ${e.toString()}'),
                         ),
                       );
                       return;
@@ -346,26 +368,32 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Ошибка в дате окончания: ${e.toString()}'),
+                          content:
+                              Text('Ошибка в дате окончания: ${e.toString()}'),
                         ),
                       );
                       return;
                     }
                   }
 
-                 context.read<TaskBloc>().add(
-      UpdateTask(
-        taskId: widget.taskId,
-        name: nameController.text,
-        statusId: widget.statusId,  
-        priority: selectedPriority,  
-        startDate: startDate,  // Передаем преобразованное значение
-        endDate: endDate,      // Передаем преобразованное значение
-        projectId: int.tryParse(selectedProjectId.text), // Преобразование в int
-        userId: int.tryParse(selectedUserId.text),        // Преобразование в int
-        description: descriptionController.text,
-      ),
-    );
+                  context.read<TaskBloc>().add(
+                        UpdateTask(
+                          taskId: widget.taskId,
+                          name: nameController.text,
+                          statusId: widget.statusId,
+                          priority: selectedPriority,
+                          startDate:
+                              startDate, // Передаем преобразованное значение
+                          endDate: endDate, // Передаем преобразованное значение
+                          projectId: int.tryParse(
+                              selectedProjectId.text), // Преобразование в int
+                          userId: int.tryParse(
+                              selectedUserId.text), // Преобразование в int
+                          description: descriptionController.text,
+                          taskStatusId: widget.statusId,
+                          message: messageController.text,
+                        ),
+                      );
                 }
               },
             ),

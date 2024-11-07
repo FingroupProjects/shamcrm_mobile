@@ -1,3 +1,9 @@
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_event.dart';
+import 'package:crm_task_manager/bloc/project/project_bloc.dart';
+import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
@@ -22,14 +28,23 @@ class TaskAddScreen extends StatefulWidget {
 class _TaskAddScreenState extends State<TaskAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController startDateController = TextEditingController();
-  final TextEditingController endDateController = TextEditingController();
+  final TextEditingController toController = TextEditingController();
+  final TextEditingController fromController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedPriority = 'Обычный';
   String? selectedProject;
-  String? selectedUser;
-
+  String ?selectedUser;
+  int ?taskStatusId;
+  String? startDate;
+  String? endDate;
+ @override
+    void initState() {
+      super.initState();
+      context.read<ManagerBloc>().add(FetchManagers());
+      context.read<ProjectBloc>().add(FetchProjects());
+      context.read<UserTaskBloc>().add(FetchUsers());
+    }
   final List<String> priorityLevels = ['Обычный', 'Критический', 'Сложный'];
 
   @override
@@ -104,12 +119,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       _buildPriorityDropdown(),
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
-                        controller: startDateController,
+                        controller: fromController,
                         label: 'От',
                       ),
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
-                        controller: endDateController,
+                        controller: toController,
                         label: 'До',
                       ),
                       const SizedBox(height: 8),
@@ -168,6 +183,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             color: Color(0xFFF4F7FD),
             borderRadius: BorderRadius.circular(8),
           ),
+           child: Theme(
+          // Обернул в Theme чтобы изменить цвет выпадающего меню на белый
+          data: Theme.of(context).copyWith(
+            canvasColor: Colors.white, // Устанавливаем белый фон для выпадающего меню
+          ),
           child: DropdownButtonFormField<String>(
             value: selectedPriority,
             items: priorityLevels.map((String priority) {
@@ -207,6 +227,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             },
             decoration: _inputDecoration(),
           ),
+           )
         ),
       ],
     );
@@ -254,26 +275,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     DateTime? startDate;
                     DateTime? endDate;
 
-                    // Парсинг дат из текстовых полей
-                    if (startDateController.text.isNotEmpty) {
-                      try {
-                        startDate = DateFormat('dd/MM/yyyy HH:mm')
-                            .parse(startDateController.text);
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content:
-                                Text('Ошибка в дате начала: ${e.toString()}'),
-                          ),
-                        );
-                        return;
-                      }
-                    }
-
-                    if (endDateController.text.isNotEmpty) {
+                    
+                    if (toController.text.isNotEmpty) {
                       try {
                         endDate = DateFormat('dd/MM/yyyy HH:mm')
-                            .parse(endDateController.text);
+                            .parse(fromController.text);
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -295,7 +301,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             name: name,
                             statusId: widget.statusId,
                             priority: selectedPriority,
-                            startDate: startDate,
+                            taskStatusId: widget.statusId,
+                            startDate:startDate,
                             endDate: endDate,
                             projectId: selectedProject != null
                                 ? int.parse(selectedProject!)

@@ -15,8 +15,6 @@ class TaskCard extends StatefulWidget {
   final int? user;
   final int? userId;
 
-
-
   TaskCard({
     required this.task,
     required this.name,
@@ -25,7 +23,7 @@ class TaskCard extends StatefulWidget {
     this.project,
     this.projectId,
     this.user,
-    this.userId
+    this.userId,
   });
 
   @override
@@ -58,7 +56,6 @@ class _TaskCardState extends State<TaskCard> {
               taskName: widget.task.name ?? 'Без имени',
               startDate: widget.task.startDate,
               endDate: widget.task.endDate,
-              
               taskStatus: dropdownValue,
               statusId: widget.statusId,
               description: widget.task.description,
@@ -100,60 +97,65 @@ class _TaskCardState extends State<TaskCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
             Row(
               children: [
                 const Text(
                   'Колонка: ',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w400,
                     color: Color(0xff99A4BA),
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    DropdownBottomSheet(
-                      context,
-                      dropdownValue,
-                      (String newValue) {
-                        setState(() {
-                          dropdownValue = newValue;
-                        });
-                        widget.onStatusUpdated();
-                      },
-                      widget.task,
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xff1E2E52),
-                        width: 0.2,
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      DropdownBottomSheet(
+                        context,
+                        dropdownValue,
+                        (String newValue) {
+                          setState(() {
+                            dropdownValue = newValue;
+                          });
+                          widget.onStatusUpdated();
+                        },
+                        widget.task,
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xff1E2E52),
+                          width: 0.2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          dropdownValue,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              dropdownValue,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1, // Ограничивает текст одной строкой
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Image.asset(
-                          'assets/icons/tabBar/dropdown.png',
-                          width: 20,
-                          height: 20,
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Image.asset(
+                            'assets/icons/tabBar/dropdown.png',
+                            width: 20,
+                            height: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -11,8 +11,6 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
-import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
-import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -170,24 +168,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 8),
-                      ProjectWidget(
-                        selectedProject: selectedProject,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedProject = newValue;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      UserWidget(
-                        selectedUser: selectedUser,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedUser = newValue;
-                          });
-                        },
-                      ),
+                      
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,

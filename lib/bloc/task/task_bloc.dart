@@ -94,6 +94,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final result = await apiService.createTask(
         name: event.name,
         statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
         priority: event.priority,
         startDate: event.startDate,
         endDate: event.endDate,
@@ -132,6 +133,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
+        taskStatusId: event.taskStatusId,
+        message: event.message,
       );
 
       if (result['success']) {

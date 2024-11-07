@@ -35,7 +35,7 @@ class Task {
       startDate: json['start_date'] is String ? json['start_date'] : null,
       endDate: json['end_date'] is String ? json['end_date'] : null,
       description: json['description'] is String ? json['description'] : '',
-      statusId: taskStatusId, // Assign taskStatusId
+      statusId: taskStatusId,
       taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])
           : null,

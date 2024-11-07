@@ -815,28 +815,31 @@ Future<Map<String, dynamic>> updateDeal({
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-// Метод для получения Задачи
-  Future<List<Task>> getTasks(int taskStatusId,
-      {int page = 1, int perPage = 20}) async {
-    final response = await _getRequest(
-        '/task?task_status_id=$taskStatusId&page=$page&per_page=$perPage');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки задач: ${response.body}');
-    }
+Future<List<Task>> getTasks(int? taskStatusId,
+    {int page = 1, int perPage = 20}) async {
+  String path = '/task';
+  if (taskStatusId != null) {
+    path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
+  } else {
+    path += '?page=$page&per_page=$perPage';
   }
-  // Метод для получения статусов Задач
 
-  // Метод для получения статусов Сделок
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки задач: ${response.body}');
+  }
+}
+  // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final response = await _getRequest('/task-status');
 
@@ -867,143 +870,141 @@ Future<Map<String, dynamic>> updateDeal({
       throw Exception('Ошибка обновления задач сделки: ${response.body}');
     }
   }
-// Метод для Создания Задачи
+   // Общий метод обработки ответов для задач
+  Map<String, dynamic> _handleTaskResponse(http.Response response, String operation) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+      
+      // Проверяем наличие ошибок в ответе
+      if (data['errors'] != null) {
+        return {
+          'success': false,
+          'message': 'Ошибка ${operation} задачи: ${data['errors']}',
+        };
+      }
+      
+      return {
+        'success': true,
+        'message': 'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'data': data['result'],
+      };
+    }
+
+    if (response.statusCode == 422) {
+      final data = json.decode(response.body);
+      final validationErrors = {
+        'name': 'Название задачи должно содержать минимум 3 символа.',
+        'from': 'Неверный формат даты начала.',
+        'to': 'Неверный формат даты окончания.',
+        'project_id': 'Указанный проект не существует.',
+        'user_id': 'Указанный пользователь не существует.',
+      };
+
+      // Проверяем каждое поле на наличие ошибки
+      for (var entry in validationErrors.entries) {
+        if (data['errors']?[entry.key] != null) {
+          return {'success': false, 'message': entry.value};
+        }
+      }
+
+      return {
+        'success': false,
+        'message': 'Ошибка валидации: ${data['errors'] ?? response.body}',
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'Ошибка ${operation} задачи: ${response.body}',
+    };
+  }
+
+  // Общий метод обработки ошибок
+  Exception _handleErrorResponse(http.Response response, String operation) {
+    try {
+      final data = json.decode(response.body);
+      final errorMessage = data['errors'] ?? data['message'] ?? response.body;
+      return Exception('Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+    } catch (e) {
+      return Exception('Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+    }
+  }
+  
+
+ // Метод для создания задачи
   Future<Map<String, dynamic>> createTask({
-  required String name,
-  required int statusId,
-  String? priority,
-  DateTime? startDate,
-  DateTime? endDate,
-  int? projectId,
-  int? userId,
-  String? description,
-}) async {
-  final response = await _postRequest('/task', {
-    'name': name,
-    'status_id': statusId,
-    if (priority != null) 'priority': priority,
-    if (startDate != null) 'start_date': startDate.toIso8601String(),
-    if (endDate != null) 'end_date': endDate.toIso8601String(),
-    if (projectId != null) 'project_id': projectId,
-    if (userId != null) 'user_id': userId,
-    if (description != null) 'description': description,
-  });
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    String? message,
+    String? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    int? userId,
+    String? description,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'message':message,
+        'task_status_id':taskStatusId,
+        'priority_level': priority ??'1', // Используем строковое значение приоритета
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null) 'user_id': userId,
+        if (description != null) 'description': description,
+      };
 
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return {'success': true, 'message': 'Задача создана успешно.'};
-  } else if (response.statusCode == 422) {
-    // Обработка ошибок валидации
-    if (response.body.contains('name')) {
+      final response = await _postRequest('/task', requestBody);
+      return _handleTaskResponse(response, 'создания');
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Название задачи должно содержать минимум 3 символа.'
+        'message': 'Ошибка при создании задачи: $e',
       };
     }
-    if (response.body.contains('start_date')) {
-      return {
-        'success': false,
-        'message': 'Неверный формат даты начала.'
-      };
-    }
-    if (response.body.contains('end_date')) {
-      return {
-        'success': false,
-        'message': 'Неверный формат даты окончания.'
-      };
-    }
-    if (response.body.contains('project_id')) {
-      return {
-        'success': false,
-        'message': 'Указанный проект не существует.'
-      };
-    }
-    if (response.body.contains('user_id')) {
-      return {
-        'success': false,
-        'message': 'Указанный пользователь не существует.'
-      };
-    }
-    
-    return {
-      'success': false,
-      'message': 'Неизвестная ошибка валидации: ${response.body}'
-    };
-  } else {
-    return {
-      'success': false,
-      'message': 'Ошибка создания задачи: ${response.body}'
-    };
   }
-}
 
-Future<Map<String, dynamic>> updateTask({
-  required int taskId,
-  required String name,
-  required int statusId,
-  String? priority,
-  DateTime? startDate,
-  DateTime? endDate,
-  int? projectId,
-  int? userId,
-  String? description,
-}) async {
-  final response = await _patchRequest('/task/$taskId', {
-    'name': name,
-    'status_id': statusId,
-    if (priority != null) 'priority': priority,
-    if (startDate != null) 'start_date': startDate.toIso8601String(),
-    if (endDate != null) 'end_date': endDate.toIso8601String(),
-    if (projectId != null) 'project_id': projectId,
-    if (userId != null) 'user_id': userId,
-    if (description != null) 'description': description,
-  });
+  // Обновленный метод обновления задачи
+  Future<Map<String, dynamic>> updateTask({
+    required int taskId,
+    required String name,
+    required int statusId,
+    required int taskStatusId,
+    required String message,
+    String? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    int? userId,
+    String? description,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id':taskStatusId,
+        'message':message,
+        if (priority != null) 'priority_level': priority,
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null) 'user_id': userId,
+        if (description != null) 'description': description,
+      };
 
-  if (response.statusCode == 200) {
-    return {'success': true, 'message': 'Задача обновлена успешно.'};
-  } else if (response.statusCode == 422) {
-    // Обработка ошибок валидации
-    if (response.body.contains('name')) {
+      final response = await _patchRequest('/task/$taskId', requestBody);
+      return _handleTaskResponse(response, 'обновления');
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Название задачи должно содержать минимум 3 символа.'
+        'message': 'Ошибка при обновлении задачи: $e',
       };
     }
-    if (response.body.contains('start_date')) {
-      return {
-        'success': false,
-        'message': 'Неверный формат даты начала.'
-      };
-    }
-    if (response.body.contains('end_date')) {
-      return {
-        'success': false,
-        'message': 'Неверный формат даты окончания.'
-      };
-    }
-    if (response.body.contains('project_id')) {
-      return {
-        'success': false,
-        'message': 'Указанный проект не существует.'
-      };
-    }
-    if (response.body.contains('user_id')) {
-      return {
-        'success': false,
-        'message': 'Указанный пользователь не существует.'
-      };
-    }
-    
-    return {
-      'success': false,
-      'message': 'Неизвестная ошибка валидации: ${response.body}'
-    };
-  } else {
-    return {
-      'success': false,
-      'message': 'Ошибка обновления задачи: ${response.body}'
-    };
   }
-}
 // Метод для получения Истории Задачи
   Future<List<TaskHistory>> getTaskHistory(int taskId) async {
     try {
@@ -1053,25 +1054,39 @@ Future<Map<String, dynamic>> updateTask({
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
-  // Метод для получения Пользователя
-  Future<List<UserTask>> getUserTask() async {
+
+  // Метод для получение Пользователя
+Future<List<UserTask>> getUserTask() async {
+  try {
+    print('Отправка запроса на /user');
     final response = await _getRequest('/user');
+    print('Статус ответа: ${response.statusCode}');
+    print('Тело ответа: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Тело ответа: $data'); // Для отладки
 
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
+      // Убедитесь, что данные соответствуют ожидаемой структуре
+      if (data['result'] != null && data['result'] is List) {
+        final usersList = (data['result'] as List)
             .map((user) => UserTask.fromJson(user))
             .toList();
+
+        print('Получено пользователей: ${usersList.length}');
+        return usersList;
       } else {
-        throw Exception('Пользователей не найдено');
+        print('Структура данных неверна: $data');
+        throw Exception('Неверная структура данных пользователей');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      print('Ошибка HTTP: ${response.statusCode}');
+      throw Exception('Ошибка сервера: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Ошибка при получении пользователей: $e');
+    rethrow;
   }
+}
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов
