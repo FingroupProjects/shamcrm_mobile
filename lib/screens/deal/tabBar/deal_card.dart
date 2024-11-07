@@ -62,7 +62,6 @@ class _DealCardState extends State<DealCard> {
               dealStatus: dropdownValue,
               statusId: widget.statusId,
               manager: widget.deal.manager?.name,
-              managerId: widget.deal.manager?.id,
               currency: widget.deal.currency?.name,
               currencyId: widget.deal.currency?.id,
               lead: widget.deal.lead?.name,
