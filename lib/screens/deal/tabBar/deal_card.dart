@@ -10,6 +10,7 @@ class DealCard extends StatefulWidget {
   final String title;
   final int statusId;
   final VoidCallback onStatusUpdated;
+  
 
   DealCard({
     required this.deal,
@@ -30,6 +31,7 @@ class _DealCardState extends State<DealCard> {
     super.initState();
     dropdownValue = widget.title;
   }
+
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -177,3 +179,5 @@ class _DealCardState extends State<DealCard> {
     );
   }
 }
+
+
