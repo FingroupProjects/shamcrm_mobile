@@ -7,19 +7,19 @@ import 'package:social_media_recorder/screen/social_media_recorder.dart';
 
 class InputField extends StatelessWidget {
   final Function onSend;
-  final Function onAttachFile;
+  final VoidCallback onAttachFile;
   final Function onRecordVoice;
   final TextEditingController messageController; // Контроллер для поля ввода
   final Function(File soundFile, String time) sendRequestFunction;
 
-  InputField(
-      {Key? key,
-      required this.onSend,
-      required this.onAttachFile,
-      required this.onRecordVoice,
-      required this.messageController,
-      required this.sendRequestFunction})
-      : super(key: key);
+  const InputField({
+    super.key,
+    required this.onSend,
+    required this.onAttachFile,
+    required this.onRecordVoice,
+    required this.messageController,
+    required this.sendRequestFunction,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +63,7 @@ class InputField extends StatelessWidget {
                   child: IconButton(
                     icon: Image.asset('assets/icons/chats/file.png',
                         width: 20, height: 20),
-                    onPressed: onAttachFile(),
+                    onPressed: onAttachFile,
                   ),
                 ),
               ],
@@ -71,11 +71,10 @@ class InputField extends StatelessWidget {
           ),
           SizedBox(width: 8),
           MediaQuery(
-              data:  MediaQueryData(
-                size: Size(300, 400),
-              ),
+            data: MediaQueryData(
+              size: Size(300, 400),
+            ),
             child: SocialMediaRecorder(
-
               startRecording: () {
                 // function called when start recording
               },
@@ -84,9 +83,7 @@ class InputField extends StatelessWidget {
               },
               sendRequestFunction: sendRequestFunction,
               encode: AudioEncoderType.AAC,
-
               radius: BorderRadius.circular(12),
-
             ),
           ),
 

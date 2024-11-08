@@ -40,6 +40,10 @@ class ImageMessageBubble extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.symmetric(vertical: 5),
+              decoration: BoxDecoration(
+                border: Border.all(width: 1, color: Colors.black26),
+                borderRadius: BorderRadius.all(Radius.circular(12))
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(

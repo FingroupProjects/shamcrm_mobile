@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 
@@ -6,7 +7,7 @@ class FileMessageBubble extends StatelessWidget {
   final bool isSender;
   final String filePath;
   final String fileName;
-  final Function onTap;
+  final Function(String) onTap;
 
   const FileMessageBubble({
     Key? key,
@@ -19,6 +20,7 @@ class FileMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     String fileExtension = fileName.split('.').last.toLowerCase();
     String iconPath;
 
@@ -33,6 +35,7 @@ class FileMessageBubble extends StatelessWidget {
         break;
       case 'doc':
       case 'docx':
+      case 'document':
         iconPath = 'assets/icons/chats/doc.png';
         break;
       case 'xls':
@@ -56,11 +59,11 @@ class FileMessageBubble extends StatelessWidget {
             isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           GestureDetector(
-            onTap: () => onTap(),
+            onTap: () => onTap(filePath),
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 5),
               padding: const EdgeInsets.all(12),
-              constraints: BoxConstraints(maxWidth: 220),
+              constraints: BoxConstraints(maxWidth: 200),
               decoration: BoxDecoration(
                 color: isSender
                     ? ChatSmsStyles.messageBubbleSenderColor
@@ -68,10 +71,9 @@ class FileMessageBubble extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Image.asset(iconPath, width: 32, height: 32),
-                  SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       fileName,
@@ -84,7 +86,7 @@ class FileMessageBubble extends StatelessWidget {
               ),
             ),
           ),
-          Text(
+         Text(
             time,
             style: const TextStyle(
               fontSize: 12,

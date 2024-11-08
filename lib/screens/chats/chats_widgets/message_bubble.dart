@@ -37,7 +37,7 @@ class MessageBubble extends StatelessWidget {
                   : ChatSmsStyles.receiverMessageTextStyle,
             ),
           ),
-          Text(
+          if(time.isNotEmpty)Text(
             time,
             style: const TextStyle(
               fontSize: 12,

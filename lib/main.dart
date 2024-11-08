@@ -2,12 +2,14 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
+import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/home_screen.dart';  // Главный экран
+import 'screens/home_screen.dart'; // Главный экран
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,11 +26,13 @@ void main() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-  
+
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -39,17 +43,25 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => LoginBloc(ApiService()), // Добавьте LoginBloc
         ),
-         BlocProvider(
+        BlocProvider(
           create: (context) => LeadBloc(ApiService()), // Добавьте LeadBloc
         ),
+        BlocProvider(
+          create: (context) => GetAllClientBloc(),
+        ),
+        BlocProvider(
+          create: (context) => CreateClientBloc(),
+        ),
+
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'CRM TASK MANAGER',
         routes: {
-          '/': (context) => AuthScreen(),  // Экран для проверки домена
-          '/login': (context) => LoginScreen(),  // Экран логина
-          '/home': (context) => HomeScreen(),  // Главный экран после успешного входа
+          '/': (context) => AuthScreen(), // Экран для проверки домена
+          '/login': (context) => LoginScreen(), // Экран логина
+          '/home': (context) =>
+              HomeScreen(), // Главный экран после успешного входа
         },
       ),
     );

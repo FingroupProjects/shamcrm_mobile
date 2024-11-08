@@ -11,11 +11,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<CheckLogin>((event, emit) async {
       emit(LoginLoading());
       try {
-        final loginModel = LoginModel(login: event.login, password: event.password);
+        final loginModel =
+            LoginModel(login: event.login, password: event.password);
         final loginResponse = await apiService.login(loginModel);
-        emit(LoginLoaded(loginResponse.token)); // Передайте токен в LoginLoaded
+        emit(LoginLoaded(loginResponse.token,
+            loginResponse.user)); // Передайте токен в LoginLoaded
       } catch (e) {
-        emit(LoginError('Не правильный Логин или Пароль')); 
+        emit(LoginError('Не правильный Логин или Пароль'));
       }
     });
   }

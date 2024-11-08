@@ -2,7 +2,7 @@ part of 'chats_bloc.dart';
 
 sealed class ChatsState extends Equatable {
   const ChatsState();
-  
+
   @override
   List<Object> get props => [];
 }
@@ -11,24 +11,19 @@ class ChatsInitial extends ChatsState {}
 
 class ChatsLoading extends ChatsState {}
 
-class ChatsLoaded extends ChatsState{
-  final List<Chats> chats;
+class ChatsLoaded extends ChatsState {
+  final PaginationDTO<Chats> chatsPagination;
+  const ChatsLoaded(this.chatsPagination);
 
-  const ChatsLoaded(this.chats);
-
-  @override  
-  List<Object> get props => [chats];
+  @override
+  List<Object> get props => [chatsPagination];
 }
 
 class ChatsError extends ChatsState {
   final String message;
 
-
   const ChatsError(this.message);
 
-  @override  
+  @override
   List<Object> get props => [message];
-
-  
 }
-

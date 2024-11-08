@@ -17,29 +17,43 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>UIBackgroundModes</key>
-    <array>
-       <string>fetch</string>
-       <string>remote-notification</string>
-    </array>
-    <key>NSAppleMusicUsageDescription</key>
-    <string>Explain why your app uses music</string>
-    <key>LSSupportsOpeningDocumentsInPlace</key>
-    <true/>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Explain why your app uses photo library</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для улучшения управления задачами.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Это приложение требует доступ к фотобиблиотеке.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Access camera</string>
 	<key>NSMicrophoneUsageDescription</key>
-    <string>We need to access to the microphone to record audio file</string>
-    <key>NSAppTransportSecurity</key>
+	<string>Это приложение не требует доступа к микрофону.</string>
+	<key>NSDocumentsUsageDescription</key>
+    <string>Это приложение требует доступ к документам для управления файлами.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Это приложение требует доступ к вашему местоположению для улучшения пользовательского опыта.</string>
+	<key>NSAllowsArbitraryLoadsInWebContent</key>
+    <true/>
+	<key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
         <key>NSAllowsArbitraryLoadsForMedia</key>
         <true/>
     </dict>
+    <key>com.apple.security.device.microphone</key>
+        <true/>
+        <key>com.apple.security.device.audio-input</key>
+        <true/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -65,6 +79,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-
+	<key>LSApplicationCategoryType</key>
+	<string>Bitcode</string>
 </dict>
 </plist>

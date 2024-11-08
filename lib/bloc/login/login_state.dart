@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/user.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class LoginState extends Equatable {
@@ -13,11 +14,12 @@ class LoginLoading extends LoginState {}
 
 class LoginLoaded extends LoginState {
   final String token;
+  final User user;
 
-  LoginLoaded(this.token);
+  const LoginLoaded(this.token, this.user);
 
   @override
-  List<Object> get props => [token];
+  List<Object> get props => [token, user];
 }
 
 class LoginError extends LoginState {

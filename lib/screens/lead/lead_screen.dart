@@ -1,4 +1,6 @@
+import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -14,6 +16,10 @@ class LeadScreen extends StatefulWidget {
 class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   List<String> _tabTitles = [];
+  TextEditingController searchController = TextEditingController();
+  FocusNode focusNode = FocusNode();
+  bool isClickAvatarIcon = false;
+
 
   @override
   void initState() {
@@ -32,7 +38,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
+      appBar: AppBar(
+        title: CustomAppBar(title: 'Лиды',
+          onClickProfileAvatar: () {
+
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+
+          },
+          onChangedSearchInput: (value) {}, textEditingController: searchController, focusNode: focusNode,
+        ),
+        backgroundColor: Colors.white,
+      ),
+      body: isClickAvatarIcon == true ? ProfileScreen(): Column(
         children: [
           const SizedBox(height: 15),
           _buildCustomTabBar(),

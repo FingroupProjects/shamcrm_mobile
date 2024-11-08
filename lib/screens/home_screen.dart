@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/clients/clients_screen.dart';
@@ -6,6 +8,7 @@ import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart'; // Импортируйте экран профиля
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -20,7 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
     DashboardScreen(),
     ClientsScreen(),
     LeadScreen(),
-    ChatsScreen(),
+    BlocProvider(
+      create: (context) => ChatsBloc(ApiService()),
+      child: ChatsScreen(),
+    ),
     DealScreen(),
     ProfileScreen(), // Добавьте экран профиля
   ];
@@ -37,66 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            if (_selectedIndex == 5) // Если экран профиля
-              IconButton(
-                icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
-                onPressed: () {
-                  setState(() {
-                    _selectedIndex = 0; // Возвращаемся на главный экран
-                  });
-                },
-              ),
-            Container(
-              width: 40,
-              height: 40,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Image.asset('assets/images/avatar.png'),
-                onPressed: () {
-                  setState(() {
-                    _selectedIndex = 5; // Установите индекс для профиля
-                  });
-                },
-              ),
-            ),
-            SizedBox(width: 8),
-            Text(
-              _titles[_selectedIndex],
-              style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600),
-            ),
-            Spacer(),
-            Row(
-              children: [
-                IconButton(
-                  icon: Image.asset(
-                    'assets/icons/AppBar/notification.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: Image.asset(
-                    'assets/icons/AppBar/search.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-      ),
+      // appBar: AppBar(
+      //   forceMaterialTransparency: true,
+      //   title: CustomAppBar(title: 'title', onClickProfileAvatar: () {
+      //
+      //   },),
+      //   backgroundColor: Colors.white,
+      // ),
       body: _widgetOptions[
           _selectedIndex], // Теперь отображаем профиль вместе с другими экранами
       backgroundColor: Colors.white,

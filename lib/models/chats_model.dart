@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/screens/chats/chats_items.dart';
+
 class Chats {
   final int id;
   final String name;
@@ -7,6 +9,8 @@ class Chats {
   final String channel;
   final String lastMessage;
   final String messageType;
+  final String createDate;
+  final int unredMessage;
 
   Chats({
     required this.id,
@@ -17,9 +21,13 @@ class Chats {
     required this.channel,
     required this.lastMessage,
     required this.messageType,
+    required this.createDate,
+    required this.unredMessage,
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
+    print('----- for test');
+    print(json);
     return Chats(
       id: json['id'] ?? 0, // Предположим, что ID должен быть числом, иначе 0
       name: json['task'] != null
@@ -27,6 +35,18 @@ class Chats {
           : json['lead'] != null
               ? json['lead']['name'] ?? 'Без имени'
               : '',
+      createDate: json['task'] != null
+          ? json['task']['created_at'] ?? ''
+          : json['lead'] != null
+              ? json['lead']['created_at'] ?? ''
+              : '',
+
+      unredMessage: json['task'] != null
+          ? json['task']['unread_messages_count'] ?? 0
+          : json['lead'] != null
+              ? json['lead']['unread_messages_count'] ?? 0
+              : 0,
+
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
       description:
@@ -60,6 +80,33 @@ class Chats {
         return 'Новое сообщение';
     }
   }
+
+  ChatItem toChatItem(String avatar) {
+    return ChatItem(
+      name,
+      lastMessage,
+      createDate,
+      avatar,
+      _mapChannelToIcon(channel),
+      unredMessage,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Chats{id: $id, name: $name, taskFrom: $taskFrom, taskTo: $taskTo, description: $description, channel: $channel, lastMessage: $lastMessage, messageType: $messageType, createDate: $createDate, unredMessage: $unredMessage}';
+  }
+
+  String _mapChannelToIcon(String channel) {
+    const channelIconMap = {
+      'telegram_bot': 'assets/icons/leads/telegram.png',
+      'telegram_account': 'assets/icons/leads/telegram.png',
+      'whatsapp': 'assets/icons/leads/whatsapp.png',
+      'instagram': 'assets/icons/leads/instagram.png',
+      'facebook': 'assets/icons/leads/facebook.png',
+    };
+    return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
+  }
 }
 
 class Message {
@@ -68,12 +115,11 @@ class Message {
   final String type;
   final String? filePath;
   final bool isMyMessage;
-  bool isPlaying; // Oynash holati uchun
-  bool isPause;   // Tanaffus holati uchun
+  final String createMessateTime;
+  bool isPlaying;
+  bool isPause;
   Duration duration;
   Duration position;
-
-
 
   Message({
     required this.id,
@@ -81,8 +127,9 @@ class Message {
     required this.type,
     this.filePath,
     required this.isMyMessage,
-    this.isPlaying = false, // Standart false qilib olamiz
-    this.isPause = false,   // Standart false qilib olamiz
+    required this.createMessateTime,
+    this.isPlaying = false,
+    this.isPause = false,
     this.duration = const Duration(),
     this.position = const Duration(),
   });
@@ -101,9 +148,15 @@ class Message {
       id: json['id'],
       text: text, // Убедитесь, что именно text используется
       type: json['type'],
+      createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isMyMessage: json['is_my_message'] ?? false,
     );
+  }
+
+  @override
+  String toString() {
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position}';
   }
 }
 
