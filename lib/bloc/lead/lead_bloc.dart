@@ -1,6 +1,7 @@
 // lead_bloc.dart
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
@@ -19,6 +20,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<UpdateLead>(_updateLead);
     on<FetchAllLeads>(_fetchAllLeads);
     on<DeleteLead>(_deleteLead);
+    on<DeleteLeadStatuses>(_deleteLeadStatuses);
   }
 
   // Метод для загрузки всех лидов
@@ -235,6 +237,22 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     } catch (e) {
       emit(LeadError('Ошибка удаления лида: ${e.toString()}'));
+    }
+  }
+  
+   Future<void> _deleteLeadStatuses(DeleteLeadStatuses event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+
+    try {
+      final response = await apiService.deleteLeadStatuses(event.leadStatusId);
+      if (response['result'] == 'Success') {
+        emit(LeadDeleted('Статус Лида удалена успешно'));
+        add(FetchLeads(event.leadStatusId)); // Перезагрузка лида после удаления
+      } else {
+        emit(LeadError('Ошибка удаления статуса лида'));
+      }
+    } catch (e) {
+      emit(LeadError('Ошибка удаления статуса лида: ${e.toString()}'));
     }
   }
 }
