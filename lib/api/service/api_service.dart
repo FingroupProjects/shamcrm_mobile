@@ -20,7 +20,7 @@ import '../../models/login_model.dart';
 class ApiService {
   // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+  final String baseUrl = 'https://shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -967,57 +967,43 @@ class ApiService {
       };
     }
   }
+  // Метод для создания задачи
+  Future<Map<String, dynamic>> createTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    int? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    int? userId,
+    String? description,
+    // Map<String, dynamic>? file,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'priority_level': priority, // Используем строковое значение приоритета
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null) 'user_id': userId,
+        // if (file != null) "file": file,
+        if (description != null) 'description': description,
+        
+      };
 
-Future<Map<String, dynamic>> createTask({
-  required String name, // Обязательное поле для имени задачи
-  required int? statusId, // Обязательное поле для ID статуса задачи
-  required int? taskStatusId, // Обязательное поле для ID статуса задачи
-  int? priority, // Приоритет задачи (необязательное поле)
-  DateTime? startDate, // Дата начала задачи (необязательное поле)
-  DateTime? endDate, // Дата окончания задачи (необязательное поле)
-  int? projectId, // ID проекта (необязательное поле)
-  int? userId, // ID пользователя (необязательное поле)
-  String? description, // Описание задачи (необязательное поле)
-  String? login, // Логин пользователя
-  TaskFile? file, // Файл для загрузки (необязательное поле)
-}) async {
-  try {
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/task'));
-
-    request.fields['name'] = name;
-    request.fields['status_id'] = statusId.toString();
-    request.fields['task_status_id'] = taskStatusId.toString();
-    
-    // Добавляем обязательное поле "login"
-    if (login != null) request.fields['login'] = login;
-
-    if (priority != null) request.fields['priority_level'] = priority.toString();
-    if (startDate != null) request.fields['from'] = startDate.toIso8601String();
-    if (endDate != null) request.fields['to'] = endDate.toIso8601String();
-    if (projectId != null) request.fields['project_id'] = projectId.toString();
-    if (userId != null) request.fields['user_id'] = userId.toString();
-    if (description != null) request.fields['description'] = description;
-
-    if (file != null) {
-      request.files.add(await http.MultipartFile.fromPath('file', file.size));
+      final response = await _postRequest('/task', requestBody);
+      return _handleTaskResponse(response, 'создания');
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при создании задачи: $e',
+      };
     }
-
-    final response = await request.send();
-    final responseData = await http.Response.fromStream(response);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача создана успешно.'};
-    } else {
-      return _handleTaskResponse(responseData, 'создания');
-    }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при создании задачи: $e',
-    };
   }
-}
-
 
   // Обновленный метод обновления задачи
   Future<Map<String, dynamic>> updateTask({

@@ -101,7 +101,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
-        file: event.file, // C
+        // file: event.file // C
       );
 
       if (result['success']) {
@@ -135,7 +135,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         userId: event.userId,
         description: event.description,
         taskStatusId: event.taskStatusId,
-        file: event.file?.toJson(), // C
+        // file: event.file 
       );
 
       if (result['success']) {

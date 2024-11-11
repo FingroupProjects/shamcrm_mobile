@@ -36,3 +36,17 @@ class LeadSuccess extends LeadState {
 
   LeadSuccess(this.message);
 }
+
+
+class LeadDeleted extends LeadState {
+  final String message;
+
+  LeadDeleted(this.message);
+}
+
+class LeadStatusDeleted extends LeadState {
+  final String message;
+
+  LeadStatusDeleted(this.message);
+}
+

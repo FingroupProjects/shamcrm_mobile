@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,7 +17,6 @@ class DealDetailsScreen extends StatefulWidget {
   final String dealStatus;
   final int statusId;
   final String? manager;
-  final int? managerId;
   final String? currency;
   final int? currencyId;
   final String? lead;
@@ -33,7 +33,6 @@ class DealDetailsScreen extends StatefulWidget {
     required this.dealStatus,
     required this.statusId,
     this.manager,
-    this.managerId,
     this.currency,
     this.currencyId,
     this.lead,
@@ -92,7 +91,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     return Scaffold(
       appBar: _buildAppBar(context, 'Просмотр Сделки'),
       backgroundColor: Colors.white,
-      body: Padding(
+      body: BlocListener<DealBloc, DealState>(
+        listener: (context, state) {
+          if (state is DealDeleted) {
+            context.read<DealBloc>().add(FetchDealStatuses());
+            Navigator.pop(context);
+          }
+        },
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: BlocBuilder<DealBloc, DealState>(
           builder: (context, state) {
@@ -122,10 +128,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             } else if (state is DealError) {
               return Center(child: Text('Ошибка: ${state.message}'));
             }
-            return Center(child: Text('Неизвестное состояние'));
+            return Center(child: Text(''));
           },
         ),
       ),
+      )
     );
   }
 
@@ -205,6 +212,22 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   ),
                 );
               }
+            },
+          ),
+        ),
+         Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/delete.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DeleteDealDialog(dealId: currentDeal!.id),
+              );
             },
           ),
         ),

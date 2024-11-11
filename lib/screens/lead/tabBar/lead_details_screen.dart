@@ -1,9 +1,9 @@
-import 'package:crm_task_manager/bloc/history/history_bloc.dart';
-import 'package:crm_task_manager/bloc/history/history_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
@@ -12,19 +12,19 @@ import 'package:intl/intl.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
-  String leadName;
-  String leadStatus;
-  int statusId;
-  String? region;
-  int? regionId;
-  String? manager;
-  int? managerId;
-  String? birthday;
-  String? instagram;
-  String? facebook;
-  String? telegram;
-  String? phone;
-  String? description;
+  final String leadName;
+  final String leadStatus;
+  final int statusId;
+  final String? region;
+  final int? regionId;
+  final String? manager;
+  final int? managerId;
+  final String? birthday;
+  final String? instagram;
+  final String? facebook;
+  final String? telegram;
+  final String? phone;
+  final String? description;
 
   LeadDetailsScreen({
     required this.leadId,
@@ -49,59 +49,97 @@ class LeadDetailsScreen extends StatefulWidget {
 
 class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
+  Lead? currentLead;
 
   @override
   void initState() {
     super.initState();
-    _updateDetails();
+    context.read<LeadBloc>().add(FetchLeads(widget.statusId));
   }
 
-  void _updateDetails() {
+  // Функция для форматирования даты
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'Не указано';
+    try {
+      final parsedDate = DateTime.parse(dateString);
+      return DateFormat('dd/MM/yyyy').format(parsedDate);
+    } catch (e) {
+      return 'Неверный формат';
+    }
+  }
+
+  // Обновление данных лида
+  void _updateDetails(Lead lead) {
+    currentLead = lead; // Сохраняем актуального лида
     details = [
-      {'label': 'ID лида:', 'value': widget.leadId},
-      {'label': 'ФИО клиента:', 'value': widget.leadName},
-      {'label': 'Статус:', 'value': widget.leadStatus},
-      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},
-      {'label': 'Регион:', 'value': widget.region ?? 'Не указано'},
-      {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
-      // {'label': 'ID региона:', 'value': widget.regionId?.toString() ?? 'Не указано'},
-      {'label': 'Дата рождения:', 'value': widget.birthday ?? 'Не указано'},
-      {'label': 'Instagram:', 'value': widget.instagram ?? 'Не указано'},
-      {'label': 'Facebook:', 'value': widget.facebook ?? 'Не указано'},
-      {'label': 'Telegram:', 'value': widget.telegram ?? 'Не указано'},
-      {'label': 'Телефон:', 'value': widget.phone ?? 'Не указано'},
-      {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
+      {'label': 'ID лида:', 'value': lead.id.toString()},
+      {'label': 'ФИО клиента:', 'value': lead.name},
+      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
+      {'label': 'Регион:', 'value': lead.region?.name ?? 'Не указано'},
+      {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Не указано'},
+      {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
+      {'label': 'Instagram:', 'value': lead.instagram ?? 'Не указано'},
+      {'label': 'Facebook:', 'value': lead.facebook ?? 'Не указано'},
+      {'label': 'Telegram:', 'value': lead.telegram ?? 'Не указано'},
+      {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
+      {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) {
-        if (state is LeadSuccess) {
-          _updateDetails();
-          setState(() {});
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(context, 'Просмотр лида'),
-        body: Padding(
+    return Scaffold(
+      appBar: _buildAppBar(context, 'Просмотр Лида'),
+      backgroundColor: Colors.white,
+      body: BlocListener<LeadBloc, LeadState>(
+        listener: (context, state) {
+          if (state is LeadDeleted) {
+            context.read<LeadBloc>().add(FetchLeadStatuses());
+            Navigator.pop(context);
+          }
+        },
+        child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ListView(
-            children: [
-              _buildDetailsList(),
-              const SizedBox(height: 16),
-              ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-              const SizedBox(height: 16),
-              NotesWidget(leadId: int.parse(widget.leadId)),
-            ],
+          child: BlocBuilder<LeadBloc, LeadState>(
+            builder: (context, state) {
+              if (state is LeadLoading) {
+                return Center(child: CircularProgressIndicator());
+              } else if (state is LeadDataLoaded) {
+                Lead? lead;
+                try {
+                  lead = state.leads.firstWhere(
+                    (lead) => lead.id.toString() == widget.leadId,
+                  );
+                } catch (e) {
+                  lead = null;
+                }
+
+                if (lead != null) {
+                  _updateDetails(lead);
+                } else {
+                  return Center(child: Text('Лид не найден'));
+                }
+                return ListView(
+                  children: [
+                    _buildDetailsList(),
+                    const SizedBox(height: 8),
+                    ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+                    const SizedBox(height: 16),
+                    NotesWidget(leadId: int.parse(widget.leadId)),
+                  ],
+                );
+              } else if (state is LeadError) {
+                return Center(child: Text('Ошибка: ${state.message}'));
+              }
+              return Center(child: Text(''));
+            },
           ),
         ),
       ),
     );
   }
 
+  // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -114,7 +152,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           height: 24,
         ),
         onPressed: () {
-          Navigator.pop(context);
+          Navigator.pop(context, widget.statusId);
+          context.read<LeadBloc>().add(FetchLeadStatuses());
         },
       ),
       title: Text(
@@ -141,50 +180,69 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                           ? DateFormat('dd/MM/yyyy')
                               .format(DateTime.parse(widget.birthday!))
                             : null;
+          padding: const EdgeInsets.only(right: 8);
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              if (currentLead != null) {
+                final birthdayString = currentLead!.birthday != null &&
+                        currentLead!.birthday!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentLead!.birthday!))
+                    : null;
 
-                  final updatedLead = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LeadEditScreen(
-                        leadId: int.parse(widget.leadId),
-                        leadName: widget.leadName,
-                        leadStatus: widget.leadStatus,
-                        statusId: widget.statusId,
-                        region: widget.regionId?.toString(),
-                        manager: widget.managerId?.toString(),
-                        birthday: formattedBirthday,
-                        instagram: widget.instagram,
-                        facebook: widget.facebook,
-                        telegram: widget.telegram,
-                        phone: widget.phone,
-                        description: widget.description,
-                      ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LeadEditScreen(
+                      leadId: currentLead!.id,
+                      leadName: currentLead!.name,
+                      statusId: currentLead!.statusId,
+                      region: currentLead!.region != null
+                          ? currentLead!.region!.id.toString()
+                          : 'Не указано',
+                      manager: currentLead!.manager != null
+                          ? currentLead!.manager!.id.toString()
+                          : 'Не указано',
+                      birthday: birthdayString,
+                      instagram: currentLead!.instagram,
+                      facebook: currentLead!.facebook,
+                      telegram: currentLead!.telegram,
+                      phone: currentLead!.phone,
+                      description: currentLead!.description,
                     ),
-                  );
-
-                  if (updatedLead != null) {
-                    context.read<LeadBloc>().add(FetchLeadStatuses());
-                    context.read<HistoryBloc>().add(FetchLeadHistory(int.parse(widget.leadId)));
-                    setState(() {
-                      widget.leadName = updatedLead['leadName'];
-                      widget.leadStatus = updatedLead['leadStatus'];
-                      widget.statusId = updatedLead['statusId'];
-                      widget.regionId = updatedLead['regionId'];
-                      widget.managerId = updatedLead['managerId'];
-                      widget.birthday = updatedLead['birthday'];
-                      widget.instagram = updatedLead['instagram'];
-                      widget.facebook = updatedLead['facebook'];
-                      widget.telegram = updatedLead['telegram'];
-                      widget.phone = updatedLead['phone'];
-                      widget.description = updatedLead['description'];
-                    });
-                    _updateDetails();
-                  }
-                })),
+                  ),
+                );
+              }
+            },
+          );
+                }
+)),
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/delete.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DeleteLeadDialog(leadId: currentLead!.id),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
 
+  // Построение списка деталей лида
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -202,6 +260,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
+  // Построение одной строки с деталями лида
   Widget _buildDetailItem(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,6 +274,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
+  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -227,6 +287,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
+  // Построение значения
   Widget _buildValue(String value) {
     return Text(
       value,

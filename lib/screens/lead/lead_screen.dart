@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +18,9 @@ class LeadScreen extends StatefulWidget {
 
 class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  List<String> _tabTitles = [];
-  int _currentTabIndex = 0; // Track the current tab index
+  List<Map<String, dynamic>> _tabTitles = []; // Store both ID and title
+
+  int _currentTabIndex = 0;
 
   @override
   void initState() {
@@ -47,27 +49,25 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-Widget _buildCustomTabBar() {
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children: [
-        ...List.generate(_tabTitles.length, (index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _buildTabButton(index),
-          );
-        }),
-        IconButton(
-          icon: Image.asset('assets/icons/tabBar/add_black.png',
-              width: 24, height: 24),
-          onPressed: _addNewTab,
-        ),
-      ],
-    ),
-  );
-}
-
+  Widget _buildCustomTabBar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          ...List.generate(_tabTitles.length, (index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: _buildTabButton(index),
+            );
+          }),
+          IconButton(
+            icon: Image.asset('assets/icons/tabBar/add_black.png', width: 24, height: 24),
+            onPressed: _addNewTab,
+          ),
+        ],
+      ),
+    );
+  }
 
   void _addNewTab() async {
     final result = await showDialog<String>(
@@ -77,7 +77,7 @@ Widget _buildCustomTabBar() {
 
     if (result != null && result.isNotEmpty) {
       setState(() {
-        _tabTitles.add(result);
+        _tabTitles.add({'id': _tabTitles.length + 1, 'title': result}); // Example: Add status with an ID
       });
     }
   }
@@ -86,15 +86,17 @@ Widget _buildCustomTabBar() {
     bool isActive = _tabController.index == index;
     return GestureDetector(
       onTap: () => _tabController.animateTo(index),
+      onLongPress: () {
+        _showDeleteDialog(index);
+      },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Center(
           child: Text(
-            _tabTitles[index],
+            _tabTitles[index]['title'],
             style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
             ),
           ),
         ),
@@ -102,23 +104,45 @@ Widget _buildCustomTabBar() {
     );
   }
 
+  void _showDeleteDialog(int index) async {
+  final leadStatusId = _tabTitles[index]['id']; // Получаем ID удаляемого статуса
+
+  final result = await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return DeleteLeadStatusDialog(leadStatusId: leadStatusId); // Передаем ID в диалог
+    },
+  );
+
+  if (result != null && result) {
+    setState(() {
+      _tabTitles.removeAt(index); // Удаляем статус из списка
+      _tabController = TabController(length: _tabTitles.length, vsync: this); // Пересоздаем TabController
+      _currentTabIndex = 0; // Возвращаемся к первому табу или вы можете установить другой индекс
+    });
+  }
+}
+
+
   Widget _buildTabBarView() {
-    return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) {
-        if (state is LeadLoaded) {
-          setState(() {
-            _tabTitles =
-                state.leadStatuses.map((status) => status.title).toList();
-            _tabController =
-                TabController(length: _tabTitles.length, vsync: this);
+  return BlocListener<LeadBloc, LeadState>(
+    listener: (context, state) {
+      if (state is LeadLoaded) {
+        setState(() {
+          // Update the tab titles and reset the tab controller
+          _tabTitles = state.leadStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList();
+
+          // Reinitialize the tab controller only if the list is not empty
+          if (_tabTitles.isNotEmpty) {
+            _tabController = TabController(length: _tabTitles.length, vsync: this);
             _tabController.addListener(() {
               setState(() {
-                _currentTabIndex =
-                    _tabController.index; // Store the current tab index
+                _currentTabIndex = _tabController.index;
               });
             });
 
-            // Set initial tab index based on the passed status ID
             int initialIndex = state.leadStatuses
                 .indexWhere((status) => status.id == widget.initialStatusId);
             if (initialIndex != -1) {
@@ -127,32 +151,32 @@ Widget _buildCustomTabBar() {
             } else {
               _tabController.index = _currentTabIndex;
             }
-          });
-        }
-      },
-      child: BlocBuilder<LeadBloc, LeadState>(
-        builder: (context, state) {
-          if (state is LeadLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-          } else if (state is LeadLoaded) {
-            return _tabTitles.isNotEmpty
-                ? TabBarView(
-                    controller: _tabController,
-                    children: List.generate(_tabTitles.length, (index) {
-                      final statusId = state.leadStatuses[index].id;
-                      final title = state.leadStatuses[index].title;
-
-                      return LeadColumn(statusId: statusId, title: title);
-                    }),
-                  )
-                : const Center(child: Text('Нет статусов для отображения'));
-          } else if (state is LeadError) {
-            return Center(child: Text(state.message));
           }
-          return const SizedBox();
-        },
-      ),
-    );
-  }
+        });
+      }
+    },
+    child: BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        if (state is LeadLoading) {
+          return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+        } else if (state is LeadLoaded) {
+          if (_tabTitles.isEmpty) {
+            return const Center(child: Text('Нет статусов для отображения'));
+          }
+          return TabBarView(
+            controller: _tabController,
+            children: List.generate(_tabTitles.length, (index) {
+              final statusId = _tabTitles[index]['id'];
+              final title = _tabTitles[index]['title'];
+              return LeadColumn(statusId: statusId, title: title);
+            }),
+          );
+        } else if (state is LeadError) {
+          return Center(child: Text(state.message));
+        }
+        return const SizedBox();
+      },
+    ),
+  );
+}
 }

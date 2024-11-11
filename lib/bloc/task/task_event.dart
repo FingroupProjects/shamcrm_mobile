@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:crm_task_manager/models/task_model.dart';
 
@@ -39,7 +38,7 @@ class CreateTask extends TaskEvent {
   final int? projectId;
   final int? userId;
   final String? description;
-  final TaskFile? file;
+  // final TaskFile? file;
   
   CreateTask({
     required this.name,
@@ -51,7 +50,7 @@ class CreateTask extends TaskEvent {
     this.projectId,
     this.userId,
     this.description,
-    this.file,
+    // this.file,
   });
 }
 
@@ -66,7 +65,7 @@ class UpdateTask extends TaskEvent {
   final int? userId;
   final String? description;
   final int taskStatusId;
-  final TaskFile? file;
+  // final TaskFile? file;
 
   UpdateTask({
     required this.taskId,
@@ -79,6 +78,6 @@ class UpdateTask extends TaskEvent {
     this.userId,
     this.description,
     required this.taskStatusId,
-    this.file,
+    // this.file,
   });
 }

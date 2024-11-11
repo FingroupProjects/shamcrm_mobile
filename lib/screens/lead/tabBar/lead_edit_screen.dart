@@ -17,7 +17,7 @@ import 'package:intl/intl.dart';
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
   final String leadName;
-  final String leadStatus;
+  // final String leadStatus;
   final String? region;
   final String? manager;
   final String? birthday;
@@ -31,7 +31,7 @@ class LeadEditScreen extends StatefulWidget {
   LeadEditScreen({
     required this.leadId,
     required this.leadName,
-    required this.leadStatus,
+    // required this.leadStatus,
     required this.statusId,
     this.region,
     this.manager,
@@ -59,7 +59,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   String? selectedRegion;
   String? selectedManager;
-  bool isUpdated = false;
 
   @override
   void initState() {
@@ -115,28 +114,16 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               ),
             );
           } else if (state is LeadSuccess) {
-            isUpdated = true;
-            final updatedLead = {
-              'leadName': titleController.text,
-              'leadStatus': widget.leadStatus,
-              'statusId': widget.statusId,
-              'region': selectedRegion,
-              'manager': selectedManager,
-              'birthday': birthdayController.text,
-              'instagram': instaLoginController.text,
-              'facebook': facebookLoginController.text,
-              'telegram': telegramController.text,
-              'phone': phoneController.text,
-              'description': descriptionController.text,
-            };
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Лид успешно обновлен'),
+                content: const Text('Лид успешно обновлена'),
                 duration: const Duration(seconds: 3),
                 backgroundColor: Colors.green,
               ),
             );
-            Navigator.pop(context, updatedLead);
+             Navigator.pop(context, widget.statusId);
+            context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+            
           }
         },
         child: Form(
@@ -241,15 +228,18 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         textColor: Colors.white,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            DateTime? birthday;
+                           DateTime? parsedBirthday;
+
                             if (birthdayController.text.isNotEmpty) {
                               try {
-                                birthday = DateFormat('dd/MM/yyyy')
-                                    .parse(birthdayController.text);
+                                parsedBirthday = DateFormat('dd/MM/yyyy')
+                                    .parseStrict(birthdayController.text);
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Ошибка: ${e.toString()}'),
+                                    content: const Text(
+                                        'Ошибка парсинга даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                    backgroundColor: Colors.red,
                                   ),
                                 );
                                 return;
@@ -271,7 +261,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               instaLogin: instaLoginController.text,
                               facebookLogin: facebookLoginController.text,
                               tgNick: telegramController.text,
-                              birthday: birthday,
+                              birthday: parsedBirthday,
                               description: descriptionController.text,
                               leadStatusId: widget.statusId,
                               organizationId: 1,
