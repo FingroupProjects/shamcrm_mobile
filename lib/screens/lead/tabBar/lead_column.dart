@@ -50,6 +50,7 @@ class LeadColumn extends StatelessWidget {
                     child: ListView.builder(
                       controller: _scrollController,
                       itemCount: leads.length,
+                      key: UniqueKey(),
                       itemBuilder: (context, index) {
                         return Padding(
                             padding: const EdgeInsets.symmetric(

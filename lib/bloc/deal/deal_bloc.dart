@@ -33,7 +33,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     try {
       final response = await apiService.getDealStatuses();
       if (response.isEmpty) {
-        emit(DealError('Ответ пустой'));
+        emit(DealError('Нет статусов'));
         return;
       }
       emit(DealLoaded(response));

@@ -19,7 +19,8 @@ import '../../models/login_model.dart';
 class ApiService {
   // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  final String baseUrl = 'https://shamcrm.com/api';
+  // final String baseUrl = 'https://shamcrm.com/api';
+  final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -181,16 +182,56 @@ class ApiService {
   //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
   // Метод для получения лидов
-  // Future<List<Lead>> getLeads(int leadStatusId,
-  //     {int page = 1, int perPage = 20}) async {
-  //   final response = await _getRequest(
-  //       '/lead?lead_status_id=$leadStatusId&page=$page&per_page=$perPage');
+Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, String? search}) async {
+  String path = '/lead?page=$page&per_page=$perPage';
+  
+  if (leadStatusId != null) {
+    path += '&lead_status_id=$leadStatusId';
+  }
+
+
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  // Логируем конечный URL запроса
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о лидах в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки лидов: ${response.body}');
+  }
+}
+
+
+
+
+  // Future<List<Lead>> getLeads(int? leadStatusId,
+  //     {int page = 1, int perPage = 20, String search = ''}) async {
+  //   String path = '/lead';
+  //   if (leadStatusId != null) {
+  //     path += '?lead_status_id=$leadStatusId&page=$page&per_page=$perPage&search=$search';
+  //   } else {
+  //     path += '?page=$page&per_page=$perPage';
+  //   }
+
+  //   final response = await _getRequest(path);
 
   //   if (response.statusCode == 200) {
   //     final data = json.decode(response.body);
   //     if (data['result']['data'] != null) {
   //       return (data['result']['data'] as List)
-  //           .map((json) => Lead.fromJson(json, leadStatusId))
+  //           .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
   //           .toList();
   //     } else {
   //       throw Exception('Нет данных о лидах в ответе');
@@ -199,32 +240,6 @@ class ApiService {
   //     throw Exception('Ошибка загрузки лидов: ${response.body}');
   //   }
   // }
-
-  // Метод для получения лидов
-  Future<List<Lead>> getLeads(int? leadStatusId,
-      {int page = 1, int perPage = 20}) async {
-    String path = '/lead';
-    if (leadStatusId != null) {
-      path += '?lead_status_id=$leadStatusId&page=$page&per_page=$perPage';
-    } else {
-      path += '?page=$page&per_page=$perPage';
-    }
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о лидах в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки лидов: ${response.body}');
-    }
-  }
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
