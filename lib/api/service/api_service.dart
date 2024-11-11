@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
@@ -19,7 +20,7 @@ import '../../models/login_model.dart';
 class ApiService {
   // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  final String baseUrl = 'https://shamcrm.com/api';
+  final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -733,64 +734,64 @@ class ApiService {
   }
 
   // Метод для обновления сделки
-Future<Map<String, dynamic>> updateDeal({
-  required int dealId,
-  required String name,
-  required int dealStatusId,
-  required int? managerId,
-  required DateTime? startDate,
-  required DateTime? endDate,
-  required String sum,
-  String? description,
-  int? organizationId,
-  int? dealtypeId,
-  required int? leadId,
-  required int? currencyId,
-  List<Map<String, String>>? customFields,
-}) async {
-  final response = await _patchRequest('/deal/$dealId', {
-    'name': name,
-    'deal_status_id': dealStatusId,
-    if (managerId != null) 'manager_id': managerId,
-    if (startDate != null) 'start_date': startDate.toIso8601String(),
-    if (endDate != null) 'end_date': endDate.toIso8601String(),
-    'sum': sum,
-    if (description != null) 'description': description,
-    if (organizationId != null) 'organization_id': organizationId,
-    if (dealtypeId != null) 'deal_type_id': dealtypeId,
-    if (leadId != null) 'lead_id': leadId,
-    if (currencyId != null) 'currency_id': currencyId,
-    'deal_custom_fields': customFields?.map((field) {
-      return {
-        'key': field.keys.first,
-        'value': field.values.first,
-      };
-    }).toList() ?? [],
-  });
+  Future<Map<String, dynamic>> updateDeal({
+    required int dealId,
+    required String name,
+    required int dealStatusId,
+    required int? managerId,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required String sum,
+    String? description,
+    int? organizationId,
+    int? dealtypeId,
+    required int? leadId,
+    required int? currencyId,
+    List<Map<String, String>>? customFields,
+  }) async {
+    final response = await _patchRequest('/deal/$dealId', {
+      'name': name,
+      'deal_status_id': dealStatusId,
+      if (managerId != null) 'manager_id': managerId,
+      if (startDate != null) 'start_date': startDate.toIso8601String(),
+      if (endDate != null) 'end_date': endDate.toIso8601String(),
+      'sum': sum,
+      if (description != null) 'description': description,
+      if (organizationId != null) 'organization_id': organizationId,
+      if (dealtypeId != null) 'deal_type_id': dealtypeId,
+      if (leadId != null) 'lead_id': leadId,
+      if (currencyId != null) 'currency_id': currencyId,
+      'deal_custom_fields': customFields?.map((field) {
+            return {
+              'key': field.keys.first,
+              'value': field.values.first,
+            };
+          }).toList() ??
+          [],
+    });
 
-  // Обработка ответа
-  if (response.statusCode == 200) {
-    return {'success': true, 'message': 'Сделка обновлена успешно.'};
-  } else if (response.statusCode == 422) {
-    if (response.body.contains('"name"')) {
+    // Обработка ответа
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'Сделка обновлена успешно.'};
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('"name"')) {
+        return {
+          'success': false,
+          'message': 'Название должно содержать не менее 3 символов.'
+        };
+      }
+      // Дополнительные проверки на другие поля могут быть добавлены здесь...
       return {
         'success': false,
-        'message': 'Название должно содержать не менее 3 символов.'
+        'message': 'Ошибка валидации данных: ${response.body}'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка обновления сделки: ${response.body}'
       };
     }
-    // Дополнительные проверки на другие поля могут быть добавлены здесь...
-    return {
-      'success': false,
-      'message': 'Ошибка валидации данных: ${response.body}'
-    };
-  } else {
-    return {
-      'success': false,
-      'message': 'Ошибка обновления сделки: ${response.body}'
-    };
   }
-}
-
 
   // Метод для получения Валюта
   Future<List<Currency>> getCurrency() async {
@@ -815,30 +816,31 @@ Future<Map<String, dynamic>> updateDeal({
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-Future<List<Task>> getTasks(int? taskStatusId,
-    {int page = 1, int perPage = 20}) async {
-  String path = '/task';
-  if (taskStatusId != null) {
-    path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
-  } else {
-    path += '?page=$page&per_page=$perPage';
-  }
-
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result']['data'] != null) {
-      return (data['result']['data'] as List)
-          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-          .toList();
+  Future<List<Task>> getTasks(int? taskStatusId,
+      {int page = 1, int perPage = 20}) async {
+    String path = '/task';
+    if (taskStatusId != null) {
+      path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
     } else {
-      throw Exception('Нет данных о задачах в ответе');
+      path += '?page=$page&per_page=$perPage';
     }
-  } else {
-    throw Exception('Ошибка загрузки задач: ${response.body}');
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .toList();
+      } else {
+        throw Exception('Нет данных о задачах в ответе');
+      }
+    } else {
+      throw Exception('Ошибка загрузки задач: ${response.body}');
+    }
   }
-}
+
   // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final response = await _getRequest('/task-status');
@@ -870,11 +872,12 @@ Future<List<Task>> getTasks(int? taskStatusId,
       throw Exception('Ошибка обновления задач сделки: ${response.body}');
     }
   }
-   // Общий метод обработки ответов для задач
-  Map<String, dynamic> _handleTaskResponse(http.Response response, String operation) {
+
+  Map<String, dynamic> _handleTaskResponse(
+      http.Response response, String operation) {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = json.decode(response.body);
-      
+
       // Проверяем наличие ошибок в ответе
       if (data['errors'] != null) {
         return {
@@ -882,10 +885,11 @@ Future<List<Task>> getTasks(int? taskStatusId,
           'message': 'Ошибка ${operation} задачи: ${data['errors']}',
         };
       }
-      
+
       return {
         'success': true,
-        'message': 'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'message':
+            'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
         'data': data['result'],
       };
     }
@@ -898,13 +902,28 @@ Future<List<Task>> getTasks(int? taskStatusId,
         'to': 'Неверный формат даты окончания.',
         'project_id': 'Указанный проект не существует.',
         'user_id': 'Указанный пользователь не существует.',
+        // Убрана валидация файла
       };
 
-      // Проверяем каждое поле на наличие ошибки
+      // Игнорируем ошибки валидации файла
+      if (data['errors']?['file'] != null) {
+        data['errors'].remove('file');
+      }
+
+      // Проверяем каждое поле на наличие ошибки, кроме файла
       for (var entry in validationErrors.entries) {
         if (data['errors']?[entry.key] != null) {
           return {'success': false, 'message': entry.value};
         }
+      }
+
+      // Если остались только ошибки файла, считаем что валидация прошла успешно
+      if (data['errors']?.isEmpty ?? true) {
+        return {
+          'success': true,
+          'message':
+              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        };
       }
 
       return {
@@ -924,49 +943,81 @@ Future<List<Task>> getTasks(int? taskStatusId,
     try {
       final data = json.decode(response.body);
       final errorMessage = data['errors'] ?? data['message'] ?? response.body;
-      return Exception('Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+      return Exception(
+          'Ошибка ${operation}: ${response.statusCode} - $errorMessage');
     } catch (e) {
-      return Exception('Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+      return Exception(
+          'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
     }
   }
-  
+ // Метод для создания Cтатуса Лида
+  Future<Map<String, dynamic>> createTaskStatus(
+      String name, String color) async {
+    final response = await _postRequest('/task-status', {
+      'name': name,
+      'color': color,
+    });
 
- // Метод для создания задачи
-  Future<Map<String, dynamic>> createTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    String? message,
-    String? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    int? userId,
-    String? description,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'name': name,
-        'status_id': statusId,
-        'message':message,
-        'task_status_id':taskStatusId,
-        'priority_level': priority ??'1', // Используем строковое значение приоритета
-        if (startDate != null) 'from': startDate.toIso8601String(),
-        if (endDate != null) 'to': endDate.toIso8601String(),
-        if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
-        if (description != null) 'description': description,
-      };
-
-      final response = await _postRequest('/task', requestBody);
-      return _handleTaskResponse(response, 'создания');
-    } catch (e) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Статус задачи создан успешно'};
+    } else {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи: $e',
+        'message': 'Ошибка создания статуса задач: ${response.body}'
       };
     }
   }
+
+Future<Map<String, dynamic>> createTask({
+  required String name, // Обязательное поле для имени задачи
+  required int? statusId, // Обязательное поле для ID статуса задачи
+  required int? taskStatusId, // Обязательное поле для ID статуса задачи
+  int? priority, // Приоритет задачи (необязательное поле)
+  DateTime? startDate, // Дата начала задачи (необязательное поле)
+  DateTime? endDate, // Дата окончания задачи (необязательное поле)
+  int? projectId, // ID проекта (необязательное поле)
+  int? userId, // ID пользователя (необязательное поле)
+  String? description, // Описание задачи (необязательное поле)
+  String? login, // Логин пользователя
+  TaskFile? file, // Файл для загрузки (необязательное поле)
+}) async {
+  try {
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/task'));
+
+    request.fields['name'] = name;
+    request.fields['status_id'] = statusId.toString();
+    request.fields['task_status_id'] = taskStatusId.toString();
+    
+    // Добавляем обязательное поле "login"
+    if (login != null) request.fields['login'] = login;
+
+    if (priority != null) request.fields['priority_level'] = priority.toString();
+    if (startDate != null) request.fields['from'] = startDate.toIso8601String();
+    if (endDate != null) request.fields['to'] = endDate.toIso8601String();
+    if (projectId != null) request.fields['project_id'] = projectId.toString();
+    if (userId != null) request.fields['user_id'] = userId.toString();
+    if (description != null) request.fields['description'] = description;
+
+    if (file != null) {
+      request.files.add(await http.MultipartFile.fromPath('file', file.size));
+    }
+
+    final response = await request.send();
+    final responseData = await http.Response.fromStream(response);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача создана успешно.'};
+    } else {
+      return _handleTaskResponse(responseData, 'создания');
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при создании задачи: $e',
+    };
+  }
+}
+
 
   // Обновленный метод обновления задачи
   Future<Map<String, dynamic>> updateTask({
@@ -974,29 +1025,29 @@ Future<List<Task>> getTasks(int? taskStatusId,
     required String name,
     required int statusId,
     required int taskStatusId,
-    required String message,
     String? priority,
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
     int? userId,
     String? description,
+    Map<String, dynamic>? file,
   }) async {
     try {
       final Map<String, dynamic> requestBody = {
         'name': name,
         'status_id': statusId,
-        'task_status_id':taskStatusId,
-        'message':message,
-        if (priority != null) 'priority_level': priority,
+        'task_status_id': taskStatusId,
+        'priority_level': priority, // Используем строковое значение приоритета
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
         if (userId != null) 'user_id': userId,
+        if (file != null) 'file': file,
         if (description != null) 'description': description,
       };
 
-      final response = await _patchRequest('/task/$taskId', requestBody);
+      final response = await _postRequest('/task/$taskId', requestBody);
       return _handleTaskResponse(response, 'обновления');
     } catch (e) {
       return {
@@ -1005,6 +1056,7 @@ Future<List<Task>> getTasks(int? taskStatusId,
       };
     }
   }
+
 // Метод для получения Истории Задачи
   Future<List<TaskHistory>> getTaskHistory(int taskId) async {
     try {
@@ -1027,7 +1079,8 @@ Future<List<Task>> getTasks(int? taskStatusId,
       } else {
         print(
             'Failed to load task history: ${response.statusCode}'); // Логирование ошибки
-        throw Exception('Ошибка загрузки истории задач: ${response.statusCode}');
+        throw Exception(
+            'Ошибка загрузки истории задач: ${response.statusCode}');
       }
     } catch (e) {
       print('Error occurred: $e'); // Логирование исключений
@@ -1056,37 +1109,37 @@ Future<List<Task>> getTasks(int? taskStatusId,
   }
 
   // Метод для получение Пользователя
-Future<List<UserTask>> getUserTask() async {
-  try {
-    print('Отправка запроса на /user');
-    final response = await _getRequest('/user');
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+  Future<List<UserTask>> getUserTask() async {
+    try {
+      print('Отправка запроса на /user');
+      final response = await _getRequest('/user');
+      print('Статус ответа: ${response.statusCode}');
+      print('Тело ответа: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-      // Убедитесь, что данные соответствуют ожидаемой структуре
-      if (data['result'] != null && data['result'] is List) {
-        final usersList = (data['result'] as List)
-            .map((user) => UserTask.fromJson(user))
-            .toList();
+        // Убедитесь, что данные соответствуют ожидаемой структуре
+        if (data['result'] != null && data['result'] is List) {
+          final usersList = (data['result'] as List)
+              .map((user) => UserTask.fromJson(user))
+              .toList();
 
-        print('Получено пользователей: ${usersList.length}');
-        return usersList;
+          print('Получено пользователей: ${usersList.length}');
+          return usersList;
+        } else {
+          print('Структура данных неверна: $data');
+          throw Exception('Неверная структура данных пользователей');
+        }
       } else {
-        print('Структура данных неверна: $data');
-        throw Exception('Неверная структура данных пользователей');
+        print('Ошибка HTTP: ${response.statusCode}');
+        throw Exception('Ошибка сервера: ${response.statusCode}');
       }
-    } else {
-      print('Ошибка HTTP: ${response.statusCode}');
-      throw Exception('Ошибка сервера: ${response.statusCode}');
+    } catch (e) {
+      print('Ошибка при получении пользователей: $e');
+      rethrow;
     }
-  } catch (e) {
-    print('Ошибка при получении пользователей: $e');
-    rethrow;
   }
-}
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов

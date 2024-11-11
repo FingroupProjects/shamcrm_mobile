@@ -1,10 +1,6 @@
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_event.dart';
-import 'package:crm_task_manager/bloc/project/project_bloc.dart';
-import 'package:crm_task_manager/bloc/project/project_event.dart';
-import 'package:crm_task_manager/bloc/user/user_bloc.dart';
-import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -41,9 +37,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   String? selectedRegion;
   String? selectedManager;
-  String? selectedProject;
-  String? selectedUser;
-
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
 
@@ -52,10 +45,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     super.initState();
     context.read<RegionBloc>().add(FetchRegions());
     context.read<ManagerBloc>().add(FetchManagers());
-    context.read<ProjectBloc>().add(FetchProjects());
-    context.read<UserTaskBloc>().add(FetchUsers());
-
-
   }
 
   @override
@@ -168,7 +157,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           });
                         },
                       ),
-                      
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,

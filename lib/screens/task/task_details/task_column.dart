@@ -84,7 +84,7 @@ class TaskColumn extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => TaskAddScreen(statusId: statusId),
+                builder: (context) => TaskAddScreen(statusId: statusId,),
               ),
             );
           },

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
@@ -13,12 +15,14 @@ class Task {
   final String? color;
   final Project? project;
   final User? user;
+  final TaskFile? file;
+  final int? priority;
 
   Task({
     required this.id,
     required this.name,
-    this.startDate,
-    this.endDate,
+    required this.startDate,
+    required this.endDate,
     this.description,
     required this.statusId, // Required statusId
     this.taskStatus,
@@ -26,30 +30,59 @@ class Task {
     this.color,
     this.project,
     this.user,
+    this.file,
+    this.priority,
   });
 
-  factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) { // Added taskStatusId parameter
+  factory Task.fromJson(Map<String,
+   dynamic> json, int taskStatusId) {
+    // Added taskStatusId parameter
     return Task(
       id: json['id'] is int ? json['id'] : 0,
+      priority: json['priority_level'] is int ? json['priority_level']:0,
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['start_date'] is String ? json['start_date'] : null,
       endDate: json['end_date'] is String ? json['end_date'] : null,
       description: json['description'] is String ? json['description'] : '',
+
       statusId: taskStatusId,
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])
           : null,
-      project: json['project'] != null && json['project'] is Map<String, dynamic>
-          ? Project.fromJson(json['project'])
-          : null,
+      project:
+          json['project'] != null && json['project'] is Map<String, dynamic>
+              ? Project.fromJson(json['project'])
+              : null,
       user: json['user'] != null && json['user'] is Map<int, dynamic>
           ? User.fromJson(json['user'])
           : null,
       color: json['color'] is String ? json['color'] : null,
+      // file: json['file'] != null ? TaskFile.fromJson(json['file']) : '', // Parse file data
+      file: json['file'] != null && json['file'] is Map<String, dynamic>
+          ? TaskFile.fromJson(json['user'])
+          : null,
     );
   }
 
-  String? get priority => null;
+}
+// Add TaskFile model
+// First, let's define the TaskFile model class
+class TaskFile {
+  final String name;
+  final String size;
+
+  TaskFile({required this.name, required this.size});
+
+  Map<String, dynamic> toJson() => {
+    "name": name,
+    "size": size,
+  };
+
+  factory TaskFile.fromJson(Map<String, dynamic> json) => TaskFile(
+    name: json["name"] as String,
+    size: json["size"] as String,
+  );
 }
 
 class TaskStatus {

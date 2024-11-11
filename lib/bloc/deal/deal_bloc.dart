@@ -55,7 +55,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       emit(DealDataLoaded(deals,
           currentPage: 1)); // Устанавливаем текущую страницу на 1
     } catch (e) {
-      emit(DealError('Не удалось загрузить лиды: ${e.toString()}'));
+      emit(DealError('Не удалось загрузить сделок: ${e.toString()}'));
     }
   }
 

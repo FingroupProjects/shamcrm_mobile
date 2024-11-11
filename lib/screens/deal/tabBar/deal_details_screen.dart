@@ -9,20 +9,20 @@ import 'package:intl/intl.dart';
 
 class DealDetailsScreen extends StatefulWidget {
   final String dealId;
-  String dealName;
-  String? startDate;
-  String? endDate;
-  String sum;
-  String dealStatus;
-  int statusId;
-  String? manager;
-  int? managerId;
-  String? currency;
-  int? currencyId;
-  String? lead;
-  int? leadId;
-  String? description;
-  List<DealCustomField> dealCustomFields;
+  final String dealName;
+  final String? startDate;
+  final String? endDate;
+  final String sum;
+  final String dealStatus;
+  final int statusId;
+  final String? manager;
+  final int? managerId;
+  final String? currency;
+  final int? currencyId;
+  final String? lead;
+  final int? leadId;
+  final String? description;
+  final List<DealCustomField> dealCustomFields;
 
   DealDetailsScreen({
     required this.dealId,
@@ -48,67 +48,88 @@ class DealDetailsScreen extends StatefulWidget {
 
 class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<Map<String, String>> details = [];
+  Deal? currentDeal; 
 
   @override
   void initState() {
     super.initState();
-    _updateDetails();
+    context.read<DealBloc>().add(FetchDeals(widget.statusId));
   }
 
-  void _updateDetails() {
-    String formatDate(String? dateString) {
-      if (dateString == null || dateString.isEmpty) return 'Не указано';
-      try {
-        final parsedDate = DateTime.parse(dateString);
-        return DateFormat('dd/MM/yyyy').format(parsedDate);
-      } catch (e) {
-        return 'Неверный формат';
-      }
+  // Функция для форматирования даты
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'Не указано';
+    try {
+      final parsedDate = DateTime.parse(dateString);
+      return DateFormat('dd/MM/yyyy').format(parsedDate);
+    } catch (e) {
+      return 'Неверный формат';
     }
+  }
 
+  // Обновление данных сделки
+  void _updateDetails(Deal deal) {
+    currentDeal = deal; // Сохраняем актуальную сделку
     details = [
-      {'label': 'ID Сделки:', 'value': widget.dealId},
-      {'label': 'Имя сделки:', 'value': widget.dealName},
-      {'label': 'Менеджер:', 'value': widget.manager ?? 'Не указано'},
-      {'label': 'Валюта:', 'value': widget.currency ?? 'Не указано'},
-      {'label': 'Клиент:', 'value': widget.lead ?? 'Не указано'},
-      {'label': 'Дата начала:', 'value': formatDate(widget.startDate)},
-      {'label': 'Дата окончания:', 'value': formatDate(widget.endDate)},
-      {'label': 'Сумма:', 'value': widget.sum ?? 'Не указано'},
-      {'label': 'Описание:', 'value': widget.description ?? 'Не указано'},
+      {'label': 'ID Сделки:', 'value': deal.id.toString()},
+      {'label': 'Имя сделки:', 'value': deal.name},
+      {'label': 'Менеджер:', 'value': deal.manager?.name ?? 'Не указано'},
+      {'label': 'Валюта:', 'value': deal.currency?.name ?? 'Не указано'},
+      {'label': 'Клиент:', 'value': deal.lead?.name ?? 'Не указано'},
+      {'label': 'Дата начала:', 'value': formatDate(deal.startDate)},
+      {'label': 'Дата окончания:', 'value': formatDate(deal.endDate)},
+      {'label': 'Сумма:', 'value': deal.sum.toString()},
+      {'label': 'Описание:', 'value': deal.description ?? 'Не указано'},
     ];
 
-    for (var field in widget.dealCustomFields) {
+    for (var field in deal.dealCustomFields) {
       details.add({'label': field.key, 'value': field.value});
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<DealBloc, DealState>(
-      listener: (context, state) {
-        if (state is DealSuccess) {
-          _updateDetails();
-          setState(() {});
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(context, 'Просмотр Сделки'),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ListView(
-            children: [
-              _buildDetailsList(),
-              const SizedBox(height: 16),
-              // ActionHistoryWidget(dealId: int.parse(widget.dealId)),
-            ],
-          ),
+    return Scaffold(
+      appBar: _buildAppBar(context, 'Просмотр Сделки'),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: BlocBuilder<DealBloc, DealState>(
+          builder: (context, state) {
+            if (state is DealLoading) {
+              return Center(child: CircularProgressIndicator());
+            } else if (state is DealDataLoaded) {
+              Deal? deal;
+              try {
+                deal = state.deals.firstWhere(
+                  (deal) => deal.id.toString() == widget.dealId,
+                );
+              } catch (e) {
+                deal = null; 
+              }
+
+              if (deal != null) {
+                _updateDetails(deal); 
+              } else {
+                return Center(child: Text('Сделка не найдена'));
+              }
+              return ListView(
+                children: [
+                  _buildDetailsList(),
+                  const SizedBox(height: 16),
+                ],
+              );
+            } else if (state is DealError) {
+              return Center(child: Text('Ошибка: ${state.message}'));
+            }
+            return Center(child: Text('Неизвестное состояние'));
+          },
         ),
       ),
     );
   }
 
+  // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -121,10 +142,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           height: 24,
         ),
         onPressed: () {
-          Navigator.pop(context);
+          Navigator.pop(context, widget.statusId);
+          context.read<DealBloc>().add(FetchDealStatuses());
         },
       ),
-      name: Text(
+      title: Text(
         title,
         style: TextStyle(
           fontSize: 18,
@@ -137,66 +159,60 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: IconButton(
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                final startDateString =
-                    widget.startDate != null && widget.startDate!.isNotEmpty
-                        ? DateFormat('dd/MM/yyyy')
-                            .format(DateTime.parse(widget.startDate!))
-                        : null;
-                final endDateString =
-                    widget.endDate != null && widget.endDate!.isNotEmpty
-                        ? DateFormat('dd/MM/yyyy')
-                            .format(DateTime.parse(widget.endDate!))
-                        : null;
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              if (currentDeal != null) {
+                final startDateString = currentDeal!.startDate != null &&
+                        currentDeal!.startDate!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.startDate!))
+                    : null;
+                final endDateString = currentDeal!.endDate != null &&
+                        currentDeal!.endDate!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.endDate!))
+                    : null;
 
-                final updatedDeal = await Navigator.push(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => DealEditScreen(
-                      dealId: int.parse(widget.dealId),
-                      dealName: widget.dealName,
-                      dealStatus: widget.dealStatus,
-                      statusId: widget.statusId,
-                      manager: widget.managerId?.toString(),
-                      currency: widget.currencyId?.toString(),
-                      lead: widget.leadId?.toString(),
-                      startDate: startDateString,
-                      endDate: endDateString,
-                      sum: widget.sum,
-                      description: widget.description,
-                      dealCustomFields: widget.dealCustomFields,
+                      dealId: currentDeal!.id, 
+                      dealName: currentDeal!.name, 
+                      // dealStatus: currentDeal!.dealStatus, // Передаем статус как строку
+                      statusId: currentDeal!.statusId,
+                      manager: currentDeal!.manager != null
+                          ? currentDeal!.manager!.id.toString()
+                          : 'Не указано', 
+                      currency: currentDeal!.currency != null
+                          ? currentDeal!.currency!.id.toString()
+                          : 'Не указано',
+                      lead: currentDeal!.lead != null
+                          ? currentDeal!.lead!.id.toString()
+                          : 'Не указано', 
+                      startDate: startDateString, 
+                      endDate: endDateString, 
+                      sum: currentDeal!.sum.toString(), 
+                      description: currentDeal!.description ??
+                          'Не указано', 
+                      dealCustomFields: currentDeal!
+                          .dealCustomFields, 
                     ),
                   ),
                 );
-
-                if (updatedDeal != null) {
-                  context.read<DealBloc>().add(FetchDealStatuses());
-                  setState(() {
-                    widget.dealName = updatedDeal['dealName'];
-                    widget.dealStatus = updatedDeal['dealStatus'];
-                    widget.statusId = updatedDeal['statusId'];
-                    widget.managerId = updatedDeal['managerId'];
-                    widget.currencyId = updatedDeal['currencyId'];
-                    widget.leadId = updatedDeal['leadId'];
-                    widget.endDate = updatedDeal['endDate'];
-                    widget.sum = updatedDeal['sum'];
-                    widget.description = updatedDeal['description'];
-                    widget.dealCustomFields = updatedDeal['customFields'];
-                  });
-
-                  _updateDetails();
-                }
-              }),
+              }
+            },
+          ),
         ),
       ],
     );
   }
 
+  // Построение списка деталей сделки
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -214,6 +230,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
+  // Построение одной строки с деталями сделки
   Widget _buildDetailItem(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,6 +244,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
+  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -239,6 +257,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
+  // Построение значения
   Widget _buildValue(String value) {
     return Text(
       value,
@@ -252,5 +271,3 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 }
-      // {'label': 'Статус:', 'value': widget.dealStatus},
-      // {'label': 'СтатусID:', 'value': widget.statusId.toString()},

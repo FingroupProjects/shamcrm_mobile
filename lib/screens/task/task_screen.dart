@@ -1,8 +1,9 @@
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
+// import 'package:crm_task_manager/screens/task/tabBar/task_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';

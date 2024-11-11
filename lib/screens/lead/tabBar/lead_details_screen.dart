@@ -140,7 +140,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       (widget.birthday != null && widget.birthday!.isNotEmpty)
                           ? DateFormat('dd/MM/yyyy')
                               .format(DateTime.parse(widget.birthday!))
-                          : null;
+                            : null;
 
                   final updatedLead = await Navigator.push(
                     context,
