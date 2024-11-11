@@ -1,15 +1,12 @@
-// lead_bloc.dart
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
 
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
-  bool allLeadsFetched =
-      false; // Переменная для отслеживания статуса завершения загрузки лидов
+  bool allLeadsFetched =false; // Переменная для отслеживания статуса завершения загрузки лидов
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -21,26 +18,51 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<FetchAllLeads>(_fetchAllLeads);
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
+   
+
   }
 
-  // Метод для загрузки всех лидов
-  Future<void> _fetchAllLeads(
-      FetchAllLeads event, Emitter<LeadState> emit) async {
-    emit(LeadLoading());
-    if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
-      return;
-    }
 
-    try {
-      final leads = await apiService
-          .getLeads(null); 
-      allLeadsFetched = leads.isEmpty;
-      emit(LeadDataLoaded(leads, currentPage: 1));
-    } catch (e) {
-      emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
-    }
+// // Метод для поиска лидов
+Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+  emit(LeadLoading());
+  if (!await _checkInternetConnection()) {
+    emit(LeadError('Нет подключения к интернету'));
+    return;
   }
+
+  try {
+    // Передаем правильный leadStatusId из события FetchLeads
+    final leads = await apiService.getLeads(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+    );
+    allLeadsFetched = leads.isEmpty;
+    emit(LeadDataLoaded(leads, currentPage: 1));
+  } catch (e) {
+    emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
+  }
+}
+  // // Метод для загрузки сделок
+  // Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+  //   emit(LeadLoading());
+  //   if (!await _checkInternetConnection()) {
+  //     emit(LeadError('Нет подключения к интернету'));
+  //     return;
+  //   }
+
+  //   try {
+  //     final leads = await apiService.getLeads(event.statusId);
+  //     allLeadsFetched = leads.isEmpty; // Если сделок нет, устанавливаем флаг
+  //     emit(LeadDataLoaded(leads,
+  //         currentPage: 1)); // Устанавливаем текущую страницу на 1
+  //   } catch (e) {
+  //     emit(LeadError('Не удалось загрузить сделок: ${e.toString()}'));
+  //   }
+  // }
+
 
   Future<void> _fetchLeadStatuses(
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
@@ -65,8 +87,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
-  // Метод для загрузки лидов
-  Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+  // Метод для загрузки всех лидов
+  Future<void> _fetchAllLeads(
+      FetchAllLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
@@ -74,14 +97,16 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
 
     try {
-      final leads = await apiService.getLeads(event.statusId);
-      allLeadsFetched = leads.isEmpty; // Если лидов нет, устанавливаем флаг
-      emit(LeadDataLoaded(leads,
-          currentPage: 1)); // Устанавливаем текущую страницу на 1
+      final leads = await apiService
+          .getLeads(null); 
+      allLeadsFetched = leads.isEmpty;
+      emit(LeadDataLoaded(leads, currentPage: 1));
     } catch (e) {
       emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
     }
   }
+
+
 
   Future<void> _fetchMoreLeads(
       FetchMoreLeads event, Emitter<LeadState> emit) async {
