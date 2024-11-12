@@ -31,7 +31,7 @@ class TaskColumn extends StatelessWidget {
                   .where((task) => task.statusId == statusId)
                   .toList();
               if (tasks.isEmpty) {
-                return Center(child: Text('Нет сделок для выбранного статуса'));
+                return Center(child: Text('Нет задач для выбранного статуса'));
               }
               // Добавляем ScrollController для отслеживания прокрутки
               final ScrollController _scrollController = ScrollController();

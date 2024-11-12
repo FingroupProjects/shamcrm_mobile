@@ -39,10 +39,10 @@ class Task {
     // Added taskStatusId parameter
     return Task(
       id: json['id'] is int ? json['id'] : 0,
-      priority: json['priority_level'] is int ? json['priority_level']:0,
+       priority: json['priority_level'] is int ? json['priority_level']:0,
       name: json['name'] is String ? json['name'] : 'Без имени',
-      startDate: json['start_date'] is String ? json['start_date'] : null,
-      endDate: json['end_date'] is String ? json['end_date'] : null,
+      startDate: json['from'] ,
+      endDate: json['to'] ,
       description: json['description'] is String ? json['description'] : '',
 
       statusId: taskStatusId,
@@ -54,14 +54,14 @@ class Task {
           json['project'] != null && json['project'] is Map<String, dynamic>
               ? Project.fromJson(json['project'])
               : null,
-      user: json['user'] != null && json['user'] is Map<int, dynamic>
+      user: json['user'] != null && json['user'] is Map<String, dynamic>
           ? User.fromJson(json['user'])
           : null,
       color: json['color'] is String ? json['color'] : null,
       // file: json['file'] != null ? TaskFile.fromJson(json['file']) : '', // Parse file data
-      file: json['file'] != null && json['file'] is Map<String, dynamic>
-          ? TaskFile.fromJson(json['user'])
-          : null,
+      // file: json['file'] != null && json['file'] is Map<String, dynamic>
+      //     ? TaskFile.fromJson(json['user'])
+      //     : null,
     );
   }
 
@@ -148,47 +148,3 @@ class TaskStatusName {
     };
   }
 }
-
-// class Project {
-//   final int id;
-//   final String name;
-//   // final String? startDate;
-//   // final String? endDate;
-
-//   Project({
-//     required this.id,
-//     required this.name,
-//     // this.startDate,
-//     // this.endDate,
-//   });
-
-//   factory Project.fromJson(Map<String, dynamic> json) {
-//     return Project(
-//       id: json['id'] is int ? json['id'] : 0,
-//       name: json['name'] is String ? json['name'] : 'Без имени',
-//       // startDate: json['start_date'] is String ? json['start_date'] : null,
-//       // endDate: json['end_date'] is String ? json['end_date'] : null,
-//     );
-//   }
-  
-// }class User {
-//   final int id;
-//   final String name;
-//   final String? startDate;
-//   final String? endDate;
-
-//   User({
-//     required this.id,
-//     required this.name,
-//     this.startDate,
-//     this.endDate,
-//   });
-
-//   factory User.fromJson(Map<String, dynamic> json) {
-//     return User(
-//       id: json['id'] is int ? json['id'] : 0,
-//       name: json['name'] is String ? json['name'] : 'Без имени',
-//       startDate: json['start_date'] is String ? json['start_date'] : null,
-//       endDate: json['end_date'] is String ? json['end_date'] : null,
-//     );
-//   }}

@@ -115,7 +115,7 @@ class _TaskCardState extends State<TaskCard> {
                     color: Color(0xff99A4BA),
                   ),
                 ),
-                Expanded(
+                IntrinsicWidth(
                   child: GestureDetector(
                     // Обработка клика для отображения выпадающего списка статусов
                     onTap: () {
@@ -139,6 +139,7 @@ class _TaskCardState extends State<TaskCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
+                      
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

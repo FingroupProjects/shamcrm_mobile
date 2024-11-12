@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/bloc/project/project_state.dart';
+import 'package:crm_task_manager/bloc/user/user_state.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
@@ -56,6 +58,40 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     context.read<ManagerBloc>().add(FetchManagers());
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<UserTaskBloc>().add(FetchUsers());
+      // Устанавливаем значения по умолчанию
+    _setDefaultValues();
+    
+    // Подписываемся на изменения в блоках
+    _setupBlocListeners();
+  } void _setDefaultValues() {
+    // Устанавливаем приоритет по умолчанию (Обычный)
+    selectedPriority = 1;
+    
+    // Устанавливаем текущую дату в поле "От"
+    final now = DateTime.now();
+    startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+  }
+
+  void _setupBlocListeners() {
+    // Слушаем изменения в ProjectBloc
+    context.read<ProjectBloc>().stream.listen((state) {
+      if (state is ProjectLoaded && state.projects.isNotEmpty) {
+        setState(() {
+          // Выбираем первый проект по умолчанию
+          selectedProject = state.projects.first.id.toString();
+        });
+      }
+    });
+
+    // // Слушаем изменения в UserBloc
+    // context.read<UserTaskBloc>().stream.listen((state) {
+    //   if (state is UserTaskLoaded && state.users.isNotEmpty) {
+    //     setState(() {
+    //       // Выбираем первого пользователя по умолчанию
+    //       selectedUser = state.users.first.id.toString();
+    //     });
+    //   }
+    // });
   }
 
   // Функция выбора файла
@@ -83,82 +119,82 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     }
   }
 
-  // Виджет выбора файла
-  Widget _buildFileSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Файл',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        GestureDetector(
-          onTap: _pickFile,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFF4F7FD)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    fileName ?? 'Выберите файл',
-                    style: TextStyle(
-                      color: fileName != null
-                          ? const Color(0xff1E2E52)
-                          : Colors.grey,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.attach_file,
-                  color: Colors.grey[600],
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (fileName != null) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text(
-                'Файл: ',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // Здесь можно добавить логику предпросмотра файла
-                },
-                child: Text(
-                  fileName!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff4759FF),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
+  // // Виджет выбора файла
+  // Widget _buildFileSelection() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         'Файл',
+  //         style: TextStyle(
+  //           fontSize: 16,
+  //           fontWeight: FontWeight.w500,
+  //           fontFamily: 'Gilroy',
+  //           color: Color(0xff1E2E52),
+  //         ),
+  //       ),
+  //       const SizedBox(height: 4),
+  //       GestureDetector(
+  //         onTap: _pickFile,
+  //         child: Container(
+  //           padding: const EdgeInsets.all(16),
+  //           decoration: BoxDecoration(
+  //             color: const Color(0xFFF4F7FD),
+  //             borderRadius: BorderRadius.circular(8),
+  //             border: Border.all(color: const Color(0xFFF4F7FD)),
+  //           ),
+  //           child: Row(
+  //             children: [
+  //               Expanded(
+  //                 child: Text(
+  //                   fileName ?? 'Выберите файл',
+  //                   style: TextStyle(
+  //                     color: fileName != null
+  //                         ? const Color(0xff1E2E52)
+  //                         : Colors.grey,
+  //                   ),
+  //                 ),
+  //               ),
+  //               Icon(
+  //                 Icons.attach_file,
+  //                 color: Colors.grey[600],
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //       // if (fileName != null) ...[
+  //       //   const SizedBox(height: 8),
+  //       //   Row(
+  //       //     children: [
+  //       //       const Text(
+  //       //         'Файл: ',
+  //       //         style: TextStyle(
+  //       //           fontSize: 14,
+  //       //           fontFamily: 'Gilroy',
+  //       //           color: Color(0xff1E2E52),
+  //       //         ),
+  //       //       ),
+  //       //       GestureDetector(
+  //       //         onTap: () {
+  //       //           // Здесь можно добавить логику предпросмотра файла
+  //       //         },
+  //       //         child: Text(
+  //       //           fileName!,
+  //       //           style: const TextStyle(
+  //       //             fontSize: 14,
+  //       //             fontFamily: 'Gilroy',
+  //       //             color: Color(0xff4759FF),
+  //       //             decoration: TextDecoration.underline,
+  //       //           ),
+  //       //         ),
+  //       //       ),
+  //       //     ],
+  //       //   ),
+  //       // ],
+  //     ],
+  //   );
+  // }
 
   // Построение выпадающего списка приоритетов
   Widget _buildPriorityDropdown() {
@@ -185,7 +221,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               canvasColor: Colors.white,
             ),
             child: DropdownButtonFormField<int>(
-              value: selectedPriority,
+              value: selectedPriority ?? 1, // Устанавливаем значение по умолчанию
               items: priorityLevels.entries.map((entry) {
                 final priorityColor = entry.key == 2
                     ? Colors.red
@@ -347,7 +383,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         maxLines: 5,
                       ),
                       const SizedBox(height: 16),
-                      _buildFileSelection(), // Добавляем виджет выбора файла
+                      // _buildFileSelection(), // Добавляем виджет выбора файла
                     ],
                   ),
                 ),
@@ -462,7 +498,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             : null,
                         priority: selectedPriority,
                         description: description,
-                        file: fileData, // Pass the actual File object
+                        // file: fileData, // Pass the actual File object
                       ));
                 }
               },

@@ -20,7 +20,7 @@ import '../../models/login_model.dart';
 class ApiService {
   // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
-  final String baseUrl = 'https://shamcrm.com/api';
+  final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -598,6 +598,26 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
+  // Метод для Удаления Статуса Лида 
+  Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async { 
+    final response = await _deleteRequest('/lead-status/$leadStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete leadStatus: ${response.body}'); 
+    } 
+  }
+// Метод для Удаления Лида 
+  Future<Map<String, dynamic>> deleteLead(int leadId) async { 
+    final response = await _deleteRequest('/lead/$leadId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete lead: ${response.body}'); 
+    } 
+  } 
 
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
@@ -812,7 +832,18 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
-
+  
+  // Метод для Удаления Сделки 
+  Future<Map<String, dynamic>> deleteDeal(int dealId) async { 
+    final response = await _deleteRequest('/deal/$dealId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete deal: ${response.body}'); 
+    } 
+  }
+ 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
@@ -1126,6 +1157,7 @@ class ApiService {
       rethrow;
     }
   }
+  
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов

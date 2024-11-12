@@ -1,10 +1,12 @@
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/project/project_state.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
+import 'package:crm_task_manager/bloc/user/user_state.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
@@ -27,7 +29,7 @@ class TaskEditScreen extends StatefulWidget {
   final String? endDate;
   final String? description;
   final int? priority;
-  final String? fail; // Добавляем поле для файла
+  final String? fail;
 
   TaskEditScreen({
     required this.taskId,
@@ -40,7 +42,7 @@ class TaskEditScreen extends StatefulWidget {
     this.endDate,
     this.description,
     this.priority,
-    this.fail, // Добавляем в конструктор
+    this.fail,
   });
 
   @override
@@ -53,14 +55,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  String? selectedFile; // Добавляем переменную для хранения выбранного файла
+  String? selectedFile;
   String? selectedProject;
   String? selectedUser;
   int? selectedPriority;
-  bool isUpdated = false;
-  String? fail;
-  String? fileName;  // Добавить
-String? fileSize;  // Добавить
+  String? fileName;
+  String? fileSize;
 
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
@@ -71,39 +71,96 @@ String? fileSize;  // Добавить
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+    _loadInitialData();
+  }
+
+  void _initializeControllers() {
     nameController.text = widget.taskName;
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
     selectedUser = widget.user;
-    selectedPriority = widget.priority;
-    selectedFile = widget.fail; // Инициализируем значение файла
+    selectedPriority = widget.priority ?? 1;
+
+    if (widget.fail != null) {
+      selectedFile = widget.fail;
+      fileName = widget.fail?.split('/').last;
+    }
+  }
+
+  void _loadInitialData() {
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<UserTaskBloc>().add(FetchUsers());
+    context.read<TaskBloc>().add(FetchTaskStatuses());
   }
 
   Future<void> _pickFile() async {
-  try {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-    if (result != null) {
-      setState(() {
-        selectedFile = result.files.single.path!;
-        fileName = result.files.single.name;
-        fileSize = '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
-      });
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result != null) {
+        setState(() {
+          selectedFile = result.files.single.path!;
+          fileName = result.files.single.name;
+          fileSize = '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ошибка при выборе файла'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  } catch (e) {
-    print('Ошибка при выборе файла: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ошибка при выборе файла'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
+
+  void _handleSave() {
+    if (_formKey.currentState!.validate()) {
+      DateTime? startDate;
+      DateTime? endDate;
+
+      try {
+        if (startDateController.text.isNotEmpty) {
+          startDate = DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
+        }
+        if (endDateController.text.isNotEmpty) {
+          endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
+        }
+
+        context.read<TaskBloc>().add(
+          UpdateTask(
+            taskId: widget.taskId,
+            name: nameController.text,
+            statusId: widget.statusId,
+            taskStatusId: widget.statusId,
+            startDate: startDate,
+            endDate: endDate,
+            projectId: selectedProject != null ? int.parse(selectedProject!) : null,
+            userId: selectedUser != null ? int.parse(selectedUser!) : null,
+            priority: selectedPriority?.toString(),
+            description: descriptionController.text,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка в формате даты: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Пожалуйста, заполните все обязательные поля'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,7 +198,6 @@ String? fileSize;  // Добавить
               ),
             );
           } else if (state is TaskSuccess) {
-            isUpdated = true;
             final updatedTask = {
               'taskName': nameController.text,
               'taskStatus': widget.taskStatus,
@@ -153,6 +209,7 @@ String? fileSize;  // Добавить
               'description': descriptionController.text,
               'priority': selectedPriority,
             };
+            
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Задача успешно обновлена'),
@@ -160,7 +217,9 @@ String? fileSize;  // Добавить
                 backgroundColor: Colors.green,
               ),
             );
+            
             Navigator.pop(context, updatedTask);
+            context.read<TaskBloc>().add(FetchTasks(widget.statusId));
           }
         },
         child: Form(
@@ -210,81 +269,79 @@ String? fileSize;  // Добавить
                             selectedUser = newValue;
                           });
                         },
-                      ),
-                      
-   Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Файл',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-      const SizedBox(height: 4),
-      GestureDetector(
-        onTap: _pickFile,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFF4F7FD)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  fileName ?? 'Выберите файл',
-                  style: TextStyle(
-                    color: fileName != null
-                        ? const Color(0xff1E2E52)
-                        : Colors.grey,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.attach_file,
-                color: Colors.grey[600],
-              ),
-            ],
-          ),
-        ),
-      ),
-      if (fileName != null) ...[
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Text(
-              'Файл: ',
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                // Здесь можно добавить логику предпросмотра файла
-              },
-              child: Text(
-                fileName!,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff4759FF),
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ],
-  ),
+                      ),//  Column(
+                      //   crossAxisAlignment: CrossAxisAlignment.start,
+                      //   children: [
+                      //     const Text(
+                      //       'Файл',
+                      //       style: TextStyle(
+                      //         fontSize: 16,
+                      //         fontWeight: FontWeight.w500,
+                      //         fontFamily: 'Gilroy',
+                      //         color: Color(0xff1E2E52),
+                      //       ),
+                      //     ),
+                      //     const SizedBox(height: 4),
+                      //     GestureDetector(
+                      //       onTap: _pickFile,
+                      //       child: Container(
+                      //         padding: const EdgeInsets.all(16),
+                      //         decoration: BoxDecoration(
+                      //           color: const Color(0xFFF4F7FD),
+                      //           borderRadius: BorderRadius.circular(8),
+                      //           border: Border.all(color: const Color(0xFFF4F7FD)),
+                      //         ),
+                      //         child: Row(
+                      //           children: [
+                      //             Expanded(
+                      //               child: Text(
+                      //                 fileName ?? 'Выберите файл',
+                      //                 style: TextStyle(
+                      //                   color: fileName != null
+                      //                       ? const Color(0xff1E2E52)
+                      //                       : Colors.grey,
+                      //                 ),
+                      //               ),
+                      //             ),
+                      //             Icon(
+                      //               Icons.attach_file,
+                      //               color: Colors.grey[600],
+                      //             ),
+                      //           ],
+                      //         ),
+                      //       ),
+                      //     ),
+                      //     if (fileName != null) ...[
+                      //       const SizedBox(height: 8),
+                      //       Row(
+                      //         children: [
+                      //           const Text(
+                      //             'Файл: ',
+                      //             style: TextStyle(
+                      //               fontSize: 14,
+                      //               fontFamily: 'Gilroy',
+                      //               color: Color(0xff1E2E52),
+                      //             ),
+                      //           ),
+                      //           GestureDetector(
+                      //             onTap: () {
+                      //               // Здесь можно добавить логику предпросмотра файла
+                      //             },
+                      //             child: Text(
+                      //               fileName!,
+                      //               style: const TextStyle(
+                      //                 fontSize: 14,
+                      //                 fontFamily: 'Gilroy',
+                      //                 color: Color(0xff4759FF),
+                      //                 decoration: TextDecoration.underline,
+                      //               ),
+                      //             ),
+                      //           ),
+                      //         ],
+                      //       ),
+                      //     ],
+                      //   ],
+                      // ),
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: descriptionController,
@@ -297,8 +354,7 @@ String? fileSize;  // Добавить
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
@@ -315,65 +371,8 @@ String? fileSize;  // Добавить
                         buttonText: 'Сохранить',
                         buttonColor: const Color(0xff4759FF),
                         textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            DateTime? startDate;
-                            if (startDateController.text.isNotEmpty) {
-                              try {
-                                startDate = DateFormat('dd/MM/yyyy')
-                                    .parse(startDateController.text);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Ошибка: ${e.toString()}'),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-
-                            DateTime? endDate;
-                            if (endDateController.text.isNotEmpty) {
-                              try {
-                                endDate = DateFormat('dd/MM/yyyy')
-                                    .parse(endDateController.text);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Ошибка: ${e.toString()}'),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-// Подготовка данных о файле
-                  TaskFile? fileData;
-                  if (selectedFile != null) {
-                    fileData = TaskFile(
-                        name: fileName ?? "unknown", size: fileSize ?? "0KB");
-                            final taskBloc = context.read<TaskBloc>();
-                            context.read<TaskBloc>().add(FetchTaskStatuses());
-                            taskBloc.add(UpdateTask(
-                              taskId: widget.taskId,
-                              name: nameController.text,
-                              statusId: widget.statusId,
-                              taskStatusId: widget.statusId,
-                              startDate: startDate,
-                              endDate: endDate,
-                              projectId: selectedProject != null
-                                  ? int.parse(selectedProject!)
-                                  : null,
-                              userId: selectedUser != null
-                                  ? int.parse(selectedUser!)
-                                  : null,
-                              priority: selectedPriority?.toString(),
-                              description: descriptionController.text,
-                              // file: fileData, // Добавляем файл в запрос
-                              
-                            ));
-                          }
-                        }
-  }),
+                        onPressed: _handleSave,
+                      ),
                     ),
                   ],
                 ),
@@ -458,5 +457,14 @@ String? fileSize;  // Добавить
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    startDateController.dispose();
+    endDateController.dispose();
+    descriptionController.dispose();
+    super.dispose();
   }
 }
