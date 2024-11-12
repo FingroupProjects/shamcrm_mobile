@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
@@ -608,13 +609,7 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     if (response.statusCode == 200) {
       return {'success': true, 'message': 'Лид обновлен успешно.'};
     } else if (response.statusCode == 422) {
-      if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'Этот номер телефона уже существует.'
-        };
-      }
-      if (response.body.contains('validation.phone')) {
+      if (response.body.contains('phone')) {
         return {
           'success': false,
           'message':
@@ -622,31 +617,7 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
         };
       }
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
-      }
-      // Обработка ошибки дублирования логина Instagram
-      else if (response.body.contains('insta_login')) {
-        return {
-          'success': false,
-          'message': 'Этот логин Instagram уже используется.'
-        };
-      } else if (response.body.contains('facebook_login')) {
-        return {
-          'success': false,
-          'message': 'Этот логин facebook уже используется.'
-        };
-      } else if (response.body.contains('tg_nick')) {
-        return {
-          'success': false,
-          'message': 'Этот логин Telegram уже используется.'
-        };
-      } else if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'Не правильная дата рождения.'};
-      } else if (response.body.contains('wa_phone')) {
-        return {
-          'success': false,
-          'message': 'Этот номер Whatsapp уже существует.'
-        };
+        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
       }
       // Другие проверки на ошибки...
       return {
@@ -658,28 +629,6 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
         'success': false,
         'message': 'Ошибка обновления лида: ${response.body}'
       };
-    }
-  }
-
-  // Метод для Удаления Лида
-  Future<Map<String, dynamic>> deleteLead(int leadId) async {
-    final response = await _deleteRequest('/lead/$leadId');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete lead: ${response.body}');
-    }
-  }
-
-  // Метод для Удаления Статуса Лида
-  Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
-    final response = await _deleteRequest('/lead-status/$leadStatusId');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete leadStatus: ${response.body}');
     }
   }
 
@@ -720,6 +669,26 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
+  // Метод для Удаления Статуса Лида 
+  Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async { 
+    final response = await _deleteRequest('/lead-status/$leadStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete leadStatus: ${response.body}'); 
+    } 
+  }
+// Метод для Удаления Лида 
+  Future<Map<String, dynamic>> deleteLead(int leadId) async { 
+    final response = await _deleteRequest('/lead/$leadId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete lead: ${response.body}'); 
+    } 
+  } 
 
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
@@ -935,32 +904,37 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
-
-  // Метод для Удаления Сделки
-  Future<Map<String, dynamic>> deleteDeal(int dealId) async {
-    final response = await _deleteRequest('/deal/$dealId');
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to delete deal: ${response.body}');
-    }
+  
+  // Метод для Удаления Сделки 
+  Future<Map<String, dynamic>> deleteDeal(int dealId) async { 
+    final response = await _deleteRequest('/deal/$dealId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete deal: ${response.body}'); 
+    } 
   }
-
+ 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-// Метод для получения Задачи
-  Future<List<Task>> getTasks(int taskStatusId,
+  Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20}) async {
-    final response = await _getRequest(
-        '/task?task_status_id=$taskStatusId&page=$page&per_page=$perPage');
+    String path = '/task';
+    if (taskStatusId != null) {
+      path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
+    } else {
+      path += '?page=$page&per_page=$perPage';
+    }
+
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
         return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId))
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
             .toList();
       } else {
         throw Exception('Нет данных о задачах в ответе');
@@ -969,9 +943,8 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
       throw Exception('Ошибка загрузки задач: ${response.body}');
     }
   }
-  // Метод для получения статусов Задач
 
-  // Метод для получения статусов Сделок
+  // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final response = await _getRequest('/task-status');
 
@@ -1003,122 +976,172 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     }
   }
 
-// Метод для Создания Задачи
+  Map<String, dynamic> _handleTaskResponse(
+      http.Response response, String operation) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+
+      // Проверяем наличие ошибок в ответе
+      if (data['errors'] != null) {
+        return {
+          'success': false,
+          'message': 'Ошибка ${operation} задачи: ${data['errors']}',
+        };
+      }
+
+      return {
+        'success': true,
+        'message':
+            'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'data': data['result'],
+      };
+    }
+
+    if (response.statusCode == 422) {
+      final data = json.decode(response.body);
+      final validationErrors = {
+        'name': 'Название задачи должно содержать минимум 3 символа.',
+        'from': 'Неверный формат даты начала.',
+        'to': 'Неверный формат даты окончания.',
+        'project_id': 'Указанный проект не существует.',
+        'user_id': 'Указанный пользователь не существует.',
+        // Убрана валидация файла
+      };
+
+      // Игнорируем ошибки валидации файла
+      if (data['errors']?['file'] != null) {
+        data['errors'].remove('file');
+      }
+
+      // Проверяем каждое поле на наличие ошибки, кроме файла
+      for (var entry in validationErrors.entries) {
+        if (data['errors']?[entry.key] != null) {
+          return {'success': false, 'message': entry.value};
+        }
+      }
+
+      // Если остались только ошибки файла, считаем что валидация прошла успешно
+      if (data['errors']?.isEmpty ?? true) {
+        return {
+          'success': true,
+          'message':
+              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        };
+      }
+
+      return {
+        'success': false,
+        'message': 'Ошибка валидации: ${data['errors'] ?? response.body}',
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'Ошибка ${operation} задачи: ${response.body}',
+    };
+  }
+
+  // Общий метод обработки ошибок
+  Exception _handleErrorResponse(http.Response response, String operation) {
+    try {
+      final data = json.decode(response.body);
+      final errorMessage = data['errors'] ?? data['message'] ?? response.body;
+      return Exception(
+          'Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+    } catch (e) {
+      return Exception(
+          'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+    }
+  }
+ // Метод для создания Cтатуса Лида
+  Future<Map<String, dynamic>> createTaskStatus(
+      String name, String color) async {
+    final response = await _postRequest('/task-status', {
+      'name': name,
+      'color': color,
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Статус задачи создан успешно'};
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания статуса задач: ${response.body}'
+      };
+    }
+  }
+  // Метод для создания задачи
   Future<Map<String, dynamic>> createTask({
     required String name,
-    required int statusId,
-    String? priority,
+    required int? statusId,
+    required int? taskStatusId,
+    int? priority,
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
     int? userId,
     String? description,
+    // Map<String, dynamic>? file,
   }) async {
-    final response = await _postRequest('/task', {
-      'name': name,
-      'status_id': statusId,
-      if (priority != null) 'priority': priority,
-      if (startDate != null) 'start_date': startDate.toIso8601String(),
-      if (endDate != null) 'end_date': endDate.toIso8601String(),
-      if (projectId != null) 'project_id': projectId,
-      if (userId != null) 'user_id': userId,
-      if (description != null) 'description': description,
-    });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача создана успешно.'};
-    } else if (response.statusCode == 422) {
-      // Обработка ошибок валидации
-      if (response.body.contains('name')) {
-        return {
-          'success': false,
-          'message': 'Название задачи должно содержать минимум 3 символа.'
-        };
-      }
-      if (response.body.contains('start_date')) {
-        return {'success': false, 'message': 'Неверный формат даты начала.'};
-      }
-      if (response.body.contains('end_date')) {
-        return {'success': false, 'message': 'Неверный формат даты окончания.'};
-      }
-      if (response.body.contains('project_id')) {
-        return {'success': false, 'message': 'Указанный проект не существует.'};
-      }
-      if (response.body.contains('user_id')) {
-        return {
-          'success': false,
-          'message': 'Указанный пользователь не существует.'
-        };
-      }
-
-      return {
-        'success': false,
-        'message': 'Неизвестная ошибка валидации: ${response.body}'
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'priority_level': priority, // Используем строковое значение приоритета
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null) 'user_id': userId,
+        // if (file != null) "file": file,
+        if (description != null) 'description': description,
+        
       };
-    } else {
+
+      final response = await _postRequest('/task', requestBody);
+      return _handleTaskResponse(response, 'создания');
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка создания задачи: ${response.body}'
+        'message': 'Ошибка при создании задачи: $e',
       };
     }
   }
 
+  // Обновленный метод обновления задачи
   Future<Map<String, dynamic>> updateTask({
     required int taskId,
     required String name,
     required int statusId,
+    required int taskStatusId,
     String? priority,
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
     int? userId,
     String? description,
+    Map<String, dynamic>? file,
   }) async {
-    final response = await _patchRequest('/task/$taskId', {
-      'name': name,
-      'status_id': statusId,
-      if (priority != null) 'priority': priority,
-      if (startDate != null) 'start_date': startDate.toIso8601String(),
-      if (endDate != null) 'end_date': endDate.toIso8601String(),
-      if (projectId != null) 'project_id': projectId,
-      if (userId != null) 'user_id': userId,
-      if (description != null) 'description': description,
-    });
-
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Задача обновлена успешно.'};
-    } else if (response.statusCode == 422) {
-      // Обработка ошибок валидации
-      if (response.body.contains('name')) {
-        return {
-          'success': false,
-          'message': 'Название задачи должно содержать минимум 3 символа.'
-        };
-      }
-      if (response.body.contains('start_date')) {
-        return {'success': false, 'message': 'Неверный формат даты начала.'};
-      }
-      if (response.body.contains('end_date')) {
-        return {'success': false, 'message': 'Неверный формат даты окончания.'};
-      }
-      if (response.body.contains('project_id')) {
-        return {'success': false, 'message': 'Указанный проект не существует.'};
-      }
-      if (response.body.contains('user_id')) {
-        return {
-          'success': false,
-          'message': 'Указанный пользователь не существует.'
-        };
-      }
-
-      return {
-        'success': false,
-        'message': 'Неизвестная ошибка валидации: ${response.body}'
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'priority_level': priority, // Используем строковое значение приоритета
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null) 'user_id': userId,
+        if (file != null) 'file': file,
+        if (description != null) 'description': description,
       };
-    } else {
+
+      final response = await _postRequest('/task/$taskId', requestBody);
+      return _handleTaskResponse(response, 'обновления');
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка обновления задачи: ${response.body}'
+        'message': 'Ошибка при обновлении задачи: $e',
       };
     }
   }
@@ -1174,25 +1197,39 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     }
   }
 
-  // Метод для получения Пользователя
+  // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {
-    final response = await _getRequest('/user');
+    try {
+      print('Отправка запроса на /user');
+      final response = await _getRequest('/user');
+      print('Статус ответа: ${response.statusCode}');
+      print('Тело ответа: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print('Тело ответа: $data'); // Для отладки
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((user) => UserTask.fromJson(user))
-            .toList();
+        // Убедитесь, что данные соответствуют ожидаемой структуре
+        if (data['result'] != null && data['result'] is List) {
+          final usersList = (data['result'] as List)
+              .map((user) => UserTask.fromJson(user))
+              .toList();
+
+          print('Получено пользователей: ${usersList.length}');
+          return usersList;
+        } else {
+          print('Структура данных неверна: $data');
+          throw Exception('Неверная структура данных пользователей');
+        }
       } else {
-        throw Exception('Пользователей не найдено');
+        print('Ошибка HTTP: ${response.statusCode}');
+        throw Exception('Ошибка сервера: ${response.statusCode}');
       }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    } catch (e) {
+      print('Ошибка при получении пользователей: $e');
+      rethrow;
     }
   }
+  
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов

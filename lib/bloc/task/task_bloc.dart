@@ -94,12 +94,14 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final result = await apiService.createTask(
         name: event.name,
         statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
         priority: event.priority,
         startDate: event.startDate,
         endDate: event.endDate,
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
+        // file: event.file // C
       );
 
       if (result['success']) {
@@ -132,6 +134,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
+        taskStatusId: event.taskStatusId,
+        // file: event.file 
       );
 
       if (result['success']) {
@@ -154,18 +158,18 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       return;
     }
 
-    // try {
-    //   final result = await apiService.createTaskStatus(event.name, event.color);
+    try {
+      final result = await apiService.createTaskStatus(event.name, event.color);
 
-    //   if (result['success']) {
-    //     emit(TaskSuccess(result['message']));
-    //     add(FetchTaskStatuses());
-    //   } else {
-    //     emit(TaskError(result['message']));
-    //   }
-    // } catch (e) {
-    //   emit(TaskError('Ошибка создания статуса задачи: ${e.toString()}'));
-    // }
+      if (result['success']) {
+        emit(TaskSuccess(result['message']));
+        add(FetchTaskStatuses());
+      } else {
+        emit(TaskError(result['message']));
+      }
+    } catch (e) {
+      emit(TaskError('Ошибка создания статуса задачи: ${e.toString()}'));
+    }
   }
 
   Future<bool> _checkInternetConnection() async {

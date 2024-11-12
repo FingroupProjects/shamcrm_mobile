@@ -1,3 +1,6 @@
+
+import 'package:crm_task_manager/models/task_model.dart';
+
 abstract class TaskEvent {}
 
 class FetchTaskStatuses extends TaskEvent {}
@@ -28,22 +31,26 @@ class CreateTaskStatus extends TaskEvent {
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
-  final String? priority;
+  final int? taskStatusId;
+  final int? priority;
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
   final int? userId;
   final String? description;
-
+  // final TaskFile? file;
+  
   CreateTask({
     required this.name,
     required this.statusId,
+    required this.taskStatusId,
     this.priority,
     this.startDate,
     this.endDate,
     this.projectId,
     this.userId,
     this.description,
+    // this.file,
   });
 }
 
@@ -57,6 +64,8 @@ class UpdateTask extends TaskEvent {
   final int? projectId;
   final int? userId;
   final String? description;
+  final int taskStatusId;
+  // final TaskFile? file;
 
   UpdateTask({
     required this.taskId,
@@ -68,5 +77,7 @@ class UpdateTask extends TaskEvent {
     this.projectId,
     this.userId,
     this.description,
+    required this.taskStatusId,
+    // this.file,
   });
 }
