@@ -495,11 +495,6 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     int? organizationId,
     String? waPhone,
   }) async {
-      // Проверяем права доступа перед выполнением запроса
-  if (!await hasPermission('lead.create')) {
-    throw Exception('У вас нет прав для создания Лида'); // Сообщение об отсутствии прав доступа
-  }
-
     final response = await _postRequest('/lead', {
       'name': name,
       'lead_status_id': leadStatusId,
