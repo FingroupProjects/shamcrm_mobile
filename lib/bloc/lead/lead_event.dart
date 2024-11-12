@@ -4,8 +4,9 @@ class FetchLeadStatuses extends LeadEvent {}
 
 class FetchLeads extends LeadEvent {
   final int statusId;
+  final String? query; // Добавьте параметр для поиска
 
-  FetchLeads(this.statusId);
+  FetchLeads(this.statusId, {this.query});
 }
 
 class FetchMoreLeads extends LeadEvent {

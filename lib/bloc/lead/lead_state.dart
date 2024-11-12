@@ -18,6 +18,7 @@ class LeadDataLoaded extends LeadState {
 
   LeadDataLoaded(this.leads, {this.currentPage = 1});
 
+
   // Метод для объединения с новыми лидами
   LeadDataLoaded merge(List<Lead> newLeads) {
     return LeadDataLoaded([...leads, ...newLeads],
@@ -49,4 +50,3 @@ class LeadStatusDeleted extends LeadState {
 
   LeadStatusDeleted(this.message);
 }
-
