@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/currency_model.dart';
+import 'package:crm_task_manager/models/dashboard_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/history_model.dart';
 import 'package:crm_task_manager/models/history_model_task.dart';
@@ -129,33 +130,54 @@ class ApiService {
 
     return response;
   }
-  //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
-
-  //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
-
-  // Метод для проверки домена
-  Future<DomainCheck> checkDomain(String domain) async {
-    final response = await _postRequest('/checkDomain', {'domain': domain});
-
-    if (response.statusCode == 200) {
-      return DomainCheck.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Не удалось загрузить домен: ${response.body}');
-    }
-  }
-
-  // Метод для сохранения домена
-  Future<void> saveDomainChecked(bool value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        'domainChecked', value); // Сохраняем статус проверки домена
-  }
-
-  // Метод для проверки домена из SharedPreferences
-  Future<bool> isDomainChecked() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('domainChecked') ??
-        false; // Проверяем статус или возвращаем false
+// Метод для выполнения POST-запросов 
+  Future<http.Response> _postRequestDomain( 
+      String path, Map<String, dynamic> body) async { 
+  final String DomainUrl = 'https://shamcrm.com/api'; 
+    final token = await getToken(); // Получаем токен перед запросом 
+    final response = await http.post( 
+      Uri.parse('$DomainUrl$path'), 
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json', 
+        if (token != null) 
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть 
+      }, 
+      body: json.encode(body), 
+    ); 
+ 
+    print('Статус ответа: ${response.statusCode}'); 
+    print('Тело ответа: ${response.body}'); 
+ 
+    return response; 
+  } 
+  //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________// 
+ 
+  //_________________________________ START___API__DOMAIN_CHECK____________________________________________// 
+ 
+  // Метод для проверки домена 
+  Future<DomainCheck> checkDomain(String domain) async { 
+    final response = await _postRequestDomain('/checkDomain', {'domain': domain}); 
+ 
+    if (response.statusCode == 200) { 
+      return DomainCheck.fromJson(json.decode(response.body)); 
+    } else { 
+      throw Exception('Не удалось загрузить домен: ${response.body}'); 
+    } 
+  } 
+ 
+  // Метод для сохранения домена 
+  Future<void> saveDomainChecked(bool value) async { 
+    SharedPreferences prefs = await SharedPreferences.getInstance(); 
+    await prefs.setBool( 
+        'domainChecked', value); // Сохраняем статус проверки домена 
+  } 
+ 
+  // Метод для проверки домена из SharedPreferences 
+  Future<bool> isDomainChecked() async { 
+    SharedPreferences prefs = await SharedPreferences.getInstance(); 
+    return prefs.getBool('domainChecked') ?? 
+        false; // Проверяем статус или возвращаем false 
   }
 
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
@@ -1172,6 +1194,51 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
       rethrow;
     }
   }
+
+    /// Получение статистики для дашборда
+  Future<DashboardStats> getDashboardStats() async {
+    String path = '/dashboard/getTopStats?organization_id=1';
+    
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          return DashboardStats.fromJson(data);
+        } else {
+          throw Exception('Нет данных о статистике в ответе');
+        }
+      } else {
+        throw Exception('Ошибка загрузки статистики: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при получении статистики: $e');
+    }
+  }
+
+ /// Получение данных графика для дашборда
+  Future<List<ChartData>> getLeadChart() async {
+    String path = '/dashboard/lead-chart';
+    
+    try {
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          return data.map((json) => ChartData.fromJson(json)).toList();
+        } else {
+          throw Exception('Нет данных графика в ответе');
+        }
+      } else {
+        throw Exception('Ошибка загрузки данных графика: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка при получении данных графика: $e');
+    }
+  }
+
   
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 

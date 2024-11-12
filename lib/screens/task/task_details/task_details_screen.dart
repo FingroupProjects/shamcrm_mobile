@@ -69,10 +69,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     details = [
       {'label': 'Название задачи:', 'value': task.name}, 
       {'label': 'От:', 'value': task.startDate != null && task.startDate!.isNotEmpty 
-          ? DateFormat('dd/MM/yyyy').format(DateTime.parse(task.startDate!))
+          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
           : 'Не указано'},
       {'label': 'До:', 'value': task.endDate != null && task.endDate!.isNotEmpty
-          ? DateFormat('dd/MM/yyyy').format(DateTime.parse(task.endDate!))
+          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
           : 'Не указано'},
       {
         'label': 'Статус:',
