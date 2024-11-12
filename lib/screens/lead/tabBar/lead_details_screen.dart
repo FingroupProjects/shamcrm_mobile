@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
@@ -50,11 +51,25 @@ class LeadDetailsScreen extends StatefulWidget {
 class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
   Lead? currentLead;
+  bool _canEditLead = false;
+  bool _canDeleteLead = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+  }
+
+  // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canEdit = await _apiService.hasPermission('lead.update');
+    final canDelete = await _apiService.hasPermission('lead.delete');
+    setState(() {
+      _canEditLead = canEdit;
+      _canDeleteLead = canDelete;
+    });
   }
 
   // Функция для форматирования даты
@@ -166,64 +181,68 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ),
       ),
       actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-              if (currentLead != null) {
-                final birthdayString = currentLead!.birthday != null &&
-                        currentLead!.birthday!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentLead!.birthday!))
-                    : null;
+        // Кнопка редактирования, если есть разрешение
+        if (_canEditLead)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/edit.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () async {
+                if (currentLead != null) {
+                  final birthdayString = currentLead!.birthday != null &&
+                          currentLead!.birthday!.isNotEmpty
+                      ? DateFormat('dd/MM/yyyy')
+                          .format(DateTime.parse(currentLead!.birthday!))
+                      : null;
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LeadEditScreen(
-                      leadId: currentLead!.id,
-                      leadName: currentLead!.name,
-                      statusId: currentLead!.statusId,
-                      region: currentLead!.region != null
-                          ? currentLead!.region!.id.toString()
-                          : 'Не указано',
-                      manager: currentLead!.manager != null
-                          ? currentLead!.manager!.id.toString()
-                          : 'Не указано',
-                      birthday: birthdayString,
-                      instagram: currentLead!.instagram,
-                      facebook: currentLead!.facebook,
-                      telegram: currentLead!.telegram,
-                      phone: currentLead!.phone,
-                      description: currentLead!.description,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LeadEditScreen(
+                        leadId: currentLead!.id,
+                        leadName: currentLead!.name,
+                        statusId: currentLead!.statusId,
+                        region: currentLead!.region != null
+                            ? currentLead!.region!.id.toString()
+                            : 'Не указано',
+                        manager: currentLead!.manager != null
+                            ? currentLead!.manager!.id.toString()
+                            : 'Не указано',
+                        birthday: birthdayString,
+                        instagram: currentLead!.instagram,
+                        facebook: currentLead!.facebook,
+                        telegram: currentLead!.telegram,
+                        phone: currentLead!.phone,
+                        description: currentLead!.description,
+                      ),
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/delete.png',
-              width: 24,
-              height: 24,
+                  );
+                }
+              },
             ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => DeleteLeadDialog(leadId: currentLead!.id),
-              );
-            },
           ),
-        ),
+        // Кнопка удаления, если есть разрешение
+        if (_canDeleteLead)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/delete.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteLeadDialog(leadId: currentLead!.id),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
