@@ -15,6 +15,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<FetchMoreTasks>(_fetchMoreTasks);
     on<CreateTaskStatus>(_createTaskStatus);
     on<UpdateTask>(_updateTask);
+
+    on<DeleteTaskStatuses>(_deleteTaskStatuses);
+
   }
 
   Future<void> _fetchTaskStatuses(
@@ -178,6 +181,22 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException {
       return false;
+    }
+  }
+
+   Future<void> _deleteTaskStatuses(DeleteTaskStatuses event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
+
+    try {
+      final response = await apiService.deleteTaskStatuses(event.taskStatusId);
+      if (response['result'] == 'Success') {
+        emit(TaskDeleted('Статус задачи удалена успешно'));
+        add(FetchTasks(event.taskStatusId)); // Перезагрузка лида после удаления
+      } else {
+        emit(TaskError('Ошибка удаления статуса сделки'));
+      }
+    } catch (e) {
+      emit(TaskError('Ошибка удаления статуса сделки: ${e.toString()}'));
     }
   }
 }

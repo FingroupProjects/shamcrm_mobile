@@ -900,6 +900,17 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     }
   }
   
+  // Метод для Удаления Статуса Лида 
+  Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async { 
+    final response = await _deleteRequest('/deal-status/$dealStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete dealStatus: ${response.body}'); 
+    } 
+  }
+
   // Метод для Удаления Сделки 
   Future<Map<String, dynamic>> deleteDeal(int dealId) async { 
     final response = await _deleteRequest('/deal/$dealId'); 
@@ -1225,6 +1236,15 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     }
   }
   
+   Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
+    final response = await _deleteRequest('/task-status/$taskStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete taskStatus: ${response.body}'); 
+    } 
+  }
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов
