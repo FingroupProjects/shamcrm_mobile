@@ -77,8 +77,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   void _initializeControllers() {
     nameController.text = widget.taskName;
-    startDateController.text = widget.startDate ?? '';
-    endDateController.text = widget.endDate ?? '';
+     if (widget.startDate != null) {
+    DateTime parsedStartDate = DateTime.parse(widget.startDate!);
+    startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
+  }
+  if (widget.endDate != null) {
+    DateTime parsedEndDate = DateTime.parse(widget.endDate!);
+    endDateController.text = DateFormat('dd/MM/yyyy').format(parsedEndDate);
+  }
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
     selectedUser = widget.user;
@@ -89,7 +95,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       fileName = widget.fail?.split('/').last;
     }
   }
-
+  
   void _loadInitialData() {
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<UserTaskBloc>().add(FetchUsers());
@@ -204,8 +210,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               'statusId': widget.statusId,
               'project': selectedProject,
               'user': selectedUser,
-              'startDate': startDateController.text,
-              'endDate': endDateController.text,
+              'from': startDateController.text,
+              'to': endDateController.text,
               'description': descriptionController.text,
               'priority': selectedPriority,
             };

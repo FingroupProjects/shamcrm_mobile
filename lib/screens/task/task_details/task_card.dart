@@ -43,7 +43,7 @@ class _TaskCardState extends State<TaskCard> {
   /// Функция для форматирования даты из строки в формат `dd-MM-yyyy`
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
-    return DateFormat('dd-MM-yyyy').format(dateTime);
+    return DateFormat('dd.MM.yyyy').format(dateTime);
   }
 
   @override
@@ -86,21 +86,21 @@ class _TaskCardState extends State<TaskCard> {
                     overflow: TextOverflow.ellipsis, // Обрезка текста, если он длинный
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _getPriorityColor(widget.task.priority), // Цвет приоритета
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _getPriorityText(widget.task.priority), // Текст приоритета
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+                // Container(
+                //   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                //   decoration: BoxDecoration(
+                //     color: _getPriorityColor(widget.task.priority), // Цвет приоритета
+                //     borderRadius: BorderRadius.circular(4),
+                //   ),
+                //   child: Text(
+                //     _getPriorityText(widget.task.priority), // Текст приоритета
+                //     style: const TextStyle(
+                //       color: Colors.white,
+                //       fontSize: 12,
+                //       fontWeight: FontWeight.w500,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
             // Строка с названием колонки и выпадающим списком для статусов
@@ -196,62 +196,57 @@ class _TaskCardState extends State<TaskCard> {
                   ],
                 ),
                 const SizedBox(width: 16),
-                // Дата окончания задачи (если есть)
-                if (widget.task.endDate != null)
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/icons/tabBar/date.png',
-                        width: 17,
-                        height: 17,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        formatDate(widget.task.endDate!),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                    ],
-                  ),
+// Если имя пользователя доступно, отображаем его
+if (widget.task.user?.name != null)
+  Row(
+    children: [
+      const SizedBox(width: 4),
+      Text(
+'Сотрудник : ${widget.task.user?.name ?? ''}',
+        style: const TextStyle(
+          fontSize: 12,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    ],
+  ),
               ],
             ),
           ],
         ),
       ),
     );
-  }
+  // }
 
-  /// Метод для получения цвета приоритета
-  /// Задает цвет в зависимости от числового значения приоритета
-  Color _getPriorityColor(int? priority) {
-    switch (priority) {
-      case 1:
-        return Colors.green; // Обычный
-      case 2:
-        return Colors.red;   // Критический
-      case 3:
-        return Colors.orange; // Сложный
-      default:
-        return Colors.green; // По умолчанию "Обычный"
-    }
-  }
+  // /// Метод для получения цвета приоритета
+  // /// Задает цвет в зависимости от числового значения приоритета
+  // Color _getPriorityColor(int? priority) {
+  //   switch (priority) {
+  //     case 1:
+  //       return Colors.green; // Обычный
+  //     case 2:
+  //       return Colors.red;   // Критический
+  //     case 3:
+  //       return Colors.orange; // Сложный
+  //     default:
+  //       return Colors.green; // По умолчанию "Обычный"
+  //   }
+  // }
 
-  /// Метод для получения текста приоритета
-  /// Возвращает текстовое представление приоритета в зависимости от его значения
-  String _getPriorityText(int? priority) {
-    switch (priority) {
-      case 1:
-        return 'Обычный';
-      case 2:
-        return 'Критический';
-      case 3:
-        return 'Сложный';
-      default:
-        return 'Обычный';
-    }
+  // /// Метод для получения текста приоритета
+  // /// Возвращает текстовое представление приоритета в зависимости от его значения
+  // String _getPriorityText(int? priority) {
+  //   switch (priority) {
+  //     case 1:
+  //       return 'Обычный';
+  //     case 2:
+  //       return 'Критический';
+  //     case 3:
+  //       return 'Сложный';
+  //     default:
+  //       return 'Обычный';
+  //   }
   }
 }

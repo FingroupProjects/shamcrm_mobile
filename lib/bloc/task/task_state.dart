@@ -36,3 +36,16 @@ class TaskSuccess extends TaskState {
 
   TaskSuccess(this.message);
 }
+
+
+class TaskDeleted extends TaskState {
+  final String message;
+
+  TaskDeleted(this.message);
+}
+
+class TaskStatusDeleted extends TaskState {
+  final String message;
+
+  TaskStatusDeleted(this.message);
+}

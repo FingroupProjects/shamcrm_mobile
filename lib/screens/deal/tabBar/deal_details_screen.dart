@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
@@ -48,11 +49,26 @@ class DealDetailsScreen extends StatefulWidget {
 class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<Map<String, String>> details = [];
   Deal? currentDeal; 
+  bool _canEditDeal = false;
+  bool _canDeleteDeal = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     context.read<DealBloc>().add(FetchDeals(widget.statusId));
+  }
+
+  Future<void> _checkPermissions() async {
+    // Проверка прав на редактирование
+    final canEdit = await _apiService.hasPermission('deal.update');
+    final canDelete = await _apiService.hasPermission('deal.delete');
+    
+    setState(() {
+      _canEditDeal = canEdit;
+      _canDeleteDeal = canDelete;
+    });
   }
 
   // Функция для форматирования даты
@@ -99,44 +115,43 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           }
         },
         child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: BlocBuilder<DealBloc, DealState>(
-          builder: (context, state) {
-            if (state is DealLoading) {
-              return Center(child: CircularProgressIndicator());
-            } else if (state is DealDataLoaded) {
-              Deal? deal;
-              try {
-                deal = state.deals.firstWhere(
-                  (deal) => deal.id.toString() == widget.dealId,
-                );
-              } catch (e) {
-                deal = null; 
-              }
+          padding: const EdgeInsets.all(16),
+          child: BlocBuilder<DealBloc, DealState>(
+            builder: (context, state) {
+              if (state is DealLoading) {
+                return Center(child: CircularProgressIndicator());
+              } else if (state is DealDataLoaded) {
+                Deal? deal;
+                try {
+                  deal = state.deals.firstWhere(
+                    (deal) => deal.id.toString() == widget.dealId,
+                  );
+                } catch (e) {
+                  deal = null; 
+                }
 
-              if (deal != null) {
-                _updateDetails(deal); 
-              } else {
-                return Center(child: Text('Сделка не найдена'));
+                if (deal != null) {
+                  _updateDetails(deal); 
+                } else {
+                  return Center(child: Text('Сделка не найдена'));
+                }
+                return ListView(
+                  children: [
+                    _buildDetailsList(),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              } else if (state is DealError) {
+                return Center(child: Text('Ошибка: ${state.message}'));
               }
-              return ListView(
-                children: [
-                  _buildDetailsList(),
-                  const SizedBox(height: 16),
-                ],
-              );
-            } else if (state is DealError) {
-              return Center(child: Text('Ошибка: ${state.message}'));
-            }
-            return Center(child: Text(''));
-          },
+              return Center(child: Text(''));
+            },
+          ),
         ),
       ),
-      )
     );
   }
 
-  // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -163,74 +178,74 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         ),
       ),
       actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-              if (currentDeal != null) {
-                final startDateString = currentDeal!.startDate != null &&
-                        currentDeal!.startDate!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentDeal!.startDate!))
-                    : null;
-                final endDateString = currentDeal!.endDate != null &&
-                        currentDeal!.endDate!.isNotEmpty
-                    ? DateFormat('dd/MM/yyyy')
-                        .format(DateTime.parse(currentDeal!.endDate!))
-                    : null;
+        if (_canEditDeal) // Условие для показа кнопки редактирования
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/edit.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () async {
+                if (currentDeal != null) {
+                  final startDateString = currentDeal!.startDate != null &&
+                          currentDeal!.startDate!.isNotEmpty
+                      ? DateFormat('dd/MM/yyyy')
+                          .format(DateTime.parse(currentDeal!.startDate!))
+                      : null;
+                  final endDateString = currentDeal!.endDate != null &&
+                          currentDeal!.endDate!.isNotEmpty
+                      ? DateFormat('dd/MM/yyyy')
+                          .format(DateTime.parse(currentDeal!.endDate!))
+                      : null;
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DealEditScreen(
-                      dealId: currentDeal!.id, 
-                      dealName: currentDeal!.name, 
-                      // dealStatus: currentDeal!.dealStatus, // Передаем статус как строку
-                      statusId: currentDeal!.statusId,
-                      manager: currentDeal!.manager != null
-                          ? currentDeal!.manager!.id.toString()
-                          : 'Не указано', 
-                      currency: currentDeal!.currency != null
-                          ? currentDeal!.currency!.id.toString()
-                          : 'Не указано',
-                      lead: currentDeal!.lead != null
-                          ? currentDeal!.lead!.id.toString()
-                          : 'Не указано', 
-                      startDate: startDateString, 
-                      endDate: endDateString, 
-                      sum: currentDeal!.sum.toString(), 
-                      description: currentDeal!.description ??
-                          'Не указано', 
-                      dealCustomFields: currentDeal!
-                          .dealCustomFields, 
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DealEditScreen(
+                        dealId: currentDeal!.id, 
+                        dealName: currentDeal!.name, 
+                        statusId: currentDeal!.statusId,
+                        manager: currentDeal!.manager != null
+                            ? currentDeal!.manager!.id.toString()
+                            : 'Не указано', 
+                        currency: currentDeal!.currency != null
+                            ? currentDeal!.currency!.id.toString()
+                            : 'Не указано',
+                        lead: currentDeal!.lead != null
+                            ? currentDeal!.lead!.id.toString()
+                            : 'Не указано', 
+                        startDate: startDateString, 
+                        endDate: endDateString, 
+                        sum: currentDeal!.sum.toString(), 
+                        description: currentDeal!.description ??
+                            'Не указано', 
+                        dealCustomFields: currentDeal!.dealCustomFields,
+                      ),
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-        ),
-         Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/delete.png',
-              width: 24,
-              height: 24,
+                  );
+                }
+              },
             ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => DeleteDealDialog(dealId: currentDeal!.id),
-              );
-            },
           ),
-        ),
+        if (_canDeleteDeal) // Условие для показа кнопки удаления
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/delete.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => DeleteDealDialog(dealId: currentDeal!.id),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
