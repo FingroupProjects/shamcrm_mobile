@@ -92,3 +92,8 @@ class DeleteDeal extends DealEvent {
 
   DeleteDeal(this.dealId);
 }
+class DeleteDealStatuses extends DealEvent {
+  final int dealStatusId;
+
+  DeleteDealStatuses(this.dealStatusId);
+}

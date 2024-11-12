@@ -1,136 +1,144 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:crm_task_manager/models/chats_model.dart';
+import 'dart:convert'; 
+import 'dart:io'; 
+import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
-import 'package:crm_task_manager/models/dashboard_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/history_model.dart';
-import 'package:crm_task_manager/models/history_model_task.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/notes_model.dart';
-import 'package:crm_task_manager/models/project_model.dart';
-import 'package:crm_task_manager/models/region_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
-import 'package:crm_task_manager/models/user_model.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/domain_check.dart';
-import '../../models/login_model.dart';
-
-class ApiService {
-  // final String baseUrl = 'http://62.84.186.96/api';
-  // final String baseUrl = 'http://192.168.1.61:8008/api';
-  // final String baseUrl = 'https://shamcrm.com/api';
-  final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
-
-  // Метод для получения токена из SharedPreferences
-  Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token'); // Получаем токен из SharedPreferences
-  }
-
-  // Метод для сохранения токена в SharedPreferences
-  Future<void> _saveToken(String token) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token); // Сохраняем токен
-  }
-
-  // Метод для удаления токена (используется при логауте)
-  Future<void> _removeToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token'); // Удаляем токен
-  }
-
-  // Метод для логаута — очистка токена
-  Future<void> logout() async {
-    await _removeToken(); // Удаляем токен при логауте
-  }
-
-  //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
-
-// Метод для выполнения GET-запросов
-  Future<http.Response> _getRequest(String path) async {
-    final token = await getToken(); // Получаем токен перед запросом
-
-    final response = await http.get(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    );
-
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
-
-    return response;
-  }
-
-  // Метод для выполнения POST-запросов
-  Future<http.Response> _postRequest(
-      String path, Map<String, dynamic> body) async {
-    final token = await getToken(); // Получаем токен перед запросом
-
-    final response = await http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+import 'package:crm_task_manager/models/dashboard_model.dart'; 
+import 'package:crm_task_manager/models/deal_model.dart'; 
+import 'package:crm_task_manager/models/history_model.dart'; 
+import 'package:crm_task_manager/models/history_model_task.dart'; 
+import 'package:crm_task_manager/models/lead_model.dart'; 
+import 'package:crm_task_manager/models/manager_model.dart'; 
+import 'package:crm_task_manager/models/notes_model.dart'; 
+import 'package:crm_task_manager/models/project_model.dart'; 
+import 'package:crm_task_manager/models/region_model.dart'; 
+import 'package:crm_task_manager/models/task_model.dart'; 
+import 'package:crm_task_manager/models/user_model.dart'; 
+import 'package:http/http.dart' as http; 
+import 'package:shared_preferences/shared_preferences.dart'; 
+import '../../models/domain_check.dart'; 
+import '../../models/login_model.dart'; 
+ 
+class ApiService { 
+  // final String baseUrl = 'http://62.84.186.96/api'; 
+  // final String baseUrl = 'http://192.168.1.61:8008/api'; 
+  // final String baseUrl = 'https://shamcrm.com/api'; 
+  final String baseUrl = 'https://fingroup-back.shamcrm.com/api'; 
+ 
+  // Метод для получения токена из SharedPreferences 
+  Future<String?> getToken() async { 
+    SharedPreferences prefs = await SharedPreferences.getInstance(); 
+    return prefs.getString('token'); // Получаем токен из SharedPreferences 
+  } 
+ 
+  // Метод для сохранения токена в SharedPreferences 
+  Future<void> _saveToken(String token) async { 
+    SharedPreferences prefs = await SharedPreferences.getInstance(); 
+    await prefs.setString('token', token); // Сохраняем токен 
+  } 
+ 
+  // Метод для удаления токена (используется при логауте) 
+  Future<void> _removeToken() async { 
+    SharedPreferences prefs = await SharedPreferences.getInstance(); 
+    await prefs.remove('token'); // Удаляем токен 
+  } 
+ 
+  // Метод для логаута — очистка токена 
+Future<void> logout() async { 
+  await _removeToken(); 
+  await _removePermissions(); // Удаляем права доступа 
+} 
+ 
+Future<void> _removePermissions() async { 
+  SharedPreferences prefs = await SharedPreferences.getInstance(); 
+  await prefs.remove('permissions'); // Удаляем права доступа из SharedPreferences 
+} 
+ 
+ 
+  //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________// 
+ 
+// Метод для выполнения GET-запросов 
+  Future<http.Response> _getRequest(String path) async { 
+    final token = await getToken(); // Получаем токен перед запросом 
+ 
+    final response = await http.get( 
+      Uri.parse('$baseUrl$path'), 
+      headers: { 
+        'Authorization': 'Bearer $token', 
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json', 
+      }, 
+    ); 
+ 
+    print('Статус ответа: ${response.statusCode}'); 
+    print('Тело ответа: ${response.body}'); 
+ 
+    return response; 
+  } 
+ 
+  // Метод для выполнения POST-запросов 
+  Future<http.Response> _postRequest( 
+      String path, Map<String, dynamic> body) async { 
+    final token = await getToken(); // Получаем токен перед запросом 
+ 
+    final response = await http.post( 
+      Uri.parse('$baseUrl$path'), 
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json', 
+        if (token != null) 
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть 
+      }, 
+      body: json.encode(body), 
+    ); 
+ 
+    print('Статус ответа: ${response.statusCode}'); 
+    print('Тело ответа: ${response.body}'); 
+ 
+    return response; 
+  } 
+ 
+// Метод для выполнения PATCH-запросов 
+  Future<http.Response> _patchRequest( 
+      String path, Map<String, dynamic> body) async { 
+    final token = await getToken(); // Получаем токен перед запросом 
+ 
+    final response = await http.patch( 
+      Uri.parse('$baseUrl$path'), 
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json', 
         if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-      },
-      body: json.encode(body),
-    );
-
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
-
-    return response;
-  }
-
-// Метод для выполнения PATCH-запросов
-  Future<http.Response> _patchRequest(
-      String path, Map<String, dynamic> body) async {
-    final token = await getToken(); // Получаем токен перед запросом
-
-    final response = await http.patch(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-      },
-      body: json.encode(body),
-    );
-
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
-
-    return response;
-  }
-
-  // Метод для выполнения DELETE-запросов
-  Future<http.Response> _deleteRequest(String path) async {
-    final token = await getToken(); // Получаем токен перед запросом
-
-    final response = await http.delete(
-      Uri.parse('$baseUrl$path'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    );
-
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
-
-    return response;
-  }
-// Метод для выполнения POST-запросов 
+        'Authorization': 'Bearer $token', // Добавляем токен, если он есть 
+      }, 
+      body: json.encode(body), 
+    ); 
+ 
+    print('Статус ответа: ${response.statusCode}'); 
+    print('Тело ответа: ${response.body}'); 
+ 
+    return response; 
+  } 
+ 
+  // Метод для выполнения DELETE-запросов 
+  Future<http.Response> _deleteRequest(String path) async { 
+    final token = await getToken(); // Получаем токен перед запросом 
+ 
+    final response = await http.delete( 
+      Uri.parse('$baseUrl$path'), 
+      headers: { 
+        'Authorization': 'Bearer $token', 
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json', 
+      }, 
+    ); 
+ 
+    print('Статус ответа: ${response.statusCode}'); 
+    print('Тело ответа: ${response.body}'); 
+ 
+    return response; 
+  } 
+ 
+  // Метод для выполнения POST-запросов 
   Future<http.Response> _postRequestDomain( 
       String path, Map<String, dynamic> body) async { 
   final String DomainUrl = 'https://shamcrm.com/api'; 
@@ -153,6 +161,10 @@ class ApiService {
   } 
   //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________// 
  
+ 
+  //        if (!await hasPermission('deal.read')) { 
+  //   throw Exception('У вас нет прав для просмотра сделки'); // Сообщение об отсутствии прав доступа 
+  // } 
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________// 
  
   // Метод для проверки домена 
@@ -178,40 +190,58 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance(); 
     return prefs.getBool('domainChecked') ?? 
         false; // Проверяем статус или возвращаем false 
-  }
-
+  } 
+ 
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
   //_________________________________ START___API__LOGIN____________________________________________//
 
   // Метод для проверки логина и пароля
-  Future<LoginResponse> login(LoginModel loginModel) async {
-    final response = await _postRequest('/login', loginModel.toJson());
+ Future<LoginResponse> login(LoginModel loginModel) async {
+  final response = await _postRequest('/login', loginModel.toJson());
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final loginResponse = LoginResponse.fromJson(data);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final loginResponse = LoginResponse.fromJson(data);
 
-      // Сохраняем токен после успешного логина
-      await _saveToken(loginResponse.token);
+    await _saveToken(loginResponse.token);
+    await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
 
-      return loginResponse;
-    } else {
-      throw Exception('Не правильный Логин или Пароль: ${response.body}');
-    }
+    return loginResponse;
+  } else {
+    throw Exception('Неправильный Логин или Пароль: ${response.body}');
   }
+}
+
+// Метод для сохранения прав доступа в SharedPreferences
+Future<void> _savePermissions(List<String> permissions) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('permissions', permissions); // Сохраняем список прав
+}
+
+
+// Метод для получения списка прав доступа
+Future<List<String>> getPermissions() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('permissions') ?? []; // Возвращаем список прав доступа или пустой список
+}
+
+// Метод для проверки, есть ли у пользователя определенное право
+Future<bool> hasPermission(String permission) async {
+  final permissions = await getPermissions();
+  return permissions.contains(permission); // Проверяем наличие права
+}
+
   //_________________________________ END___API__LOGIN____________________________________________//
 
   //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
-  // Метод для получения лидов
 Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, String? search}) async {
   String path = '/lead?page=$page&per_page=$perPage';
   
   if (leadStatusId != null) {
     path += '&lead_status_id=$leadStatusId';
   }
-
 
   if (search != null && search.isNotEmpty) {
     path += '&search=$search';
@@ -222,7 +252,6 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
-
     final data = json.decode(response.body);
     if (data['result']['data'] != null) {
       return (data['result']['data'] as List)
@@ -235,6 +264,7 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     throw Exception('Ошибка загрузки лидов: ${response.body}');
   }
 }
+
 
 
 
@@ -666,6 +696,7 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     final response = await _getRequest(
         '/deal?deal_status_id=$dealStatusId&page=$page&per_page=$perPage');
 
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -870,6 +901,17 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     }
   }
   
+  // Метод для Удаления Статуса Лида 
+  Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async { 
+    final response = await _deleteRequest('/deal-status/$dealStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete dealStatus: ${response.body}'); 
+    } 
+  }
+
   // Метод для Удаления Сделки 
   Future<Map<String, dynamic>> deleteDeal(int dealId) async { 
     final response = await _deleteRequest('/deal/$dealId'); 
@@ -1240,6 +1282,15 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
   }
 
   
+   Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
+    final response = await _deleteRequest('/task-status/$taskStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete taskStatus: ${response.body}'); 
+    } 
+  }
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов

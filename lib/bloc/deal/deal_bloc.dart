@@ -16,6 +16,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<CreateDealStatus>(_createDealStatus);
     on<UpdateDeal>(_updateDeal);
     on<DeleteDeal>(_deleteDeal);
+    on<DeleteDealStatuses>(_deleteDealStatuses);
 
   }
 
@@ -201,6 +202,22 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       }
     } catch (e) {
       emit(DealError('Ошибка удаления сделки: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _deleteDealStatuses(DeleteDealStatuses event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+
+    try {
+      final response = await apiService.deleteDealStatuses(event.dealStatusId);
+      if (response['result'] == 'Success') {
+        emit(DealDeleted('Статус Лида удалена успешно'));
+        add(FetchDeals(event.dealStatusId)); // Перезагрузка лида после удаления
+      } else {
+        emit(DealError('Ошибка удаления статуса сделки'));
+      }
+    } catch (e) {
+      emit(DealError('Ошибка удаления статуса сделки: ${e.toString()}'));
     }
   }
 }

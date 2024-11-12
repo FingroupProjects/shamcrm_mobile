@@ -71,7 +71,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       body: Column(
         children: [
           const SizedBox(height: 15),
-          _buildSearchBar(),
+          // _buildSearchBar(),
           _buildCustomTabBar(),
           Expanded(child: _buildTabBarView()),
         ],
