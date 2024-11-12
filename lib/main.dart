@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
@@ -87,7 +88,9 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => HistoryBlocTask(apiService),
         ),
-        
+        BlocProvider(
+          create: (context) => DashboardBloc(apiService),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
