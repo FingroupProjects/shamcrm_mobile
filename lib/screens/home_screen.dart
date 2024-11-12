@@ -56,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
     }
 
+    // if ( await _apiService.hasPermission('task.read')) {
     if (!hasAvailableScreens || await _apiService.hasPermission('task.read')) {
       widgets.add(TaskScreen());
       titles.add('Задачи');

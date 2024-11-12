@@ -42,7 +42,7 @@ class _CurrencyWidgetState extends State<CurrencyWidget> {
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                  'Нет валют',
+                  'Нет валюты',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
