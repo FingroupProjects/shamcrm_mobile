@@ -3,8 +3,17 @@ import 'package:flutter/material.dart';
 
 class MyNavBar extends StatefulWidget {
   final Function(int) onItemSelected;
+  final List<String> navBarTitles;
+  final List<String> activeIcons;
+  final List<String> inactiveIcons;
 
-  MyNavBar({required this.onItemSelected, required int selectedIndex});
+  MyNavBar({
+    required this.onItemSelected,
+    required int selectedIndex,
+    required this.navBarTitles,
+    required this.activeIcons,
+    required this.inactiveIcons,
+  });
 
   @override
   _MyNavBarState createState() => _MyNavBarState();
@@ -39,6 +48,10 @@ class _MyNavBarState extends State<MyNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    // Проверка доступности экрана (добавьте свою логику проверки доступности экранов)
+    bool allItemsAvailable = widget.navBarTitles.length == widget.activeIcons.length &&
+                              widget.navBarTitles.length == widget.inactiveIcons.length;
+
     return BottomNavyBar(
       backgroundColor: Color(0xffF4F7FD),
       selectedIndex: currentIndex,
@@ -48,13 +61,21 @@ class _MyNavBarState extends State<MyNavBar> {
         });
         widget.onItemSelected(index);
       },
-      items: <BottomNavyBarItem>[
-        _buildNavBarItem(0, 'Дашборд', 'assets/icons/MyNavBar/dashboard_ON.png', 'assets/icons/MyNavBar/dashboard_OFF.png'),
-        _buildNavBarItem(1, 'Задачи', 'assets/icons/MyNavBar/tasks_ON.png', 'assets/icons/MyNavBar/tasks_OFF.png'),
-        _buildNavBarItem(2, 'Лиды', 'assets/icons/MyNavBar/clients_ON.png', 'assets/icons/MyNavBar/clients_OFF.png'),
-        _buildNavBarItem(3, 'Сообщения', 'assets/icons/MyNavBar/chats_ON.png', 'assets/icons/MyNavBar/chats_OFF.png'),
-        _buildNavBarItem(4, 'Сделки', 'assets/icons/MyNavBar/deal_ON.png', 'assets/icons/MyNavBar/deal_OFF.png'),
-      ],
+      items: List.generate(
+        widget.navBarTitles.length,
+        (index) => _buildNavBarItem(
+          index,
+          widget.navBarTitles[index],
+          widget.activeIcons[index],
+          widget.inactiveIcons[index],
+        ),
+      ),
+      iconSize: _iconSize,
+      containerHeight: 60, 
+      curve: Curves.ease,
+      mainAxisAlignment: allItemsAvailable
+          ? MainAxisAlignment.spaceAround 
+          : MainAxisAlignment.spaceEvenly, 
     );
   }
 }
