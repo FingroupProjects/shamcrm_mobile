@@ -167,20 +167,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ),
       actions: [
         Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/edit.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () async {
-                  final formattedBirthday =
-                      (widget.birthday != null && widget.birthday!.isNotEmpty)
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(widget.birthday!))
-                            : null;
-          padding: const EdgeInsets.only(right: 8);
+          padding: const EdgeInsets.only(right: 8),
           child: IconButton(
             icon: Image.asset(
               'assets/icons/edit.png',
@@ -219,9 +206,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 );
               }
             },
-          );
-                }
-)),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: IconButton(
