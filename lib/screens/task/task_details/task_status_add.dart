@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/task/task_details/TaskStatus_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,6 +16,8 @@ class CreateStatusDialog extends StatefulWidget {
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _controller = TextEditingController();
   String? _errorMessage;
+  String? selectedProject;
+  String? selectedTaskStatusName;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +54,23 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               contentPadding:
                   EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
+          ),
+          const SizedBox(height: 8),
+          TaskStatusNameWidget(
+            selectedTaskStatusName: selectedTaskStatusName,
+            onChanged: (String? newValue) {
+              setState(() {
+                selectedTaskStatusName = newValue;
+              });
+            },
+          ),
+          ProjectWidget(
+            selectedProject: selectedProject,
+            onChanged: (String? newValue) {
+              setState(() {
+                selectedProject = newValue;
+              });
+            },
           ),
           if (_errorMessage != null)
             Padding(

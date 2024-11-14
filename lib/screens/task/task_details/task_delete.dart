@@ -1,5 +1,8 @@
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DeleteTaskDialog extends StatelessWidget {
   final int taskId; // Изменили тип на int
@@ -49,8 +52,9 @@ class DeleteTaskDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: 'Удалить',
                 onPressed: () {
-                  // context.read<TaskBloc>().add(DeleteTask(taskId));
+                  context.read<TaskBloc>().add(DeleteTask(taskId));
                   Navigator.of(context).pop();
+                  Navigator.pushReplacementNamed(context, '/taskListPage');
                 },
                 buttonColor: Color(0xff1E2E52),
                 textColor: Colors.white,

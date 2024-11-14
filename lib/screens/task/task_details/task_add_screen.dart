@@ -48,8 +48,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Карта уровней приоритета
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
-    2: 'Критический',
-    3: 'Сложный'
+    3: 'Критический',
+    2: 'Сложный'
   };
 
   @override
@@ -58,15 +58,17 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     context.read<ManagerBloc>().add(FetchManagers());
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<UserTaskBloc>().add(FetchUsers());
-      // Устанавливаем значения по умолчанию
+    // Устанавливаем значения по умолчанию
     _setDefaultValues();
-    
+
     // Подписываемся на изменения в блоках
     _setupBlocListeners();
-  } void _setDefaultValues() {
+  }
+
+  void _setDefaultValues() {
     // Устанавливаем приоритет по умолчанию (Обычный)
     selectedPriority = 1;
-    
+
     // Устанавливаем текущую дату в поле "От"
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
@@ -221,12 +223,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               canvasColor: Colors.white,
             ),
             child: DropdownButtonFormField<int>(
-              value: selectedPriority ?? 1, // Устанавливаем значение по умолчанию
+              value:
+                  selectedPriority ?? 1, // Устанавливаем значение по умолчанию
               items: priorityLevels.entries.map((entry) {
                 final priorityColor = entry.key == 2
-                    ? Colors.red
+                    ? Colors.yellow
                     : entry.key == 3
-                        ? Colors.yellow
+                        ? Colors.red
                         : Colors.green;
                 return DropdownMenuItem(
                   value: entry.key,
@@ -283,13 +286,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context, widget.statusId);
+              context.read<TaskBloc>().add(FetchTaskStatuses());
+            }),
         title: const Text(
           'Новая задача',
           style: TextStyle(
@@ -299,8 +304,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             color: Color(0xff1E2E52),
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        // elevation: 5,
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
@@ -351,11 +356,23 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'От',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'До',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       ProjectWidget(
@@ -461,12 +478,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   }
 
                   // Подготовка данных о файле
-                 TaskFile? fileData;
-      if (selectedFile != null) {
-        fileData = TaskFile(
-          name: fileName ?? "unknown",
-          size: fileSize ?? "0KB"
-        );
+                  TaskFile? fileData;
+                  if (selectedFile != null) {
+                    fileData = TaskFile(
+                        name: fileName ?? "unknown", size: fileSize ?? "0KB");
                   }
                   print("fileData: $fileData");
                   print("SelectedData: $selectedFile");
