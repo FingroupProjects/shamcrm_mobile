@@ -1,8 +1,10 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/lead/lead_state.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
+import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
+import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
@@ -50,7 +52,7 @@ class LeadDetailsScreen extends StatefulWidget {
 
 class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   List<Map<String, String>> details = [];
-  Lead? currentLead;
+  LeadById? currentLead;
   bool _canEditLead = false;
   bool _canDeleteLead = false;
   final ApiService _apiService = ApiService();
@@ -59,7 +61,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+    // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+    context
+        .read<LeadByIdBloc>()
+        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+   
   }
 
   // Метод для проверки разрешений
@@ -84,7 +90,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   // Обновление данных лида
-  void _updateDetails(Lead lead) {
+  void _updateDetails(LeadById lead) {
     currentLead = lead; // Сохраняем актуального лида
     details = [
       {'label': 'ID лида:', 'value': lead.id.toString()},
@@ -104,54 +110,43 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, 'Просмотр Лида'),
-      backgroundColor: Colors.white,
-      body: BlocListener<LeadBloc, LeadState>(
-        listener: (context, state) {
-          if (state is LeadDeleted) {
-            context.read<LeadBloc>().add(FetchLeadStatuses());
-            Navigator.pop(context);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: BlocBuilder<LeadBloc, LeadState>(
+        appBar: _buildAppBar(context, 'Просмотр Лида'),
+        backgroundColor: Colors.white,
+        body: BlocListener<LeadByIdBloc, LeadByIdState>(
+          listener: (context, state) {
+            if (state is LeadByIdLoaded) {
+              print("Лид Data: ${state.lead.toString()}");
+            } else if (state is LeadByIdError) {
+              print("Ошибка получения Лид data: ${state.message}");
+            }
+          },
+          child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
             builder: (context, state) {
-              if (state is LeadLoading) {
+              if (state is LeadByIdLoading) {
                 return Center(child: CircularProgressIndicator());
-              } else if (state is LeadDataLoaded) {
-                Lead? lead;
-                try {
-                  lead = state.leads.firstWhere(
-                    (lead) => lead.id.toString() == widget.leadId,
-                  );
-                } catch (e) {
-                  lead = null;
-                }
-
-                if (lead != null) {
-                  _updateDetails(lead);
-                } else {
-                  return Center(child: Text('Лид не найден'));
-                }
-                return ListView(
-                  children: [
-                    _buildDetailsList(),
-                    const SizedBox(height: 8),
-                    ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-                    const SizedBox(height: 16),
-                    NotesWidget(leadId: int.parse(widget.leadId)),
-                  ],
+              } else if (state is LeadByIdLoaded) {
+                LeadById lead = state.lead;
+                _updateDetails(lead);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: ListView(
+                    children: [
+                      _buildDetailsList(),
+                      const SizedBox(height: 8),
+                      ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+                      const SizedBox(height: 16),
+                      NotesWidget(leadId: int.parse(widget.leadId)),
+                    ],
+                  ),
                 );
-              } else if (state is LeadError) {
+              } else if (state is LeadByIdError) {
                 return Center(child: Text('Ошибка: ${state.message}'));
               }
               return Center(child: Text(''));
             },
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   // Функция для построения AppBar
@@ -186,44 +181,49 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                if (currentLead != null) {
-                  final birthdayString = currentLead!.birthday != null &&
-                          currentLead!.birthday!.isNotEmpty
-                      ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentLead!.birthday!))
-                      : null;
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () async {
+                  if (currentLead != null) {
+                    final birthdayString = currentLead!.birthday != null &&
+                            currentLead!.birthday!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentLead!.birthday!))
+                        : null;
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LeadEditScreen(
-                        leadId: currentLead!.id,
-                        leadName: currentLead!.name,
-                        statusId: currentLead!.statusId,
-                        region: currentLead!.region != null
-                            ? currentLead!.region!.id.toString()
-                            : 'Не указано',
-                        manager: currentLead!.manager != null
-                            ? currentLead!.manager!.id.toString()
-                            : 'Не указано',
-                        birthday: birthdayString,
-                        instagram: currentLead!.instagram,
-                        facebook: currentLead!.facebook,
-                        telegram: currentLead!.telegram,
-                        phone: currentLead!.phone,
-                        description: currentLead!.description,
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LeadEditScreen(
+                          leadId: currentLead!.id,
+                          leadName: currentLead!.name,
+                          statusId: currentLead!.statusId,
+                          region: currentLead!.region != null
+                              ? currentLead!.region!.id.toString()
+                              : 'Не указано',
+                          manager: currentLead!.manager != null
+                              ? currentLead!.manager!.id.toString()
+                              : 'Не указано',
+                          birthday: birthdayString,
+                          instagram: currentLead!.instagram,
+                          facebook: currentLead!.facebook,
+                          telegram: currentLead!.telegram,
+                          phone: currentLead!.phone,
+                          description: currentLead!.description,
+                        ),
                       ),
-                    ),
-                  );
-                }
-              },
-            ),
+                    );
+
+                    if (shouldUpdate == true) {
+                      // Перезагружаем данные лида
+                      context.read<LeadByIdBloc>().add(
+                          FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+                    }
+                  }
+                }),
           ),
         // Кнопка удаления, если есть разрешение
         if (_canDeleteLead)
@@ -238,7 +238,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => DeleteLeadDialog(leadId: currentLead!.id),
+                  builder: (context) =>
+                      DeleteLeadDialog(leadId: currentLead!.id),
                 );
               },
             ),
@@ -306,3 +307,351 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 }
+
+
+
+
+
+
+// import 'package:crm_task_manager/api/service/api_service.dart';
+// import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+// import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+// import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+// import 'package:crm_task_manager/models/lead_model.dart';
+// import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
+// import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:intl/intl.dart';
+
+// class LeadDetailsScreen extends StatefulWidget {
+//   final String leadId;
+//   final String leadName;
+//   final String leadStatus;
+//   final int statusId;
+//   final String? region;
+//   final int? regionId;
+//   final String? manager;
+//   final int? managerId;
+//   final String? birthday;
+//   final String? instagram;
+//   final String? facebook;
+//   final String? telegram;
+//   final String? phone;
+//   final String? description;
+
+//   LeadDetailsScreen({
+//     required this.leadId,
+//     required this.leadName,
+//     required this.leadStatus,
+//     required this.statusId,
+//     this.region,
+//     this.regionId,
+//     this.manager,
+//     this.managerId,
+//     this.birthday,
+//     this.instagram,
+//     this.facebook,
+//     this.telegram,
+//     this.phone,
+//     this.description,
+//   });
+
+//   @override
+//   _LeadDetailsScreenState createState() => _LeadDetailsScreenState();
+// }
+
+// class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
+//   List<Map<String, String>> details = [];
+//   Lead? currentLead;
+//   bool _canEditLead = false;
+//   bool _canDeleteLead = false;
+//   final ApiService _apiService = ApiService();
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _checkPermissions();
+//     context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+//   }
+
+//   // Метод для проверки разрешений
+//   Future<void> _checkPermissions() async {
+//     final canEdit = await _apiService.hasPermission('lead.update');
+//     final canDelete = await _apiService.hasPermission('lead.delete');
+//     setState(() {
+//       _canEditLead = canEdit;
+//       _canDeleteLead = canDelete;
+//     });
+//   }
+
+//   // Функция для форматирования даты
+//   String formatDate(String? dateString) {
+//     if (dateString == null || dateString.isEmpty) return 'Не указано';
+//     try {
+//       final parsedDate = DateTime.parse(dateString);
+//       return DateFormat('dd/MM/yyyy').format(parsedDate);
+//     } catch (e) {
+//       return 'Неверный формат';
+//     }
+//   }
+
+//   // Обновление данных лида
+//   void _updateDetails(Lead lead) {
+//     currentLead = lead; // Сохраняем актуального лида
+//     details = [
+//       {'label': 'ID лида:', 'value': lead.id.toString()},
+//       {'label': 'ФИО клиента:', 'value': lead.name},
+//       {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
+//       {'label': 'Регион:', 'value': lead.region?.name ?? 'Не указано'},
+//       {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Не указано'},
+//       {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
+//       {'label': 'Instagram:', 'value': lead.instagram ?? 'Не указано'},
+//       {'label': 'Facebook:', 'value': lead.facebook ?? 'Не указано'},
+//       {'label': 'Telegram:', 'value': lead.telegram ?? 'Не указано'},
+//       {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
+//       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
+//     ];
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: _buildAppBar(context, 'Просмотр Лида'),
+//       backgroundColor: Colors.white,
+//       body: BlocListener<LeadBloc, LeadState>(
+//         listener: (context, state) {
+//           if (state is LeadDeleted) {
+//             context.read<LeadBloc>().add(FetchLeadStatuses());
+//             Navigator.pop(context);
+//           }
+//         },
+//         child: Padding(
+//           padding: const EdgeInsets.all(16),
+//           child: BlocBuilder<LeadBloc, LeadState>(
+//             builder: (context, state) {
+//               if (state is LeadLoading) {
+//                 return Center(
+//                     child:
+//                         CircularProgressIndicator()); // Показываем индикатор загрузки
+//               } else if (state is LeadDataLoaded) {
+//                 Lead? lead;
+//                 try {
+//                   // Преобразуем leadId в целое число, если нужно
+//                   lead = state.leads.firstWhere(
+//                     (lead) => lead.id.toString() == widget.leadId,
+//                     orElse: () => Lead(
+//                       id: -1, // Дефолтное значение для id
+//                       name: 'Не найден', // Дефолтное имя для лида
+//                       messageAmount: 0, // Дефолтное количество сообщений
+//                       statusId: -1, // Дефолтный статус
+//                       source: null, // Ожидаем, что source может быть null
+//                       createdAt: null, // Дата создания лида
+//                       region: null, // Регион может быть null
+//                       manager: null, // Менеджер может быть null
+//                       birthday: null, // Дата рождения может быть null
+//                       instagram: null, // Instagram может быть null
+//                       facebook: null, // Facebook может быть null
+//                       telegram: null, // Telegram может быть null
+//                       phone: null, // Телефон может быть null
+//                       description: null, // Описание может быть null
+//                       leadStatus: null, // Статус лида может быть null
+//                     ),
+//                   );
+//                 } catch (e) {
+//                   lead = null; // В случае ошибки ищем null
+//                 }
+
+//                 if (lead != null) {
+//                   _updateDetails(lead); // Обновляем данные лида
+//                 } else {
+//                   return Center(
+//                     child: Text(
+//                       'Лид с таким ID не найден или произошла ошибка при загрузке данных.',
+//                       style: TextStyle(color: Colors.red, fontSize: 16),
+//                     ),
+//                   ); // Сообщение, если лид не найден
+//                 }
+
+//                 return ListView(
+//                   children: [
+//                     _buildDetailsList(),
+//                     const SizedBox(height: 8),
+//                     ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+//                     const SizedBox(height: 16),
+//                     NotesWidget(leadId: int.parse(widget.leadId)),
+//                   ],
+//                 );
+//               } else if (state is LeadError) {
+//                 return Center(
+//                   child: Text(
+//                     'Ошибка: ${state.message}',
+//                     style: TextStyle(color: Colors.red, fontSize: 16),
+//                   ),
+//                 ); // Сообщение об ошибке
+//               }
+//               return Center(
+//                   child:
+//                       Text('')); // Пустой экран в случае неизвестного состояния
+//             },
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   // Функция для построения AppBar
+//   AppBar _buildAppBar(BuildContext context, String title) {
+//     return AppBar(
+//       backgroundColor: Colors.white,
+//       forceMaterialTransparency: true,
+//       elevation: 0,
+//       leading: IconButton(
+//         icon: Image.asset(
+//           'assets/icons/arrow-left.png',
+//           width: 24,
+//           height: 24,
+//         ),
+//         onPressed: () {
+//           Navigator.pop(context, widget.statusId);
+//           context.read<LeadBloc>().add(FetchLeadStatuses());
+//         },
+//       ),
+//       title: Text(
+//         title,
+//         style: TextStyle(
+//           fontSize: 18,
+//           fontFamily: 'Gilroy',
+//           fontWeight: FontWeight.w600,
+//           color: Color(0xff1E2E52),
+//         ),
+//       ),
+//       actions: [
+//         // Кнопка редактирования, если есть разрешение
+//         if (_canEditLead)
+//           Padding(
+//             padding: const EdgeInsets.only(right: 8),
+//             child: IconButton(
+//               icon: Image.asset(
+//                 'assets/icons/edit.png',
+//                 width: 24,
+//                 height: 24,
+//               ),
+//               onPressed: () async {
+//                 if (currentLead != null) {
+//                   final birthdayString = currentLead!.birthday != null &&
+//                           currentLead!.birthday!.isNotEmpty
+//                       ? DateFormat('dd/MM/yyyy')
+//                           .format(DateTime.parse(currentLead!.birthday!))
+//                       : null;
+
+//                   Navigator.push(
+//                     context,
+//                     MaterialPageRoute(
+//                       builder: (context) => LeadEditScreen(
+//                         leadId: currentLead!.id,
+//                         leadName: currentLead!.name,
+//                         statusId: currentLead!.statusId,
+//                         region: currentLead!.region != null
+//                             ? currentLead!.region!.id.toString()
+//                             : 'Не указано',
+//                         manager: currentLead!.manager != null
+//                             ? currentLead!.manager!.id.toString()
+//                             : 'Не указано',
+//                         birthday: birthdayString,
+//                         instagram: currentLead!.instagram,
+//                         facebook: currentLead!.facebook,
+//                         telegram: currentLead!.telegram,
+//                         phone: currentLead!.phone,
+//                         description: currentLead!.description,
+//                       ),
+//                     ),
+//                   );
+//                 }
+//               },
+//             ),
+//           ),
+//         // Кнопка удаления, если есть разрешение
+//         if (_canDeleteLead)
+//           Padding(
+//             padding: const EdgeInsets.only(right: 8),
+//             child: IconButton(
+//               icon: Image.asset(
+//                 'assets/icons/delete.png',
+//                 width: 24,
+//                 height: 24,
+//               ),
+//               onPressed: () {
+//                 showDialog(
+//                   context: context,
+//                   builder: (context) =>
+//                       DeleteLeadDialog(leadId: currentLead!.id),
+//                 );
+//               },
+//             ),
+//           ),
+//       ],
+//     );
+//   }
+
+//   // Построение списка деталей лида
+//   Widget _buildDetailsList() {
+//     return ListView.builder(
+//       shrinkWrap: true,
+//       physics: NeverScrollableScrollPhysics(),
+//       itemCount: details.length,
+//       itemBuilder: (context, index) {
+//         return Padding(
+//           padding: const EdgeInsets.symmetric(vertical: 6),
+//           child: _buildDetailItem(
+//             details[index]['label']!,
+//             details[index]['value']!,
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   // Построение одной строки с деталями лида
+//   Widget _buildDetailItem(String label, String value) {
+//     return Row(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         _buildLabel(label),
+//         SizedBox(width: 8),
+//         Expanded(
+//           child: _buildValue(value),
+//         ),
+//       ],
+//     );
+//   }
+
+//   // Построение метки
+//   Widget _buildLabel(String label) {
+//     return Text(
+//       label,
+//       style: TextStyle(
+//         fontSize: 16,
+//         fontFamily: 'Gilroy',
+//         fontWeight: FontWeight.w400,
+//         color: Color(0xfff99A4BA),
+//       ),
+//     );
+//   }
+
+//   // Построение значения
+//   Widget _buildValue(String value) {
+//     return Text(
+//       value,
+//       style: TextStyle(
+//         fontSize: 16,
+//         fontFamily: 'Gilroy',
+//         fontWeight: FontWeight.w500,
+//         color: Color(0xfff1E2E52),
+//       ),
+//       overflow: TextOverflow.visible,
+//     );
+//   }
+// }
