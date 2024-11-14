@@ -44,23 +44,44 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   // Метод для загрузки сделок
-  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-    emit(DealLoading());
-    if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
-      return;
-    }
+  // Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+  //   emit(DealLoading());
+  //   if (!await _checkInternetConnection()) {
+  //     emit(DealError('Нет подключения к интернету'));
+  //     return;
+  //   }
 
-    try {
-      final deals = await apiService.getDeals(event.statusId);
-      allDealsFetched = deals.isEmpty; // Если сделок нет, устанавливаем флаг
-      emit(DealDataLoaded(deals,
-          currentPage: 1)); // Устанавливаем текущую страницу на 1
-    } catch (e) {
-      emit(DealError('Не удалось загрузить сделок: ${e.toString()}'));
-    }
+  //   try {
+  //     final deals = await apiService.getDeals(event.statusId);
+  //     allDealsFetched = deals.isEmpty; // Если сделок нет, устанавливаем флаг
+  //     emit(DealDataLoaded(deals,
+  //         currentPage: 1)); // Устанавливаем текущую страницу на 1
+  //   } catch (e) {
+  //     emit(DealError('Не удалось загрузить сделок: ${e.toString()}'));
+  //   }
+  // }
+
+Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+  emit(DealLoading());
+  if (!await _checkInternetConnection()) {
+    emit(DealError('Нет подключения к интернету'));
+    return;
   }
 
+  try {
+    // Передаем правильный leadStatusId из события FetchLeads
+    final leads = await apiService.getDeals(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+    );
+    allDealsFetched = leads.isEmpty;
+    emit(DealDataLoaded(leads, currentPage: 1));
+  } catch (e) {
+    emit(DealError('Не удалось загрузить сделки: ${e.toString()}'));
+  }
+}
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {
     if (allDealsFetched)
