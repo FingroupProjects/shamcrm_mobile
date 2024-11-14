@@ -12,7 +12,8 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/project_model.dart'; 
 import 'package:crm_task_manager/models/region_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
-import 'package:crm_task_manager/models/user_model.dart'; 
+import 'package:crm_task_manager/models/user_model.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; 
 import 'package:http/http.dart' as http; 
 import 'package:shared_preferences/shared_preferences.dart'; 
 import '../../models/domain_check.dart'; 
@@ -927,29 +928,36 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
   Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1, int perPage = 20}) async {
-    String path = '/task';
-    if (taskStatusId != null) {
-      path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
-    } else {
-      path += '?page=$page&per_page=$perPage';
-    }
-
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки задач: ${response.body}');
-    }
+    {int page = 1, int perPage = 20}) async {
+  String path = '/task';
+  if (taskStatusId != null) {
+    path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
+  } else {
+    path += '?page=$page&per_page=$perPage';
   }
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      // Логирование уровня приоритета для каждой задачи
+      final tasks = (data['result']['data'] as List).map((json) {
+        // Извлекаем priority_level и выводим его в лог
+        final priority = json['priority_level'];
+        print('Task priority level: $priority');
+
+        return Task.fromJson(json, taskStatusId ?? -1);
+      }).toList();
+
+      return tasks;
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки задач: ${response.body}');
+  }
+}
 
   // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -970,18 +978,21 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
   }
 
 //Обновление статуса карточки Сделки  в колонке
-  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-    final response = await _postRequest('/task/changeStatus/$taskId', {
-      'position': position,
-      'status_id': statusId,
-    });
-
-    if (response.statusCode == 200) {
-      print('Статус задачи обновлен успешно.');
-    } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
-    }
+  
+Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+  final response = await _postRequest('/task/changeStatus/$taskId', {
+    'position': position,
+    'status_id': statusId,
+  });
+  
+  if (response.statusCode == 200) {
+    print('Статус задачи обновлен успешно.');
+  } else if (response.statusCode == 422) {
+    throw TaskStatusUpdateException(422, 'Вы не можете переместить задачу на этот статус');
+  } else {
+    throw Exception('Ошибка обновления задач сделки: ${response.body}');
   }
+}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {
@@ -1236,8 +1247,7 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
       rethrow;
     }
   }
-
-    /// Получение статистики для дашборда
+/// Получение статистики для дашборда
   Future<DashboardStats> getDashboardStats() async {
     String path = '/dashboard/getTopStats?organization_id=1';
     
@@ -1281,7 +1291,18 @@ Future<List<Lead>> getLeads(int? leadStatusId, {int page = 1, int perPage = 20, 
     }
   }
 
-  
+
+  // Метод для Удаления Лида 
+  Future<Map<String, dynamic>> deleteTask(int taskId) async { 
+    final response = await _deleteRequest('/task/$taskId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete task: ${response.body}'); 
+    } 
+  } 
+
    Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
     final response = await _deleteRequest('/task-status/$taskStatusId'); 
  

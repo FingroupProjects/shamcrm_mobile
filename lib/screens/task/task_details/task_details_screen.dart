@@ -26,6 +26,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final String? startDate;
   final String? endDate;
   final String? sum;
+  final int? priority;
 
   TaskDetailsScreen({
     required this.taskId,
@@ -41,6 +42,7 @@ class TaskDetailsScreen extends StatefulWidget {
     this.endDate,
     this.sum,
     // this.projectName,
+    this.priority,
   });
 
   @override
@@ -98,12 +100,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
       },
       // {'label': 'Приоритет:', 'value': task.priority.toString()},
-      {'label': 'Название задачи:', 'value': task.name},
-      {'label': 'От:', 'value': formatDate(task.startDate)},
-      {'label': 'До:', 'value': formatDate(task.endDate)},
-      {'label': 'Статус:', 'value': task.taskStatus?.taskStatus.name ?? 'Не указано'},
+      
       {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
       {'label': 'Пользователь:', 'value': task.user?.name ?? 'Не указано'},
+
+
       {'label': 'Описание:', 'value': task.description?.isNotEmpty == true ? task.description! : 'Не указано'},
     ];
   }

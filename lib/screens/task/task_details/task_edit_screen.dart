@@ -252,11 +252,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'От',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'До',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 8),
                       ProjectWidget(

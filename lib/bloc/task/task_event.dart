@@ -81,7 +81,11 @@ class UpdateTask extends TaskEvent {
     // this.file,
   });
 }
+class DeleteTask extends TaskEvent {
+  final int taskId;
 
+  DeleteTask(this.taskId);
+}
 
 class DeleteTaskStatuses extends TaskEvent {
   final int taskStatusId;
