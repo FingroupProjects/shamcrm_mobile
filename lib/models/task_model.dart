@@ -9,14 +9,13 @@ class Task {
   final String? startDate;
   final String? endDate;
   final String? description;
-  final int statusId; // Added back statusId
+  final int statusId;
   final TaskStatus? taskStatus;
-  // final Project? project;
   final String? color;
   final Project? project;
   final User? user;
   final TaskFile? file;
-  final int? priority;
+  final int priority;
 
   Task({
     required this.id,
@@ -24,48 +23,59 @@ class Task {
     required this.startDate,
     required this.endDate,
     this.description,
-    required this.statusId, // Required statusId
+    required this.statusId,
     this.taskStatus,
-    // this.project,
     this.color,
     this.project,
     this.user,
     this.file,
-    this.priority,
+    required this.priority,
   });
 
-  factory Task.fromJson(Map<String,
-   dynamic> json, int taskStatusId) {
-    // Added taskStatusId parameter
+  factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
+    // Извлекаем и проверяем priority_level
+    final rawPriority = json['priority_level'];
+    print('Raw priority from JSON: $rawPriority'); // Debug print
+    
+    // Преобразуем priority_level в int
+    final int priorityLevel;
+    if (rawPriority is int) {
+      priorityLevel = rawPriority;
+    } else if (rawPriority is String) {
+      priorityLevel = int.tryParse(rawPriority) ?? 0;
+    } else {
+      priorityLevel = 0;
+    }
+    
+    print('Converted priority level: $priorityLevel'); // Debug print
+
     return Task(
       id: json['id'] is int ? json['id'] : 0,
-       priority: json['priority_level'] is int ? json['priority_level']:0,
       name: json['name'] is String ? json['name'] : 'Без имени',
-      startDate: json['from'] ,
-      endDate: json['to'] ,
+      startDate: json['from'],
+      endDate: json['to'],
       description: json['description'] is String ? json['description'] : '',
-
       statusId: taskStatusId,
-      taskStatus: json['taskStatus'] != null &&
-              json['taskStatus'] is Map<String, dynamic>
+      priority: priorityLevel, // Используем обработанное значение
+      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])
           : null,
-      project:
-          json['project'] != null && json['project'] is Map<String, dynamic>
-              ? Project.fromJson(json['project'])
-              : null,
+      project: json['project'] != null && json['project'] is Map<String, dynamic>
+          ? Project.fromJson(json['project'])
+          : null,
       user: json['user'] != null && json['user'] is Map<String, dynamic>
           ? User.fromJson(json['user'])
           : null,
       color: json['color'] is String ? json['color'] : null,
-      // file: json['file'] != null ? TaskFile.fromJson(json['file']) : '', // Parse file data
-      // file: json['file'] != null && json['file'] is Map<String, dynamic>
-      //     ? TaskFile.fromJson(json['user'])
-      //     : null,
+      file: json['file'] != null && json['file'] is Map<String, dynamic>
+          ? TaskFile.fromJson(json['file'])
+          : null,
     );
   }
-
 }
+
+
+
 // Add TaskFile model
 // First, let's define the TaskFile model class
 class TaskFile {
@@ -75,14 +85,14 @@ class TaskFile {
   TaskFile({required this.name, required this.size});
 
   Map<String, dynamic> toJson() => {
-    "name": name,
-    "size": size,
-  };
+        "name": name,
+        "size": size,
+      };
 
   factory TaskFile.fromJson(Map<String, dynamic> json) => TaskFile(
-    name: json["name"] as String,
-    size: json["size"] as String,
-  );
+        name: json["name"] as String,
+        size: json["size"] as String,
+      );
 }
 
 class TaskStatus {

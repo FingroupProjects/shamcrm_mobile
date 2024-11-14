@@ -15,6 +15,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<FetchMoreTasks>(_fetchMoreTasks);
     on<CreateTaskStatus>(_createTaskStatus);
     on<UpdateTask>(_updateTask);
+    on<DeleteTask>(_deleteTask);
 
     on<DeleteTaskStatuses>(_deleteTaskStatuses);
 
@@ -184,6 +185,23 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
+
+   Future<void> _deleteTask(DeleteTask event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
+
+    try {
+      final response = await apiService.deleteTask(event.taskId);
+      if (response['result'] == 'Success') {
+        emit(TaskDeleted('Задача удалена успешно'));
+        add(FetchTasks(event.taskId)); // Перезагрузка лида после удаления
+      } else {
+        emit(TaskError('Ошибка удаления задача'));
+      }
+    } catch (e) {
+      emit(TaskError('Ошибка удаления задача: ${e.toString()}'));
+    }
+  }
+  
    Future<void> _deleteTaskStatuses(DeleteTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 

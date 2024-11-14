@@ -13,6 +13,15 @@ void DropdownBottomSheet(
   String selectedValue = defaultValue;
   int? selectedStatusId;
 
+  void showErrorMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Вы не можете переместить задачу на этот статус'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
@@ -45,7 +54,6 @@ void DropdownBottomSheet(
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return Center(child: Text('Нет доступных статусов'));
                       }
-
                       List<TaskStatus> statuses = snapshot.data!;
 
                       return ListView(
@@ -53,13 +61,13 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue = status.taskStatus.name; // Изменено
-                                selectedStatusId = status.taskStatus.id; // Изменено
+                                selectedValue = status.taskStatus.name;
+                                selectedStatusId = status.taskStatus.id;
                               });
                             },
                             child: buildDropDownStyles(
-                              text: status.taskStatus.name, // Изменено
-                              isSelected: selectedValue == status.taskStatus.name, // Изменено
+                              text: status.taskStatus.name,
+                              isSelected: selectedValue == status.taskStatus.name,
                             ),
                           );
                         }).toList(),
@@ -80,7 +88,12 @@ void DropdownBottomSheet(
                         Navigator.pop(context);
                         onSelect(selectedValue);
                       }).catchError((error) {
-                        print('Ошибка обновления статуса задачи: $error');
+                        if (error is TaskStatusUpdateException && error.statusCode == 422) {
+                          showErrorMessage(context);
+                          Navigator.pop(context);
+                        } else {
+                          print('Ошибка обновления статуса задачи: $error');
+                        }
                       });
                     } else {
                       print('Статус не выбран');
@@ -96,3 +109,11 @@ void DropdownBottomSheet(
     },
   );
 }
+
+class TaskStatusUpdateException implements Exception {
+  final int statusCode;
+  final String message;
+
+  TaskStatusUpdateException(this.statusCode, this.message);
+}
+

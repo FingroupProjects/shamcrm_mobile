@@ -84,7 +84,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
     if (result != null && result.isNotEmpty) {
       setState(() {
-        _tabTitles.add({'id': _tabTitles.length + 1, 'title': result});
+        _tabTitles.add({'id': _tabTitles.length + 1, 'name': result});
         _tabKeys.add(GlobalKey());
       });
     }
