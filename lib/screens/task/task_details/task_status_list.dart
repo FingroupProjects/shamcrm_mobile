@@ -2,11 +2,10 @@
 import 'package:crm_task_manager/bloc/project%20copy/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/project%20copy/statusName_state.dart';
 import 'package:crm_task_manager/models/TaskStatusName_model.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_state.dart';
-import 'package:crm_task_manager/models/task_model.dart';
+
 
 class StatusList extends StatefulWidget {
   final String? selectedTaskStatus;

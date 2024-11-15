@@ -119,13 +119,19 @@ class _DealCardState extends State<DealCard> {
                           horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
-                          Text(
-                            dropdownValue,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                          Container(
+                            constraints: BoxConstraints(
+                                maxWidth: 200), //Размер колонки Выбора Статуса
+                            child: Text(
+                              dropdownValue,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
+                              overflow:
+                                  TextOverflow.ellipsis, 
                             ),
                           ),
                           const SizedBox(width: 8),

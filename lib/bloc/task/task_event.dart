@@ -1,14 +1,12 @@
-
-import 'package:crm_task_manager/models/task_model.dart';
-
 abstract class TaskEvent {}
 
 class FetchTaskStatuses extends TaskEvent {}
 
 class FetchTasks extends TaskEvent {
   final int statusId;
+  final String? query; // Добавьте параметр для поиска
 
-  FetchTasks(this.statusId);
+  FetchTasks(this.statusId, {this.query});
 }
 
 class FetchMoreTasks extends TaskEvent {

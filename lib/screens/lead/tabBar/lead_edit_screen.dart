@@ -116,14 +116,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           } else if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Лид успешно обновлена'),
+                content: const Text('Лид успешно обновлен'),
                 duration: const Duration(seconds: 3),
                 backgroundColor: Colors.green,
               ),
             );
-             Navigator.pop(context, widget.statusId);
-            context.read<LeadBloc>().add(FetchLeads(widget.statusId));
-            
+            Navigator.pop(context,true); 
           }
         },
         child: Form(
@@ -228,7 +226,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         textColor: Colors.white,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                           DateTime? parsedBirthday;
+                            DateTime? parsedBirthday;
 
                             if (birthdayController.text.isNotEmpty) {
                               try {

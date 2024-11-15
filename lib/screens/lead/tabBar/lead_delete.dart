@@ -52,9 +52,12 @@ class DeleteLeadDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: 'Удалить',
                 onPressed: () {
-                  context.read<LeadBloc>().add(DeleteLead(leadId));
+                  context.read<LeadBloc>().add(DeleteLead(leadId)); 
+                  context.read<LeadBloc>().add(FetchLeadStatuses()); 
                   Navigator.of(context).pop();
+                  Navigator.pop(context, true); 
                 },
+
                 buttonColor: Color(0xff1E2E52),
                 textColor: Colors.white,
               ),

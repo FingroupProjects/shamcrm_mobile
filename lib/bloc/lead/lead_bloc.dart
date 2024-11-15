@@ -45,23 +45,6 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
   }
 }
-  // // Метод для загрузки сделок
-  // Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
-  //   emit(LeadLoading());
-  //   if (!await _checkInternetConnection()) {
-  //     emit(LeadError('Нет подключения к интернету'));
-  //     return;
-  //   }
-
-  //   try {
-  //     final leads = await apiService.getLeads(event.statusId);
-  //     allLeadsFetched = leads.isEmpty; // Если сделок нет, устанавливаем флаг
-  //     emit(LeadDataLoaded(leads,
-  //         currentPage: 1)); // Устанавливаем текущую страницу на 1
-  //   } catch (e) {
-  //     emit(LeadError('Не удалось загрузить сделок: ${e.toString()}'));
-  //   }
-  // }
 
 
   Future<void> _fetchLeadStatuses(
