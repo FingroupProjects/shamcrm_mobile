@@ -1,21 +1,21 @@
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
-class Task {
+class TaskById {
   final int id;
   final String name;
   final String? startDate;
   final String? endDate;
   final String? description;
   final int statusId;
-  final TaskStatus? taskStatus;
+  final TaskStatusById? taskStatus;
   final String? color;
   final Project? project;
   final User? user;
-  final TaskFile? file;
+  final TaskFileById? file;
   final int priority;
 
-  Task({
+  TaskById({
     required this.id,
     required this.name,
     required this.startDate,
@@ -30,7 +30,7 @@ class Task {
     required this.priority,
   });
 
-  factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
+  factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
     // Извлекаем и проверяем priority_level
     final rawPriority = json['priority_level'];
     print('Raw priority from JSON: $rawPriority'); // Debug print
@@ -47,7 +47,7 @@ class Task {
     
     print('Converted priority level: $priorityLevel'); // Debug print
 
-    return Task(
+    return TaskById(
       id: json['id'] is int ? json['id'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['from'],
@@ -56,8 +56,8 @@ class Task {
       statusId: taskStatusId,
       priority: priorityLevel, // Используем обработанное значение
       taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
-          ? TaskStatus.fromJson(json['taskStatus'])
-          : null,
+      ? TaskStatusById.fromJson(json['taskStatus'])
+      : null,
       project: json['project'] != null && json['project'] is Map<String, dynamic>
           ? Project.fromJson(json['project'])
           : null,
@@ -66,49 +66,45 @@ class Task {
           : null,
       color: json['color'] is String ? json['color'] : null,
       file: json['file'] != null && json['file'] is Map<String, dynamic>
-          ? TaskFile.fromJson(json['file'])
+          ? TaskFileById.fromJson(json['file'])
           : null,
     );
   }
 }
 
-
-
-// Add TaskFile model
-// First, let's define the TaskFile model class
-class TaskFile {
+class TaskFileById {
   final String name;
   final String size;
 
-  TaskFile({required this.name, required this.size});
+  TaskFileById({required this.name, required this.size});
 
   Map<String, dynamic> toJson() => {
         "name": name,
         "size": size,
       };
 
-  factory TaskFile.fromJson(Map<String, dynamic> json) => TaskFile(
+  factory TaskFileById.fromJson(Map<String, dynamic> json) => TaskFileById(
         name: json["name"] as String,
         size: json["size"] as String,
       );
 }
 
-class TaskStatus {
+class TaskStatusById {
   final int id;
-  final TaskStatusName taskStatus;
+  final TaskStatusNameById taskStatus;
   final String color;
 
-  TaskStatus({
+  TaskStatusById({
     required this.id,
     required this.taskStatus,
     required this.color,
   });
 
   // Метод для создания объекта из JSON
-  factory TaskStatus.fromJson(Map<String, dynamic> json) {
-    return TaskStatus(
+  factory TaskStatusById.fromJson(Map<String, dynamic> json) {
+    return TaskStatusById(
       id: json['id'],
-      taskStatus: TaskStatusName.fromJson(json['taskStatus']),
+      taskStatus: TaskStatusNameById.fromJson(json['taskStatus']),
       color: json['color'],
     );
   }
@@ -123,13 +119,13 @@ class TaskStatus {
   }
 }
 
-class TaskStatusName {
+class TaskStatusNameById {
   final int id;
   final String name;
   final String? createdAt;
   final String? updatedAt;
 
-  TaskStatusName({
+  TaskStatusNameById({
     required this.id,
     required this.name,
     this.createdAt,
@@ -137,8 +133,8 @@ class TaskStatusName {
   });
 
   // Метод для создания вложенного объекта из JSON
-  factory TaskStatusName.fromJson(Map<String, dynamic> json) {
-    return TaskStatusName(
+  factory TaskStatusNameById.fromJson(Map<String, dynamic> json) {
+    return TaskStatusNameById(
       id: json['id'],
       name: json['name'],
       createdAt: json['created_at'],
@@ -156,3 +152,6 @@ class TaskStatusName {
     };
   }
 }
+
+
+      // taskStatus: json['taskStatus'] != null ? TaskStatusById.fromJson(json['taskStatus']) : TaskStatusById(id: 0, taskStatus: TaskStatusNameById(id: 0, name: 'Не указан'), color: '#000000'),
