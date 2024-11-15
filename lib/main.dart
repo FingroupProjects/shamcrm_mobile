@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -95,9 +96,13 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => LeadByIdBloc(apiService),
         ),
+        BlocProvider(
+          create: (context) => DealByIdBloc(apiService),
+        ),
       
       ],
       child: MaterialApp(
+        color: Colors.white,
         debugShowCheckedModeBanner: false,
         title: 'CRM TASK MANAGER',
         routes: {

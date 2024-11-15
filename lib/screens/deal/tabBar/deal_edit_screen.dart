@@ -10,7 +10,7 @@ import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
@@ -35,7 +35,7 @@ class DealEditScreen extends StatefulWidget {
   final String? description;
   final String? sum;
   final int statusId;
-  final List<DealCustomField> dealCustomFields;
+  final List<DealCustomFieldsById> dealCustomFields;
 
   DealEditScreen({
     required this.dealId,
@@ -157,9 +157,9 @@ void initState() {
                 backgroundColor: Colors.green,
               ),
             );
-             Navigator.pop(context, widget.statusId);
-            context.read<DealBloc>().add(FetchDeals(widget.statusId));
-            
+             Navigator.pop(context,true); 
+            //  Navigator.pop(context, widget.statusId);
+            // context.read<DealBloc>().add(FetchDeals(widget.statusId));
           }
         },
         child: Form(
