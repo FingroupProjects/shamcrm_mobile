@@ -1,6 +1,3 @@
-
-// graphics_dashboard.dart
-
 import 'package:crm_task_manager/bloc/dashboard/dashboard_state.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +16,7 @@ class GraphicsDashboard extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        
+
         if (state is DashboardError) {
           return _buildContainer(
             child: Center(
@@ -36,110 +33,129 @@ class GraphicsDashboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Контрагенты',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2D3748),
-                  ),
+                // Text(
+                //   '',
+                //   style: TextStyle(
+                //     fontSize: 18,
+                //     fontWeight: FontWeight.w600,
+                //     color: Color(0xFF2D3748),
+                //   ),
+                // ),
+                SizedBox(height: 0),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildLegendItem('Неизвестный', Color(0xFF4299E1)),
+                    _buildLegendItem('В работе', Color(0xFFFF6B6B)),
+                    _buildLegendItem('Клиент', Color(0xFFFFA600)),
+                    // _buildLegendItem('Холодное обращение', Color(0xFFFFD700)),
+                  ],
                 ),
-                SizedBox(height: 16),
+                SizedBox(height: 12),
                 Expanded(
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false, // Убираем вертикальные линии
-                        horizontalInterval: 20,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Colors.grey.withOpacity(0.1),
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
-                      titlesData: FlTitlesData(
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16.0, left: 0),
+                    child: LineChart(
+                      LineChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: true,
+                          horizontalInterval: 10,
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: Colors.grey.withOpacity(0.1),
+                              strokeWidth: 1,
+                            );
+                          },
                         ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 20,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                value.toInt().toString(),
-                                style: TextStyle(
-                                  color: Color(0xFF718096),
-                                  fontSize: 12,
-                                ),
-                              );
-                            },
+                        titlesData: FlTitlesData(
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
                           ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              // Изменяем месяцы на период Май-Ноябрь
-                              const months = ['Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Ноя'];
-                              if (value.toInt() < months.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(
-                                    months[value.toInt()],
-                                    style: TextStyle(
-                                      color: Color(0xFF718096),
-                                      fontSize: 12,
-                                    ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: 10,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: TextStyle(
+                                    color: Color(0xFF718096),
+                                    fontSize: 10,
                                   ),
                                 );
-                              }
-                              return Text('');
-                            },
+                              },
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                const months = ['Янв', 'Фев', 'Май', 'Июн', 'Окт', 'Ноя'];
+                                if (value.toInt() < months.length) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      months[value.toInt()],
+                                      style: TextStyle(
+                                        color: Color(0xFF718096),
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return Text('');
+                              },
+                            ),
                           ),
                         ),
+                        borderData: FlBorderData(show: false),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: [
+                              FlSpot(0, 30), FlSpot(1, 25), FlSpot(2, 15), FlSpot(3, 0), FlSpot(4, 0), FlSpot(5, 0),
+                            ],
+                            isCurved: true,
+                            color: Color(0xFFFF6B6B),
+                            barWidth: 2,
+                            dotData: FlDotData(show: true),
+                          ),
+                          LineChartBarData(
+                            spots: [
+                              FlSpot(0, 10), FlSpot(1, 20), FlSpot(2, 15), FlSpot(3, 0), FlSpot(4, 5), FlSpot(5, 10),
+                            ],
+                            isCurved: true,
+                            color: Color(0xFF4299E1),
+                            barWidth: 2,
+                            dotData: FlDotData(show: true),
+                          ),
+                          LineChartBarData(
+                            spots: [
+                              FlSpot(0, 20), FlSpot(1, 15), FlSpot(2, 10), FlSpot(3, 0), FlSpot(4, 5), FlSpot(5, 10),
+                            ],
+                            isCurved: true,
+                            color: Color(0xFFFFA600),
+                            barWidth: 2,
+                            dotData: FlDotData(show: true),
+                          ),
+                          LineChartBarData(
+                            spots: [
+                              FlSpot(0, 5), FlSpot(1, 0), FlSpot(2, 10), FlSpot(3, 0), FlSpot(4, 0), FlSpot(5, 5),
+                            ],
+                            isCurved: true,
+                            color: Color(0xFFFFD700),
+                            barWidth: 2,
+                            dotData: FlDotData(show: true),
+                          ),
+                        ],
+                        minX: 0,
+                        maxX: 5,
+                        minY: 0,
+                        maxY: 30,
                       ),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        // Оставляем только одну линию
-                        LineChartBarData(
-                          spots: [
-                            FlSpot(0, 40), // Май
-                            FlSpot(1, 55), // Июн
-                            FlSpot(2, 45), // Июл
-                            FlSpot(3, 60), // Авг
-                            FlSpot(4, 50), // Сен
-                            FlSpot(5, 65), // Ноя
-                          ],
-                          isCurved: true,
-                          color: Color(0xFF6366F1),
-                          barWidth: 2,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, percent, barData, index) {
-                              return FlDotCirclePainter(
-                                radius: 4,
-                                color: Colors.white,
-                                strokeWidth: 2,
-                                strokeColor: Color(0xFF6366F1),
-                              );
-                            },
-                          ),
-                          belowBarData: BarAreaData(
-                            show: false, // Убираем заливку под графиком
-                          ),
-                        ),
-                      ],
-                      minX: 0,
-                      maxX: 5,
-                      minY: 0,
-                      maxY: 100,
-                      backgroundColor: Colors.transparent, // Прозрачный фон
                     ),
                   ),
                 ),
@@ -165,10 +181,33 @@ class GraphicsDashboard extends StatelessWidget {
       height: 250,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.transparent, // Убираем фоновый цвет
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,
+    );
+  }
+
+  Widget _buildLegendItem(String title, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        SizedBox(width: 4),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 10,
+            color: Color(0xFF718096),
+          ),
+        ),
+      ],
     );
   }
 }
