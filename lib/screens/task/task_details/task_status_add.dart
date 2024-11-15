@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/screens/task/task_details/TaskStatus_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

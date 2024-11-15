@@ -14,6 +14,7 @@ import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -98,6 +99,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => DealByIdBloc(apiService),
+        ),
+        BlocProvider(
+          create: (context) => TaskByIdBloc(apiService),
         ),
       
       ],

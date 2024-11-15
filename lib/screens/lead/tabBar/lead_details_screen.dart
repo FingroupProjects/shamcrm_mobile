@@ -223,7 +223,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       context.read<LeadBloc>().add(FetchLeadStatuses());
                     }
                   }
-                }),
+                }
+                ),
           ),
         // Кнопка удаления, если есть разрешение
         if (_canDeleteLead)

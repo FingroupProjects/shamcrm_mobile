@@ -1,8 +1,5 @@
-import 'package:crm_task_manager/bloc/project/project_bloc.dart';
-import 'package:crm_task_manager/bloc/project/project_state.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
-import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

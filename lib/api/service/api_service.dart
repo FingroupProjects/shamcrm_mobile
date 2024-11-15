@@ -14,6 +14,7 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:http/http.dart' as http;
@@ -973,37 +974,73 @@ class ApiService {
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-  Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1, int perPage = 20}) async {
-    String path = '/task';
-    if (taskStatusId != null) {
-      path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
-    } else {
-      path += '?page=$page&per_page=$perPage';
-    }
 
-    final response = await _getRequest(path);
+//Метод для получения Задачи через его ID
+ Future<TaskById> getTaskById(int taskId) async {
+  try {
+    final response = await _getRequest('/task/$taskId');
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        // Логирование уровня приоритета для каждой задачи
-        final tasks = (data['result']['data'] as List).map((json) {
-          // Извлекаем priority_level и выводим его в лог
-          final priority = json['priority_level'];
-          print('Task priority level: $priority');
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonTask = decodedJson['result'];
 
-          return Task.fromJson(json, taskStatusId ?? -1);
-        }).toList();
-
-        return tasks;
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
+      if (jsonTask == null || jsonTask['taskStatus'] == null) {
+        throw Exception('Некорректные данные от API');
       }
+
+      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
     } else {
-      throw Exception('Ошибка загрузки задач: ${response.body}');
+      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Ошибка загрузки task ID: $e');
   }
+}
+
+
+
+//Метод для получения Задачи с пагинации
+ Future<List<Task>> getTasks(int? taskStatusId, {int page = 1, int perPage = 20, String? search}) async {
+  String path = '/task';
+
+  // Формирование URL с параметром поиска
+  if (taskStatusId != null) {
+    path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
+  } else {
+    path += '?page=$page&per_page=$perPage';
+  }
+
+  // Добавление параметра поиска, если он есть
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  // Логируем конечный URL запроса
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      // Логирование уровня приоритета для каждой задачи
+      final tasks = (data['result']['data'] as List).map((json) {
+        // Извлекаем priority_level и выводим его в лог
+        final priority = json['priority_level'];
+        print('Task priority level: $priority');
+
+        return Task.fromJson(json, taskStatusId ?? -1);
+      }).toList();
+
+      return tasks;
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки задач: ${response.body}');
+  }
+}
+
 
   // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
