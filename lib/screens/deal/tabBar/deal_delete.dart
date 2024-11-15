@@ -53,7 +53,9 @@ class DeleteDealDialog extends StatelessWidget {
                 buttonText: 'Удалить',
                 onPressed: () {
                   context.read<DealBloc>().add(DeleteDeal(dealId)); 
+                  context.read<DealBloc>().add(FetchDealStatuses()); 
                   Navigator.of(context).pop();
+                  Navigator.pop(context, true); 
                 },
                 buttonColor: Color(0xff1E2E52),
                 textColor: Colors.white,
