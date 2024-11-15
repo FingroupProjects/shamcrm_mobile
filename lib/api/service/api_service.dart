@@ -1011,7 +1011,7 @@ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
   if (response.statusCode == 200) {
     print('Статус задачи обновлен успешно.');
   } else if (response.statusCode == 422) {
-    throw TaskStatusUpdateException(422, 'Вы не можете переместить задачу на этот статус');
+    // throw TaskStatusUpdateException(422, 'Вы не можете переместить задачу на этот статус');
   } else {
     throw Exception('Ошибка обновления задач сделки: ${response.body}');
   }
