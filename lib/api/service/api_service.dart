@@ -1,5 +1,6 @@
 import 'dart:convert'; 
 import 'dart:io'; 
+import 'package:crm_task_manager/models/TaskStatusName_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/dashboard_model.dart'; 
@@ -10,7 +11,8 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart'; 
 import 'package:crm_task_manager/models/notes_model.dart'; 
 import 'package:crm_task_manager/models/project_model.dart'; 
-import 'package:crm_task_manager/models/region_model.dart'; 
+import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/role_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; 
@@ -1247,6 +1249,75 @@ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
       rethrow;
     }
   }
+  // Метод для получение Роли
+
+ Future<List<Role>> getRoles() async {
+  final response = await _getRequest('/role');
+  
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Тело ответа ролей: $data'); // Для отладки
+    
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((role) => Role.fromJson(role))
+          .toList();
+    } else {
+      throw Exception('Роли не найдены');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+// Метод для получения Cтатуса задачи
+  // Метод для получение Роли
+
+ Future<List<StatusName>> getStatusName() async {
+  final response = await _getRequest('/taskStatusName');
+  
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Тело ответа ролей: $data'); // Для отладки
+    
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((name) => StatusName.fromJson(name))
+          .toList();
+    } else {
+      throw Exception('Роли не найдены');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+  // Метод для Удаления Задачи 
+  Future<Map<String, dynamic>> deleteTask(int taskId) async { 
+    final response = await _deleteRequest('/task/$taskId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete task: ${response.body}'); 
+    } 
+  } 
+  
+    // Метод для Удаления Статуса Задачи 
+
+   Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
+    final response = await _deleteRequest('/task-status/$taskStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete taskStatus: ${response.body}'); 
+    } 
+  }
+  //_________________________________ END_____API_SCREEN__TASK____________________________________________//
+    
+  //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
+
 /// Получение статистики для дашборда
   Future<DashboardStats> getDashboardStats() async {
     String path = '/dashboard/getTopStats?organization_id=1';
@@ -1291,28 +1362,8 @@ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
     }
   }
 
-
-  // Метод для Удаления Лида 
-  Future<Map<String, dynamic>> deleteTask(int taskId) async { 
-    final response = await _deleteRequest('/task/$taskId'); 
- 
-    if (response.statusCode == 200) { 
-      return {'result': 'Success'}; 
-    } else { 
-      throw Exception('Failed to delete task: ${response.body}'); 
-    } 
-  } 
-
-   Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
-    final response = await _deleteRequest('/task-status/$taskStatusId'); 
- 
-    if (response.statusCode == 200) { 
-      return {'result': 'Success'}; 
-    } else { 
-      throw Exception('Failed to delete taskStatus: ${response.body}'); 
-    } 
-  }
-  //_________________________________ END_____API_SCREEN__TASK____________________________________________//
+  
+  //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
   // Метод для получения список чатов
   Future<List<Chats>> getAllChats() async {

@@ -1,30 +1,34 @@
-import 'package:crm_task_manager/bloc/project/project_bloc.dart';
-import 'package:crm_task_manager/bloc/project/project_state.dart';
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_state.dart';
-import 'package:crm_task_manager/models/project_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
+
+import 'package:crm_task_manager/bloc/project%20copy/statusName_bloc.dart';
+import 'package:crm_task_manager/bloc/project%20copy/statusName_state.dart';
+import 'package:crm_task_manager/models/TaskStatusName_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 
-class TaskStatusNameWidget extends StatefulWidget {
-  final String? selectedTaskStatusName;
+class StatusList extends StatefulWidget {
+  final String? selectedTaskStatus;
   final ValueChanged<String?> onChanged;
 
-  TaskStatusNameWidget({required this.selectedTaskStatusName, required this.onChanged});
+  StatusList({
+    required this.selectedTaskStatus, 
+    required this.onChanged
+  });
 
   @override
-  _TaskStatusNameWidgetState createState() => _TaskStatusNameWidgetState();
+  _TaskStatusListState createState() => _TaskStatusListState();
 }
 
-class _TaskStatusNameWidgetState extends State<TaskStatusNameWidget> {
+class _TaskStatusListState extends State<StatusList> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TaskBloc, TaskState>(
+    return BlocBuilder<StatusNameBloc, StatusNameState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
 
-        if (state is TaskLoading) {
+        if (state is StatusNameLoading) {
           dropdownItems = [
             DropdownMenuItem(
               value: null,
@@ -39,22 +43,20 @@ class _TaskStatusNameWidgetState extends State<TaskStatusNameWidget> {
               ),
             ),
           ];
-        } else if (state is TaskLoaded) {
-          print('Список статусов: ${state.taskStatuses}');
-          dropdownItems =
-              state.taskStatuses.map<DropdownMenuItem<String>>((TaskStatusName taskStatuses) {
+        } else if (state is StatusNameLoaded) {
+          dropdownItems = state.statusName.map<DropdownMenuItem<String>>((StatusName status) {
             return DropdownMenuItem<String>(
-              value: taskStatuses.id.toString(),
-              child: Text(taskStatuses.name),
+              value: status.id.toString(),
+              child: Text(status.name),
             );
-          } as DropdownMenuItem<String> Function(TaskStatus e)).toList();
+          }).toList();
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Проект',
+              'Статус задачи',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -70,11 +72,11 @@ class _TaskStatusNameWidgetState extends State<TaskStatusNameWidget> {
               ),
               child: DropdownButtonFormField<String>(
                 value: dropdownItems
-                        .any((item) => item.value == widget.selectedTaskStatusName)
-                    ? widget.selectedTaskStatusName
+                    .any((item) => item.value == widget.selectedTaskStatus)
+                    ? widget.selectedTaskStatus
                     : null,
                 hint: const Text(
-                  'Выберите cтатуса',
+                  'Выберите статус задачи',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

@@ -21,10 +21,17 @@ class FetchMoreTasks extends TaskEvent {
 class CreateTaskStatus extends TaskEvent {
   final String name;
   final String color;
+  final bool? hasAccess;
+  final bool? isFinalStage;
+  final String? roleId;
 
   CreateTaskStatus({
     required this.name,
     required this.color,
+    this.hasAccess,
+    this.isFinalStage,
+    this.roleId,
+    
   });
 }
 

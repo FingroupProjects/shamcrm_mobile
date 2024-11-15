@@ -1,9 +1,13 @@
-// dashboard/dashboard_screen.dart
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/dashboard_event.dart';
 import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
+import 'package:crm_task_manager/screens/dashboard/graphic_circle_dashboard.dart';
+import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%202.dart';
+import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%203.dart';
+import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
+
 import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
 import 'package:crm_task_manager/screens/dashboard/tasks_dart.dart';
 import 'package:flutter/material.dart';
@@ -28,10 +32,62 @@ class DashboardScreen extends StatelessWidget {
               SizedBox(height: 16),
               DealsBox(),
               SizedBox(height: 16),
-              GraphicsDashboard(),
+              _buildExpansionTile(
+                title: 'Клиенты',
+                child: Column(
+                  children: [
+                    GraphicsDashboard(),
+                    GraphicCircleDashboard(),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+              _buildExpansionTile(
+                title: 'Сделки',
+                child: GraphicBarDashboard(),
+              ),
+              SizedBox(height: 16),
+              _buildExpansionTile(
+                title: 'Задачи',
+                child: GraphicTasksDashboard(),
+              ),
+              SizedBox(height: 16),
+              _buildExpansionTile(
+                title: 'Проекты',
+                child: GraphicCircleDashboardProject(),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Метод для стилизованных раскрывающихся карточек
+  Widget _buildExpansionTile({required String title, required Widget child}) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: const Color.fromARGB(255, 244, 247, 254),
+      elevation: 4,
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D3748),
+          ),
+        ),
+        iconColor: Color(0xFF2D3748),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: child,
+          ),
+        ],
       ),
     );
   }

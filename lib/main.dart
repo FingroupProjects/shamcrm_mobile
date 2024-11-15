@@ -11,12 +11,14 @@ import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
+import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'bloc/project copy/statusName_bloc.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -90,6 +92,12 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => DashboardBloc(apiService),
+        ),
+        BlocProvider(
+          create: (context) =>RoleBloc(apiService),
+        ),
+        BlocProvider(
+          create: (context) =>StatusNameBloc(apiService),
         ),
       ],
       child: MaterialApp(

@@ -164,7 +164,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                 ),
               ],
             ),
-            const SizedBox(height: 8), // Отступ в 12 пикселей сверху
+            const SizedBox(height: 0), // Отступ в 12 пикселей сверху
             Text(
               widget.task.project?.name ?? 'Без проекта',
               style: const TextStyle(
@@ -174,7 +174,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                 color: Color(0xff99A4BA),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 0),
             Row(
               children: [
                 const Text(
@@ -243,7 +243,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Row(
               children: [
                 
