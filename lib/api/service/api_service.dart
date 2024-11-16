@@ -4,9 +4,10 @@ import 'package:crm_task_manager/models/TaskStatusName_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/dashboard_model.dart';
-import 'package:crm_task_manager/models/dealById_model.dart'; 
+import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_history_model.dart'; 
 import 'package:crm_task_manager/models/deal_model.dart'; 
-import 'package:crm_task_manager/models/history_model.dart'; 
+import 'package:crm_task_manager/models/lead_history_model.dart'; 
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/leadById_model.dart'; 
 import 'package:crm_task_manager/models/lead_model.dart'; 
@@ -795,6 +796,26 @@ class ApiService {
         'success': false,
         'message': 'Ошибка создания статуса сделки: ${response.body}'
       };
+    }
+  }
+
+  // Метод для получения Истории Лида
+  Future<List<DealHistory>> getDealHistory(int dealId) async {
+    try {
+      // Используем метод _getRequest вместо прямого выполнения запроса
+      final response = await _getRequest('/deal/history/$dealId');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result']['history'];
+        return jsonList.map((json) => DealHistory.fromJson(json)).toList();
+      } else {
+        print('Failed to load deal history: ${response.statusCode}');
+        throw Exception('Ошибка загрузки истории сделки: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e');
+      throw Exception('Ошибка загрузки истории сделки: $e');
     }
   }
 

@@ -4,7 +4,8 @@ import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
-import 'package:crm_task_manager/bloc/history/history_bloc.dart';
+import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
+import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
@@ -17,6 +18,7 @@ import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/models/deal_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -110,6 +112,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => TaskByIdBloc(apiService),
+        ),
+        BlocProvider(
+          create: (context) => DealHistoryBloc(apiService),
         ),
       
       ],

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/history_model.dart';
+import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class HistoryState extends Equatable {
