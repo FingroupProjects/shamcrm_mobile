@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
@@ -35,7 +33,7 @@ class Task {
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
     // Извлекаем и проверяем priority_level
     final rawPriority = json['priority_level'];
-    print('Raw priority from JSON: $rawPriority'); // Debug print
+    // print('Raw priority from JSON: $rawPriority'); // Debug print
     
     // Преобразуем priority_level в int
     final int priorityLevel;

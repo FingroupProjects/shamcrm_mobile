@@ -1,19 +1,25 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:crm_task_manager/models/chats_model.dart';
+import 'dart:convert'; 
+import 'dart:io'; 
+import 'package:crm_task_manager/models/TaskStatusName_model.dart';
+import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/dashboard_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/history_model.dart';
+import 'package:crm_task_manager/models/dealById_model.dart'; 
+import 'package:crm_task_manager/models/deal_model.dart'; 
+import 'package:crm_task_manager/models/history_model.dart'; 
 import 'package:crm_task_manager/models/history_model_task.dart';
-import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/notes_model.dart';
-import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/leadById_model.dart'; 
+import 'package:crm_task_manager/models/lead_model.dart'; 
+import 'package:crm_task_manager/models/manager_model.dart'; 
+import 'package:crm_task_manager/models/notes_model.dart'; 
+import 'package:crm_task_manager/models/project_model.dart'; 
 import 'package:crm_task_manager/models/region_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/role_model.dart'; 
+import 'package:crm_task_manager/models/task_model.dart'; 
+
+import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_model.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
@@ -241,25 +247,24 @@ class ApiService {
   //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
 //Метод для получения Лида через его ID
-Future<LeadById> getLeadById(int leadId) async {
-  try {
-    final response = await _getRequest('/lead/$leadId');
+  Future<LeadById> getLeadById(int leadId) async {
+    try {
+      final response = await _getRequest('/lead/$leadId');
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      final Map<String, dynamic> jsonLead = decodedJson['result']; 
-      return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
-    } else {
-      print('Failed to load lead ID: ${response.statusCode}');
-      throw Exception('Ошибка загрузки лида ID: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic> jsonLead = decodedJson['result'];
+        return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
+      } else {
+        print('Failed to load lead ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки лида ID: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e');
+      throw Exception('Ошибка загрузки лида ID: $e');
     }
-  } catch (e) {
-    print('Error occurred: $e');
-    throw Exception('Ошибка загрузки лида ID: $e');
   }
-}
 
-  
 //Метод для получения Лидов с пагинации
   Future<List<Lead>> getLeads(int? leadStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -704,6 +709,28 @@ Future<LeadById> getLeadById(int leadId) async {
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
 
+//Метод для получения Сделки через его ID
+  Future<DealById> getDealById(int dealId) async {
+    try {
+      final response = await _getRequest('/deal/$dealId');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic>? jsonDeal = decodedJson['result'];
+
+        if (jsonDeal == null || jsonDeal['deal_status'] == null) {
+          throw Exception('Некорректные данные от API');
+        }
+
+        return DealById.fromJson(jsonDeal, jsonDeal['deal_status']['id'] ?? 0);
+      } else {
+        throw Exception('Ошибка загрузки deal ID: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка загрузки deal ID: $e');
+    }
+  }
+
   // Метод для получения Сделок c пагинации
   Future<List<Deal>> getDeals(int? dealStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -927,7 +954,7 @@ Future<LeadById> getLeadById(int leadId) async {
 
   // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
-    final response = await _deleteRequest('/deal-status/$dealStatusId');
+    final response = await _deleteRequest('/deal/statuses/$dealStatusId');
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -950,15 +977,50 @@ Future<LeadById> getLeadById(int leadId) async {
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-  Future<List<Task>> getTasks(int? taskStatusId,
-    {int page = 1, int perPage = 20}) async {
+
+//Метод для получения Задачи через его ID
+ Future<TaskById> getTaskById(int taskId) async {
+  try {
+    final response = await _getRequest('/task/$taskId');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonTask = decodedJson['result'];
+
+      if (jsonTask == null || jsonTask['taskStatus'] == null) {
+        throw Exception('Некорректные данные от API');
+      }
+
+      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+    } else {
+      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Ошибка загрузки task ID: $e');
+  }
+}
+
+
+
+//Метод для получения Задачи с пагинации
+ Future<List<Task>> getTasks(int? taskStatusId, {int page = 1, int perPage = 20, String? search}) async {
   String path = '/task';
+
+  // Формирование URL с параметром поиска
   if (taskStatusId != null) {
     path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
   } else {
     path += '?page=$page&per_page=$perPage';
   }
 
+  // Добавление параметра поиска, если он есть
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  // Логируем конечный URL запроса
+  print('Sending request to API with path: $path');
   final response = await _getRequest(path);
 
   if (response.statusCode == 200) {
@@ -967,8 +1029,8 @@ Future<LeadById> getLeadById(int leadId) async {
       // Логирование уровня приоритета для каждой задачи
       final tasks = (data['result']['data'] as List).map((json) {
         // Извлекаем priority_level и выводим его в лог
-        final priority = json['priority_level'];
-        print('Task priority level: $priority');
+        // final priority = json['priority_level'];
+        // print('Task priority level: $priority');
 
         return Task.fromJson(json, taskStatusId ?? -1);
       }).toList();
@@ -981,6 +1043,7 @@ Future<LeadById> getLeadById(int leadId) async {
     throw Exception('Ошибка загрузки задач: ${response.body}');
   }
 }
+
 
   // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -1001,21 +1064,22 @@ Future<LeadById> getLeadById(int leadId) async {
   }
 
 //Обновление статуса карточки Сделки  в колонке
-  
-Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-  final response = await _postRequest('/task/changeStatus/$taskId', {
-    'position': position,
-    'status_id': statusId,
-  });
-  
-  if (response.statusCode == 200) {
-    print('Статус задачи обновлен успешно.');
-  } else if (response.statusCode == 422) {
-    // throw TaskStatusUpdateException(422, 'Вы не можете переместить задачу на этот статус');
-  } else {
-    throw Exception('Ошибка обновления задач сделки: ${response.body}');
+
+  Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
+    final response = await _postRequest('/task/changeStatus/$taskId', {
+      'position': position,
+      'status_id': statusId,
+    });
+
+    if (response.statusCode == 200) {
+      print('Статус задачи обновлен успешно.');
+    } else if (response.statusCode == 422) {
+      throw TaskStatusUpdateException(
+          422, 'Вы не можете переместить задачу на этот статус');
+    } else {
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+    }
   }
-}
 
   Map<String, dynamic> _handleTaskResponse(
       http.Response response, String operation) {
@@ -1261,6 +1325,76 @@ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
       rethrow;
     }
   }
+  // Метод для получение Роли
+
+ Future<List<Role>> getRoles() async {
+  final response = await _getRequest('/role');
+  
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Тело ответа ролей: $data'); // Для отладки
+    
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((role) => Role.fromJson(role))
+          .toList();
+    } else {
+      throw Exception('Роли не найдены');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+// Метод для получения Cтатуса задачи
+  // Метод для получение Роли
+
+ Future<List<StatusName>> getStatusName() async {
+  final response = await _getRequest('/taskStatusName');
+  
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Тело ответа ролей: $data'); // Для отладки
+    
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((name) => StatusName.fromJson(name))
+          .toList();
+    } else {
+      throw Exception('Роли не найдены');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+  // Метод для Удаления Задачи 
+  Future<Map<String, dynamic>> deleteTask(int taskId) async { 
+    final response = await _deleteRequest('/task/$taskId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete task: ${response.body}'); 
+    } 
+  } 
+  
+    // Метод для Удаления Статуса Задачи 
+
+   Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
+    final response = await _deleteRequest('/task-status/$taskStatusId'); 
+ 
+    if (response.statusCode == 200) { 
+      return {'result': 'Success'}; 
+    } else { 
+      throw Exception('Failed to delete taskStatus: ${response.body}'); 
+    } 
+  }
+  //_________________________________ END_____API_SCREEN__TASK____________________________________________//
+    
+  //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
+
+/// Получение статистики для дашборда
 
   Future<DashboardStats> getDashboardStats() async {
     String path = '/dashboard/getTopStats?organization_id=1';
@@ -1305,28 +1439,28 @@ Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
     }
   }
 
+  
+  //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
+  // // Метод для Удаления Лида
+  // Future<Map<String, dynamic>> deleteTask(int taskId) async {
+  //   final response = await _deleteRequest('/task/$taskId');
 
+  //   if (response.statusCode == 200) {
+  //     return {'result': 'Success'};
+  //   } else {
+  //     throw Exception('Failed to delete task: ${response.body}');
+  //   }
+  // }
 
-  // Метод для Удаления Лида 
-  Future<Map<String, dynamic>> deleteTask(int taskId) async { 
-    final response = await _deleteRequest('/task/$taskId'); 
- 
-    if (response.statusCode == 200) { 
-      return {'result': 'Success'}; 
-    } else { 
-      throw Exception('Failed to delete task: ${response.body}'); 
-    } 
-  } 
+  // Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async {
+  //   final response = await _deleteRequest('/task-status/$taskStatusId');
 
-   Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
-    final response = await _deleteRequest('/task-status/$taskStatusId'); 
- 
-    if (response.statusCode == 200) { 
-      return {'result': 'Success'}; 
-    } else { 
-      throw Exception('Failed to delete taskStatus: ${response.body}'); 
-    } 
-  }
+  //   if (response.statusCode == 200) {
+  //     return {'result': 'Success'};
+  //   } else {
+  //     throw Exception('Failed to delete taskStatus: ${response.body}');
+  //   }
+  // }
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   // Метод для получения список чатов

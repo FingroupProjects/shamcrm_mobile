@@ -44,22 +44,28 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
-    if (!await _checkInternetConnection()) {
-      emit(TaskError('Нет подключения к интернету'));
-      return;
-    }
-
-    try {
-      final tasks = await apiService.getTasks(event.statusId);
-      allTasksFetched = tasks.isEmpty;
-      emit(TaskDataLoaded(tasks, currentPage: 1));
-    } catch (e) {
-      emit(TaskError('Не удалось загрузить задачи: ${e.toString()}'));
-    }
+// // Метод для поиска лидов
+Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
+  emit(TaskLoading());
+  if (!await _checkInternetConnection()) {
+    emit(TaskError('Нет подключения к интернету'));
+    return;
   }
 
+  try {
+    // Передаем правильный leadStatusId из события FetchLeads
+    final tasks = await apiService.getTasks(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+    );
+    allTasksFetched = tasks.isEmpty;
+    emit(TaskDataLoaded(tasks, currentPage: 1));
+  } catch (e) {
+    emit(TaskError('Не удалось загрузить задачи: ${e.toString()}'));
+  }
+}
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {
     if (allTasksFetched) return;

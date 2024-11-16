@@ -1,13 +1,10 @@
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
-import 'package:crm_task_manager/bloc/project/project_state.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
-import 'package:crm_task_manager/bloc/user/user_state.dart';
-import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -55,12 +52,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  String? selectedFile;
+  
   String? selectedProject;
   String? selectedUser;
   int? selectedPriority;
-  String? fileName;
-  String? fileSize;
 
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
@@ -77,49 +72,24 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   void _initializeControllers() {
     nameController.text = widget.taskName;
-     if (widget.startDate != null) {
-    DateTime parsedStartDate = DateTime.parse(widget.startDate!);
-    startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
-  }
-  if (widget.endDate != null) {
-    DateTime parsedEndDate = DateTime.parse(widget.endDate!);
-    endDateController.text = DateFormat('dd/MM/yyyy').format(parsedEndDate);
-  }
+    if (widget.startDate != null) {
+      DateTime parsedStartDate = DateTime.parse(widget.startDate!);
+      startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
+    }
+    if (widget.endDate != null) {
+      DateTime parsedEndDate = DateTime.parse(widget.endDate!);
+      endDateController.text = DateFormat('dd/MM/yyyy').format(parsedEndDate);
+    }
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
     selectedUser = widget.user;
     selectedPriority = widget.priority ?? 1;
-
-    if (widget.fail != null) {
-      selectedFile = widget.fail;
-      fileName = widget.fail?.split('/').last;
-    }
   }
-  
+
   void _loadInitialData() {
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<UserTaskBloc>().add(FetchUsers());
     context.read<TaskBloc>().add(FetchTaskStatuses());
-  }
-
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result != null) {
-        setState(() {
-          selectedFile = result.files.single.path!;
-          fileName = result.files.single.name;
-          fileSize = '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ошибка при выборе файла'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   void _handleSave() {
@@ -193,7 +163,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           ),
         ),
       ),
-      body: BlocListener<TaskBloc, TaskState>(
+       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
           if (state is TaskError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -204,28 +174,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               ),
             );
           } else if (state is TaskSuccess) {
-            final updatedTask = {
-              'taskName': nameController.text,
-              'taskStatus': widget.taskStatus,
-              'statusId': widget.statusId,
-              'project': selectedProject,
-              'user': selectedUser,
-              'from': startDateController.text,
-              'to': endDateController.text,
-              'description': descriptionController.text,
-              'priority': selectedPriority,
-            };
-            
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Задача успешно обновлена'),
-                duration: Duration(seconds: 3),
+              SnackBar(
+                content: const Text('Задача успешно обновлен'),
+                duration: const Duration(seconds: 3),
                 backgroundColor: Colors.green,
               ),
             );
-            
-            Navigator.pop(context, updatedTask);
-            context.read<TaskBloc>().add(FetchTasks(widget.statusId));
+            Navigator.pop(context,true); 
           }
         },
         child: Form(
@@ -287,79 +243,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             selectedUser = newValue;
                           });
                         },
-                      ),//  Column(
-                      //   crossAxisAlignment: CrossAxisAlignment.start,
-                      //   children: [
-                      //     const Text(
-                      //       'Файл',
-                      //       style: TextStyle(
-                      //         fontSize: 16,
-                      //         fontWeight: FontWeight.w500,
-                      //         fontFamily: 'Gilroy',
-                      //         color: Color(0xff1E2E52),
-                      //       ),
-                      //     ),
-                      //     const SizedBox(height: 4),
-                      //     GestureDetector(
-                      //       onTap: _pickFile,
-                      //       child: Container(
-                      //         padding: const EdgeInsets.all(16),
-                      //         decoration: BoxDecoration(
-                      //           color: const Color(0xFFF4F7FD),
-                      //           borderRadius: BorderRadius.circular(8),
-                      //           border: Border.all(color: const Color(0xFFF4F7FD)),
-                      //         ),
-                      //         child: Row(
-                      //           children: [
-                      //             Expanded(
-                      //               child: Text(
-                      //                 fileName ?? 'Выберите файл',
-                      //                 style: TextStyle(
-                      //                   color: fileName != null
-                      //                       ? const Color(0xff1E2E52)
-                      //                       : Colors.grey,
-                      //                 ),
-                      //               ),
-                      //             ),
-                      //             Icon(
-                      //               Icons.attach_file,
-                      //               color: Colors.grey[600],
-                      //             ),
-                      //           ],
-                      //         ),
-                      //       ),
-                      //     ),
-                      //     if (fileName != null) ...[
-                      //       const SizedBox(height: 8),
-                      //       Row(
-                      //         children: [
-                      //           const Text(
-                      //             'Файл: ',
-                      //             style: TextStyle(
-                      //               fontSize: 14,
-                      //               fontFamily: 'Gilroy',
-                      //               color: Color(0xff1E2E52),
-                      //             ),
-                      //           ),
-                      //           GestureDetector(
-                      //             onTap: () {
-                      //               // Здесь можно добавить логику предпросмотра файла
-                      //             },
-                      //             child: Text(
-                      //               fileName!,
-                      //               style: const TextStyle(
-                      //                 fontSize: 14,
-                      //                 fontFamily: 'Gilroy',
-                      //                 color: Color(0xff4759FF),
-                      //                 decoration: TextDecoration.underline,
-                      //               ),
-                      //             ),
-                      //           ),
-                      //         ],
-                      //       ),
-                      //     ],
-                      //   ],
-                      // ),
+                      ),
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: descriptionController,
@@ -433,56 +317,29 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     : entry.key == 3
                         ? Colors.yellow
                         : Colors.green;
-                return DropdownMenuItem(
+
+                return DropdownMenuItem<int>(
                   value: entry.key,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: priorityColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(entry.value),
-                    ],
+                  child: Text(
+                    entry.value,
+                    style: TextStyle(color: priorityColor),
                   ),
                 );
               }).toList(),
-              onChanged: (int? newValue) {
+              onChanged: (value) {
                 setState(() {
-                  selectedPriority = newValue;
+                  selectedPriority = value;
                 });
               },
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                border: InputBorder.none,
               ),
+              validator: (value) => value == null ? 'Поле обязательно для заполнения' : null,
             ),
           ),
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    startDateController.dispose();
-    endDateController.dispose();
-    descriptionController.dispose();
-    super.dispose();
   }
 }

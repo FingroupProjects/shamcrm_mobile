@@ -52,9 +52,10 @@ class DeleteTaskDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: 'Удалить',
                 onPressed: () {
-                  context.read<TaskBloc>().add(DeleteTask(taskId));
+                  context.read<TaskBloc>().add(DeleteTask(taskId)); 
+                  context.read<TaskBloc>().add(FetchTaskStatuses()); 
                   Navigator.of(context).pop();
-                  Navigator.pushReplacementNamed(context, '/taskListPage');
+                  Navigator.pop(context, true); 
                 },
                 buttonColor: Color(0xff1E2E52),
                 textColor: Colors.white,

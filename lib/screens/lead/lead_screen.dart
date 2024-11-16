@@ -52,12 +52,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     if (query.isEmpty) {
       leadBloc.add(FetchLeads(currentStatusId));
-      print(
-          "Поиск: пустой запрос, выводим лидов по статусу id = $currentStatusId");
     } else {
       leadBloc.add(FetchLeads(currentStatusId, query: query));
-      print(
-          "Поиск: текущий статус лида id = $currentStatusId, поисковый запрос = '$query'");
     }
   }
 
@@ -76,6 +72,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        forceMaterialTransparency: true,
         title: CustomAppBar(
           title: 'Лиды',
           onClickProfileAvatar: () {
@@ -303,8 +300,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
-                print(
-                    "Отображение вкладки с id = $statusId, названием = '$title'");
                 return LeadColumn(statusId: statusId, title: title);
               }),
             );

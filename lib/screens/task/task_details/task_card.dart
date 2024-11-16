@@ -164,7 +164,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                 ),
               ],
             ),
-            const SizedBox(height: 8), // Отступ в 12 пикселей сверху
+            const SizedBox(height: 0), // Отступ в 12 пикселей сверху
             Text(
               widget.task.project?.name ?? 'Без проекта',
               style: const TextStyle(
@@ -174,7 +174,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                 color: Color(0xff99A4BA),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 0),
             Row(
               children: [
                 const Text(
@@ -214,25 +214,25 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
+                          Container(
+                            constraints: BoxConstraints(
+                                maxWidth: 200), //Размер колонки Выбора Статуса
                             child: Text(
-                              
-                              dropdownValue, // Текущий статус задачи
+                              dropdownValue,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
                               ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
+                              overflow:
+                                  TextOverflow.ellipsis, 
                             ),
                           ),
-                          const SizedBox(width: 2),
+                          const SizedBox(width: 8),
                           Image.asset(
-                            'assets/icons/tabBar/dropdown.png', // Иконка выпадающего списка
+                            'assets/icons/tabBar/dropdown.png',
                             width: 20,
                             height: 20,
                           ),
@@ -243,7 +243,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Row(
               children: [
                 

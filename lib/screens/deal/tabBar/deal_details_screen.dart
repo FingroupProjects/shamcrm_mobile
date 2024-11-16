@@ -1,7 +1,12 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
-import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
+import 'package:crm_task_manager/bloc/deal_by_id/dealById_event.dart';
+import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
@@ -48,7 +53,7 @@ class DealDetailsScreen extends StatefulWidget {
 
 class _DealDetailsScreenState extends State<DealDetailsScreen> {
   List<Map<String, String>> details = [];
-  Deal? currentDeal; 
+  DealById? currentDeal;
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
   final ApiService _apiService = ApiService();
@@ -57,14 +62,18 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    context.read<DealBloc>().add(FetchDeals(widget.statusId));
+    // context.read<DealBloc>().add(FetchDeals(widget.statusId));
+
+    context
+        .read<DealByIdBloc>()
+        .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
   }
 
   Future<void> _checkPermissions() async {
     // Проверка прав на редактирование
     final canEdit = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
-    
+
     setState(() {
       _canEditDeal = canEdit;
       _canDeleteDeal = canDelete;
@@ -83,7 +92,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   // Обновление данных сделки
-  void _updateDetails(Deal deal) {
+  void _updateDetails(DealById deal) {
     currentDeal = deal; // Сохраняем актуальную сделку
     details = [
       {'label': 'ID Сделки:', 'value': deal.id.toString()},
@@ -105,51 +114,43 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, 'Просмотр Сделки'),
-      backgroundColor: Colors.white,
-      body: BlocListener<DealBloc, DealState>(
-        listener: (context, state) {
-          if (state is DealDeleted) {
-            context.read<DealBloc>().add(FetchDealStatuses());
-            Navigator.pop(context);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: BlocBuilder<DealBloc, DealState>(
+        appBar: _buildAppBar(context, 'Просмотр Сделки'),
+        backgroundColor: Colors.white,
+        body: BlocListener<DealByIdBloc, DealByIdState>(
+          listener: (context, state) {
+            if (state is DealByIdLoaded) {
+              print("Deal Data: ${state.deal.toString()}");
+            } else if (state is DealByIdError) {
+              print("Ошибка получения Deal data: ${state.message}");
+            }
+          },
+          child: BlocBuilder<DealByIdBloc, DealByIdState>(
             builder: (context, state) {
-              if (state is DealLoading) {
-                return Center(child: CircularProgressIndicator());
-              } else if (state is DealDataLoaded) {
-                Deal? deal;
-                try {
-                  deal = state.deals.firstWhere(
-                    (deal) => deal.id.toString() == widget.dealId,
-                  );
-                } catch (e) {
-                  deal = null; 
-                }
-
-                if (deal != null) {
-                  _updateDetails(deal); 
-                } else {
-                  return Center(child: Text('Сделка не найдена'));
-                }
-                return ListView(
-                  children: [
-                    _buildDetailsList(),
-                    const SizedBox(height: 16),
-                  ],
+              if (state is DealByIdLoading) {
+                return Center(
+                    child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              } else if (state is DealByIdLoaded) {
+                DealById deal = state.deal;
+                _updateDetails(deal);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: ListView(
+                    children: [
+                      _buildDetailsList(),
+                      const SizedBox(height: 8),
+                      // ActionHistoryWidget(leadId: int.parse(widget.leadId)),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 );
-              } else if (state is DealError) {
+              } else if (state is DealByIdError) {
                 return Center(child: Text('Ошибка: ${state.message}'));
               }
               return Center(child: Text(''));
             },
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
@@ -165,7 +166,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         ),
         onPressed: () {
           Navigator.pop(context, widget.statusId);
-          context.read<DealBloc>().add(FetchDealStatuses());
+          // context.read<DealBloc>().add(FetchDealStatuses());
         },
       ),
       title: Text(
@@ -200,31 +201,39 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                           .format(DateTime.parse(currentDeal!.endDate!))
                       : null;
 
-                  Navigator.push(
+                  final shouldUpdate = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => DealEditScreen(
-                        dealId: currentDeal!.id, 
-                        dealName: currentDeal!.name, 
+                        dealId: currentDeal!.id,
+                        dealName: currentDeal!.name,
                         statusId: currentDeal!.statusId,
                         manager: currentDeal!.manager != null
                             ? currentDeal!.manager!.id.toString()
-                            : 'Не указано', 
+                            : 'Не указано',
                         currency: currentDeal!.currency != null
                             ? currentDeal!.currency!.id.toString()
                             : 'Не указано',
                         lead: currentDeal!.lead != null
                             ? currentDeal!.lead!.id.toString()
-                            : 'Не указано', 
-                        startDate: startDateString, 
-                        endDate: endDateString, 
-                        sum: currentDeal!.sum.toString(), 
-                        description: currentDeal!.description ??
-                            'Не указано', 
+                            : 'Не указано',
+                        startDate: startDateString,
+                        endDate: endDateString,
+                        sum: currentDeal!.sum.toString(),
+                        description: currentDeal!.description ?? 'Не указано',
                         dealCustomFields: currentDeal!.dealCustomFields,
                       ),
                     ),
                   );
+
+                  if (shouldUpdate == true) {
+                    // Перезагружаем данные сделки
+                    context
+                        .read<DealByIdBloc>()
+                        .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                      context.read<DealBloc>().add(FetchDealStatuses());
+
+                  }
                 }
               },
             ),
@@ -241,7 +250,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => DeleteDealDialog(dealId: currentDeal!.id),
+                  builder: (context) =>
+                      DeleteDealDialog(dealId: currentDeal!.id),
                 );
               },
             ),
