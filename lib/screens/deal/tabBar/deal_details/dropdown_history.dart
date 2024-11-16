@@ -1,15 +1,15 @@
-import 'package:crm_task_manager/bloc/history/history_bloc.dart';
-import 'package:crm_task_manager/bloc/history/history_event.dart';
-import 'package:crm_task_manager/bloc/history/history_state.dart';
-import 'package:crm_task_manager/models/history_model.dart';
+import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
+import 'package:crm_task_manager/bloc/history_deal/deal_history_event.dart';
+import 'package:crm_task_manager/bloc/history_deal/deal_history_state.dart';
+import 'package:crm_task_manager/models/deal_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class ActionHistoryWidget extends StatefulWidget {
-  final int leadId;
+  final int dealId;
 
-  ActionHistoryWidget({required this.leadId});
+  ActionHistoryWidget({required this.dealId});
 
   @override
   _ActionHistoryWidgetState createState() => _ActionHistoryWidgetState();
@@ -17,23 +17,23 @@ class ActionHistoryWidget extends StatefulWidget {
 
 class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
   bool isActionHistoryExpanded = false;
-  List<LeadHistory> actionHistory = [];
+  List<DealHistory> actionHistory = [];
 
   @override
   void initState() {
     super.initState();
-    context.read<HistoryBloc>().add(FetchLeadHistory(widget.leadId));
+    context.read<DealHistoryBloc>().add(FetchDealHistory(widget.dealId));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HistoryBloc, HistoryState>(
+    return BlocBuilder<DealHistoryBloc, DealHistoryState>(
       builder: (context, state) {
-        if (state is HistoryLoading) {
+        if (state is DealHistoryLoading) {
           // return Center(child:  CircularProgressIndicator(color: Color(0xff1E2E52)));
-        } else if (state is HistoryLoaded) {
-          actionHistory = state.leadHistory;
-        } else if (state is HistoryError) {
+        } else if (state is DealHistoryLoaded) {
+          actionHistory = state.dealHistory;
+        } else if (state is DealHistoryError) {
           return Center(child: Text(state.message));
         }
 
@@ -200,7 +200,7 @@ Column _buildAdditionalDetails(List<String> details) {
 }
 
 
-  List<String> _buildActionHistoryItems(List<LeadHistory> history) {
+  List<String> _buildActionHistoryItems(List<DealHistory> history) {
     return history.map((entry) {
       final changes = entry.changes;
       final formattedDate =
@@ -213,10 +213,10 @@ Column _buildAdditionalDetails(List<String> details) {
           actionDetail +=
               '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
         }
-        if (changes.leadStatusNewValue != null &&
-            changes.leadStatusPreviousValue != null) {
+        if (changes.dealStatusNewValue != null &&
+            changes.dealStatusPreviousValue != null) {
           actionDetail +=
-              '\nСтатус клиента: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
+              '\nСтатус клиента: ${changes.dealStatusNewValue ?? "Не указано"} > ${changes.dealStatusPreviousValue ?? "Не указано"}';
         }
       }
 
