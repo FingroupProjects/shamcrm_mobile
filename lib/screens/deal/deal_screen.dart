@@ -310,11 +310,24 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _scrollToActiveTab() {
-    final key = _tabKeys[_currentTabIndex];
-    if (key.currentContext != null) {
-      Scrollable.ensureVisible(key.currentContext!,
-          duration: const Duration(milliseconds: 300));
+ void _scrollToActiveTab() {
+    final keyContext = _tabKeys[_currentTabIndex].currentContext;
+    if (keyContext != null) {
+      final box = keyContext.findRenderObject() as RenderBox;
+      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final tabWidth = box.size.width;
+
+      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+
+        if (targetOffset != _scrollController.offset) {
+          _scrollController.animateTo(
+            targetOffset,
+            duration: Duration(milliseconds: 10),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
     }
   }
 }
