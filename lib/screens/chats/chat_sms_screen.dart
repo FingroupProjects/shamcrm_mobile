@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
+import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
+import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
+import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -14,7 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/api_service_chats.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
-import 'package:crm_task_manager/screens/chats/chats_items.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
@@ -105,7 +110,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
         if (state is MessagesLoadedState) {
           if (state.messages.isEmpty) {
-            return Center(child: Text('Нет сообщений'));
+            return Center(
+                child: Text(
+              'Нет сообщений',
+              style: TextStyle(color: AppColors.textPrimary700),
+            ));
           }
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -113,6 +122,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               controller: _scrollController,
               // key: UniqueKey(),
               itemCount: state.messages.length,
+              padding: EdgeInsets.zero,
               reverse: true,
               itemBuilder: (context, index) {
                 return MessageItemWidget(
@@ -138,6 +148,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       },
       messageController: _messageController,
       sendRequestFunction: (File soundFile, String time) async {
+        context.read<ListenSenderVoiceCubit>().updateValue(true);
         debugPrint("the current path is ${soundFile.path}");
         String inputPath = '/path/to/recorded/file.mp4a';
         String outputPath = await getOutputPath('converted_file.ogg');
@@ -147,15 +158,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
           await uploadFile(convertedFile, uploadUrl);
         } else {
-          debugPrint('Konvertatsiya muvaffaqiyatsiz yakunlandi');
+          debugPrint('Conversion failed');
         }
-        // sendCahtAudioFile
-        debugPrint('9.2. Отправка сообщения через API');
-        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
 
-        debugPrint('added aduio -----');
-        // 2. Добавить сообщение в локальный список
-        // _addMessageToLocalList(messageText, true);
+        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+        context.read<ListenSenderVoiceCubit>().updateValue(false);
+
       },
     );
   }
@@ -180,8 +188,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
-        // here you can handle connection errors.
-        // refresh callback enables to reconnect the client
         debugPrint(exception);
         // refresh();
       },
@@ -195,9 +201,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint:
-            Uri.parse('https://shamcrm.com/broadcasting/auth'),
-        headers: {'Authorization': 'Bearer $token'},
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': 'fingroup-back'
+        },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
         },
@@ -209,14 +217,25 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
       chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
+        print('----sender');
+        print(mm.message!.sender!);
+
         if (kDebugMode) {
           print(event.data);
           print(event.channelName);
           print('------ socket');
           print('--------');
           print(mm.message);
+
           print('--------');
         }
+
+        print('----------------------- check');
+        print('---- user in app');
+        print(userID);
+        print('----- sender');
+        print(mm.message!.sender);
+
 
         Message msg;
         if (mm.message!.type == 'voice' ||
@@ -228,24 +247,28 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               filePath: mm.message!.filePath.toString(),
               text: mm.message!.text ??= mm.message!.type!,
               type: mm.message!.type.toString(),
-              isMyMessage: mm.message!.isMyMessage!,
+              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() &&
+                  mm.message!.sender!.type == 'user'),
               createMessateTime: mm.message!.createdAt.toString(),
               duration: Duration(
                   seconds: (mm.message!.voiceDuration != null)
-                      ? int.parse(mm.message!.voiceDuration.toString())
-                      : 20));
+                      ? double.parse(mm.message!.voiceDuration.toString())
+                          .round()
+                      : 20),
+          );
         } else {
           msg = Message(
             id: mm.message!.id!,
             text: mm.message!.text ??= mm.message!.type!,
             type: mm.message!.type.toString(),
             createMessateTime: mm.message!.createdAt.toString(),
-            isMyMessage: mm.message!.isMyMessage!,
+            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
+                mm.message!.sender!.type ==
+                    'user'),
           );
         }
         setState(() {
           context.read<MessagingCubit>().addMessageFormSocket(msg);
-          // messages.insert(0, msg);
         });
         _scrollToBottom();
       });
@@ -264,7 +287,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.pixels,
-        // Endiga scroll qilish uchun maxScrollExtent dan foydalanamiz
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -272,6 +294,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Future<void> _onSendInButton() async {
+    context.read<ListenSenderTextCubit>().updateValue(true);
     if (kDebugMode) {
       print('9. Начало отправки сообщения');
     }
@@ -279,19 +302,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final messageText = _messageController.text.trim();
 
     if (messageText.isNotEmpty) {
-      // 1. Вывести сообщение в консоль
-      debugPrint('9.1. Сообщение для отправки: $messageText');
-
       try {
         debugPrint('9.2. Отправка сообщения через API');
         _messageController.clear();
         await widget.apiService.sendMessage(widget.chatId, messageText);
-        // 2. Добавить сообщение в локальный список
-        // _addMessageToLocalList(messageText, true);
-        debugPrint('9.3. Сообщение успешно отправлено через API');
-
-        // 3. Отправить сообщение в WebSocket
-        // _sendMessageToWebSocket(messageText);
+        context.read<ListenSenderTextCubit>().updateValue(false);
       } catch (e) {
         debugPrint('9.4. Ошибка отправки сообщения через API: $e');
       }
@@ -308,20 +323,26 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       debugPrint('------------------ select file');
       debugPrint(result.files.first.path!);
 
+      context.read<ListenSenderFileCubit>().updateValue(true);
       await widget.apiService
           .sendChatFile(widget.chatId, result.files.first.path!);
+      context.read<ListenSenderFileCubit>().updateValue(false);
     }
   }
 
   @override
   void dispose() {
+    context.watch<ListenSenderFileCubit>().updateValue(false);
+    context.watch<ListenSenderVoiceCubit>().updateValue(false);
+    context.watch<ListenSenderTextCubit>().updateValue(false);
+
     chatSubscribtion.cancel();
     _scrollController.dispose();
 
     _messageController.dispose();
     socketClient.dispose();
     _webSocket
-        ?.close(); // Закрытие WebSocket соединения при уничтожении виджета
+        ?.close();
 
     super.dispose();
   }
@@ -330,15 +351,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
+
   const MessageItemWidget(
       {super.key, required this.message, required this.apiServiceDownload});
 
   @override
   Widget build(BuildContext context) {
-    if (kDebugMode) {
-      print('-------------------------- message');
-      print(message);
-    }
 
     switch (message.type) {
       case 'text':
@@ -353,10 +371,6 @@ class MessageItemWidget extends StatelessWidget {
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
           onTap: (path) async {
-            if (kDebugMode) {
-              print('----------- click file:::');
-              print(message.filePath);
-            }
 
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
@@ -423,7 +437,6 @@ class MessageItemWidget extends StatelessWidget {
 
     final audioController = VoiceController(
       audioSrc: audioUrl,
-      noiseCount: 36,
       onComplete: () {
         /// do something on complete
       },
@@ -436,7 +449,7 @@ class MessageItemWidget extends StatelessWidget {
       onError: (err) {
         /// do somethin on error
       },
-      maxDuration: const Duration(seconds: 100),
+      maxDuration: Duration(minutes: 5),
       isFile: false,
     );
     return Container(

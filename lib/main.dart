@@ -1,5 +1,9 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
+import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
+import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
@@ -51,6 +55,20 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => CreateClientBloc(),
+        ),
+        BlocProvider(
+          create: (context) => DealBloc(ApiService()),
+        ),
+
+         BlocProvider(
+          create: (context) => ListenSenderTextCubit(),
+        ),
+
+         BlocProvider(
+          create: (context) => ListenSenderVoiceCubit(),
+        ),
+         BlocProvider(
+          create: (context) => ListenSenderFileCubit(),
         ),
 
       ],

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/screens/chats/chats_items.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 
 class Chats {
   final int id;
@@ -30,7 +30,9 @@ class Chats {
     print(json);
     return Chats(
       id: json['id'] ?? 0, // Предположим, что ID должен быть числом, иначе 0
-      name: json['task'] != null
+      name:
+      json['user'] != null ? json['user']['name'] :
+      json['task'] != null
           ? json['task']['name'] ?? ''
           : json['lead'] != null
               ? json['lead']['name'] ?? 'Без имени'
@@ -89,6 +91,7 @@ class Chats {
       avatar,
       _mapChannelToIcon(channel),
       unredMessage,
+
     );
   }
 

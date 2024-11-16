@@ -25,6 +25,8 @@
 	<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для улучшения управления задачами.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Это приложение требует доступ к фотобиблиотеке.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+    <string>The app saves the image to your photo gallery.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Access camera</string>
 	<key>NSMicrophoneUsageDescription</key>

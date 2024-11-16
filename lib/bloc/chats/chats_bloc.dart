@@ -51,9 +51,8 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           state.chatsPagination.totalPage) {
         emit(ChatsLoading());
         try {
-          final chats = await apiService.getAllChats(
+          chatsPagination = await apiService.getAllChats(
               endPoint, state.chatsPagination.currentPage + 1);
-          chatsPagination = state.chatsPagination.merge(chats);
           emit(ChatsLoaded(chatsPagination!));
         } catch (e) {
           emit(ChatsError(e.toString()));

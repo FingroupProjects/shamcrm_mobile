@@ -8,12 +8,13 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/bottom_sheet_add_client_dialog.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/screens/chats/chats_items.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_unfocuser/flutter_unfocuser.dart';
@@ -85,10 +86,6 @@ class _ChatsScreenState extends State<ChatsScreen>
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
-        // here you can handle connection errors.
-        // refresh callback enables to reconnect the client
-        debugPrint(exception);
-        // refresh();
       },
       minimumReconnectDelayDuration: const Duration(
         seconds: 1,
@@ -101,8 +98,11 @@ class _ChatsScreenState extends State<ChatsScreen>
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
         authorizationEndpoint:
-            Uri.parse('https://shamcrm.com/broadcasting/auth'),
-        headers: {'Authorization': 'Bearer $token'},
+            Uri.parse(baseUrlSocket),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': 'fingroup-back'
+        },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
         },
@@ -334,6 +334,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
+            splashColor: AppColors.primaryBlue,
+            focusColor: Colors.black87,
             child: ChatListItem(
               chatItem: item.toChatItem("assets/images/AvatarChat.png"),
             ),

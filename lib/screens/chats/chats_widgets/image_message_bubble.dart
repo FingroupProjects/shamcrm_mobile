@@ -30,7 +30,7 @@ class ImageMessageBubble extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FullImageScreenViewer(imagePath: fullUrl),
+              builder: (context) => FullImageScreenViewer(imagePath: fullUrl, time: time, fileName: fileName,),
             ),
           );
         },
