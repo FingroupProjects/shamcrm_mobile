@@ -173,6 +173,47 @@ class ApiService {
   //        if (!await hasPermission('deal.read')) {
   //   throw Exception('У вас нет прав для просмотра сделки'); // Сообщение об отсутствии прав доступа
   // }
+
+  //_________________________________ START___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
+
+    // Добавление метода для отправки токена устройства
+Future<void> sendDeviceToken(String deviceToken) async {
+  final token = await getToken(); // Получаем токен пользователя (если он есть)
+
+  final response = await http.post(
+    Uri.parse('$baseUrl/add-fcm-token'), // Используем правильный путь
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+    body: json.encode({
+      'type': 'mobile', // Указываем тип устройства
+      'token': deviceToken, // Передаем FCM-токен устройства
+    }),
+  );
+
+  if (response.statusCode == 200) {
+    print('FCM-токен успешно отправлен!');
+  } else {
+    print('Ошибка при отправке FCM-токена: ${response.statusCode}');
+    throw Exception('Ошибка: ${response.body}');
+  }
+}
+
+  // Метод для получения чата по ID
+Future<Chats> getChatById(int chatId) async {
+  final response = await _getRequest('/chat/$chatId');
+
+  if (response.statusCode == 200) {
+    return Chats.fromJson(json.decode(response.body));
+  } else {
+    throw Exception('Ошибка получения чата: ${response.body}');
+  }
+}
+
+  //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
+
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
   // Метод для проверки домена
@@ -296,31 +337,6 @@ class ApiService {
       throw Exception('Ошибка загрузки лидов: ${response.body}');
     }
   }
-
-  // Future<List<Lead>> getLeads(int? leadStatusId,
-  //     {int page = 1, int perPage = 20, String search = ''}) async {
-  //   String path = '/lead';
-  //   if (leadStatusId != null) {
-  //     path += '?lead_status_id=$leadStatusId&page=$page&per_page=$perPage&search=$search';
-  //   } else {
-  //     path += '?page=$page&per_page=$perPage';
-  //   }
-
-  //   final response = await _getRequest(path);
-
-  //   if (response.statusCode == 200) {
-  //     final data = json.decode(response.body);
-  //     if (data['result']['data'] != null) {
-  //       return (data['result']['data'] as List)
-  //           .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-  //           .toList();
-  //     } else {
-  //       throw Exception('Нет данных о лидах в ответе');
-  //     }
-  //   } else {
-  //     throw Exception('Ошибка загрузки лидов: ${response.body}');
-  //   }
-  // }
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
