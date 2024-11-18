@@ -14,8 +14,15 @@ class LeadLoaded extends LeadState {
 
 class LeadDataLoaded extends LeadState {
   final List<Lead> leads;
+  final int currentPage;
 
-  LeadDataLoaded(this.leads);
+  LeadDataLoaded(this.leads, {this.currentPage = 1});
+
+  // Метод для объединения с новыми лидами
+  LeadDataLoaded merge(List<Lead> newLeads) {
+    return LeadDataLoaded([...leads, ...newLeads],
+        currentPage: currentPage + 1);
+  }
 }
 
 class LeadError extends LeadState {
@@ -28,4 +35,17 @@ class LeadSuccess extends LeadState {
   final String message;
 
   LeadSuccess(this.message);
+}
+
+
+class LeadDeleted extends LeadState {
+  final String message;
+
+  LeadDeleted(this.message);
+}
+
+class LeadStatusDeleted extends LeadState {
+  final String message;
+
+  LeadStatusDeleted(this.message);
 }

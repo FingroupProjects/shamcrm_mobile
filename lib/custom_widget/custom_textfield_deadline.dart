@@ -1,35 +1,69 @@
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class CustomTextFieldDate extends StatelessWidget {
   final TextEditingController controller;
   final String label;
+  final bool withTime;
+  final String? Function(String?)? validator;
 
   CustomTextFieldDate({
     required this.controller,
     required this.label,
+    this.withTime = false,
+    this.validator,
   });
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime(1940),
       lastDate: DateTime(2101),
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            primaryColor: Colors.blue, // Set the primary color (e.g., for the header)
-            hintColor: Colors.blue, // Set the accent color
-            colorScheme: ColorScheme.light(primary: Color(0xfff1E2E52)), // Set the color scheme
-            dialogBackgroundColor: Colors.white, // Change the background color of the dialog
+            primaryColor: Colors.blue,
+            hintColor: Colors.blue,
+            colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
+            dialogBackgroundColor: Colors.white,
           ),
           child: child ?? Container(),
         );
       },
     );
-    if (picked != null) {
-      controller.text = "${picked.day}/${picked.month}/${picked.year}";
+
+    if (pickedDate != null) {
+      if (withTime) {
+        final TimeOfDay? pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+          builder: (BuildContext context, Widget? child) {
+            return Theme(
+              data: ThemeData.light().copyWith(
+                primaryColor: Colors.blue,
+                hintColor: Colors.blue,
+                colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
+                dialogBackgroundColor: Colors.white,
+              ),
+              child: child ?? Container(),
+            );
+          },
+        );
+
+        if (pickedTime != null) {
+          final DateTime dateTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+          controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+        }
+      } else {
+        controller.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+      }
     }
   }
 
@@ -44,18 +78,19 @@ class CustomTextFieldDate extends StatelessWidget {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xfff1E2E52),
+            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: () => _selectDate(context),
           child: AbsorbPointer(
-            child: TextField(
+            child: TextFormField(
               controller: controller,
+              validator: validator, // Use the validator here
               decoration: InputDecoration(
-                hintText: '__/__/____',
-                hintStyle: TextStyle(fontSize: 12), // Set the desired hint text size
+                hintText: withTime ? '__/__/____ __:__' : '__/__/____',
+                hintStyle: TextStyle(fontSize: 12),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12),
                   child: SizedBox(
@@ -73,7 +108,8 @@ class CustomTextFieldDate extends StatelessWidget {
                 ),
                 filled: true,
                 fillColor: Color(0xffF4F7FD),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 part of 'chats_bloc.dart';
 
 sealed class ChatsEvent extends Equatable {
@@ -23,3 +24,15 @@ class RefreshChats extends ChatsEvent {
 class UpdateChatsFromSocket extends ChatsEvent {
   const UpdateChatsFromSocket();
 }
+=======
+part of 'chats_bloc.dart';
+
+sealed class ChatsEvent extends Equatable {
+  const ChatsEvent();
+
+  @override
+  List<Object> get props => [];
+}
+class FetchChats extends ChatsEvent{}
+
+>>>>>>> main

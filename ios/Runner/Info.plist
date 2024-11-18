@@ -16,17 +16,27 @@
 	<string>crm_task_manager</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+<<<<<<< HEAD
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+=======
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+>>>>>>> main
 	<key>NSAppleMusicUsageDescription</key>
 	<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для улучшения управления задачами.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Это приложение требует доступ к фотобиблиотеке.</string>
+<<<<<<< HEAD
 	<key>NSPhotoLibraryAddUsageDescription</key>
     <string>The app saves the image to your photo gallery.</string>
+=======
+>>>>>>> main
 	<key>NSCameraUsageDescription</key>
 	<string>Access camera</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -52,10 +62,13 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+<<<<<<< HEAD
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+=======
+>>>>>>> main
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>

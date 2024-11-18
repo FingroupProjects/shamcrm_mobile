@@ -21,88 +21,97 @@ class LoginScreen extends StatelessWidget {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) {
             if (state is LoginLoading) {
-              // Здесь можно показать индикатор загрузки, если это необходимо
+              // Optional loading indicator in the Snackbar if needed
               // ScaffoldMessenger.of(context).showSnackBar(
-              //   SnackBar(content: Text('Загрузка...')),
+              //   SnackBar(content: Text('Loading...')),
               // );
             } else if (state is LoginLoaded) {
+<<<<<<< HEAD
               // Если логин успешен, переходите на главный экран
               // ScaffoldMessenger.of(context).showSnackBar(
               //   SnackBar(content: Text('Успешный вход')),
               // );
               userID.value = state.user.id.toString();
+=======
+              // On successful login, navigate to the home screen
+>>>>>>> main
               Navigator.pushReplacementNamed(context, '/home');
             } else if (state is LoginError) {
-              // Если произошла ошибка, покажите сообщение об ошибке
+              // Show error message if login fails
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
               );
             }
           },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 75),
-              const Text(
-                'Вход',
-                style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              SizedBox(height: 8),
-              const Text(
-                'Введите логин и пароль для входа',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xfff99A4BA),
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              SizedBox(height: 16),
-              CustomTextField(
-                controller: loginController,
-                hintText: 'Введите логин',
-                label: 'Логин',
-              ),
-              SizedBox(height: 16),
-              CustomTextField(
-                controller: passwordController,
-                hintText: 'Введите пароль',
-                label: 'Пароль',
-                isPassword: true,
-              ),
-              SizedBox(height: 16),
-              CustomButton(
-                buttonText: 'Войти',
-                buttonColor: Color(0xfff4F40EC),
-                textColor: Colors.white,
-                onPressed: () {
-                  final login = loginController.text.trim();
-                  final password = passwordController.text.trim();
-
-                  // Проверка на пустые поля
-                  if (login.isEmpty || password.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Пожалуйста, заполните все поля')),
-                    );
-                    return; // Останавливаем дальнейшее выполнение, если поля пустые
-                  }
-
-                  // Отправляем событие CheckLogin в LoginBloc
-                  BlocProvider.of<LoginBloc>(context)
-                      .add(CheckLogin(login, password));
-                },
-              ),
-              SizedBox(height: 16),
-              ForgotPassword(
-                onPressed: () {
-                  // Здесь вы можете реализовать логику для сброса пароля
-                },
-              ),
-            ],
+          child: BlocBuilder<LoginBloc, LoginState>(
+            builder: (context, state) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 75),
+                  const Text(
+                    'Вход',
+                    style: TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  const Text(
+                    'Введите логин и пароль для входа',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xfff99A4BA),
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  CustomTextField(
+                    controller: loginController,
+                    hintText: 'Введите логин',
+                    label: 'Логин',
+                  ),
+                  SizedBox(height: 16),
+                  CustomTextField(
+                    controller: passwordController,
+                    hintText: 'Введите пароль',
+                    label: 'Пароль',
+                    isPassword: true,
+                  ),
+                  SizedBox(height: 16),
+                  state is LoginLoading
+                      ? Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xff1E2E52)))
+                      : CustomButton(
+                          buttonText: 'Войти',
+                          buttonColor: Color(0xfff4F40EC),
+                          textColor: Colors.white,
+                          onPressed: () {
+                            final login = loginController.text.trim();
+                            final password = passwordController.text.trim();
+                            if (login.isEmpty || password.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('Пожалуйста, заполните все поля'),
+                                ),
+                              );
+                              return;
+                            }
+                            BlocProvider.of<LoginBloc>(context)
+                                .add(CheckLogin(login, password));
+                          },
+                        ),
+                  SizedBox(height: 16),
+                  ForgotPassword(
+                    onPressed: () {},
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
