@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
+import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -25,7 +26,15 @@ class LoginScreen extends StatelessWidget {
               //   SnackBar(content: Text('Loading...')),
               // );
             } else if (state is LoginLoaded) {
+<<<<<<< HEAD
+              // Если логин успешен, переходите на главный экран
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(content: Text('Успешный вход')),
+              // );
+              userID.value = state.user.id.toString();
+=======
               // On successful login, navigate to the home screen
+>>>>>>> main
               Navigator.pushReplacementNamed(context, '/home');
             } else if (state is LoginError) {
               // Show error message if login fails

@@ -1,4 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+<<<<<<< HEAD
+import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
+=======
+>>>>>>> main
 import 'package:crm_task_manager/screens/MyNavBar.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
@@ -8,6 +12,7 @@ import 'package:crm_task_manager/screens/placeholder_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -20,11 +25,26 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
 
+<<<<<<< HEAD
+  // Добавьте экран профиля в список виджетов
+  final List<Widget> _widgetOptions = <Widget>[
+    DashboardScreen(),
+    ClientsScreen(),
+    LeadScreen(),
+    BlocProvider(
+      create: (context) => ChatsBloc(ApiService()),
+      child: ChatsScreen(),
+    ),
+    DealScreen(),
+    ProfileScreen(), // Добавьте экран профиля
+  ];
+=======
   List<Widget> _widgetOptions = [];
   List<String> _titles = [];
   List<String> _navBarTitles = [];
   List<String> _activeIcons = [];
   List<String> _inactiveIcons = [];
+>>>>>>> main
 
   @override
   void initState() {
@@ -121,6 +141,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       // appBar: AppBar(
       //   forceMaterialTransparency: true,
+<<<<<<< HEAD
+      //   title: CustomAppBar(title: 'title', onClickProfileAvatar: () {
+      //
+      //   },),
+      //   backgroundColor: Colors.white,
+      // ),
+      body: _widgetOptions[
+          _selectedIndex], // Теперь отображаем профиль вместе с другими экранами
+=======
       //   title: Row(
       //     mainAxisAlignment: MainAxisAlignment.start,
       //     children: [
@@ -220,6 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _selectedIndex < _widgetOptions.length
               ? _widgetOptions[_selectedIndex]
               : Center(child: Text('Нет доступных экранов'))),
+>>>>>>> main
       backgroundColor: Colors.white,
       bottomNavigationBar: _widgetOptions.isNotEmpty
           ? MyNavBar(

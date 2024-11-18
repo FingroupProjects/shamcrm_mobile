@@ -1,7 +1,12 @@
 name: crm_task_manager
 description: "A new Flutter project."
+publish_to: none
 
+<<<<<<< HEAD
+version: 1.0.8+14
+=======
 version: 1.0.8+10
+>>>>>>> main
 
 environment:
   sdk: ^3.5.3
@@ -18,9 +23,16 @@ dependencies:
   flutter_bloc: ^8.1.6
   http: ^1.2.2
   equatable: ^2.0.5
-  shared_preferences: 2.3.2 
+  shared_preferences: 2.3.2
   intl: ^0.19.0
   open_file: ^3.5.9
+<<<<<<< HEAD
+  dropdown_search: ^5.0.2
+  path_provider: ^2.1.5
+  dart_pusher_channels: ^1.2.3
+  social_media_recorder: ^1.1.13
+  # audio_waveforms: ^1.0.5
+=======
   path_provider: ^2.1.5
   # dropdown_button2: ^2.3.9
   # flutter_dropdown: ^1.0.1+hotfix.1
@@ -34,6 +46,7 @@ dependencies:
   # webview_flutter: ^4.10.0
   # url_launcher: ^6.3.1
   # audio_waveforms: ^1.0.5 
+>>>>>>> main
   # pusher_websocket_flutter: ^0.2.0 # Check for the latest version
 
   # pusher_channels_flutter: ^2.2.1
@@ -41,7 +54,29 @@ dependencies:
   # flutter_pusher: ^1.0.3 
   # web_socket_channel: ^3.0.1
   # socket_io_client: ^3.0.0
+<<<<<<< HEAD
+  flutter_secure_storage: ^9.2.2
+  dio: ^5.7.0
+  chat_bubbles: ^1.6.0
+  just_audio: ^0.9.18
+  audioplayers: ^6.1.0
+  file_picker: ^8.1.3
+  voice_message_package:
+    git:
+      url: https://github.com/DiyorjonNasriddinov/voice_message_player.git
+  ffmpeg_kit_flutter: ^6.0.3
+  http_parser: ^4.0.2
+  flutter_unfocuser: ^1.0.0
+  infinite_scroll_pagination: ^4.0.0
+  modal_bottom_sheet: ^3.0.0
+  radio_group_v2: ^3.2.1
+  animated_custom_dropdown: ^3.1.1
+  flutter_svg: ^2.0.14
+  image_gallery_saver_plus: ^3.0.5
+#  image_gallery_saver: ^2.0.3
+=======
   # flutter_secure_storage: ^9.2.2
+>>>>>>> main
   # pusher_client_fixed: ^0.0.4+2
   # laravel_flutter_pusher_plus: ^1.0.2
   # json_annotation: ^4.9.0
@@ -53,20 +88,20 @@ dependencies:
   # audioplayers: ^6.1.0
   # voice_message_package: ^2.2.1
   # just_audio: ^0.9.41
-#   voice_message_package:
-# #    path: ../voice_message_player-code-with-bisky
-#     git:
-#       url: https://github.com/codewithbisky/voice_message_player.git
-#       ref: master
-# pusher_client:
-#     git:
-#       url: https://github.com/DumbDev168/pusher_client.git
-#       ref: master
+  #   voice_message_package:
+  # #    path: ../voice_message_player-code-with-bisky
+  #     git:
+  #       url: https://github.com/codewithbisky/voice_message_player.git
+  #       ref: master
+  # pusher_client:
+  #     git:
+  #       url: https://github.com/DumbDev168/pusher_client.git
+  #       ref: master
 
 
   # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:
-    path: lib/widgets/bottom_navy_bar.dart
+  path: lib/widgets/bottom_navy_bar.dart
 
 # voice_message_package:
 #     path: lib/widgets/voice_message_package
@@ -130,7 +165,7 @@ flutter:
         - asset: assets/fonts/Golos-Regular.ttf
         - asset: assets/fonts/Golos-Bold.ttf
           weight: 700
-          
+
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf

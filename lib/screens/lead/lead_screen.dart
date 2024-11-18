@@ -1,9 +1,13 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+<<<<<<< HEAD
+import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
+=======
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
+>>>>>>> main
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,12 +27,20 @@ class LeadScreen extends StatefulWidget {
 
 class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late TabController _tabController;
+<<<<<<< HEAD
+  List<String> _tabTitles = [];
+  TextEditingController searchController = TextEditingController();
+  FocusNode focusNode = FocusNode();
+  bool isClickAvatarIcon = false;
+
+=======
   late ScrollController _scrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+>>>>>>> main
 
   @override
   void initState() {
@@ -72,6 +84,26 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+<<<<<<< HEAD
+        title: CustomAppBar(title: 'Лиды',
+          onClickProfileAvatar: () {
+
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+
+          },
+          onChangedSearchInput: (value) {}, textEditingController: searchController, focusNode: focusNode,
+        ),
+        backgroundColor: Colors.white,
+      ),
+      body: isClickAvatarIcon == true ? ProfileScreen(): Column(
+        children: [
+          const SizedBox(height: 15),
+          _buildCustomTabBar(),
+          Expanded(child: _buildTabBarView()),
+        ],
+=======
         forceMaterialTransparency: true,
         title: CustomAppBar(
           title: 'Лиды',
@@ -148,6 +180,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             ),
           );
         },
+>>>>>>> main
       ),
     );
   }

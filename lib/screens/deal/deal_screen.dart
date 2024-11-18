@@ -1,10 +1,13 @@
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+<<<<<<< HEAD
+=======
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart'; 
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart'; 
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart'; 
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+>>>>>>> main
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart'; 
@@ -13,6 +16,46 @@ import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 
 class DealScreen extends StatefulWidget {
+<<<<<<< HEAD
+  @override
+  State<DealScreen> createState() => _DealScreenState();
+}
+
+class _DealScreenState extends State<DealScreen> {
+  TextEditingController searchController = TextEditingController();
+  FocusNode focusNode = FocusNode();
+  bool isClickAvatarIcon = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return  Scaffold(
+      backgroundColor: Colors.white,
+
+      appBar: AppBar(
+        elevation: 1,
+
+        title: CustomAppBar(title: 'Сделки',
+          onClickProfileAvatar: () {
+
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+
+          },
+          onChangedSearchInput: (value) {}, textEditingController: searchController, focusNode: focusNode,
+        ),
+        backgroundColor: Colors.white,
+      ),
+      body: Center(
+        child: Text(
+          'Сделки',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
+=======
   final int? initialStatusId;
 
   DealScreen({this.initialStatusId});
@@ -331,3 +374,4 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     }
   }
 }
+>>>>>>> main
