@@ -12,25 +12,35 @@ import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/leadById_model.dart'; 
 import 'package:crm_task_manager/models/lead_model.dart'; 
 import 'package:crm_task_manager/models/manager_model.dart'; 
-import 'package:crm_task_manager/models/notes_model.dart'; 
+import 'package:crm_task_manager/models/notes_model.dart';
+import 'package:crm_task_manager/models/pagination_dto.dart'; 
 import 'package:crm_task_manager/models/project_model.dart'; 
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
 
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-class ApiService {
+
   // final String baseUrl = 'http://62.84.186.96/api';
   // final String baseUrl = 'http://192.168.1.61:8008/api';
   // final String baseUrl = 'https://shamcrm.com/api';
   final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+  final String baseUrlSocket = 'https://fingroup-back.shamcrm.com/broadcasting/auth';
+
+
+class ApiService {
+
 
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
@@ -61,6 +71,65 @@ class ApiService {
     await prefs
         .remove('permissions'); // Удаляем права доступа из SharedPreferences
   }
+
+ // get all users
+  Future<UsersDataResponse> getAllUser() async {
+    final token = await getToken(); // Получаем токен перед запросом
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/user'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+      },
+
+    );
+    late UsersDataResponse dataUser;
+
+    if(response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getAll user: ${response.body}');
+    }
+
+    return dataUser;
+  }
+
+  // create new client
+  Future<http.Response> createNewClient(String userID) async {
+    final token = await getToken();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/chat/createChat/$userID'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+      },
+    );
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('data: ${response.body}');
+    }
+
+    return response;
+  }
+  
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
@@ -1478,33 +1547,17 @@ Future<Chats> getChatById(int chatId) async {
 
   
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
-  // // Метод для Удаления Лида
-  // Future<Map<String, dynamic>> deleteTask(int taskId) async {
-  //   final response = await _deleteRequest('/task/$taskId');
 
-  //   if (response.statusCode == 200) {
-  //     return {'result': 'Success'};
-  //   } else {
-  //     throw Exception('Failed to delete task: ${response.body}');
-  //   }
-  // }
 
-  // Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async {
-  //   final response = await _deleteRequest('/task-status/$taskStatusId');
-
-  //   if (response.statusCode == 200) {
-  //     return {'result': 'Success'};
-  //   } else {
-  //     throw Exception('Failed to delete taskStatus: ${response.body}');
-  //   }
-  // }
-  //_________________________________ END_____API_SCREEN__TASK____________________________________________//
+  //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
   // Метод для получения список чатов
-  Future<List<Chats>> getAllChats() async {
+  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+      [int page = 1]) async {
     final token = await getToken(); // Получаем токен
+    String url = '$baseUrl/chat/getMyChats/$endPoint?page=$page';
     final response = await http.get(
-      Uri.parse('$baseUrl/chat/getMyChats'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -1513,10 +1566,11 @@ Future<Chats> getChatById(int chatId) async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+
       if (data['result'] != null) {
-        return (data['result'] as List)
-            .map((chat) => Chats.fromJson(chat))
-            .toList();
+        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+          return Chats.fromJson(e);
+        });
       } else {
         throw Exception('Результат отсутствует в ответе');
       }
@@ -1558,12 +1612,105 @@ Future<Chats> getChatById(int chatId) async {
       'message': message,
     });
 
-    print(
-        'Response from sendMessage: ${response.body}'); // Добавлено для отладки
+    if (kDebugMode) {
+      print(
+        'Response from sendMessage: ${response.body}');
+    } // Добавлено для отладки
 
     if (response.statusCode != 200) {
-      print('Ошибка отправки сообщения: ${response.body}'); // Отладка ошибок
+      if (kDebugMode) {
+        print('Ошибка отправки сообщения: ${response.body}');
+      } // Отладка ошибок
       throw Exception('Ошибка отправки сообщения: ${response.body}');
+    }
+  }
+
+ // Метод для отправки audio file
+  Future<void> sendChatAudioFile(int chatId, File audio) async {
+    final token = await getToken(); // Получаем токен
+    String requestUrl = '$baseUrl/chat/sendVoice/$chatId';
+
+    Dio dio = Dio();
+    try {
+      final voice = await MultipartFile.fromFile(audio.path,
+          contentType: MediaType('audio', 'm4a')
+          // "/Users/diyorjonnasriddinov/Downloads/2024-10-30\ 17.35.27.ogg",
+          );
+      FormData formData = FormData.fromMap({'voice': voice});
+
+      var response = await dio.post(requestUrl,
+          data: formData,
+          options: Options(
+            headers: {
+              "Authorization": "Bearer $token",
+              // "Accept": "application/json",
+              // 'Content-Type': 'multipart/form-data'
+            },
+            // contentType: 'multipart/form-data',
+          ));
+      if (kDebugMode) {
+        print('response.statusCode: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print('Audio message sent successfully!');
+        }
+      } else {
+        if (kDebugMode) {
+          print('Error sending audio message: ${response.data}');
+        }
+        throw Exception('Error sending audio message: ${response.data}');
+      }
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        print('Exception caught: $e');
+      }
+      if (kDebugMode) {
+        print(e.response?.data);
+      }
+      throw Exception('Failed to send audio message due to an exception: $e');
+    }
+  }
+
+// Метод для отправки audio file
+  Future<void> sendChatFile(int chatId, String pathFile) async {
+    final token = await getToken(); // Получаем токен
+    String requestUrl = '$baseUrl/chat/sendFile/$chatId';
+
+    Dio dio = Dio();
+    try {
+      FormData formData =
+          FormData.fromMap({'file': await MultipartFile.fromFile(pathFile)});
+
+      var response = await dio.post(requestUrl,
+          data: formData,
+          options: Options(
+            headers: {
+              "Authorization": "Bearer $token",
+              "Accept": "application/json",
+            },
+            contentType: 'multipart/form-data',
+          ));
+      if (kDebugMode) {
+        print('response.statusCode: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print('Audio message sent successfully!');
+        }
+      } else {
+        if (kDebugMode) {
+          print('Error sending audio message: ${response.data}');
+        }
+        throw Exception('Error sending audio message: ${response.data}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Exception caught: $e');
+      }
+      throw Exception('Failed to send audio message due to an exception: $e');
     }
   }
 

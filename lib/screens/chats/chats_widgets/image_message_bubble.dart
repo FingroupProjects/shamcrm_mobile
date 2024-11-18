@@ -30,7 +30,7 @@ class ImageMessageBubble extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FullImageScreenViewer(imagePath: fullUrl),
+              builder: (context) => FullImageScreenViewer(imagePath: fullUrl, time: time, fileName: fileName,),
             ),
           );
         },
@@ -40,6 +40,10 @@ class ImageMessageBubble extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.symmetric(vertical: 5),
+              decoration: BoxDecoration(
+                border: Border.all(width: 1, color: Colors.black26),
+                borderRadius: BorderRadius.all(Radius.circular(12))
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(

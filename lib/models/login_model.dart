@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/user.dart';
+
 class LoginModel {
   final String login;
   final String password;
@@ -14,15 +16,28 @@ class LoginModel {
 
 class LoginResponse {
   final String token;
-  final List<String> permissions; // Добавлено для прав доступа
+  final User user;
+  final List<String> permissions;
 
-  LoginResponse({required this.token, required this.permissions});
+  LoginResponse({
+    required this.token,
+    required this.user,
+    required this.permissions,
+  });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
       token: json['token'],
-      permissions: List<String>.from(json['permissions']), // Инициализируем права доступа из JSON
+      user: User.fromMap(json['user']),
+      permissions: List<String>.from(json['permissions']),
     );
   }
-}
 
+  Map<String, dynamic> toJson() {
+    return {
+      'token': token,
+      'user': user.toMap(),
+      'permissions': permissions,
+    };
+  }
+}
