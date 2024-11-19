@@ -26,7 +26,6 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
-import 'package:crm_task_manager/models/deal_history_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -37,16 +36,6 @@ import 'bloc/project copy/statusName_bloc.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
-
-// Обработчик фоновых push-сообщений
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Handling a background message: ${message.messageId}');
-  print('Message data: ${message.data}');
-  print('Received a message while in the foreground!');
-  // Дополнительно выводим данные уведомления
-  print('Notification title: ${message.notification?.title}');
-  print('Notification body: ${message.notification?.body}');
-}
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -76,7 +65,6 @@ void main() async {
   );
 
   // Инициализация уведомлений
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
   
@@ -84,9 +72,6 @@ void main() async {
 }
 
 Future<void> getFCMTokens(ApiService apiService) async {
-  // Делаем небольшую задержку перед запросом токенов
-  // await Future.delayed(Duration(seconds: 1));
-// }
   // try {
   //   // Получаем APNS токен
   //   String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
@@ -95,16 +80,6 @@ Future<void> getFCMTokens(ApiService apiService) async {
   //   } else {
   //     print('Не удалось получить APNS токен');
   //   }
-
-//     Получаем FCM токен
-    String? fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      // print('FCM Token: $fcmToken');
-      // Отправляем FCM токен на сервер
-      await apiService.sendDeviceToken(fcmToken);
-    } else {
-      print('Не удалось получить FCM токен');
-    }
   } 
 
 
