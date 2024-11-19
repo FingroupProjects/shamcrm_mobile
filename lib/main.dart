@@ -56,20 +56,16 @@ void main() async {
   final apiService = ApiService();
   final bool isDomainChecked = await apiService.isDomainChecked();
 
-  // Инициализация Firebase с конфигурацией для текущей платформы
+  // Инициализация Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Получаем FCM-токен
-  String? fcmToken = await FirebaseMessaging.instance.getToken();
-  if (fcmToken != null) {
-    print('FCM-токен: $fcmToken');
-    // Отправляем FCM-токен на сервер
-    await apiService.sendDeviceToken(fcmToken);
-  } else {
-    print('Не удалось получить FCM-токен');
-  }
+  // Запрос разрешений на уведомления
+  await FirebaseMessaging.instance.requestPermission();
+
+  // Получаем токены (APNS и FCM)
+  await getFCMTokens(apiService);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -79,13 +75,38 @@ void main() async {
     ),
   );
 
-  // Инициализация Firebase API для push-уведомлений
+  // Инициализация уведомлений
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
-
+  
   runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
 }
+
+Future<void> getFCMTokens(ApiService apiService) async {
+  // Делаем небольшую задержку перед запросом токенов
+  // await Future.delayed(Duration(seconds: 1));
+// }
+  // try {
+  //   // Получаем APNS токен
+  //   String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+  //   if (apnsToken != null) {
+  //     print('APNS Token: $apnsToken');
+  //   } else {
+  //     print('Не удалось получить APNS токен');
+  //   }
+
+//     Получаем FCM токен
+    String? fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      // print('FCM Token: $fcmToken');
+      // Отправляем FCM токен на сервер
+      await apiService.sendDeviceToken(fcmToken);
+    } else {
+      print('Не удалось получить FCM токен');
+    }
+  } 
+
 
 class MyApp extends StatelessWidget {
   final ApiService apiService;
@@ -173,10 +194,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => ListenSenderFileCubit(),
         ),
-       BlocProvider(
-  create: (context) => ChatsBloc(ApiService()), // Ensure ApiService is passed here
-),
-      ],
+        BlocProvider(
+          create: (context) =>ChatsBloc(ApiService()),
+              ),
+       ],
       child: MaterialApp(
         color: Colors.white,
         debugShowCheckedModeBanner: false,

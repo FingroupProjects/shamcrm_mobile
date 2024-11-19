@@ -5,42 +5,54 @@ import 'package:flutter/material.dart'; // Доступ к navigatorKey
 class FirebaseApi {
   final _firebaseMessaging = FirebaseMessaging.instance;
 
-  // Инициализация уведомлений
   Future<void> initNotifications() async {
-    await _firebaseMessaging.requestPermission(); // Запрос разрешений
+    // Запрос разрешений на уведомления
+    await _firebaseMessaging.requestPermission();
 
-    final fCMToken = await _firebaseMessaging.getToken();
-    print('FCM Token: $fCMToken');
+    // Получение APNS токена для iOS
+    final apnsToken = await _firebaseMessaging.getAPNSToken();
+    print('APNS Token: ${apnsToken ?? "Не удалось получить APNS токен"}');
 
-    // Обработчик фоновых сообщений
+    // Получение FCM токена
+    final fcmToken = await _firebaseMessaging.getToken();
+    print('FCM Token: $fcmToken');
+
+    // Настройка обработчиков уведомлений
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     initPushNotification();
   }
 
   void initPushNotification() {
-    // При открытии уведомления в закрытом или свернутом состоянии
-    FirebaseMessaging.instance.getInitialMessage().then(handleMessage);
-    
-    // При нажатии на уведомление (foreground или background)
-    FirebaseMessaging.onMessageOpenedApp.listen(handleMessage);
+    // При открытии через уведомление в свернутом или закрытом состоянии
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      print('Получено уведомление при запуске приложения: ${message?.messageId}');
+      handleMessage(message);
+    });
 
-    // Для уведомлений при активном приложении
+    // При нажатии на уведомление
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      print('Пользователь нажал на уведомление: ${message.messageId}');
+      handleMessage(message);
+    });
+
+    // Для уведомлений в активном приложении
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Foreground message: ${message.notification?.body}');
+      print('Уведомление при активном приложении: ${message.notification?.title}');
+      print('Содержимое: ${message.notification?.body}');
       _showForegroundNotification(message);
     });
   }
 
-  // Обработка уведомлений
   void handleMessage(RemoteMessage? message) {
     if (message == null) return;
+    print('Обработка уведомления: ${message.messageId}');
+    // Перенаправление на экран уведомлений
     navigatorKey.currentState?.pushNamed(
       '/notification_screen',
       arguments: message,
     );
   }
 
-  // Показ уведомлений во время работы приложения
   void _showForegroundNotification(RemoteMessage message) {
     showDialog(
       context: navigatorKey.currentContext!,
@@ -67,5 +79,8 @@ class FirebaseApi {
 
 // Фоновый обработчик сообщений
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Handling background message: ${message.messageId}');
+  print('Фоновое уведомление: ${message.messageId}');
+  print('Заголовок: ${message.notification?.title}');
+  print('Сообщение: ${message.notification?.body}');
+  // Здесь можно добавить логику для работы с данными из фонового уведомления
 }
