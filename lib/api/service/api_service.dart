@@ -1,6 +1,6 @@
 import 'dart:convert'; 
 import 'dart:io'; 
-import 'package:crm_task_manager/models/TaskStatusName_model.dart';
+import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/dashboard_model.dart';
@@ -1169,7 +1169,7 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
-//Обновление статуса карточки Сделки  в колонке
+//Обновление статуса карточки Задачи  в колонке
 
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
     final response = await _postRequest('/task/changeStatus/$taskId', {
@@ -1264,24 +1264,76 @@ Future<Chats> getChatById(int chatId) async {
           'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
     }
   }
+ /// Создает новый статус задачи
+Future<Map<String, dynamic>> createTaskStatus({
+  required int taskStatusNameId,
+  required int projectId,
+  required int organizationId,
+  required bool needsPermission,
+  List<int>? roleIds,
+}) async {
+  try {
+    final Map<String, dynamic> data = {
+      'task_status_name_id': taskStatusNameId,
+      'project_id': projectId,
+      'organization_id': organizationId,
+      'needs_permission': needsPermission ? 1 : 0,
+    };
 
-  // Метод для создания Cтатуса Лида
-  Future<Map<String, dynamic>> createTaskStatus(
-      String name, String color) async {
-    final response = await _postRequest('/task-status', {
-      'name': name,
-      'color': color,
-    });
+    if (roleIds != null && roleIds.isNotEmpty) {
+      data['roles'] = roleIds.map((roleId) => {'role_id': roleId}).toList();
+    }
 
+    final response = await _postRequest('/task-status', data);
+    
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Статус задачи создан успешно'};
-    } else {
+      final responseData = json.decode(response.body);
       return {
-        'success': false,
-        'message': 'Ошибка создания статуса задач: ${response.body}'
+        'success': true,
+        'message': 'Статус задачи успешно создан',
+        'data': responseData
       };
     }
+
+    // Обработка различных кодов ошибок
+    String errorMessage;
+    switch (response.statusCode) {
+      case 400:
+        errorMessage = 'Неверные данные запроса';
+        break;
+      case 401:
+        errorMessage = 'Необходима авторизация';
+        break;
+      case 403:
+        errorMessage = 'Недостаточно прав для создания статуса';
+        break;
+      case 404:
+        errorMessage = 'Ресурс не найден';
+        break;
+      case 409:
+        errorMessage = 'Конфликт при создании статуса';
+        break;
+      case 500:
+        errorMessage = 'Внутренняя ошибка сервера';
+        break;
+      default:
+        errorMessage = 'Произошла ошибка при создании статуса';
+    }
+
+    return {
+      'success': false,
+      'message': '$errorMessage: ${response.body}',
+      'statusCode': response.statusCode
+    };
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при выполнении запроса: $e',
+      'error': e.toString()
+    };
   }
+}
+
 
   // Метод для создания задачи
   Future<Map<String, dynamic>> createTask({
@@ -1431,6 +1483,7 @@ Future<Chats> getChatById(int chatId) async {
       rethrow;
     }
   }
+
   // Метод для получение Роли
 
  Future<List<Role>> getRoles() async {
@@ -1453,21 +1506,23 @@ Future<Chats> getChatById(int chatId) async {
 }
 
 // Метод для получения Cтатуса задачи
-  // Метод для получение Роли
-
  Future<List<StatusName>> getStatusName() async {
+  print('Начало запроса статусов задач'); // Отладочный вывод
   final response = await _getRequest('/taskStatusName');
+  print('Статус код ответа: ${response.statusCode}'); // Отладочный вывод
   
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    print('Тело ответа ролей: $data'); // Для отладки
+    print('Полученные данные: $data'); // Отладочный вывод
     
     if (data['result'] != null) {
-      return (data['result'] as List)
+      final statusList = (data['result'] as List)
           .map((name) => StatusName.fromJson(name))
           .toList();
+      print('Преобразованный список статусов: $statusList'); // Отладочный вывод
+      return statusList;
     } else {
-      throw Exception('Роли не найдены');
+      throw Exception('Статусы задач не найдены');
     }
   } else {
     throw Exception('Ошибка ${response.statusCode}: ${response.body}');

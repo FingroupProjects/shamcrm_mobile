@@ -47,6 +47,8 @@ dependencies:
   animated_custom_dropdown: ^3.1.1
   flutter_svg: ^2.0.14
   image_gallery_saver_plus: ^3.0.5
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.3
 
 
   # bottom_navy_bar: ^6.1.0
@@ -63,7 +65,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-
+flutter_native_splash:
+ android: true
+ ios: true
+ image_path: assets/playstore.png
+ color: "#000000"
+ adaptive_icon_foreground: assets/playstore.png
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

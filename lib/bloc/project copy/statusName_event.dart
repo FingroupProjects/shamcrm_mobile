@@ -1,10 +1,10 @@
-import 'package:equatable/equatable.dart';
+// import 'package:equatable/equatable.dart';
 
-abstract class StatusNameEvent extends Equatable {
-  const StatusNameEvent();
+// abstract class StatusNameEvent extends Equatable {
+//   const StatusNameEvent();
 
-  @override
-  List<Object> get props => [];
-}
+//   @override
+//   List<Object> get props => [];
+// }
 
-class FetchStatusNames extends StatusNameEvent {}
+// class FetchStatusNames extends StatusNameEvent {}

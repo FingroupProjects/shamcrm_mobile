@@ -1,33 +1,33 @@
-import 'package:crm_task_manager/models/TaskStatusName_model.dart';
-import 'package:crm_task_manager/models/project_model.dart';
-// import 'package:crm_task_manager/models/task_model.dart';
-import 'package:equatable/equatable.dart';
+// import 'package:crm_task_manager/models/TaskStatusName_model.dart';
+// import 'package:crm_task_manager/models/project_model.dart';
+// // import 'package:crm_task_manager/models/task_model.dart';
+// import 'package:equatable/equatable.dart';
 
-abstract class StatusNameState extends Equatable {
-  const StatusNameState();
+// abstract class StatusNameState extends Equatable {
+//   const StatusNameState();
 
-  @override
-  List<Object> get props => [];
-}
+//   @override
+//   List<Object> get props => [];
+// }
 
-class StatusNameInitial extends StatusNameState {}
+// class StatusNameInitial extends StatusNameState {}
 
-class StatusNameLoading extends StatusNameState {}
+// class StatusNameLoading extends StatusNameState {}
 
-class StatusNameLoaded extends StatusNameState {
-  final List<StatusName> statusName;
+// class StatusNameLoaded extends StatusNameState {
+//   final List<StatusName> statusName;
 
-  const StatusNameLoaded(this.statusName);
+//   const StatusNameLoaded(this.statusName);
 
-  @override
-  List<Object> get props => [statusName];
-}
+//   @override
+//   List<Object> get props => [statusName];
+// }
 
-class StatusNameError extends StatusNameState {
-  final String message;
+// class StatusNameError extends StatusNameState {
+//   final String message;
 
-  const StatusNameError(this.message);
+//   const StatusNameError(this.message);
 
-  @override
-  List<Object> get props => [message];
-}
+//   @override
+//   List<Object> get props => [message];
+// }
