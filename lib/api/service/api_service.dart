@@ -1265,7 +1265,7 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
  /// Создает новый статус задачи
-Future<Map<String, dynamic>> createTaskStatus({
+Future<Map<String, dynamic>> CreateTaskStatusAdd({
   required int taskStatusNameId,
   required int projectId,
   required int organizationId,

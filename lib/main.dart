@@ -176,6 +176,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TaskStatusBloc(ApiService()),
         ),
+        
       ],
       child: MaterialApp(
         color: Colors.white,
