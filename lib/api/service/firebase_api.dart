@@ -54,14 +54,33 @@ class FirebaseApi {
   }
 
   void handleMessage(RemoteMessage? message) {
-    if (message == null) return;
-    print('Обработка уведомления: ${message.messageId}');
-    // Перенаправление на экран уведомлений
-    navigatorKey.currentState?.pushNamed(
-      '/notification_screen',
-      arguments: message,
-    );
+  if (message == null || message.data.isEmpty) {
+    print('handleMessage: сообщение пустое или данные отсутствуют');
+    return;
   }
+
+  final type = message.data['type'];
+  final id = message.data['id'];
+
+  if (type == null || id == null) {
+    print('handleMessage: отсутствуют необходимые данные (type или id)');
+    return;
+  }
+
+  print('handleMessage: тип уведомления: $type, ID чата: $id');
+
+  // if (type == 'chat') {
+  //   print('Переход на экран чата с ID: $id');
+  //   navigatorKey.currentState?.pushNamed(
+  //     '/chats',
+  //     arguments: {'id': id},
+  //   );
+  // } else {
+  //   print('handleMessage: Неизвестный тип: $type');
+  // }
+}
+
+
 }
 
 // Фоновый обработчик сообщений
