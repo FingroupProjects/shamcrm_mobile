@@ -56,7 +56,7 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
 
   String _getSelectedRolesText(List<Role> roles) {
     if (_selectedRoleIds.isEmpty) return 'Выберите роли';
-    
+
     return roles
         .where((role) => _selectedRoleIds.contains(role.id))
         .map((role) => role.name)
@@ -100,10 +100,6 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
               activeColor: Color(0xff1E2E52),
               checkColor: Colors.white,
               tileColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: Color(0xff1E2E52), width: 1),
-              ),
             ),
           );
 
@@ -135,10 +131,6 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                 activeColor: Color(0xff1E2E52),
                 checkColor: Colors.white,
                 tileColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Color(0xff1E2E52), width: 1),
-                ),
               );
             }).toList(),
           );
@@ -204,15 +196,11 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                  border: Border.all(color: Color(0xff1E2E52).withOpacity(0.2)),
+                  // Убрана тень, чтобы исключить её влияние
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: roleCheckboxes,
                 ),
               ),
