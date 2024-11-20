@@ -8,7 +8,6 @@ import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%202.
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%203.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
-
 import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
 import 'package:crm_task_manager/screens/dashboard/tasks_dart.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -31,96 +30,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
       )..add(LoadDashboardStats()),
       child: Scaffold(
         backgroundColor: Colors.white,
-        // body: SingleChildScrollView(
-        //   padding: EdgeInsets.all(16),
-        //   child: Column(
-        //     children: [
-        //       LeadsBox(),
-        //       SizedBox(height: 16),
-        //       TasksBox(),
-        //       SizedBox(height: 16),
-        //       DealsBox(),
-        //       SizedBox(height: 16),
-        //       _buildExpansionTile(
-        //         title: 'Клиенты',
-        //         child: Column(
-        //           children: [
-        //             GraphicsDashboard(),
-        //             GraphicCircleDashboard(),
-        //           ],
-        //         ),
-        //       ),
-        //       SizedBox(height: 16),
-        //       _buildExpansionTile(
-        //         title: 'Сделки',
-        //         child: GraphicBarDashboard(),
-        //       ),
-        //       SizedBox(height: 16),
-        //       _buildExpansionTile(
-        //         title: 'Задачи',
-        //         child: GraphicTasksDashboard(),
-        //       ),
-        //       SizedBox(height: 16),
-        //       _buildExpansionTile(
-        //         title: 'Проекты',
-        //         child: GraphicCircleDashboardProject(),
-        //       ),
-        //     ],
-        //   ),
-        // ),
         appBar: AppBar(
-        forceMaterialTransparency: true,
+          forceMaterialTransparency: true,
           title: CustomAppBar(
-          title: "Дашборд",
-           onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
-          showSearchIcon: false,
-        )),
+            title: "Дашборд",
+            onClickProfileAvatar: () {
+              setState(() {
+                isClickAvatarIcon = !isClickAvatarIcon;
+              });
+            },
+            onChangedSearchInput: (input) {},
+            textEditingController: TextEditingController(),
+            focusNode: FocusNode(),
+            clearButtonClick: (isSearching) {},
+            showSearchIcon: false,
+          ),
+        ),
         body: isClickAvatarIcon
             ? ProfileScreen()
             : SingleChildScrollView(
                 padding: EdgeInsets.all(16),
                 child: Column(
                   children: [
-              LeadsBox(),
-              SizedBox(height: 16),
-              TasksBox(),
-              SizedBox(height: 16),
-              DealsBox(),
-              SizedBox(height: 16),
-              _buildExpansionTile(
-                title: 'Клиенты',
-                child: Column(
-                  children: [
+                    LeadsBox(),
+                    SizedBox(height: 16),
+                    TasksBox(),
+                    SizedBox(height: 16),
+                    DealsBox(),
+                    SizedBox(height: 16),
                     GraphicsDashboard(),
+                    SizedBox(height: 16),
                     GraphicCircleDashboard(),
+                    SizedBox(height: 16),
+                    GraphicTasksDashboard(),
+                    SizedBox(height: 16),
+                    GraphicBarDashboard(),
+                    SizedBox(height: 16),
+                    GraphicCircleDashboardProject(),
                   ],
                 ),
-              ),
-              SizedBox(height: 16),
-              _buildExpansionTile(
-                title: 'Сделки',
-                child: GraphicBarDashboard(),
-              ),
-              SizedBox(height: 16),
-              _buildExpansionTile(
-                title: 'Задачи',
-                child: GraphicTasksDashboard(),
-              ),
-              SizedBox(height: 16),
-              _buildExpansionTile(
-                title: 'Проекты',
-                child: GraphicCircleDashboardProject(),
-              ),
-            ],
-          ),
               ),
       ),
     );

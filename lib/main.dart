@@ -42,6 +42,7 @@ import 'screens/home_screen.dart';
 // final navigatorKey = GlobalKey<NavigatorState>();
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
