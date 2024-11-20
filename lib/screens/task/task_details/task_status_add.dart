@@ -1,43 +1,40 @@
-import 'package:crm_task_manager/bloc/project%20copy/statusName_bloc.dart';
-import 'package:crm_task_manager/bloc/project%20copy/statusName_event.dart';
+import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
+import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_event.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_event.dart';
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
+// import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task_status_add/task_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateStatusDialog extends StatefulWidget {
-  CreateStatusDialog({Key? key}) : super(key: key);
+  const CreateStatusDialog({Key? key}) : super(key: key);
 
   @override
   _CreateStatusDialogState createState() => _CreateStatusDialogState();
 }
 
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
-  final TextEditingController _controller = TextEditingController();
-  String? _errorMessage;
-  String? selectedProject;
-  String? selectedTaskStatusName;
-    String? selectedTaskStatus;
-
-  String? selectedRole;
-  bool hasAccess = false;
+  int? selectedStatusNameId;
+  int? selectedProjectId;
+  List<int> selectedRoleIds = [];
+  bool needsPermission = false;
   bool isFinalStage = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    context.read<RoleBloc>().add(FetchRoles());
+    context.read<TaskStatusNameBloc>().add(FetchStatusNames());
     context.read<ProjectBloc>().add(FetchProjects());
-    context.read<StatusNameBloc>().add(FetchStatusNames());
-
+    context.read<RoleBloc>().add(FetchRoles());
+    
   }
 
   @override
@@ -45,7 +42,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(
-        'Добавить статуса',
+        'Добавить статус',
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -58,105 +55,107 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-           const SizedBox(height: 16),
-StatusList(
-  selectedTaskStatus: selectedTaskStatus,
-  onChanged: (String? newValue) {
-    setState(() {
-      selectedTaskStatus = newValue;
-    });
-  },
-),
+            const SizedBox(height: 16),
+            StatusList(
+              selectedTaskStatus: selectedStatusNameId?.toString(),
+              onChanged: (String? statusName, int? statusId) {
+                setState(() {
+                  selectedStatusNameId = statusId;
+                });
+              },
+            ),
             const SizedBox(height: 16),
             ProjectWidget(
-              selectedProject: selectedProject,
-              onChanged: (String? newValue) {
+              selectedProject: selectedProjectId?.toString(),
+              onChanged: (String? projectId) {
                 setState(() {
-                  selectedProject = newValue;
+                  selectedProjectId = projectId != null 
+                    ? int.tryParse(projectId) 
+                    : null;
                 });
               },
             ),
             Container(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      checkboxTheme: CheckboxThemeData(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        fillColor: MaterialStateProperty.all(Colors.transparent), // Прозрачный фон
-                        checkColor: MaterialStateProperty.all(Color(0xFF1E2E52)), // Темно-синяя галочка
-                        side: BorderSide(color: Color(0xFF1E2E52), width: 2), // Рамка темно-синего цвета
-                      ),
-                    ),
-                    child: CheckboxListTile(
-                      title: Text(
-                        'С доступом',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      value: hasAccess,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          hasAccess = value ?? false;
-                          if (!hasAccess) {
-                            selectedRole = null;
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      checkboxTheme: CheckboxThemeData(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4
+                  // С доступом switch
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'С доступом',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                        fillColor: MaterialStateProperty.all(Colors.transparent),
-                        checkColor: MaterialStateProperty.all(Color(0xFF1E2E52)),
-                        side: BorderSide(color: Color(0xFF1E2E52), width: 2),
-                      ),
-                    ),
-                    child: CheckboxListTile(
-                      title: Text(
-                        'Завершающий этап',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
+                        Switch(
+                          value: needsPermission,
+                          onChanged: (value) {
+                            setState(() {
+                              needsPermission = value;
+                              if (!value) {
+                                selectedRoleIds.clear();
+                              }
+                            });
+                          },
+                          activeColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                          activeTrackColor: const Color.fromARGB(255, 45, 101, 254).withOpacity(0.5),
+                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
                         ),
-                      ),
-                      value: isFinalStage,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          isFinalStage = value ?? false;
-                        });
-                      },
+                      ],
+                    ),
+                  ),
+                  // Завершающий этап switch
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Завершающий этап',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        Switch(
+                          value: isFinalStage,
+                          onChanged: (value) {
+                            setState(() {
+                              isFinalStage = value;
+                            });
+                          },
+                          activeColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                          activeTrackColor: const Color.fromARGB(255, 45, 101, 254).withOpacity(0.5),
+                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            if (hasAccess) ...[
+            if (needsPermission) ...[
               const SizedBox(height: 2),
-              RoleWidget(
-                selectedRole: selectedRole,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedRole = newValue;
-                  });
-                },
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: RoleSelectionWidget(
+                  selectedRoleIds: selectedRoleIds,
+                  onRolesChanged: (roleIds) {
+                    setState(() {
+                      selectedRoleIds = roleIds;
+                    });
+                  },
+                ),
               ),
             ],
             if (_errorMessage != null)
@@ -181,43 +180,46 @@ StatusList(
           child: Row(
             children: [
               Expanded(
-                child: CustomButton(
-                  buttonText: 'Отмена',
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Отмена',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
                 ),
               ),
               SizedBox(width: 16),
               Expanded(
-                child: CustomButton(
-                  buttonText: 'Добавить',
-                  onPressed: () {
-                    final name = _controller.text;
-                    if (selectedTaskStatusName != null && selectedProject != null) {
-                      setState(() {
-                        _errorMessage = null;
-                      });
-                      context.read<TaskBloc>().add(
-                            CreateTaskStatus(
-                              name: selectedTaskStatusName!,
-                              color: '#000000',
-                              hasAccess: hasAccess,
-                              isFinalStage: isFinalStage,
-                              roleId: hasAccess ? selectedRole : null,
-                            ),
-                          );
-                      Navigator.of(context).pop();
-                    } else {
-                      setState(() {
-                        _errorMessage = 'Заполните обязательные поля';
-                      });
-                    }
-                  },
-                  buttonColor: Color(0xFF1E2E52),
-                  textColor: Colors.white,
+                child: ElevatedButton(
+                  onPressed: _createStatus,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: Color(0xFF1E2E52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Добавить',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -227,9 +229,27 @@ StatusList(
     );
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void _createStatus() {
+    if (selectedStatusNameId == null || selectedProjectId == null) {
+      setState(() {
+        _errorMessage = 'Заполните обязательные поля';
+      });
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+    });
+
+    context.read<TaskStatusBloc>().add(
+      CreateTaskStatus(
+        taskStatusNameId: selectedStatusNameId!,
+        projectId: selectedProjectId!,
+        organizationId: 1,
+        needsPermission: needsPermission,
+        roleIds: needsPermission ? selectedRoleIds : null,
+      ),
+    );
+    Navigator.pop(context);
   }
 }

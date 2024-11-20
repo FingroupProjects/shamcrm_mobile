@@ -13,10 +13,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<FetchTasks>(_fetchTasks);
     on<CreateTask>(_createTask);
     on<FetchMoreTasks>(_fetchMoreTasks);
-    on<CreateTaskStatus>(_createTaskStatus);
+    // on<CreateTaskStatus>(_createTaskStatus);
     on<UpdateTask>(_updateTask);
     on<DeleteTask>(_deleteTask);
-
+    // on<CreateTaskStatus>(_createTaskStatus);
     on<DeleteTaskStatuses>(_deleteTaskStatuses);
 
   }
@@ -159,28 +159,31 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     }
   }
 
-  Future<void> _createTaskStatus(
-      CreateTaskStatus event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
+  // Future<void> _createTaskStatus(
+  //   CreateTaskStatus event,
+  //   Emitter<TaskState> emit,
+  // ) async {
+  //   emit(TaskLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(TaskError('Нет подключения к интернету'));
-      return;
-    }
+  //   try {
+  //     final result = await apiService.createTaskStatus(
+  //       taskStatusNameId: event.taskStatusNameId,
+  //       projectId: event.projectId,
+  //       organizationId: event.organizationId,
+  //       needsPermission: event.needsPermission,
+  //       roleIds: event.roleIds,
+  //     );
 
-    try {
-      final result = await apiService.createTaskStatus(event.name, event.color);
-
-      if (result['success']) {
-        emit(TaskSuccess(result['message']));
-        add(FetchTaskStatuses());
-      } else {
-        emit(TaskError(result['message']));
-      }
-    } catch (e) {
-      emit(TaskError('Ошибка создания статуса задачи: ${e.toString()}'));
-    }
-  }
+  //     if (result['success']) {
+  //       emit(TaskSuccess(result['message']));
+  //       add(FetchTaskStatuses());
+  //     } else {
+  //       emit(TaskError(result['message']));
+  //     }
+  //   } catch (e) {
+  //     emit(TaskError('Ошибка создания статуса задачи: ${e.toString()}'));
+  //   }
+  // }
 
   Future<bool> _checkInternetConnection() async {
     try {

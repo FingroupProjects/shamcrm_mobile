@@ -16,22 +16,23 @@ class FetchMoreTasks extends TaskEvent {
   FetchMoreTasks(this.statusId, this.currentPage);
 }
 
-class CreateTaskStatus extends TaskEvent {
-  final String name;
-  final String color;
-  final bool? hasAccess;
-  final bool? isFinalStage;
-  final String? roleId;
+// class CreateTaskStatus extends TaskEvent {
+//   final String name;
+//   final String color;
+//   final bool? hasAccess;
+//   final bool? isFinalStage;
+//   final String? roleId;
+  
 
-  CreateTaskStatus({
-    required this.name,
-    required this.color,
-    this.hasAccess,
-    this.isFinalStage,
-    this.roleId,
+//   CreateTaskStatus({
+//     required this.name,
+//     required this.color,
+//     this.hasAccess,
+//     this.isFinalStage,
+//     this.roleId,
     
-  });
-}
+//   });
+// }
 
 class CreateTask extends TaskEvent {
   final String name;
@@ -83,9 +84,27 @@ class UpdateTask extends TaskEvent {
     this.userId,
     this.description,
     required this.taskStatusId,
+
     // this.file,
   });
 }
+
+class CreateTaskStatus extends TaskEvent {
+  final int taskStatusNameId;
+  final int projectId;
+  final int organizationId;
+  final bool needsPermission;
+  final List<int>? roleIds;
+
+  CreateTaskStatus({
+    required this.taskStatusNameId,
+    required this.projectId,
+    required this.organizationId,
+    required this.needsPermission,
+    this.roleIds,
+  });
+}
+
 class DeleteTask extends TaskEvent {
   final int taskId;
 

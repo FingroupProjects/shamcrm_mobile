@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/main.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FirebaseApi {

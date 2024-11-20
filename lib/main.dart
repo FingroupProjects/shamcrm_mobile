@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -22,6 +23,7 @@ import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
@@ -33,7 +35,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'bloc/project copy/statusName_bloc.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -69,7 +70,7 @@ void main() async {
   // Инициализация уведомлений
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
-  
+
   runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
 }
 
@@ -82,8 +83,7 @@ Future<void> getFCMTokens(ApiService apiService) async {
   //   } else {
   //     print('Не удалось получить APNS токен');
   //   }
-  } 
-
+}
 
 class MyApp extends StatelessWidget {
   final ApiService apiService;
@@ -142,7 +142,7 @@ class MyApp extends StatelessWidget {
           create: (context) => RoleBloc(apiService),
         ),
         BlocProvider(
-          create: (context) => StatusNameBloc(apiService),
+          create: (context) => TaskStatusNameBloc(apiService),
         ),
         BlocProvider(
           create: (context) => LeadByIdBloc(apiService),
@@ -172,9 +172,12 @@ class MyApp extends StatelessWidget {
           create: (context) => ListenSenderFileCubit(),
         ),
         BlocProvider(
-          create: (context) =>ChatsBloc(ApiService()),
-              ),
-       ],
+          create: (context) => ChatsBloc(ApiService()),
+        ),
+        BlocProvider(
+          create: (context) => TaskStatusBloc(ApiService()),
+        ),
+      ],
       child: MaterialApp(
         color: Colors.white,
         debugShowCheckedModeBanner: false,

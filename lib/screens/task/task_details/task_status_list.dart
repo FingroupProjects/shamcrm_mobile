@@ -1,15 +1,14 @@
 
-import 'package:crm_task_manager/bloc/project%20copy/statusName_bloc.dart';
-import 'package:crm_task_manager/bloc/project%20copy/statusName_state.dart';
-import 'package:crm_task_manager/models/TaskStatusName_model.dart';
-
+import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
+import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_state.dart';
+import 'package:crm_task_manager/models/task_Status_Name_model.dart';
+// import 'package:crm_task_manager/models/taskStatusName_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
 class StatusList extends StatefulWidget {
   final String? selectedTaskStatus;
-  final ValueChanged<String?> onChanged;
+  final Function(String? value, int? id) onChanged;  // Обновленный тип
 
   StatusList({
     required this.selectedTaskStatus, 
@@ -23,7 +22,7 @@ class StatusList extends StatefulWidget {
 class _TaskStatusListState extends State<StatusList> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<StatusNameBloc, StatusNameState>(
+    return BlocBuilder<TaskStatusNameBloc, StatusNameState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
 
@@ -45,7 +44,7 @@ class _TaskStatusListState extends State<StatusList> {
         } else if (state is StatusNameLoaded) {
           dropdownItems = state.statusName.map<DropdownMenuItem<String>>((StatusName status) {
             return DropdownMenuItem<String>(
-              value: status.id.toString(),
+              value: status.id.toString(), // Используем id как value
               child: Text(status.name),
             );
           }).toList();
@@ -84,7 +83,16 @@ class _TaskStatusListState extends State<StatusList> {
                   ),
                 ),
                 items: dropdownItems,
-                onChanged: widget.onChanged,
+                onChanged: (String? value) {
+                  // Находим соответствующий статус и его id
+                  if (state is StatusNameLoaded && value != null) {
+                    final selectedStatus = state.statusName
+                        .firstWhere((status) => status.id.toString() == value);
+                    widget.onChanged(selectedStatus.name, selectedStatus.id);
+                  } else {
+                    widget.onChanged(null, null);
+                  }
+                },
                 validator: (value) {
                   if (value == null) {
                     return 'Поле обязательно для заполнения';

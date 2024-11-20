@@ -5,15 +5,14 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
-import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
-import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:file_picker/file_picker.dart';
 
 class TaskEditScreen extends StatefulWidget {
   final int taskId;
@@ -92,6 +91,86 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     context.read<TaskBloc>().add(FetchTaskStatuses());
   }
 
+  InputDecoration _inputDecoration() {
+    return const InputDecoration(
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      border: InputBorder.none,
+      filled: true,
+      fillColor: Color(0xFFF4F7FD),
+    );
+  }
+
+  Widget _buildPriorityDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Уровень приоритета',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F7FD),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              canvasColor: Colors.white,
+            ),
+            child: DropdownButtonFormField<int>(
+              value: selectedPriority ?? 1,
+              items: priorityLevels.entries.map((entry) {
+                final priorityColor = entry.key == 2
+                    ? Colors.red
+                    : entry.key == 3
+                        ? Colors.yellow
+                        : Colors.green;
+                return DropdownMenuItem(
+                  value: entry.key,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: priorityColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        entry.value,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.bold, // Добавлено свойство для жирного текста
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (int? newValue) {
+                setState(() {
+                  selectedPriority = newValue;
+                });
+              },
+              decoration: _inputDecoration(),
+              validator: (value) => value == null ? 'Поле обязательно для заполнения' : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
       DateTime? startDate;
@@ -163,7 +242,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           ),
         ),
       ),
-       body: BlocListener<TaskBloc, TaskState>(
+      body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
           if (state is TaskError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -175,13 +254,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             );
           } else if (state is TaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Задача успешно обновлен'),
-                duration: const Duration(seconds: 3),
+              const SnackBar(
+                content: Text('Задача успешно обновлена'),
+                duration: Duration(seconds: 3),
                 backgroundColor: Colors.green,
               ),
             );
-            Navigator.pop(context,true); 
+            Navigator.pop(context, true);
           }
         },
         child: Form(
@@ -283,63 +362,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildPriorityDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Уровень приоритета',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              canvasColor: Colors.white,
-            ),
-            child: DropdownButtonFormField<int>(
-              value: selectedPriority,
-              items: priorityLevels.entries.map((entry) {
-                final priorityColor = entry.key == 2
-                    ? Colors.red
-                    : entry.key == 3
-                        ? Colors.yellow
-                        : Colors.green;
-
-                return DropdownMenuItem<int>(
-                  value: entry.key,
-                  child: Text(
-                    entry.value,
-                    style: TextStyle(color: priorityColor),
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedPriority = value;
-                });
-              },
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                border: InputBorder.none,
-              ),
-              validator: (value) => value == null ? 'Поле обязательно для заполнения' : null,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
