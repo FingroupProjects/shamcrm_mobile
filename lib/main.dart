@@ -28,19 +28,20 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-// import 'bloc/project copy/statusName_bloc.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 
-final navigatorKey = GlobalKey<NavigatorState>();
+// final navigatorKey = GlobalKey<NavigatorState>();
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -182,10 +183,12 @@ class MyApp extends StatelessWidget {
         color: Colors.white,
         debugShowCheckedModeBanner: false,
         title: 'CRM TASK MANAGER',
+        navigatorKey: navigatorKey, // Навигационный ключ
         routes: {
           '/': (context) => isDomainChecked ? LoginScreen() : AuthScreen(),
           '/login': (context) => LoginScreen(),
           '/home': (context) => HomeScreen(),
+          '/chats': (context) => ChatsScreen(),
         },
       ),
     );
