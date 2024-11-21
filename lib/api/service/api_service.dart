@@ -1,5 +1,6 @@
 import 'dart:convert'; 
 import 'dart:io'; 
+import 'package:crm_task_manager/models/chart_data.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
@@ -1264,7 +1265,7 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
  /// Создает новый статус задачи
-Future<Map<String, dynamic>> createTaskStatus({
+Future<Map<String, dynamic>> CreateTaskStatusAdd({
   required int taskStatusNameId,
   required int projectId,
   required int organizationId,

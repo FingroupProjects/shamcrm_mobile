@@ -41,7 +41,10 @@ import 'screens/home_screen.dart';
 
 // final navigatorKey = GlobalKey<NavigatorState>();
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();void main() async {
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final apiService = ApiService();
@@ -177,6 +180,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TaskStatusBloc(ApiService()),
         ),
+        
       ],
       child: MaterialApp(
         color: Colors.white,

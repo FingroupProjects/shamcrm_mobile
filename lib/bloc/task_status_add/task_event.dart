@@ -8,14 +8,14 @@ abstract class TaskStatusEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class CreateTaskStatus extends TaskStatusEvent {
+class CreateTaskStatusAdd extends TaskStatusEvent {
   final int taskStatusNameId;
   final int projectId;
   final int organizationId;
   final bool needsPermission;
   final List<int>? roleIds;
 
-  const CreateTaskStatus({
+  const CreateTaskStatusAdd({
     required this.taskStatusNameId,
     required this.projectId,
     required this.organizationId,

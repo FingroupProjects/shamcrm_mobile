@@ -1,6 +1,7 @@
 // models/dashboard_model.dart
-// dashboard_model.dart
+// // dashboard_model.dart
 class ChartData {
+  
   final String label;
   final List<double> data;
   final String color;

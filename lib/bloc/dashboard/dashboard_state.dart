@@ -1,5 +1,6 @@
 // dashboard_state.dart
 
+import 'package:crm_task_manager/models/chart_data.dart';
 import 'package:crm_task_manager/models/dashboard_model.dart';
 
 abstract class DashboardState {}
