@@ -32,13 +32,12 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String
-      dropdownValue; // Текущее значение выпадающего списка статусов задачи
+  late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
 
   @override
   void initState() {
     super.initState();
-    dropdownValue = widget.name; // Установка начального статуса задачи
+    dropdownValue = widget.name;
   }
 
   /// Форматирование даты в `dd-MM-yyyy`
@@ -110,7 +109,6 @@ class _TaskCardState extends State<TaskCard> {
           MaterialPageRoute(
             builder: (context) => TaskDetailsScreen(
               taskId:
-              
                   widget.task.id.toString(), // ID задачи для детального экрана
               taskName: widget.task.name ?? 'Без имени', // Название задачи
               startDate: widget.task.startDate, // Дата начала задачи
@@ -119,7 +117,8 @@ class _TaskCardState extends State<TaskCard> {
               statusId: widget.statusId, // ID статуса задачи
               priority: widget.task.priority, // Приоритет задачи
               description: widget.task.description, // Описание задачи
-project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
+              project:
+                  widget.task.project?.name ?? widget.project ?? 'Без проекта',
             ),
           ),
         );
@@ -226,8 +225,7 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
                               ),
-                              overflow:
-                                  TextOverflow.ellipsis, 
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -246,7 +244,6 @@ project: widget.task.project?.name ?? widget.project ?? 'Без проекта',
             const SizedBox(height: 20),
             Row(
               children: [
-                
                 const SizedBox(width: 1),
                 if (widget.task.user?.name !=
                     null) // Проверка на наличие имени пользователя

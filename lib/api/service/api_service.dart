@@ -18,7 +18,6 @@ import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
-
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
