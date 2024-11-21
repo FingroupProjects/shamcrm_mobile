@@ -41,6 +41,7 @@ import 'screens/home_screen.dart';
 
 // final navigatorKey = GlobalKey<NavigatorState>();
 
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
@@ -71,6 +72,7 @@ void main() async {
   // Инициализация уведомлений
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
+  
 
   runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
 }

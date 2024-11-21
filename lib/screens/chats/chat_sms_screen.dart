@@ -67,6 +67,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: ChatSmsStyles.appBarTitleColor),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: Row(
           children: [
             CircleAvatar(
@@ -163,7 +169,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
         await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
         context.read<ListenSenderVoiceCubit>().updateValue(false);
-
       },
     );
   }
@@ -236,25 +241,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         print('----- sender');
         print(mm.message!.sender);
 
-
         Message msg;
         if (mm.message!.type == 'voice' ||
             mm.message!.type == 'file' ||
             mm.message!.type == 'image' ||
             mm.message!.type == 'document') {
           msg = Message(
-              id: mm.message!.id!,
-              filePath: mm.message!.filePath.toString(),
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() &&
-                  mm.message!.sender!.type == 'user'),
-              createMessateTime: mm.message!.createdAt.toString(),
-              duration: Duration(
-                  seconds: (mm.message!.voiceDuration != null)
-                      ? double.parse(mm.message!.voiceDuration.toString())
-                          .round()
-                      : 20),
+            id: mm.message!.id!,
+            filePath: mm.message!.filePath.toString(),
+            text: mm.message!.text ??= mm.message!.type!,
+            type: mm.message!.type.toString(),
+            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
+                mm.message!.sender!.type == 'user'),
+            createMessateTime: mm.message!.createdAt.toString(),
+            duration: Duration(
+                seconds: (mm.message!.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString()).round()
+                    : 20),
           );
         } else {
           msg = Message(
@@ -263,8 +266,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             type: mm.message!.type.toString(),
             createMessateTime: mm.message!.createdAt.toString(),
             isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
-                mm.message!.sender!.type ==
-                    'user'),
+                mm.message!.sender!.type == 'user'),
           );
         }
         setState(() {
@@ -341,8 +343,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
     _messageController.dispose();
     socketClient.dispose();
-    _webSocket
-        ?.close();
+    _webSocket?.close();
 
     super.dispose();
   }
@@ -357,7 +358,6 @@ class MessageItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     switch (message.type) {
       case 'text':
         return textState();
@@ -371,7 +371,6 @@ class MessageItemWidget extends StatelessWidget {
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
           onTap: (path) async {
-
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
