@@ -18,6 +18,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
@@ -179,6 +180,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => TaskStatusBloc(ApiService()),
+        ),
+        BlocProvider(
+          create: (context) => OrganizationBloc(ApiService()),
         ),
         
       ],

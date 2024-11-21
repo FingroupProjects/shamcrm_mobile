@@ -241,6 +241,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         print('----- sender');
         print(mm.message!.sender);
 
+
+        context.read<ListenSenderFileCubit>().updateValue(false);
+        context.read<ListenSenderVoiceCubit>().updateValue(false);
+        context.read<ListenSenderTextCubit>().updateValue(false);
+
         Message msg;
         if (mm.message!.type == 'voice' ||
             mm.message!.type == 'file' ||

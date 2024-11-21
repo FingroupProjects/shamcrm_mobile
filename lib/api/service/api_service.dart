@@ -1,6 +1,7 @@
 import 'dart:convert'; 
 import 'dart:io'; 
 import 'package:crm_task_manager/models/chart_data.dart';
+import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
@@ -1794,4 +1795,39 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+
+  //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
+
+
+  //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
+
+
+
+
+  // Метод для получения Менеджера
+  Future<List<Organization>> getOrganization() async {
+    final response = await _getRequest('/organization');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); // Для отладки
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((organization) => Organization.fromJson(organization))
+            .toList();
+      } else {
+        throw Exception('Организация не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+
+
+
+  //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
+
+
 }
