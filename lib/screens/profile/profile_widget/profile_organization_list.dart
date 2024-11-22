@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
-import 'package:crm_task_manager/models/organization_model.dart';
 
 class OrganizationWidget extends StatefulWidget {
   final String? selectedOrganization;
   final ValueChanged<String?> onChanged;
 
-  OrganizationWidget({required this.selectedOrganization, required this.onChanged});
+  OrganizationWidget({
+    required this.selectedOrganization,
+    required this.onChanged,
+  });
 
   @override
   _OrganizationWidgetState createState() => _OrganizationWidgetState();
@@ -53,30 +55,45 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
             ];
           } else {
-            dropdownItems = state.organizations.map<DropdownMenuItem<String>>((Organization organization) {
+            dropdownItems = state.organizations
+                .map<DropdownMenuItem<String>>((organization) {
               return DropdownMenuItem<String>(
                 value: organization.id.toString(),
-                child: Text(organization.name),
+                child: Text(
+                  organization.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
               );
             }).toList();
           }
         }
 
+        String? selectedOrganization = widget.selectedOrganization;
+
+        // Если выбранная организация не в списке, выбираем первую
+        if (selectedOrganization != null &&
+            !dropdownItems.any((item) => item.value == selectedOrganization)) {
+          selectedOrganization =
+              dropdownItems.isNotEmpty ? dropdownItems.first.value : null;
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // const SizedBox(height: 4),
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 8), 
-              padding: const EdgeInsets.all(8), 
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(16),  
+                borderRadius: BorderRadius.circular(16),
               ),
               child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedOrganization)
-                    ? widget.selectedOrganization
-                    : null,
+                value: selectedOrganization,
                 hint: const Text(
                   'Выберите организацию',
                   style: TextStyle(
@@ -88,12 +105,6 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 ),
                 items: dropdownItems,
                 onChanged: widget.onChanged,
-                // validator: (value) {
-                //   if (value == null) {
-                //     return 'Поле обязательно для заполнения';
-                //   }
-                //   return null;
-                // },
                 decoration: InputDecoration(
                   labelStyle: TextStyle(color: Colors.grey),
                   border: OutlineInputBorder(

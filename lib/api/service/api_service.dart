@@ -65,6 +65,7 @@ class ApiService {
   Future<void> logout() async {
     await _removeToken();
     await _removePermissions(); // Удаляем права доступа
+    await _removeOrganizationId(); // Удаляем права доступа
   }
 
   Future<void> _removePermissions() async {
@@ -76,9 +77,10 @@ class ApiService {
  // get all users
   Future<UsersDataResponse> getAllUser() async {
     final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization(); 
 
     final response = await http.get(
-      Uri.parse('$baseUrl/user'),
+      Uri.parse('$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null)
@@ -111,9 +113,10 @@ class ApiService {
   // create new client
   Future<http.Response> createNewClient(String userID) async {
     final token = await getToken();
+    final organizationId = await getSelectedOrganization(); 
 
     final response = await http.post(
-      Uri.parse('$baseUrl/chat/createChat/$userID'),
+      Uri.parse('$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null)
@@ -273,7 +276,10 @@ Future<void> sendDeviceToken(String deviceToken) async {
 
   // Метод для получения чата по ID
 Future<Chats> getChatById(int chatId) async {
-  final response = await _getRequest('/chat/$chatId');
+    final organizationId = await getSelectedOrganization(); 
+
+  final response = await _getRequest('/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
 
   if (response.statusCode == 200) {
     return Chats.fromJson(json.decode(response.body));
@@ -288,8 +294,8 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
-    final response =
-        await _postRequestDomain('/checkDomain', {'domain': domain});
+    final organizationId = await getSelectedOrganization(); 
+    final response = await _postRequestDomain('/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}', {'domain': domain});
 
     if (response.statusCode == 200) {
       return DomainCheck.fromJson(json.decode(response.body));
@@ -318,15 +324,16 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для проверки логина и пароля
   Future<LoginResponse> login(LoginModel loginModel) async {
-    final response = await _postRequest('/login', loginModel.toJson());
+    final organizationId = await getSelectedOrganization(); 
+    print("------------------------ $organizationId");
+    final response = await _postRequest('/login${organizationId != null ? '?organization_id=$organizationId' : ''}', loginModel.toJson());
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final loginResponse = LoginResponse.fromJson(data);
 
       await _saveToken(loginResponse.token);
-      await _savePermissions(
-          loginResponse.permissions); // Сохраняем права доступа
+      await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
 
       return loginResponse;
     } else {
@@ -361,7 +368,10 @@ Future<Chats> getChatById(int chatId) async {
 //Метод для получения Лида через его ID
   Future<LeadById> getLeadById(int leadId) async {
     try {
-      final response = await _getRequest('/lead/$leadId');
+      final organizationId = await getSelectedOrganization(); 
+
+
+      final response = await _getRequest('/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -377,40 +387,45 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
-//Метод для получения Лидов с пагинации
-  Future<List<Lead>> getLeads(int? leadStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
-    String path = '/lead?page=$page&per_page=$perPage';
+Future<List<Lead>> getLeads(int? leadStatusId,
+    {int page = 1, int perPage = 20, String? search}) async {
+  final organizationId = await getSelectedOrganization(); 
+  String path = '/lead?page=$page&per_page=$perPage';
 
-    if (leadStatusId != null) {
-      path += '&lead_status_id=$leadStatusId';
-    }
+  // Добавляем параметр organization_id
+  path += '&organization_id=$organizationId';
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о лидах в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки лидов: ${response.body}');
-    }
+  if (leadStatusId != null) {
+    path += '&lead_status_id=$leadStatusId';
   }
+
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  // Логируем конечный URL запроса
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о лидах в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки лидов: ${response.body}');
+  }
+}
+
 
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
-    final response = await _getRequest('/lead/statuses');
+    final organizationId = await getSelectedOrganization(); 
+    final response = await _getRequest('/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -429,7 +444,10 @@ Future<Chats> getChatById(int chatId) async {
   // Метод для создания Cтатуса Лида
   Future<Map<String, dynamic>> createLeadStatus(
       String title, String color) async {
-    final response = await _postRequest('/lead-status', {
+          final organizationId = await getSelectedOrganization(); 
+
+        
+    final response = await _postRequest('/lead-status${organizationId != null ? '?organization_id=$organizationId' : ''}', {
       'title': title,
       'color': color,
     });
@@ -446,7 +464,11 @@ Future<Chats> getChatById(int chatId) async {
 
 //Обновление статуса карточки Лида  в колонке
   Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-    final response = await _postRequest('/lead/changeStatus/$leadId', {
+      final organizationId = await getSelectedOrganization(); 
+
+
+    final response = await _postRequest('/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'position': position,
       'status_id': statusId,
     });
@@ -460,9 +482,13 @@ Future<Chats> getChatById(int chatId) async {
 
 // Метод для получения Истории Лида
   Future<List<LeadHistory>> getLeadHistory(int leadId) async {
+
     try {
+        final organizationId = await getSelectedOrganization(); 
+
       // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest('/lead/history/$leadId');
+      final response = await _getRequest('/lead/history/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -478,20 +504,22 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
-// Метод для получения Заметок с Пагинацией
-  Future<List<Notes>> getLeadNotes(int leadId,
-      {int page = 1, int perPage = 20}) async {
-    final response =
-        await _getRequest('/notices/$leadId?page=$page&per_page=$perPage');
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return (data['result']['data'] as List)
-          .map((note) => Notes.fromJson(note))
-          .toList();
-    } else {
-      throw Exception('Ошибка загрузки заметок');
-    }
+Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) async {
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
+  final path = '/notices/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId'; 
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result']['data'] as List)
+        .map((note) => Notes.fromJson(note))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки заметок');
   }
+}
+
 
   // Метод для Создания Заметки Лида
   Future<Map<String, dynamic>> createNotes({
@@ -501,8 +529,10 @@ Future<Chats> getChatById(int chatId) async {
     bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
+  final organizationId = await getSelectedOrganization(); 
 
-    final response = await _postRequest('/notices', {
+    final response = await _postRequest('/notices${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
@@ -542,8 +572,10 @@ Future<Chats> getChatById(int chatId) async {
     bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
+  final organizationId = await getSelectedOrganization(); 
 
-    final response = await _patchRequest('/notices/$noteId', {
+    final response = await _patchRequest('/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
@@ -576,7 +608,10 @@ Future<Chats> getChatById(int chatId) async {
 
 // Метод для Удаления Заметки Лида
   Future<Map<String, dynamic>> deleteNotes(int noteId) async {
-    final response = await _deleteRequest('/notices/$noteId');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -600,7 +635,10 @@ Future<Chats> getChatById(int chatId) async {
     int? organizationId,
     String? waPhone,
   }) async {
-    final response = await _postRequest('/lead', {
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/lead${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'name': name,
       'lead_status_id': leadStatusId,
       'phone': phone,
@@ -691,7 +729,11 @@ Future<Chats> getChatById(int chatId) async {
     int? organizationId,
     String? waPhone,
   }) async {
-    final response = await _patchRequest('/lead/$leadId', {
+      final organizationId = await getSelectedOrganization(); 
+
+
+    final response = await _patchRequest('/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'name': name,
       'lead_status_id': leadStatusId,
       'phone': phone,
@@ -734,7 +776,10 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для получения региона
   Future<List<Region>> getRegion() async {
-    final response = await _getRequest('/region');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/region${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -752,7 +797,10 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для получения Менеджера
   Future<List<Manager>> getManager() async {
-    final response = await _getRequest('/manager');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/manager${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -772,7 +820,10 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
-    final response = await _deleteRequest('/lead-status/$leadStatusId');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -783,7 +834,10 @@ Future<Chats> getChatById(int chatId) async {
 
 // Метод для Удаления Лида
   Future<Map<String, dynamic>> deleteLead(int leadId) async {
-    final response = await _deleteRequest('/lead/$leadId');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -799,7 +853,10 @@ Future<Chats> getChatById(int chatId) async {
 //Метод для получения Сделки через его ID
   Future<DealById> getDealById(int dealId) async {
     try {
-      final response = await _getRequest('/deal/$dealId');
+        final organizationId = await getSelectedOrganization(); 
+
+      final response = await _getRequest('/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -818,40 +875,49 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
-  // Метод для получения Сделок c пагинации
   Future<List<Deal>> getDeals(int? dealStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
-    String path = '/deal?page=$page&per_page=$perPage';
+    {int page = 1, int perPage = 20, String? search}) async {
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
+  String path = '/deal?page=$page&per_page=$perPage';
 
-    if (dealStatusId != null) {
-      path += '&deal_status_id=$dealStatusId';
-    }
+  // Добавляем параметр organization_id
+  path += '&organization_id=$organizationId';
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о сделках в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки сделок: ${response.body}');
-    }
+  // Добавляем параметр deal_status_id, если он передан
+  if (dealStatusId != null) {
+    path += '&deal_status_id=$dealStatusId';
   }
+
+  // Добавляем параметр поиска, если он передан
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
+
+  // Логируем конечный URL запроса
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Deal.fromJson(json, dealStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о сделках в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки сделок: ${response.body}');
+  }
+}
+
 
   // Метод для получения статусов Сделок
   Future<List<DealStatus>> getDealStatuses() async {
-    final response = await _getRequest('/deal/statuses');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -870,7 +936,10 @@ Future<Chats> getChatById(int chatId) async {
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
       String title, String color) async {
-    final response = await _postRequest('/deal/statuses', {
+          final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'title': title,
       'color': color,
     });
@@ -888,8 +957,11 @@ Future<Chats> getChatById(int chatId) async {
   // Метод для получения Истории Лида
   Future<List<DealHistory>> getDealHistory(int dealId) async {
     try {
+        final organizationId = await getSelectedOrganization(); 
+
       // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest('/deal/history/$dealId');
+      final response = await _getRequest('/deal/history/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -907,7 +979,10 @@ Future<Chats> getChatById(int chatId) async {
 
   //Обновление статуса карточки Сделки  в колонке
   Future<void> updateDealStatus(int dealId, int position, int statusId) async {
-    final response = await _postRequest('/deal/changeStatus/$dealId', {
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'position': position,
       'status_id': statusId,
     });
@@ -956,8 +1031,9 @@ Future<Chats> getChatById(int chatId) async {
           }).toList() ??
           [],
     };
+  final organizationIdProfile = await getSelectedOrganization(); 
 
-    final response = await _postRequest('/deal', requestBody);
+    final response = await _postRequest('/deal${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}', requestBody);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Сделка создана успешно.'};
@@ -995,7 +1071,8 @@ Future<Chats> getChatById(int chatId) async {
     required int? currencyId,
     List<Map<String, String>>? customFields,
   }) async {
-    final response = await _patchRequest('/deal/$dealId', {
+    final response = await _patchRequest('/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'name': name,
       'deal_status_id': dealStatusId,
       if (managerId != null) 'manager_id': managerId,
@@ -1041,7 +1118,10 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для получения Валюта
   Future<List<Currency>> getCurrency() async {
-    final response = await _getRequest('/currency');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/currency${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -1061,7 +1141,10 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteDealStatuses(int dealStatusId) async {
-    final response = await _deleteRequest('/deal/statuses/$dealStatusId');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -1072,7 +1155,10 @@ Future<Chats> getChatById(int chatId) async {
 
   // Метод для Удаления Сделки
   Future<Map<String, dynamic>> deleteDeal(int dealId) async {
-    final response = await _deleteRequest('/deal/$dealId');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -1088,7 +1174,10 @@ Future<Chats> getChatById(int chatId) async {
 //Метод для получения Задачи через его ID
  Future<TaskById> getTaskById(int taskId) async {
   try {
-    final response = await _getRequest('/task/$taskId');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1110,18 +1199,19 @@ Future<Chats> getChatById(int chatId) async {
 
 
 
-//Метод для получения Задачи с пагинации
- Future<List<Task>> getTasks(int? taskStatusId, {int page = 1, int perPage = 20, String? search}) async {
-  String path = '/task';
+Future<List<Task>> getTasks(int? taskStatusId, {int page = 1, int perPage = 20, String? search}) async {
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
+  String path = '/task?page=$page&per_page=$perPage';
 
-  // Формирование URL с параметром поиска
+  // Добавляем параметр organization_id
+  path += '&organization_id=$organizationId';
+
+  // Добавление параметра task_status_id, если он передан
   if (taskStatusId != null) {
-    path += '?task_status_id=$taskStatusId&page=$page&per_page=$perPage';
-  } else {
-    path += '?page=$page&per_page=$perPage';
+    path += '&task_status_id=$taskStatusId';
   }
 
-  // Добавление параметра поиска, если он есть
+  // Добавление параметра поиска, если он передан
   if (search != null && search.isNotEmpty) {
     path += '&search=$search';
   }
@@ -1133,12 +1223,8 @@ Future<Chats> getChatById(int chatId) async {
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
     if (data['result']['data'] != null) {
-      // Логирование уровня приоритета для каждой задачи
+      // Логирование задач
       final tasks = (data['result']['data'] as List).map((json) {
-        // Извлекаем priority_level и выводим его в лог
-        // final priority = json['priority_level'];
-        // print('Task priority level: $priority');
-
         return Task.fromJson(json, taskStatusId ?? -1);
       }).toList();
 
@@ -1152,9 +1238,14 @@ Future<Chats> getChatById(int chatId) async {
 }
 
 
+
   // Метод для получения статусов Задач
   Future<List<TaskStatus>> getTaskStatuses() async {
-    final response = await _getRequest('/task-status');
+      final organizationId = await getSelectedOrganization(); 
+
+
+    final response = await _getRequest('/task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -1173,7 +1264,10 @@ Future<Chats> getChatById(int chatId) async {
 //Обновление статуса карточки Задачи  в колонке
 
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
-    final response = await _postRequest('/task/changeStatus/$taskId', {
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/task/changeStatus/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'position': position,
       'status_id': statusId,
     });
@@ -1285,7 +1379,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
       data['roles'] = roleIds.map((roleId) => {'role_id': roleId}).toList();
     }
 
-    final response = await _postRequest('/task-status', data);
+  final organizationIdProfile = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/task-status${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}'
+, data);
     
     if (response.statusCode == 200 || response.statusCode == 201) {
       final responseData = json.decode(response.body);
@@ -1363,7 +1460,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
         if (description != null) 'description': description,
       };
 
-      final response = await _postRequest('/task', requestBody);
+  final organizationId = await getSelectedOrganization(); 
+
+      final response = await _postRequest('/task${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, requestBody);
       return _handleTaskResponse(response, 'создания');
     } catch (e) {
       return {
@@ -1401,7 +1501,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
         if (description != null) 'description': description,
       };
 
-      final response = await _postRequest('/task/$taskId', requestBody);
+  final organizationId = await getSelectedOrganization(); 
+
+      final response = await _postRequest('/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, requestBody);
       return _handleTaskResponse(response, 'обновления');
     } catch (e) {
       return {
@@ -1414,8 +1517,11 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 // Метод для получения Истории Задачи
   Future<List<TaskHistory>> getTaskHistory(int taskId) async {
     try {
+        final organizationId = await getSelectedOrganization(); 
+
       // Используем метод _getRequest вместо прямого выполнения запроса
-      final response = await _getRequest('/task/history/$taskId');
+      final response = await _getRequest('/task/history/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
@@ -1434,7 +1540,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
 // Метод для получения Проекта
   Future<List<Project>> getProject() async {
-    final response = await _getRequest('/project');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/project${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -1455,8 +1564,11 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {
     try {
+        final organizationId = await getSelectedOrganization(); 
+
       print('Отправка запроса на /user');
-      final response = await _getRequest('/user');
+      final response = await _getRequest('/user${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
       print('Статус ответа: ${response.statusCode}');
       print('Тело ответа: ${response.body}');
 
@@ -1488,7 +1600,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   // Метод для получение Роли
 
  Future<List<Role>> getRoles() async {
-  final response = await _getRequest('/role');
+    final organizationId = await getSelectedOrganization(); 
+
+  final response = await _getRequest('/role${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
   
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
@@ -1508,8 +1623,11 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
 // Метод для получения Cтатуса задачи
  Future<List<StatusName>> getStatusName() async {
+    final organizationId = await getSelectedOrganization(); 
+
   print('Начало запроса статусов задач'); // Отладочный вывод
-  final response = await _getRequest('/taskStatusName');
+  final response = await _getRequest('/taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
   print('Статус код ответа: ${response.statusCode}'); // Отладочный вывод
   
   if (response.statusCode == 200) {
@@ -1532,7 +1650,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
   // Метод для Удаления Задачи 
   Future<Map<String, dynamic>> deleteTask(int taskId) async { 
-    final response = await _deleteRequest('/task/$taskId'); 
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+); 
  
     if (response.statusCode == 200) { 
       return {'result': 'Success'}; 
@@ -1544,7 +1665,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
     // Метод для Удаления Статуса Задачи 
 
    Future<Map<String, dynamic>> deleteTaskStatuses(int taskStatusId) async { 
-    final response = await _deleteRequest('/task-status/$taskStatusId'); 
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _deleteRequest('/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+); 
  
     if (response.statusCode == 200) { 
       return {'result': 'Success'}; 
@@ -1559,7 +1683,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 /// Получение статистики для дашборда
 
   Future<DashboardStats> getDashboardStats() async {
-    String path = '/dashboard/getTopStats?organization_id=1';
+      final organizationId = await getSelectedOrganization(); 
+
+    String path = '/dashboard/getTopStats${organizationId != null ? '?organization_id=$organizationId' : ''}'
+;
 
     try {
       final response = await _getRequest(path);
@@ -1581,7 +1708,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
   /// Получение данных графика для дашборда
   Future<List<ChartData>> getLeadChart() async {
-    String path = '/dashboard/lead-chart';
+      final organizationId = await getSelectedOrganization(); 
+
+    String path = '/dashboard/lead-chart${organizationId != null ? '?organization_id=$organizationId' : ''}'
+;
 
     try {
       final response = await _getRequest(path);
@@ -1608,63 +1738,75 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
   // Метод для получения список чатов
-  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
-      [int page = 1]) async {
-    final token = await getToken(); // Получаем токен
-    String url = '$baseUrl/chat/getMyChats/$endPoint?page=$page';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+  Future<PaginationDTO<Chats>> getAllChats(String endPoint, [int page = 1]) async {
+  final token = await getToken(); // Получаем токен
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+  // Формируем URL с параметром organization_id
+  String url = '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
-      if (data['result'] != null) {
-        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e);
-        });
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+        return Chats.fromJson(e);
+      });
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
+}
+
 
 // Метод для получения сообщений по chatId
   Future<List<Message>> getMessages(int chatId) async {
-    final token = await getToken(); // Получаем токен
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/chat/getMessages/$chatId'), // Обновите путь согласно вашему API
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+  final token = await getToken(); // Получаем токен
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return (data['result'] as List)
-            .map(
-                (msg) => Message.fromJson(msg)) // Создайте модель для сообщения
-            .toList();
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+  // Формируем путь с параметром organization_id
+  final url = Uri.parse('$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId');
+
+  final response = await http.get(
+    url,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map(
+              (msg) => Message.fromJson(msg)) // Создайте модель для сообщения
+          .toList();
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
+}
+
 
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message) async {
-    final response = await _postRequest('/chat/sendMessage/$chatId', {
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'message': message,
     });
 
@@ -1684,7 +1826,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
  // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {
     final token = await getToken(); // Получаем токен
-    String requestUrl = '$baseUrl/chat/sendVoice/$chatId';
+      final organizationId = await getSelectedOrganization(); 
+
+    String requestUrl = '$baseUrl/chat/sendVoice/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+;
 
     Dio dio = Dio();
     try {
@@ -1732,7 +1877,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 // Метод для отправки audio file
   Future<void> sendChatFile(int chatId, String pathFile) async {
     final token = await getToken(); // Получаем токен
-    String requestUrl = '$baseUrl/chat/sendFile/$chatId';
+      final organizationId = await getSelectedOrganization(); 
+
+    String requestUrl = '$baseUrl/chat/sendFile/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+;
 
     Dio dio = Dio();
     try {
@@ -1774,7 +1922,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   Future<void> sendFile(int chatId, String filePath) async {
     // Если вы используете MultipartRequest для отправки файлов, создайте метод
     // Для упрощения мы будем использовать _postRequest как пример
-    final response = await _postRequest('/chat/sendFile/$chatId', {
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/chat/sendFile/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'file_path':
           filePath, // Убедитесь, что вы используете правильные параметры
     });
@@ -1786,7 +1937,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
   // Метод для отправки голосового сообщения
   Future<void> sendVoice(int chatId, String voicePath) async {
-    final response = await _postRequest('/chat/sendVoice/$chatId', {
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _postRequest('/chat/sendVoice/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
       'voice_path':
           voicePath, // Убедитесь, что вы используете правильные параметры
     });
@@ -1806,7 +1960,10 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
   // Метод для получения Менеджера
   Future<List<Organization>> getOrganization() async {
-    final response = await _getRequest('/organization');
+      final organizationId = await getSelectedOrganization(); 
+
+    final response = await _getRequest('/organization${organizationId != null ? '?organization_id=$organizationId' : ''}'
+);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -1822,6 +1979,24 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
     } else {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
+  }
+
+    // Сохранение выбранной организации
+    Future<void> saveSelectedOrganization(String organizationId) async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedOrganization', organizationId);
+    }
+
+    // Получение выбранной организации
+    Future<String?> getSelectedOrganization() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      return prefs.getString('selectedOrganization');
+    }
+
+     // Метод для удаления токена (используется при логауте)
+  Future<void> _removeOrganizationId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('selectedOrganization'); // Удаляем токен
   }
 
 

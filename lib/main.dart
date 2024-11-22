@@ -40,8 +40,6 @@ import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 
-// final navigatorKey = GlobalKey<NavigatorState>();
-
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
