@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
     initializeScreensWithPermissions();
   }
 
@@ -97,13 +98,29 @@ class _HomeScreenState extends State<HomeScreen> {
       _navBarTitles = navBarTitles;
       _activeIcons = activeIcons;
       _inactiveIcons = inactiveIcons;
-
-      if (_widgetOptions.isNotEmpty) {
-        _selectedIndex = 0;
-      }
     });
 
-    // If no screens are available, show a placeholder
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+      setState(() {
+        if (args != null) {
+          if (args['screenIndex'] != null) {
+            _selectedIndex = args['screenIndex'];
+          } else if (_widgetOptions.isNotEmpty) {
+            _selectedIndex = 0;
+          }
+          // if (args['id'] != null) {
+          //   var chatId = args['id'];
+          //   print("Received ID----------------------: $chatId"); // Example: Output the id
+          // }
+        } else if (_widgetOptions.isNotEmpty) {
+          _selectedIndex = 0;
+        }
+      });
+    });
+
     if (!hasAvailableScreens) {
       setState(() {
         _widgetOptions = [PlaceholderScreen(message: 'Нет доступных экранов.')];
@@ -111,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _navBarTitles = [];
         _activeIcons = [];
         _inactiveIcons = [];
-        _selectedIndex = 0; // Show placeholder screen
+        _selectedIndex = 0;
       });
     }
   }
@@ -119,7 +136,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: _selectedIndex == -1 // Экран профиля
           ? ProfileScreen()
           : (_widgetOptions.isNotEmpty &&
@@ -130,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       bottomNavigationBar: _widgetOptions.isNotEmpty
           ? MyNavBar(
-              selectedIndex: _selectedIndex,
+              currentIndex: _selectedIndex,
               onItemSelected: (index) {
                 setState(() {
                   _selectedIndex = index;

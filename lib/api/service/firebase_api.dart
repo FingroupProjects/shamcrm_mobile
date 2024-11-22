@@ -1,4 +1,15 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FirebaseApi {
   final _firebaseMessaging = FirebaseMessaging.instance;
@@ -53,33 +64,123 @@ class FirebaseApi {
   }
 
   void handleMessage(RemoteMessage? message) {
-  if (message == null || message.data.isEmpty) {
-    print('handleMessage: сообщение пустое или данные отсутствуют');
-    return;
+    if (message == null || message.data.isEmpty) {
+      print('handleMessage: сообщение пустое или данные отсутствуют');
+      return;
+    }
+
+    final type = message.data['type'];
+    final id = message.data['id'];
+    int? screenIndex;
+
+    if (type == null) {
+      print('handleMessage: отсутствует тип уведомления');
+      return;
+    }
+
+    if (type == 'message') {
+      print('Переход на экран чата с ID: $id');
+      screenIndex = 3;
+      navigatorKey.currentState?.pushReplacementNamed(
+        '/home',
+        arguments: {'id': id, 'screenIndex': screenIndex},
+      );
+      final chatId = int.tryParse(message.data['id'].toString()) ?? 0;
+
+      if (chatId != null) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => MessagingCubit(ApiService()),
+              child: ChatSmsScreen(
+                chatItem: Chats(
+                  id: chatId,
+                  name: "",
+                  taskFrom: "",
+                  taskTo: "",
+                  description: "",
+                  channel: "",
+                  lastMessage: "",
+                  messageType: "",
+                  createDate: "",
+                  unredMessage: 0,
+                ).toChatItem("assets/images/AvatarChat.png"),
+                chatId: chatId,
+              ),
+            ),
+          ),
+        );
+      }
+    } else if (type == 'task') {
+      print('Переход на экран задачи с ID: $id');
+      screenIndex = 1;
+      navigatorKey.currentState?.pushReplacementNamed(
+        '/home',
+        arguments: {'id': id, 'screenIndex': screenIndex},
+      );
+      final taskId = message.data['id']; 
+      if (taskId != null) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => TaskDetailsScreen(
+              taskId: taskId,
+              taskName: '',
+              taskStatus: '',
+              statusId: 1,
+            ),
+          ),
+        );
+      }
+    } else if (type == 'notice') {
+      print('Переход на экран лида с ID: $id');
+      screenIndex = 2;
+      navigatorKey.currentState?.pushReplacementNamed(
+        '/home',
+        arguments: {'id': id, 'screenIndex': screenIndex},
+      );
+      final leadId = message.data['id'];
+      if (leadId != null) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => LeadDetailsScreen(
+              leadId: leadId.toString(),
+              leadName: '',
+              leadStatus: "",
+              statusId: 1,
+            ),
+          ),
+        );
+      }
+    } else if (type == 'deal') {
+      print('Переход на экран сделки с ID: $id');
+      screenIndex = 4;
+      navigatorKey.currentState?.pushReplacementNamed(
+        '/home',
+        arguments: {'id': id, 'screenIndex': screenIndex},
+      );
+      final dealId = message.data['id']; 
+      if (dealId != null) {
+        List<DealCustomField> defaultCustomFields = [
+          DealCustomField(id: 1, key: '', value: ''),
+          DealCustomField(id: 2, key: '', value: ''),
+        ];
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => DealDetailsScreen(
+              dealId: dealId.toString(),
+              dealName: '',
+              sum: '',
+              dealStatus: '',
+              statusId: 1,
+              dealCustomFields: defaultCustomFields,
+            ),
+          ),
+        );
+      }
+    } else {
+      print('handleMessage: Неизвестный тип: $type');
+    }
   }
-
-  final type = message.data['type'];
-  final id = message.data['id'];
-
-  if (type == null || id == null) {
-    print('handleMessage: отсутствуют необходимые данные (type или id)');
-    return;
-  }
-
-  print('handleMessage: тип уведомления: $type, ID чата: $id');
-
-  // if (type == 'chat') {
-  //   print('Переход на экран чата с ID: $id');
-  //   navigatorKey.currentState?.pushNamed(
-  //     '/chats',
-  //     arguments: {'id': id},
-  //   );
-  // } else {
-  //   print('handleMessage: Неизвестный тип: $type');
-  // }
-}
-
-
 }
 
 // Фоновый обработчик сообщений

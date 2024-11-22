@@ -18,6 +18,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
@@ -41,7 +42,9 @@ import 'screens/home_screen.dart';
 
 // final navigatorKey = GlobalKey<NavigatorState>();
 
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -70,6 +73,7 @@ void main() async {
   // Инициализация уведомлений
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
+  
 
   runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
 }
@@ -177,6 +181,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TaskStatusBloc(ApiService()),
         ),
+        BlocProvider(
+          create: (context) => OrganizationBloc(ApiService()),
+        ),
+        
       ],
       child: MaterialApp(
         color: Colors.white,

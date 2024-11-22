@@ -1,5 +1,7 @@
 import 'dart:convert'; 
 import 'dart:io'; 
+import 'package:crm_task_manager/models/chart_data.dart';
+import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
@@ -18,7 +20,6 @@ import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
-
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
@@ -1265,7 +1266,7 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
  /// Создает новый статус задачи
-Future<Map<String, dynamic>> createTaskStatus({
+Future<Map<String, dynamic>> CreateTaskStatusAdd({
   required int taskStatusNameId,
   required int projectId,
   required int organizationId,
@@ -1794,4 +1795,39 @@ Future<Map<String, dynamic>> createTaskStatus({
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+
+  //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
+
+
+  //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
+
+
+
+
+  // Метод для получения Менеджера
+  Future<List<Organization>> getOrganization() async {
+    final response = await _getRequest('/organization');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); // Для отладки
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((organization) => Organization.fromJson(organization))
+            .toList();
+      } else {
+        throw Exception('Организация не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+
+
+
+  //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
+
+
 }

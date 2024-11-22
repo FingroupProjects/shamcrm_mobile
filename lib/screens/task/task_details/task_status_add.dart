@@ -4,9 +4,10 @@ import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_event.dart';
-// import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task_status_add/task_event.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart' as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_event.dart' as task_status_add;
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
@@ -34,7 +35,6 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     context.read<TaskStatusNameBloc>().add(FetchStatusNames());
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<RoleBloc>().add(FetchRoles());
-    
   }
 
   @override
@@ -69,9 +69,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               selectedProject: selectedProjectId?.toString(),
               onChanged: (String? projectId) {
                 setState(() {
-                  selectedProjectId = projectId != null 
-                    ? int.tryParse(projectId) 
-                    : null;
+                  selectedProjectId =
+                      projectId != null ? int.tryParse(projectId) : null;
                 });
               },
             ),
@@ -79,7 +78,6 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Column(
                 children: [
-                  // С доступом switch
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Row(
@@ -104,14 +102,16 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
-                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                          activeTrackColor: const Color.fromARGB(255, 45, 101, 254).withOpacity(0.5),
-                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor:
+                              const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                          activeTrackColor:
+                              const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                          inactiveThumbColor:
+                              const Color.fromARGB(255, 255, 255, 255),
                         ),
                       ],
                     ),
                   ),
-                  // Завершающий этап switch
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Row(
@@ -133,9 +133,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             });
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
-                          inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                          activeTrackColor: const Color.fromARGB(255, 45, 101, 254).withOpacity(0.5),
-                          inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                          inactiveTrackColor:
+                              const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                          activeTrackColor:
+                              const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                          inactiveThumbColor:
+                              const Color.fromARGB(255, 255, 255, 255),
                         ),
                       ],
                     ),
@@ -241,15 +244,23 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       _errorMessage = null;
     });
 
-    context.read<TaskStatusBloc>().add(
-      CreateTaskStatus(
-        taskStatusNameId: selectedStatusNameId!,
-        projectId: selectedProjectId!,
-        organizationId: 1,
-        needsPermission: needsPermission,
-        roleIds: needsPermission ? selectedRoleIds : null,
-      ),
-    );
+    // Создаем новый статус
+    context.read<task_status_add.TaskStatusBloc>().add(
+          task_status_add.CreateTaskStatusAdd(
+            taskStatusNameId: selectedStatusNameId!,
+            projectId: selectedProjectId!,
+            organizationId: 1,
+            needsPermission: needsPermission,
+            roleIds: needsPermission ? selectedRoleIds : null,
+          ),
+        );
+
+    // Закрываем диалог
     Navigator.pop(context);
+
+    // Обновляем список статусов
+    Future.delayed(Duration(milliseconds: 0), () {
+      context.read<TaskBloc>().add(FetchTaskStatuses());
+    });
   }
 }

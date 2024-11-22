@@ -16,23 +16,6 @@ class FetchMoreTasks extends TaskEvent {
   FetchMoreTasks(this.statusId, this.currentPage);
 }
 
-// class CreateTaskStatus extends TaskEvent {
-//   final String name;
-//   final String color;
-//   final bool? hasAccess;
-//   final bool? isFinalStage;
-//   final String? roleId;
-  
-
-//   CreateTaskStatus({
-//     required this.name,
-//     required this.color,
-//     this.hasAccess,
-//     this.isFinalStage,
-//     this.roleId,
-    
-//   });
-// }
 
 class CreateTask extends TaskEvent {
   final String name;
