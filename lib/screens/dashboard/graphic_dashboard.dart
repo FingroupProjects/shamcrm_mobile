@@ -1,22 +1,24 @@
-import 'package:crm_task_manager/models/dashboard_model.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_state.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_state.dart';
+
 
 class GraphicsDashboard extends StatelessWidget {
   const GraphicsDashboard({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DashboardBloc, DashboardState>(
+    return BlocBuilder<DashboardChartBloc, DashboardChartState>(
       builder: (context, state) {
-        if (state is DashboardLoading) {
+        if (state is DashboardChartLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (state is DashboardError) {
+        if (state is DashboardChartError) {
           return const Center(
             child: Text(
               'Ошибка загрузки данных',
@@ -25,7 +27,7 @@ class GraphicsDashboard extends StatelessWidget {
           );
         }
 
-        if (state is DashboardLoaded && state.chartData.isNotEmpty) {
+        if (state is DashboardChartLoaded && state.chartData.isNotEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(

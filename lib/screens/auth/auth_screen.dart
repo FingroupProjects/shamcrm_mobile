@@ -40,7 +40,7 @@ class AuthScreen extends StatelessWidget {
                 children: [
                   // Ваш UI для ввода поддомена
                   const Text(
-                    'CRM TASK MANAGER',
+                    'SHAMCRM',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,

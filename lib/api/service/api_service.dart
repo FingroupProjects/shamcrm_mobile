@@ -1,11 +1,15 @@
 import 'dart:convert'; 
 import 'dart:io'; 
-import 'package:crm_task_manager/models/chart_data.dart';
+// import 'package:crm_task_manager/models/chart_data.dart';
+// import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/deal_state_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
-import 'package:crm_task_manager/models/dashboard_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart'; 
 import 'package:crm_task_manager/models/deal_model.dart'; 
@@ -20,7 +24,6 @@ import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
-
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
@@ -1604,7 +1607,7 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
       throw Exception('Ошибка при получении данных графика: $e');
     }
   }
-
+//Метод для получение графика Конверсия
  Future<LeadConversion> getLeadConversionData() async {
   String path = '/dashboard/leadConversion-chart';
   try {
@@ -1633,6 +1636,27 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   }
 }
 
+
+ Future<DealStatsResponse> getDealStatsData() async {
+    String path = '/dashboard/dealStats';
+    try {
+      print('getDealStatsData: Начало запроса');
+      final response = await _getRequest(path); // Используем тот же _getRequest метод
+      print("Response status code: ${response.statusCode}");
+      print("Raw response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        print("Декодированные данные: $jsonData");
+        return DealStatsResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Ошибка загрузки данных: ${response.body}');
+      }
+    } catch (e) {
+      print('Ошибка запроса: $e');
+      throw Exception('Ошибка получения данных: $e');
+    }
+  }
   
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
@@ -1827,4 +1851,39 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+
+  //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
+
+
+  //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
+
+
+
+
+  // Метод для получения Менеджера
+  Future<List<Organization>> getOrganization() async {
+    final response = await _getRequest('/organization');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Тело ответа: $data'); // Для отладки
+
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((organization) => Organization.fromJson(organization))
+            .toList();
+      } else {
+        throw Exception('Организация не найдено');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+
+
+
+  //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
+
+
 }

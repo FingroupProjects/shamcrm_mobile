@@ -85,8 +85,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-      },
+      connectionErrorHandler: (exception, trace, refresh) {},
       minimumReconnectDelayDuration: const Duration(
         seconds: 1,
       ),
@@ -97,8 +96,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint:
-            Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': 'fingroup-back'
@@ -145,7 +143,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void updateChats() {
-    context.read<ChatsBloc>().add(RefreshChats());
+    // context.read<ChatsBloc>().add(RefreshChats());
   }
 
   bool isClickAvatarIcon = false;
@@ -193,21 +191,22 @@ class _ChatsScreenState extends State<ChatsScreen>
                   Expanded(child: _buildTabBarView()),
                 ],
               ),
-        floatingActionButton:(selectTabIndex == 2) ? FloatingActionButton(
-          onPressed: () {
-            showCupertinoModalBottomSheet(
-              context: context,
-              expand: false,
-              elevation: 4,
-              isDismissible: false,
-              builder: (context) => BottomSheetAddClientDialog(),
-            );
-
-          },
-          backgroundColor: Color(0xff1E2E52),
-          child:
-          Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
-        ) : null,
+        floatingActionButton: (selectTabIndex == 2)
+            ? FloatingActionButton(
+                onPressed: () {
+                  showCupertinoModalBottomSheet(
+                    context: context,
+                    expand: false,
+                    elevation: 4,
+                    isDismissible: false,
+                    builder: (context) => BottomSheetAddClientDialog(),
+                  );
+                },
+                backgroundColor: Color(0xff1E2E52),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
+              )
+            : null,
       ),
     );
   }

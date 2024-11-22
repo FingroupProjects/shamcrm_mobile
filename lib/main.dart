@@ -2,13 +2,15 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
-import 'package:crm_task_manager/bloc/chart_bloc/lead_Conversion/lead_conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
@@ -19,6 +21,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
@@ -41,6 +44,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 
 // final navigatorKey = GlobalKey<NavigatorState>();
+
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -72,6 +76,7 @@ void main() async {
   // Инициализация уведомлений
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
+  
 
   runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
 }
@@ -138,9 +143,6 @@ class MyApp extends StatelessWidget {
           create: (context) => HistoryBlocTask(apiService),
         ),
         BlocProvider(
-          create: (context) => DashboardBloc(apiService),
-        ),
-        BlocProvider(
           create: (context) => RoleBloc(apiService),
         ),
         BlocProvider(
@@ -180,7 +182,18 @@ class MyApp extends StatelessWidget {
           create: (context) => TaskStatusBloc(ApiService()),
         ),
        
-        
+        BlocProvider(
+          create: (context) => OrganizationBloc(ApiService()),
+        ),     
+        BlocProvider(
+          create: (context) => DashboardChartBloc(ApiService()),
+        ),BlocProvider(
+          create: (context) => DashboardConversionBloc(ApiService()),
+        ),BlocProvider(
+          create: (context) => DashboardStatsBloc(ApiService()),
+        ),   BlocProvider(
+          create: (context) => DealStatsBloc(ApiService()),
+        ),
       ],
       child: MaterialApp(
         color: Colors.white,
