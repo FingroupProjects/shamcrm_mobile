@@ -1,6 +1,3 @@
-// dashboard_state.dart
-
-import 'package:crm_task_manager/models/chart_data.dart';
 import 'package:crm_task_manager/models/dashboard_model.dart';
 
 abstract class DashboardState {}
@@ -16,11 +13,18 @@ class DashboardLoaded extends DashboardState {
   DashboardLoaded({
     required this.stats,
     required this.chartData,
-  }): assert(chartData != null);
+    
+  });
 }
+  class LeadConversionDataLoaded extends DashboardState {
+    final LeadConversion leadConversionData;
+
+    LeadConversionDataLoaded({required this.leadConversionData});
+    
+  }
 
 class DashboardError extends DashboardState {
   final String message;
-
+  
   DashboardError({required this.message});
 }

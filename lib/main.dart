@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/chart_bloc/lead_Conversion/lead_conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
@@ -178,12 +179,13 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TaskStatusBloc(ApiService()),
         ),
+       
         
       ],
       child: MaterialApp(
         color: Colors.white,
         debugShowCheckedModeBanner: false,
-        title: 'CRM TASK MANAGER',
+        title: 'SHAMCRM',
         navigatorKey: navigatorKey, // Навигационный ключ
         routes: {
           '/': (context) => isDomainChecked ? LoginScreen() : AuthScreen(),

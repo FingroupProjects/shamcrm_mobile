@@ -9,6 +9,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
   DashboardBloc(this._apiService) : super(DashboardInitial()) {
     on<LoadDashboardStats>(_onLoadDashboardStats);
+    on<LoadLeadConversionData>(_onLoadLeadConversionData);
   }
 
   Future<void> _onLoadDashboardStats(
@@ -17,11 +18,28 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) async {
     try {
       emit(DashboardLoading());
-      
+
       final stats = await _apiService.getDashboardStats();
       final chartData = await _apiService.getLeadChart();
-      
-      emit(DashboardLoaded(stats: stats, chartData: chartData));
+
+      emit(DashboardLoaded(
+        stats: stats,
+        chartData: chartData,
+      ));
+    } catch (e) {
+      emit(DashboardError(message: e.toString()));
+    }
+  }
+
+  // Метод для загрузки LeadConversionData
+  Future<void> _onLoadLeadConversionData(
+    LoadLeadConversionData event,
+    Emitter<DashboardState> emit,
+  ) async {
+    try {
+      emit(DashboardLoading());
+      final leadConversionData = await _apiService.getLeadConversionData();
+      emit(LeadConversionDataLoaded(leadConversionData: leadConversionData));
     } catch (e) {
       emit(DashboardError(message: e.toString()));
     }

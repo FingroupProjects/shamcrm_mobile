@@ -1,6 +1,7 @@
 import 'dart:convert'; 
 import 'dart:io'; 
 import 'package:crm_task_manager/models/chart_data.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
 import 'package:crm_task_manager/models/currency_model.dart';
@@ -38,7 +39,10 @@ import '../../models/login_model.dart';
   // final String baseUrl = 'https://shamcrm.com/api';
   final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
   final String baseUrlSocket = 'https://fingroup-back.shamcrm.com/broadcasting/auth';
+class LeadConversionService {
+  final Dio _dio;
 
+  LeadConversionService(this._dio);}
 
 class ApiService {
 
@@ -1600,6 +1604,34 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
       throw Exception('Ошибка при получении данных графика: $e');
     }
   }
+
+ Future<LeadConversion> getLeadConversionData() async {
+  String path = '/dashboard/leadConversion-chart';
+  try {
+    print('getLeadConversionData: Начало запроса');
+    final response = await _getRequest(path);
+    print("Response status code: ${response.statusCode}");
+    print("Raw response body: ${response.body}");
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      print("Декодированные данные: $data");
+      
+      if (data.isNotEmpty) {
+        final conversion = LeadConversion.fromJson(data);
+        print("Созданный объект LeadConversion: ${conversion.data}");
+        return conversion;
+      } else {
+        throw Exception('Нет данных графика в ответе');
+      }
+    } else {
+      throw Exception('Ошибка загрузки данных графика: ${response.body}');
+    }
+  } catch (e) {
+    print("Ошибка в получении данных: $e");
+    throw Exception('Ошибка при получении данных графика: $e');
+  }
+}
 
   
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//

@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/dashboard_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
-import 'package:crm_task_manager/screens/dashboard/graphic_circle_dashboard.dart';
+import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%202.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%203.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy.dart';
@@ -21,6 +21,11 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
+  @override
+  void initState() {
+    super.initState();
+    context.read<DashboardBloc>().add(LoadLeadConversionData());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,13 +65,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SizedBox(height: 16),
                     GraphicsDashboard(),
                     SizedBox(height: 16),
-                    GraphicCircleDashboard(),
-                    SizedBox(height: 16),
-                    GraphicTasksDashboard(),
-                    SizedBox(height: 16),
-                    GraphicBarDashboard(),
-                    SizedBox(height: 16),
-                    GraphicCircleDashboardProject(),
+                    AnimatedConversionChart(),
+                    // SizedBox(height: 16),
+                    // GraphicTasksDashboard(),
+                    // SizedBox(height: 16),
+                    // GraphicBarDashboard(),
+                    // SizedBox(height: 16),
+                    // GraphicCircleDashboardProject(),
                   ],
                 ),
               ),
