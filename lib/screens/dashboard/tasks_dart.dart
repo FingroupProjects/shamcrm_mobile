@@ -1,6 +1,6 @@
 // dashboard/tasks_box.dart
-import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_state.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_state.dart';
 import 'package:crm_task_manager/screens/dashboard/style_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,9 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class TasksBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DashboardBloc, DashboardState>(
+    return BlocBuilder<DashboardStatsBloc, DashboardStatsState>(
       builder: (context, state) {
-        if (state is DashboardLoaded) {
+        if (state is DashboardStatsLoaded) {
           return BaseStatsBox(
             title: 'Задачи',
             icon: Icons.task_outlined,
