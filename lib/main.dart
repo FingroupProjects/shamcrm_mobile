@@ -7,7 +7,10 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
@@ -138,9 +141,6 @@ class MyApp extends StatelessWidget {
           create: (context) => HistoryBlocTask(apiService),
         ),
         BlocProvider(
-          create: (context) => DashboardBloc(apiService),
-        ),
-        BlocProvider(
           create: (context) => RoleBloc(apiService),
         ),
         BlocProvider(
@@ -179,15 +179,24 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TaskStatusBloc(ApiService()),
         ),
+       
         BlocProvider(
           create: (context) => OrganizationBloc(ApiService()),
+        ),     
+        BlocProvider(
+          create: (context) => DashboardChartBloc(ApiService()),
+        ),BlocProvider(
+          create: (context) => DashboardConversionBloc(ApiService()),
+        ),BlocProvider(
+          create: (context) => DashboardStatsBloc(ApiService()),
+        ),   BlocProvider(
+          create: (context) => DealStatsBloc(ApiService()),
         ),
-        
       ],
       child: MaterialApp(
         color: Colors.white,
         debugShowCheckedModeBanner: false,
-        title: 'CRM TASK MANAGER',
+        title: 'SHAMCRM',
         navigatorKey: navigatorKey, // Навигационный ключ
         routes: {
           '/': (context) => isDomainChecked ? LoginScreen() : AuthScreen(),

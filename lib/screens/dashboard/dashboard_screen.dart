@@ -1,12 +1,16 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/dashboard_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
-import 'package:crm_task_manager/screens/dashboard/graphic_circle_dashboard.dart';
-import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%202.dart';
-import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%203.dart';
-import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy.dart';
+import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
 import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
 import 'package:crm_task_manager/screens/dashboard/tasks_dart.dart';
@@ -23,11 +27,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Загрузка данных конверсии лидов
+    context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => DashboardBloc(
-        context.read<ApiService>(),
-      )..add(LoadDashboardStats()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => DashboardStatsBloc(
+            context.read<ApiService>(),
+          )..add(LoadDashboardStats()),
+        ),
+        BlocProvider(
+          create: (context) => DashboardChartBloc(
+            context.read<ApiService>(),
+          )..add(LoadLeadChartData()),
+        ),
+        BlocProvider(
+          create: (context) => DashboardConversionBloc(
+            context.read<ApiService>(),
+          )..add(LoadLeadConversionData()),
+        ),
+        BlocProvider(
+          create: (context) => DealStatsBloc(
+            context.read<ApiService>(),
+          )..add(LoadDealStatsData()),
+        ),
+      ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -60,13 +90,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SizedBox(height: 16),
                     GraphicsDashboard(),
                     SizedBox(height: 16),
-                    GraphicCircleDashboard(),
+                    LeadConversionChart(),
                     SizedBox(height: 16),
-                    GraphicTasksDashboard(),
-                    SizedBox(height: 16),
-                    GraphicBarDashboard(),
-                    SizedBox(height: 16),
-                    GraphicCircleDashboardProject(),
+                    DealStatsChart(),
                   ],
                 ),
               ),
