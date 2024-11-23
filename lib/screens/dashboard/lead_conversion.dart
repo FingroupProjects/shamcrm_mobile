@@ -23,7 +23,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   @override
   void initState() {
     super.initState();
-    print('🔄 LeadConversionChart: initState вызван');
     
     // Инициализация анимации
     _animationController = AnimationController(
@@ -38,23 +37,19 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
     // Загрузка данных при инициализации
     context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
-    print('📊 Отправлен запрос на загрузку данных конверсии');
   }
 
   @override
   void dispose() {
-    print('🔄 LeadConversionChart: dispose вызван');
     _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('🔄 LeadConversionChart: build вызван');
     return BlocConsumer<DashboardConversionBloc, DashboardConversionState>(
       listener: (context, state) {
         if (state is DashboardConversionLoaded) {
-          print('📊 Получены новые данные конверсии: ${state.leadConversionData.data}');
           _animationController.forward(from: 0.0);
         }
       },
@@ -100,10 +95,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
   Widget _buildChart(DashboardConversionState state) {
     if (state is DashboardConversionLoading) {
-      print('⌛ Отображение индикатора загрузки');
-      return const Center(child: CircularProgressIndicator());
+      // return const Center(child: CircularProgressIndicator());
     } else if (state is DashboardConversionError) {
-      print('❌ Отображение ошибки: ${state.message}');
       return Center(
         child: Text(
           'Ошибка загрузки данных: ${state.message}',
@@ -114,7 +107,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       return AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          print('🎨 Отрисовка графика с анимацией: ${_animation.value}');
           return PieChart(
             PieChartData(
               startDegreeOffset: -90,
@@ -127,9 +119,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
                       touchedIndex = -1;
                       return;
                     }
-                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                    print('👆 Выбран сектор: $touchedIndex');
-                  });
+                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;                  });
                 },
               ),
               sectionsSpace: 4,
@@ -144,7 +134,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   }
 
   List<PieChartSectionData> _showingSections(LeadConversion data, double animationValue) {
-    print('📊 Генерация секций графика с данными: ${data.data}');
     return List.generate(2, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 20.0 : 0.0;
