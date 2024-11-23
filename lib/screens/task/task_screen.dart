@@ -1,4 +1,5 @@
 
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
@@ -30,6 +31,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+   bool _canReadTaskStatus = false;
+  bool _canCreateTaskStatus = false;
+  bool _canDeleteTaskStatus = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -38,6 +43,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     taskBloc.add(FetchTaskStatuses());
     print("Инициализация: отправлен запрос на получение статусов задачи");
+    _checkPermissions();
   }
 
   @override
@@ -61,6 +67,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void _onSearch(String query) {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchTasks(query, currentStatusId);
+  }
+
+   // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('taskStatus.read');
+    final canCreate = await _apiService.hasPermission('taskStatus.create');
+    final canDelete = await _apiService.hasPermission('taskStatus.delete');
+    setState(() {
+      _canReadTaskStatus = canRead;
+      _canCreateTaskStatus = canCreate;
+      _canDeleteTaskStatus = canDelete;
+    });
   }
 
   FocusNode focusNode = FocusNode();
@@ -168,6 +186,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               child: _buildTabButton(index),
             );
           }),
+          if (_canCreateTaskStatus)
           IconButton(
             icon: Image.asset('assets/icons/tabBar/add_black.png',
                 width: 24, height: 24),
@@ -199,9 +218,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       onTap: () {
         _tabController.animateTo(index);
       },
-      onLongPress: () {
+       onLongPress: () {
+      // Показываем диалог удаления только если есть разрешение
+      if (_canDeleteTaskStatus) {
         _showDeleteDialog(index);
-      },
+      }
+    },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -248,6 +270,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (state is TaskLoaded) {
           setState(() {
             _tabTitles = state.taskStatuses
+                .where((status) => _canReadTaskStatus) 
                 .map((status) => {'id': status.id, 'title': status.taskStatus.name})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());

@@ -62,9 +62,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     super.initState();
     _checkPermissions();
     // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
-    context
-        .read<LeadByIdBloc>()
-        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 
   // Метод для проверки разрешений
