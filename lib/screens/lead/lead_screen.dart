@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
@@ -29,6 +30,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  bool _canReadLeadStatus = false;
+  bool _canCreateLeadStatus = false;
+  bool _canDeleteLeadStatus = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -37,6 +42,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeadStatuses());
     print("Инициализация: отправлен запрос на получение статусов лидов");
+     _checkPermissions();
   }
 
   @override
@@ -61,6 +67,19 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchLeads(query, currentStatusId);
   }
+
+ // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('leadStatus.read');
+    final canCreate = await _apiService.hasPermission('leadStatus.create');
+    final canDelete = await _apiService.hasPermission('leadStatus.delete');
+    setState(() {
+      _canReadLeadStatus = canRead;
+      _canCreateLeadStatus = canCreate;
+      _canDeleteLeadStatus = canDelete;
+    });
+  }
+
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -153,29 +172,32 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCustomTabBar() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      controller: _scrollController,
-      child: Row(
-        children: [
-          ...List.generate(_tabTitles.length, (index) {
-            if (_tabKeys.length <= index) {
-              _tabKeys.add(GlobalKey());
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildTabButton(index),
-            );
-          }),
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    controller: _scrollController,
+    child: Row(
+      children: [
+        ...List.generate(_tabTitles.length, (index) {
+          if (_tabKeys.length <= index) {
+            _tabKeys.add(GlobalKey());
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _buildTabButton(index),
+          );
+        }),
+        // Показываем кнопку добавления только если есть разрешение
+        if (_canCreateLeadStatus)
           IconButton(
             icon: Image.asset('assets/icons/tabBar/add_black.png',
                 width: 24, height: 24),
             onPressed: _addNewTab,
           ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
+
 
   void _addNewTab() async {
     final result = await showDialog<String>(
@@ -192,30 +214,39 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
-    return GestureDetector(
-      key: _tabKeys[index],
-      onTap: () {
-        _tabController.animateTo(index);
-      },
-      onLongPress: () {
+  bool isActive = _tabController.index == index;
+  return GestureDetector(
+    key: _tabKeys[index],
+    onTap: () {
+      _tabController.animateTo(index);
+    },
+    onLongPress: () {
+      // Показываем диалог удаления только если есть разрешение
+      if (_canDeleteLeadStatus) {
         _showDeleteDialog(index);
-      },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
-            _tabTitles[index]['title'],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+      }
+    },
+    child: Container(
+      decoration: TaskStyles.tabButtonDecoration(isActive),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Text(
+              _tabTitles[index]['title'],
+              style: TaskStyles.tabTextStyle.copyWith(
+                color:
+                    isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+              ),
             ),
           ),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   void _showDeleteDialog(int index) async {
     final leadStatusId = _tabTitles[index]['id'];
@@ -247,6 +278,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         if (state is LeadLoaded) {
           setState(() {
             _tabTitles = state.leadStatuses
+            .where((status) => _canReadLeadStatus) // Только те статусы, которые можно читать
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
@@ -331,6 +363,9 @@ void _scrollToActiveTab() {
       }
     }
   }
+}
+
+
   // void _scrollToActiveTab() {
   //   final key = _tabKeys[_currentTabIndex];
   //   if (key.currentContext != null) {
@@ -338,4 +373,3 @@ void _scrollToActiveTab() {
   //         duration: const Duration(milliseconds: 800));
   //   }
   // }
-}

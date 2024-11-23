@@ -259,9 +259,10 @@ class ApiService {
     // Добавление метода для отправки токена устройства
 Future<void> sendDeviceToken(String deviceToken) async {
   final token = await getToken(); // Получаем токен пользователя (если он есть)
+  final organizationId = await getSelectedOrganization(); 
 
   final response = await http.post(
-    Uri.parse('$baseUrl/add-fcm-token'), // Используем правильный путь
+    Uri.parse('$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}'), // Используем правильный путь
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
