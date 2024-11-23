@@ -43,13 +43,22 @@ class _ChatsScreenState extends State<ChatsScreen>
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabTitles.length, vsync: this);
-    setUpServices((context.read<LoginBloc>().state as LoginLoaded).user.id);
-    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+@override
+void initState() {
+  super.initState();
+  _tabController = TabController(length: _tabTitles.length, vsync: this);
+
+  final currentState = context.read<LoginBloc>().state;
+  if (currentState is LoginLoaded) {
+    setUpServices(currentState.user.id);
+  } else {
+    // Логируем или обрабатываем случай, когда состояние ещё не `LoginLoaded`
+    print('Состояние LoginBloc: $currentState');
   }
+
+  context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+}
+
 
   void _filterChats(String query) {
     isClickAvatarIcon = false;
