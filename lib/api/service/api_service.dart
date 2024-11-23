@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_state_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
@@ -391,6 +392,7 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
+//Метод для получения список Лидов с пагинацией
 Future<List<Lead>> getLeads(int? leadStatusId,
     {int page = 1, int perPage = 20, String? search}) async {
   final organizationId = await getSelectedOrganization(); 
@@ -2055,6 +2057,37 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
 
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
+
+
+  //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
+
+
+  // Метод для получения список Уведомления
+Future<List<Notifications>> getAllNotifications({int page = 1, int perPage = 20}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/notification/unread?page=$page&per_page=$perPage';
+
+  path += '&organization_id=$organizationId';
+
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Notifications.fromJson(json))
+          .toList();
+    } else {
+      throw Exception('Нет данных о уведомлениях в ответе');
+    }
+  } else {
+    throw Exception('Ошибка загрузки уведомлений: ${response.body}');
+  }
+}
+
+
+  //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
 
 
 }
