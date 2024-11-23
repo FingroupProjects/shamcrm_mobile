@@ -42,10 +42,6 @@ import '../../models/login_model.dart';
   // final String baseUrl = 'https://shamcrm.com/api';
   final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
   final String baseUrlSocket = 'https://fingroup-back.shamcrm.com/broadcasting/auth';
-class LeadConversionService {
-  final Dio _dio;
-
-  LeadConversionService(this._dio);}
 
 class ApiService {
 
