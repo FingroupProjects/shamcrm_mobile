@@ -96,6 +96,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           title: 'Сделки',
           onClickProfileAvatar: () {
             setState(() {
+              final dealBloc = BlocProvider.of<DealBloc>(context);
+              dealBloc.add(FetchDealStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
             });
           },

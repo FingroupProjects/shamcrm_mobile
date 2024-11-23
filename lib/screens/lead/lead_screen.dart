@@ -96,7 +96,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           title: 'Лиды',
           onClickProfileAvatar: () {
             setState(() {
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
+
             });
           },
           onChangedSearchInput: (String value) {
