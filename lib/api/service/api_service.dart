@@ -2016,9 +2016,8 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 
   // Метод для получения Менеджера
   Future<List<Organization>> getOrganization() async {
-      final organizationId = await getSelectedOrganization(); 
 
-    final response = await _getRequest('/organization${organizationId != null ? '?organization_id=$organizationId' : ''}'
+    final response = await _getRequest('/organization'
 );
 
     if (response.statusCode == 200) {
