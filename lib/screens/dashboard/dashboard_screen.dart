@@ -5,11 +5,14 @@ import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.d
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
+import 'package:crm_task_manager/screens/dashboard/project_chart.dart';
+import 'package:crm_task_manager/screens/dashboard/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
 import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
@@ -57,6 +60,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context.read<ApiService>(),
           )..add(LoadDealStatsData()),
         ),
+        BlocProvider(
+          create: (context) => ProjectChartBloc(
+            context.read<ApiService>(),
+          ),
+          child: const ProjectChartTable(),
+        )
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -93,6 +102,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     LeadConversionChart(),
                     SizedBox(height: 16),
                     DealStatsChart(),
+                    SizedBox(height: 16),
+                    TaskChartWidget(),
+                    SizedBox(height: 16),
+                    ProjectChartTable(),
                   ],
                 ),
               ),

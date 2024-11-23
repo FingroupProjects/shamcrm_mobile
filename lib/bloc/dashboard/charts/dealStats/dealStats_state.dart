@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/dashboard_charts_models/deal_state_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 
 
 abstract class DealStatsState {}

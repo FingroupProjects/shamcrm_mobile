@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io'; 
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
-import 'package:crm_task_manager/models/dashboard_charts_models/deal_state_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
@@ -1738,7 +1740,9 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   }
 //Метод для получение графика Конверсия
  Future<LeadConversion> getLeadConversionData() async {
-  String path = '/dashboard/leadConversion-chart';
+        final organizationId = await getSelectedOrganization(); 
+
+  String path = '/dashboard/leadConversion-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
   try {
     print('getLeadConversionData: Начало запроса');
     final response = await _getRequest(path);
@@ -1766,26 +1770,97 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
 }
 
 
- Future<DealStatsResponse> getDealStatsData() async {
-    String path = '/dashboard/dealStats';
-    try {
-      print('getDealStatsData: Начало запроса');
-      final response = await _getRequest(path); // Используем тот же _getRequest метод
-      print("Response status code: ${response.statusCode}");
-      print("Raw response body: ${response.body}");
+ // Метод для получение графика Сделки 
+Future<DealStatsResponse> getDealStatsData() async {
+  String path = '/dashboard/dealStats';
+  try {
+    print('getDealStatsData: Начало запроса');
+    final response = await _getRequest(path);
+    print("Response status code: ${response.statusCode}");
+    print("Raw response body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        print("Декодированные данные: $jsonData");
-        return DealStatsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных: ${response.body}');
-      }
-    } catch (e) {
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = json.decode(response.body);
+      print("Принт $jsonData");
+      return DealStatsResponse.fromJson(jsonData);
+    } else {
+      throw Exception('Ошибка загрузки данных: ${response.body}');
+    }
+  } catch (e) {
       print('Ошибка запроса: $e');
       throw Exception('Ошибка получения данных: $e');
     }
   }
+  Future<TaskChart> getTaskChartData() async {
+      String path = '/dashboard/task-chart';
+      try {
+        print('getTaskChartData: Начало запроса');
+        final response = await _getRequest(path);
+        print("Статус ответа: ${response.statusCode}");
+        print("Тело ответа: ${response.body}");
+
+        if (response.statusCode == 200) {
+          // Декодируем ответ как List
+          final List<dynamic> jsonList = json.decode(response.body);
+          print("Декодированные данные: $jsonList");
+
+          if (jsonList.isNotEmpty) {
+            // Получаем первый элемент списка
+            final Map<String, dynamic> firstItem = jsonList.first;
+            print("Данные первого элемента: $firstItem");
+
+            final taskChart = TaskChart(
+              data: (firstItem['data'] as List<dynamic>)
+                  .map((x) => (x as num).toDouble())
+                  .toList(),
+              color: firstItem['color'] as String,
+            );
+            
+            print("Созданный объект TaskChart: ${taskChart.data}");
+            return taskChart;
+          } else {
+            throw Exception('Нет данных графика в ответе');
+          }
+        } else {
+          throw Exception('Ошибка загрузки данных графика: ${response.body}');
+        }
+      } catch (e) {
+        print("Ошибка в получении данных: $e");
+        throw Exception('Ошибка при получении данных графика: $e');
+      }
+    }
+
+  Future<ProjectChartResponse> getProjectChartData() async {
+
+  String path = '/dashboard/projects-chart';
+  try {
+    print('ApiService: getProjectChartData: Начало запроса');
+    print('ApiService: URL запроса: $path');
+    
+    final response = await _getRequest(path);
+    print('ApiService: Статус ответа: ${response.statusCode}');
+    print('ApiService: Заголовки ответа: ${response.headers}');
+    print('ApiService: Тело ответа: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = json.decode(response.body);
+      print('ApiService: Декодированные данные: $jsonData');
+      
+      final result = ProjectChartResponse.fromJson(jsonData);
+      print('ApiService: Данные успешно преобразованы в объект');
+      return result;
+    } else {
+      print('ApiService: Ошибка запроса. Статус: ${response.statusCode}');
+      throw Exception('Ошибка загрузки данных проектов: ${response.body}');
+    }
+  } catch (e) {
+    print('ApiService: Ошибка в получении данных проектов: $e');
+    print('ApiService: Stack trace: ${StackTrace.current}');
+    throw Exception('Ошибка при получении данных проектов: $e');
+  }
+}
+
+
   
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
