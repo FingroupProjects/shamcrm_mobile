@@ -96,6 +96,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           title: 'Задачи',
           onClickProfileAvatar: () {
             setState(() {
+              final taskBloc = BlocProvider.of<TaskBloc>(context);
+              taskBloc.add(FetchTaskStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
             });
           },
