@@ -31,6 +31,18 @@ class LoginScreen extends StatelessWidget {
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
+
+              // Проверяем сохранённую организацию
+              final savedOrganization = await apiService.getSelectedOrganization();
+              if (savedOrganization == null) {
+                // Если организация не выбрана, загружаем список и выбираем первую
+                final organizations = await apiService.getOrganization();
+                if (organizations.isNotEmpty) {
+                  final firstOrganization = organizations.first;
+                  await apiService.saveSelectedOrganization(
+                      firstOrganization.id.toString());
+                }
+              }
               // Переход на главный экран
               Navigator.pushReplacementNamed(context, '/home');
             } else if (state is LoginError) {
