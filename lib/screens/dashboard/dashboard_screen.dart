@@ -10,6 +10,8 @@ import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
+import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy%203.dart';
+import 'package:crm_task_manager/screens/dashboard/graphic_dashboard%20copy.dart';
 import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
 import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
@@ -93,6 +95,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     LeadConversionChart(),
                     SizedBox(height: 16),
                     DealStatsChart(),
+                    SizedBox(height: 16),
+                    TaskChartWidget(),
+                    SizedBox(height: 16),
+                    ProjectChartTable(),
                   ],
                 ),
               ),

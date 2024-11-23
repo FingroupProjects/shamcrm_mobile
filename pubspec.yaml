@@ -51,6 +51,7 @@ dependencies:
   flutter_native_splash: ^2.4.3
 
 
+
   # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:
     path: lib/widgets/bottom_navy_bar.dart
@@ -68,9 +69,9 @@ dev_dependencies:
 flutter_native_splash:
  android: true
  ios: true
- image_path: assets/playstore.png
+ image: assets/lv_0_20241123084305.gif
  color: "#000000"
- adaptive_icon_foreground: assets/playstore.png
+ fullscreen: true
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -93,6 +94,7 @@ flutter:
     - assets/icons/chats/
     - assets/icons/
     - assets/images/
+    - assets/lv_0_20241123084305.gif
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg

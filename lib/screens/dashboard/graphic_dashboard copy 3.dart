@@ -1,160 +1,68 @@
-// import 'package:fl_chart/fl_chart.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:crm_task_manager/bloc/dashboard/dashboard_bloc.dart';
-// import 'package:crm_task_manager/bloc/dashboard/dashboard_state.dart';
+// widgets/dashboard/project_chart_table.dart
+import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-// class GraphicCircleDashboardProject extends StatelessWidget {
-//   const GraphicCircleDashboardProject({Key? key}) : super(key: key);
+class ProjectChartTable extends StatelessWidget {
+  const ProjectChartTable({Key? key}) : super(key: key);
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return BlocBuilder<DashboardBloc, DashboardState>(
-//       builder: (context, state) {
-//         if (state is DashboardLoading) {
-//           return _buildContainer(
-//             child: Center(child: CircularProgressIndicator()),
-//           );
-//         }
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProjectChartBloc, ProjectChartState>(
+      builder: (context, state) {
+        if (state is ProjectChartLoading) {
+          // return const Center(child: CircularProgressIndicator());
+        }
 
-//         if (state is DashboardError) {
-//           return _buildContainer(
-//             child: Center(
-//               child: Text(
-//                 'Ошибка загрузки данных',
-//                 style: TextStyle(color: Colors.red),
-//               ),
-//             ),
-//           );
-//         }
+        if (state is ProjectChartError) {
+          return Center(child: Text('Ошибка: ${state.message}'));
+        }
 
-//         if (state is DashboardLoaded) {
-//           return Row(
-//             children: [
-//               Expanded(
-//                 child: _buildProjectCard('Sham'),
-//               ),
-//               const SizedBox(width: 16),
-//               Expanded(
-//                 child: _buildProjectCard('1212'),
-//               ),
-//             ],
-//           );
-//         }
+        if (state is ProjectChartLoaded) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Проекты',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text('Название')),
+                        DataColumn(label: Text('Активный')),
+                        DataColumn(label: Text('Готовый')),
+                        DataColumn(label: Text('Просроченные')),
+                      ],
+                      rows: state.data.result.map((project) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(project.name)),
+                            DataCell(Text(project.data[0].toString())),
+                            DataCell(Text(project.data[1].toString())),
+                            DataCell(Text(project.data[2].toString())),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-//         return _buildContainer(
-//           child: Center(
-//             child: Text(
-//               'Нет данных для отображения',
-//               style: TextStyle(color: Color(0xFF718096)),
-//             ),
-//           ),
-//         );
-//       },
-//     );
-//   }
-
-//   Widget _buildProjectCard(String title) {
-//     return _buildContainer(
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Text(
-//             title,
-//             style: TextStyle(
-//               fontSize: 24,
-//               fontWeight: FontWeight.w600,
-//               color: Color(0xFF2D3748),
-//             ),
-//           ),
-//           const SizedBox(height: 24),
-//           Expanded(
-//             child: PieChart(
-//               PieChartData(
-//                 sectionsSpace: 2,
-//                 centerSpaceRadius: 0,
-//                 sections: [
-//                   PieChartSectionData(
-//                     value: 45, // Просроченные
-//                     color: const Color.fromARGB(255, 255, 0, 0),
-//                     title: '',
-//                     radius: 70,
-//                   ),
-//                   PieChartSectionData(
-//                     value: 45, // Готовый
-//                     color: const Color.fromARGB(255, 0, 202, 74),
-//                     title: '',
-//                     radius: 70,
-//                   ),
-//                   PieChartSectionData(
-//                     value: 10, // Активный
-//                     color: const Color.fromARGB(255, 36, 118, 218),
-//                     title: '',
-//                     radius: 70,
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//           const SizedBox(height: 16),
-//           _buildLegend(),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildLegend() {
-//     return Wrap(
-//       spacing: 16,
-//       runSpacing: 8,
-//       children: [
-//         _buildLegendItem('Активный', Color(0xFF60A5FA)),
-//         _buildLegendItem('Готовый', Color(0xFF4ADE80)),
-//         _buildLegendItem('Просроченные', Color(0xFFF87171)),
-//       ],
-//     );
-//   }
-
-//   Widget _buildLegendItem(String title, Color color) {
-//     return Row(
-//       mainAxisSize: MainAxisSize.min,
-//       children: [
-//         Container(
-//           width: 12,
-//           height: 12,
-//           decoration: BoxDecoration(
-//             color: color,
-//             shape: BoxShape.circle,
-//           ),
-//         ),
-//         SizedBox(width: 4),
-//         Text(
-//           title,
-//           style: TextStyle(
-//             color: Color(0xFF718096),
-//             fontSize: 12,
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-
-//   Widget _buildContainer({required Widget child}) {
-//     return Container(
-//       height: 350,
-//       padding: EdgeInsets.all(16),
-//       decoration: BoxDecoration(
-//             color: Color.fromARGB(255, 244, 247, 254),
-//         borderRadius: BorderRadius.circular(12),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.05),
-//             blurRadius: 5,
-//             offset: Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: child,
-//     );
-//   }
-// }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+}

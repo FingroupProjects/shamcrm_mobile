@@ -15,7 +15,7 @@ class GraphicsDashboard extends StatelessWidget {
     return BlocBuilder<DashboardChartBloc, DashboardChartState>(
       builder: (context, state) {
         if (state is DashboardChartLoading) {
-          return const Center(child: CircularProgressIndicator());
+          // return const Center(child: CircularProgressIndicator());
         }
 
         if (state is DashboardChartError) {
@@ -40,10 +40,10 @@ class GraphicsDashboard extends StatelessWidget {
         }
 
         return const Center(
-          child: Text(
-            'Нет данных для отображения',
-            style: TextStyle(color: Colors.grey),
-          ),
+          // child: Text(
+          //   // 'Нет данных для отображения',
+          //   style: TextStyle(color: Colors.grey),
+          // ),
         );
       },
     );
