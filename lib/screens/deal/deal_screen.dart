@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart'; 
@@ -29,6 +30,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  bool _canReadDealStatus = false;
+  bool _canCreateDealStatus = false;
+  bool _canDeleteDealStatus = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -37,6 +42,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     final dealBloc = BlocProvider.of<DealBloc>(context);
     dealBloc.add(FetchDealStatuses());
     print("Инициализация: отправлен запрос на получение статусов сделок");
+    _checkPermissions();
+
   }
 
   @override
@@ -62,6 +69,18 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     _searchDeals(query, currentStatusId);
   }
 
+  // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('dealStatus.read');
+    final canCreate = await _apiService.hasPermission('dealStatus.create');
+    final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    setState(() {
+      _canReadDealStatus = canRead;
+      _canCreateDealStatus = canCreate;
+      _canDeleteDealStatus = canDelete;
+    });
+  }
+
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
@@ -77,6 +96,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           title: 'Сделки',
           onClickProfileAvatar: () {
             setState(() {
+              final dealBloc = BlocProvider.of<DealBloc>(context);
+              dealBloc.add(FetchDealStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
             });
           },
@@ -167,6 +188,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               child: _buildTabButton(index),
             );
           }),
+          if (_canCreateDealStatus)
           IconButton(
             icon: Image.asset('assets/icons/tabBar/add_black.png',
                 width: 24, height: 24),
@@ -199,7 +221,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _tabController.animateTo(index);
       },
       onLongPress: () {
+           // Показываем диалог удаления только если есть разрешение
+      if (_canDeleteDealStatus) {
         _showDeleteDialog(index);
+      }
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -247,6 +272,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         if (state is DealLoaded) {
           setState(() {
             _tabTitles = state.dealStatuses
+                .where((status) => _canReadDealStatus) 
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());

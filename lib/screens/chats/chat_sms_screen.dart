@@ -159,9 +159,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         String inputPath = '/path/to/recorded/file.mp4a';
         String outputPath = await getOutputPath('converted_file.ogg');
 
+        // Получение organizationId из SharedPreferences
+        String? organizationId = await widget.apiService.getSelectedOrganization();
+
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
         if (convertedFile != null) {
-          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
+          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}?organization_id=$organizationId';
           await uploadFile(convertedFile, uploadUrl);
         } else {
           debugPrint('Conversion failed');

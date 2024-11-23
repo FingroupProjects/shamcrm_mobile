@@ -53,7 +53,8 @@ void main() async {
 
   final apiService = ApiService();
   final bool isDomainChecked = await apiService.isDomainChecked();
-  
+    final String? token = await apiService.getToken();  // Получаем токен из SharedPreferences
+
 
   // Инициализация Firebase
   await Firebase.initializeApp(
@@ -79,7 +80,7 @@ void main() async {
   await firebaseApi.initNotifications();
   
 
-  runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked));
+  runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked, token: token));
 }
 
 Future<void> getFCMTokens(ApiService apiService) async {
@@ -96,8 +97,9 @@ Future<void> getFCMTokens(ApiService apiService) async {
 class MyApp extends StatelessWidget {
   final ApiService apiService;
   final bool isDomainChecked;
+  final String? token;
 
-  const MyApp({required this.apiService, required this.isDomainChecked});
+  const MyApp({required this.apiService, required this.isDomainChecked, this.token});
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +210,7 @@ class MyApp extends StatelessWidget {
         title: 'SHAMCRM',
         navigatorKey: navigatorKey, // Навигационный ключ
         routes: {
-          '/': (context) => isDomainChecked ? LoginScreen() : AuthScreen(),
+          '/': (context) => token != null ? HomeScreen() : (isDomainChecked ? LoginScreen() : AuthScreen()),
           '/login': (context) => LoginScreen(),
           '/home': (context) => HomeScreen(),
           '/chats': (context) => ChatsScreen(),

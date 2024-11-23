@@ -31,8 +31,32 @@ class LoginScreen extends StatelessWidget {
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
-              // Переход на главный экран
-              Navigator.pushReplacementNamed(context, '/home');
+
+              // Проверяем сохранённую организацию
+              final savedOrganization =
+                  await apiService.getSelectedOrganization();
+              if (savedOrganization == null) {
+                // Если организация не выбрана, загружаем список и выбираем первую
+                final organizations = await apiService.getOrganization();
+                if (organizations.isNotEmpty) {
+                  final firstOrganization = organizations.first;
+                  await apiService.saveSelectedOrganization(
+                      firstOrganization.id.toString());
+                }
+              }
+              // Проверка на наличие токена
+              Future<void> checkAutoLogin() async {
+                final token = await apiService.getToken();
+                if (token != null) {
+                  // Автоматически переходим на главный экран, если токен есть
+                  Navigator.pushReplacementNamed(context, '/home');
+                }
+              }
+
+              // Вызов метода при запуске
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                checkAutoLogin();
+              });
             } else if (state is LoginError) {
               // Показываем сообщение об ошибке
               ScaffoldMessenger.of(context).showSnackBar(

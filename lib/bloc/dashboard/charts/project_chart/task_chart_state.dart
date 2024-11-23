@@ -1,5 +1,5 @@
 // bloc/dashboard/projects_chart/project_chart_state.dart
-import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model%20copy.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 
 abstract class ProjectChartState {}
 

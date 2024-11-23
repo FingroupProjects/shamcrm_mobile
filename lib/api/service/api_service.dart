@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
-import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model%20copy.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
@@ -44,10 +44,6 @@ import '../../models/login_model.dart';
   // final String baseUrl = 'https://shamcrm.com/api';
   final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
   final String baseUrlSocket = 'https://fingroup-back.shamcrm.com/broadcasting/auth';
-class LeadConversionService {
-  final Dio _dio;
-
-  LeadConversionService(this._dio);}
 
 class ApiService {
 
@@ -261,9 +257,10 @@ class ApiService {
     // Добавление метода для отправки токена устройства
 Future<void> sendDeviceToken(String deviceToken) async {
   final token = await getToken(); // Получаем токен пользователя (если он есть)
+  final organizationId = await getSelectedOrganization(); 
 
   final response = await http.post(
-    Uri.parse('$baseUrl/add-fcm-token'), // Используем правильный путь
+    Uri.parse('$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}'), // Используем правильный путь
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -1741,7 +1738,9 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   }
 //Метод для получение графика Конверсия
  Future<LeadConversion> getLeadConversionData() async {
-  String path = '/dashboard/leadConversion-chart';
+        final organizationId = await getSelectedOrganization(); 
+
+  String path = '/dashboard/leadConversion-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
   try {
     print('getLeadConversionData: Начало запроса');
     final response = await _getRequest(path);
@@ -1830,27 +1829,34 @@ Future<DealStatsResponse> getDealStatsData() async {
     }
 
   Future<ProjectChartResponse> getProjectChartData() async {
+
   String path = '/dashboard/projects-chart';
   try {
-    print('getProjectChartData: Начало запроса');
+    print('ApiService: getProjectChartData: Начало запроса');
+    print('ApiService: URL запроса: $path');
+    
     final response = await _getRequest(path);
-    print("Статус ответа: ${response.statusCode}");
-    print("Тело ответа: ${response.body}");
-
+    print('ApiService: Статус ответа: ${response.statusCode}');
+    print('ApiService: Заголовки ответа: ${response.headers}');
+    print('ApiService: Тело ответа: ${response.body}');
+    
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonData = json.decode(response.body);
-      print("Декодированные данные: $jsonData");
-
-      return ProjectChartResponse.fromJson(jsonData);
+      print('ApiService: Декодированные данные: $jsonData');
+      
+      final result = ProjectChartResponse.fromJson(jsonData);
+      print('ApiService: Данные успешно преобразованы в объект');
+      return result;
     } else {
+      print('ApiService: Ошибка запроса. Статус: ${response.statusCode}');
       throw Exception('Ошибка загрузки данных проектов: ${response.body}');
     }
   } catch (e) {
-    print("Ошибка в получении данных проектов: $e");
+    print('ApiService: Ошибка в получении данных проектов: $e');
+    print('ApiService: Stack trace: ${StackTrace.current}');
     throw Exception('Ошибка при получении данных проектов: $e');
   }
 }
-
 
 
   
@@ -2082,9 +2088,8 @@ Future<DealStatsResponse> getDealStatsData() async {
 
   // Метод для получения Менеджера
   Future<List<Organization>> getOrganization() async {
-      final organizationId = await getSelectedOrganization(); 
 
-    final response = await _getRequest('/organization${organizationId != null ? '?organization_id=$organizationId' : ''}'
+    final response = await _getRequest('/organization'
 );
 
     if (response.statusCode == 200) {

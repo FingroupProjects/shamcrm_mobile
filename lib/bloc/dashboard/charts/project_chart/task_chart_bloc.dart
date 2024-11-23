@@ -15,12 +15,20 @@ class ProjectChartBloc extends Bloc<ProjectChartEvent, ProjectChartState> {
     LoadProjectChartData event,
     Emitter<ProjectChartState> emit,
   ) async {
+    print('ProjectChartBloc: Начало загрузки данных');
     try {
       emit(ProjectChartLoading());
+      print('ProjectChartBloc: Состояние изменено на Loading');
+      
       final projectChartData = await _apiService.getProjectChartData();
+      print('ProjectChartBloc: Данные успешно получены');
+      
       emit(ProjectChartLoaded(data: projectChartData));
+      print('ProjectChartBloc: Состояние изменено на Loaded');
     } catch (e) {
+      print('ProjectChartBloc: Произошла ошибка: $e');
       emit(ProjectChartError(message: e.toString()));
+      print('ProjectChartBloc: Состояние изменено на Error');
     }
   }
 }
