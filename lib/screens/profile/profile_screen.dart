@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -67,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const NotificationSettingsWidget(),
+            const PinChangeWidget(),
             OrganizationWidget(
               selectedOrganization: _selectedOrganization,
               onChanged: _onOrganizationChanged,

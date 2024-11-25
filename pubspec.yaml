@@ -49,8 +49,9 @@ dependencies:
   image_gallery_saver_plus: ^3.0.5
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.3
-
-
+  local_auth: ^2.3.0
+  vibration: ^2.0.1
+  device_info_plus: ^11.1.1
 
   # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:
@@ -69,7 +70,7 @@ dev_dependencies:
 flutter_native_splash:
  android: true
  ios: true
- image: assets/lv_0_20241123084305.gif
+ image: assets/icons/playstore.png
  color: "#000000"
  fullscreen: true
 # For information on the generic Dart part of this file, see the
@@ -94,7 +95,6 @@ flutter:
     - assets/icons/chats/
     - assets/icons/
     - assets/images/
-    - assets/lv_0_20241123084305.gif
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg

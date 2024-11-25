@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
@@ -23,6 +24,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
@@ -35,16 +37,16 @@ import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
+import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
+import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'screens/auth/auth_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
-
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -52,19 +54,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final apiService = ApiService();
+  final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
-    final String? token = await apiService.getToken();  // Получаем токен из SharedPreferences
+  final String? token = await apiService.getToken();
+  final String? pin = await authService.getPin();
 
-
-  // Инициализация Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Запрос разрешений на уведомления
   await FirebaseMessaging.instance.requestPermission();
 
-  // Получаем токены (APNS и FCM)
   await getFCMTokens(apiService);
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -74,146 +74,106 @@ void main() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-
-  // Инициализация уведомлений
-  FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications();
   
 
-  runApp(MyApp(apiService: apiService, isDomainChecked: isDomainChecked, token: token));
+  FirebaseApi firebaseApi = FirebaseApi();
+  await firebaseApi.initNotifications();
+
+  runApp(MyApp(
+    apiService: apiService,
+    authService: authService,
+    isDomainChecked: isDomainChecked,
+    token: token,
+    pin: pin,
+  ));
 }
 
 Future<void> getFCMTokens(ApiService apiService) async {
-  // try {
-  //   // Получаем APNS токен
-  //   String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-  //   if (apnsToken != null) {
-  //     print('APNS Token: $apnsToken');
-  //   } else {
-  //     print('Не удалось получить APNS токен');
-  //   }
+  // Функция оставлена пустой, как в оригинальном коде
 }
 
 class MyApp extends StatelessWidget {
   final ApiService apiService;
+  final AuthService authService;
   final bool isDomainChecked;
   final String? token;
+  final String? pin;
 
-  const MyApp({required this.apiService, required this.isDomainChecked, this.token});
+  const MyApp({
+    required this.apiService,
+    required this.authService,
+    required this.isDomainChecked,
+    this.token,
+    this.pin,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         Provider<ApiService>.value(value: apiService),
-        BlocProvider(
-          create: (context) => DomainBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => LoginBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => LeadBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => HistoryBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => NotesBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => ManagerBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => RegionBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => DealBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => CurrencyBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => TaskBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => ProjectBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => UserTaskBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => HistoryBlocTask(apiService),
-        ),
-        BlocProvider(
-          create: (context) => RoleBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => TaskStatusNameBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => LeadByIdBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => DealByIdBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => TaskByIdBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => DealHistoryBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => GetAllClientBloc(),
-        ),
-        BlocProvider(
-          create: (context) => CreateClientBloc(),
-        ),
-        BlocProvider(
-          create: (context) => ListenSenderTextCubit(),
-        ),
-        BlocProvider(
-          create: (context) => ListenSenderVoiceCubit(),
-        ),
-        BlocProvider(
-          create: (context) => ListenSenderFileCubit(),
-        ),
-        BlocProvider(
-          create: (context) => ChatsBloc(ApiService()),
-        ),
-        BlocProvider(
-          create: (context) => TaskStatusBloc(ApiService()),
-        ),
-       
-        BlocProvider(
-          create: (context) => OrganizationBloc(ApiService()),
-        ),     
-        BlocProvider(
-          create: (context) => DashboardChartBloc(ApiService()),
-        ),BlocProvider(
-          create: (context) => DashboardConversionBloc(ApiService()),
-        ),BlocProvider(
-          create: (context) => DashboardStatsBloc(ApiService()),
-        ),   BlocProvider(
-          create: (context) => DealStatsBloc(ApiService()),
-        ),
-          BlocProvider(
-          create: (context) => DashboardTaskChartBloc(ApiService()),
-        ),
-        BlocProvider(
-          create: (context) => ProjectChartBloc(ApiService()),
-        ),
+        Provider<AuthService>.value(value: authService),
+        BlocProvider(create: (context) => DomainBloc(apiService)),
+        BlocProvider(create: (context) => LoginBloc(apiService)),
+        BlocProvider(create: (context) => LeadBloc(apiService)),
+        BlocProvider(create: (context) => HistoryBloc(apiService)),
+        BlocProvider(create: (context) => NotesBloc(apiService)),
+        BlocProvider(create: (context) => ManagerBloc(apiService)),
+        BlocProvider(create: (context) => RegionBloc(apiService)),
+        BlocProvider(create: (context) => DealBloc(apiService)),
+        BlocProvider(create: (context) => CurrencyBloc(apiService)),
+        BlocProvider(create: (context) => TaskBloc(apiService)),
+        BlocProvider(create: (context) => ProjectBloc(apiService)),
+        BlocProvider(create: (context) => UserTaskBloc(apiService)),
+        BlocProvider(create: (context) => HistoryBlocTask(apiService)),
+        BlocProvider(create: (context) => RoleBloc(apiService)),
+        BlocProvider(create: (context) => TaskStatusNameBloc(apiService)),
+        BlocProvider(create: (context) => LeadByIdBloc(apiService)),
+        BlocProvider(create: (context) => DealByIdBloc(apiService)),
+        BlocProvider(create: (context) => TaskByIdBloc(apiService)),
+        BlocProvider(create: (context) => DealHistoryBloc(apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc()),
+        BlocProvider(create: (context) => CreateClientBloc()),
+        BlocProvider(create: (context) => ListenSenderTextCubit()),
+        BlocProvider(create: (context) => ListenSenderVoiceCubit()),
+        BlocProvider(create: (context) => ListenSenderFileCubit()),
+        BlocProvider(create: (context) => ChatsBloc(ApiService())),
+        BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
+        BlocProvider(create: (context) => OrganizationBloc(ApiService())),
+        BlocProvider(create: (context) => NotificationBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
+        BlocProvider(create: (context) => DealStatsBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
+        BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,
         debugShowCheckedModeBanner: false,
         title: 'SHAMCRM',
-        navigatorKey: navigatorKey, // Навигационный ключ
+        navigatorKey: navigatorKey,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Colors.white,
+        ),
+        home: Builder(
+          builder: (context) {
+            if (token == null) {
+              return isDomainChecked ? LoginScreen() : AuthScreen();
+            } else if (pin == null) {
+              return PinSetupScreen ();
+            } else {
+              return const AuthScreen();
+            }
+          },
+        ),
         routes: {
-          '/': (context) => token != null ? HomeScreen() : (isDomainChecked ? LoginScreen() : AuthScreen()),
           '/login': (context) => LoginScreen(),
           '/home': (context) => HomeScreen(),
           '/chats': (context) => ChatsScreen(),
+          '/pin_setup': (context) => PinSetupScreen(),
+          '/local_auth': (context) => const AuthScreen(),
         },
       ),
     );
