@@ -62,7 +62,7 @@ void DropdownBottomSheet(
                             onTap: () {
                               setState(() {
                                 selectedValue = status.taskStatus.name;
-                                selectedStatusId = status.taskStatus.id;
+                                selectedStatusId = status.id;
                               });
                             },
                             child: buildDropDownStyles(

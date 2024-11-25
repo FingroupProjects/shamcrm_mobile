@@ -94,7 +94,6 @@ flutter:
     - assets/icons/chats/
     - assets/icons/
     - assets/images/
-    - assets/lv_0_20241123084305.gif
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg

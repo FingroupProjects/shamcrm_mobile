@@ -51,7 +51,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
-    await Future.delayed(Duration(milliseconds: 500)); // Небольшая задержка
+    await Future.delayed(Duration(milliseconds: 800)); // Небольшая задержка
 
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));

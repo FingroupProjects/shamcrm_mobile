@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -627,6 +628,25 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
       throw Exception('Failed to delete note: ${response.body}');
     }
   }
+  
+
+Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}) async {
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
+  final path = '/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId'; 
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result']['data'] as List)
+        .map((deal) => LeadDeal.fromJson(deal))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки заметок');
+  }
+}
+
+
 
   // Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({

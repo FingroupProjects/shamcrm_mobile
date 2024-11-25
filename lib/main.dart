@@ -20,6 +20,7 @@ import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
@@ -205,6 +206,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => ProjectChartBloc(ApiService()),
+        ),
+        BlocProvider(
+          create: (context) => LeadDealsBloc(ApiService()),
         ),
       ],
       child: MaterialApp(

@@ -54,6 +54,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   @override
   void initState() {
     context.read<MessagingCubit>().getMessages(widget.chatId);
+
+    context.read<ListenSenderFileCubit>().updateValue(false);
+    context.read<ListenSenderVoiceCubit>().updateValue(false);
+    context.read<ListenSenderTextCubit>().updateValue(false);
+
     setUpServices();
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {

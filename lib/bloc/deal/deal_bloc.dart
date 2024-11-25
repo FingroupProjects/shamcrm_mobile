@@ -44,23 +44,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   // Метод для загрузки сделок
-  // Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-  //   emit(DealLoading());
-  //   if (!await _checkInternetConnection()) {
-  //     emit(DealError('Нет подключения к интернету'));
-  //     return;
-  //   }
-
-  //   try {
-  //     final deals = await apiService.getDeals(event.statusId);
-  //     allDealsFetched = deals.isEmpty; // Если сделок нет, устанавливаем флаг
-  //     emit(DealDataLoaded(deals,
-  //         currentPage: 1)); // Устанавливаем текущую страницу на 1
-  //   } catch (e) {
-  //     emit(DealError('Не удалось загрузить сделок: ${e.toString()}'));
-  //   }
-  // }
-
 Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
   emit(DealLoading());
   if (!await _checkInternetConnection()) {
