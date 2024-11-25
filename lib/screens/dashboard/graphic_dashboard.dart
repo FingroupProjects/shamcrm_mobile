@@ -16,13 +16,15 @@ class GraphicsDashboard extends StatefulWidget {
 class _GraphicsDashboardState extends State<GraphicsDashboard> {
   int currentPage = 0;
   final int itemsPerPage = 5;
+  int? selectedIndex; // Индекс выбранной точки
+  int? selectedLineIndex; // Индекс выбранной линии
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardChartBloc, DashboardChartState>(
       builder: (context, state) {
         if (state is DashboardChartLoading) {
-          return const Center(child: CircularProgressIndicator());
+          // return const Center(child: CircularProgressIndicator());
         }
 
         if (state is DashboardChartError) {
@@ -35,7 +37,6 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
         }
 
         if (state is DashboardChartLoaded && state.chartData.isNotEmpty) {
-          // Разбиваем данные на страницы
           List<List<ChartData>> paginatedData = _paginateData(state.chartData);
 
           return Padding(
@@ -44,19 +45,19 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Клиенты',  // Добавляем текст "Клиенты" перед графиком
+                  'Клиенты',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 16),  // Отступ
+                const SizedBox(height: 16),
                 SizedBox(
-                  height: 300, // Фиксированная высота графика
+                  height: 300,
                   child: LineChart(
                     _buildChartData(state.chartData),
                   ),
                 ),
-                const SizedBox(height: 16), // Отступ между графиком и списком
-                _buildStatsList(paginatedData[currentPage]), // Список для текущей страницы
-                _buildPagination(paginatedData), // Пагинация
+                const SizedBox(height: 16),
+                _buildStatsList(paginatedData[currentPage]),
+                _buildPagination(paginatedData),
               ],
             ),
           );
@@ -64,27 +65,34 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
 
         return const Center(
           child: Text(
-            'Нет данных для отображения',
+            '',
             style: TextStyle(color: Colors.grey),
           ),
         );
       },
     );
   }
-  // Разбиваем список данных на страницы
+
   List<List<ChartData>> _paginateData(List<ChartData> chartData) {
     List<List<ChartData>> paginatedData = [];
     for (int i = 0; i < chartData.length; i += itemsPerPage) {
-      paginatedData.add(chartData.sublist(i, i + itemsPerPage > chartData.length ? chartData.length : i + itemsPerPage));
+      paginatedData.add(chartData.sublist(
+          i,
+          i + itemsPerPage > chartData.length
+              ? chartData.length
+              : i + itemsPerPage));
     }
     return paginatedData;
   }
 
   LineChartData _buildChartData(List<ChartData> chartData) {
-    List<LineChartBarData> lineBars = chartData.map((data) {
+    List<LineChartBarData> lineBars = chartData.asMap().entries.map((entry) {
+      int lineIndex = entry.key;
+      ChartData data = entry.value;
+
       List<FlSpot> spots = data.data.asMap().entries.map((entry) {
         double x = entry.key.toDouble();
-        double y = entry.value.toDouble();
+        double y = entry.value < 0 ? 0 : entry.value.toDouble();
         return FlSpot(x, y);
       }).toList();
 
@@ -97,11 +105,24 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
 
       return LineChartBarData(
         spots: spots,
-        isCurved: true,
+        isCurved: false,
         color: lineColor,
         barWidth: 3,
         isStrokeCapRound: true,
-        dotData: FlDotData(show: true),
+        dotData: FlDotData(
+          show: true,
+          getDotPainter: (spot, percent, barData, index) {
+            bool isSelected =
+                lineIndex == selectedLineIndex && index == selectedIndex;
+            return FlDotCirclePainter(
+              radius: isSelected ? 6 : 4,
+              color: isSelected ? const Color.fromARGB(255, 25, 2, 47) : lineColor,
+              strokeWidth: 2,
+              strokeColor: Colors.white,
+            );
+          },
+        ),
+        belowBarData: BarAreaData(show: false),
       );
     }).toList();
 
@@ -111,7 +132,12 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
         .toDouble();
 
     return LineChartData(
-      gridData: FlGridData(show: true),
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: true,
+        horizontalInterval: maxY / 5,
+        verticalInterval: 1,
+      ),
       titlesData: FlTitlesData(
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
@@ -130,8 +156,18 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
             showTitles: true,
             getTitlesWidget: (value, meta) {
               final months = [
-                'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
-                'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
+                'Январь',
+                'Февраль',
+                'Март',
+                'Апрель',
+                'Май',
+                'Июнь',
+                'Июль',
+                'Август',
+                'Сентябрь',
+                'Октябрь',
+                'Ноябрь',
+                'Декабрь'
               ];
               return Text(
                 months[value.toInt() % 12],
@@ -141,12 +177,53 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
           ),
         ),
       ),
-      borderData: FlBorderData(show: true),
+      borderData: FlBorderData(
+        show: true,
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+      ),
       minX: 0,
       maxX: 11,
       minY: 0,
-      maxY: maxY,
+      maxY: maxY * 1.1,
       lineBarsData: lineBars,
+      lineTouchData: LineTouchData(
+  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+    if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
+      // Проверяем, что список не пуст
+      final firstSpot = touchResponse!.lineBarSpots!.first;
+      setState(() {
+        selectedLineIndex = chartData.indexWhere(
+          (data) => data.data.contains(firstSpot.y.toInt()),
+        );
+        selectedIndex = firstSpot.spotIndex; // Убедитесь, что 'spotIndex' существует.
+      });
+    }
+  },
+  touchTooltipData: LineTouchTooltipData(
+    getTooltipItems: (List<LineBarSpot> spots) {
+      final months = [
+        'Январь',
+        'Февраль',
+        'Март',
+        'Апрель',
+        'Май',
+        'Июнь',
+        'Июль',
+        'Август',
+        'Сентябрь',
+        'Октябрь',
+        'Ноябрь',
+        'Декабрь'
+      ];
+      return spots.map((spot) {
+        return LineTooltipItem(
+          '${months[spot.x.toInt() % 12]}: ${spot.y.toInt()}',
+          const TextStyle(color: Colors.white),
+        );
+      }).toList();
+    },
+  ),
+),
     );
   }
 
@@ -182,7 +259,6 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
     );
   }
 
-  // Добавляем пагинацию с разделителем
   Widget _buildPagination(List<List<ChartData>> paginatedData) {
     int totalPages = paginatedData.length;
     return Row(
@@ -198,7 +274,10 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                 }
               : null,
         ),
-        Text('${currentPage + 1}/$totalPages', style: const TextStyle(fontSize: 16)),
+        Text(
+          '${currentPage + 1}/$totalPages',
+          style: const TextStyle(fontSize: 16),
+        ),
         IconButton(
           icon: const Icon(Icons.arrow_right),
           onPressed: currentPage < totalPages - 1

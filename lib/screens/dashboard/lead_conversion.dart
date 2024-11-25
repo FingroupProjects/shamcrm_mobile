@@ -119,7 +119,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
                       touchedIndex = -1;
                       return;
                     }
-                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;                  });
+                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                  });
                 },
               ),
               sectionsSpace: 4,
@@ -161,12 +162,12 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildLegendItem(
-          'Новые (${data.data[0].toStringAsFixed(1)}%)',
+          'Новые (${data.newLeads.toStringAsFixed(1)}%)',
           const Color(0xFF60A5FA),
         ),
         const SizedBox(width: 24),
         _buildLegendItem(
-          'Повторные (${data.data[1].toStringAsFixed(1)}%)',
+          'Повторные (${data.repeatedLeads.toStringAsFixed(1)}%)',
           const Color.fromARGB(255, 33, 41, 188),
         ),
       ],

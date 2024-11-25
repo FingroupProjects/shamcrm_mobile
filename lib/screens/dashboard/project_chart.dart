@@ -23,7 +23,7 @@ class _ProjectChartTableState extends State<ProjectChartTable> {
     return BlocBuilder<ProjectChartBloc, ProjectChartState>(
       builder: (context, state) {
         if (state is ProjectChartLoading) {
-          return const Center(child: CircularProgressIndicator());
+          // return const Center(child: CircularProgressIndicator());
         }
 
         if (state is ProjectChartError) {
