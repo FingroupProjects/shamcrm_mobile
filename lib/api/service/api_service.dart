@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:io'; 
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
+import 'package:crm_task_manager/models/ChatById_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -394,6 +396,23 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
+ Future<ChatProfile> getChatProfileByChat(int chatId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/lead/getByChat/$chatId'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return ChatProfile.fromJson(json['result']);
+      } else {
+        print('Failed to fetch chat profile: ${response.statusCode}');
+        throw Exception('Ошибка загрузки профиля чата: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e');
+      throw Exception('Ошибка при загрузке профиля чата: $e');
+    }
+  }
+
 //Метод для получения список Лидов с пагинацией
 Future<List<Lead>> getLeads(int? leadStatusId,
     {int page = 1, int perPage = 20, String? search}) async {
@@ -627,6 +646,25 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
       throw Exception('Failed to delete note: ${response.body}');
     }
   }
+  
+
+Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}) async {
+  final organizationId = await getSelectedOrganization(); // Получаем ID организации
+  final path = '/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId'; 
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result']['data'] as List)
+        .map((deal) => LeadDeal.fromJson(deal))
+        .toList();
+  } else {
+    throw Exception('Ошибка загрузки заметок');
+  }
+}
+
+
 
   // Метод для Создания Лида
   Future<Map<String, dynamic>> createLead({
@@ -1791,44 +1829,39 @@ Future<DealStatsResponse> getDealStatsData() async {
       throw Exception('Ошибка получения данных: $e');
     }
   }
+
+   // Метод для получение графика Зажачи 
   Future<TaskChart> getTaskChartData() async {
-      String path = '/dashboard/task-chart';
-      try {
-        print('getTaskChartData: Начало запроса');
-        final response = await _getRequest(path);
-        print("Статус ответа: ${response.statusCode}");
-        print("Тело ответа: ${response.body}");
+  String path = '/dashboard/task-chart';
+  try {
+    print('getTaskChartData: Начало запроса');
+    final response = await _getRequest(path);
+    print("Статус ответа: ${response.statusCode}");
+    print("Тело ответа: ${response.body}");
 
-        if (response.statusCode == 200) {
-          // Декодируем ответ как List
-          final List<dynamic> jsonList = json.decode(response.body);
-          print("Декодированные данные: $jsonList");
+    if (response.statusCode == 200) {
+      // Декодируем ответ как Map
+      final Map<String, dynamic> jsonMap = json.decode(response.body);
+      print("Декодированные данные: $jsonMap");
 
-          if (jsonList.isNotEmpty) {
-            // Получаем первый элемент списка
-            final Map<String, dynamic> firstItem = jsonList.first;
-            print("Данные первого элемента: $firstItem");
-
-            final taskChart = TaskChart(
-              data: (firstItem['data'] as List<dynamic>)
-                  .map((x) => (x as num).toDouble())
-                  .toList(),
-              color: firstItem['color'] as String,
-            );
-            
-            print("Созданный объект TaskChart: ${taskChart.data}");
-            return taskChart;
-          } else {
-            throw Exception('Нет данных графика в ответе');
-          }
-        } else {
-          throw Exception('Ошибка загрузки данных графика: ${response.body}');
-        }
-      } catch (e) {
-        print("Ошибка в получении данных: $e");
-        throw Exception('Ошибка при получении данных графика: $e');
+      // Проверяем наличие данных в ключе "result" -> "data"
+      if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
+        final taskChart = TaskChart.fromJson(jsonMap);
+        print("Созданный объект TaskChart: ${taskChart.data}");
+        return taskChart;
+      } else {
+        throw Exception('Нет данных графика в ответе');
       }
+    } else {
+      throw Exception('Ошибка загрузки данных графика: ${response.body}');
     }
+  } catch (e) {
+    print("Ошибка в получении данных: $e");
+    throw Exception('Ошибка при получении данных графика: $e');
+  }
+}
+
+ // Метод для получение графика Проект 
 
   Future<ProjectChartResponse> getProjectChartData() async {
 
@@ -1860,8 +1893,6 @@ Future<DealStatsResponse> getDealStatsData() async {
   }
 }
 
-
-  
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
 

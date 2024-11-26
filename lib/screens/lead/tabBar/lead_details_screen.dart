@@ -4,10 +4,13 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -135,6 +138,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 16),
                       NotesWidget(leadId: int.parse(widget.leadId)),
+                      const SizedBox(height: 16),
+                      DealsWidget(leadId: int.parse(widget.leadId)),
                     ],
                   ),
                 );
@@ -219,6 +224,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       context.read<LeadByIdBloc>().add(
                           FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
                       context.read<LeadBloc>().add(FetchLeadStatuses());
+
                     }
                   }
                 }

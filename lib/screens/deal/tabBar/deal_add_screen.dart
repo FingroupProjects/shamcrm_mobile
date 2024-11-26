@@ -336,7 +336,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   currencyId: selectedCurrency != null
                                       ? int.parse(selectedCurrency!)
                                       : null,
-                                  organizationId: 1,
                                   dealtypeId: 1,
                                   startDate: startDate,
                                   endDate: endDate,

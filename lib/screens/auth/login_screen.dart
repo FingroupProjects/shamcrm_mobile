@@ -10,7 +10,7 @@ import 'package:crm_task_manager/widgets/forgot_password.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-class LoginScreen extends StatelessWidget {
+class   LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextEditingController loginController = TextEditingController();
@@ -49,7 +49,7 @@ class LoginScreen extends StatelessWidget {
                 final token = await apiService.getToken();
                 if (token != null) {
                   // Автоматически переходим на главный экран, если токен есть
-                  Navigator.pushReplacementNamed(context, '/home');
+                  Navigator.pushReplacementNamed(context, '/pin_setup');
                 }
               }
 

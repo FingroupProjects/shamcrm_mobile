@@ -4,8 +4,6 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
@@ -65,9 +63,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     _checkPermissions();
     // context.read<DealBloc>().add(FetchDeals(widget.statusId));
 
-    context
-        .read<DealByIdBloc>()
-        .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
+    context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
   }
 
   Future<void> _checkPermissions() async {
@@ -229,9 +225,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
                   if (shouldUpdate == true) {
                     // Перезагружаем данные сделки
-                    context
-                        .read<DealByIdBloc>()
-                        .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                    context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
                       context.read<DealBloc>().add(FetchDealStatuses());
 
                   }

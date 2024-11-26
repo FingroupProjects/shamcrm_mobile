@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -54,6 +55,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   @override
   void initState() {
     context.read<MessagingCubit>().getMessages(widget.chatId);
+
+    context.read<ListenSenderFileCubit>().updateValue(false);
+    context.read<ListenSenderVoiceCubit>().updateValue(false);
+    context.read<ListenSenderTextCubit>().updateValue(false);
+
     setUpServices();
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,23 +79,33 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             Navigator.pop(context);
           },
         ),
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: AssetImage(widget.chatItem.avatar),
-              radius: ChatSmsStyles.avatarRadius,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              widget.chatItem.name,
-              style: const TextStyle(
-                fontSize: 16,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Gilroy',
+        title: InkWell(
+          onTap: () {
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => ChatProfileScreen(chatProfile: widget.chatId),
+            //   ),
+            // );
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: AssetImage(widget.chatItem.avatar),
+                radius: ChatSmsStyles.avatarRadius,
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Text(
+                widget.chatItem.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: ChatSmsStyles.appBarTitleColor,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       backgroundColor: const Color(0xffF4F7FD),
@@ -160,11 +176,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         String outputPath = await getOutputPath('converted_file.ogg');
 
         // Получение organizationId из SharedPreferences
-        String? organizationId = await widget.apiService.getSelectedOrganization();
+        String? organizationId =
+            await widget.apiService.getSelectedOrganization();
 
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
         if (convertedFile != null) {
-          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}?organization_id=$organizationId';
+          String uploadUrl =
+              '$baseUrl/chat/sendVoice/${widget.chatId}?organization_id=$organizationId';
           await uploadFile(convertedFile, uploadUrl);
         } else {
           debugPrint('Conversion failed');
@@ -243,7 +261,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         print(userID);
         print('----- sender');
         print(mm.message!.sender);
-
 
         context.read<ListenSenderFileCubit>().updateValue(false);
         context.read<ListenSenderVoiceCubit>().updateValue(false);

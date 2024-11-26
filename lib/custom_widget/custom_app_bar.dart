@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatefulWidget {
@@ -8,7 +7,7 @@ class CustomAppBar extends StatefulWidget {
   TextEditingController textEditingController;
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
-  bool showSearchIcon;
+  bool showSearchIcon; 
 
   CustomAppBar({
     super.key,
@@ -18,7 +17,7 @@ class CustomAppBar extends StatefulWidget {
     required this.textEditingController,
     required this.focusNode,
     required this.clearButtonClick,
-    this.showSearchIcon = true,
+    this.showSearchIcon = true, 
   });
 
   @override
@@ -52,13 +51,15 @@ class _CustomAppBarState extends State<CustomAppBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      height: kToolbarHeight,
-      color: Colors.white,
+      width: double.infinity, 
+      height: kToolbarHeight, 
+      color: Colors.white, 
       padding: EdgeInsets.zero,
+
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment:
+            CrossAxisAlignment.center, 
         children: [
           Container(
             width: 40,
@@ -108,18 +109,13 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   width: 24,
                   height: 24,
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => NotificationsScreen()),
-                  );
-                },
+                onPressed: () {},
               ),
-              if (widget.showSearchIcon)
+              if (widget
+                  .showSearchIcon) 
                 IconButton(
                   icon: _isSearching
-                      ? Icon(Icons.close)
+                      ? Icon(Icons.close) 
                       : Image.asset(
                           'assets/icons/AppBar/search.png',
                           width: 24,
