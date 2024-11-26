@@ -107,8 +107,8 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
 
   List<PieChartSectionData> _showingSections(TaskChart taskChart) {
     final List<Color> colors = [
-      const Color(0xFF60A5FA), // Активный - голубой
-      const Color(0xFF818CF8), // Просрочен - фиолетовый
+      const Color.fromARGB(255, 29, 93, 197), // Активный - голубой
+      const Color.fromARGB(255, 255, 0, 0), // Просрочен - фиолетовый
       const Color(0xFF34D399), // Завершён - зеленый
     ];
 
@@ -140,12 +140,12 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
           children: [
             _buildLegendItem(
               'Активный ',
-              const Color(0xFF60A5FA),
+              const Color.fromARGB(255, 29, 93, 197),
             ),
             const SizedBox(width: 24),
             _buildLegendItem(
               'Просрочен',
-              const Color(0xFF818CF8),
+              const Color.fromARGB(255, 245, 0, 0),
             ),
           ],
         ),

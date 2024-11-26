@@ -23,7 +23,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   @override
   void initState() {
     super.initState();
-    
+
     // Инициализация анимации
     _animationController = AnimationController(
       vsync: this,
@@ -82,10 +82,15 @@ class _LeadConversionChartState extends State<LeadConversionChart>
               ),
               const SizedBox(height: 16),
               Expanded(
+                // Убрана стилизация "в коробке", чтобы график соответствовал минималистичному стилю
                 child: _buildChart(state),
               ),
               const SizedBox(height: 16),
-              if (state is DashboardConversionLoaded) _buildLegend(state.leadConversionData),
+              if (state is DashboardConversionLoaded)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildLegend(state.leadConversionData),
+                )
             ],
           ),
         );
@@ -119,13 +124,15 @@ class _LeadConversionChartState extends State<LeadConversionChart>
                       touchedIndex = -1;
                       return;
                     }
-                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    touchedIndex =
+                        pieTouchResponse.touchedSection!.touchedSectionIndex;
                   });
                 },
               ),
               sectionsSpace: 4,
               centerSpaceRadius: 40,
-              sections: _showingSections(state.leadConversionData, _animation.value),
+              sections:
+                  _showingSections(state.leadConversionData, _animation.value),
             ),
           );
         },
@@ -134,7 +141,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
     return const SizedBox.shrink();
   }
 
-  List<PieChartSectionData> _showingSections(LeadConversion data, double animationValue) {
+  List<PieChartSectionData> _showingSections(
+      LeadConversion data, double animationValue) {
     return List.generate(2, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 20.0 : 0.0;
@@ -144,7 +152,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       return PieChartSectionData(
         color: i == 0
             ? const Color(0xFF60A5FA).withOpacity(isTouched ? 1 : 0.6)
-            : const Color.fromARGB(255, 33, 41, 188).withOpacity(isTouched ? 1 : 0.6),
+            : const Color.fromARGB(255, 33, 41, 188)
+                .withOpacity(isTouched ? 1 : 0.6),
         value: value,
         title: isTouched ? '${value.toStringAsFixed(1)}%' : '',
         radius: radius,
