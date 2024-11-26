@@ -59,10 +59,10 @@ class Lead {
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
       description: json['description'] is String ? json['description'] : '',
-      leadStatus: json['leadStatus'] != null &&
-              json['leadStatus'] is Map<String, dynamic>
-          ? LeadStatus.fromJson(json['leadStatus'])
-          : null,
+      // leadStatus: json['leadStatus'] != null &&
+      //         json['leadStatus'] is Map<String, dynamic>
+      //     ? LeadStatus.fromJson(json['leadStatus'])
+      //     : null,
     );
   }
 }

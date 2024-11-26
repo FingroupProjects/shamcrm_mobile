@@ -94,7 +94,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     currentLead = lead; // Сохраняем актуального лида
     details = [
       {'label': 'ID лида:', 'value': lead.id.toString()},
-      {'label': 'ФИО клиента:', 'value': lead.name},
+      {'label': 'Наименование лида :', 'value': lead.name},
       {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
       {'label': 'Регион:', 'value': lead.region?.name ?? 'Не указано'},
       {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Не указано'},
@@ -154,35 +154,38 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
-        ),
-        onPressed: () {
-          Navigator.pop(context, widget.statusId);
-        },
+  return AppBar(
+    backgroundColor: Colors.white,
+    forceMaterialTransparency: true,
+    elevation: 0,
+    leading: IconButton(
+      icon: Image.asset(
+        'assets/icons/arrow-left.png',
+        width: 24,
+        height: 24,
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
+      onPressed: () {
+        Navigator.pop(context, widget.statusId);
+      },
+    ),
+    title: Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+        color: Color(0xff1E2E52),
       ),
-      actions: [
-        // Кнопка редактирования, если есть разрешение
-        if (_canEditLead)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
+    ),
+    actions: [
+      if (_canEditLead || _canDeleteLead)
+        Row(
+          mainAxisSize: MainAxisSize.min, 
+          children: [
+            if (_canEditLead)
+              IconButton(
+                padding: EdgeInsets.zero, 
+                constraints: BoxConstraints(), 
                 icon: Image.asset(
                   'assets/icons/edit.png',
                   width: 24,
@@ -220,38 +223,37 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     );
 
                     if (shouldUpdate == true) {
-                      // Перезагружаем данные лида
-                      context.read<LeadByIdBloc>().add(
-                          FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-                      context.read<LeadBloc>().add(FetchLeadStatuses());
 
+                      // Перезагружаем данные лида
+                      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+                      context.read<LeadBloc>().add(FetchLeadStatuses());
                     }
                   }
-                }
-                ),
-          ),
-        // Кнопка удаления, если есть разрешение
-        if (_canDeleteLead)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+                },
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) =>
-                      DeleteLeadDialog(leadId: currentLead!.id),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
+            if (_canDeleteLead)
+              IconButton(
+                padding: EdgeInsets.only(right: 10), 
+                constraints: BoxConstraints(), 
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        DeleteLeadDialog(leadId: currentLead!.id),
+                  );
+                },
+              ),
+          ],
+        ),
+    ],
+  );
+}
+
 
   // Построение списка деталей лида
   Widget _buildDetailsList() {

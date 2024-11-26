@@ -153,93 +153,95 @@ Widget build(BuildContext context) {
 
 
 
-  // Функция для построения AppBar
   AppBar _buildAppBar(BuildContext context, String title) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
-        ),
-        onPressed: () {
-          Navigator.pop(context);
-          context.read<TaskBloc>().add(FetchTaskStatuses());
-        },
+  return AppBar(
+    backgroundColor: Colors.white,
+    elevation: 0,
+    leading: IconButton(
+      icon: Image.asset(
+        'assets/icons/arrow-left.png',
+        width: 24,
+        height: 24,
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
+      onPressed: () {
+        Navigator.pop(context);
+        context.read<TaskBloc>().add(FetchTaskStatuses());
+      },
+    ),
+    title: Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+        color: Color(0xff1E2E52),
       ),
-      actions: [
-        // Кнопка редактирования, если есть разрешение
-        if (_canEditTask)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                if (currentTask != null) {
-                   final shouldUpdate = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TaskEditScreen(
-                        taskId: currentTask!.id,
-                        taskName: currentTask!.name,
-                        taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
-                        project: currentTask!.project?.id.toString(),
-                        user: currentTask!.user?.id.toString(),
-                        statusId: currentTask!.statusId,
-                        description: currentTask!.description,
-                        startDate: currentTask!.startDate,
-                        endDate: currentTask!.endDate,
+    ),
+    actions: [
+      if (_canEditTask || _canDeleteTask)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canEditTask)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () async {
+                  if (currentTask != null) {
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskEditScreen(
+                          taskId: currentTask!.id,
+                          taskName: currentTask!.name,
+                          taskStatus: currentTask!.taskStatus?.taskStatus
+                                  .toString() ??
+                              '',
+                          project: currentTask!.project?.id.toString(),
+                          user: currentTask!.user?.id.toString(),
+                          statusId: currentTask!.statusId,
+                          description: currentTask!.description,
+                          startDate: currentTask!.startDate,
+                          endDate: currentTask!.endDate,
+                        ),
                       ),
-                    ),
-                  );
+                    );
 
-                   if (shouldUpdate == true) {
-                      // Перезагружаем данные лида
-                      context.read<TaskByIdBloc>().add(
-                          FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+                    if (shouldUpdate == true) {
+                      context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
                       context.read<TaskBloc>().add(FetchTaskStatuses());
                     }
-                }
-              },
-            ),
-          ),
-        // Кнопка удаления, если есть разрешение
-        if (_canDeleteTask)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+                  }
+                },
               ),
-              onPressed: () {
-                // Show delete confirmation dialog
-                showDialog(
-                  context: context,
-                  builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
+            if (_canDeleteTask)
+              IconButton(
+                padding: EdgeInsets.only(right: 8),
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        DeleteTaskDialog(taskId: currentTask!.id),
+                  );
+                },
+              ),
+          ],
+        ),
+    ],
+  );
+}
+
 
   // Построение списка деталей задачи
   Widget _buildDetailsList() {

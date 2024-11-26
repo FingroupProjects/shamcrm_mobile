@@ -903,7 +903,7 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
     }
   }
 
-  Future<List<Deal>> getDeals(int? dealStatusId,
+Future<List<Deal>> getDeals(int? dealStatusId,
     {int page = 1, int perPage = 20, String? search}) async {
   final organizationId = await getSelectedOrganization(); // Получаем ID организации
   String path = '/deal?page=$page&per_page=$perPage';
@@ -935,9 +935,12 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
       throw Exception('Нет данных о сделках в ответе');
     }
   } else {
+    // Логирование ошибки с ответом сервера
+    print('Error response: ${response.statusCode} - ${response.body}');
     throw Exception('Ошибка загрузки сделок: ${response.body}');
   }
 }
+
 
 
   // Метод для получения статусов Сделок
