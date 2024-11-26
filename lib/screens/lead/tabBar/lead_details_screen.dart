@@ -239,7 +239,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   'assets/icons/delete.png',
                   width: 24,
                   height: 24,
-                ),
+                ),  
                 onPressed: () {
                   showDialog(
                     context: context,

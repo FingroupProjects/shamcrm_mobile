@@ -20,11 +20,13 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
+  final TextEditingController titleController = TextEditingController(); 
   bool _sendPushNotification = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
+Widget build(BuildContext context) {
+  return SingleChildScrollView(
+    child: Padding(
       padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
@@ -40,7 +42,20 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 color: Color(0xff1E2E52),
               ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 8),
+            CustomTextField(
+              controller: titleController,
+              hintText: 'Введите заголовок',
+              label: 'Заголовок',
+              maxLines: 1,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Поле обязательно для заполнения';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: 8),
             CustomTextField(
               controller: bodyController,
               hintText: 'Введите название',
@@ -53,13 +68,13 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 return null;
               },
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 8),
             CustomTextFieldDate(
               controller: dateController,
               label: 'Дата',
               withTime: true,
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
@@ -110,6 +125,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               buttonText: 'Сохранить',
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
+                  final String title = titleController.text;
                   final String body = bodyController.text;
                   final String? dateString =
                       dateController.text.isEmpty ? null : dateController.text;
@@ -130,6 +146,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   }
                   context.read<NotesBloc>().add(CreateNotes(
                         leadId: widget.leadId,
+                        title: title,
                         body: body,
                         date: date,
                         sendNotification: _sendPushNotification,
@@ -141,10 +158,11 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               buttonColor: Color(0xff1E2E52),
               textColor: Colors.white,
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 8),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
