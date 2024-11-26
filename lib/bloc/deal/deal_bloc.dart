@@ -24,7 +24,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    await Future.delayed(Duration(milliseconds: 800));
+    await Future.delayed(Duration(milliseconds: 300));
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
@@ -200,7 +200,6 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       final response = await apiService.deleteDeal(event.dealId);
       if (response['result'] == 'Success') {
         emit(DealDeleted('Сделка удалена успешно'));
-        add(FetchDeals(event.dealId)); // Перезагрузка лида после удаления
       } else {
         emit(DealError('Ошибка удаления сделки'));
       }
@@ -216,7 +215,6 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       final response = await apiService.deleteDealStatuses(event.dealStatusId);
       if (response['result'] == 'Success') {
         emit(DealDeleted('Статус Лида удалена успешно'));
-        add(FetchDeals(event.dealStatusId)); // Перезагрузка лида после удаления
       } else {
         emit(DealError('Ошибка удаления статуса сделки'));
       }

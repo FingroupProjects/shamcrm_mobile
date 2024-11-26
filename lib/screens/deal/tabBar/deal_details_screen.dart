@@ -151,109 +151,115 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
-        ),
-        onPressed: () {
-          Navigator.pop(context, widget.statusId);
-          // context.read<DealBloc>().add(FetchDealStatuses());
-        },
+  return AppBar(
+    backgroundColor: Colors.white,
+    forceMaterialTransparency: true,
+    elevation: 0,
+    leading: IconButton(
+      icon: Image.asset(
+        'assets/icons/arrow-left.png',
+        width: 24,
+        height: 24,
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
+      onPressed: () {
+        Navigator.pop(context, widget.statusId);
+      },
+    ),
+    title: Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+        color: Color(0xff1E2E52),
       ),
-      actions: [
-        if (_canEditDeal) // Условие для показа кнопки редактирования
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
-                if (currentDeal != null) {
-                  final startDateString = currentDeal!.startDate != null &&
-                          currentDeal!.startDate!.isNotEmpty
-                      ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentDeal!.startDate!))
-                      : null;
-                  final endDateString = currentDeal!.endDate != null &&
-                          currentDeal!.endDate!.isNotEmpty
-                      ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentDeal!.endDate!))
-                      : null;
+    ),
+    actions: [
+      if (_canEditDeal || _canDeleteDeal)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canEditDeal)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () async {
+                  if (currentDeal != null) {
+                    final startDateString = currentDeal!.startDate != null &&
+                            currentDeal!.startDate!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentDeal!.startDate!))
+                        : null;
+                    final endDateString = currentDeal!.endDate != null &&
+                            currentDeal!.endDate!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentDeal!.endDate!))
+                        : null;
 
-                  final shouldUpdate = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DealEditScreen(
-                        dealId: currentDeal!.id,
-                        dealName: currentDeal!.name,
-                        statusId: currentDeal!.statusId,
-                        manager: currentDeal!.manager != null
-                            ? currentDeal!.manager!.id.toString()
-                            : 'Не указано',
-                        currency: currentDeal!.currency != null
-                            ? currentDeal!.currency!.id.toString()
-                            : 'Не указано',
-                        lead: currentDeal!.lead != null
-                            ? currentDeal!.lead!.id.toString()
-                            : 'Не указано',
-                        startDate: startDateString,
-                        endDate: endDateString,
-                        sum: currentDeal!.sum.toString(),
-                        description: currentDeal!.description ?? 'Не указано',
-                        dealCustomFields: currentDeal!.dealCustomFields,
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DealEditScreen(
+                          dealId: currentDeal!.id,
+                          dealName: currentDeal!.name,
+                          statusId: currentDeal!.statusId,
+                          manager: currentDeal!.manager != null
+                              ? currentDeal!.manager!.id.toString()
+                              : 'Не указано',
+                          currency: currentDeal!.currency != null
+                              ? currentDeal!.currency!.id.toString()
+                              : 'Не указано',
+                          lead: currentDeal!.lead != null
+                              ? currentDeal!.lead!.id.toString()
+                              : 'Не указано',
+                          startDate: startDateString,
+                          endDate: endDateString,
+                          sum: currentDeal!.sum.toString(),
+                          description:
+                              currentDeal!.description ?? 'Не указано',
+                          dealCustomFields: currentDeal!.dealCustomFields,
+                        ),
                       ),
+                    );
+
+                    if (shouldUpdate == true) {
+                      context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                      context.read<DealBloc>().add(FetchDealStatuses());
+                    }
+                  }
+                },
+              ),
+            if (_canDeleteDeal)
+              IconButton(
+                padding: EdgeInsets.only(right: 8),
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => DeleteDealDialog(
+                      dealId: currentDeal!.id,
+                      leadId: currentDeal!.lead!.id,
                     ),
                   );
-
-                  if (shouldUpdate == true) {
-                    // Перезагружаем данные сделки
-                    context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
-                      context.read<DealBloc>().add(FetchDealStatuses());
-
-                  }
-                }
-              },
-            ),
-          ),
-        if (_canDeleteDeal) // Условие для показа кнопки удаления
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+                },
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) =>
-                      DeleteDealDialog(dealId: currentDeal!.id),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
+          ],
+        ),
+    ],
+  );
+}
+
+
 
   // Построение списка деталей сделки
   Widget _buildDetailsList() {

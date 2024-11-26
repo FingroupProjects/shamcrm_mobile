@@ -173,7 +173,6 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       final response = await apiService.deleteTask(event.taskId);
       if (response['result'] == 'Success') {
         emit(TaskDeleted('Задача удалена успешно'));
-        add(FetchTasks(event.taskId)); // Перезагрузка лида после удаления
       } else {
         emit(TaskError('Ошибка удаления задача'));
       }
@@ -189,7 +188,6 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       final response = await apiService.deleteTaskStatuses(event.taskStatusId);
       if (response['result'] == 'Success') {
         emit(TaskDeleted('Статус задачи удалена успешно'));
-        add(FetchTasks(event.taskStatusId)); // Перезагрузка лида после удаления
       } else {
         emit(TaskError('Ошибка удаления статуса сделки'));
       }

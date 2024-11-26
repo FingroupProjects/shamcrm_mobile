@@ -239,7 +239,6 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       final response = await apiService.deleteLead(event.leadId);
       if (response['result'] == 'Success') {
         emit(LeadDeleted('Лид удалена успешно'));
-        add(FetchLeads(event.leadId)); // Перезагрузка лида после удаления
       } else {
         emit(LeadError('Ошибка удаления лида'));
       }
@@ -255,7 +254,6 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       final response = await apiService.deleteLeadStatuses(event.leadStatusId);
       if (response['result'] == 'Success') {
         emit(LeadDeleted('Статус Лида удалена успешно'));
-        add(FetchLeads(event.leadStatusId)); // Перезагрузка лида после удаления
       } else {
         emit(LeadError('Ошибка удаления статуса лида'));
       }

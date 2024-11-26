@@ -1,8 +1,18 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_event.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_state.dart';
+import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatefulWidget {
   @override
@@ -17,14 +27,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     notificationBloc = BlocProvider.of<NotificationBloc>(context);
-    notificationBloc.add(FetchNotifications()); 
+    notificationBloc.add(FetchNotifications());
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
           _scrollController.position.maxScrollExtent) {
         if (!notificationBloc.allNotificationsFetched) {
           notificationBloc.add(FetchMoreNotifications(notificationBloc.state
-        is NotificationDataLoaded ? (notificationBloc.state as NotificationDataLoaded).currentPage : 1));
+                  is NotificationDataLoaded
+              ? (notificationBloc.state as NotificationDataLoaded).currentPage
+              : 1));
         }
       }
     });
@@ -39,12 +51,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.white,
         elevation: 1,
         centerTitle: true,
-        title: const Text('Уведомления',
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52))),
+        title: const Text(
+          'Уведомления',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
+        ),
         iconTheme: const IconThemeData(color: Color(0xff1E2E52)),
+        leading: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
@@ -67,70 +92,178 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       if (index == notifications.length) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          // child: Center(child: CircularProgressIndicator()),
                         );
                       }
+
                       final notification = notifications[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
+
+                      return Dismissible(
+                        key: Key(notification.id.toString()),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
                                 blurRadius: 8,
-                                offset: const Offset(0, 4))
-                          ],
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: const Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.notifications,
-                              color: Color(0xff1E2E52), size: 28),
-                          title: Text(notification.type,
+                        onDismissed: (direction) {
+                          setState(() {
+                            notifications.removeAt(index);
+                          });
+
+                          notificationBloc.add(DeleteNotification(notification.id));
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.notifications,
+                                color: Color(0xff1E2E52), size: 28),
+                            title: Text(
+                              notification.type == 'message'
+                                  ? 'Новое сообщение'
+                                  : notification.type == 'deal'
+                                      ? 'Сделка'
+                                      : notification.type == 'notice'
+                                          ? 'Новая заметка'
+                                          : notification.type == 'task'
+                                              ? 'Новая задача'
+                                              : notification.type,
                               style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52))),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(notification.message,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xff5A6B87))),
-                          ),
-                          trailing: Text(
-                            '${notification.createdAt.hour}:${notification.createdAt.minute}',
-                            style: const TextStyle(
+                                  color: Color(0xff1E2E52)),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(notification.message,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xff5A6B87))),
+                            ),
+                            trailing: Text(
+                              DateFormat('dd.MM.yyyy HH:mm')
+                                  .format(notification.createdAt),
+                              style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xff5A6B87)),
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                            onTap: () {
+                              navigateToScreen(notification.type,
+                                  notification.modelId.toString());
+                            },
                           ),
-                          // onTap: () {
-                          //   showDialog(
-                          //     context: context,
-                          //     builder: (_) => AlertDialog(
-                          //       title: Text(notification.message),
-                          //       content: Text(notification.type),
-                          //       actions: [
-                          //         TextButton(
-                          //             onPressed: () => Navigator.pop(context),
-                          //             child: const Text('Закрыть')),
-                          //       ],
-                          //     ),
-                          //   );
-                          // },
                         ),
                       );
                     },
                   );
           }
-
           return Container();
         },
       ),
     );
+  }
+
+  void navigateToScreen(String type, String? id) {
+    if (type == 'message') {
+      print('Переход на экран чата с ID: $id');
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => BlocProvider(
+            create: (context) => MessagingCubit(ApiService()),
+            child: ChatSmsScreen(
+              chatItem: Chats(
+                id: int.tryParse(id ?? '0') ?? 0,
+                name: "",
+                taskFrom: "",
+                taskTo: "",
+                description: "",
+                channel: "",
+                lastMessage: "",
+                messageType: "",
+                createDate: "",
+                unredMessage: 0,
+              ).toChatItem("assets/images/AvatarChat.png"),
+              chatId: int.tryParse(id ?? '0') ?? 0,
+            ),
+          ),
+        ),
+      );
+    } else if (type == 'task') {
+      print('Переход на экран задачи с ID: $id');
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => TaskDetailsScreen(
+            taskId: id ?? '',
+            taskName: '',
+            taskStatus: '',
+            statusId: 1,
+          ),
+        ),
+      );
+    } else if (type == 'notice') {
+      print('Переход на экран лида с ID: $id');
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => LeadDetailsScreen(
+            leadId: id ?? '',
+            leadName: '',
+            leadStatus: "",
+            statusId: 1,
+          ),
+        ),
+      );
+    } else if (type == 'deal') {
+      print('Переход на экран сделки с ID: $id');
+      List<DealCustomField> defaultCustomFields = [
+        DealCustomField(id: 1, key: '', value: ''),
+        DealCustomField(id: 2, key: '', value: ''),
+      ];
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => DealDetailsScreen(
+            dealId: id ?? '',
+            dealName: '',
+            sum: '',
+            dealStatus: '',
+            statusId: 1,
+            dealCustomFields: defaultCustomFields,
+          ),
+        ),
+      );
+    } else {
+      print('navigateToScreen: Неизвестный тип: $type');
+    }
   }
 }

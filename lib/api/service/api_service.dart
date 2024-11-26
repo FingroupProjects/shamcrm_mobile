@@ -921,7 +921,7 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
     }
   }
 
-  Future<List<Deal>> getDeals(int? dealStatusId,
+Future<List<Deal>> getDeals(int? dealStatusId,
     {int page = 1, int perPage = 20, String? search}) async {
   final organizationId = await getSelectedOrganization(); // Получаем ID организации
   String path = '/deal?page=$page&per_page=$perPage';
@@ -953,9 +953,12 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
       throw Exception('Нет данных о сделках в ответе');
     }
   } else {
+    // Логирование ошибки с ответом сервера
+    print('Error response: ${response.statusCode} - ${response.body}');
     throw Exception('Ошибка загрузки сделок: ${response.body}');
   }
 }
+
 
 
   // Метод для получения статусов Сделок
@@ -2191,6 +2194,35 @@ Future<List<Notifications>> getAllNotifications({int page = 1, int perPage = 20}
     throw Exception('Ошибка загрузки уведомлений: ${response.body}');
   }
 }
+
+// Метод для удаления Уведомлений
+Future<void> DeleteNotifications({int? notificationId}) async {
+  final organizationId = await getSelectedOrganization();
+
+  String path = '/notification/read/$notificationId';
+
+  Map<String, dynamic> body = {
+    'notificationId': notificationId, 
+    'organization_id': organizationId,
+  };
+
+  print('Sending POST request to API with path: $path');
+
+  final response = await _postRequest(path, body);
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений: ${response.body}');
+  }
+  final data = json.decode(response.body);
+  if (data['result'] == 'Success') {
+    return; 
+  } else {
+    throw Exception('Ошибка удаления уведомления');
+  }
+}
+
+
+
 
 
   //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
