@@ -19,7 +19,7 @@ class Deal {
     required this.id,
     required this.name,
     this.startDate,
-    this.endDate,
+    this.endDate, 
     this.description,
     required this.sum,
     required this.statusId,

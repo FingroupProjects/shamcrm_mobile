@@ -1,13 +1,16 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart'; // Путь к bloc для сделок
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DeleteDealDialog extends StatelessWidget {
   final int dealId;
+  final int leadId;
 
-  DeleteDealDialog({required this.dealId});
+  DeleteDealDialog({required this.dealId,required this.leadId});
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +57,8 @@ class DeleteDealDialog extends StatelessWidget {
                 onPressed: () {
                   context.read<DealBloc>().add(DeleteDeal(dealId)); 
                   context.read<DealBloc>().add(FetchDealStatuses()); 
+                  context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
+
                   Navigator.of(context).pop();
                   Navigator.pop(context, true); 
                 },
