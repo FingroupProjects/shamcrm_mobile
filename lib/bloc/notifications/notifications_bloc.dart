@@ -11,7 +11,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   NotificationBloc(this.apiService) : super(NotificationInitial()) {
     on<FetchNotifications>(_fetchNotifications);
     on<FetchMoreNotifications>(_fetchMoreNotifications);
-    // on<DeleteNotification>(_deleteNotification);
+    on<DeleteNotification>(_deleteNotification);
   }
 
   // Метод для поиска уведомлений
@@ -49,24 +49,18 @@ Future<void> _fetchMoreNotifications(FetchMoreNotifications event, Emitter<Notif
   }
 }
 
+ Future<void> _deleteNotification(DeleteNotification event, Emitter<NotificationState> emit) async {
+  try {
+    await apiService.DeleteNotifications(notificationId: event.notificationId);
+  } catch (e) {
+    emit(NotificationError('Ошибка удаления уведомления: ${e.toString()}'));
+  }
+}
+
+
 
 
 }
 
 
 
-  // Future<void> _deleteNotification(DeleteNotification event, Emitter<NotificationState> emit) async {
-  //   emit(NotificationLoading());
-
-  //   try {
-  //     final response = await apiService.deleteNotification(event.notificationId);
-  //     if (response['result'] == 'Success') {
-  //       emit(NotificationDeleted('Уведомление удалено успешно'));
-  //       add(FetchNotifications(event.notificationId)); // Перезагрузка уведомлений после удаления
-  //     } else {
-  //       emit(NotificationError('Ошибка удаления уведомления'));
-  //     }
-  //   } catch (e) {
-  //     emit(NotificationError('Ошибка удаления уведомления: ${e.toString()}'));
-  //   }
-  // }

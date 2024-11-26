@@ -2181,6 +2181,35 @@ Future<List<Notifications>> getAllNotifications({int page = 1, int perPage = 20}
   }
 }
 
+// Метод для удаления Уведомлений
+Future<void> DeleteNotifications({int? notificationId}) async {
+  final organizationId = await getSelectedOrganization();
+
+  String path = '/notification/read/$notificationId';
+
+  Map<String, dynamic> body = {
+    'notificationId': notificationId, 
+    'organization_id': organizationId,
+  };
+
+  print('Sending POST request to API with path: $path');
+
+  final response = await _postRequest(path, body);
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений: ${response.body}');
+  }
+  final data = json.decode(response.body);
+  if (data['result'] == 'Success') {
+    return; 
+  } else {
+    throw Exception('Ошибка удаления уведомления');
+  }
+}
+
+
+
+
 
   //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
 
