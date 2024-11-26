@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
@@ -37,6 +38,7 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
@@ -75,7 +77,6 @@ void main() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-  
 
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
@@ -143,12 +144,14 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
         BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
+        BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,
@@ -164,9 +167,9 @@ class MyApp extends StatelessWidget {
             if (token == null) {
               return isDomainChecked ? LoginScreen() : AuthScreen();
             } else if (pin == null) {
-              return PinSetupScreen ();
+              return PinSetupScreen();
             } else {
-              return const AuthScreen();
+              return PinScreen(); // Для последующих входов
             }
           },
         ),
