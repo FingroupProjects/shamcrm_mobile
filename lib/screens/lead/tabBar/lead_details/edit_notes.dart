@@ -22,140 +22,160 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
+  final TextEditingController titleController = TextEditingController();
   bool _sendPushNotification = false;
 
   @override
   void initState() {
     super.initState();
+    titleController.text = widget.note.title; // Инициализация заголовка
     bodyController.text = widget.note.body;
-    dateController.text = DateFormat('dd/MM/yyyy HH:mm')
-        .format(DateTime.parse(widget.note.date!));
+    dateController.text = widget.note.date != null
+        ? DateFormat('dd/MM/yyyy HH:mm')
+            .format(DateTime.parse(widget.note.date!))
+        : '';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Редактировать заметку',
-              style: TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            SizedBox(height: 16),
-            CustomTextField(
-              controller: bodyController,
-              hintText: 'Введите название',
-              label: 'Название',
-              maxLines: 5,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Поле обязательно для заполнения';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            CustomTextFieldDate(
-              controller: dateController,
-              label: 'Дата',
-              withTime: true, // только дата
-            ),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _sendPushNotification = !_sendPushNotification;
-                    });
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Color(0xff1E2E52)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(1),
-                      child: Icon(
-                        _sendPushNotification ? Icons.check : Icons.clear,
-                        color: _sendPushNotification
-                            ? Color(0xff1E2E52)
-                            : Colors.transparent,
-                      ),
-                    ),
-                  ),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Редактировать заметку',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
+              ),
+              SizedBox(height: 8),
+              CustomTextField(
+                controller: titleController,
+                hintText: 'Введите заголовок',
+                label: 'Заголовок',
+                maxLines: 1,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Поле обязательно для заполнения';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 8),
+              CustomTextField(
+                controller: bodyController,
+                hintText: 'Введите название',
+                label: 'Название',
+                maxLines: 5,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Поле обязательно для заполнения';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 8),
+              CustomTextFieldDate(
+                controller: dateController,
+                label: 'Дата',
+                withTime: true,
+              ),
+              SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  GestureDetector(
                     onTap: () {
                       setState(() {
                         _sendPushNotification = !_sendPushNotification;
                       });
                     },
-                    child: Text(
-                      'Отправить пуш уведомления',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Color(0xff1E2E52)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(1),
+                        child: Icon(
+                          _sendPushNotification ? Icons.check : Icons.clear,
+                          color: _sendPushNotification
+                              ? Color(0xff1E2E52)
+                              : Colors.transparent,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            CustomButton(
-              buttonText: 'Сохранить',
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final String body = bodyController.text;
-                  final String? dateString =
-                      dateController.text.isEmpty ? null : dateController.text;
-
-                  DateTime? date;
-                  if (dateString != null && dateString.isNotEmpty) {
-                    try {
-                      date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ ЧЧ:ММ'),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _sendPushNotification = !_sendPushNotification;
+                        });
+                      },
+                      child: Text(
+                        'Отправить пуш уведомления',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
                         ),
-                      );
-                      return;
-                    }
-                  }
-                  print(
-                      'Обновление заметки: noteId: ${widget.note.id}, body: $body, date: $date, sendPush: $_sendPushNotification');
-                  context.read<NotesBloc>().add(UpdateNotes(
-                        noteId: widget.note.id,
-                        leadId: widget.leadId,
-                        body: body,
-                        date: date,
-                        sendNotification: _sendPushNotification,
-                      ));
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              CustomButton(
+                buttonText: 'Сохранить',
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final String title = titleController.text;
+                    final String body = bodyController.text;
+                    final String? dateString = dateController.text.isEmpty
+                        ? null
+                        : dateController.text;
 
-                  Navigator.pop(context);
-                }
-              },
-              buttonColor: Color(0xff1E2E52),
-              textColor: Colors.white,
-            ),
-            SizedBox(height: 16),
-          ],
+                    DateTime? date;
+                    if (dateString != null && dateString.isNotEmpty) {
+                      try {
+                        date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Введите корректную дату и время в формате ДД/ММ/ГГГГ ЧЧ:ММ'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    context.read<NotesBloc>().add(UpdateNotes(
+                          noteId: widget.note.id,
+                          leadId: widget.leadId,
+                          title: title,
+                          body: body,
+                          date: date,
+                          sendNotification: _sendPushNotification,
+                        ));
+
+                    Navigator.pop(context);
+                  }
+                },
+                buttonColor: Color(0xff1E2E52),
+                textColor: Colors.white,
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

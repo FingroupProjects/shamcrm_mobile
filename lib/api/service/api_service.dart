@@ -550,6 +550,7 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
 
   // Метод для Создания Заметки Лида
   Future<Map<String, dynamic>> createNotes({
+    required String title,
     required String body,
     required int leadId,
     DateTime? date,
@@ -560,6 +561,7 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
 
     final response = await _postRequest('/notices${organizationId != null ? '?organization_id=$organizationId' : ''}'
 , {
+      'title': title,
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
@@ -569,11 +571,13 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Заметка создана успешно.'};
     } else if (response.statusCode == 422) {
-      if (response.body.contains('body.')) {
+      if (response.body.contains('title')) {
         return {
           'success': false,
           'message': 'Ошибка! Поля не может быть пустым.'
         };
+      } else if (response.body.contains('body')) {
+        return {'success': false, 'message': 'Ошибка! Поля не может быть пустым.'};
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'Не правильная дата.'};
       } else {
@@ -594,6 +598,7 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
   Future<Map<String, dynamic>> updateNotes({
     required int noteId,
     required int leadId,
+    required String title,
     required String body,
     DateTime? date,
     bool sendNotification = false,
@@ -603,6 +608,7 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
 
     final response = await _patchRequest('/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}'
 , {
+      'title': title,
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
@@ -612,11 +618,13 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
     if (response.statusCode == 200) {
       return {'success': true, 'message': 'Заметка обновлена успешно.'};
     } else if (response.statusCode == 422) {
-      if (response.body.contains('body.')) {
+       if (response.body.contains('title')) {
         return {
           'success': false,
           'message': 'Ошибка! Поля не может быть пустым.'
         };
+      } else if (response.body.contains('body')) {
+        return {'success': false, 'message': 'Ошибка! Поля не может быть пустым.'};
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'Не правильная дата.'};
       } else {
@@ -628,7 +636,7 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления Заметки: ${response.body}'
+        'message': 'Ошибка создания Заметки: ${response.body}'
       };
     }
   }

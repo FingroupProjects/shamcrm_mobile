@@ -136,7 +136,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        note.body,
+                        note.title,
                         style: TaskCardStyles.titleStyle,
                       ),
                       SizedBox(height: 4),

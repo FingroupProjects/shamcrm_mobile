@@ -14,12 +14,14 @@ class FetchMoreNotes extends NotesEvent {
 }
 
 class CreateNotes extends NotesEvent {
+  final String title;
   final String body;
   final int leadId;
   final DateTime? date;
   final bool sendNotification;
 
   CreateNotes({
+    required this.title,
     required this.body,
     required this.leadId,
     this.date,
@@ -30,6 +32,7 @@ class CreateNotes extends NotesEvent {
 class UpdateNotes extends NotesEvent {
   final int noteId;
   final int leadId;
+  final String title;
   final String body;
   final DateTime? date;
   final bool sendNotification;
@@ -37,6 +40,7 @@ class UpdateNotes extends NotesEvent {
   UpdateNotes({
     required this.noteId,
     required this.leadId,
+    required this.title,
     required this.body,
     this.date,
     this.sendNotification = false,
