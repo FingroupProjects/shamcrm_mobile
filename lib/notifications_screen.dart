@@ -126,7 +126,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             notifications.removeAt(index);
                           });
 
-                          notificationBloc.add(DeleteNotification(notification.id));
+                          notificationBloc
+                              .add(DeleteNotification(notification.id));
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -180,7 +181,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               ),
                             ),
                             onTap: () {
-                              navigateToScreen(notification.type,
+                              navigateToScreen(
+                                  notification.type,
+                                  notification.id,
                                   notification.modelId.toString());
                             },
                           ),
@@ -195,7 +198,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  void navigateToScreen(String type, String? id) {
+  void navigateToScreen(String type, int notificationId, String id) {
+    setState(() {
+      (notificationBloc.state as NotificationDataLoaded)
+          .notifications
+          .removeWhere((notification) => notification.id == notificationId);
+    });
+    notificationBloc.add(DeleteNotification(notificationId));
     if (type == 'message') {
       print('Переход на экран чата с ID: $id');
       navigatorKey.currentState?.push(
