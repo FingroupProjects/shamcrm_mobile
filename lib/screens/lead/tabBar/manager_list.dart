@@ -1,132 +1,109 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
+import 'package:crm_task_manager/models/manager_data_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_state.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
 
-class ManagerWidget extends StatefulWidget {
+class ManagerRadioGroupWidget extends StatefulWidget {
   final String? selectedManager;
-  final ValueChanged<String?> onChanged;
+  final Function(ManagerData) onSelectManager;
 
-  ManagerWidget({required this.selectedManager, required this.onChanged});
+  ManagerRadioGroupWidget({super.key, required this.onSelectManager, this.selectedManager});
 
   @override
-  _ManagerWidgetState createState() => _ManagerWidgetState();
+  State<ManagerRadioGroupWidget> createState() => _ManagerRadioGroupWidgetState();
 }
 
-class _ManagerWidgetState extends State<ManagerWidget> {
+class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
+  List<ManagerData> managersList = [];
+  ManagerData? selectedManagerData;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ManagerBloc, ManagerState>(
-      builder: (context, state) {
-        List<DropdownMenuItem<String>> dropdownItems = [];
+    return Column(
+      children: [
+        BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
+          builder: (context, state) {
+            if (state is GetAllManagerLoading) {
+              // return Center(child: CircularProgressIndicator());
+            }
 
-        if (state is ManagerLoading) {
-          dropdownItems = [
-            DropdownMenuItem(
-              value: null,
-              child: Text(
-                'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ];
-        } else if (state is ManagerLoaded) {
-          if (state.managers.isEmpty) {
-            dropdownItems = [
-              DropdownMenuItem(
-                value: null,
-                child: Text(
-                  'Нет менеджеров',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+            if (state is GetAllManagerError) {
+              return Text(state.message);
+            }
+            if (state is GetAllManagerSuccess) {
+              managersList = state.dataManager.result ?? [];
+              if (widget.selectedManager != null) {
+                selectedManagerData = managersList.firstWhere(
+                  (manager) => manager.id.toString() == widget.selectedManager
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 12),
+                  const Text(
+                    'Менеджер',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xfff1E2E52),
+                    ),
                   ),
-                ),
-              ),
-            ];
-          } else {
-            dropdownItems = state.managers.map<DropdownMenuItem<String>>((Manager manager) {
-              return DropdownMenuItem<String>(
-                value: manager.id.toString(),
-                child: Text(manager.name),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                    ),
+                    child: CustomDropdown<ManagerData>.search(
+                      closeDropDownOnClearFilterSearch: true,
+                      items: managersList,
+                      searchHintText: 'Поиск',
+                      overlayHeight: 400,
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                        return Text(item.name!);
+                      },
+                      headerBuilder: (context, selectedItem, enabled) {
+                        return Text(
+                          selectedItem.name ?? 'Выберите менеджера',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) => Text('Выберите менеджера'),
+                      excludeSelected: false,
+                      initialItem: selectedManagerData,
+                      onChanged: (value) {
+                        if (value != null) {
+                          widget.onSelectManager(value);
+                          setState(() {
+                            selectedManagerData = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
               );
-            }).toList();
-          }
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Менеджер',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedManager)
-                    ? widget.selectedManager
-                    : null,
-                hint: const Text(
-                  'Выберите менеджера',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-                items: dropdownItems,
-                onChanged: widget.onChanged,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+            }
+            return SizedBox();
+          },
+        ),
+      ],
     );
   }
 }

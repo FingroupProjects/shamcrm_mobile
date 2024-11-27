@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -120,7 +121,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadBloc(apiService)),
         BlocProvider(create: (context) => HistoryBloc(apiService)),
         BlocProvider(create: (context) => NotesBloc(apiService)),
-        BlocProvider(create: (context) => ManagerBloc(apiService)),
+        // BlocProvider(create: (context) => ManagerBloc(apiService)),
         BlocProvider(create: (context) => RegionBloc(apiService)),
         BlocProvider(create: (context) => DealBloc(apiService)),
         BlocProvider(create: (context) => CurrencyBloc(apiService)),
@@ -152,6 +153,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
+        BlocProvider(create: (context) => GetAllManagerBloc()),
+
       ],
       child: MaterialApp(
         

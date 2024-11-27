@@ -1,9 +1,9 @@
+import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_event.dart';
+import 'package:crm_task_manager/models/manager_data_response.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
@@ -73,7 +73,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedRegion = widget.region;
     selectedManager = widget.manager;
 
-    context.read<ManagerBloc>().add(FetchManagers());
+    // context.read<ManagerBloc>().add(FetchManagers());
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+
     context.read<RegionBloc>().add(FetchRegions());
   }
 
@@ -121,7 +123,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 backgroundColor: Colors.green,
               ),
             );
-            Navigator.pop(context,true); 
+            Navigator.pop(context, true);
           }
         },
         child: Form(
@@ -161,11 +163,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      ManagerWidget(
-                        selectedManager: selectedManager,
-                        onChanged: (String? newValue) {
+                      ManagerRadioGroupWidget(
+                        selectedManager: selectedManager, 
+                        onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
-                            selectedManager = newValue;
+                            selectedManager = selectedManagerData.id.toString();
                           });
                         },
                       ),
