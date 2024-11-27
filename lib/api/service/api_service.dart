@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
+import 'package:crm_task_manager/models/manager_data_response.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -850,26 +851,62 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
   }
 
   // Метод для получения Менеджера
-  Future<List<Manager>> getManager() async {
-      final organizationId = await getSelectedOrganization(); 
+//   Future<List<Manager>> getManager() async {
+//       final organizationId = await getSelectedOrganization(); 
 
-    final response = await _getRequest('/manager${organizationId != null ? '?organization_id=$organizationId' : ''}'
-);
+//     final response = await _getRequest('/manager${organizationId != null ? '?organization_id=$organizationId' : ''}'
+// );
 
-    if (response.statusCode == 200) {
+//     if (response.statusCode == 200) {
+//       final data = json.decode(response.body);
+//       print('Тело ответа: $data'); // Для отладки
+
+//       if (data['result'] != null && data['result']['data'] != null) {
+//         return (data['result']['data'] as List)
+//             .map((manager) => Manager.fromJson(manager))
+//             .toList();
+//       } else {
+//         throw Exception('Менеджеров не найдено');
+//       }
+//     } else {
+//       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+//     }
+//   }
+
+  // // get all managers
+  Future<ManagersDataResponse> getAllManager() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization(); 
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/manager${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+      },
+
+    );
+    late ManagersDataResponse dataManager;
+
+    if(response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Тело ответа: $data'); // Для отладки
 
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((manager) => Manager.fromJson(manager))
-            .toList();
+      if (data['result'] != null) {
+        dataManager = ManagersDataResponse.fromJson(data);
       } else {
-        throw Exception('Менеджеров не найдено');
+        throw Exception('Результат отсутствует в ответе');
       }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getAll manager: ${response.body}');
+    }
+
+    return dataManager;
   }
 
   // Метод для Удаления Статуса Лида

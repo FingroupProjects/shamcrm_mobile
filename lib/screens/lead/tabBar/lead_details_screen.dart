@@ -233,7 +233,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               ),
             if (_canDeleteLead)
               IconButton(
-                padding: EdgeInsets.only(right: 10), 
+                padding: EdgeInsets.only(right: 8), 
                 constraints: BoxConstraints(), 
                 icon: Image.asset(
                   'assets/icons/delete.png',

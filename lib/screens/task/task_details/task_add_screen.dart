@@ -1,9 +1,7 @@
+import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_state.dart';
-import 'package:crm_task_manager/bloc/user/user_state.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
@@ -55,7 +53,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ManagerBloc>().add(FetchManagers());
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<ProjectBloc>().add(FetchProjects());
     context.read<UserTaskBloc>().add(FetchUsers());
     // Устанавливаем значения по умолчанию
