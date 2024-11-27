@@ -157,6 +157,7 @@ class MyApp extends StatelessWidget {
 
       ],
       child: MaterialApp(
+        
         color: Colors.white,
         debugShowCheckedModeBanner: false,
         title: 'SHAMCRM',

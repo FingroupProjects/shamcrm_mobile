@@ -1,4 +1,3 @@
-
 // lib/screens/auth/auth_screen.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +42,9 @@ class _PinScreenState extends State<PinScreen>
         _animationController.reset();
       }
     });
+
+    // Автоматически запускаем биометрическую аутентификацию
+    // WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
   }
 
   Future<void> _initBiometrics() async {
@@ -80,7 +82,7 @@ class _PinScreenState extends State<PinScreen>
       }
 
       final bool didAuthenticate = await _auth.authenticate(
-        localizedReason: 'Подтвердите личность с помощью отпечатка пальца',
+        localizedReason: 'Подтвердите личность',
         options: const AuthenticationOptions(
           biometricOnly: true,
           useErrorDialogs: true,
@@ -150,9 +152,9 @@ class _PinScreenState extends State<PinScreen>
     }
   }
 
- void _onExitPressed() {
-  SystemNavigator.pop(); // Closes the application
-}
+  void _onExitPressed() {
+    SystemNavigator.pop(); // Closes the application
+  }
 
   @override
   void dispose() {
@@ -229,7 +231,8 @@ class _PinScreenState extends State<PinScreen>
                       onPressed: () => _onNumberPressed(i.toString()),
                       child: Text(
                         i.toString(),
-                        style: const TextStyle(fontSize: 24, color: Colors.black),
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
                   TextButton(
