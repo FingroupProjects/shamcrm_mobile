@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -5,17 +6,16 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/manager_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_status_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -47,7 +47,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ManagerBloc>().add(FetchManagers());
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<DealBloc>().add(FetchDealStatuses()); // Загружаем статусы
     context.read<CurrencyBloc>().add(FetchCurrencies());
   }
@@ -159,16 +159,15 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 8),
-                      ManagerWidget(
-                        selectedManager: selectedManager,
-                        onChanged: (String? newValue) {
+                        const SizedBox(height: 8),
+                      ManagerRadioGroupWidget(
+                        selectedManager: selectedManager, 
+                        onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
-                            selectedManager = newValue;
+                            selectedManager = selectedManagerData.id.toString();
                           });
                         },
                       ),
-                      const SizedBox(height: 8),
                       CurrencyWidget(
                         selectedCurrency: selectedCurrency,
                         onChanged: (String? newValue) {

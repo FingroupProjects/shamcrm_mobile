@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -5,17 +6,16 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_event.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/bloc/region/region_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/manager_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/manager_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -89,7 +89,7 @@ void initState() {
 
   context.read<RegionBloc>().add(FetchRegions());
   context.read<LeadBloc>().add(FetchAllLeads());
-  context.read<ManagerBloc>().add(FetchManagers());
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   context.read<CurrencyBloc>().add(FetchCurrencies());
 }
 
@@ -189,16 +189,15 @@ void initState() {
                           });
                         },
                       ),
-                      const SizedBox(height: 8),
-                      ManagerWidget(
-                        selectedManager: selectedManager,
-                        onChanged: (String? newValue) {
+                        const SizedBox(height: 8),
+                      ManagerRadioGroupWidget(
+                        selectedManager: selectedManager, 
+                        onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
-                            selectedManager = newValue;
+                            selectedManager = selectedManagerData.id.toString();
                           });
                         },
                       ),
-                      const SizedBox(height: 8),
                       CurrencyWidget(
                         selectedCurrency: selectedCurrency,
                         onChanged: (String? newValue) {

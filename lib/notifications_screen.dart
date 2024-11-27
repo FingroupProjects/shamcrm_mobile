@@ -204,7 +204,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .notifications
           .removeWhere((notification) => notification.id == notificationId);
     });
+    
     notificationBloc.add(DeleteNotification(notificationId));
+
     if (type == 'message') {
       print('Переход на экран чата с ID: $id');
       navigatorKey.currentState?.push(
