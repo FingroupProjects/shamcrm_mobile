@@ -154,6 +154,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
       ],
       child: MaterialApp(
+        
         color: Colors.white,
         debugShowCheckedModeBanner: false,
         title: 'SHAMCRM',

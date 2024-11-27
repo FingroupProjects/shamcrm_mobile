@@ -162,13 +162,3 @@ class Message {
     return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position}';
   }
 }
-
-
-
-
-
-
-
-
-
-  // var audioUrl;

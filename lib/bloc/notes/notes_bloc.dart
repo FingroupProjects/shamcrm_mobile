@@ -55,6 +55,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
 
     try {
       final result = await apiService.createNotes(
+        title: event.title,
         body: event.body,
         leadId: event.leadId,
         date: event.date,
@@ -79,6 +80,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       final result = await apiService.updateNotes(
         noteId: event.noteId,
         leadId: event.leadId,
+        title: event.title,
         body: event.body,
         date: event.date,
         sendNotification: event.sendNotification,
