@@ -39,7 +39,6 @@ class CreateLead extends LeadEvent {
   final String? tgNick;
   final DateTime? birthday;
   final String? description;
-  final int? organizationId;
   final String? waPhone;
 
   CreateLead({
@@ -53,7 +52,6 @@ class CreateLead extends LeadEvent {
     this.tgNick,
     this.birthday,
     this.description,
-    this.organizationId,
     this.waPhone,
   });
 }
@@ -69,7 +67,6 @@ class UpdateLead extends LeadEvent {
   final String? tgNick;
   final DateTime? birthday;
   final String? description;
-  final int? organizationId;
   final String? waPhone;
 
   UpdateLead({
@@ -84,7 +81,6 @@ class UpdateLead extends LeadEvent {
     this.tgNick,
     this.birthday,
     this.description,
-    this.organizationId,
     this.waPhone,
   });
 }

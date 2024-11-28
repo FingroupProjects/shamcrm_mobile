@@ -1,20 +1,23 @@
+import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'project_event.dart';
-import 'project_state.dart';
+import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/project/project_state.dart';
 
-class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
-  final ApiService apiService;
-  
-  ProjectBloc(this.apiService) : super(ProjectInitial()) {
-    on<FetchProjects>((event, emit) async {
-      emit(ProjectLoading());
-      try {
-        final projects = await apiService.getProject();
-        emit(ProjectLoaded(projects));
-      } catch (e) {
-        emit(ProjectError('Ошибка при загрузке Проектов'));
-      }
-    });
+class GetAllProjectBloc extends Bloc<GetAllProjectEvent, GetAllProjectState> {
+  GetAllProjectBloc() : super(GetAllProjectInitial()) {
+    on<GetAllProjectEv>(_getProjects);
+  }
+
+  Future<void> _getProjects(GetAllProjectEv event, Emitter<GetAllProjectState> emit) async {
+    try {
+      emit(GetAllProjectLoading());
+
+      var res = await ApiService().getAllProject();
+
+      emit(GetAllProjectSuccess(dataProject: res));
+    } catch (e) {
+      emit(GetAllProjectError(message: e.toString()));
+    }
   }
 }

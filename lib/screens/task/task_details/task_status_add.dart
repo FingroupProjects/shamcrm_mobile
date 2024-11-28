@@ -23,7 +23,7 @@ class CreateStatusDialog extends StatefulWidget {
 
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   int? selectedStatusNameId;
-  int? selectedProjectId;
+  String? selectedProjectId; 
   List<int> selectedRoleIds = [];
   bool needsPermission = false;
   bool isFinalStage = false;
@@ -33,7 +33,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   void initState() {
     super.initState();
     context.read<TaskStatusNameBloc>().add(FetchStatusNames());
-    context.read<ProjectBloc>().add(FetchProjects());
+    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
     context.read<RoleBloc>().add(FetchRoles());
   }
 
@@ -65,12 +65,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               },
             ),
             const SizedBox(height: 16),
-            ProjectWidget(
-              selectedProject: selectedProjectId?.toString(),
-              onChanged: (String? projectId) {
+            ProjectRadioGroupWidget( 
+              selectedProject: selectedProjectId,
+              onSelectProject: (project) {
                 setState(() {
-                  selectedProjectId =
-                      projectId != null ? int.tryParse(projectId) : null;
+                  selectedProjectId = project.id.toString();
                 });
               },
             ),
@@ -248,17 +247,15 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     context.read<task_status_add.TaskStatusBloc>().add(
           task_status_add.CreateTaskStatusAdd(
             taskStatusNameId: selectedStatusNameId!,
-            projectId: selectedProjectId!,
+            projectId: int.tryParse(selectedProjectId!) ?? 0, 
             organizationId: 1,
             needsPermission: needsPermission,
             roleIds: needsPermission ? selectedRoleIds : null,
           ),
         );
 
-    // Закрываем диалог
     Navigator.pop(context);
 
-    // Обновляем список статусов
     Future.delayed(Duration(milliseconds: 0), () {
       context.read<TaskBloc>().add(FetchTaskStatuses());
     });

@@ -140,7 +140,6 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         tgNick: event.tgNick,
         birthday: event.birthday,
         description: event.description,
-        organizationId: event.organizationId,
         waPhone: event.waPhone,
       );
 
@@ -191,7 +190,6 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         tgNick: event.tgNick,
         birthday: event.birthday,
         description: event.description,
-        organizationId: event.organizationId,
         waPhone: event.waPhone,
       );
 
