@@ -25,6 +25,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
+// import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
@@ -151,10 +152,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
+        BlocProvider(create: (context) => GetAllManagerBloc()),
 
       ],
       child: MaterialApp(
-        
         color: Colors.white,
         debugShowCheckedModeBanner: false,
         title: 'SHAMCRM',

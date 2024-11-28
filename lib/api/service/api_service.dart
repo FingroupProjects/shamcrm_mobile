@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io'; 
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
-import 'package:crm_task_manager/models/ChatById_model.dart';
+import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
@@ -398,20 +398,28 @@ Future<Chats> getChatById(int chatId) async {
     }
   }
 
- Future<ChatProfile> getChatProfileByChat(int chatId) async {
+  Future<ChatProfile> getChatProfile(int chatId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/lead/getByChat/$chatId'));
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body);
-        return ChatProfile.fromJson(json['result']);
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        if (decodedJson['result'] != null) {
+          return ChatProfile.fromJson(decodedJson['result']);
+        } else {
+          throw Exception('Данные профиля не найдены');
+        }
       } else {
-        print('Failed to fetch chat profile: ${response.statusCode}');
+        print('Ошибка загрузки профиля чата: ${response.statusCode}');
         throw Exception('Ошибка загрузки профиля чата: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка при загрузке профиля чата: $e');
+      print('Ошибка в getChatProfile: $e');
+      throw Exception('Ошибка загрузки профиля чата: $e');
     }
   }
 
