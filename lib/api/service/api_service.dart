@@ -31,6 +31,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart'; 
 import 'package:crm_task_manager/models/task_model.dart'; 
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/user_add_task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
@@ -1666,6 +1667,23 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
       rethrow;
     }
   }
+  // Future<List<UserTaskAdd>> getUsers() async {
+  // final response = await _getRequest('/user');
+
+  // if (response.statusCode == 200) {
+  //   final data = json.decode(response.body);
+  //   print('Ответ пользователей: $data'); // Для отладки
+
+  //   if (data['users'] != null) {
+  //     return (data['users'] as List)
+  //         .map((user) => UserTaskAdd.fromJson(user))
+  //         .toList();
+  //   } else {
+  //     throw Exception('Пользователи не найдены');
+  //   }
+  // } else {
+  //   throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  // }}
 
   // Метод для получение Роли
 
