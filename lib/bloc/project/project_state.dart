@@ -1,32 +1,18 @@
 import 'package:crm_task_manager/models/project_model.dart';
-// import 'package:crm_task_manager/models/task_model.dart';
-import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
-abstract class ProjectState extends Equatable {
-  const ProjectState();
+@immutable
+sealed class GetAllProjectState {}
 
-  @override
-  List<Object> get props => [];
+final class GetAllProjectInitial extends GetAllProjectState {}
+final class GetAllProjectLoading extends GetAllProjectState {}
+final class GetAllProjectError extends GetAllProjectState {
+  String message;
+
+  GetAllProjectError({required this.message});
 }
+final class GetAllProjectSuccess extends GetAllProjectState {
+  ProjectsDataResponse dataProject;
 
-class ProjectInitial extends ProjectState {}
-
-class ProjectLoading extends ProjectState {}
-
-class ProjectLoaded extends ProjectState {
-  final List<Project> projects;
-
-  const ProjectLoaded(this.projects);
-
-  @override
-  List<Object> get props => [projects];
-}
-
-class ProjectError extends ProjectState {
-  final String message;
-
-  const ProjectError(this.message);
-
-  @override
-  List<Object> get props => [message];
+  GetAllProjectSuccess({required this.dataProject});
 }

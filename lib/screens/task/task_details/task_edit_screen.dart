@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +87,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   void _loadInitialData() {
-    context.read<ProjectBloc>().add(FetchProjects());
+    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     context.read<TaskBloc>().add(FetchTaskStatuses());
   }
@@ -306,11 +307,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      ProjectWidget(
-                        selectedProject: selectedProject,
-                        onChanged: (String? newValue) {
+                      ProjectRadioGroupWidget(
+                        selectedProject: selectedProject, 
+                        onSelectProject: (Project selectedProjectData) {
                           setState(() {
-                            selectedProject = newValue;
+                            selectedProject = selectedProjectData.id.toString();
                           });
                         },
                       ),

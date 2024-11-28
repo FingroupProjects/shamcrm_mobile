@@ -688,7 +688,6 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
     String? tgNick,
     DateTime? birthday,
     String? description,
-    int? organizationId,
     String? waPhone,
   }) async {
       final organizationId = await getSelectedOrganization(); 
@@ -706,7 +705,6 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
       if (birthday != null)
         'birthday': birthday.toIso8601String(), // Конвертация в строку
       if (description != null) 'description': description,
-      if (organizationId != null) 'organization_id': organizationId,
       if (waPhone != null) 'wa_phone': waPhone,
     });
 
@@ -1102,7 +1100,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
     required DateTime? endDate,
     required String sum,
     String? description,
-    int? organizationId,
     int? dealtypeId,
     required int? leadId,
     List<Map<String, String>>? customFields,
@@ -1115,7 +1112,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
       if (endDate != null) 'end_date': endDate.toIso8601String(),
       'sum': sum,
       if (description != null) 'description': description,
-      if (organizationId != null) 'organization_id': organizationId,
       if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
       // Здесь добавляем deal_custom_fields
@@ -1128,9 +1124,9 @@ Future<List<Deal>> getDeals(int? dealStatusId,
           }).toList() ??
           [],
     };
-  final organizationIdProfile = await getSelectedOrganization(); 
+  final organizationId = await getSelectedOrganization(); 
 
-    final response = await _postRequest('/deal${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}', requestBody);
+    final response = await _postRequest('/deal${organizationId != null ? '?organization_id=$organizationId' : ''}', requestBody);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Сделка создана успешно.'};
@@ -1162,11 +1158,12 @@ Future<List<Deal>> getDeals(int? dealStatusId,
     required DateTime? endDate,
     required String sum,
     String? description,
-    int? organizationId,
     int? dealtypeId,
     required int? leadId,
     List<Map<String, String>>? customFields,
   }) async {
+    final organizationId = await getSelectedOrganization(); 
+
     final response = await _patchRequest('/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
 , {
       'name': name,
@@ -1176,7 +1173,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
       if (endDate != null) 'end_date': endDate.toIso8601String(),
       'sum': sum,
       if (description != null) 'description': description,
-      if (organizationId != null) 'organization_id': organizationId,
       if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
       'deal_custom_fields': customFields?.map((field) {
@@ -1611,27 +1607,31 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
   }
 
 // Метод для получения Проекта
-  Future<List<Project>> getProject() async {
-      final organizationId = await getSelectedOrganization(); 
+ Future<ProjectsDataResponse> getAllProject() async {
+  final organizationId = await getSelectedOrganization(); 
 
-    final response = await _getRequest('/project${organizationId != null ? '?organization_id=$organizationId' : ''}'
-);
+  final response = await _getRequest('/project${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print('Тело ответа: $data'); // Для отладки
+  late ProjectsDataResponse dataProject;
 
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((project) => Project.fromJson(project))
-            .toList();
-      } else {
-        throw Exception('Проектов не найдено');
-      }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataProject = ProjectsDataResponse.fromJson(data);
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Результат отсутствует в ответе');
     }
+  } else {
+    throw Exception('Ошибка при получении данных: ${response.statusCode}');
   }
+
+  if (kDebugMode) {
+    print('getAll project: ${response.body}');
+  }
+
+  return dataProject;
+}
 
   // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {

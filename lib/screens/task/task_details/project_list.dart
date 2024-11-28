@@ -1,119 +1,123 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
+import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/bloc/project/project_state.dart';
 import 'package:crm_task_manager/models/project_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ProjectWidget extends StatefulWidget {
+class ProjectRadioGroupWidget extends StatefulWidget {
   final String? selectedProject;
-  final ValueChanged<String?> onChanged;
+  final Function(Project) onSelectProject;
 
-  ProjectWidget({required this.selectedProject, required this.onChanged});
+  ProjectRadioGroupWidget(
+      {super.key, required this.onSelectProject, this.selectedProject});
 
   @override
-  _ProjectWidgetState createState() => _ProjectWidgetState();
+  State<ProjectRadioGroupWidget> createState() => _ProjectRadioGroupWidgetState();
 }
 
-class _ProjectWidgetState extends State<ProjectWidget> {
+class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
+  List<Project> projectsList = [];
+  Project? selectedProjectData;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProjectBloc, ProjectState>(
-      builder: (context, state) {
-        List<DropdownMenuItem<String>> dropdownItems = [];
+    return Column(
+      children: [
+        BlocBuilder<GetAllProjectBloc, GetAllProjectState>(
+          builder: (context, state) {
+            if (state is GetAllProjectLoading) {
+              // return Center(child: CircularProgressIndicator());
+            }
 
-        if (state is ProjectLoading) {
-          dropdownItems = [
-            DropdownMenuItem(
-              value: null,
-              child: Text(
-                'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ];
-        } else if (state is ProjectLoaded) {
-          print('Список проектов: ${state.projects}');
-          dropdownItems =
-              state.projects.map<DropdownMenuItem<String>>((Project project) {
-            return DropdownMenuItem<String>(
-              value: project.id.toString(),
-              child: Text(project.name),
-            );
-          }).toList();
-        }
+            if (state is GetAllProjectError) {
+              return Text(state.message);
+            }
+            if (state is GetAllProjectSuccess) {
+              projectsList = state.dataProject.result ?? [];
+              if (widget.selectedProject != null && projectsList.isNotEmpty) {
+                try {
+                  selectedProjectData = projectsList.firstWhere(
+                    (project) => project.id.toString() == widget.selectedProject,
+                  );
+                } catch (e) {
+                  selectedProjectData = null;
+                }
+              }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Проект',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems
-                        .any((item) => item.value == widget.selectedProject)
-                    ? widget.selectedProject
-                    : null,
-                hint: const Text(
-                  'Выберите проекта',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Проекты',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xfff1E2E52),
+                    ),
                   ),
-                ),
-                items: dropdownItems,
-                onChanged: widget.onChanged,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                    ),
+                    child: CustomDropdown<Project>.search(
+                      closeDropDownOnClearFilterSearch: true,
+                      items: projectsList,
+                      searchHintText: 'Поиск',
+                      overlayHeight: 400,
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
+                        return Text(item.name!);
+                      },
+                      headerBuilder: (context, selectedItem, enabled) {
+                        return Text(
+                          selectedItem.name ?? 'Выберите проект',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) =>
+                          Text('Выберите проект'),
+                      excludeSelected: false,
+                      initialItem: selectedProjectData,
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Поле обязательно для заполнения';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        if (value != null) {
+                          widget.onSelectProject(value);
+                          setState(() {
+                            selectedProjectData = value;
+                          });
+                        }
+                      },
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+                ],
+              );
+            }
+            return SizedBox();
+          },
+        ),
+      ],
     );
   }
 }

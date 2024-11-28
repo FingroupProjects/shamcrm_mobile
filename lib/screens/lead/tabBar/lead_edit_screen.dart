@@ -73,11 +73,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     selectedRegion = widget.region;
     selectedManager = widget.manager;
 
-    // context.read<ManagerBloc>().add(FetchManagers());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
-
-    // context.read<RegionBloc>().add(FetchRegions());
   }
 
   @override
@@ -265,7 +262,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               birthday: parsedBirthday,
                               description: descriptionController.text,
                               leadStatusId: widget.statusId,
-                              organizationId: 1,
                             ));
                           }
                         },

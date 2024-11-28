@@ -125,7 +125,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => GetAllLeadBloc()),
         BlocProvider(create: (context) => DealBloc(apiService)),
         BlocProvider(create: (context) => TaskBloc(apiService)),
-        BlocProvider(create: (context) => ProjectBloc(apiService)),
+        BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(apiService)),
         BlocProvider(create: (context) => RoleBloc(apiService)),
