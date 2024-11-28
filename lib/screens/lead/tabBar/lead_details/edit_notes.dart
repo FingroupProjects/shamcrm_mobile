@@ -23,7 +23,6 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
   final TextEditingController titleController = TextEditingController();
-  bool _sendPushNotification = false;
 
   @override
   void initState() {
@@ -88,52 +87,6 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
                 withTime: true,
               ),
               SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _sendPushNotification = !_sendPushNotification;
-                      });
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Color(0xff1E2E52)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(1),
-                        child: Icon(
-                          _sendPushNotification ? Icons.check : Icons.clear,
-                          color: _sendPushNotification
-                              ? Color(0xff1E2E52)
-                              : Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _sendPushNotification = !_sendPushNotification;
-                        });
-                      },
-                      child: Text(
-                        'Отправить пуш уведомления',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
               CustomButton(
                 buttonText: 'Сохранить',
                 onPressed: () {
@@ -164,7 +117,6 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
                           title: title,
                           body: body,
                           date: date,
-                          sendNotification: _sendPushNotification,
                         ));
 
                     Navigator.pop(context);

@@ -556,7 +556,6 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
     required String body,
     required int leadId,
     DateTime? date,
-    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
   final organizationId = await getSelectedOrganization(); 
@@ -567,7 +566,6 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
-      'send_notification': sendNotification ? 1 : 0,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -603,7 +601,6 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
     required String title,
     required String body,
     DateTime? date,
-    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
   final organizationId = await getSelectedOrganization(); 
@@ -614,7 +611,6 @@ Future<List<Notes>> getLeadNotes(int leadId, {int page = 1, int perPage = 20}) a
       'body': body,
       'lead_id': leadId,
       'date': date.toIso8601String(),
-      'send_notification': sendNotification ? 1 : 0,
     });
 
     if (response.statusCode == 200) {
@@ -1510,7 +1506,7 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
-    int? userId,
+    List<int>? userId,
     String? description,
     // Map<String, dynamic>? file,
   }) async {
@@ -1523,7 +1519,8 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
+        if (userId != null)
+        'users': userId.map((id) => {'user_id': id}).toList(), // Передаем список как массив
         // if (file != null) "file": file,
         if (description != null) 'description': description,
       };
@@ -1551,7 +1548,7 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
-    int? userId,
+    List<int>? userId,
     String? description,
     Map<String, dynamic>? file,
   }) async {
@@ -1564,7 +1561,8 @@ Future<Map<String, dynamic>> CreateTaskStatusAdd({
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
+         if (userId != null)
+        'users': userId.map((id) => {'user_id': id}).toList(), 
         if (file != null) 'file': file,
         if (description != null) 'description': description,
       };

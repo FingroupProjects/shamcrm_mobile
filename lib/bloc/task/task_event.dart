@@ -25,7 +25,7 @@ class CreateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final int? userId;
+  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   // final TaskFile? file;
   
@@ -37,11 +37,12 @@ class CreateTask extends TaskEvent {
     this.startDate,
     this.endDate,
     this.projectId,
-    this.userId,
+    this.userId, // Передаём новый параметр в конструктор
     this.description,
     // this.file,
   });
 }
+
 
 class UpdateTask extends TaskEvent {
   final int taskId;
@@ -51,7 +52,7 @@ class UpdateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final int? userId;
+  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   final int taskStatusId;
   // final TaskFile? file;

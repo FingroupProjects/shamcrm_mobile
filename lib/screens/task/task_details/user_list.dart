@@ -1,118 +1,131 @@
-import 'package:crm_task_manager/bloc/user/user_bloc.dart';
-import 'package:crm_task_manager/bloc/user/user_state.dart';
-import 'package:crm_task_manager/models/user_model.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/models/user.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class UserWidget extends StatefulWidget {
-  final String? selectedUser;
-  final ValueChanged<String?> onChanged;
+class UserMultiSelectWidget extends StatefulWidget {
+  final List<String>? selectedUsers;
+  final Function(List<UserData>) onSelectUsers;
 
-  UserWidget({required this.selectedUser, required this.onChanged});
+  UserMultiSelectWidget({
+    super.key,
+    required this.onSelectUsers,
+    this.selectedUsers,
+  });
 
   @override
-  _UserWidgetState createState() => _UserWidgetState();
+  State<UserMultiSelectWidget> createState() => _UserMultiSelectWidgetState();
 }
 
-class _UserWidgetState extends State<UserWidget> {
+class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
+  List<UserData> usersList = [];
+  List<UserData> selectedUsersData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GetAllClientBloc>().add(GetAllClientEv());
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UserTaskBloc, UserTaskState>(
-      builder: (context, state) {
-        List<DropdownMenuItem<String>> dropdownItems = [];
+    return Column(
+      children: [
+        BlocBuilder<GetAllClientBloc, GetAllClientState>(
+          builder: (context, state) {
+            if (state is GetAllClientLoading) {
+              // return Center(child: CircularProgressIndicator());
+            }
 
-        if (state is UserTaskLoading) {
-          dropdownItems = [
-            DropdownMenuItem(
-              value: null,
-              child: Text(
-                'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ];
-        } else if (state is UserTaskLoaded) {
-          print('Список пользователей: ${state.users}');
-          dropdownItems =
-              state.users.map<DropdownMenuItem<String>>((UserTask users) {
-            return DropdownMenuItem<String>(
-              value: users.id.toString(),
-              child: Text(users.name),
-            );
-          }).toList();
-        }
+            if (state is GetAllClientError) {
+              return Text(state.message);
+            }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Пользователь',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems
-                        .any((item) => item.value == widget.selectedUser)
-                    ? widget.selectedUser
-                    : null,
-                hint: const Text(
-                  'Выберите пользователя',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+            if (state is GetAllClientSuccess) {
+              usersList = state.dataUser.result ?? [];
+              if (widget.selectedUsers != null && usersList.isNotEmpty) {
+                selectedUsersData = usersList.where((user) => widget.selectedUsers!.contains(user.id.toString())).toList();
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Пользователи',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xfff1E2E52),
+                    ),
                   ),
-                ),
-                items: dropdownItems,
-                onChanged: widget.onChanged,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                    ),
+                    child: CustomDropdown<UserData>.multiSelectSearch(
+                      items: usersList,
+                      initialItems: selectedUsersData,
+                      searchHintText: 'Поиск',
+                      overlayHeight: 400,
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero, 
+                        dense: true, 
+                        title: Padding(
+                          padding: EdgeInsets.zero, 
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min, 
+                            children: [
+                              Container(
+                                width: 20, 
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Color(0xff1E2E52), width: 1),
+                                  color: isSelected ? Color(0xff1E2E52) : Colors.transparent, 
+                                ),
+                                child: isSelected ? Icon(Icons.check, color: Colors.white, size: 16) : null,
+                              ),
+                              const SizedBox(width: 10), 
+                              Text(
+                                item.name!,
+                                style: TextStyle(fontSize: 16), 
+                              ),
+                            ],
+                          ),
+                        ),
+                        onTap: () => onItemSelect(),
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) =>
+                          Text('Выберите пользователей'),
+                      listValidator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Поле обязательно для заполнения';
+                        }
+                        return null;
+                      },
+                      onListChanged: (values) {
+                        widget.onSelectUsers(values);
+                        setState(() {
+                          selectedUsersData = values;
+                        });
+                      },
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+                ],
+              );
+            }
+
+            return SizedBox();
+          },
+        ),
+      ],
     );
   }
 }

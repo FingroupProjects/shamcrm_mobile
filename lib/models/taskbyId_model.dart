@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
 class TaskById {
@@ -11,7 +10,7 @@ class TaskById {
   final TaskStatusById? taskStatus;
   final String? color;
   final Project? project;
-  final User? user;
+  final List<UserById>? user;  // Обновлено на список пользователей
   final TaskFileById? file;
   final int priority;
 
@@ -61,13 +60,38 @@ class TaskById {
       project: json['project'] != null && json['project'] is Map<String, dynamic>
           ? Project.fromJson(json['project'])
           : null,
-      user: json['user'] != null && json['user'] is Map<String, dynamic>
-          ? User.fromJson(json['user'])
-          : null,
+      user: json['users'] != null && json['users'] is List
+         ? (json['users'] as List)
+        .map((userJson) => UserById.fromJson(userJson))
+        .toList()
+        : null,
       color: json['color'] is String ? json['color'] : null,
       file: json['file'] != null && json['file'] is Map<String, dynamic>
           ? TaskFileById.fromJson(json['file'])
           : null,
+    );
+  }
+}
+
+class UserById {
+  final int id;
+  final String name;
+  final String email;
+  final String phone;
+
+  UserById({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+  });
+
+  factory UserById.fromJson(Map<String, dynamic> json) {
+    return UserById(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указано', 
+      email: json['email'] ?? 'Не указано', 
+      phone: json['phone'] ?? 'Не указано', 
     );
   }
 }

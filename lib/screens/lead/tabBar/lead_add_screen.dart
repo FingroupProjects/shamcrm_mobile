@@ -280,7 +280,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                   managerId: selectedManager != null
                                       ? int.parse(selectedManager!)
                                       : null,
-                                  // organizationId: 1,
                                   instaLogin: instaLogin,
                                   facebookLogin: facebookLogin,
                                   tgNick: tgNick,

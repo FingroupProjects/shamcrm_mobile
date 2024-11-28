@@ -43,7 +43,7 @@ void DropdownBottomSheet(
                       if (snapshot.hasError) {
                         return Center(child: Text('Ошибка: ${snapshot.error}'));
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text('Нет доступных статусов'));
+                        return Center(child: Text('Загрузка....'));
                       }
 
                       List<LeadStatus> statuses = snapshot.data!;

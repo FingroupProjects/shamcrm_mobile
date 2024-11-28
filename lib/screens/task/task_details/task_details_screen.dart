@@ -19,8 +19,8 @@ class TaskDetailsScreen extends StatefulWidget {
   final int statusId;
   final String? project;
   final int? projectId;
-  final String? user;
-  final int? userId;
+  // final String? user;
+  final List<int>? userId;
   // final String? projectName;
   final String? description;
   final String? startDate;
@@ -35,7 +35,7 @@ class TaskDetailsScreen extends StatefulWidget {
     required this.statusId,
     this.project,
     this.projectId,
-    this.user,
+    // this.user,
     this.userId,
     this.description,
     this.startDate,
@@ -61,6 +61,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     super.initState();
     _checkPermissions();
       context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+
   }
 
   // Метод для проверки разрешений
@@ -86,29 +87,27 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   // Обновление данных задачи
   void _updateDetails(TaskById task) {
-    currentTask = task;
-    details = [
-      {'label': 'ID задачи:', 'value': task.id.toString()}, 
-      {'label': 'Название задачи:', 'value': task.name}, 
-      {'label': 'От:', 'value': task.startDate != null && task.startDate!.isNotEmpty 
-          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-          : 'Не указано'},
-      {'label': 'До:', 'value': task.endDate != null && task.endDate!.isNotEmpty
-          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-          : 'Не указано'},
-      {
-        'label': 'Статус:',
-        'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
-      },
-      // {'label': 'Приоритет:', 'value': task.priority.toString()},
-      
-      {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
-      {'label': 'Пользователь:', 'value': task.user?.name ?? 'Не указано'},
+  currentTask = task;
+  details = [
+    {'label': 'ID задачи:', 'value': task.id.toString()}, 
+    {'label': 'Название задачи:', 'value': task.name}, 
+    {'label': 'От:', 'value': task.startDate != null && task.startDate!.isNotEmpty 
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+        : 'Не указано'},
+    {'label': 'До:', 'value': task.endDate != null && task.endDate!.isNotEmpty
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+        : 'Не указано'},
+    {
+      'label': 'Статус:',
+      'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
+    },
+    {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
+    {'label': 'Пользователь:','value': task.user != null && task.user!.isNotEmpty 
+          ? task.user!.map((user) => user.name).join(', ') : 'Не указано', },
+    {'label': 'Описание:', 'value': task.description?.isNotEmpty == true ? task.description! : 'Не указано'},
+  ];
+}
 
-
-      {'label': 'Описание:', 'value': task.description?.isNotEmpty == true ? task.description! : 'Не указано'},
-    ];
-  }
 
   @override
 Widget build(BuildContext context) {
@@ -199,11 +198,11 @@ Widget build(BuildContext context) {
                         builder: (context) => TaskEditScreen(
                           taskId: currentTask!.id,
                           taskName: currentTask!.name,
-                          taskStatus: currentTask!.taskStatus?.taskStatus
-                                  .toString() ??
-                              '',
+                          taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
                           project: currentTask!.project?.id.toString(),
-                          user: currentTask!.user?.id.toString(),
+                          user: currentTask!.user != null && currentTask!.user!.isNotEmpty
+                          ? currentTask!.user!.map((user) => user.id).toList()  
+                          : null, 
                           statusId: currentTask!.statusId,
                           description: currentTask!.description,
                           startDate: currentTask!.startDate,
