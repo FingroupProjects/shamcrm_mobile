@@ -1,16 +1,13 @@
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
-import 'package:crm_task_manager/bloc/currency/currency_event.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/region/region_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -64,7 +61,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final TextEditingController sumController = TextEditingController();
 
   String? selectedManager;
-  String? selectedCurrency;
   String? selectedLead;
   List<CustomField> customFields = [];
 
@@ -75,7 +71,6 @@ void initState() {
   titleController.text = widget.dealName;
   descriptionController.text = widget.description ?? '';
   selectedManager = widget.manager;
-  selectedCurrency = widget.currency;
   selectedLead = widget.lead;
   startDateController.text = widget.startDate ?? '';
   endDateController.text = widget.endDate ?? '';
@@ -86,10 +81,8 @@ void initState() {
       ..controller.text = customField.value);
   }
 
-  // context.read<RegionBloc>().add(FetchRegions());
-  context.read<LeadBloc>().add(FetchAllLeads());
+    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-  context.read<CurrencyBloc>().add(FetchCurrencies());
 }
 
 
@@ -179,12 +172,12 @@ void initState() {
                             ? 'Поле обязательно для заполнения'
                             : null,
                       ),
-                      const SizedBox(height: 8),
-                      LeadWidget(
-                        selectedLead: selectedLead,
-                        onChanged: (String? newValue) {
+                        const SizedBox(height: 8),
+                      LeadRadioGroupWidget(
+                        selectedLead: selectedLead, 
+                        onSelectLead: (LeadData selectedRegionData) {
                           setState(() {
-                            selectedLead = newValue;
+                            selectedLead = selectedRegionData.id.toString();
                           });
                         },
                       ),
@@ -194,14 +187,6 @@ void initState() {
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      CurrencyWidget(
-                        selectedCurrency: selectedCurrency,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedCurrency = newValue;
                           });
                         },
                       ),
@@ -339,9 +324,6 @@ void initState() {
                                       : null,
                                   leadId: selectedLead != null
                                       ? int.parse(selectedLead!)
-                                      : null,
-                                  currencyId: selectedCurrency != null
-                                      ? int.parse(selectedCurrency!)
                                       : null,
                                   description: descriptionController.text,
                                   startDate: parsedStartDate,

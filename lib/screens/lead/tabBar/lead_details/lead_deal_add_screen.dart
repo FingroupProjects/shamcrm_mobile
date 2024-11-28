@@ -1,6 +1,4 @@
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
-import 'package:crm_task_manager/bloc/currency/currency_event.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
@@ -11,7 +9,6 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_status_list.dart';
@@ -41,7 +38,6 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
   String? selectedManager;
   String? selectedDealStatus; // Добавляем выбор статуса
-  String? selectedCurrency;
   List<CustomField> customFields = [];
 
   @override
@@ -49,7 +45,6 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<DealBloc>().add(FetchDealStatuses()); // Загружаем статусы
-    context.read<CurrencyBloc>().add(FetchCurrencies());
   }
 
   void _addCustomField(String fieldName) {
@@ -168,14 +163,6 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           });
                         },
                       ),
-                      CurrencyWidget(
-                        selectedCurrency: selectedCurrency,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedCurrency = newValue;
-                          });
-                        },
-                      ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
@@ -280,9 +267,6 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                   dealStatusId: int.parse(selectedDealStatus!),
                                   managerId: int.parse(selectedManager!),
                                   leadId: widget.leadId,
-                                  currencyId: selectedCurrency != null
-                                      ? int.parse(selectedCurrency!)
-                                      : null,
                                   dealtypeId: 1,
                                   startDate: startDateController.text.isNotEmpty
                                       ? DateFormat('dd/MM/yyyy').parse(startDateController.text)

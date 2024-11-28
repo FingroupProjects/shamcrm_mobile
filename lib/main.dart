@@ -3,13 +3,13 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
-import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
@@ -29,7 +29,7 @@ import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
-import 'package:crm_task_manager/bloc/region/region_bloc.dart';
+import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
@@ -122,8 +122,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => NotesBloc(apiService)),
         BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => GetAllRegionBloc()),
+        BlocProvider(create: (context) => GetAllLeadBloc()),
         BlocProvider(create: (context) => DealBloc(apiService)),
-        BlocProvider(create: (context) => CurrencyBloc(apiService)),
         BlocProvider(create: (context) => TaskBloc(apiService)),
         BlocProvider(create: (context) => ProjectBloc(apiService)),
         BlocProvider(create: (context) => UserTaskBloc(apiService)),

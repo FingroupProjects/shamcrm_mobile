@@ -1,114 +1,124 @@
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_state.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class LeadWidget extends StatefulWidget {
+class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
-  final ValueChanged<String?> onChanged;
+  final Function(LeadData) onSelectLead;
 
-  LeadWidget({required this.selectedLead, required this.onChanged});
+  LeadRadioGroupWidget(
+      {super.key, required this.onSelectLead, this.selectedLead});
 
   @override
-  _LeadWidgetState createState() => _LeadWidgetState();
+  State<LeadRadioGroupWidget> createState() => _LeadRadioGroupWidgetState();
 }
 
-class _LeadWidgetState extends State<LeadWidget> {
+class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
+  List<LeadData> leadsList = [];
+  LeadData? selectedLeadData;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        List<DropdownMenuItem<String>> dropdownItems = [];
-        if (state is LeadLoading) {
-          dropdownItems = [
-            DropdownMenuItem(
-              value: null,
-              child: Text(
-                'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ];
-        } else if (state is LeadDataLoaded) {
-          dropdownItems = state.leads.map<DropdownMenuItem<String>>((Lead lead) {
-            return DropdownMenuItem<String>(
-              value: lead.id.toString(),
-              child: Text(lead.name),
-            );
-          }).toList();
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Лиды',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedLead)
-                    ? widget.selectedLead
-                    : null,
-                hint: const Text(
-                  'Выберите лида',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+    return Column(
+      children: [
+        BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
+          builder: (context, state) {
+            if (state is GetAllLeadLoading) {
+              // return Center(child: CircularProgressIndicator());
+            }
+
+            if (state is GetAllLeadError) {
+              return Text(state.message);
+            }
+            if (state is GetAllLeadSuccess) {
+              leadsList = state.dataLead.result ?? [];
+              if (widget.selectedLead != null && leadsList.isNotEmpty) {
+                try {
+                  selectedLeadData = leadsList.firstWhere(
+                    (lead) => lead.id.toString() == widget.selectedLead,
+                  );
+                } catch (e) {
+                  selectedLeadData = null;
+                }
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // SizedBox(height: 8),
+                  const Text(
+                    'Лиды',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xfff1E2E52),
+                    ),
                   ),
-                ),
-                items: dropdownItems,
-                onChanged: widget.onChanged,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                    ),
+                    child: CustomDropdown<LeadData>.search(
+                      closeDropDownOnClearFilterSearch: true,
+                      items: leadsList,
+                      searchHintText: 'Поиск',
+                      overlayHeight: 400,
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
+                        return Text(item.name!);
+                      },
+                      headerBuilder: (context, selectedItem, enabled) {
+                        return Text(
+                          selectedItem.name ?? 'Выберите лида',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) =>
+                          Text('Выберите лид'),
+                      excludeSelected: false,
+                      initialItem: selectedLeadData,
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Поле обязательно для заполнения';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        if (value != null) {
+                          widget.onSelectLead(value);
+                          setState(() {
+                            selectedLeadData = value;
+                          });
+                        }
+                      },
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
-                ),
-                menuMaxHeight: 300,
-              ),
-            ),
-          ],
-        );
-      },
+                ],
+              );
+            }
+            return SizedBox();
+          },
+        ),
+      ],
     );
   }
 }

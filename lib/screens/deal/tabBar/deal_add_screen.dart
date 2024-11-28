@@ -1,18 +1,15 @@
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
-import 'package:crm_task_manager/bloc/currency/currency_event.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
@@ -39,15 +36,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
   String? selectedManager;
   String? selectedLead;
-  String? selectedCurrency;
   List<CustomField> customFields = [];
 
   @override
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    context.read<LeadBloc>().add(FetchAllLeads());
-    context.read<CurrencyBloc>().add(FetchCurrencies());
+    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
   }
 
   void _addCustomField(String fieldName) {
@@ -146,11 +141,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      LeadWidget(
-                        selectedLead: selectedLead,
-                        onChanged: (String? newValue) {
+                       LeadRadioGroupWidget(
+                        selectedLead: selectedLead, 
+                        onSelectLead: (LeadData selectedRegionData) {
                           setState(() {
-                            selectedLead = newValue;
+                            selectedLead = selectedRegionData.id.toString();
                           });
                         },
                       ),
@@ -160,14 +155,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      CurrencyWidget(
-                        selectedCurrency: selectedCurrency,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedCurrency = newValue;
                           });
                         },
                       ),
@@ -333,9 +320,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   dealStatusId: widget.statusId,
                                   managerId: int.parse(selectedManager!),
                                   leadId: int.parse(selectedLead!),
-                                  currencyId: selectedCurrency != null
-                                      ? int.parse(selectedCurrency!)
-                                      : null,
                                   dealtypeId: 1,
                                   startDate: startDate,
                                   endDate: endDate,
