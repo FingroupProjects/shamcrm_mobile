@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/lead_model.dart';
+
 class ChatProfile {
   final int id;
   final String name;
@@ -11,6 +13,8 @@ class ChatProfile {
   final String? address;
   final String? description;
   final String createdAt;
+  final String? manager;
+  final LeadStatus? leadStatus;
 
   ChatProfile({
     required this.id,
@@ -25,12 +29,14 @@ class ChatProfile {
     this.address,
     this.description,
     required this.createdAt,
+    this.manager,
+    this.leadStatus,
   });
 
   factory ChatProfile.fromJson(Map<String, dynamic> json) {
     return ChatProfile(
       id: json['id'],
-      name: json['name']?? "Без имени",
+      name: json['name'] ?? "Без имени",
       facebookLogin: json['facebook_login'],
       instaLogin: json['insta_login'],
       tgNick: json['tg_nick'],
@@ -41,6 +47,11 @@ class ChatProfile {
       address: json['address'],
       description: json['description'],
       createdAt: json['created_at'],
+      manager: json['manager'],
+      leadStatus: json['leadStatus'] != null
+          ? LeadStatus.fromJson(json['leadStatus'])
+          : null,
     );
   }
 }
+

@@ -13,9 +13,13 @@ class ChatProfileBloc extends Bloc<ChatProfileEvent, ChatProfileState> {
       emit(ChatProfileLoading());
       try {
         final profile = await apiService.getChatProfile(event.chatId);
-        emit(ChatProfileLoaded(profile as ChatProfile));
+        emit(ChatProfileLoaded(profile));
       } catch (e) {
-        emit(ChatProfileError(e.toString()));
+        if (e.toString() == "Такого Лида не существует") {
+          emit(ChatProfileError("Такого Лида не существует"));
+        } else {
+          emit(ChatProfileError("Ошибка: ${e.toString()}"));
+        }
       }
     });
   }
