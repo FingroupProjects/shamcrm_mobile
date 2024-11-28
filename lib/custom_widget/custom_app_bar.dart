@@ -109,7 +109,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   height: 24,
                 ),
                 onPressed: () {
-                 (
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => NotificationsScreen()),
