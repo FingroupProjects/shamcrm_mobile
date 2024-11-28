@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/api/service/api_service.dart'; 
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_state.dart';
@@ -33,7 +33,8 @@ class UserProfileScreen extends StatelessWidget {
               final profile = state.profile;
               // Преобразование и форматирование даты
               final DateTime parsedDate = DateTime.parse(profile.createdAt);
-              final String formattedDate = DateFormat('dd-MM-yyyy').format(parsedDate);
+              final String formattedDate =
+                  DateFormat('dd-MM-yyyy').format(parsedDate);
 
               return ListView(
                 padding: const EdgeInsets.all(16.0),
@@ -46,7 +47,6 @@ class UserProfileScreen extends StatelessWidget {
                     leading: Icon(Icons.phone),
                     title: Text("Телефон: ${profile.phone ?? 'Не указано'}"),
                   ),
-                  
                   ListTile(
                     leading: Image.asset('assets/icons/leads/instagram.png',
                         width: 24, height: 24),
@@ -74,10 +74,10 @@ class UserProfileScreen extends StatelessWidget {
                     title: Text(
                         "Facebook: ${profile.facebookLogin ?? 'Не указано'}"),
                   ),
-                  ListTile(
-                    leading: Icon(Icons.location_on),
-                    title: Text("Адрес: ${profile.address ?? 'Не указано'}"),
-                  ),
+                  // ListTile(
+                  //   leading: Icon(Icons.location_on),
+                  //   title: Text("Адрес: ${profile.address ?? 'Не указано'}"),
+                  // ),
                   ListTile(
                     leading: Icon(Icons.description),
                     title: Text(
@@ -85,12 +85,20 @@ class UserProfileScreen extends StatelessWidget {
                   ),
                   ListTile(
                     leading: Icon(Icons.calendar_today),
-                    title: Text("Дата создания: $formattedDate"), 
+                    title: Text("Дата создания: $formattedDate"),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.supervisor_account),
+                    title: Text("Менеджер: ${profile.manager ?? 'Не указано'}"),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.assignment),
+                    title: Text("Статус: ${profile.leadStatus?.title ?? 'Не указано'}"), // Только name
                   ),
                 ],
               );
             } else if (state is ChatProfileError) {
-              return Center(child: Text("Ошибка: ${state.error}"));
+              return Center(child: Text(state.error));
             }
             return Center(child: Text("Загрузите данные"));
           },
