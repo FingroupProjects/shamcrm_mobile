@@ -7,7 +7,6 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
-import 'package:crm_task_manager/screens/dashboard/chat_profile_proba.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
@@ -82,11 +81,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         ),
         title: InkWell(
           onTap: () {
-            // Переход на экран UserProfileScreen
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => UserProfileScreen(), // Переход на экран профиля
+                builder: (context) => UserProfileScreen(chatId: widget.chatId),
               ),
             );
           },

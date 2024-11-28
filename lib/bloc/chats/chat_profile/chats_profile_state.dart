@@ -1,28 +1,29 @@
-import 'package:crm_task_manager/models/ChatById_model.dart';
+import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class ChatProfileState extends Equatable {
-  const ChatProfileState();
-  
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class ChatProfileInitial extends ChatProfileState {}
+
 class ChatProfileLoading extends ChatProfileState {}
+
 class ChatProfileLoaded extends ChatProfileState {
   final ChatProfile profile;
 
-  const ChatProfileLoaded(this.profile);
+  ChatProfileLoaded(this.profile);
 
   @override
-  List<Object> get props => [profile];
+  List<Object?> get props => [profile];
 }
-class ChatProfileError extends ChatProfileState {
-  final String message;
 
-  const ChatProfileError(this.message);
+class ChatProfileError extends ChatProfileState {
+  final String error;
+
+  ChatProfileError(this.error);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [error];
 }
