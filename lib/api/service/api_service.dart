@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
@@ -14,7 +15,6 @@ import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart'; 
-import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart'; 
@@ -885,6 +885,34 @@ Future<List<LeadDeal>> getLeadDeals(int leadId, {int page = 1, int perPage = 20}
 }
 
 
+      //Метод для получения лида
+ Future<LeadsDataResponse> getAllLead() async {
+  final organizationId = await getSelectedOrganization(); 
+
+  final response = await _getRequest('/lead${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+  late LeadsDataResponse dataLead;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataLead = LeadsDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка при получении данных: ${response.statusCode}');
+  }
+
+  if (kDebugMode) {
+    print('getAll lead: ${response.body}');
+  }
+
+  return dataLead;
+}
+
+
   // Метод для Удаления Статуса Лида
   Future<Map<String, dynamic>> deleteLeadStatuses(int leadStatusId) async {
       final organizationId = await getSelectedOrganization(); 
@@ -1076,7 +1104,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
     int? organizationId,
     int? dealtypeId,
     required int? leadId,
-    required int? currencyId,
     List<Map<String, String>>? customFields,
   }) async {
     final requestBody = {
@@ -1090,7 +1117,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
       if (organizationId != null) 'organization_id': organizationId,
       if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
-      if (currencyId != null) 'currency_id': currencyId,
       // Здесь добавляем deal_custom_fields
       'deal_custom_fields': customFields?.map((field) {
             // Изменяем структуру для соответствия новому формату
@@ -1138,7 +1164,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
     int? organizationId,
     int? dealtypeId,
     required int? leadId,
-    required int? currencyId,
     List<Map<String, String>>? customFields,
   }) async {
     final response = await _patchRequest('/deal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}'
@@ -1153,7 +1178,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
       if (organizationId != null) 'organization_id': organizationId,
       if (dealtypeId != null) 'deal_type_id': dealtypeId,
       if (leadId != null) 'lead_id': leadId,
-      if (currencyId != null) 'currency_id': currencyId,
       'deal_custom_fields': customFields?.map((field) {
             return {
               'key': field.keys.first,
@@ -1183,29 +1207,6 @@ Future<List<Deal>> getDeals(int? dealStatusId,
         'success': false,
         'message': 'Ошибка обновления сделки: ${response.body}'
       };
-    }
-  }
-
-  // Метод для получения Валюта
-  Future<List<Currency>> getCurrency() async {
-      final organizationId = await getSelectedOrganization(); 
-
-    final response = await _getRequest('/currency${organizationId != null ? '?organization_id=$organizationId' : ''}'
-);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print('Тело ответа: $data');
-
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((currency) => Currency.fromJson(currency))
-            .toList();
-      } else {
-        throw Exception('Валюты не найдено');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
 

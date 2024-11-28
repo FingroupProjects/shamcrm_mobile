@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 
@@ -11,7 +10,6 @@ class DealById {
   final String sum;
   final int statusId;
   final ManagerData? manager;
-  final Currency? currency;
   final Lead? lead;
   final List<DealCustomFieldsById> dealCustomFields;
 
@@ -24,7 +22,6 @@ class DealById {
     required this.sum,
     required this.statusId,
     this.manager,
-    this.currency,
     this.lead,
     required this.dealCustomFields,
   });
@@ -40,8 +37,6 @@ class DealById {
       statusId: dealStatusId,
       manager:
           json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
-      currency:
-          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
               ?.map((field) => DealCustomFieldsById.fromJson(field))

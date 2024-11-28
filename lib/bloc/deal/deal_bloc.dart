@@ -134,7 +134,6 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         organizationId: event.organizationId,
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
-        currencyId: event.currencyId,
         customFields: event.customFields,
       );
       if (result['success']) {
@@ -169,7 +168,6 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         organizationId: event.organizationId,
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
-        currencyId: event.currencyId,
         customFields: event.customFields,
       );
 

@@ -37,7 +37,6 @@ class CreateDeal extends DealEvent {
   final int? organizationId;
   final int? dealtypeId;
   final int? leadId;
-  final int? currencyId;
   final List<Map<String, String>>? customFields;
 
   CreateDeal({
@@ -51,7 +50,6 @@ class CreateDeal extends DealEvent {
     this.organizationId,
     this.dealtypeId,
     this.leadId,
-    this.currencyId,
     this.customFields,
   });
 }
@@ -68,7 +66,6 @@ class UpdateDeal extends DealEvent {
   final int? organizationId;
   final int? dealtypeId;
   final int? leadId;
-  final int? currencyId;
   final List<Map<String, String>>? customFields;
 
   UpdateDeal({
@@ -83,7 +80,6 @@ class UpdateDeal extends DealEvent {
     this.organizationId,
     this.dealtypeId,
     this.leadId,
-    this.currencyId,
     this.customFields,
   });
 }

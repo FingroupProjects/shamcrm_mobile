@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/region/region_bloc.dart';
+import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:intl/intl.dart';
 
 class LeadAddScreen extends StatefulWidget {
@@ -44,7 +44,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    // context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
   }
 
