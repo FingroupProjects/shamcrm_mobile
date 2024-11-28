@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/manager_data_response.dart';
 
 class Deal {
   final int id;
@@ -10,7 +10,7 @@ class Deal {
   final String? description;
   final String sum;
   final int statusId;
-  final Manager? manager;
+  final ManagerData? manager;
   final Currency? currency;
   final Lead? lead;
   final List<DealCustomField> dealCustomFields;
@@ -38,7 +38,7 @@ class Deal {
       description: json['description'] ?? '',
       sum: json['sum'] ?? '0.00',
       statusId: dealStatusId,
-      manager: json['manager'] != null ? Manager.fromJson(json['manager']) : null,
+      manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       currency: json['currency'] != null ? Currency.fromJson(json['currency']) : null,
       lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
