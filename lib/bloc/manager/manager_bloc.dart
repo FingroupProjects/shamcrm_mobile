@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/manager_data_response.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:meta/meta.dart';
 
-part 'get_all_manager_event.dart';
-part 'get_all_manager_state.dart';
+part 'manager_event.dart';
+part 'manager_state.dart';
 
 class GetAllManagerBloc extends Bloc<GetAllManagerEvent, GetAllManagerState> {
   GetAllManagerBloc() : super(GetAllManagerInitial()) {

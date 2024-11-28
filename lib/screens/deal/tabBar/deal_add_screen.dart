@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_bloc.dart';
 import 'package:crm_task_manager/bloc/currency/currency_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -11,7 +11,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/models/manager_data_response.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/currency_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';

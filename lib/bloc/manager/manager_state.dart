@@ -1,4 +1,4 @@
-part of 'get_all_manager_bloc.dart';
+part of 'manager_bloc.dart';
 
 @immutable
 sealed class GetAllManagerState {}
