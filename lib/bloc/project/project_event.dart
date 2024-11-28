@@ -1,10 +1,6 @@
-import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
-abstract class ProjectEvent extends Equatable {
-  const ProjectEvent();
+@immutable
+sealed class GetAllProjectEvent {}
 
-  @override
-  List<Object> get props => [];
-}
-
-class FetchProjects extends ProjectEvent {}
+class GetAllProjectEv extends GetAllProjectEvent {}

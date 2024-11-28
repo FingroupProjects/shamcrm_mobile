@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/manager_data_response.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 
 class Lead {
@@ -8,7 +8,7 @@ class Lead {
   final int messageAmount;
   final String? createdAt;
   final int statusId;
-  final Region? region;
+  final RegionData? region;
   final ManagerData? manager;
   final String? birthday;
   final String? instagram;
@@ -47,7 +47,7 @@ class Lead {
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       statusId: leadStatusId,
       region: json['region'] != null && json['region'] is Map<String, dynamic>
-          ? Region.fromJson(json['region'])
+          ? RegionData.fromJson(json['region'])
           : null,
       manager:
           json['manager'] != null && json['manager'] is Map<String, dynamic>

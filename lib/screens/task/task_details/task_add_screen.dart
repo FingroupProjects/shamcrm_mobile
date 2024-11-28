@@ -1,9 +1,9 @@
-import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
-import 'package:crm_task_manager/bloc/project/project_state.dart';
-import 'package:crm_task_manager/models/task_model.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
@@ -54,7 +54,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    context.read<ProjectBloc>().add(FetchProjects());
+    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     // Устанавливаем значения по умолчанию
     _setDefaultValues();
@@ -74,14 +74,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   void _setupBlocListeners() {
     // Слушаем изменения в ProjectBloc
-    context.read<ProjectBloc>().stream.listen((state) {
-      if (state is ProjectLoaded && state.projects.isNotEmpty) {
-        setState(() {
-          // Выбираем первый проект по умолчанию
-          selectedProject = state.projects.first.id.toString();
-        });
-      }
-    });
+    // context.read<GetAllProjectBloc>().stream.listen((state) {
+    //   if (state is GetAllProjectLoaded && state.projects.isNotEmpty) {
+    //     setState(() {
+    //       // Выбираем первый проект по умолчанию
+    //       selectedProject = state.projects.first.id.toString();
+    //     });
+    //   }
+    // });
 
     // // Слушаем изменения в UserBloc
     // context.read<UserTaskBloc>().stream.listen((state) {
@@ -373,11 +373,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      ProjectWidget(
-                        selectedProject: selectedProject,
-                        onChanged: (String? newValue) {
+                      ProjectRadioGroupWidget(
+                        selectedProject: selectedProject, 
+                        onSelectProject: (Project selectedProjectData) {
                           setState(() {
-                            selectedProject = newValue;
+                            selectedProject = selectedProjectData.id.toString();
                           });
                         },
                       ),

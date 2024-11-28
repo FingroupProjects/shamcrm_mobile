@@ -1,117 +1,123 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
+import 'package:crm_task_manager/models/region_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/region/region_bloc.dart';
-import 'package:crm_task_manager/bloc/region/region_state.dart';
-import 'package:crm_task_manager/models/region_model.dart';
 
-class RegionWidget extends StatefulWidget {
+class RegionRadioGroupWidget extends StatefulWidget {
   final String? selectedRegion;
-  final ValueChanged<String?> onChanged;
+  final Function(RegionData) onSelectRegion;
 
-  RegionWidget({required this.selectedRegion, required this.onChanged});
+  RegionRadioGroupWidget(
+      {super.key, required this.onSelectRegion, this.selectedRegion});
 
   @override
-  _RegionWidgetState createState() => _RegionWidgetState();
+  State<RegionRadioGroupWidget> createState() =>
+      _RegionRadioGroupWidgetState();
 }
 
-class _RegionWidgetState extends State<RegionWidget> {
+class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
+  List<RegionData> regionsList = [];
+  RegionData? selectedRegionData;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RegionBloc, RegionState>(
-      builder: (context, state) {
-        List<DropdownMenuItem<String>> dropdownItems = [];
+    return Column(
+      children: [
+        BlocBuilder<GetAllRegionBloc, GetAllRegionState>(
+          builder: (context, state) {
+            if (state is GetAllRegionLoading) {
+              // return Center(child: CircularProgressIndicator());
+            }
 
-        if (state is RegionLoading) {
-          dropdownItems = [
-            DropdownMenuItem(
-              value: null,
-              child: Text(
-                'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ];
-        } else if (state is RegionLoaded) {
-          dropdownItems =
-              state.regions.map<DropdownMenuItem<String>>((Region region) {
-            return DropdownMenuItem<String>(
-              value: region.id.toString(),
-              child: Text(region.name),
-            );
-          }).toList();
-        }
+            if (state is GetAllRegionError) {
+              return Text(state.message);
+            }
+            if (state is GetAllRegionSuccess) {
+              regionsList = state.dataRegion.result ?? [];
+              if (widget.selectedRegion != null && regionsList.isNotEmpty) {
+                try {
+                  selectedRegionData = regionsList.firstWhere(
+                    (region) => region.id.toString() == widget.selectedRegion,
+                  );
+                } catch (e) {
+                  selectedRegionData = null;
+                }
+              }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Регион',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems
-                        .any((item) => item.value == widget.selectedRegion)
-                    ? widget.selectedRegion
-                    : null,
-                hint: const Text(
-                  'Выберите регион',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // SizedBox(height: 8),
+                  const Text(
+                    'Регион',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xfff1E2E52),
+                    ),
                   ),
-                ),
-                items: dropdownItems,
-                onChanged: widget.onChanged,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF4F7FD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                    ),
+                    child: CustomDropdown<RegionData>.search(
+                      closeDropDownOnClearFilterSearch: true,
+                      items: regionsList,
+                      searchHintText: 'Поиск',
+                      overlayHeight: 400,
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
+                        return Text(item.name!);
+                      },
+                      headerBuilder: (context, selectedItem, enabled) {
+                        return Text(
+                          selectedItem.name ?? 'Выберите регион',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) =>
+                          Text('Выберите регион'),
+                      excludeSelected: false,
+                      initialItem: selectedRegionData,
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Поле обязательно для заполнения';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        if (value != null) {
+                          widget.onSelectRegion(value);
+                          setState(() {
+                            selectedRegionData = value;
+                          });
+                        }
+                      },
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+                ],
+              );
+            }
+            return SizedBox();
+          },
+        ),
+      ],
     );
   }
 }

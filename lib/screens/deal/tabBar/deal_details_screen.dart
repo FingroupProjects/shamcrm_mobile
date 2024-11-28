@@ -23,7 +23,6 @@ class DealDetailsScreen extends StatefulWidget {
   final int statusId;
   final String? manager;
   final String? currency;
-  final int? currencyId;
   final String? lead;
   final int? leadId;
   final String? description;
@@ -39,7 +38,6 @@ class DealDetailsScreen extends StatefulWidget {
     required this.statusId,
     this.manager,
     this.currency,
-    this.currencyId,
     this.lead,
     this.leadId,
     this.description,
@@ -95,7 +93,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       {'label': 'ID Сделки:', 'value': deal.id.toString()},
       {'label': 'Имя сделки:', 'value': deal.name},
       {'label': 'Менеджер:', 'value': deal.manager?.name ?? 'Не указано'},
-      {'label': 'Валюта:', 'value': deal.currency?.name ?? 'Не указано'},
       {'label': 'Клиент:', 'value': deal.lead?.name ?? 'Не указано'},
       {'label': 'Дата начала:', 'value': formatDate(deal.startDate)},
       {'label': 'Дата окончания:', 'value': formatDate(deal.endDate)},
@@ -210,9 +207,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                           statusId: currentDeal!.statusId,
                           manager: currentDeal!.manager != null
                               ? currentDeal!.manager!.id.toString()
-                              : 'Не указано',
-                          currency: currentDeal!.currency != null
-                              ? currentDeal!.currency!.id.toString()
                               : 'Не указано',
                           lead: currentDeal!.lead != null
                               ? currentDeal!.lead!.id.toString()

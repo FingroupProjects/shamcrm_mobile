@@ -1,6 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
-import 'package:crm_task_manager/models/manager_data_response.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,10 +8,12 @@ class ManagerRadioGroupWidget extends StatefulWidget {
   final String? selectedManager;
   final Function(ManagerData) onSelectManager;
 
-  ManagerRadioGroupWidget({super.key, required this.onSelectManager, this.selectedManager});
+  ManagerRadioGroupWidget(
+      {super.key, required this.onSelectManager, this.selectedManager});
 
   @override
-  State<ManagerRadioGroupWidget> createState() => _ManagerRadioGroupWidgetState();
+  State<ManagerRadioGroupWidget> createState() =>
+      _ManagerRadioGroupWidgetState();
 }
 
 class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
@@ -39,16 +41,21 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
             }
             if (state is GetAllManagerSuccess) {
               managersList = state.dataManager.result ?? [];
-              if (widget.selectedManager != null) {
-                selectedManagerData = managersList.firstWhere(
-                  (manager) => manager.id.toString() == widget.selectedManager
-                );
+              if (widget.selectedManager != null && managersList.isNotEmpty) {
+                try {
+                  selectedManagerData = managersList.firstWhere(
+                    (manager) =>
+                        manager.id.toString() == widget.selectedManager,
+                  );
+                } catch (e) {
+                  selectedManagerData = null;
+                }
               }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 12),
+                  // SizedBox(height: 8),
                   const Text(
                     'Менеджер',
                     style: TextStyle(
@@ -70,7 +77,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       items: managersList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
                         return Text(item.name!);
                       },
                       headerBuilder: (context, selectedItem, enabled) {
@@ -84,9 +92,16 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                           ),
                         );
                       },
-                      hintBuilder: (context, hint, enabled) => Text('Выберите менеджера'),
+                      hintBuilder: (context, hint, enabled) =>
+                          Text('Выберите менеджера'),
                       excludeSelected: false,
                       initialItem: selectedManagerData,
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Поле обязательно для заполнения';
+                        }
+                        return null;
+                      },
                       onChanged: (value) {
                         if (value != null) {
                           widget.onSelectManager(value);
