@@ -36,31 +36,31 @@ class LeadDeal {
 class OrganizationLeadDeals {
   final int id;
   final String name;
-  final int? usersCount;
-  final String? instagram;
-  final String? facebook;
-  final String? tgNick;
-  final String? whatsapp;
+  // final int? usersCount;
+  // final String? instagram;
+  // final String? facebook;
+  // final String? tgNick;
+  // final String? whatsapp;
 
   OrganizationLeadDeals({
     required this.id,
     required this.name,
-    this.usersCount,
-    this.instagram,
-    this.facebook,
-    this.tgNick,
-    this.whatsapp,
+    // this.usersCount,
+    // this.instagram,
+    // this.facebook,
+    // this.tgNick,
+    // this.whatsapp,
   });
 
   factory OrganizationLeadDeals.fromJson(Map<String, dynamic> json) {
     return OrganizationLeadDeals(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Без имени',
-      usersCount: json['usersCount'],
-      instagram: json['instagram'],
-      facebook: json['facebook'],
-      tgNick: json['tg_nick'],
-      whatsapp: json['whatsapp'],
+      // usersCount: json['usersCount'],
+      // instagram: json['instagram'],
+      // facebook: json['facebook'],
+      // tgNick: json['tg_nick'],
+      // whatsapp: json['whatsapp'],
     );
   }
 }

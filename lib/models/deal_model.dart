@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/models/currency_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/models/manager_data_response.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 
 class Deal {
   final int id;

@@ -1,31 +1,47 @@
-import 'package:equatable/equatable.dart';
-import 'package:crm_task_manager/models/region_model.dart';
 
-abstract class RegionState extends Equatable {
-  const RegionState();
+part of 'region_bloc.dart';
 
-  @override
-  List<Object> get props => [];
+
+@immutable
+sealed class GetAllRegionState {}
+
+final class GetAllRegionInitial extends GetAllRegionState {}
+final class GetAllRegionLoading extends GetAllRegionState {
+
+}
+final class GetAllRegionError extends GetAllRegionState {
+  String message;
+
+  GetAllRegionError({required this.message});
+
+}
+final class GetAllRegionSuccess extends GetAllRegionState {
+  RegionsDataResponse dataRegion;
+
+  GetAllRegionSuccess({required this.dataRegion});
 }
 
-class RegionInitial extends RegionState {}
 
-class RegionLoading extends RegionState {}
 
-class RegionLoaded extends RegionState {
-  final List<Region> regions;
 
-  const RegionLoaded(this.regions);
+// import 'package:crm_task_manager/models/region_model.dart';
+// import 'package:flutter/material.dart';
 
-  @override
-  List<Object> get props => [regions];
-}
+// @immutable
+// sealed class GetAllRegionState {}
 
-class RegionError extends RegionState {
-  final String message;
+// final class GetAllRegionInitial extends GetAllRegionState {}
+// final class GetAllRegionLoading extends GetAllRegionState {
 
-  const RegionError(this.message);
+// }
+// final class GetAllRegionError extends GetAllRegionState {
+//   String message;
 
-  @override
-  List<Object> get props => [message];
-}
+//   GetAllRegionError({required this.message});
+
+// }
+// final class GetAllRegionSuccess extends GetAllRegionState {
+//   RegionsDataResponse dataRegion;
+
+//   GetAllRegionSuccess({required this.dataRegion});
+// }

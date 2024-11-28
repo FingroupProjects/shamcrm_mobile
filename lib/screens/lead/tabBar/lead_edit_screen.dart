@@ -1,9 +1,9 @@
-import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region/region_bloc.dart';
-import 'package:crm_task_manager/bloc/region/region_event.dart';
-import 'package:crm_task_manager/models/manager_data_response.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
@@ -75,8 +75,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     // context.read<ManagerBloc>().add(FetchManagers());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
 
-    context.read<RegionBloc>().add(FetchRegions());
+    // context.read<RegionBloc>().add(FetchRegions());
   }
 
   @override
@@ -154,11 +155,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             : null,
                       ),
                       const SizedBox(height: 8),
-                      RegionWidget(
-                        selectedRegion: selectedRegion,
-                        onChanged: (String? newValue) {
+                      RegionRadioGroupWidget(
+                        selectedRegion: selectedRegion, 
+                        onSelectRegion: (RegionData selectedRegionData) {
                           setState(() {
-                            selectedRegion = newValue;
+                            selectedRegion = selectedRegionData.id.toString();
                           });
                         },
                       ),

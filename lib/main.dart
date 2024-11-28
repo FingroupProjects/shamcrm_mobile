@@ -3,7 +3,7 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/get_all_manager_bloc.dart';
+import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -25,7 +25,6 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
-import 'package:crm_task_manager/bloc/manager/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
@@ -121,8 +120,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadBloc(apiService)),
         BlocProvider(create: (context) => HistoryBloc(apiService)),
         BlocProvider(create: (context) => NotesBloc(apiService)),
-        // BlocProvider(create: (context) => ManagerBloc(apiService)),
-        BlocProvider(create: (context) => RegionBloc(apiService)),
+        BlocProvider(create: (context) => GetAllManagerBloc()),
+        BlocProvider(create: (context) => GetAllRegionBloc()),
         BlocProvider(create: (context) => DealBloc(apiService)),
         BlocProvider(create: (context) => CurrencyBloc(apiService)),
         BlocProvider(create: (context) => TaskBloc(apiService)),
@@ -145,15 +144,13 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
         BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
-        BlocProvider(create: (context) => GetAllManagerBloc()),
 
       ],
       child: MaterialApp(

@@ -1,10 +1,15 @@
-import 'package:equatable/equatable.dart';
 
-abstract class RegionEvent extends Equatable {
-  const RegionEvent();
+// import 'package:flutter/material.dart';
 
-  @override
-  List<Object> get props => [];
+// @immutable
+// sealed class GetAllRegionEvent {}
+// class GetAllRegionEv extends GetAllRegionEvent {
+
+// }
+part of 'region_bloc.dart';
+
+@immutable
+sealed class GetAllRegionEvent {}
+class GetAllRegionEv extends GetAllRegionEvent {
+
 }
-
-class FetchRegions extends RegionEvent {}
