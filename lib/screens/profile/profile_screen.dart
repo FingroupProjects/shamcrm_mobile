@@ -67,12 +67,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const NotificationSettingsWidget(),
-            const PinChangeWidget(),
-            OrganizationWidget(
+             OrganizationWidget(
               selectedOrganization: _selectedOrganization,
               onChanged: _onOrganizationChanged,
             ),
+            const NotificationSettingsWidget(),
+            const PinChangeWidget(),
             const LogoutButtonWidget(),
           ],
         ),

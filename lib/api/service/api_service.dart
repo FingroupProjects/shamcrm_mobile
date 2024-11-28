@@ -599,20 +599,18 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     required String body,
     required int leadId,
     DateTime? date,
-    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
-    final organizationId = await getSelectedOrganization();
+  final organizationId = await getSelectedOrganization(); 
 
-    final response = await _postRequest(
-        '/notices${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'title': title,
-          'body': body,
-          'lead_id': leadId,
-          'date': date.toIso8601String(),
-          'send_notification': sendNotification ? 1 : 0,
-        });
+    final response = await _postRequest('/notices${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
+      'title': title,
+      'body': body,
+      'lead_id': leadId,
+      'date': date.toIso8601String(),
+    });
+
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Заметка создана успешно.'};
@@ -650,20 +648,18 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     required String title,
     required String body,
     DateTime? date,
-    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
-    final organizationId = await getSelectedOrganization();
+  final organizationId = await getSelectedOrganization(); 
 
-    final response = await _patchRequest(
-        '/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'title': title,
-          'body': body,
-          'lead_id': leadId,
-          'date': date.toIso8601String(),
-          'send_notification': sendNotification ? 1 : 0,
-        });
+    final response = await _patchRequest('/notices/$noteId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+, {
+      'title': title,
+      'body': body,
+      'lead_id': leadId,
+      'date': date.toIso8601String(),
+    });
+
 
     if (response.statusCode == 200) {
       return {'success': true, 'message': 'Заметка обновлена успешно.'};
@@ -1566,7 +1562,7 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
-    int? userId,
+    List<int>? userId,
     String? description,
     // Map<String, dynamic>? file,
   }) async {
@@ -1579,7 +1575,8 @@ Future<ChatProfile> getChatProfile(int chatId) async {
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
+        if (userId != null)
+        'users': userId.map((id) => {'user_id': id}).toList(), // Передаем список как массив
         // if (file != null) "file": file,
         if (description != null) 'description': description,
       };
@@ -1608,7 +1605,7 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
-    int? userId,
+    List<int>? userId,
     String? description,
     Map<String, dynamic>? file,
   }) async {
@@ -1621,7 +1618,8 @@ Future<ChatProfile> getChatProfile(int chatId) async {
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
+         if (userId != null)
+        'users': userId.map((id) => {'user_id': id}).toList(), 
         if (file != null) 'file': file,
         if (description != null) 'description': description,
       };

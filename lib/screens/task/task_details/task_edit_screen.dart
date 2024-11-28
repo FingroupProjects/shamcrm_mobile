@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class TaskEditScreen extends StatefulWidget {
   final String taskStatus;
   final int statusId;
   final String? project;
-  final String? user;
+  final List<int>? user;
   final String? startDate;
   final String? endDate;
   final String? description;
@@ -52,9 +53,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  
+
   String? selectedProject;
-  String? selectedUser;
+  List<String>? selectedUsers;
   int? selectedPriority;
 
   final Map<int, String> priorityLevels = {
@@ -74,7 +75,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     nameController.text = widget.taskName;
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
-      startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
+      startDateController.text =
+          DateFormat('dd/MM/yyyy').format(parsedStartDate);
     }
     if (widget.endDate != null) {
       DateTime parsedEndDate = DateTime.parse(widget.endDate!);
@@ -82,7 +84,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
-    selectedUser = widget.user;
+    selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
+
     selectedPriority = widget.priority ?? 1;
   }
 
@@ -151,7 +154,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           color: Colors.black,
                           fontSize: 16,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.bold, // Добавлено свойство для жирного текста
+                          fontWeight: FontWeight
+                              .bold, // Добавлено свойство для жирного текста
                         ),
                       ),
                     ],
@@ -164,7 +168,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 });
               },
               decoration: _inputDecoration(),
-              validator: (value) => value == null ? 'Поле обязательно для заполнения' : null,
+              validator: (value) =>
+                  value == null ? 'Поле обязательно для заполнения' : null,
             ),
           ),
         ),
@@ -179,26 +184,32 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
       try {
         if (startDateController.text.isNotEmpty) {
-          startDate = DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
+          startDate =
+              DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
         }
         if (endDateController.text.isNotEmpty) {
-          endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
+          endDate =
+              DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
         }
 
         context.read<TaskBloc>().add(
-          UpdateTask(
-            taskId: widget.taskId,
-            name: nameController.text,
-            statusId: widget.statusId,
-            taskStatusId: widget.statusId,
-            startDate: startDate,
-            endDate: endDate,
-            projectId: selectedProject != null ? int.parse(selectedProject!) : null,
-            userId: selectedUser != null ? int.parse(selectedUser!) : null,
-            priority: selectedPriority?.toString(),
-            description: descriptionController.text,
-          ),
-        );
+              UpdateTask(
+                taskId: widget.taskId,
+                name: nameController.text,
+                statusId: widget.statusId,
+                taskStatusId: widget.statusId,
+                startDate: startDate,
+                endDate: endDate,
+                projectId: selectedProject != null
+                    ? int.parse(selectedProject!)
+                    : null,
+                userId: selectedUsers != null
+                    ? selectedUsers!.map((id) => int.parse(id)).toList()
+                    : null,
+                priority: selectedPriority?.toString(),
+                description: descriptionController.text,
+              ),
+            );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -308,7 +319,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       ),
                       const SizedBox(height: 8),
                       ProjectRadioGroupWidget(
-                        selectedProject: selectedProject, 
+                        selectedProject: selectedProject,
                         onSelectProject: (Project selectedProjectData) {
                           setState(() {
                             selectedProject = selectedProjectData.id.toString();
@@ -316,15 +327,18 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      UserWidget(
-                        selectedUser: selectedUser,
-                        onChanged: (String? newValue) {
+                      UserMultiSelectWidget(
+                        selectedUsers: selectedUsers,
+                        onSelectUsers: (List<UserData> selectedUsersData) {
                           setState(() {
-                            selectedUser = newValue;
+                            // Update selected user IDs
+                            selectedUsers = selectedUsersData
+                                .map((user) => user.id.toString())
+                                .toList();
                           });
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
                         hintText: 'Введите описание',
@@ -336,7 +350,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
