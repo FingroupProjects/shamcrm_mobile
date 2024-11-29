@@ -28,12 +28,22 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
+  bool areBoxesLoaded = false; // Состояние для загрузки основных коробок
 
   @override
   void initState() {
     super.initState();
     // Загрузка данных конверсии лидов
     context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+    _loadImportantBoxes();
+  }
+
+  // Метод для имитации загрузки важных коробок
+  Future<void> _loadImportantBoxes() async {
+    await Future.delayed(Duration(seconds: 2)); // Имитация загрузки
+    setState(() {
+      areBoxesLoaded = true;
+    });
   }
 
   @override
@@ -91,21 +101,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    // Важные коробки
                     LeadsBox(),
                     SizedBox(height: 16),
                     TasksBox(),
                     SizedBox(height: 16),
                     DealsBox(),
                     SizedBox(height: 16),
-                    GraphicsDashboard(),
+                    
+                    // Остальная часть интерфейса загружается только после отображения важных коробок
+                    if (areBoxesLoaded) ...[
+                  GraphicsDashboard(),
                     SizedBox(height: 16),
-                    LeadConversionChart(),
-                    SizedBox(height: 16),
-                    DealStatsChart(),
-                    SizedBox(height: 16),
-                    TaskChartWidget(),
-                    SizedBox(height: 16),
-                    ProjectChartTable(),
+                      LeadConversionChart(),
+                      SizedBox(height: 16),
+                      DealStatsChart(),
+                      SizedBox(height: 16),
+                      TaskChartWidget(),
+                      SizedBox(height: 16),
+                      ProjectChartTable(),
+                    ] else ...[
+                      Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ]
                   ],
                 ),
               ),

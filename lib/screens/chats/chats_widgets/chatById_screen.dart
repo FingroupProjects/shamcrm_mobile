@@ -8,8 +8,9 @@ import 'package:intl/intl.dart'; // Для форматирования даты
 
 class UserProfileScreen extends StatelessWidget {
   final int chatId;
+  
 
-  UserProfileScreen({required this.chatId});
+  UserProfileScreen({required this.chatId, });
 
   @override
   Widget build(BuildContext context) {
