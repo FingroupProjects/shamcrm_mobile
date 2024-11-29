@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatScreenById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
@@ -84,7 +85,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                builder: (context) => TaskByIdScreen(chatId: widget.chatId),
               ),
             );
           },
