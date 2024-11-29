@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -82,23 +83,39 @@ Future<void> _fetchBaseUrl() async {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: AssetImage(widget.chatItem.avatar),
-              radius: ChatSmsStyles.avatarRadius,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              widget.chatItem.name,
-              style: const TextStyle(
-                fontSize: 16,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Gilroy',
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: ChatSmsStyles.appBarTitleColor),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserProfileScreen(chatId: widget.chatId),
               ),
-            ),
-          ],
+            );
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: AssetImage(widget.chatItem.avatar),
+                radius: ChatSmsStyles.avatarRadius,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                widget.chatItem.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: ChatSmsStyles.appBarTitleColor,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       backgroundColor: const Color(0xffF4F7FD),
