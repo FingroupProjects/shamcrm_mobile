@@ -404,54 +404,77 @@ class ApiService {
     }
   }
 
-Future<ChatProfile> getChatProfile(int chatId) async {
-  try {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-      '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      if (decodedJson['result'] != null) {
-        return ChatProfile.fromJson(decodedJson['result']);
-      } else {
-        throw Exception('Данные профиля не найдены');
-      }
-    } else if (response.statusCode == 404) {
-      throw ('Такого Лида не существует');
-    } else {
-      print('Ошибка загрузки профиля чата: ${response.statusCode}');
-      throw Exception('${response.statusCode}');
-    }
-  } catch (e) {
-    print('Ошибка в getChatProfile: $e');
-    throw ('$e');
-  }
-}
-
-  Future<TaskProfile> getTaskProfile(int chatId) async {
+  Future<ChatProfile> getChatProfile(int chatId) async {
     try {
       final organizationId = await getSelectedOrganization();
 
       final response = await _getRequest(
-        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         if (decodedJson['result'] != null) {
-          return TaskProfile.fromJson(decodedJson['result']);
+          return ChatProfile.fromJson(decodedJson['result']);
         } else {
-          throw Exception('Данные задачи не найдены');
+          throw Exception('Данные профиля не найдены');
+        }
+      } else if (response.statusCode == 404) {
+        throw ('Такого Лида не существует');
+      } else {
+        print('Ошибка загрузки профиля чата: ${response.statusCode}');
+        throw Exception('${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка в getChatProfile: $e');
+      throw ('$e');
+    }
+  }
+
+  Future<TaskProfile> getTaskProfile(int chatId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      print('Organization ID: $organizationId'); // Добавим логирование
+
+      final response = await _getRequest(
+        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      print(
+          'Response status code: ${response.statusCode}'); // Логируем статус ответа
+      print('Response body: ${response.body}'); // Логируем тело ответа
+
+      if (response.statusCode == 200) {
+        try {
+          final dynamic decodedJson = json.decode(response.body);
+          print(
+              'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
+          print('Decoded JSON: $decodedJson'); // Отладочный вывод
+
+          if (decodedJson is Map<String, dynamic>) {
+            if (decodedJson['result'] != null) {
+              print(
+                  'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
+              return TaskProfile.fromJson(decodedJson['result']);
+            } else {
+              print('Result is null');
+              throw Exception('Данные задачи не найдены');
+            }
+          } else {
+            print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
+            throw Exception('Неверный формат ответа');
+          }
+        } catch (parseError) {
+          print('Ошибка парсинга JSON: $parseError');
+          throw Exception('Ошибка парсинга ответа: $parseError');
         }
       } else {
         print('Ошибка загрузки задачи: ${response.statusCode}');
         throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка в getTaskProfile: $e');
+      print('Полная ошибка в getTaskProfile: $e');
+      print('Трассировка стека: ${StackTrace.current}');
       throw Exception('Ошибка загрузки задачи: $e');
     }
   }
@@ -599,7 +622,6 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     required String body,
     required int leadId,
     DateTime? date,
-    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
     final organizationId = await getSelectedOrganization();
@@ -611,7 +633,6 @@ Future<ChatProfile> getChatProfile(int chatId) async {
           'body': body,
           'lead_id': leadId,
           'date': date.toIso8601String(),
-          'send_notification': sendNotification ? 1 : 0,
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -650,7 +671,6 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     required String title,
     required String body,
     DateTime? date,
-    bool sendNotification = false,
   }) async {
     date ??= DateTime.now();
     final organizationId = await getSelectedOrganization();
@@ -662,7 +682,6 @@ Future<ChatProfile> getChatProfile(int chatId) async {
           'body': body,
           'lead_id': leadId,
           'date': date.toIso8601String(),
-          'send_notification': sendNotification ? 1 : 0,
         });
 
     if (response.statusCode == 200) {
@@ -1566,7 +1585,7 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
-    int? userId,
+    List<int>? userId,
     String? description,
     // Map<String, dynamic>? file,
   }) async {
@@ -1579,7 +1598,10 @@ Future<ChatProfile> getChatProfile(int chatId) async {
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
+        if (userId != null)
+          'users': userId
+              .map((id) => {'user_id': id})
+              .toList(), // Передаем список как массив
         // if (file != null) "file": file,
         if (description != null) 'description': description,
       };
@@ -1608,7 +1630,7 @@ Future<ChatProfile> getChatProfile(int chatId) async {
     DateTime? startDate,
     DateTime? endDate,
     int? projectId,
-    int? userId,
+    List<int>? userId,
     String? description,
     Map<String, dynamic>? file,
   }) async {
@@ -1621,7 +1643,8 @@ Future<ChatProfile> getChatProfile(int chatId) async {
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (projectId != null) 'project_id': projectId,
-        if (userId != null) 'user_id': userId,
+        if (userId != null)
+          'users': userId.map((id) => {'user_id': id}).toList(),
         if (file != null) 'file': file,
         if (description != null) 'description': description,
       };

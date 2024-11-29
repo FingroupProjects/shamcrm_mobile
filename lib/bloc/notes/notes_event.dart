@@ -18,14 +18,12 @@ class CreateNotes extends NotesEvent {
   final String body;
   final int leadId;
   final DateTime? date;
-  final bool sendNotification;
 
   CreateNotes({
     required this.title,
     required this.body,
     required this.leadId,
     this.date,
-    this.sendNotification = false,
   });
 }
 
@@ -35,7 +33,6 @@ class UpdateNotes extends NotesEvent {
   final String title;
   final String body;
   final DateTime? date;
-  final bool sendNotification;
 
   UpdateNotes({
     required this.noteId,
@@ -43,7 +40,6 @@ class UpdateNotes extends NotesEvent {
     required this.title,
     required this.body,
     this.date,
-    this.sendNotification = false,
   });
 }
 

@@ -7,6 +7,7 @@ class TaskProfile {
   final TaskStatus taskStatus;
   final String from;
   final String to;
+  
 
   TaskProfile({
     required this.id,
@@ -14,7 +15,7 @@ class TaskProfile {
     required this.taskNumber,
     required this.taskStatus,
     required this.from,
-    required this.to,
+    required this.to, 
   });
 
   factory TaskProfile.fromJson(Map<String, dynamic> json) {
@@ -25,6 +26,7 @@ class TaskProfile {
       taskStatus: TaskStatus.fromJson(json['taskStatus']),
       from: json['from'],
       to: json['to'],
+
     );
   }
 }

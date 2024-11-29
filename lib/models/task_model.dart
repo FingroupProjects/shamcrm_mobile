@@ -34,7 +34,7 @@ class Task {
     // Извлекаем и проверяем priority_level
     final rawPriority = json['priority_level'];
     // print('Raw priority from JSON: $rawPriority'); // Debug print
-    
+
     // Преобразуем priority_level в int
     final int priorityLevel;
     if (rawPriority is int) {
@@ -44,7 +44,7 @@ class Task {
     } else {
       priorityLevel = 0;
     }
-    
+
     print('Converted priority level: $priorityLevel'); // Debug print
 
     return Task(
@@ -55,12 +55,14 @@ class Task {
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
       priority: priorityLevel, // Используем обработанное значение
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])
           : null,
-      project: json['project'] != null && json['project'] is Map<String, dynamic>
-          ? Project.fromJson(json['project'])
-          : null,
+      project:
+          json['project'] != null && json['project'] is Map<String, dynamic>
+              ? Project.fromJson(json['project'])
+              : null,
       user: json['user'] != null && json['user'] is Map<String, dynamic>
           ? User.fromJson(json['user'])
           : null,
@@ -71,8 +73,6 @@ class Task {
     );
   }
 }
-
-
 
 // Add TaskFile model
 // First, let's define the TaskFile model class
@@ -106,9 +106,12 @@ class TaskStatus {
 
   // Метод для создания объекта из JSON
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
+     print('TaskStatus JSON: $json'); // Добавим логирование
     return TaskStatus(
       id: json['id'],
-      taskStatus: TaskStatusName.fromJson(json['taskStatus']),
+     taskStatus: json['taskStatus'] is Map<String, dynamic> 
+       ? TaskStatusName.fromJson(json['taskStatus']) 
+       : TaskStatusName(id: 0, name: json['taskStatus'] ?? 'Неизвестный статус'),
       color: json['color'],
     );
   }
@@ -138,8 +141,9 @@ class TaskStatusName {
 
   // Метод для создания вложенного объекта из JSON
   factory TaskStatusName.fromJson(Map<String, dynamic> json) {
+    print('TaskStatusName JSON: $json'); // Добавим логирование
     return TaskStatusName(
-      id: json['id'],
+      id: json['id'] ?? 0,
       name: json['name'],
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],

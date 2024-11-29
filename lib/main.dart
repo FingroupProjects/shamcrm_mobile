@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
@@ -145,7 +146,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -153,7 +155,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => GetAllManagerBloc()),
-
+        BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,

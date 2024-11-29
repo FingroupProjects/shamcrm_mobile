@@ -21,7 +21,6 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
   final TextEditingController titleController = TextEditingController(); 
-  bool _sendPushNotification = false;
 
   @override
 Widget build(BuildContext context) {
@@ -45,8 +44,8 @@ Widget build(BuildContext context) {
             SizedBox(height: 8),
             CustomTextField(
               controller: titleController,
-              hintText: 'Введите заголовок',
-              label: 'Заголовок',
+              hintText: 'Введите название',
+              label: 'Название',
               maxLines: 1,
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -58,8 +57,8 @@ Widget build(BuildContext context) {
             SizedBox(height: 8),
             CustomTextField(
               controller: bodyController,
-              hintText: 'Введите название',
-              label: 'Название',
+              hintText: 'Введите текст',
+              label: 'Текст',
               maxLines: 5,
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -75,52 +74,7 @@ Widget build(BuildContext context) {
               withTime: true,
             ),
             SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _sendPushNotification = !_sendPushNotification;
-                    });
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Color(0xff1E2E52)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(1),
-                      child: Icon(
-                        _sendPushNotification ? Icons.check : Icons.clear,
-                        color: _sendPushNotification
-                            ? Color(0xff1E2E52)
-                            : Colors.transparent,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _sendPushNotification = !_sendPushNotification;
-                      });
-                    },
-                    child: Text(
-                      'Отправить пуш уведомления',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
+         
             CustomButton(
               buttonText: 'Сохранить',
               onPressed: () {
@@ -149,7 +103,6 @@ Widget build(BuildContext context) {
                         title: title,
                         body: body,
                         date: date,
-                        sendNotification: _sendPushNotification,
                       ));
 
                   Navigator.pop(context);

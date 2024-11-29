@@ -3,6 +3,8 @@ import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/client_item_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
@@ -41,7 +43,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   int? selectedPriority;
   String? selectedProject;
-  String? selectedUser;
+  List<String>? selectedUsers;
 
   // Карта уровней приоритета
   final Map<int, String> priorityLevels = {
@@ -60,7 +62,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     _setDefaultValues();
 
     // Подписываемся на изменения в блоках
-    _setupBlocListeners();
   }
 
   void _setDefaultValues() {
@@ -70,28 +71,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     // Устанавливаем текущую дату в поле "От"
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
-  }
-
-  void _setupBlocListeners() {
-    // Слушаем изменения в ProjectBloc
-    // context.read<GetAllProjectBloc>().stream.listen((state) {
-    //   if (state is GetAllProjectLoaded && state.projects.isNotEmpty) {
-    //     setState(() {
-    //       // Выбираем первый проект по умолчанию
-    //       selectedProject = state.projects.first.id.toString();
-    //     });
-    //   }
-    // });
-
-    // // Слушаем изменения в UserBloc
-    // context.read<UserTaskBloc>().stream.listen((state) {
-    //   if (state is UserTaskLoaded && state.users.isNotEmpty) {
-    //     setState(() {
-    //       // Выбираем первого пользователя по умолчанию
-    //       selectedUser = state.users.first.id.toString();
-    //     });
-    //   }
-    // });
   }
 
   // Функция выбора файла
@@ -118,83 +97,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       );
     }
   }
-
-  // // Виджет выбора файла
-  // Widget _buildFileSelection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text(
-  //         'Файл',
-  //         style: TextStyle(
-  //           fontSize: 16,
-  //           fontWeight: FontWeight.w500,
-  //           fontFamily: 'Gilroy',
-  //           color: Color(0xff1E2E52),
-  //         ),
-  //       ),
-  //       const SizedBox(height: 4),
-  //       GestureDetector(
-  //         onTap: _pickFile,
-  //         child: Container(
-  //           padding: const EdgeInsets.all(16),
-  //           decoration: BoxDecoration(
-  //             color: const Color(0xFFF4F7FD),
-  //             borderRadius: BorderRadius.circular(8),
-  //             border: Border.all(color: const Color(0xFFF4F7FD)),
-  //           ),
-  //           child: Row(
-  //             children: [
-  //               Expanded(
-  //                 child: Text(
-  //                   fileName ?? 'Выберите файл',
-  //                   style: TextStyle(
-  //                     color: fileName != null
-  //                         ? const Color(0xff1E2E52)
-  //                         : Colors.grey,
-  //                   ),
-  //                 ),
-  //               ),
-  //               Icon(
-  //                 Icons.attach_file,
-  //                 color: Colors.grey[600],
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //       // if (fileName != null) ...[
-  //       //   const SizedBox(height: 8),
-  //       //   Row(
-  //       //     children: [
-  //       //       const Text(
-  //       //         'Файл: ',
-  //       //         style: TextStyle(
-  //       //           fontSize: 14,
-  //       //           fontFamily: 'Gilroy',
-  //       //           color: Color(0xff1E2E52),
-  //       //         ),
-  //       //       ),
-  //       //       GestureDetector(
-  //       //         onTap: () {
-  //       //           // Здесь можно добавить логику предпросмотра файла
-  //       //         },
-  //       //         child: Text(
-  //       //           fileName!,
-  //       //           style: const TextStyle(
-  //       //             fontSize: 14,
-  //       //             fontFamily: 'Gilroy',
-  //       //             color: Color(0xff4759FF),
-  //       //             decoration: TextDecoration.underline,
-  //       //           ),
-  //       //         ),
-  //       //       ),
-  //       //     ],
-  //       //   ),
-  //       // ],
-  //     ],
-  //   );
-  // }
 
   // Построение выпадающего списка приоритетов
   Widget _buildPriorityDropdown() {
@@ -374,7 +276,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       ),
                       const SizedBox(height: 8),
                       ProjectRadioGroupWidget(
-                        selectedProject: selectedProject, 
+                        selectedProject: selectedProject,
                         onSelectProject: (Project selectedProjectData) {
                           setState(() {
                             selectedProject = selectedProjectData.id.toString();
@@ -382,15 +284,18 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      UserWidget(
-                        selectedUser: selectedUser,
-                        onChanged: (String? newValue) {
+                      UserMultiSelectWidget(
+                        selectedUsers: selectedUsers,
+                        onSelectUsers: (List<UserData> selectedUsersData) {
                           setState(() {
-                            selectedUser = newValue;
+                            // Update selected user IDs
+                            selectedUsers = selectedUsersData
+                                .map((user) => user.id.toString())
+                                .toList();
                           });
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
                         hintText: 'Введите описание',
@@ -474,29 +379,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       return;
                     }
                   }
-
                   // Подготовка данных о файле
                   TaskFile? fileData;
                   if (selectedFile != null) {
                     fileData = TaskFile(
                         name: fileName ?? "unknown", size: fileSize ?? "0KB");
                   }
-                  print("fileData: $fileData");
-                  print("SelectedData: $selectedFile");
-                  print("Sending data to server:");
-                  print("Name: $name");
-                  print("Status ID: ${widget.statusId}");
-                  print("Task Status ID: ${widget.statusId}");
-                  print("Start Date: $startDate");
-                  print("End Date: $endDate");
-                  print(
-                      "Project ID: ${selectedProject != null ? int.parse(selectedProject!) : null}");
-                  print(
-                      "User ID: ${selectedUser != null ? int.parse(selectedUser!) : null}");
-                  print(
-                      "Priority: ${selectedPriority != null ? priorityLevels[selectedPriority!] : null}");
-                  print("Description: $description");
-
                   context.read<TaskBloc>().add(CreateTask(
                         name: name,
                         statusId: widget.statusId,
@@ -506,9 +394,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         projectId: selectedProject != null
                             ? int.parse(selectedProject!)
                             : null,
-                        userId: selectedUser != null
-                            ? int.parse(selectedUser!)
-                            : null,
+                        userId: selectedUsers != null ? selectedUsers!.map((id) => int.parse(id)).toList() : null,
                         priority: selectedPriority,
                         description: description,
                         // file: fileData, // Pass the actual File object
@@ -520,3 +406,83 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ]));
   }
 }
+
+
+
+
+  // // Виджет выбора файла
+  // Widget _buildFileSelection() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         'Файл',
+  //         style: TextStyle(
+  //           fontSize: 16,
+  //           fontWeight: FontWeight.w500,
+  //           fontFamily: 'Gilroy',
+  //           color: Color(0xff1E2E52),
+  //         ),
+  //       ),
+  //       const SizedBox(height: 4),
+  //       GestureDetector(
+  //         onTap: _pickFile,
+  //         child: Container(
+  //           padding: const EdgeInsets.all(16),
+  //           decoration: BoxDecoration(
+  //             color: const Color(0xFFF4F7FD),
+  //             borderRadius: BorderRadius.circular(8),
+  //             border: Border.all(color: const Color(0xFFF4F7FD)),
+  //           ),
+  //           child: Row(
+  //             children: [
+  //               Expanded(
+  //                 child: Text(
+  //                   fileName ?? 'Выберите файл',
+  //                   style: TextStyle(
+  //                     color: fileName != null
+  //                         ? const Color(0xff1E2E52)
+  //                         : Colors.grey,
+  //                   ),
+  //                 ),
+  //               ),
+  //               Icon(
+  //                 Icons.attach_file,
+  //                 color: Colors.grey[600],
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //       // if (fileName != null) ...[
+  //       //   const SizedBox(height: 8),
+  //       //   Row(
+  //       //     children: [
+  //       //       const Text(
+  //       //         'Файл: ',
+  //       //         style: TextStyle(
+  //       //           fontSize: 14,
+  //       //           fontFamily: 'Gilroy',
+  //       //           color: Color(0xff1E2E52),
+  //       //         ),
+  //       //       ),
+  //       //       GestureDetector(
+  //       //         onTap: () {
+  //       //           // Здесь можно добавить логику предпросмотра файла
+  //       //         },
+  //       //         child: Text(
+  //       //           fileName!,
+  //       //           style: const TextStyle(
+  //       //             fontSize: 14,
+  //       //             fontFamily: 'Gilroy',
+  //       //             color: Color(0xff4759FF),
+  //       //             decoration: TextDecoration.underline,
+  //       //           ),
+  //       //         ),
+  //       //       ),
+  //       //     ],
+  //       //   ),
+  //       // ],
+  //     ],
+  //   );
+  // }

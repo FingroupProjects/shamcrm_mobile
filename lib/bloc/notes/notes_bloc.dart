@@ -59,7 +59,6 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         body: event.body,
         leadId: event.leadId,
         date: event.date,
-        sendNotification: event.sendNotification,
       );
 
       if (result['success']) {
@@ -83,7 +82,6 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         title: event.title,
         body: event.body,
         date: event.date,
-        sendNotification: event.sendNotification,
       );
 
       if (result['success']) {
