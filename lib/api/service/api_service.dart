@@ -45,14 +45,51 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-// final String baseUrl = 'http://62.84.186.96/api';
-// final String baseUrl = 'http://192.168.1.61:8008/api';
-// final String baseUrl = 'https://shamcrm.com/api';
-final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
-final String baseUrlSocket =
-    'https://fingroup-back.shamcrm.com/broadcasting/auth';
+
+
+// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
+  
+  late final String baseUrl;
+  late final String baseUrlSocket;
+
+   ApiService() {
+    _initializeIfDomainExists();
+  }
+
+  Future<void> _initializeIfDomainExists() async {
+    bool isDomainSet = await isDomainChecked();
+    if (isDomainSet) {
+      await initialize();
+    }
+  }
+
+
+  Future<void> initialize() async {
+    baseUrl = await getDynamicBaseUrl();
+    baseUrlSocket = await getSocketBaseUrl();
+  }
+
+  Future<String> getDynamicBaseUrl() async {
+    String? domain = await getEnteredDomain();
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.shamcrm.com/api';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
+  }
+
+  Future<String> getSocketBaseUrl() async {
+    String? domain = await getEnteredDomain();
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.shamcrm.com/broadcasting/auth';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
+  }
+  
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -332,6 +369,19 @@ class ApiService {
     return prefs.getBool('domainChecked') ??
         false; // Проверяем статус или возвращаем false
   }
+
+  // Метод для сохранения введенного домена
+Future<void> saveDomain(String domain) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('enteredDomain', domain); 
+}
+
+// Метод для получения введенного домена
+Future<String?> getEnteredDomain() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('enteredDomain'); // Возвращаем введенный домен или null
+}
+
 
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 

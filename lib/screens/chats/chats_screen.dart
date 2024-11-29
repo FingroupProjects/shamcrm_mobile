@@ -84,6 +84,11 @@ void initState() {
     debugPrint('--------------------------- start socket:::::::');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
+    
+      final baseUrlSocket = await apiService.getSocketBaseUrl();
+        final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+
+
 
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
@@ -108,7 +113,7 @@ void initState() {
         authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Tenant': 'fingroup-back'
+          'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
