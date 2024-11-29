@@ -10,7 +10,7 @@ class ChatItem {
   final String icon; // Добавлено поле для иконки
 
   ChatItem(this.name, this.message, this.time, this.avatar, this.icon,
-      this.unredMessageCount,);
+      this.unredMessageCount);
 
   get id => null;
 }
