@@ -1,7 +1,6 @@
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
-import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -201,25 +200,13 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
   },
   touchTooltipData: LineTouchTooltipData(
     getTooltipItems: (List<LineBarSpot> spots) {
-      final months = [
-        'Январь',
-        'Февраль',
-        'Март',
-        'Апрель',
-        'Май',
-        'Июнь',
-        'Июль',
-        'Август',
-        'Сентябрь',
-        'Октябрь',
-        'Ноябрь',
-        'Декабрь'
-      ];
       return spots.map((spot) {
+        // Найти соответствующий ChartData для линии и точки
+        final lineData = chartData[spots.indexOf(spot)];
+        final label = lineData.label; // Название статуса
         return LineTooltipItem(
-          '${months[spot.x.toInt() % 12]}: ${spot.y.toInt()}',
-          const TextStyle(color: Colors.white),
-        );
+          '$label: ${spot.y.toInt()}',
+          const TextStyle(color: Colors.white));
       }).toList();
     },
   ),
