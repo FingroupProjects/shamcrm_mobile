@@ -49,8 +49,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   late PusherChannelsClient socketClient;
+  final ApiService apiService = ApiService();
 
   late VoiceController audioController;
+  late String baseUrl;
+
 
   @override
   void initState() {
@@ -64,9 +67,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
+          _fetchBaseUrl();
+
     });
     // _connectWebSocket();
   }
+
+Future<void> _fetchBaseUrl() async {
+  baseUrl = await apiService.getDynamicBaseUrl();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +159,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 return MessageItemWidget(
                   message: state.messages[index],
                   apiServiceDownload: widget.apiServiceDownload,
+                    baseUrl: baseUrl, // Передаём baseUrl
+
                 );
               },
             ),
@@ -176,8 +187,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         String outputPath = await getOutputPath('converted_file.ogg');
 
         // Получение organizationId из SharedPreferences
-        String? organizationId =
-            await widget.apiService.getSelectedOrganization();
+        String? organizationId = await widget.apiService.getSelectedOrganization();
+       
+        final baseUrl = await apiService.getDynamicBaseUrl();
 
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
         if (convertedFile != null) {
@@ -203,6 +215,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     debugPrint('--------------------------- start socket:::::::');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
+
+      final baseUrlSocket = await apiService.getSocketBaseUrl();
+      final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+
+
 
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
@@ -230,7 +247,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Tenant': 'fingroup-back'
+          'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
@@ -377,9 +394,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
+  final String baseUrl; // Новый параметр
 
-  const MessageItemWidget(
-      {super.key, required this.message, required this.apiServiceDownload});
+  const MessageItemWidget({
+    super.key,
+    required this.message,
+    required this.apiServiceDownload,
+    required this.baseUrl,
+  });
+
 
   @override
   Widget build(BuildContext context) {

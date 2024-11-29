@@ -60,6 +60,9 @@ void main() async {
   final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
+   if (isDomainChecked) {
+    await apiService.initialize();
+  }
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
 
