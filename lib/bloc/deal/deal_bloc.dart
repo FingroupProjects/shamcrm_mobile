@@ -103,7 +103,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
 
     try {
       final result =
-          await apiService.createDealStatus(event.title, event.color);
+          await apiService.createDealStatus(event.title, event.color, event.day);
 
       if (result['success']) {
         emit(DealSuccess(result['message']));

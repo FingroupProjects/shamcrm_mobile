@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -727,12 +728,11 @@ class ApiService {
     }
   }
 
+// Метод для Получения Сделки в Окно Лида
   Future<List<LeadDeal>> getLeadDeals(int leadId,
       {int page = 1, int perPage = 20}) async {
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
-    final path =
-        '/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId';
+    final organizationId = await getSelectedOrganization();
+    final path ='/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId';
 
     final response = await _getRequest(path);
 
@@ -1103,13 +1103,14 @@ class ApiService {
 
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
-      String title, String color) async {
+      String title, String color, int day) async {
     final organizationId = await getSelectedOrganization();
 
     final response = await _postRequest(
         '/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {
           'title': title,
+          'day': day,
           'color': color,
         });
 
@@ -1164,6 +1165,22 @@ class ApiService {
       throw Exception('Ошибка обновления статуса сделки: ${response.body}');
     }
   }
+
+  // Метод для Получения Сделки в Окно Лида
+Future<List<DealTask>> getDealTasks(int dealId) async {
+  final organizationId = await getSelectedOrganization();
+  final path = '/task/getByDeal/$dealId?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List).map((task) => DealTask.fromJson(task)).toList();
+  } else {
+    throw Exception('Ошибка загрузки сделки задачи');
+  }
+}
+
 
 // Метод для создания Сделки
   Future<Map<String, dynamic>> createDeal({
