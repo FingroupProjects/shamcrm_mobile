@@ -70,6 +70,7 @@ class DealStatus {
   final String color;
   final String? createdAt;
   final String? updatedAt;
+  final int? day;
 
   DealStatus({
     required this.id,
@@ -77,6 +78,7 @@ class DealStatus {
     required this.color,
     this.createdAt,
     this.updatedAt,
+    this.day,
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
@@ -86,6 +88,7 @@ class DealStatus {
       color: json['color'] is String ? json['color'] : '#000',
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
+      day: json['day'] is int ? json['day'] : null,
     );
   }
 }

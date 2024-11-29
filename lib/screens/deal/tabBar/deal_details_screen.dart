@@ -8,6 +8,7 @@ import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -135,6 +136,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       const SizedBox(height: 8),
                       ActionHistoryWidget(dealId: int.parse(widget.dealId)),
                       const SizedBox(height: 16),
+                      TasksWidget(dealId: int.parse(widget.dealId)),
                     ],
                   ),
                 );
