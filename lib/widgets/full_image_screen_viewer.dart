@@ -9,9 +9,10 @@ class FullImageScreenViewer extends StatefulWidget {
   final String imagePath;
   final String time;
   final String fileName;
+  final String senderName;
 
 
-  const FullImageScreenViewer({Key? key, required this.imagePath, required this.time, required this.fileName}) : super(key: key);
+  const FullImageScreenViewer({Key? key, required this.imagePath,required this.senderName, required this.time, required this.fileName}) : super(key: key);
 
   @override
   State<FullImageScreenViewer> createState() => _FullImageScreenViewerState();
@@ -66,6 +67,7 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
         iconTheme: IconThemeData(
           color: AppColors.primaryBlue, //change your color here
         ),
+        title: Text(widget.senderName),
         actions: [
 
         ],

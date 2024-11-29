@@ -5,7 +5,6 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -49,9 +48,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   late PusherChannelsClient socketClient;
-  final ApiService apiService = ApiService();
 
   late VoiceController audioController;
+  final ApiService apiService = ApiService();
+
   late String baseUrl;
 
 
@@ -82,46 +82,29 @@ Future<void> _fetchBaseUrl() async {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: ChatSmsStyles.appBarTitleColor),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserProfileScreen(chatId: widget.chatId),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: AssetImage(widget.chatItem.avatar),
+              radius: ChatSmsStyles.avatarRadius,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              widget.chatItem.name,
+              style: const TextStyle(
+                fontSize: 16,
+                color: ChatSmsStyles.appBarTitleColor,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Gilroy',
               ),
-            );
-          },
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundImage: AssetImage(widget.chatItem.avatar),
-                radius: ChatSmsStyles.avatarRadius,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                widget.chatItem.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: ChatSmsStyles.appBarTitleColor,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       backgroundColor: const Color(0xffF4F7FD),
       body: Column(
         children: [
           Expanded(child: messageListUi()),
-
           /// bottom ui
           inputWidget(),
         ],
@@ -159,8 +142,7 @@ Future<void> _fetchBaseUrl() async {
                 return MessageItemWidget(
                   message: state.messages[index],
                   apiServiceDownload: widget.apiServiceDownload,
-                    baseUrl: baseUrl, // Передаём baseUrl
-
+                  baseUrl: baseUrl, // Передаём baseUrl
                 );
               },
             ),
@@ -186,22 +168,21 @@ Future<void> _fetchBaseUrl() async {
         String inputPath = '/path/to/recorded/file.mp4a';
         String outputPath = await getOutputPath('converted_file.ogg');
 
-        // Получение organizationId из SharedPreferences
-        String? organizationId = await widget.apiService.getSelectedOrganization();
-       
-        final baseUrl = await apiService.getDynamicBaseUrl();
-
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
         if (convertedFile != null) {
-          String uploadUrl =
-              '$baseUrl/chat/sendVoice/${widget.chatId}?organization_id=$organizationId';
+          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
           await uploadFile(convertedFile, uploadUrl);
         } else {
           debugPrint('Conversion failed');
         }
 
-        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+        try {
+          await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+        } catch(e) {
+          context.read<ListenSenderVoiceCubit>().updateValue(false);
+        }
         context.read<ListenSenderVoiceCubit>().updateValue(false);
+
       },
     );
   }
@@ -216,9 +197,9 @@ Future<void> _fetchBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
+
       final baseUrlSocket = await apiService.getSocketBaseUrl();
       final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
-
 
 
     final customOptions = PusherChannelsOptions.custom(
@@ -263,22 +244,6 @@ Future<void> _fetchBaseUrl() async {
         print('----sender');
         print(mm.message!.sender!);
 
-        if (kDebugMode) {
-          print(event.data);
-          print(event.channelName);
-          print('------ socket');
-          print('--------');
-          print(mm.message);
-
-          print('--------');
-        }
-
-        print('----------------------- check');
-        print('---- user in app');
-        print(userID);
-        print('----- sender');
-        print(mm.message!.sender);
-
         context.read<ListenSenderFileCubit>().updateValue(false);
         context.read<ListenSenderVoiceCubit>().updateValue(false);
         context.read<ListenSenderTextCubit>().updateValue(false);
@@ -289,17 +254,19 @@ Future<void> _fetchBaseUrl() async {
             mm.message!.type == 'image' ||
             mm.message!.type == 'document') {
           msg = Message(
-            id: mm.message!.id!,
-            filePath: mm.message!.filePath.toString(),
-            text: mm.message!.text ??= mm.message!.type!,
-            type: mm.message!.type.toString(),
-            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
-                mm.message!.sender!.type == 'user'),
-            createMessateTime: mm.message!.createdAt.toString(),
-            duration: Duration(
-                seconds: (mm.message!.voiceDuration != null)
-                    ? double.parse(mm.message!.voiceDuration.toString()).round()
-                    : 20),
+              id: mm.message!.id!,
+              filePath: mm.message!.filePath.toString(),
+              text: mm.message!.text ??= mm.message!.type!,
+              type: mm.message!.type.toString(),
+              isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
+              // isMyMessage:  (userID.value == mm.message!.sender!.id.toString() &&
+              //     mm.message!.sender!.type == 'user'),
+              createMessateTime: mm.message!.createdAt.toString(),
+              duration: Duration(
+                  seconds: (mm.message!.voiceDuration != null)
+                      ? double.parse(mm.message!.voiceDuration.toString())
+                          .round()
+                      : 20), senderName: mm.message!.sender!.name!,
           );
         } else {
           msg = Message(
@@ -307,10 +274,15 @@ Future<void> _fetchBaseUrl() async {
             text: mm.message!.text ??= mm.message!.type!,
             type: mm.message!.type.toString(),
             createMessateTime: mm.message!.createdAt.toString(),
-            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
-                mm.message!.sender!.type == 'user'),
+            isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
+            // isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
+            //     mm.message!.sender!.type ==
+            //         'user'),
+              senderName: mm.message!.sender!.name!
           );
         }
+
+
         setState(() {
           context.read<MessagingCubit>().addMessageFormSocket(msg);
         });
@@ -376,16 +348,15 @@ Future<void> _fetchBaseUrl() async {
 
   @override
   void dispose() {
-    context.watch<ListenSenderFileCubit>().updateValue(false);
-    context.watch<ListenSenderVoiceCubit>().updateValue(false);
-    context.watch<ListenSenderTextCubit>().updateValue(false);
+
 
     chatSubscribtion.cancel();
     _scrollController.dispose();
 
     _messageController.dispose();
     socketClient.dispose();
-    _webSocket?.close();
+    _webSocket
+        ?.close();
 
     super.dispose();
   }
@@ -403,9 +374,9 @@ class MessageItemWidget extends StatelessWidget {
     required this.baseUrl,
   });
 
-
   @override
   Widget build(BuildContext context) {
+
     switch (message.type) {
       case 'text':
         return textState();
@@ -419,6 +390,7 @@ class MessageItemWidget extends StatelessWidget {
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
           onTap: (path) async {
+
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
@@ -432,7 +404,7 @@ class MessageItemWidget extends StatelessWidget {
                 print('Invalid file path. Cannot open file.');
               }
             }
-          },
+          }, senderName: message.senderName,
         );
       case 'voice':
         return voiceState();
@@ -448,6 +420,7 @@ class MessageItemWidget extends StatelessWidget {
       message: message.text,
       time: time(message.createMessateTime), // Динамическое время
       isSender: message.isMyMessage,
+      senderName: message.senderName.toString(),
     );
   }
 
@@ -458,7 +431,7 @@ class MessageItemWidget extends StatelessWidget {
       isSender: message.isMyMessage,
       filePath: message.filePath ?? 'Unknown file format',
       fileName: message.text,
-      message: message,
+      message: message, senderName: message.senderName,
     );
   }
 
@@ -471,7 +444,7 @@ class MessageItemWidget extends StatelessWidget {
       fileName: message.text,
       onTap: (path) async {
         await apiServiceDownload.downloadAndOpenFile(message.filePath!);
-      },
+      }, senderName: message.senderName,
     );
   }
 
@@ -510,6 +483,11 @@ class MessageItemWidget extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 8),
+          if(message.isMyMessage == false) Text(
+            message.senderName,
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           VoiceMessageView(
             innerPadding: 8,
             backgroundColor: message.isMyMessage
