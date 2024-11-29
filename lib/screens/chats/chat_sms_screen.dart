@@ -31,11 +31,13 @@ class ChatSmsScreen extends StatefulWidget {
   final int chatId;
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
+  final String endPoint;
 
   ChatSmsScreen({
     super.key,
     required this.chatItem,
     required this.chatId,
+    required this.endPoint,
   });
 
   @override
@@ -54,6 +56,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   @override
   void initState() {
     context.read<MessagingCubit>().getMessages(widget.chatId);
+
+    context.read<ListenSenderFileCubit>().updateValue(false);
+    context.read<ListenSenderVoiceCubit>().updateValue(false);
+    context.read<ListenSenderTextCubit>().updateValue(false);
+
     setUpServices();
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,13 +76,34 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
         title: Row(
           children: [
+            /*
+            onTap() {
+
+              if(widget.endPoint =='lead') {
+                open chatByIdScreen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                  builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                ),
+            );
+              } else
+              if(widget.endPoint =='task') {
+                open task
+              } else {
+                 open profile screen
+
+              }
+
+            }
+             */
             CircleAvatar(
               backgroundImage: AssetImage(widget.chatItem.avatar),
               radius: ChatSmsStyles.avatarRadius,
             ),
             const SizedBox(width: 10),
             Text(
-              widget.chatItem.name,
+              '${widget.chatItem.name} ${widget.endPoint}',
               style: const TextStyle(
                 fontSize: 16,
                 color: ChatSmsStyles.appBarTitleColor,
@@ -90,7 +118,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       body: Column(
         children: [
           Expanded(child: messageListUi()),
-
           /// bottom ui
           inputWidget(),
         ],
@@ -161,7 +188,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           debugPrint('Conversion failed');
         }
 
-        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+        try {
+          await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+        } catch(e) {
+          context.read<ListenSenderVoiceCubit>().updateValue(false);
+        }
         context.read<ListenSenderVoiceCubit>().updateValue(false);
 
       },
@@ -219,27 +250,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('----sender');
         print(mm.message!.sender!);
+        print(mm.message!.text!);
+        print(userID.value);
+        print('--- end');
 
-        if (kDebugMode) {
-          print(event.data);
-          print(event.channelName);
-          print('------ socket');
-          print('--------');
-          print(mm.message);
-
-          print('--------');
-        }
-
-        print('----------------------- check');
-        print('---- user in app');
-        print(userID);
-        print('----- sender');
-        print(mm.message!.sender);
-
+        context.read<ListenSenderFileCubit>().updateValue(false);
+        context.read<ListenSenderVoiceCubit>().updateValue(false);
+        context.read<ListenSenderTextCubit>().updateValue(false);
 
         Message msg;
         if (mm.message!.type == 'voice' ||
-            mm.message!.type == 'file' ||
+            mm.message!.type == 'file'  ||
             mm.message!.type == 'image' ||
             mm.message!.type == 'document') {
           msg = Message(
@@ -247,14 +268,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               filePath: mm.message!.filePath.toString(),
               text: mm.message!.text ??= mm.message!.type!,
               type: mm.message!.type.toString(),
-              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() &&
-                  mm.message!.sender!.type == 'user'),
+              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
+              // isMyMessage:  (userID.value == mm.message!.sender!.id.toString()),
               createMessateTime: mm.message!.createdAt.toString(),
               duration: Duration(
                   seconds: (mm.message!.voiceDuration != null)
                       ? double.parse(mm.message!.voiceDuration.toString())
                           .round()
-                      : 20),
+                      : 20), senderName: mm.message!.sender!.name!,
           );
         } else {
           msg = Message(
@@ -262,11 +283,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             text: mm.message!.text ??= mm.message!.type!,
             type: mm.message!.type.toString(),
             createMessateTime: mm.message!.createdAt.toString(),
-            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
+            // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
+              isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
                 mm.message!.sender!.type ==
                     'user'),
+
+
+              senderName: mm.message!.sender!.name!
           );
         }
+
+
         setState(() {
           context.read<MessagingCubit>().addMessageFormSocket(msg);
         });
@@ -332,9 +359,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   @override
   void dispose() {
-    context.watch<ListenSenderFileCubit>().updateValue(false);
-    context.watch<ListenSenderVoiceCubit>().updateValue(false);
-    context.watch<ListenSenderTextCubit>().updateValue(false);
+
 
     chatSubscribtion.cancel();
     _scrollController.dispose();
@@ -353,7 +378,9 @@ class MessageItemWidget extends StatelessWidget {
   final ApiServiceDownload apiServiceDownload;
 
   const MessageItemWidget(
-      {super.key, required this.message, required this.apiServiceDownload});
+      {super.key,
+        required this.message,
+        required this.apiServiceDownload});
 
   @override
   Widget build(BuildContext context) {
@@ -385,7 +412,7 @@ class MessageItemWidget extends StatelessWidget {
                 print('Invalid file path. Cannot open file.');
               }
             }
-          },
+          }, senderName: message.senderName,
         );
       case 'voice':
         return voiceState();
@@ -401,6 +428,7 @@ class MessageItemWidget extends StatelessWidget {
       message: message.text,
       time: time(message.createMessateTime), // Динамическое время
       isSender: message.isMyMessage,
+      senderName: message.senderName.toString(),
     );
   }
 
@@ -411,7 +439,7 @@ class MessageItemWidget extends StatelessWidget {
       isSender: message.isMyMessage,
       filePath: message.filePath ?? 'Unknown file format',
       fileName: message.text,
-      message: message,
+      message: message, senderName: message.senderName,
     );
   }
 
@@ -424,7 +452,7 @@ class MessageItemWidget extends StatelessWidget {
       fileName: message.text,
       onTap: (path) async {
         await apiServiceDownload.downloadAndOpenFile(message.filePath!);
-      },
+      }, senderName: message.senderName,
     );
   }
 
@@ -463,6 +491,11 @@ class MessageItemWidget extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 8),
+          if(message.isMyMessage == false) Text(
+            message.senderName,
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           VoiceMessageView(
             innerPadding: 8,
             backgroundColor: message.isMyMessage

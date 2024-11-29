@@ -42,6 +42,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   final List<String> _tabTitles = ['Лиды', 'Задачи', 'Корпоративный чат'];
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
+  String endPointForTab = 'lead';
 
   @override
   void initState() {
@@ -209,7 +210,6 @@ class _ChatsScreenState extends State<ChatsScreen>
       ),
     );
   }
-
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
     return GestureDetector(
@@ -218,19 +218,19 @@ class _ChatsScreenState extends State<ChatsScreen>
         selectTabIndex = index;
         _tabController.animateTo(index);
 
-        String endPoint = '';
+
         if (index == 0) {
-          endPoint = 'lead';
+          endPointForTab = 'lead';
         }
 
         if (index == 1) {
-          endPoint = 'task';
+          endPointForTab = 'task';
         }
 
         if (index == 2) {
-          endPoint = 'corporate';
+          endPointForTab = 'corporate';
         }
-        context.read<ChatsBloc>().add(FetchChats(endPoint: endPoint));
+        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointForTab));
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -253,7 +253,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       controller: _tabController,
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(_tabTitles.length,
-          (index) => _ChatItemsWidget(updateChats: updateChats)),
+          (index) => _ChatItemsWidget(updateChats: updateChats, endPointForTab: endPointForTab,)),
     );
   }
 
@@ -268,7 +268,9 @@ class _ChatsScreenState extends State<ChatsScreen>
 
 class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
-  const _ChatItemsWidget({required this.updateChats});
+  final String endPointForTab;
+
+  const _ChatItemsWidget({required this.updateChats, required this.endPointForTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
@@ -301,7 +303,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           create: (context) => MessagingCubit(ApiService()),
           child: ChatSmsScreen(
             chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
-            chatId: chat.id,
+            chatId: chat.id, endPoint: widget.endPointForTab,
           ),
         ),
       ),

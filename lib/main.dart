@@ -45,10 +45,10 @@ class MyApp extends StatelessWidget {
           create: (context) => DomainBloc(ApiService()),
         ),
         BlocProvider(
-          create: (context) => LoginBloc(ApiService()), // Добавьте LoginBloc
+          create: (context) => LoginBloc(ApiService()),
         ),
         BlocProvider(
-          create: (context) => LeadBloc(ApiService()), // Добавьте LeadBloc
+          create: (context) => LeadBloc(ApiService()),
         ),
         BlocProvider(
           create: (context) => GetAllClientBloc(),
@@ -59,18 +59,15 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => DealBloc(ApiService()),
         ),
-
          BlocProvider(
           create: (context) => ListenSenderTextCubit(),
         ),
-
          BlocProvider(
           create: (context) => ListenSenderVoiceCubit(),
         ),
          BlocProvider(
           create: (context) => ListenSenderFileCubit(),
         ),
-
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
