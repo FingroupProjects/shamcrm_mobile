@@ -4,6 +4,7 @@ import 'dart:io';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
+import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
@@ -1062,6 +1063,144 @@ Future<String?> getEnteredDomain() async {
     }
   }
 
+
+    // Метод для Получения Сделки в Окно Лида
+Future<List<ContactPerson>> getContactPerson(int leadId) async {
+  final organizationId = await getSelectedOrganization();
+  final path = '/contactPerson/$leadId?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List).map((contactPerson) => ContactPerson.fromJson(contactPerson)).toList();
+  } else {
+    throw Exception('Ошибка загрузки Контактное Лицо ');
+  }
+}
+
+ // Метод для Создания Контактного Лица
+  Future<Map<String, dynamic>> createContactPerson({
+    required int leadId,
+    required String name,
+    required String phone,
+    required String position,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/contactPerson${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'lead_id': leadId,
+          'name': name,
+          'phone': phone,
+          'position': position,
+        });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Заметка создана успешно.'};
+    } else if (response.statusCode == 422) {
+     if (response.body.contains('name')) {
+        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+      
+      } if (response.body.contains('The phone has already been taken.')) {
+        return {
+          'success': false,
+          'message': 'Этот номер телефона уже существует.'
+        };
+      }
+      if (response.body.contains('validation.phone')) {
+        return {
+          'success': false,
+          'message':
+              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+        };
+      }
+      else if (response.body.contains('position')) {
+        return {'success': false, 'message': 'Поля не может быть пустым.'};
+      }
+       else {
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания Контактного лица: ${response.body}'
+      };
+    }
+  }
+ // Метод для Создания Контактного Лица
+  Future<Map<String, dynamic>> updateContactPerson({
+    required int leadId,
+    required int contactpersonId,
+    required String name,
+    required String phone,
+    required String position,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _patchRequest(
+        '/contactPerson/$contactpersonId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'lead_id': leadId,
+          'name': name,
+          'phone': phone,
+          'position': position,
+        });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Заметка создана успешно.'};
+    } else if (response.statusCode == 422) {
+     if (response.body.contains('name')) {
+        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+      
+      } if (response.body.contains('The phone has already been taken.')) {
+        return {
+          'success': false,
+          'message': 'Этот номер телефона уже существует.'
+        };
+      }
+      if (response.body.contains('validation.phone')) {
+        return {
+          'success': false,
+          'message':
+              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+        };
+      }
+      else if (response.body.contains('position')) {
+        return {'success': false, 'message': 'Поля не может быть пустым.'};
+      }
+       else {
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка: ${response.body}'
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания Контактного лица: ${response.body}'
+      };
+    }
+  }
+
+
+// Метод для Удаления конатного Лица
+  Future<Map<String, dynamic>> deleteContactPerson(int contactpersonId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/contactPerson/$contactpersonId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete contactPerson: ${response.body}');
+    }
+  }
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//

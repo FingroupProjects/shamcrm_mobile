@@ -275,9 +275,8 @@ Future<void> _fetchBaseUrl() async {
               filePath: mm.message!.filePath.toString(),
               text: mm.message!.text ??= mm.message!.type!,
               type: mm.message!.type.toString(),
-              isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-              // isMyMessage:  (userID.value == mm.message!.sender!.id.toString() &&
-              //     mm.message!.sender!.type == 'user'),
+              // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
+              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
               createMessateTime: mm.message!.createdAt.toString(),
               duration: Duration(
                   seconds: (mm.message!.voiceDuration != null)
@@ -291,10 +290,8 @@ Future<void> _fetchBaseUrl() async {
             text: mm.message!.text ??= mm.message!.type!,
             type: mm.message!.type.toString(),
             createMessateTime: mm.message!.createdAt.toString(),
-            isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-            // isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
-            //     mm.message!.sender!.type ==
-            //         'user'),
+            // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
+            isMyMessage: (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type =='user'),
               senderName: mm.message!.sender!.name!
           );
         }
