@@ -139,6 +139,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         facebookLogin: event.facebookLogin,
         tgNick: event.tgNick,
         birthday: event.birthday,
+        email: event.email,
         description: event.description,
         waPhone: event.waPhone,
       );
@@ -190,6 +191,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         tgNick: event.tgNick,
         birthday: event.birthday,
         description: event.description,
+        email: event.email,
         waPhone: event.waPhone,
       );
 
