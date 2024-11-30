@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:flutter/material.dart';

@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
@@ -158,8 +159,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
         BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
+        BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
-        BlocProvider(create: (context) => GetAllManagerBloc()),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
       ],
       child: MaterialApp(

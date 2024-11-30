@@ -10,9 +10,10 @@ class TaskById {
   final TaskStatusById? taskStatus;
   final String? color;
   final Project? project;
-  final List<UserById>? user;  // Обновлено на список пользователей
+  final List<UserById>? user;  
   final TaskFileById? file;
   final int priority;
+  final ChatById? chat; 
 
   TaskById({
     required this.id,
@@ -27,14 +28,12 @@ class TaskById {
     this.user,
     this.file,
     required this.priority,
+    this.chat, // Инициализация нового поля
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
-    // Извлекаем и проверяем priority_level
-    final rawPriority = json['priority_level'];
-    print('Raw priority from JSON: $rawPriority'); // Debug print
-    
     // Преобразуем priority_level в int
+    final rawPriority = json['priority_level'];
     final int priorityLevel;
     if (rawPriority is int) {
       priorityLevel = rawPriority;
@@ -43,8 +42,6 @@ class TaskById {
     } else {
       priorityLevel = 0;
     }
-    
-    print('Converted priority level: $priorityLevel'); // Debug print
 
     return TaskById(
       id: json['id'] is int ? json['id'] : 0,
@@ -53,25 +50,59 @@ class TaskById {
       endDate: json['to'],
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
-      priority: priorityLevel, // Используем обработанное значение
+      priority: priorityLevel,
       taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
-      ? TaskStatusById.fromJson(json['taskStatus'])
-      : null,
+          ? TaskStatusById.fromJson(json['taskStatus'])
+          : null,
       project: json['project'] != null && json['project'] is Map<String, dynamic>
           ? Project.fromJson(json['project'])
           : null,
       user: json['users'] != null && json['users'] is List
-         ? (json['users'] as List)
-        .map((userJson) => UserById.fromJson(userJson))
-        .toList()
-        : null,
+          ? (json['users'] as List).map((userJson) => UserById.fromJson(userJson)).toList()
+          : null,
       color: json['color'] is String ? json['color'] : null,
       file: json['file'] != null && json['file'] is Map<String, dynamic>
           ? TaskFileById.fromJson(json['file'])
           : null,
+      chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
+          ? ChatById.fromJson(json['chat']) // Преобразуем JSON для чата
+          : null,
     );
   }
 }
+
+class ChatById {
+  final int id;
+  final String? lead;
+  final String type;
+  final String? user;
+
+  ChatById({
+    required this.id,
+    this.lead,
+    required this.type,
+    this.user,
+  });
+
+  factory ChatById.fromJson(Map<String, dynamic> json) {
+    return ChatById(
+      id: json['id'] ?? 0,
+      lead: json['lead'] as String?,
+      type: json['type'] as String? ?? 'unknown',
+      user: json['user'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'lead': lead,
+      'type': type,
+      'user': user,
+    };
+  }
+}
+
 
 class UserById {
   final int id;
@@ -176,6 +207,3 @@ class TaskStatusNameById {
     };
   }
 }
-
-
-      // taskStatus: json['taskStatus'] != null ? TaskStatusById.fromJson(json['taskStatus']) : TaskStatusById(id: 0, taskStatus: TaskStatusNameById(id: 0, name: 'Не указан'), color: '#000000'),
