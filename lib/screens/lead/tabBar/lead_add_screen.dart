@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -7,13 +8,11 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:intl/intl.dart';
 
 class LeadAddScreen extends StatefulWidget {
@@ -34,6 +33,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   final TextEditingController tgNickController = TextEditingController();
   final TextEditingController whatsappController = TextEditingController();
   final TextEditingController birthdayController = TextEditingController();
+  final TextEditingController createDateController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
@@ -44,8 +46,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   @override
   void initState() {
     super.initState();
-    // context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
 
   @override
@@ -193,6 +195,26 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true, 
+                        readOnly: true, 
+                      ),
+                       const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: 'Введите электронную почту',
+                        label: 'Электронная почта',
+                        keyboardType: TextInputType.emailAddress, 
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
                         hintText: 'Введите описание',
@@ -250,6 +272,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 birthdayController.text.isEmpty
                                     ? null
                                     : birthdayController.text;
+                            final String? email =
+                                emailController.text.isEmpty
+                                    ? null
+                                    : emailController.text;
                             final String? description =
                                 descriptionController.text.isEmpty
                                     ? null
@@ -259,14 +285,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             if (birthdayString != null &&
                                 birthdayString.isNotEmpty) {
                               try {
-                                birthday = DateFormat('dd/MM/yyyy')
-                                    .parse(birthdayString);
+                                birthday = DateFormat('dd/MM/yyyy').parse(birthdayString);
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'Введите корректную дату рождения в формате ДД/ММ/ГГГГ')),
-                                );
+                                  SnackBar(content: Text('Введите корректную дату рождения в формате ДД/ММ/ГГГГ')),);
                                 return;
                               }
                             }
@@ -285,6 +307,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                   tgNick: tgNick,
                                   waPhone: whatsapp,
                                   birthday: birthday,
+                                  email: email,
                                   description: description,
                                 ));
                           }
