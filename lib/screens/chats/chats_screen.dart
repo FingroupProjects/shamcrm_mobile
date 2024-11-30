@@ -165,7 +165,7 @@ void initState() {
     return Unfocuser(
       child: Scaffold(
         appBar: AppBar(
-          forceMaterialTransparency: true,
+        forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
             title: 'Чаты',

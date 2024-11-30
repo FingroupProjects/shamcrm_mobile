@@ -1,41 +1,32 @@
-import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
-import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
-import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
+import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
+import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
+import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/lead_deal_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_lead_deal.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_add_screen.dart';
+import 'package:crm_task_manager/models/contact_person_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_add_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_delete.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_update_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
-class DealsWidget extends StatefulWidget {
+class ContactPersonWidget extends StatefulWidget {
   final int leadId;
 
-  DealsWidget({required this.leadId});
+  ContactPersonWidget({required this.leadId});
 
   @override
-  _DealsWidgetState createState() => _DealsWidgetState();
+  _ContactPersonWidgetState createState() => _ContactPersonWidgetState();
 }
 
-class _DealsWidgetState extends State<DealsWidget> {
-  List<LeadDeal> deals = [];
+class _ContactPersonWidgetState extends State<ContactPersonWidget> {
+  List<ContactPerson> contactPerson = [];
   late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
-    context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+    context.read<ContactPersonBloc>().add(FetchContactPerson(widget.leadId));
   }
 
   @override
@@ -44,40 +35,30 @@ class _DealsWidgetState extends State<DealsWidget> {
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
-        !context.read<LeadDealsBloc>().allLeadDealsFetched) {
-      context
-          .read<LeadDealsBloc>()
-          .add(FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LeadDealsBloc, LeadDealsState>(
+    return BlocBuilder<ContactPersonBloc, ContactPersonState>(
       builder: (context, state) {
-        if (state is LeadDealsLoading) {
+        if (state is ContactPersonLoading) {
           // return const Center(child: CircularProgressIndicator());
-        } else if (state is LeadDealsLoaded) {
-          deals = state.deals;
-        } else if (state is LeadDealsError) {
+        } else if (state is ContactPersonLoaded) {
+          contactPerson = state.contactPerson;
+        } else if (state is ContactPersonError) {
           return Center(child: Text(state.message));
         }
 
-        return _buildDealsList(deals);
+        return _buildContactPersonList(contactPerson);
       },
     );
   }
 
-  Widget _buildDealsList(List<LeadDeal> deals) {
+  Widget _buildContactPersonList(List<ContactPerson> contactPerson) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Сделки'),
+        _buildTitleRow('Контактное Лицо'),
         SizedBox(height: 8),
-        if (deals.isEmpty)
+        if (contactPerson.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
@@ -86,7 +67,7 @@ class _DealsWidgetState extends State<DealsWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пока здесь нет сделок',
+                    'Пока здесь нет Контактное Лицо',
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -104,9 +85,9 @@ class _DealsWidgetState extends State<DealsWidget> {
             height: 300,
             child: ListView.builder(
               controller: _scrollController,
-              itemCount: deals.length,
+              itemCount: contactPerson.length,
               itemBuilder: (context, index) {
-                return _buildDealItem(deals[index]);
+                return _buildContactPersonItem(contactPerson[index]);
               },
             ),
           ),
@@ -114,14 +95,10 @@ class _DealsWidgetState extends State<DealsWidget> {
     );
   }
 
-  Widget _buildDealItem(LeadDeal deal) {
-    final formattedDate = deal.startDate != null
-        ? DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse(deal.startDate!))
-        : 'Не указано';
-
+  Widget _buildContactPersonItem(ContactPerson contactPerson) {
     return GestureDetector(
       onTap: () {
-        _navigateToDealDetails(deal);
+        _navigateToContactPersonDetails(contactPerson);
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -132,7 +109,7 @@ class _DealsWidgetState extends State<DealsWidget> {
             child: Row(
               children: [
                 Image.asset(
-                  'assets/icons/MyNavBar/deal_ON.png',
+                  'assets/icons/contactPerson.png',
                   width: 24,
                   height: 24,
                   color: Color(0xff1E2E52),
@@ -143,15 +120,14 @@ class _DealsWidgetState extends State<DealsWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        deal.name,
+                        contactPerson.name,
                         style: TaskCardStyles.titleStyle,
                       ),
-                      SizedBox(height: 4),
                       Text(
-                        formattedDate,
-                        style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff1E2E52),
-                        ),
+                        contactPerson.phone,
+                      ),
+                      Text(
+                        contactPerson.position.toString(),
                       ),
                     ],
                   ),
@@ -161,8 +137,8 @@ class _DealsWidgetState extends State<DealsWidget> {
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder: (context) => DeleteDealDialog(
-                        dealId: deal.id,
+                      builder: (context) => DeleteContactPersonDialog(
+                        contactPerson: contactPerson,
                         leadId: widget.leadId,
                       ),
                     );
@@ -176,25 +152,18 @@ class _DealsWidgetState extends State<DealsWidget> {
     );
   }
 
-  void _navigateToDealDetails(LeadDeal deal) {
-    List<DealCustomField> defaultCustomFields = [
-      DealCustomField(id: 1, key: '', value: ''),
-      DealCustomField(id: 2, key: '', value: ''),
-    ];
-
+  void _navigateToContactPersonDetails(ContactPerson contactPerson) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DealDetailsScreen(
-          dealId: deal.id.toString(),
-          dealName: deal.name ?? '',
-          sum: deal.sum?.toString() ?? '',
-          dealStatus: '',
-          statusId: 1,
-          dealCustomFields: defaultCustomFields,
+        builder: (context) => ContactPersonUpdateScreen(
+          leadId: widget.leadId,
+          contactPerson: contactPerson,
         ),
       ),
-    );
+    ).then((_) {
+      context.read<ContactPersonBloc>().add(FetchContactPerson(widget.leadId));
+    });
   }
 
   Row _buildTitleRow(String title) {
@@ -210,11 +179,16 @@ class _DealsWidgetState extends State<DealsWidget> {
         TextButton(
           onPressed: () {
             Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LeadDealAddScreen(leadId: widget.leadId),
-                    ),
-                  );
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ContactPersonAddScreen(leadId: widget.leadId),
+              ),
+            ).then((_) {
+              context
+                  .read<ContactPersonBloc>()
+                  .add(FetchContactPerson(widget.leadId));
+            });
           },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
@@ -237,21 +211,4 @@ class _DealsWidgetState extends State<DealsWidget> {
       ],
     );
   }
-
-  //   void _showAddNoteDialog() {
-  //   showModalBottomSheet(
-  //     context: context,
-  //     backgroundColor: Colors.white,
-  //     builder: (BuildContext context) {
-  //       return CreateNotesDialog(leadId: widget.leadId);
-  //     },
-  //   );
-  // }
-
-  // void _showDeleteDealDialog(Deal deal) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => DeleteDealDialog(dealId: deal.id),
-  //   );
-  // }
 }

@@ -14,6 +14,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_status_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -192,6 +193,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         controller: sumController,
                         hintText: 'Введите сумму',
                         label: 'Сумма',
+                        keyboardType: TextInputType.number, 
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, 
+                        ],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';

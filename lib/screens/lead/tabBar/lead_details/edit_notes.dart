@@ -27,7 +27,7 @@ class _EditNotesDialogState extends State<EditNotesDialog> {
   @override
   void initState() {
     super.initState();
-    titleController.text = widget.note.title; // Инициализация заголовка
+    titleController.text = widget.note.title; 
     bodyController.text = widget.note.body;
     dateController.text = widget.note.date != null
         ? DateFormat('dd/MM/yyyy HH:mm')
