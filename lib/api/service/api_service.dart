@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
@@ -1201,6 +1202,25 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
       throw Exception('Failed to delete contactPerson: ${response.body}');
     }
   }
+
+
+
+    // Метод для Получения Чата в Окно Лида
+Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
+  final organizationId = await getSelectedOrganization();
+  final path = '/lead/$leadId/chats?organization_id=$organizationId';
+
+  final response = await _getRequest(path);
+  print('Request path: $path');
+
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return (data['result'] as List).map((leadtochat) => LeadNavigateChat.fromJson(leadtochat)).toList();
+  } else {
+    throw Exception('Ошибка загрузки чата в Лид');
+  }
+}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//

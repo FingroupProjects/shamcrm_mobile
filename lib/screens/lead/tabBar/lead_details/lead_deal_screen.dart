@@ -35,7 +35,6 @@ class _DealsWidgetState extends State<DealsWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh the deals when the widget is rebuilt after navigating back.
     context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
   }
 

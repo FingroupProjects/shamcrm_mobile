@@ -12,6 +12,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -136,6 +137,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     children: [
                       _buildDetailsList(),
                       const SizedBox(height: 8),
+                      LeadNavigateToChat(leadId: int.parse(widget.leadId)),
+                      const SizedBox(height: 16),
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 16),
                       NotesWidget(leadId: int.parse(widget.leadId)),
@@ -143,6 +146,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       DealsWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 16),
                       ContactPersonWidget(leadId: int.parse(widget.leadId)),
+                      
                     ],
                   ),
                 );
