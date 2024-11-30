@@ -48,9 +48,9 @@ class _DealsWidgetState extends State<DealsWidget> {
     if (_scrollController.position.pixels ==
             _scrollController.position.maxScrollExtent &&
         !context.read<LeadDealsBloc>().allLeadDealsFetched) {
-      context.read<LeadDealsBloc>().add(
-        FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()),
-      );
+      context
+          .read<LeadDealsBloc>()
+          .add(FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()));
     }
   }
 
@@ -194,9 +194,7 @@ class _DealsWidgetState extends State<DealsWidget> {
           dealCustomFields: defaultCustomFields,
         ),
       ),
-    ).then((_) {
-      context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
-    });
+    );
   }
 
   Row _buildTitleRow(String title) {
@@ -212,13 +210,11 @@ class _DealsWidgetState extends State<DealsWidget> {
         TextButton(
           onPressed: () {
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LeadDealAddScreen(leadId: widget.leadId),
-              ),
-            ).then((_) {
-              context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
-            });
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LeadDealAddScreen(leadId: widget.leadId),
+                    ),
+                  );
           },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
@@ -241,4 +237,21 @@ class _DealsWidgetState extends State<DealsWidget> {
       ],
     );
   }
+
+  //   void _showAddNoteDialog() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: Colors.white,
+  //     builder: (BuildContext context) {
+  //       return CreateNotesDialog(leadId: widget.leadId);
+  //     },
+  //   );
+  // }
+
+  // void _showDeleteDealDialog(Deal deal) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => DeleteDealDialog(dealId: deal.id),
+  //   );
+  // }
 }

@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/forgot_pin_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
@@ -47,51 +48,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-
-
-// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
-// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
+// final String baseUrl = 'http://62.84.186.96/api';
+// final String baseUrl = 'http://192.168.1.61:8008/api';
+// final String baseUrl = 'https://shamcrm.com/api';
+final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+final String baseUrlSocket =
+    'https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
-  
-  late final String baseUrl;
-  late final String baseUrlSocket;
-
-   ApiService() {
-    _initializeIfDomainExists();
-  }
-
-  Future<void> _initializeIfDomainExists() async {
-    bool isDomainSet = await isDomainChecked();
-    if (isDomainSet) {
-      await initialize();
-    }
-  }
-
-
-  Future<void> initialize() async {
-    baseUrl = await getDynamicBaseUrl();
-    baseUrlSocket = await getSocketBaseUrl();
-  }
-
-  Future<String> getDynamicBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
-  }
-
-  Future<String> getSocketBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/broadcasting/auth';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
-  }
-  
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -372,19 +336,6 @@ class ApiService {
         false; // Проверяем статус или возвращаем false
   }
 
-  // Метод для сохранения введенного домена
-Future<void> saveDomain(String domain) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('enteredDomain', domain); 
-}
-
-// Метод для получения введенного домена
-Future<String?> getEnteredDomain() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('enteredDomain'); // Возвращаем введенный домен или null
-}
-
-
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
   //_________________________________ START___API__LOGIN____________________________________________//
@@ -430,6 +381,49 @@ Future<String?> getEnteredDomain() async {
     final permissions = await getPermissions();
     return permissions.contains(permission); // Проверяем наличие права
   }
+
+ Future<String> forgotPin(LoginModel loginModel) async {
+  try {
+    // Получение ID организации (если необходимо)
+    final organizationId = await getSelectedOrganization();
+
+    // Формирование URL с учетом ID организации
+    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    // Запрос к API
+    final response = await _postRequest(
+      url,
+      {
+        'login': loginModel.login,
+        'password': loginModel.password,
+      },
+    );
+
+    // Обработка успешного ответа
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+      if (decodedJson['result'] != null) {
+        return decodedJson['result'].toString();
+      } else {
+        throw Exception('Не удалось получить временный PIN.');
+      }
+    } 
+    // Обработка ошибок сервера
+    else if (response.statusCode == 400) {
+      throw Exception('Некорректные данные запроса.');
+    } else {
+      print('Ошибка API forgotPin: ${response.statusCode}');
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Ошибка в forgotPin: $e');
+    throw Exception('Ошибка в запросе: $e');
+  }
+}
+
+
+
 
   //_________________________________ END___API__LOGIN____________________________________________//
 

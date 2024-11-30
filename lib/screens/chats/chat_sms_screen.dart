@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -30,6 +31,8 @@ import 'package:voice_message_package/voice_message_package.dart';
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
+  //todo: tab's key value for opened profile screen.
+  final String endPointInTab;
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
 
@@ -37,6 +40,7 @@ class ChatSmsScreen extends StatefulWidget {
     super.key,
     required this.chatItem,
     required this.chatId,
+    required this.endPointInTab,
   });
 
   @override
@@ -51,10 +55,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   late PusherChannelsClient socketClient;
 
   late VoiceController audioController;
-  final ApiService apiService = ApiService();
-
-  late String baseUrl;
-
 
   @override
   void initState() {
@@ -68,15 +68,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
-          _fetchBaseUrl();
-
     });
     // _connectWebSocket();
   }
-
-Future<void> _fetchBaseUrl() async {
-  baseUrl = await apiService.getDynamicBaseUrl();
-}
 
   @override
   Widget build(BuildContext context) {
@@ -91,12 +85,24 @@ Future<void> _fetchBaseUrl() async {
         ),
         title: InkWell(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserProfileScreen(chatId: widget.chatId),
-              ),
-            );
+            if(widget.endPointInTab == 'lead') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                ),
+              );
+            } else if(widget.endPointInTab == 'task'){
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                ),
+              );
+            }
+
+
+
           },
           child: Row(
             children: [
@@ -122,6 +128,7 @@ Future<void> _fetchBaseUrl() async {
       body: Column(
         children: [
           Expanded(child: messageListUi()),
+
           /// bottom ui
           inputWidget(),
         ],
@@ -159,7 +166,6 @@ Future<void> _fetchBaseUrl() async {
                 return MessageItemWidget(
                   message: state.messages[index],
                   apiServiceDownload: widget.apiServiceDownload,
-                  baseUrl: baseUrl, // Передаём baseUrl
                 );
               },
             ),
@@ -185,21 +191,21 @@ Future<void> _fetchBaseUrl() async {
         String inputPath = '/path/to/recorded/file.mp4a';
         String outputPath = await getOutputPath('converted_file.ogg');
 
+        // Получение organizationId из SharedPreferences
+        String? organizationId =
+            await widget.apiService.getSelectedOrganization();
+
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
         if (convertedFile != null) {
-          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
+          String uploadUrl =
+              '$baseUrl/chat/sendVoice/${widget.chatId}?organization_id=$organizationId';
           await uploadFile(convertedFile, uploadUrl);
         } else {
           debugPrint('Conversion failed');
         }
 
-        try {
-          await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
-        } catch(e) {
-          context.read<ListenSenderVoiceCubit>().updateValue(false);
-        }
+        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
         context.read<ListenSenderVoiceCubit>().updateValue(false);
-
       },
     );
   }
@@ -213,11 +219,6 @@ Future<void> _fetchBaseUrl() async {
     debugPrint('--------------------------- start socket:::::::');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
-
-
-      final baseUrlSocket = await apiService.getSocketBaseUrl();
-      final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
-
 
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
@@ -245,7 +246,7 @@ Future<void> _fetchBaseUrl() async {
         authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
+          'X-Tenant': 'fingroup-back'
         },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
@@ -261,6 +262,22 @@ Future<void> _fetchBaseUrl() async {
         print('----sender');
         print(mm.message!.sender!);
 
+        if (kDebugMode) {
+          print(event.data);
+          print(event.channelName);
+          print('------ socket');
+          print('--------');
+          print(mm.message);
+
+          print('--------');
+        }
+
+        print('----------------------- check');
+        print('---- user in app');
+        print(userID);
+        print('----- sender');
+        print(mm.message!.sender);
+
         context.read<ListenSenderFileCubit>().updateValue(false);
         context.read<ListenSenderVoiceCubit>().updateValue(false);
         context.read<ListenSenderTextCubit>().updateValue(false);
@@ -271,18 +288,17 @@ Future<void> _fetchBaseUrl() async {
             mm.message!.type == 'image' ||
             mm.message!.type == 'document') {
           msg = Message(
-              id: mm.message!.id!,
-              filePath: mm.message!.filePath.toString(),
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
-              createMessateTime: mm.message!.createdAt.toString(),
-              duration: Duration(
-                  seconds: (mm.message!.voiceDuration != null)
-                      ? double.parse(mm.message!.voiceDuration.toString())
-                          .round()
-                      : 20), senderName: mm.message!.sender!.name!,
+            id: mm.message!.id!,
+            filePath: mm.message!.filePath.toString(),
+            text: mm.message!.text ??= mm.message!.type!,
+            type: mm.message!.type.toString(),
+            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
+                mm.message!.sender!.type == 'user'),
+            createMessateTime: mm.message!.createdAt.toString(),
+            duration: Duration(
+                seconds: (mm.message!.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString()).round()
+                    : 20),
           );
         } else {
           msg = Message(
@@ -290,13 +306,10 @@ Future<void> _fetchBaseUrl() async {
             text: mm.message!.text ??= mm.message!.type!,
             type: mm.message!.type.toString(),
             createMessateTime: mm.message!.createdAt.toString(),
-            // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-            isMyMessage: (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type =='user'),
-              senderName: mm.message!.sender!.name!
+            isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
+                mm.message!.sender!.type == 'user'),
           );
         }
-
-
         setState(() {
           context.read<MessagingCubit>().addMessageFormSocket(msg);
         });
@@ -362,15 +375,16 @@ Future<void> _fetchBaseUrl() async {
 
   @override
   void dispose() {
-
+    context.watch<ListenSenderFileCubit>().updateValue(false);
+    context.watch<ListenSenderVoiceCubit>().updateValue(false);
+    context.watch<ListenSenderTextCubit>().updateValue(false);
 
     chatSubscribtion.cancel();
     _scrollController.dispose();
 
     _messageController.dispose();
     socketClient.dispose();
-    _webSocket
-        ?.close();
+    _webSocket?.close();
 
     super.dispose();
   }
@@ -379,18 +393,12 @@ Future<void> _fetchBaseUrl() async {
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
-  final String baseUrl; // Новый параметр
 
-  const MessageItemWidget({
-    super.key,
-    required this.message,
-    required this.apiServiceDownload,
-    required this.baseUrl,
-  });
+  const MessageItemWidget(
+      {super.key, required this.message, required this.apiServiceDownload});
 
   @override
   Widget build(BuildContext context) {
-
     switch (message.type) {
       case 'text':
         return textState();
@@ -404,7 +412,6 @@ class MessageItemWidget extends StatelessWidget {
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
           onTap: (path) async {
-
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
@@ -418,7 +425,7 @@ class MessageItemWidget extends StatelessWidget {
                 print('Invalid file path. Cannot open file.');
               }
             }
-          }, senderName: message.senderName,
+          },
         );
       case 'voice':
         return voiceState();
@@ -434,7 +441,6 @@ class MessageItemWidget extends StatelessWidget {
       message: message.text,
       time: time(message.createMessateTime), // Динамическое время
       isSender: message.isMyMessage,
-      senderName: message.senderName.toString(),
     );
   }
 
@@ -445,7 +451,7 @@ class MessageItemWidget extends StatelessWidget {
       isSender: message.isMyMessage,
       filePath: message.filePath ?? 'Unknown file format',
       fileName: message.text,
-      message: message, senderName: message.senderName,
+      message: message,
     );
   }
 
@@ -458,7 +464,7 @@ class MessageItemWidget extends StatelessWidget {
       fileName: message.text,
       onTap: (path) async {
         await apiServiceDownload.downloadAndOpenFile(message.filePath!);
-      }, senderName: message.senderName,
+      },
     );
   }
 
@@ -497,11 +503,6 @@ class MessageItemWidget extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 8),
-          if(message.isMyMessage == false) Text(
-            message.senderName,
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
           VoiceMessageView(
             innerPadding: 8,
             backgroundColor: message.isMyMessage

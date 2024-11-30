@@ -109,6 +109,28 @@ class InputField extends StatelessWidget {
                   ),
                 ),
 
+          /*
+
+           */
+          // IconButton(
+          //   icon: Container(
+          //     width: 48,
+          //     height: 48,
+          //     decoration: BoxDecoration(
+          //       color: ChatSmsStyles.inputBackgroundColor,
+          //       borderRadius: BorderRadius.circular(8),
+          //     ),
+          //     padding: const EdgeInsets.all(12),
+          //     child: Image.asset(
+          //       'assets/icons/chats/microphone.png',
+          //       width: 20,
+          //       height: 20,
+          //     ),
+          //   ),
+          //   onPressed: () {
+          //     onRecordVoice();
+          //   },
+          // ),
           (context.watch<ListenSenderTextCubit>().state)
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
