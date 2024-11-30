@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -85,52 +86,61 @@ class TaskByIdScreen extends StatelessWidget {
                     title: Text("Автор: ${task.authorName}"),
                   ),
                   ListTile(
-                    leading: Icon(Icons.group),
-                    title: GestureDetector(
-                      onTap: () {
-                        // Показать всплывающее окно со списком всех пользователей
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              backgroundColor: Colors.white,
-                              title: Text(
-                                "Список исполнителей",
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                              content: SingleChildScrollView(
-                                child: ListBody(
-                                  children: userNamesList.asMap().entries.map((entry) {
-                                    int index = entry.key + 1; // Нумерация с 1
-                                    String name = entry.value;
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                      child: Text(
-                                        '$index. $name',
-                                        style: TextStyle(fontSize: 18),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: Text("Закрыть", style: TextStyle(fontSize: 16)),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
+  leading: Icon(Icons.group),
+  title: GestureDetector(
+    onTap: () {
+      // Показать всплывающее окно со списком всех пользователей
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text(
+              "Список исполнителей",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            content: Container(
+              height: 400, 
+              child: SingleChildScrollView(
+                child: ListBody(
+                  children: userNamesList.asMap().entries.map((entry) {
+                    int index = entry.key + 1; // Нумерация с 1
+                    String name = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: Text(
-                        "Исполнители: $displayUserNames",
-                        style: TextStyle(color: Colors.black, fontSize: 16),
+                        '$index. $name',
+                        style: TextStyle(fontSize: 18),
                       ),
-                    ),
-                  ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: CustomButton(
+                  buttonText: 'Закрыть',
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+    child: Text(
+      "Исполнители: $displayUserNames",
+      style: TextStyle(color: Colors.black, fontSize: 16),
+    ),
+  ),
+),
+
                   ListTile(
                     leading: Icon(Icons.calendar_today),
                     title: Text("От: ${formattedFromDate}"),
