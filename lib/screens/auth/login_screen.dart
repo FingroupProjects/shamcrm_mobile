@@ -49,7 +49,7 @@ class   LoginScreen extends StatelessWidget {
                 final token = await apiService.getToken();
                 if (token != null) {
                   // Автоматически переходим на главный экран, если токен есть
-                  Navigator.pushReplacementNamed(context, '/pin_setup');
+                  Navigator.pushReplacementNamed(context, '/pin_screen');
                 }
               }
 

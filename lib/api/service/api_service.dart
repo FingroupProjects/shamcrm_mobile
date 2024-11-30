@@ -8,6 +8,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/forgot_pin_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -378,6 +379,49 @@ class ApiService {
     final permissions = await getPermissions();
     return permissions.contains(permission); // Проверяем наличие права
   }
+
+ Future<String> forgotPin(LoginModel loginModel) async {
+  try {
+    // Получение ID организации (если необходимо)
+    final organizationId = await getSelectedOrganization();
+
+    // Формирование URL с учетом ID организации
+    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    // Запрос к API
+    final response = await _postRequest(
+      url,
+      {
+        'login': loginModel.login,
+        'password': loginModel.password,
+      },
+    );
+
+    // Обработка успешного ответа
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+      if (decodedJson['result'] != null) {
+        return decodedJson['result'].toString();
+      } else {
+        throw Exception('Не удалось получить временный PIN.');
+      }
+    } 
+    // Обработка ошибок сервера
+    else if (response.statusCode == 400) {
+      throw Exception('Некорректные данные запроса.');
+    } else {
+      print('Ошибка API forgotPin: ${response.statusCode}');
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Ошибка в forgotPin: $e');
+    throw Exception('Ошибка в запросе: $e');
+  }
+}
+
+
+
 
   //_________________________________ END___API__LOGIN____________________________________________//
 

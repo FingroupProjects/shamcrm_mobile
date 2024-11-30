@@ -43,6 +43,8 @@ class _ChatsScreenState extends State<ChatsScreen>
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
 
+  // todo: 1. tab's key value for opened profile screen.
+  String endPointInTab = 'lead';
 @override
 void initState() {
   super.initState();
@@ -228,19 +230,19 @@ void initState() {
         selectTabIndex = index;
         _tabController.animateTo(index);
 
-        String endPoint = '';
+        // todo: 2. tab's key value for opened profile screen.
         if (index == 0) {
-          endPoint = 'lead';
+          endPointInTab = 'lead';
         }
-
+        // todo: 3. tab's key value for opened profile screen.
         if (index == 1) {
-          endPoint = 'task';
+          endPointInTab = 'task';
         }
-
+        // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
-          endPoint = 'corporate';
+          endPointInTab = 'corporate';
         }
-        context.read<ChatsBloc>().add(FetchChats(endPoint: endPoint));
+        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -263,7 +265,7 @@ void initState() {
       controller: _tabController,
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(_tabTitles.length,
-          (index) => _ChatItemsWidget(updateChats: updateChats)),
+          (index) => _ChatItemsWidget(updateChats: updateChats, endPointInTab: endPointInTab,)),
     );
   }
 
@@ -278,13 +280,16 @@ void initState() {
 
 class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
-  const _ChatItemsWidget({required this.updateChats});
+  // todo: tab's key value for opened profile screen.
+  final String endPointInTab;
+  const _ChatItemsWidget({required this.updateChats, required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
 }
 
 class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
+
   final PagingController<int, Chats> _pagingController =
       PagingController(firstPageKey: 0);
 
@@ -312,6 +317,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           child: ChatSmsScreen(
             chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
             chatId: chat.id,
+            // todo: tab's key value for opened profile screen.
+            endPointInTab: widget.endPointInTab,
           ),
         ),
       ),
