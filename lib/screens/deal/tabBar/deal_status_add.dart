@@ -17,6 +17,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _dayController = TextEditingController();
   String? _errorMessage;
   String? _dayErrorMessage;
+  bool _isTextExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +35,19 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+            children: [
+              Text(
+                'Название',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xfff1E2E52),
+                ),
+              ),
+            ],
+          ),
           TextFormField(
             controller: _controller,
             decoration: InputDecoration(
@@ -50,8 +64,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               ),
               filled: true,
               fillColor: Color(0xffF4F7FD),
-              contentPadding:
-                  EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
           ),
           if (_errorMessage != null)
@@ -68,11 +81,36 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               ),
             ),
           SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isTextExpanded = !_isTextExpanded;
+                    });
+                  },
+                  child: Text(
+                    'Укажите сколько дней может находиться сделка в этом статусе',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xfff1E2E52),
+                    ),
+                    overflow: _isTextExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                    maxLines: _isTextExpanded ? null : 1, 
+                  ),
+                ),
+              ),
+            ],
+          ),
+
           TextFormField(
             controller: _dayController,
-            keyboardType: TextInputType.number, 
+            keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              hintText: 'Введите день',
+              hintText: 'Введите число дней',
               hintStyle: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -85,10 +123,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               ),
               filled: true,
               fillColor: Color(0xffF4F7FD),
-              contentPadding:EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly, 
-            ],
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           if (_dayErrorMessage != null)
             Padding(
@@ -138,14 +175,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       context.read<DealBloc>().add(CreateDealStatus(
                           title: title, color: color, day: day));
                       Navigator.of(context).pop();
-                    } 
+                    }
                   } else {
                     setState(() {
                       if (title.isEmpty) {
                         _errorMessage = 'Заполните название';
                       }
                       if (dayString.isEmpty) {
-                        _dayErrorMessage = 'Заполните день';
+                        _dayErrorMessage = 'Заполните число дней';
                       }
                     });
                   }
