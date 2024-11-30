@@ -803,6 +803,7 @@ class ApiService {
     String? facebookLogin,
     String? tgNick,
     DateTime? birthday,
+    String? email,
     String? description,
     String? waPhone,
   }) async {
@@ -822,6 +823,7 @@ class ApiService {
           if (birthday != null)
             'birthday': birthday.toIso8601String(), // Конвертация в строку
           if (description != null) 'description': description,
+          if (email != null) 'email': email,
           if (waPhone != null) 'wa_phone': waPhone,
         });
 
@@ -896,8 +898,8 @@ class ApiService {
     String? facebookLogin,
     String? tgNick,
     DateTime? birthday,
+    String? email,
     String? description,
-    int? organizationId,
     String? waPhone,
   }) async {
     final organizationId = await getSelectedOrganization();
@@ -914,8 +916,8 @@ class ApiService {
           if (facebookLogin != null) 'facebook_login': facebookLogin,
           if (tgNick != null) 'tg_nick': tgNick,
           if (birthday != null) 'birthday': birthday.toIso8601String(),
+          if (email != null) 'email': email,
           if (description != null) 'description': description,
-          if (organizationId != null) 'organization_id': organizationId,
           if (waPhone != null) 'wa_phone': waPhone,
         });
 

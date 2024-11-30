@@ -39,6 +39,7 @@ class CreateLead extends LeadEvent {
   final String? tgNick;
   final DateTime? birthday;
   final String? description;
+  final String? email;
   final String? waPhone;
 
   CreateLead({
@@ -51,6 +52,7 @@ class CreateLead extends LeadEvent {
     this.facebookLogin,
     this.tgNick,
     this.birthday,
+    this.email,
     this.description,
     this.waPhone,
   });
@@ -66,6 +68,7 @@ class UpdateLead extends LeadEvent {
   final String? facebookLogin;
   final String? tgNick;
   final DateTime? birthday;
+  final String? email;
   final String? description;
   final String? waPhone;
 
@@ -80,6 +83,7 @@ class UpdateLead extends LeadEvent {
     this.facebookLogin,
     this.tgNick,
     this.birthday,
+    this.email,
     this.description,
     this.waPhone,
   });

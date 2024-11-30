@@ -174,7 +174,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'Дата окончание',
+                        label: 'Дата завершения',
                         withTime: false,
                         validator: (value) {
                           if (value == null || value.isEmpty) {

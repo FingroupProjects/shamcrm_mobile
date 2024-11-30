@@ -15,6 +15,7 @@ class Lead {
   final String? facebook;
   final String? telegram;
   final String? phone;
+  final String? email;
   final String? description;
   final LeadStatus? leadStatus;
 
@@ -32,6 +33,7 @@ class Lead {
     this.facebook,
     this.telegram,
     this.phone,
+    this.email,
     this.description,
     this.leadStatus,
   });
@@ -58,11 +60,8 @@ class Lead {
       facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
+      email: json['email'] is String ? json['email'] : '',
       description: json['description'] is String ? json['description'] : '',
-      // leadStatus: json['leadStatus'] != null &&
-      //         json['leadStatus'] is Map<String, dynamic>
-      //     ? LeadStatus.fromJson(json['leadStatus'])
-      //     : null,
     );
   }
 }
