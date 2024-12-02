@@ -23,41 +23,42 @@ class _PinScreenState extends State<PinScreen>
   bool _canCheckBiometrics = false;
   List<BiometricType> _availableBiometrics = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _checkSavedPin();
-    _initBiometrics();
+@override
+void initState() {
+  super.initState();
+  _checkSavedPin();
+  _initBiometrics();
 
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
+  _animationController = AnimationController(
+    duration: const Duration(milliseconds: 500),
+    vsync: this,
+  );
 
-    _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
-    );
+  _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+    CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
+  );
 
-    _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _animationController.reset();
-      }
-    });
-
-    // Автоматически запускаем биометрическую аутентификацию
-    // WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
-  }
-
-  Future<void> _initBiometrics() async {
-    try {
-      _canCheckBiometrics = await _auth.canCheckBiometrics;
-      if (_canCheckBiometrics) {
-        _availableBiometrics = await _auth.getAvailableBiometrics();
-      }
-    } on PlatformException catch (e) {
-      debugPrint('Ошибка инициализации биометрии: $e');
+  _animationController.addStatusListener((status) {
+    if (status == AnimationStatus.completed) {
+      _animationController.reset();
     }
+  });
+}
+
+Future<void> _initBiometrics() async {
+  try {
+    _canCheckBiometrics = await _auth.canCheckBiometrics;
+    if (_canCheckBiometrics) {
+      _availableBiometrics = await _auth.getAvailableBiometrics();
+      if (_availableBiometrics.isNotEmpty) {
+        // Автоматический вызов аутентификации
+        _authenticate();
+      }
+    }
+  } on PlatformException catch (e) {
+    debugPrint('Ошибка инициализации биометрии: $e');
   }
+}
 
   Future<void> _checkSavedPin() async {
     final prefs = await SharedPreferences.getInstance();

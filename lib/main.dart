@@ -65,7 +65,7 @@ void main() async {
   final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
-   if (isDomainChecked) {
+  if (isDomainChecked) {
     await apiService.initialize();
   }
   final String? token = await apiService.getToken();
@@ -166,7 +166,6 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
-
       ],
       child: MaterialApp(
         color: Colors.white,
@@ -194,6 +193,7 @@ class MyApp extends StatelessWidget {
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
           '/local_auth': (context) => const AuthScreen(),
+          '/pin_screen': (context) => PinScreen(),
         },
       ),
     );
