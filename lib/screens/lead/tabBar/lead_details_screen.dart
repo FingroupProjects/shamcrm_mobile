@@ -109,6 +109,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
       {'label': 'Email:', 'value': lead.email ?? 'Не указано'},
       {'label': 'Автор:', 'value': lead.author?.name ?? 'Не указано'},
+      {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
     ];
   }
@@ -209,6 +210,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         ? DateFormat('dd/MM/yyyy')
                             .format(DateTime.parse(currentLead!.birthday!))
                         : null;
+                    final createdAtString = currentLead!.createdAt != null &&
+                            currentLead!.createdAt!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentLead!.createdAt!))
+                        : null;
 
                     final shouldUpdate = await Navigator.push(
                       context,
@@ -224,10 +230,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                               ? currentLead!.manager!.id.toString()
                               : 'Не указано',
                           birthday: birthdayString,
+                          createAt: createdAtString,
                           instagram: currentLead!.instagram,
                           facebook: currentLead!.facebook,
                           telegram: currentLead!.telegram,
                           phone: currentLead!.phone,
+                          email: currentLead!.email,
                           description: currentLead!.description,
                         ),
                       ),

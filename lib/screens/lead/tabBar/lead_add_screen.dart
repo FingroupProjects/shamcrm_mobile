@@ -7,7 +7,6 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +14,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadAddScreen extends StatefulWidget {
   final int statusId;
@@ -47,9 +47,19 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   @override
   void initState() {
     super.initState();
+  _loadUserName();
+
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
+  
+  void _loadUserName() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? userName = prefs.getString('userName');
+  if (userName != null) {
+    authorController.text = userName;
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +224,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         controller: authorController,
                         hintText: 'Автор',
                         label: 'Автор',
+                        readOnly: true, 
+
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
