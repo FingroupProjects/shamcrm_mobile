@@ -34,6 +34,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   final TextEditingController tgNickController = TextEditingController();
   final TextEditingController whatsappController = TextEditingController();
   final TextEditingController birthdayController = TextEditingController();
+  final TextEditingController createDateController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
@@ -44,8 +47,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   @override
   void initState() {
     super.initState();
-    // context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
 
   @override
@@ -140,9 +143,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         },
                         label: 'Телефон',
                       ),
-                       const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       RegionRadioGroupWidget(
-                        selectedRegion: selectedRegion, 
+                        selectedRegion: selectedRegion,
                         onSelectRegion: (RegionData selectedRegionData) {
                           setState(() {
                             selectedRegion = selectedRegionData.id.toString();
@@ -151,7 +154,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       ),
                       const SizedBox(height: 8),
                       ManagerRadioGroupWidget(
-                        selectedManager: selectedManager, 
+                        selectedManager: selectedManager,
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
@@ -191,6 +194,26 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         controller: birthdayController,
                         label: 'Дата рождения',
                         withTime: false,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true,
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: 'Введите электронную почту',
+                        label: 'Электронная почта',
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -250,6 +273,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 birthdayController.text.isEmpty
                                     ? null
                                     : birthdayController.text;
+                            final String? email = emailController.text.isEmpty
+                                ? null
+                                : emailController.text;
                             final String? description =
                                 descriptionController.text.isEmpty
                                     ? null
