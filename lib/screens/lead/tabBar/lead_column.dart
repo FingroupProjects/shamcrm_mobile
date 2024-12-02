@@ -43,8 +43,7 @@ class _LeadColumnState extends State<LeadColumn> {
         body: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
             if (state is LeadLoading) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Color(0xfff1E2E52)));
+              return const Center(child: CircularProgressIndicator(color: Color(0xfff1E2E52)));
             } else if (state is LeadDataLoaded) {
               final leads = state.leads
                   .where((lead) => lead.statusId == widget.statusId)

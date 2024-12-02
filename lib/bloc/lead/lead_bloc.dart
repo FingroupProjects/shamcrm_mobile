@@ -148,7 +148,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       if (result['success']) {
         emit(LeadSuccess('Лид создан успешно'));
         // Передаем статус лида (event.leadStatusId) в событие FetchLeads
-        add(FetchLeads(event.leadStatusId));
+        // add(FetchLeads(event.leadStatusId));
       } else {
         // Если есть ошибка, отображаем сообщение об ошибке
         emit(LeadError(result['message']));
@@ -198,7 +198,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       // Если успешно, то обновляем состояние
       if (result['success']) {
         emit(LeadSuccess('Лид обновлен успешно'));
-        add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
+        // add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
       } else {
         emit(LeadError(result['message']));
       }

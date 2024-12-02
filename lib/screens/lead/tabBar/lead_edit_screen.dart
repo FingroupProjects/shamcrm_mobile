@@ -57,7 +57,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController birthdayController = TextEditingController();
   final TextEditingController createDateController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
@@ -209,12 +208,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         hintText: 'Введите электронную почту',
                         label: 'Электронная почта',
                         keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: authorController,
-                        hintText: 'Автор',
-                        label: 'Автор',
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

@@ -323,15 +323,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             return searchWidget(leads);
           }
           if (state is LeadLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
               return const Center(child: Text('Нет статусов для отображения'));
             }
             return TabBarView(
               controller: _tabController,
-              key: UniqueKey(),
+              // key: UniqueKey(),
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];

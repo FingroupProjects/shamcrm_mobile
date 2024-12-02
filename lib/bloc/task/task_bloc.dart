@@ -114,7 +114,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
 
       if (result['success']) {
         emit(TaskSuccess('Задача создана успешно'));
-        add(FetchTasks(event.statusId));
+        // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
       }
@@ -148,7 +148,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
 
       if (result['success']) {
         emit(TaskSuccess('Задача обновлена успешно'));
-        add(FetchTasks(event.statusId));
+        // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
       }
