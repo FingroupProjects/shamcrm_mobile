@@ -117,8 +117,8 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: positionController,
-                        hintText: 'Введите позицию',
-                        label: 'Позиция',
+                        hintText: 'Введите должность',
+                        label: 'Должность',
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';

@@ -68,7 +68,7 @@ void dispose() {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пока здесь нет задачи',
+                    'Пусто',
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
