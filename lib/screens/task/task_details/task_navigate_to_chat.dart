@@ -46,7 +46,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                             createDate: "",
                             unredMessage: 0,
                           ).toChatItem("assets/images/AvatarChat.png"),
-                          chatId: widget.chatId,
+                          chatId: widget.chatId, endPointInTab: '',
                         ),
                       ),
                     ),
