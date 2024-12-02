@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -30,6 +31,8 @@ import 'package:voice_message_package/voice_message_package.dart';
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
+    final String endPointInTab;
+
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
 
@@ -37,6 +40,8 @@ class ChatSmsScreen extends StatefulWidget {
     super.key,
     required this.chatItem,
     required this.chatId,
+        required this.endPointInTab,
+
   });
 
   @override
@@ -78,7 +83,7 @@ Future<void> _fetchBaseUrl() async {
   baseUrl = await apiService.getDynamicBaseUrl();
 }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -91,12 +96,21 @@ Future<void> _fetchBaseUrl() async {
         ),
         title: InkWell(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserProfileScreen(chatId: widget.chatId),
-              ),
-            );
+            if(widget.endPointInTab == 'lead') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileScreen(chatId: widget.chatId),
+                ),
+              );
+            } else if(widget.endPointInTab == 'task'){
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                ),
+              );
+            }
           },
           child: Row(
             children: [
@@ -122,6 +136,7 @@ Future<void> _fetchBaseUrl() async {
       body: Column(
         children: [
           Expanded(child: messageListUi()),
+
           /// bottom ui
           inputWidget(),
         ],
