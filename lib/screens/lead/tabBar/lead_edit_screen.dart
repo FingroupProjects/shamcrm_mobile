@@ -259,7 +259,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: const Text(
-                                        'Ошибка парсинга даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                        'Ошибка ввода даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
                                     backgroundColor: Colors.red,
                                   ),
                                 );
@@ -283,6 +283,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               facebookLogin: facebookLoginController.text,
                               tgNick: telegramController.text,
                               birthday: parsedBirthday,
+                              email: emailController.text,
                               description: descriptionController.text,
                               leadStatusId: widget.statusId,
                             ));

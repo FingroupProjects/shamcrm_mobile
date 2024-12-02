@@ -311,6 +311,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                   tgNick: tgNick,
                                   waPhone: whatsapp,
                                   birthday: birthday,
+                                  email: email,
                                   description: description,
                                 ));
                           }
