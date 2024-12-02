@@ -232,19 +232,19 @@ void initState() {
         selectTabIndex = index;
         _tabController.animateTo(index);
 
-        String endPoint = '';
-        if (index == 0) {
-          endPoint = 'lead';
+        // String endPoint = '';
+         if (index == 0) {
+          endPointInTab = 'lead';
         }
-
+        // todo: 3. tab's key value for opened profile screen.
         if (index == 1) {
-          endPoint = 'task';
+          endPointInTab = 'task';
         }
-
+        // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
-          endPoint = 'corporate';
+          endPointInTab = 'corporate';
         }
-        context.read<ChatsBloc>().add(FetchChats(endPoint: endPoint));
+        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
