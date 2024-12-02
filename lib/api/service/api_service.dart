@@ -430,6 +430,45 @@ Future<String?> getEnteredDomain() async {
     final permissions = await getPermissions();
     return permissions.contains(permission); // Проверяем наличие права
   }
+  Future<String> forgotPin(LoginModel loginModel) async {
+  try {
+    // Получение ID организации (если необходимо)
+    final organizationId = await getSelectedOrganization();
+
+    // Формирование URL с учетом ID организации
+    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    // Запрос к API
+    final response = await _postRequest(
+      url,
+      {
+        'login': loginModel.login,
+        'password': loginModel.password,
+      },
+    );
+
+    // Обработка успешного ответа
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+      if (decodedJson['result'] != null) {
+        return decodedJson['result'].toString();
+      } else {
+        throw Exception('Не удалось получить временный PIN.');
+      }
+    } 
+    // Обработка ошибок сервера
+    else if (response.statusCode == 400) {
+      throw Exception('Некорректные данные запроса.');
+    } else {
+      print('Ошибка API forgotPin: ${response.statusCode}');
+      throw Exception('Ошибка сервера: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Ошибка в forgotPin: $e');
+    throw Exception('Ошибка в запросе: $e');
+  }
+}
 
   //_________________________________ END___API__LOGIN____________________________________________//
 
@@ -457,7 +496,7 @@ Future<String?> getEnteredDomain() async {
     }
   }
 
-  Future<ChatProfile> getChatProfile(int chatId) async {
+ Future<ChatProfile> getChatProfile(int chatId) async {
     try {
       final organizationId = await getSelectedOrganization();
 

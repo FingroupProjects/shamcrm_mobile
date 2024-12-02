@@ -105,7 +105,7 @@ class FirebaseApi {
                   createDate: "",
                   unredMessage: 0,
                 ).toChatItem("assets/images/AvatarChat.png"),
-                chatId: chatId,
+                chatId: chatId, endPointInTab: 'lead',
               ),
             ),
           ),
