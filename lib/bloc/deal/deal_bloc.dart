@@ -137,7 +137,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       );
       if (result['success']) {
         emit(DealSuccess('Сделка создана успешно'));
-        add(FetchDeals(event.dealStatusId));
+        // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
@@ -171,7 +171,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
 
       if (result['success']) {
         emit(DealSuccess('Сделка обновлена успешно'));
-        add(FetchDeals(event.dealStatusId));
+        // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
