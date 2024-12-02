@@ -332,7 +332,28 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
       child: PagedListView<int, Chats>(
         padding: EdgeInsets.symmetric(vertical: 0),
         pagingController: _pagingController,
+
         builderDelegate: PagedChildBuilderDelegate<Chats>(
+
+            noItemsFoundIndicatorBuilder: (context) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Ничего не найдено.",
+                      style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "Список в данный момент пуст.",
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              );
+            },
+
             itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
@@ -343,6 +364,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             ),
           );
         }),
+
       ),
     );
   }
