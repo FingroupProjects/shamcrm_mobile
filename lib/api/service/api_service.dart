@@ -822,6 +822,7 @@ class ApiService {
           if (tgNick != null) 'tg_nick': tgNick,
           if (birthday != null)
             'birthday': birthday.toIso8601String(), // Конвертация в строку
+          if (email != null) 'email': email,
           if (description != null) 'description': description,
           if (email != null) 'email': email,
           if (waPhone != null) 'wa_phone': waPhone,
