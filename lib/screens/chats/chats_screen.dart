@@ -43,7 +43,9 @@ class _ChatsScreenState extends State<ChatsScreen>
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
 
- @override
+  // todo: 1. tab's key value for opened profile screen.
+  String endPointInTab = 'lead';
+@override
 void initState() {
   super.initState();
   _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -58,6 +60,7 @@ void initState() {
 
   context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
 }
+
 
   void _filterChats(String query) {
     isClickAvatarIcon = false;
@@ -84,9 +87,6 @@ void initState() {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
-        final baseUrlSocket = await apiService.getSocketBaseUrl();
-        final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
-
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
       uriResolver: (metadata) =>
@@ -96,8 +96,7 @@ void initState() {
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-      },
+      connectionErrorHandler: (exception, trace, refresh) {},
       minimumReconnectDelayDuration: const Duration(
         seconds: 1,
       ),
@@ -108,11 +107,10 @@ void initState() {
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint:
-            Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
+          'X-Tenant': 'fingroup-back'
         },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
@@ -204,21 +202,22 @@ void initState() {
                   Expanded(child: _buildTabBarView()),
                 ],
               ),
-        floatingActionButton:(selectTabIndex == 2) ? FloatingActionButton(
-          onPressed: () {
-            showCupertinoModalBottomSheet(
-              context: context,
-              expand: false,
-              elevation: 4,
-              isDismissible: false,
-              builder: (context) => BottomSheetAddClientDialog(),
-            );
-
-          },
-          backgroundColor: Color(0xff1E2E52),
-          child:
-          Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
-        ) : null,
+        floatingActionButton: (selectTabIndex == 2)
+            ? FloatingActionButton(
+                onPressed: () {
+                  showCupertinoModalBottomSheet(
+                    context: context,
+                    expand: false,
+                    elevation: 4,
+                    isDismissible: false,
+                    builder: (context) => BottomSheetAddClientDialog(),
+                  );
+                },
+                backgroundColor: Color(0xff1E2E52),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
+              )
+            : null,
       ),
     );
   }
@@ -231,19 +230,19 @@ void initState() {
         selectTabIndex = index;
         _tabController.animateTo(index);
 
-        String endPoint = '';
+        // todo: 2. tab's key value for opened profile screen.
         if (index == 0) {
-          endPoint = 'lead';
+          endPointInTab = 'lead';
         }
-
+        // todo: 3. tab's key value for opened profile screen.
         if (index == 1) {
-          endPoint = 'task';
+          endPointInTab = 'task';
         }
-
+        // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
-          endPoint = 'corporate';
+          endPointInTab = 'corporate';
         }
-        context.read<ChatsBloc>().add(FetchChats(endPoint: endPoint));
+        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -266,7 +265,7 @@ void initState() {
       controller: _tabController,
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(_tabTitles.length,
-          (index) => _ChatItemsWidget(updateChats: updateChats)),
+          (index) => _ChatItemsWidget(updateChats: updateChats, endPointInTab: endPointInTab,)),
     );
   }
 
@@ -281,13 +280,16 @@ void initState() {
 
 class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
-  const _ChatItemsWidget({required this.updateChats});
+  // todo: tab's key value for opened profile screen.
+  final String endPointInTab;
+  const _ChatItemsWidget({required this.updateChats, required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
 }
 
 class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
+
   final PagingController<int, Chats> _pagingController =
       PagingController(firstPageKey: 0);
 
@@ -315,6 +317,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           child: ChatSmsScreen(
             chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
             chatId: chat.id,
+            // todo: tab's key value for opened profile screen.
+            endPointInTab: widget.endPointInTab,
           ),
         ),
       ),

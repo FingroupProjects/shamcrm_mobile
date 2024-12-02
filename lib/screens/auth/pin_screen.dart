@@ -1,4 +1,5 @@
 // lib/screens/auth/auth_screen.dart
+import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
@@ -266,9 +267,9 @@ class _PinScreenState extends State<PinScreen>
               const SizedBox(height: 24),
               TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Забыли PIN-код?')),
-                  );
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ForgotPinScreen(),
+                  ));
                 },
                 child: const Text(
                   'Забыли PIN-код?',

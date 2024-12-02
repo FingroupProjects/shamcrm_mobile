@@ -73,13 +73,10 @@ class AuthScreen extends StatelessWidget {
                         );
                       } else if (state is DomainLoaded) {
                         if (state.domainCheck.result) {
-                          // Сохранение домена
+                          // Если домен действителен, сохраняем его статус и переходим на экран входа
                           await context
                               .read<ApiService>()
                               .saveDomainChecked(true);
-                          await context
-                              .read<ApiService>()
-                              .initialize(); // Инициализация
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (_) => LoginScreen()),
@@ -88,7 +85,7 @@ class AuthScreen extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                                 content: Text(
-                                    'Неверный поддомен: ${state.domainCheck.errors}')),
+                                    'Неверный поддомен: ${state.domainCheck.errors ?? "Ошибка"}')),
                           );
                         }
                       }
@@ -104,25 +101,17 @@ class AuthScreen extends StatelessWidget {
                         buttonText: 'Войти',
                         buttonColor: Color(0xfff4F40EC),
                         textColor: Colors.white,
-                        onPressed: () async {
+                        onPressed: () {
                           final subdomain = subdomainController.text.trim();
                           if (subdomain.isNotEmpty) {
-                            await context
-                                .read<ApiService>()
-                                .saveDomain(subdomain);
                             context
                                 .read<DomainBloc>()
                                 .add(CheckDomain(subdomain));
-                            // Временно выводим сохранённый домен для отладки
-                            String? savedDomain = await context
-                                .read<ApiService>()
-                                .getEnteredDomain();
-                            print('Сохранённый домен: $savedDomain');
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Пожалуйста, введите поддомен'),
-                              ),
+                                  content:
+                                      Text('Пожалуйста, введите поддомен')),
                             );
                           }
                         },
@@ -137,7 +126,7 @@ class AuthScreen extends StatelessWidget {
       },
     );
   }
-}
+ }
 // // lib/screens/auth/auth_screen.dart
 // import 'package:flutter/material.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
