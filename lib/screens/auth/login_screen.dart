@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/widgets/forgot_password.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class   LoginScreen extends StatelessWidget {
   @override
@@ -26,6 +27,11 @@ class   LoginScreen extends StatelessWidget {
             if (state is LoginLoaded) {
               // Сохраняем userID после успешного входа
               userID.value = state.user.id.toString();
+
+                  // Сохранение имени пользователя в SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userName', state.user.name.toString());
+
               // Получаем токен устройства и отправляем его на сервер
               String? fcmToken = await FirebaseMessaging.instance.getToken();
               if (fcmToken != null) {
