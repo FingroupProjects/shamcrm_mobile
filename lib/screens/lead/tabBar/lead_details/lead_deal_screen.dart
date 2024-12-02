@@ -86,7 +86,7 @@ class _DealsWidgetState extends State<DealsWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пока здесь нет сделок',
+                    'Пусто',
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',

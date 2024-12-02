@@ -67,7 +67,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пока здесь нет Контактное Лицо',
+                    'Пусто',
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',

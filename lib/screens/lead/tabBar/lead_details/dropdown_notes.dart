@@ -79,7 +79,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пока здесь нет заметок',
+                    'Пусто',
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
