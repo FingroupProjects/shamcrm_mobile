@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -19,6 +20,14 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        elevation: 0,
+      ),
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -35,21 +44,11 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
                 fontFamily: 'Gilroy',
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
+            SizedBox(height: 16),
+            CustomTextField(
               controller: _loginController,
-              style: const TextStyle(
-                color: Color.fromARGB(255, 0, 0, 0),
-                fontFamily: 'Gilroy',
-              ),
-              decoration: InputDecoration(
-                labelText: 'Введите ваш логин',
-                labelStyle: const TextStyle(
-                  color: Colors.grey,
-                  fontFamily: 'Gilroy',
-                ),
-                border: OutlineInputBorder(),
-              ),
+              hintText: 'Введите логин',
+              label: 'Логин',
             ),
             const SizedBox(height: 16),
             Center(
@@ -162,6 +161,14 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        elevation: 0,
+      ),
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -181,30 +188,12 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Введите код подтверждение',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: const Color.fromARGB(255, 0, 0, 0),
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
+              const SizedBox(height: 8),
+              CustomTextField(
                 controller: _pinController,
-                style: const TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontFamily: 'Gilroy',
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Введите код подтверждение',
-                  labelStyle: const TextStyle(
-                    color: Color.fromARGB(255, 0, 0, 0),
-                    fontFamily: 'Gilroy',
-                  ),
-                  border: OutlineInputBorder(),
-                ),
+                hintText: 'Введите код подтверждения',
+                label: 'Код подтверждения',
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
               if (_isTimerActive)
@@ -230,7 +219,7 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                       ),
                     ),
                     child: const Text(
-                      'Не получили код подтверждение?',
+                      'Не получили код подтверждения?',
                       style: TextStyle(
                         color: Color.fromARGB(255, 255, 255, 255),
                         fontFamily: 'Gilroy',
@@ -247,7 +236,7 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Неверный код подтверждение!'),
+                          content: Text('Неверный код подтверждения!'),
                           backgroundColor: Colors.red, // Красный фон
                         ),
                       );

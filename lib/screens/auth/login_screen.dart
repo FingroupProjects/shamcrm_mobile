@@ -11,7 +11,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class   LoginScreen extends StatelessWidget {
+class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextEditingController loginController = TextEditingController();
@@ -42,7 +42,6 @@ class   LoginScreen extends StatelessWidget {
               final savedOrganization =
                   await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
-                // Если организация не выбрана, загружаем список и выбираем первую
                 final organizations = await apiService.getOrganization();
                 if (organizations.isNotEmpty) {
                   final firstOrganization = organizations.first;
@@ -50,19 +49,9 @@ class   LoginScreen extends StatelessWidget {
                       firstOrganization.id.toString());
                 }
               }
-              // Проверка на наличие токена
-              Future<void> checkAutoLogin() async {
-                final token = await apiService.getToken();
-                if (token != null) {
-                  // Автоматически переходим на главный экран, если токен есть
-                  Navigator.pushReplacementNamed(context, '/pin_setup');
-                }
-              }
 
-              // Вызов метода при запуске
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                checkAutoLogin();
-              });
+              // Проверяем состояние PIN-настройки
+              await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
               // Показываем сообщение об ошибке
               ScaffoldMessenger.of(context).showSnackBar(
@@ -143,5 +132,19 @@ class   LoginScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _checkPinSetupStatus(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
+
+    if (!isPinSetupComplete) {
+      // Первый раз: переходим на страницу /pin_setup
+      prefs.setBool('isPinSetupComplete', true);
+      Navigator.pushReplacementNamed(context, '/pin_setup');
+    } else {
+      // Последующие разы: переходим на страницу /pin_screen
+      Navigator.pushReplacementNamed(context, '/pin_screen');
+    }
   }
 }

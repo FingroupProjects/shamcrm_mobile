@@ -64,7 +64,7 @@ void main() async {
   final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
-   if (isDomainChecked) {
+  if (isDomainChecked) {
     await apiService.initialize();
   }
   final String? token = await apiService.getToken();
@@ -152,7 +152,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -163,7 +164,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
- BlocProvider(
+        BlocProvider(
             create: (context) => ForgotPinBloc(apiService: ApiService())),
       ],
       child: MaterialApp(
@@ -192,6 +193,7 @@ class MyApp extends StatelessWidget {
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
           '/local_auth': (context) => const AuthScreen(),
+          '/pin_screen': (context) => PinScreen(),
         },
       ),
     );
