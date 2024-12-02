@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
+import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
@@ -63,9 +64,6 @@ void main() async {
   final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
-   if (isDomainChecked) {
-    await apiService.initialize();
-  }
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
 
@@ -162,6 +160,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,
@@ -189,6 +189,7 @@ class MyApp extends StatelessWidget {
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
           '/local_auth': (context) => const AuthScreen(),
+          '/pin_screen': (context) => PinScreen(),
         },
       ),
     );

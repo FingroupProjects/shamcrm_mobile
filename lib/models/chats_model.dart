@@ -120,7 +120,6 @@ class Message {
   final bool isMyMessage;
   final String createMessateTime;
   bool isPlaying;
-  String senderName;
   bool isPause;
   Duration duration;
   Duration position;
@@ -132,7 +131,6 @@ class Message {
     this.filePath,
     required this.isMyMessage,
     required this.createMessateTime,
-    required this.senderName,
     this.isPlaying = false,
     this.isPause = false,
     this.duration = const Duration(),
@@ -153,7 +151,6 @@ class Message {
       id: json['id'],
       text: text, // Убедитесь, что именно text используется
       type: json['type'],
-      senderName: json['sender']['name'],
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isMyMessage: json['is_my_message'] ?? false,
@@ -165,13 +162,3 @@ class Message {
     return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position}';
   }
 }
-
-
-
-
-
-
-
-
-
-  // var audioUrl;
