@@ -6,24 +6,26 @@ class CustomTextField extends StatefulWidget {
   final String hintText;
   final String label;
   final bool isPassword;
+  final bool readOnly;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final TextInputType keyboardType;
   final List<TextInputFormatter>? inputFormatters;
-  final int maxLines; // Сделаем maxLines обязательным, но с дефолтным значением
-  final String? Function(String?)? validator; // Validator callback
+  final int maxLines; 
+  final String? Function(String?)? validator;
 
   CustomTextField({
     required this.controller,
     required this.hintText,
     required this.label,
     this.isPassword = false,
+    this.readOnly = false,
     this.prefixIcon,
     this.suffixIcon,
     this.keyboardType = TextInputType.text,
     this.inputFormatters,
-    this.maxLines = 1, // Устанавливаем значение по умолчанию
-    this.validator, // Initialize the validator
+    this.maxLines = 1, 
+    this.validator, 
   });
 
   @override
@@ -51,10 +53,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword && !_isPasswordVisible,
+          readOnly: widget.readOnly, 
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,
           maxLines: widget.maxLines,
-          validator: widget.validator, // Use the validator here
+          validator: widget.validator,
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(

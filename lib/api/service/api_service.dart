@@ -115,6 +115,7 @@ class ApiService {
     await _removeToken();
     await _removePermissions(); // Удаляем права доступа
     await _removeOrganizationId(); // Удаляем права доступа
+    
   }
 
   Future<void> _removePermissions() async {
@@ -962,7 +963,7 @@ Future<String?> getEnteredDomain() async {
           if (facebookLogin != null) 'facebook_login': facebookLogin,
           if (tgNick != null) 'tg_nick': tgNick,
           if (birthday != null) 'birthday': birthday.toIso8601String(),
-          if (email != null) 'description': email,
+          if (email != null) 'email': email,
           if (description != null) 'description': description,
           if (organizationId != null) 'organization_id': organizationId,
           if (waPhone != null) 'wa_phone': waPhone,
