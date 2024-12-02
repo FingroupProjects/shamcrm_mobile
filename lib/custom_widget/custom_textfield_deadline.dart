@@ -6,13 +6,25 @@ class CustomTextFieldDate extends StatelessWidget {
   final String label;
   final bool withTime;
   final String? Function(String?)? validator;
+  final bool useCurrentDateAsDefault;
+  final bool readOnly;
+  final TextInputType keyboardType; // New property for input type
 
   CustomTextFieldDate({
     required this.controller,
     required this.label,
     this.withTime = false,
     this.validator,
-  });
+    this.useCurrentDateAsDefault = false,
+    this.readOnly = false,
+    this.keyboardType = TextInputType.text, // Initialize the new property
+  }) {
+    if (useCurrentDateAsDefault) {
+      controller.text = withTime
+          ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())
+          : DateFormat('dd/MM/yyyy').format(DateTime.now());
+    }
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
@@ -83,11 +95,13 @@ class CustomTextFieldDate extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () => _selectDate(context),
+          onTap: readOnly ? null : () => _selectDate(context),
           child: AbsorbPointer(
             child: TextFormField(
               controller: controller,
-              validator: validator, // Use the validator here
+              validator: validator,
+              readOnly: readOnly,
+              keyboardType: keyboardType, // Set the input type
               decoration: InputDecoration(
                 hintText: withTime ? '__/__/____ __:__' : '__/__/____',
                 hintStyle: TextStyle(fontSize: 12),

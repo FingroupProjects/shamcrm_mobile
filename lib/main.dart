@@ -96,7 +96,7 @@ void main() async {
     pin: pin,
   ));
 }
-//TEST COMMIT GITHUB
+
 Future<void> getFCMTokens(ApiService apiService) async {
   // Функция оставлена пустой, как в оригинальном коде
 }

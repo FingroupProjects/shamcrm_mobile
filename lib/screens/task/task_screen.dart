@@ -322,7 +322,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
             return TabBarView(
               controller: _tabController,
-              key: UniqueKey(),
+              // key: UniqueKey(),
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];

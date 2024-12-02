@@ -809,6 +809,7 @@ Future<String?> getEnteredDomain() async {
     String? facebookLogin,
     String? tgNick,
     DateTime? birthday,
+    String? email,
     String? description,
     String? waPhone,
   }) async {
@@ -827,6 +828,7 @@ Future<String?> getEnteredDomain() async {
           if (tgNick != null) 'tg_nick': tgNick,
           if (birthday != null)
             'birthday': birthday.toIso8601String(), // Конвертация в строку
+          if (email != null) 'email': email,
           if (description != null) 'description': description,
           if (waPhone != null) 'wa_phone': waPhone,
         });
@@ -902,6 +904,7 @@ Future<String?> getEnteredDomain() async {
     String? facebookLogin,
     String? tgNick,
     DateTime? birthday,
+    String? email,
     String? description,
     int? organizationId,
     String? waPhone,
@@ -920,6 +923,7 @@ Future<String?> getEnteredDomain() async {
           if (facebookLogin != null) 'facebook_login': facebookLogin,
           if (tgNick != null) 'tg_nick': tgNick,
           if (birthday != null) 'birthday': birthday.toIso8601String(),
+          if (email != null) 'description': email,
           if (description != null) 'description': description,
           if (organizationId != null) 'organization_id': organizationId,
           if (waPhone != null) 'wa_phone': waPhone,
