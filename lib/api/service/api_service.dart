@@ -17,6 +17,7 @@ import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
@@ -1265,6 +1266,28 @@ Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
     throw Exception('Ошибка загрузки чата в Лид');
   }
 }
+
+// Метод для получения Источников
+  Future<List<SourceLead>> getSourceLead() async {
+    final organizationId = await getSelectedOrganization();
+
+    print('Начало запроса статусов задач'); // Отладочный вывод
+    final response = await _getRequest('/source${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        final sourceLead = (data['result'] as List)
+            .map((name) => SourceLead.fromJson(name))
+            .toList();
+        return sourceLead;
+      } else {
+        throw Exception('Статусы задач не найдены');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//

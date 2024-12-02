@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
+import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -8,6 +10,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -41,25 +44,28 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
   String? selectedRegion;
   String? selectedManager;
+  String? selectedSourceLead;
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
 
   @override
   void initState() {
     super.initState();
-  _loadUserName();
+    _loadUserName();
 
+    context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+
   }
-  
+
   void _loadUserName() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? userName = prefs.getString('userName');
-  if (userName != null) {
-    authorController.text = userName;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userName = prefs.getString('userName');
+    if (userName != null) {
+      authorController.text = userName;
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +178,15 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      SourceLeadWidget(
+                        selectedSourceLead: selectedSourceLead,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedSourceLead = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,
                         hintText: 'Введите логин instagram',
@@ -224,8 +239,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         controller: authorController,
                         hintText: 'Автор',
                         label: 'Автор',
-                        readOnly: true, 
-
+                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
