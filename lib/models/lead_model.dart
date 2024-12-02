@@ -15,6 +15,8 @@ class Lead {
   final String? facebook;
   final String? telegram;
   final String? phone;
+  final String? email;
+  final Author? author;
   final String? description;
   final LeadStatus? leadStatus;
 
@@ -32,6 +34,8 @@ class Lead {
     this.facebook,
     this.telegram,
     this.phone,
+    this.email,
+    this.author,
     this.description,
     this.leadStatus,
   });
@@ -58,11 +62,28 @@ class Lead {
       facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
+      email: json['email'] is String ? json['email'] : '',
+      author: json['author'] != null && json['author'] is Map<String, dynamic>
+          ? Author.fromJson(json['author'])
+          : null,
       description: json['description'] is String ? json['description'] : '',
-      // leadStatus: json['leadStatus'] != null &&
-      //         json['leadStatus'] is Map<String, dynamic>
-      //     ? LeadStatus.fromJson(json['leadStatus'])
-      //     : null,
+    );
+  }
+}
+
+class Author {
+  final int id;
+  final String name;
+
+  Author({
+    required this.id,
+    required this.name,
+  });
+
+  factory Author.fromJson(Map<String, dynamic> json) {
+    return Author(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указан',
     );
   }
 }
@@ -93,7 +114,7 @@ class LeadStatus {
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
     return LeadStatus(
       id: json['id'],
-      title: json['title'] ?? json['name'] ?? 'Не указан', 
+      title: json['title'] ?? json['name'] ?? 'Не указан',
       color: json['color'],
     );
   }
