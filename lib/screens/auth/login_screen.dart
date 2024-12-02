@@ -27,6 +27,11 @@ class LoginScreen extends StatelessWidget {
             if (state is LoginLoaded) {
               // Сохраняем userID после успешного входа
               userID.value = state.user.id.toString();
+
+                  // Сохранение имени пользователя в SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userName', state.user.name.toString());
+
               // Получаем токен устройства и отправляем его на сервер
               String? fcmToken = await FirebaseMessaging.instance.getToken();
               if (fcmToken != null) {

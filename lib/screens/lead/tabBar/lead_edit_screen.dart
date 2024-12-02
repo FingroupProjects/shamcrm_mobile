@@ -21,10 +21,12 @@ class LeadEditScreen extends StatefulWidget {
   final String? region;
   final String? manager;
   final String? birthday;
+  final String? createAt;
   final String? instagram;
   final String? facebook;
   final String? telegram;
   final String? phone;
+  final String? email;
   final String? description;
   final int statusId;
 
@@ -36,10 +38,12 @@ class LeadEditScreen extends StatefulWidget {
     this.region,
     this.manager,
     this.birthday,
+    this.createAt,
     this.instagram,
     this.facebook,
     this.telegram,
     this.phone,
+    this.email,
     this.description,
   });
 
@@ -55,7 +59,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController facebookLoginController = TextEditingController();
   final TextEditingController telegramController = TextEditingController();
   final TextEditingController birthdayController = TextEditingController();
-  final TextEditingController createDateController = TextEditingController();
+  final TextEditingController createdAtController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
@@ -71,6 +75,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     facebookLoginController.text = widget.facebook ?? '';
     telegramController.text = widget.telegram ?? '';
     birthdayController.text = widget.birthday ?? '';
+    createdAtController.text = widget.createAt ?? '';
+    emailController.text = widget.email ?? '';
     descriptionController.text = widget.description ?? '';
     selectedRegion = widget.region;
     selectedManager = widget.manager;
@@ -197,9 +203,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
-                        controller: createDateController,
+                        controller: createdAtController,
                         label: 'Дата создания',
-                        useCurrentDateAsDefault: true,
                         readOnly: true,
                       ),
                       const SizedBox(height: 8),
