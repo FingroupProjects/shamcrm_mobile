@@ -226,7 +226,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 createDate: "",
                 unredMessage: 0,
               ).toChatItem("assets/images/AvatarChat.png"),
-              chatId: int.tryParse(id ?? '0') ?? 0,
+              chatId: int.tryParse(id ?? '0') ?? 0, endPointInTab: 'lead',
             ),
           ),
         ),

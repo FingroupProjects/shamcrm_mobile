@@ -7,7 +7,6 @@ class FileMessageBubble extends StatelessWidget {
   final bool isSender;
   final String filePath;
   final String fileName;
-  final String senderName;
   final Function(String) onTap;
 
   const FileMessageBubble({
@@ -17,7 +16,6 @@ class FileMessageBubble extends StatelessWidget {
     required this.filePath,
     required this.fileName,
     required this.onTap,
-    required this.senderName,
   }) : super(key: key);
 
   @override
@@ -60,11 +58,6 @@ class FileMessageBubble extends StatelessWidget {
         crossAxisAlignment:
             isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 8),
-          if(!isSender) Text(
-            senderName,
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
           GestureDetector(
             onTap: () => onTap(filePath),
             child: Container(

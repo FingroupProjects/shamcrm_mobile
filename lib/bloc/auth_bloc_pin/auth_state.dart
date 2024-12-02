@@ -1,14 +1,19 @@
-// abstract class AuthState {}
+abstract class PinState {}
 
-// class AuthInitial extends AuthState {}
+class PinInitialState extends PinState {}
 
-// class AuthPinRequired extends AuthState {}
+class PinLoadingState extends PinState {}
 
-// class AuthAuthenticated extends AuthState {}
+class PinSuccessState extends PinState {
+  final String pin;
 
-// class AuthFailed extends AuthState {
-//   final String errorMessage;
-//   AuthFailed(this.errorMessage);
-// }
+  PinSuccessState(this.pin);
+}
 
-// class AuthBiometricAvailable extends AuthState {}
+class PinErrorState extends PinState {
+  final String message;
+
+  PinErrorState(this.message);
+}
+
+class PinValidatedState extends PinState {}

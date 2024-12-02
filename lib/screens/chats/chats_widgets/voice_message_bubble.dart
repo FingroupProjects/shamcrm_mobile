@@ -6,7 +6,6 @@ class VoiceMessageBubble extends StatelessWidget {
   final bool isSender;
   final String filePath;
   final String fileName;
-  final String senderName;
   final Function onTap;
 
   const VoiceMessageBubble({
@@ -16,7 +15,6 @@ class VoiceMessageBubble extends StatelessWidget {
     required this.filePath,
     required this.fileName,
     required this.onTap,
-    required this.senderName,
   }) : super(key: key);
 
   @override
@@ -57,11 +55,6 @@ class VoiceMessageBubble extends StatelessWidget {
         crossAxisAlignment:
             isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 8),
-          if(!isSender) Text(
-            senderName,
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
           GestureDetector(
             onTap: () => onTap(),
             child: Container(
