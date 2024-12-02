@@ -156,7 +156,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       ),
                       const SizedBox(height: 8),
                       RegionRadioGroupWidget(
-                        selectedRegion: selectedRegion, 
+                        selectedRegion: selectedRegion,
                         onSelectRegion: (RegionData selectedRegionData) {
                           setState(() {
                             selectedRegion = selectedRegionData.id.toString();
@@ -165,7 +165,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       ),
                       const SizedBox(height: 8),
                       ManagerRadioGroupWidget(
-                        selectedManager: selectedManager, 
+                        selectedManager: selectedManager,
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
@@ -209,6 +209,26 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         hintText: 'Введите электронную почту',
                         label: 'Электронная почта',
                         keyboardType: TextInputType.emailAddress, 
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true,
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: 'Введите электронную почту',
+                        label: 'Электронная почта',
+                        keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

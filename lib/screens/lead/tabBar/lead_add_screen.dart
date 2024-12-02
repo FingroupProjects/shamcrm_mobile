@@ -142,9 +142,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         },
                         label: 'Телефон',
                       ),
-                       const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       RegionRadioGroupWidget(
-                        selectedRegion: selectedRegion, 
+                        selectedRegion: selectedRegion,
                         onSelectRegion: (RegionData selectedRegionData) {
                           setState(() {
                             selectedRegion = selectedRegionData.id.toString();
@@ -153,7 +153,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       ),
                       const SizedBox(height: 8),
                       ManagerRadioGroupWidget(
-                        selectedManager: selectedManager, 
+                        selectedManager: selectedManager,
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
@@ -198,8 +198,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       CustomTextFieldDate(
                         controller: createDateController,
                         label: 'Дата создания',
-                        useCurrentDateAsDefault: true, 
-                        readOnly: true, 
+                        useCurrentDateAsDefault: true,
+                        readOnly: true,
                       ),
                        const SizedBox(height: 8),
                       CustomTextField(
@@ -272,10 +272,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 birthdayController.text.isEmpty
                                     ? null
                                     : birthdayController.text;
-                            final String? email =
-                                emailController.text.isEmpty
-                                    ? null
-                                    : emailController.text;
+                            final String? email = emailController.text.isEmpty
+                                ? null
+                                : emailController.text;
                             final String? description =
                                 descriptionController.text.isEmpty
                                     ? null
