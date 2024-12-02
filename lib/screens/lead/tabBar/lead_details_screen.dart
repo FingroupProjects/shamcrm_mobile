@@ -93,6 +93,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   // Обновление данных лида
   void _updateDetails(LeadById lead) {
+      print('Lead author: ${lead.author?.name}'); // Добавьте вывод для отладки
+
     currentLead = lead; // Сохраняем актуального лида
     details = [
       {'label': 'ID лида:', 'value': lead.id.toString()},
@@ -105,6 +107,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Facebook:', 'value': lead.facebook ?? 'Не указано'},
       {'label': 'Telegram:', 'value': lead.telegram ?? 'Не указано'},
       {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
+      {'label': 'Email:', 'value': lead.email ?? 'Не указано'},
+      {'label': 'Автор:', 'value': lead.author?.name ?? 'Не указано'},
       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
     ];
   }
