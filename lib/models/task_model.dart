@@ -106,15 +106,18 @@ class TaskStatus {
 
   // Метод для создания объекта из JSON
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
-     print('TaskStatus JSON: $json'); // Добавим логирование
-    return TaskStatus(
-      id: json['id'],
-     taskStatus: json['taskStatus'] is Map<String, dynamic> 
-       ? TaskStatusName.fromJson(json['taskStatus']) 
-       : TaskStatusName(id: 0, name: json['taskStatus'] ?? 'Неизвестный статус'),
-      color: json['color'],
-    );
-  }
+  print('TaskStatus JSON: $json'); // For debugging purposes
+  return TaskStatus(
+    id: json['id'],
+    taskStatus: json['taskStatus'] is Map<String, dynamic>
+        ? TaskStatusName.fromJson(json['taskStatus'])
+        : TaskStatusName(
+            id: 0, 
+            name: json['taskStatus'] ?? 'Неизвестный статус'
+          ),
+    color: json['color'],
+  );
+}
 
   // Метод для преобразования объекта в JSON
   Map<String, dynamic> toJson() {
