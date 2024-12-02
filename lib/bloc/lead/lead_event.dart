@@ -40,6 +40,7 @@ class CreateLead extends LeadEvent {
   final DateTime? birthday;
   final String? email;
   final String? description;
+  final String? email;
   final String? waPhone;
 
   CreateLead({

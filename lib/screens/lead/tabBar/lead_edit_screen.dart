@@ -195,6 +195,26 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         label: 'Дата рождения',
                         withTime: false,
                       ),
+                       const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true, 
+                        readOnly: true, 
+                      ),
+                       const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: 'Введите электронную почту',
+                        label: 'Электронная почта',
+                        keyboardType: TextInputType.emailAddress, 
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                      ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: createDateController,
