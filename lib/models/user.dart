@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'role_model.dart'; // Import the Role class
 
 class User {
   final int id;
@@ -7,6 +8,8 @@ class User {
   final String? email;
   final String? phone;
   final String? image;
+  final Role? role; // Added role property
+
   User({
     required this.id,
     required this.name,
@@ -14,6 +17,7 @@ class User {
     required this.email,
     required this.phone,
     required this.image,
+    this.role, // Added role parameter in the constructor
   });
 
   User copyWith({
@@ -23,6 +27,7 @@ class User {
     String? email,
     String? phone,
     String? image,
+    Role? role, // Added role parameter in copyWith
   }) {
     return User(
       id: id ?? this.id,
@@ -31,6 +36,7 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       image: image ?? this.image,
+      role: role ?? this.role, // Updated copyWith method
     );
   }
 
@@ -53,6 +59,9 @@ class User {
     if (image != null) {
       result.addAll({'image': image});
     }
+    if (role != null) {
+      result.addAll({'role': role?.toMap()}); // Convert role to map
+    }
 
     return result;
   }
@@ -65,6 +74,7 @@ class User {
       email: map['email'],
       phone: map['phone'],
       image: map['image'],
+      role: map['role'] != null ? Role.fromJson(map['role']) : null, // Parse role from map
     );
   }
 
@@ -74,7 +84,7 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image)';
+    return 'User(id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image, role: $role)';
   }
 
   @override
@@ -87,7 +97,8 @@ class User {
         other.login == login &&
         other.email == email &&
         other.phone == phone &&
-        other.image == image;
+        other.image == image &&
+        other.role == role; // Updated equality check
   }
 
   @override
@@ -97,6 +108,7 @@ class User {
         login.hashCode ^
         email.hashCode ^
         phone.hashCode ^
-        image.hashCode;
+        image.hashCode ^
+        role.hashCode; // Updated hashCode
   }
 }

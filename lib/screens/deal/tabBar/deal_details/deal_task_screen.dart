@@ -98,11 +98,11 @@ void dispose() {
 
   Widget _buildTaskItem(DealTask task) {
   final formattedDateFrom = task.from != null
-      ? DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse(task.from!))
+      ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.from!))
       : 'Не указано';
 
   final formattedDateTo = task.to != null
-      ? DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse(task.to!))
+      ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.to!))
       : 'Не указано';
 
   return GestureDetector(

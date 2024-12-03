@@ -1,4 +1,3 @@
-// role_model.dart
 class Role {
   final int id;
   final String name;
@@ -22,5 +21,16 @@ class Role {
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
     );
+  }
+
+  // Added the toMap method to convert a Role to a map
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'guard_name': guardName,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
   }
 }
