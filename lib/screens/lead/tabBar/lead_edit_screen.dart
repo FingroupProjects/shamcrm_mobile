@@ -2,13 +2,10 @@ import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
-import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
-import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -86,7 +83,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
-
   }
 
   @override
@@ -200,6 +196,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         label: 'Telegram',
                       ),
                       const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: 'Введите электронную почту',
+                        label: 'Электронная почта',
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: birthdayController,
                         label: 'Дата рождения',
@@ -210,13 +213,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         controller: createdAtController,
                         label: 'Дата создания',
                         readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: emailController,
-                        hintText: 'Введите электронную почту',
-                        label: 'Электронная почта',
-                        keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
