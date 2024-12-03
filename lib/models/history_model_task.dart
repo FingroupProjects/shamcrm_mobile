@@ -38,6 +38,7 @@ class TaskHistory {
             id: 0,
             name: 'Не указано',
             email: 'Не указано',
+            image: 'Не указано',
             phone: 'Не указано'),
         status: 'Не указано',
         date: DateTime.now(),
@@ -62,12 +63,14 @@ class User {
   final String name;
   final String email;
   final String phone;
+  final String image; 
 
   User({
     required this.id,
     required this.name,
     required this.email,
     required this.phone,
+    required this.image,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -76,9 +79,11 @@ class User {
       name: json['name'] ?? 'Не указано', 
       email: json['email'] ?? 'Не указано', 
       phone: json['phone'] ?? 'Не указано', 
+      image: json['image'] ?? 'Не указано', 
     );
   }
 }
+
 
 class Changes {
   final String? taskStatusNewValue;
