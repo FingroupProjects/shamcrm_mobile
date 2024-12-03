@@ -56,7 +56,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
-
   }
 
   void _loadUserName() async {
@@ -215,19 +214,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         label: 'Whatsapp',
                       ),
                       const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: birthdayController,
-                        label: 'Дата рождения',
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: createDateController,
-                        label: 'Дата создания',
-                        useCurrentDateAsDefault: true,
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: emailController,
                         hintText: 'Введите электронную почту',
@@ -235,10 +221,23 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: birthdayController,
+                        label: 'Дата рождения',
+                        withTime: false,
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: authorController,
                         hintText: 'Автор',
                         label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true,
                         readOnly: true,
                       ),
                       const SizedBox(height: 8),
@@ -331,6 +330,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                       : null,
                                   managerId: selectedManager != null
                                       ? int.parse(selectedManager!)
+                                      : null,
+                                  sourceId: selectedSourceLead != null
+                                      ? int.parse(selectedSourceLead!)
                                       : null,
                                   instaLogin: instaLogin,
                                   facebookLogin: facebookLogin,

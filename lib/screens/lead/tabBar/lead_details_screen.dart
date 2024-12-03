@@ -109,6 +109,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
       {'label': 'Email:', 'value': lead.email ?? 'Не указано'},
       {'label': 'Автор:', 'value': lead.author?.name ?? 'Не указано'},
+      {'label': 'Источник:', 'value': lead.sourceLead?.name ?? 'Не указано'},
       {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
     ];

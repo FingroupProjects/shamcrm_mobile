@@ -34,6 +34,7 @@ class CreateLead extends LeadEvent {
   final String phone;
   final int? regionId;
   final int? managerId;
+  final int? sourceId;
   final String? instaLogin;
   final String? facebookLogin;
   final String? tgNick;
@@ -48,6 +49,7 @@ class CreateLead extends LeadEvent {
     required this.phone,
     this.regionId,
     this.managerId,
+    this.sourceId,
     this.instaLogin,
     this.facebookLogin,
     this.tgNick,

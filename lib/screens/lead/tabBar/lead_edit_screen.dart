@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
@@ -61,6 +62,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController birthdayController = TextEditingController();
   final TextEditingController createdAtController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
@@ -83,6 +85,16 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+
+    _loadUserName();
+  }
+
+  void _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userName = prefs.getString('userName');
+    if (userName != null) {
+      authorController.text = userName;
+    }
   }
 
   @override
@@ -196,23 +208,30 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         label: 'Telegram',
                       ),
                       const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: 'Введите электронную почту',
+                        label: 'Электронная почта',
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: birthdayController,
                         label: 'Дата рождения',
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: createdAtController,
                         label: 'Дата создания',
                         readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: emailController,
-                        hintText: 'Введите электронную почту',
-                        label: 'Электронная почта',
-                        keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

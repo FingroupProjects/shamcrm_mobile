@@ -18,6 +18,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -28,6 +29,7 @@ class DealEditScreen extends StatefulWidget {
   final String? lead;
   final String? startDate;
   final String? endDate;
+  final String? createdAt;
   final String? description;
   final String? sum;
   final int statusId;
@@ -43,6 +45,7 @@ class DealEditScreen extends StatefulWidget {
     this.lead,
     this.startDate,
     this.endDate,
+    this.createdAt,
     this.description,
     this.sum,
     required this.dealCustomFields,
@@ -56,35 +59,39 @@ class _DealEditScreenState extends State<DealEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
+  final TextEditingController createdAtController = TextEditingController();
   final TextEditingController sumController = TextEditingController();
 
   String? selectedManager;
   String? selectedLead;
   List<CustomField> customFields = [];
 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  titleController.text = widget.dealName;
-  descriptionController.text = widget.description ?? '';
-  selectedManager = widget.manager;
-  selectedLead = widget.lead;
-  startDateController.text = widget.startDate ?? '';
-  endDateController.text = widget.endDate ?? '';
-  sumController.text = widget.sum ?? '';
+    titleController.text = widget.dealName;
+    descriptionController.text = widget.description ?? '';
+    selectedManager = widget.manager;
+    selectedLead = widget.lead;
+    startDateController.text = widget.startDate ?? '';
+    endDateController.text = widget.endDate ?? '';
+    createdAtController.text = widget.createdAt ?? '';
+    sumController.text = widget.sum ?? '';
 
-  for (var customField in widget.dealCustomFields) {
-    customFields.add(CustomField(fieldName: customField.key)
-      ..controller.text = customField.value);
-  }
+    for (var customField in widget.dealCustomFields) {
+      customFields.add(CustomField(fieldName: customField.key)
+        ..controller.text = customField.value);
+    }
 
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-}
 
+    _loadUserName();
+  }
 
   void _addCustomField(String fieldName) {
     setState(() {
@@ -103,6 +110,14 @@ void initState() {
         );
       },
     );
+  }
+
+  void _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userName = prefs.getString('userName');
+    if (userName != null) {
+      authorController.text = userName;
+    }
   }
 
   @override
@@ -149,7 +164,7 @@ void initState() {
                 backgroundColor: Colors.green,
               ),
             );
-             Navigator.pop(context,true); 
+            Navigator.pop(context, true);
             //  Navigator.pop(context, widget.statusId);
             // context.read<DealBloc>().add(FetchDeals(widget.statusId));
           }
@@ -172,18 +187,18 @@ void initState() {
                             ? 'Поле обязательно для заполнения'
                             : null,
                       ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       LeadRadioGroupWidget(
-                        selectedLead: selectedLead, 
+                        selectedLead: selectedLead,
                         onSelectLead: (LeadData selectedRegionData) {
                           setState(() {
                             selectedLead = selectedRegionData.id.toString();
                           });
                         },
                       ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       ManagerRadioGroupWidget(
-                        selectedManager: selectedManager, 
+                        selectedManager: selectedManager,
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
@@ -213,6 +228,19 @@ void initState() {
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createdAtController,
+                        label: 'Дата создания',
+                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

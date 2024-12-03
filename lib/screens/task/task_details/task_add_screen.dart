@@ -19,6 +19,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskAddScreen extends StatefulWidget {
   final int statusId;
@@ -34,7 +35,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
+  final TextEditingController createDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
 
   // Переменные для файла
   String? selectedFile;
@@ -60,8 +63,17 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     context.read<UserTaskBloc>().add(FetchUsers());
     // Устанавливаем значения по умолчанию
     _setDefaultValues();
+    _loadUserName();
 
     // Подписываемся на изменения в блоках
+  }
+
+  void _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userName = prefs.getString('userName');
+    if (userName != null) {
+      authorController.text = userName;
+    }
   }
 
   void _setDefaultValues() {
@@ -296,6 +308,21 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true,
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
                         hintText: 'Введите описание',
@@ -394,7 +421,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         projectId: selectedProject != null
                             ? int.parse(selectedProject!)
                             : null,
-                        userId: selectedUsers != null ? selectedUsers!.map((id) => int.parse(id)).toList() : null,
+                        userId: selectedUsers != null
+                            ? selectedUsers!.map((id) => int.parse(id)).toList()
+                            : null,
                         priority: selectedPriority,
                         description: description,
                         // file: fileData, // Pass the actual File object

@@ -1,22 +1,22 @@
 class SourceLead {
   final int id;
   final String name;
-  // final String? createdAt;
-  // final String? updatedAt;
+  final String? createdAt;
+  final String? updatedAt;
 
   SourceLead({
     required this.id,
     required this.name,
-    // this.createdAt,
-    // this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
  factory SourceLead.fromJson(Map<String, dynamic> json) {
-    return SourceLead(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Без имени',
-      // createdAt: json['created_at'],
-      // updatedAt: json['updated_at'],
-    );
-  }
+  return SourceLead(
+    id: json['id'] ?? 0,
+    name: json['name'] ?? 'Без имени',  
+    createdAt: json['created_at'] is String ? json['created_at'] : null,
+    updatedAt: json['update_at'] is String ? json['update_at'] : null,
+  );
+}
 }
