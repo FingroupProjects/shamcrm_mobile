@@ -77,6 +77,20 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       items: leadsList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(item.name!);
@@ -93,7 +107,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите лид'),
+                          Text('Выберите лид',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       excludeSelected: false,
                       initialItem: selectedLeadData,
                       validator: (value) {

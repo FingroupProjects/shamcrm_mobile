@@ -46,7 +46,10 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             if (state is GetAllClientSuccess) {
               usersList = state.dataUser.result ?? [];
               if (widget.selectedUsers != null && usersList.isNotEmpty) {
-                selectedUsersData = usersList.where((user) => widget.selectedUsers!.contains(user.id.toString())).toList();
+                selectedUsersData = usersList
+                    .where((user) =>
+                        widget.selectedUsers!.contains(user.id.toString()))
+                    .toList();
               }
 
               return Column(
@@ -73,37 +76,64 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       initialItems: selectedUsersData,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero, 
-                        dense: true, 
-                        title: Padding(
-                          padding: EdgeInsets.zero, 
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min, 
-                            children: [
-                              Container(
-                                width: 20, 
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Color(0xff1E2E52), width: 1),
-                                  color: isSelected ? Color(0xff1E2E52) : Colors.transparent, 
-                                ),
-                                child: isSelected ? Icon(Icons.check, color: Colors.white, size: 16) : null,
-                              ),
-                              const SizedBox(width: 10), 
-                              Text(
-                                item.name!,
-                                style: TextStyle(fontSize: 16), 
-                              ),
-                            ],
-                          ),
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
                         ),
-                        onTap: () => onItemSelect(),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Padding(
+                            padding: EdgeInsets.zero,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: Color(0xff1E2E52), width: 1),
+                                    color: isSelected
+                                        ? Color(0xff1E2E52)
+                                        : Colors.transparent,
+                                  ),
+                                  child: isSelected
+                                      ? Icon(Icons.check,
+                                          color: Colors.white, size: 16)
+                                      : null,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  item.name!,
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                          onTap: () => onItemSelect(),
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите пользователей'),
+                          Text('Выберите пользователей',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       listValidator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Поле обязательно для заполнения';

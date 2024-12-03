@@ -55,7 +55,6 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // SizedBox(height: 8),
                   const Text(
                     'Менеджер',
                     style: TextStyle(
@@ -69,7 +68,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   Container(
                     decoration: BoxDecoration(
                       color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
                     ),
                     child: CustomDropdown<ManagerData>.search(
@@ -77,9 +76,31 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       items: managersList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
-                        return Text(item.name!);
+                        return Text(
+                          item.name!,
+                          style: TextStyle(
+                            color: Color(0xff1E2E52),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                          ),
+                        );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
@@ -93,7 +114,13 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите менеджера'),
+                          Text('Выберите менеджера',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       excludeSelected: false,
                       initialItem: selectedManagerData,
                       validator: (value) {

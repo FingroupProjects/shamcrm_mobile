@@ -101,13 +101,16 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                 value: dropdownItems.any((item) => item.value == widget.selectedSourceLead)
                     ? widget.selectedSourceLead
                     : null,
-                hint: const Text(
-                  'Выберите источник',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                hint: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: const Text(
+                    'Выберите источник',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
                   ),
                 ),
                 items: dropdownItems,
