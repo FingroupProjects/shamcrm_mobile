@@ -3,6 +3,7 @@ import 'package:crm_task_manager/models/task_model.dart'; // Импорт мод
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart'; // Импорт экрана деталей задачи
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; // Импорт виджета выпадающего диалога для выбора статуса задачи
 import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart'; // Импорт для форматирования даты
 
 /// Класс виджета для отображения карточки задачи
@@ -15,7 +16,7 @@ class TaskCard extends StatefulWidget {
   final int? projectId; // ID проекта (опционально)
   final int? user; // ID ответственного пользователя (опционально)
   final int? userId; // ID пользователя, создавшего задачу (опционально)
-
+  final List<UserTaskImage>? usersImage;
   TaskCard({
     required this.task,
     required this.name,
@@ -24,6 +25,7 @@ class TaskCard extends StatefulWidget {
     this.project,
     this.projectId,
     this.user,
+    this.usersImage,
     this.userId,
   });
 
@@ -32,7 +34,8 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
+  late String
+      dropdownValue; // Текущее значение выпадающего списка статусов задачи
 
   @override
   void initState() {
@@ -241,7 +244,75 @@ class _TaskCardState extends State<TaskCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 5),
+
+            Row(
+              children: [
+                widget.task.usersImage != null &&
+                        widget.task.usersImage!.isNotEmpty
+                    ? Stack(
+                        children: [
+                          // First user image
+                          if (widget.task.usersImage!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 20), // Adjust padding as needed
+                              child:
+                                  widget.task.usersImage![0].image.isNotEmpty &&
+                                          widget.task.usersImage![0].image
+                                              .startsWith('<svg')
+                                      ? SvgPicture.string(
+                                          widget.task.usersImage![0].image,
+                                          width: 32,
+                                          height: 32,
+                                        )
+                                      : CircleAvatar(
+                                          radius: 16,
+                                          backgroundImage: NetworkImage(
+                                              widget.task.usersImage![0].image),
+                                        ),
+                            ),
+                          if (widget.task.usersImage!.length > 1)
+                            Positioned(
+                              left: 20, 
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: widget.task.usersImage![1].image
+                                            .isNotEmpty &&
+                                        widget.task.usersImage![1].image
+                                            .startsWith('<svg')
+                                    ? SvgPicture.string(
+                                        widget.task.usersImage![1].image,
+                                        width: 32,
+                                        height: 32,
+                                      )
+                                    : CircleAvatar(
+                                        radius: 16,
+                                        backgroundImage: NetworkImage(
+                                            widget.task.usersImage![1].image),
+                                      ),
+                              ),
+                            ),
+                        ],
+                      )
+                    : const SizedBox(),
+
+                // Display the count of additional users
+                if (widget.task.usersImage != null &&
+                    widget.task.usersImage!.length > 3)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Text('+${widget.task.usersImage!.length - 3}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        )),
+                  ),
+              ],
+            ),
+            // const SizedBox(height: 5),
             Row(
               children: [
                 const SizedBox(width: 1),
@@ -271,8 +342,8 @@ class _TaskCardState extends State<TaskCard> {
                     ],
                   ),
                 Padding(
-                  padding: const EdgeInsets.only(
-                      left: 12, top: 2), // Отступ слева в 12 пикселей
+                  padding:
+                      const EdgeInsets.all(0), // Отступ слева в 12 пикселей
                   child: Row(
                     children: [
                       Image.asset(
@@ -280,7 +351,7 @@ class _TaskCardState extends State<TaskCard> {
                         width: 20,
                         height: 28,
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4),
                       Text(
                         formatDate(widget.task.endDate ??
                             DateTime.now()
