@@ -402,6 +402,7 @@ Future<String?> getEnteredDomain() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final loginResponse = LoginResponse.fromJson(data);
+      
 
       await _saveToken(loginResponse.token);
       await _savePermissions(
@@ -2061,27 +2062,25 @@ Future<List<DealTask>> getDealTasks(int dealId) async {
 
   // Метод для получение Роли
 
-  Future<List<Role>> getRoles() async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _getRequest(
-        '/role${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print('Тело ответа ролей: $data'); // Для отладки
-
-      if (data['result'] != null) {
-        return (data['result'] as List)
-            .map((role) => Role.fromJson(role))
-            .toList();
-      } else {
-        throw Exception('Роли не найдены');
-      }
+Future<List<Role>> getRoles() async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _getRequest(
+    '/role${organizationId != null ? '?organization_id=$organizationId' : ''}'
+  );
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((role) => Role.fromJson(role))
+          .toList();
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Роли не найдены');
     }
+  } else {
+    throw Exception('Ошибка при получении ролей: ${response.statusCode}');
   }
+}
+
 
 // Метод для получения Cтатуса задачи
   Future<List<StatusName>> getStatusName() async {

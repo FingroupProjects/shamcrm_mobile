@@ -139,19 +139,19 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildLegendItem(
-              'Активный ',
+              'Активные ',
               const Color.fromARGB(255, 29, 93, 197),
             ),
             const SizedBox(width: 24),
             _buildLegendItem(
-              'Просрочен',
+              'Просроченные',
               const Color.fromARGB(255, 245, 0, 0),
             ),
           ],
         ),
         const SizedBox(height: 8),
         _buildLegendItem(
-          'Завершён ',
+          'Завершённые ',
           const Color(0xFF34D399),
         ),
       ],

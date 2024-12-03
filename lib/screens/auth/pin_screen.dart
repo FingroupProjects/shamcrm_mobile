@@ -50,10 +50,10 @@ Future<void> _initBiometrics() async {
     _canCheckBiometrics = await _auth.canCheckBiometrics;
     if (_canCheckBiometrics) {
       _availableBiometrics = await _auth.getAvailableBiometrics();
-      // if (_availableBiometrics.isNotEmpty) {
-      //   // Автоматический вызов аутентификации
-      //   // _authenticate();
-      // }
+      if (_availableBiometrics.isNotEmpty) {
+        // Автоматический вызов аутентификации
+        // _authenticate();
+      }
     }
   } on PlatformException catch (e) {
     debugPrint('Ошибка инициализации биометрии: $e');
