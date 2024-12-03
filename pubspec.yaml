@@ -1,7 +1,7 @@
 name: crm_task_manager
 description: "A new Flutter project."
 
-version: 1.0.9+16
+version: 1.0.9+17
 
 environment:
   sdk: ^3.5.3
@@ -45,7 +45,7 @@ dependencies:
   modal_bottom_sheet: ^3.0.0
   radio_group_v2: ^3.2.1
   animated_custom_dropdown: ^3.1.1
-  flutter_svg: ^2.0.14
+  flutter_svg: ^2.0.16
   image_gallery_saver_plus: ^3.0.5
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.3
@@ -95,6 +95,7 @@ flutter:
     - assets/icons/chats/
     - assets/icons/
     - assets/images/
+    - assets/images/avatar2.png
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg

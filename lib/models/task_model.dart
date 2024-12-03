@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
 class Task {
@@ -11,7 +10,9 @@ class Task {
   final TaskStatus? taskStatus;
   final String? color;
   final Project? project;
-  final User? user;
+  final UserTaskImage? user;
+  final List<UserTaskImage>?
+      usersImage; // Changed from UserTaskImage? to List<UserTaskImage>?
   final TaskFile? file;
   final int priority;
 
@@ -25,6 +26,7 @@ class Task {
     this.taskStatus,
     this.color,
     this.project,
+    this.usersImage,
     this.user,
     this.file,
     required this.priority,
@@ -45,7 +47,12 @@ class Task {
       priorityLevel = 0;
     }
 
-    print('Converted priority level: $priorityLevel'); // Debug print
+    // Parsing the users list
+    final usersList = json['users'] != null && json['users'] is List
+        ? (json['users'] as List)
+            .map((userJson) => UserTaskImage.fromJson(userJson))
+            .toList()
+        : null;
 
     return Task(
       id: json['id'] is int ? json['id'] : 0,
@@ -63,13 +70,40 @@ class Task {
           json['project'] != null && json['project'] is Map<String, dynamic>
               ? Project.fromJson(json['project'])
               : null,
-      user: json['user'] != null && json['user'] is Map<String, dynamic>
-          ? User.fromJson(json['user'])
+      usersImage: usersList,
+      user: json['users'] != null && json['users'] is Map<String, dynamic>
+          ? UserTaskImage.fromJson(json['users'])
           : null,
       color: json['color'] is String ? json['color'] : null,
       file: json['file'] != null && json['file'] is Map<String, dynamic>
           ? TaskFile.fromJson(json['file'])
           : null,
+    );
+  }
+}
+
+class UserTaskImage {
+  final int id;
+  final String name;
+  final String email;
+  final String phone;
+  final String image;
+
+  UserTaskImage({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.image,
+  });
+
+  factory UserTaskImage.fromJson(Map<String, dynamic> json) {
+    return UserTaskImage(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указано',
+      email: json['email'] ?? 'Не указано',
+      phone: json['phone'] ?? 'Не указано',
+      image: json['image'] ?? '', // Handle SVG data properly here.
     );
   }
 }
@@ -106,18 +140,16 @@ class TaskStatus {
 
   // Метод для создания объекта из JSON
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
-  print('TaskStatus JSON: $json'); // For debugging purposes
-  return TaskStatus(
-    id: json['id'],
-    taskStatus: json['taskStatus'] is Map<String, dynamic>
-        ? TaskStatusName.fromJson(json['taskStatus'])
-        : TaskStatusName(
-            id: 0, 
-            name: json['taskStatus'] ?? 'Неизвестный статус'
-          ),
-    color: json['color'],
-  );
-}
+    print('TaskStatus JSON: $json'); // For debugging purposes
+    return TaskStatus(
+      id: json['id'],
+      taskStatus: json['taskStatus'] is Map<String, dynamic>
+          ? TaskStatusName.fromJson(json['taskStatus'])
+          : TaskStatusName(
+              id: 0, name: json['taskStatus'] ?? 'Неизвестный статус'),
+      color: json['color'],
+    );
+  }
 
   // Метод для преобразования объекта в JSON
   Map<String, dynamic> toJson() {
