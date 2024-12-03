@@ -98,6 +98,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       {'label': 'Дата начала:', 'value': formatDate(deal.startDate)},
       {'label': 'Дата окончания:', 'value': formatDate(deal.endDate)},
       {'label': 'Сумма:', 'value': deal.sum.toString()},
+      {'label': 'Автор:', 'value': deal.author?.name ?? 'Не указано'},
+      {'label': 'Дата создания:', 'value': formatDate(deal.createdAt)},
       {'label': 'Описание:', 'value': deal.description ?? 'Не указано'},
     ];
 
@@ -199,6 +201,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                         ? DateFormat('dd/MM/yyyy')
                             .format(DateTime.parse(currentDeal!.endDate!))
                         : null;
+                    final createdAtDateString = currentDeal!.createdAt != null &&
+                            currentDeal!.createdAt!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentDeal!.createdAt!))
+                        : null;
 
                     final shouldUpdate = await Navigator.push(
                       context,
@@ -215,6 +222,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                               : 'Не указано',
                           startDate: startDateString,
                           endDate: endDateString,
+                          createdAt: createdAtDateString,
                           sum: currentDeal!.sum.toString(),
                           description:
                               currentDeal!.description ?? 'Не указано',

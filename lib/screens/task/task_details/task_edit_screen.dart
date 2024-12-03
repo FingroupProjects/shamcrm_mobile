@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskEditScreen extends StatefulWidget {
   final int taskId;
@@ -25,6 +26,7 @@ class TaskEditScreen extends StatefulWidget {
   final List<int>? user;
   final String? startDate;
   final String? endDate;
+  final String? createdAt;
   final String? description;
   final int? priority;
   final String? fail;
@@ -38,6 +40,7 @@ class TaskEditScreen extends StatefulWidget {
     this.user,
     this.startDate,
     this.endDate,
+    this.createdAt,
     this.description,
     this.priority,
     this.fail,
@@ -52,6 +55,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
+  final TextEditingController createdAtController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedProject;
@@ -69,6 +74,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     super.initState();
     _initializeControllers();
     _loadInitialData();
+    _loadUserName();
+  }
+
+  void _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userName = prefs.getString('userName');
+    if (userName != null) {
+      authorController.text = userName;
+    }
   }
 
   void _initializeControllers() {
@@ -87,6 +101,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
 
     selectedPriority = widget.priority ?? 1;
+
+    createdAtController.text = widget.createdAt ?? '';
+
   }
 
   void _loadInitialData() {
@@ -337,6 +354,19 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                 .toList();
                           });
                         },
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createdAtController,
+                        label: 'Дата создания',
+                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

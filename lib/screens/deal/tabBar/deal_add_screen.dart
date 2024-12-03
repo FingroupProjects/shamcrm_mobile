@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DealAddScreen extends StatefulWidget {
   final int statusId;
@@ -32,7 +33,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
+  final TextEditingController createDateController = TextEditingController();
   final TextEditingController sumController = TextEditingController();
+  final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedManager;
@@ -42,6 +45,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserName();
+
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
   }
@@ -63,6 +68,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
         );
       },
     );
+  }
+
+  void _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userName = prefs.getString('userName');
+    if (userName != null) {
+      authorController.text = userName;
+    }
   }
 
   @override
@@ -188,8 +201,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         controller: sumController,
                         hintText: 'Введите сумму',
                         label: 'Сумма',
-                        keyboardType: TextInputType.number, 
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, 
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -197,6 +211,20 @@ class _DealAddScreenState extends State<DealAddScreen> {
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: createDateController,
+                        label: 'Дата создания',
+                        useCurrentDateAsDefault: true,
+                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

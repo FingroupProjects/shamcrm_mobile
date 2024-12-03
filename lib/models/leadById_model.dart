@@ -60,8 +60,8 @@ class LeadById {
           json['manager'] != null && json['manager'] is Map<String, dynamic>
               ? ManagerData.fromJson(json['manager'])
               : null,
-      sourceLead: json['source'] != null && json['source'] is Map<String, dynamic>
-      ? SourceLead.fromJson(json['source'])
+      sourceLead: json['source_lead'] != null && json['source_lead'] is Map<String, dynamic>
+      ? SourceLead.fromJson(json['source_lead'])
       : null,
       birthday: json['birthday'] is String ? json['birthday'] : '',
       instagram: json['insta_login'] is String ? json['insta_login'] : '',
