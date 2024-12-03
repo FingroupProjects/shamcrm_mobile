@@ -14,7 +14,8 @@ class ProjectRadioGroupWidget extends StatefulWidget {
       {super.key, required this.onSelectProject, this.selectedProject});
 
   @override
-  State<ProjectRadioGroupWidget> createState() => _ProjectRadioGroupWidgetState();
+  State<ProjectRadioGroupWidget> createState() =>
+      _ProjectRadioGroupWidgetState();
 }
 
 class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
@@ -45,7 +46,8 @@ class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
               if (widget.selectedProject != null && projectsList.isNotEmpty) {
                 try {
                   selectedProjectData = projectsList.firstWhere(
-                    (project) => project.id.toString() == widget.selectedProject,
+                    (project) =>
+                        project.id.toString() == widget.selectedProject,
                   );
                 } catch (e) {
                   selectedProjectData = null;
@@ -76,6 +78,20 @@ class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
                       items: projectsList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(item.name!);
@@ -92,7 +108,13 @@ class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите проект'),
+                          Text('Выберите проект',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       excludeSelected: false,
                       initialItem: selectedProjectData,
                       validator: (value) {

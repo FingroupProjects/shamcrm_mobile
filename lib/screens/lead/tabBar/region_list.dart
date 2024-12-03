@@ -12,8 +12,7 @@ class RegionRadioGroupWidget extends StatefulWidget {
       {super.key, required this.onSelectRegion, this.selectedRegion});
 
   @override
-  State<RegionRadioGroupWidget> createState() =>
-      _RegionRadioGroupWidgetState();
+  State<RegionRadioGroupWidget> createState() => _RegionRadioGroupWidgetState();
 }
 
 class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
@@ -68,7 +67,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                   Container(
                     decoration: BoxDecoration(
                       color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
                     ),
                     child: CustomDropdown<RegionData>.search(
@@ -76,6 +75,20 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                       items: regionsList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(item.name!);
@@ -92,7 +105,13 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите регион'),
+                          Text('Выберите регион',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       excludeSelected: false,
                       initialItem: selectedRegionData,
                       validator: (value) {

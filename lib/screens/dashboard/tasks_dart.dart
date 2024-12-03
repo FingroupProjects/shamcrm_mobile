@@ -16,15 +16,15 @@ class TasksBox extends StatelessWidget {
             icon: Icons.task_outlined,
             items: [
               StatItem(
-                label: 'Выполнено',
+                label: 'Активные',
                 value: state.stats.taskStats.finished.toString(),
               ),
               StatItem(
-                label: 'Просрочено',
+                label: 'Просроченные',
                 value: state.stats.taskStats.outDated.toString(),
               ),
               StatItem(
-                label: 'Открытых',
+                label: 'Завершённые',
                 value: (state.stats.taskStats.all - 
                        state.stats.taskStats.finished - 
                        state.stats.taskStats.outDated).toString(),

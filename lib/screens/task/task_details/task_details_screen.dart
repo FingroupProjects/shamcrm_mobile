@@ -119,9 +119,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
       {
-        'label': task.user != null && task.user!.length > 1
-            ? 'Пользователи:'
-            : 'Пользователь:',
+        'label': 'Исполнитель:',
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
             : 'Не указано',
@@ -251,6 +249,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,
                             createdAt: createdAtString,
+
                           ),
                         ),
                       );
@@ -306,45 +305,51 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    if (label == 'Пользователь:' && value.contains(',')) {
-      return GestureDetector(
-        onTap: () => _showUsersDialog(value),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                value.split(',').take(3).join(', ') +
-                    (value.split(',').length > 1
-                        ? ' и еще ${value.split(',').length - 1}...'
-                        : ''),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  // Проверка на наличие запятой в значении, чтобы определить множественное число
+  if (label == 'Исполнитель:' && value.contains(',')) {
+    label = 'Исполнители:';
+  }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        SizedBox(width: 8),
-        Expanded(
-          child: _buildValue(value),
-        ),
-      ],
+  if (label == 'Исполнители:') {
+    return GestureDetector(
+      onTap: () => _showUsersDialog(value),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value.split(',').take(3).join(', ') +
+                  (value.split(',').length > 3
+                      ? ' и еще ${value.split(',').length - 3}...'
+                      : ''),
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
+
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildLabel(label),
+      SizedBox(width: 8),
+      Expanded(
+        child: _buildValue(value),
+      ),
+    ],
+  );
+}
+
 
   void _showUsersDialog(String users) {
     List<String> userList =
@@ -361,7 +366,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Container(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Список пользователей',
+                  'Список исполнителей',
                   style: TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
