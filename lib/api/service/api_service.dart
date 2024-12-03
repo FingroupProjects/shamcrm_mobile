@@ -846,6 +846,7 @@ Future<String?> getEnteredDomain() async {
     required String phone,
     int? regionId,
     int? managerId,
+    int? sourceId,
     String? instaLogin,
     String? facebookLogin,
     String? tgNick,
@@ -864,6 +865,7 @@ Future<String?> getEnteredDomain() async {
           'phone': phone,
           if (regionId != null) 'region_id': regionId,
           if (managerId != null) 'manager_id': managerId,
+          if (sourceId != null) 'source_id': sourceId,
           if (instaLogin != null) 'insta_login': instaLogin,
           if (facebookLogin != null) 'facebook_login': facebookLogin,
           if (tgNick != null) 'tg_nick': tgNick,
@@ -1268,26 +1270,22 @@ Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
 }
 
 // Метод для получения Источников
-  Future<List<SourceLead>> getSourceLead() async {
-    final organizationId = await getSelectedOrganization();
+Future<List<SourceLead>> getSourceLead() async {
+  final organizationId = await getSelectedOrganization();
+  final path = '/source?organization_id=$organizationId';
 
-    print('Начало запроса статусов задач'); // Отладочный вывод
-    final response = await _getRequest('/source${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  final response = await _getRequest(path);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        final sourceLead = (data['result'] as List)
-            .map((name) => SourceLead.fromJson(name))
-            .toList();
-        return sourceLead;
-      } else {
-        throw Exception('Статусы задач не найдены');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-    }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    print('Полученные данные: $data');
+    return (data as List).map((sourceLead) => SourceLead.fromJson(sourceLead)).toList();
+  } else {
+    throw Exception('Ошибка загрузки источников');
   }
+}
+
+
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//

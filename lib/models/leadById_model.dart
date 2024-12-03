@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/source_model.dart';
 
 class LeadById {
   final int id;
@@ -10,6 +11,7 @@ class LeadById {
   final int statusId;
   final RegionData? region;
   final ManagerData? manager;
+  final SourceLead? sourceLead;
   final String? birthday;
   final String? instagram;
   final String? facebook;
@@ -29,6 +31,7 @@ class LeadById {
     required this.statusId,
     this.region,
     this.manager,
+    this.sourceLead,
     this.birthday,
     this.instagram,
     this.facebook,
@@ -57,6 +60,12 @@ class LeadById {
           json['manager'] != null && json['manager'] is Map<String, dynamic>
               ? ManagerData.fromJson(json['manager'])
               : null,
+    //   sourceLead: json['sourceLead'] != null && json['sourceLead'] is Map<String, dynamic>
+    // ? SourceLead.fromJson(json['sourceLead'])
+    // : null,
+      sourceLead: json['source'] != null && json['source'] is Map<String, dynamic>
+      ? SourceLead.fromJson(json['source'])
+      : null,
       birthday: json['birthday'] is String ? json['birthday'] : '',
       instagram: json['insta_login'] is String ? json['insta_login'] : '',
       facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
@@ -64,8 +73,8 @@ class LeadById {
       phone: json['phone'] is String ? json['phone'] : '',
       email: json['email'] is String ? json['email'] : '',
       author: json['author'] != null && json['author'] is Map<String, dynamic>
-    ? Author.fromJson(json['author'])
-    : null,
+          ? Author.fromJson(json['author'])
+          : null,
       description: json['description'] is String ? json['description'] : '',
       leadStatus: json['leadStatus'] != null &&
               json['leadStatus'] is Map<String, dynamic>
@@ -86,13 +95,11 @@ class Author {
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
-      id: json['id'] ?? 0, 
+      id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указан',
     );
   }
 }
-
-
 
 class Source {
   final String name;
@@ -120,7 +127,7 @@ class LeadStatusById {
   factory LeadStatusById.fromJson(Map<String, dynamic> json) {
     return LeadStatusById(
       id: json['id'],
-      title: json['title'] ?? json['name'] ?? 'Не указан', 
+      title: json['title'] ?? json['name'] ?? 'Не указан',
       color: json['color'],
     );
   }
