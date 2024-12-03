@@ -57,9 +57,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   bool _canEditTask = false;
   bool _canDeleteTask = false;
   final ApiService _apiService = ApiService();
-    bool _isTextExpanded = false; // New state variable for expanding text
-
-  
+  bool _isTextExpanded = false; // New state variable for expanding text
 
   @override
   void initState() {
@@ -93,48 +91,49 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   // Обновление данных задачи
   void _updateDetails(TaskById? task) {
-  if (task == null) {
-    currentTask = null;
-    details.clear();
-    return;
-  }
-  
-  currentTask = task;
-  details = [
-    {'label': 'ID задачи:', 'value': task.id.toString()},
-    {'label': 'Название задачи:', 'value': task.name},
-    {
-      'label': 'От:',
-      'value': task.startDate != null && task.startDate!.isNotEmpty
-          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-          : 'Не указано'
-    },
-    {
-      'label': 'До:',
-      'value': task.endDate != null && task.endDate!.isNotEmpty
-          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-          : 'Не указано'
-    },
-    {
-      'label': 'Статус:',
-      'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
-    },
-    {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
-    {
-      'label': 'Пользователь:',
-      'value': task.user != null && task.user!.isNotEmpty
-          ? task.user!.map((user) => user.name).join(', ')
-          : 'Не указано',
-    },
-    {
-      'label': 'Описание:',
-      'value': task.description?.isNotEmpty == true
-          ? task.description!
-          : 'Не указано'
-    },
-  ];
-}
+    if (task == null) {
+      currentTask = null;
+      details.clear();
+      return;
+    }
 
+    currentTask = task;
+    details = [
+      {'label': 'ID задачи:', 'value': task.id.toString()},
+      {'label': 'Название задачи:', 'value': task.name},
+      {
+        'label': 'От:',
+        'value': task.startDate != null && task.startDate!.isNotEmpty
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+            : 'Не указано'
+      },
+      {
+        'label': 'До:',
+        'value': task.endDate != null && task.endDate!.isNotEmpty
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+            : 'Не указано'
+      },
+      {
+        'label': 'Статус:',
+        'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
+      },
+      {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
+      {
+        'label': 'Пользователь:',
+        'value': task.user != null && task.user!.isNotEmpty
+            ? task.user!.map((user) => user.name).join(', ')
+            : 'Не указано',
+      },
+      {
+        'label': 'Описание:',
+        'value': task.description?.isNotEmpty == true
+            ? task.description!
+            : 'Не указано'
+      },
+      {'label': 'Автор:', 'value': task.author?.name ?? 'Не указано'},
+      {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,32 +150,34 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           },
           child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
             builder: (context, state) {
-            if (state is TaskByIdLoading) {
-              return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-            } else if (state is TaskByIdLoaded) {
-              TaskById task = state.task;
-              if (task == null) {
-                return Center(child: Text('Task data is not available.'));
+              if (state is TaskByIdLoading) {
+                return Center(
+                    child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              } else if (state is TaskByIdLoaded) {
+                TaskById task = state.task;
+                if (task == null) {
+                  return Center(child: Text('Task data is not available.'));
+                }
+                _updateDetails(task);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: ListView(
+                    children: [
+                      _buildDetailsList(),
+                      const SizedBox(height: 8),
+                      if (task.chat != null)
+                        TaskNavigateToChat(chatId: task.chat!.id),
+                      const SizedBox(height: 16),
+                      ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
+                    ],
+                  ),
+                );
+              } else if (state is TaskByIdError) {
+                return Center(child: Text('Ошибка: ${state.message}'));
               }
-              _updateDetails(task);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ListView(
-                  children: [
-                    _buildDetailsList(),
-                    const SizedBox(height: 8),
-                    if (task.chat != null) TaskNavigateToChat(chatId: task.chat!.id),
-                    const SizedBox(height: 16),
-                    ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
-                  ],
-                ),
-              );
-            } else if (state is TaskByIdError) {
-              return Center(child: Text('Ошибка: ${state.message}'));
-            }
-            return Center(child: Text(''));
-          },
+              return Center(child: Text(''));
+            },
           ),
         ));
   }
@@ -220,6 +221,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     height: 24,
                   ),
                   onPressed: () async {
+                    final createdAtString = currentTask!.createdAt != null &&
+                            currentTask!.createdAt!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentTask!.createdAt!))
+                        : null;
+
                     if (currentTask != null) {
                       final shouldUpdate = await Navigator.push(
                         context,
@@ -241,6 +248,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             description: currentTask!.description,
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,
+                            createdAt: createdAtString,
+
                           ),
                         ),
                       );
@@ -295,102 +304,104 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-Widget _buildDetailItem(String label, String value) {
-  if (label == 'Пользователь:' && value.contains(',')) {
-    return GestureDetector(
-      onTap: () => _showUsersDialog(value),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value.split(',').take(3).join(', ') + (value.split(',').length > 1 ? ' и еще ${value.split(',').length - 1}...' : ''),
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildLabel(label),
-      SizedBox(width: 8),
-      Expanded(
-        child: _buildValue(value),
-      ),
-    ],
-  );
-}
-
-void _showUsersDialog(String users) {
-List<String> userList = users.split(',').map((user) => user.trim()).toList();
-
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return Dialog(
-        backgroundColor: Colors.white,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildDetailItem(String label, String value) {
+    if (label == 'Пользователь:' && value.contains(',')) {
+      return GestureDetector(
+        onTap: () => _showUsersDialog(value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: EdgeInsets.all(16),
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
               child: Text(
-                'Список пользователей',
+                value.split(',').take(3).join(', ') +
+                    (value.split(',').length > 1
+                        ? ' и еще ${value.split(',').length - 1}...'
+                        : ''),
                 style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
-            ),
-            SizedBox(
-              height: 400,
-              child: ListView.builder(
-                itemCount: userList.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(
-                      '${index + 1}. ${userList[index]}',
-                      style: TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 16,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: CustomButton(
-                buttonText: 'Закрыть',
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
       );
-    },
-  );
-}
+    }
 
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        SizedBox(width: 8),
+        Expanded(
+          child: _buildValue(value),
+        ),
+      ],
+    );
+  }
 
+  void _showUsersDialog(String users) {
+    List<String> userList =
+        users.split(',').map((user) => user.trim()).toList();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Список пользователей',
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 400,
+                child: ListView.builder(
+                  itemCount: userList.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        '${index + 1}. ${userList[index]}',
+                        style: TextStyle(
+                          color: Color(0xff1E2E52),
+                          fontSize: 16,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: CustomButton(
+                  buttonText: 'Закрыть',
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   // Построение метки
   Widget _buildLabel(String label) {
@@ -418,5 +429,4 @@ List<String> userList = users.split(',').map((user) => user.trim()).toList();
       overflow: TextOverflow.visible,
     );
   }
-
 }

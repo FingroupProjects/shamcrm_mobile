@@ -5,21 +5,24 @@ class TaskById {
   final String name;
   final String? startDate;
   final String? endDate;
+  final String? createdAt;
   final String? description;
   final int statusId;
   final TaskStatusById? taskStatus;
   final String? color;
   final Project? project;
-  final List<UserById>? user;  
+  final List<UserById>? user;
   final TaskFileById? file;
   final int priority;
-  final ChatById? chat; 
+  final ChatById? chat;
+  final AuthorTask? author;
 
   TaskById({
     required this.id,
     required this.name,
     required this.startDate,
     required this.endDate,
+    this.createdAt,
     this.description,
     required this.statusId,
     this.taskStatus,
@@ -29,6 +32,7 @@ class TaskById {
     this.file,
     required this.priority,
     this.chat, // Инициализация нового поля
+    this.author, // Инициализация нового поля
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -48,17 +52,22 @@ class TaskById {
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
+      createdAt: json['created_at'] is String ? json['created_at'] : null,
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
       priority: priorityLevel,
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusById.fromJson(json['taskStatus'])
           : null,
-      project: json['project'] != null && json['project'] is Map<String, dynamic>
-          ? Project.fromJson(json['project'])
-          : null,
+      project:
+          json['project'] != null && json['project'] is Map<String, dynamic>
+              ? Project.fromJson(json['project'])
+              : null,
       user: json['users'] != null && json['users'] is List
-          ? (json['users'] as List).map((userJson) => UserById.fromJson(userJson)).toList()
+          ? (json['users'] as List)
+              .map((userJson) => UserById.fromJson(userJson))
+              .toList()
           : null,
       color: json['color'] is String ? json['color'] : null,
       file: json['file'] != null && json['file'] is Map<String, dynamic>
@@ -67,6 +76,26 @@ class TaskById {
       chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
           ? ChatById.fromJson(json['chat']) // Преобразуем JSON для чата
           : null,
+      author: json['author'] != null && json['author'] is Map<String, dynamic>
+          ? AuthorTask.fromJson(json['author'])
+          : null,
+    );
+  }
+}
+
+class AuthorTask {
+  final int id;
+  final String name;
+
+  AuthorTask({
+    required this.id,
+    required this.name,
+  });
+
+  factory AuthorTask.fromJson(Map<String, dynamic> json) {
+    return AuthorTask(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указан',
     );
   }
 }
@@ -103,7 +132,6 @@ class ChatById {
   }
 }
 
-
 class UserById {
   final int id;
   final String name;
@@ -120,9 +148,9 @@ class UserById {
   factory UserById.fromJson(Map<String, dynamic> json) {
     return UserById(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано', 
-      email: json['email'] ?? 'Не указано', 
-      phone: json['phone'] ?? 'Не указано', 
+      name: json['name'] ?? 'Не указано',
+      email: json['email'] ?? 'Не указано',
+      phone: json['phone'] ?? 'Не указано',
     );
   }
 }
