@@ -299,10 +299,10 @@ class _TaskCardState extends State<TaskCard> {
 
                 // Display the count of additional users
                 if (widget.task.usersImage != null &&
-                    widget.task.usersImage!.length > 3)
+                    widget.task.usersImage!.length > 2)
                   Padding(
                     padding: const EdgeInsets.only(left: 2),
-                    child: Text('+${widget.task.usersImage!.length - 3}',
+                    child: Text('+${widget.task.usersImage!.length - 2}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
