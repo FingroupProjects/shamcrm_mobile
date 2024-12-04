@@ -308,6 +308,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: authorController,
+                        hintText: 'Автор',
+                        label: 'Автор',
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: createDateController,
                         label: 'Дата создания',
@@ -316,20 +323,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
-                        controller: authorController,
-                        hintText: 'Автор',
-                        label: 'Автор',
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      const SizedBox(height: 8),
-                      CustomTextField(
                         controller: descriptionController,
                         hintText: 'Введите описание',
                         label: 'Описание',
                         maxLines: 5,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       // _buildFileSelection(), // Добавляем виджет выбора файла
                     ],
                   ),
