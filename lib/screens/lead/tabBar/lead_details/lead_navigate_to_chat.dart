@@ -185,7 +185,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                 createDate: "",
                 unredMessage: 0,
               ).toChatItem("assets/images/AvatarChat.png"),
-              chatId: id, endPointInTab: '',
+              chatId: id, endPointInTab: 'lead',
             ),
           ),
         ),
