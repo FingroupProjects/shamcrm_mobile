@@ -33,9 +33,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
-  final TextEditingController createDateController = TextEditingController();
   final TextEditingController sumController = TextEditingController();
-  final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedManager;
@@ -45,7 +43,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserName();
 
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
@@ -70,13 +67,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
     );
   }
 
-  void _loadUserName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userName = prefs.getString('userName');
-    if (userName != null) {
-      authorController.text = userName;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -211,20 +201,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                           }
                           return null;
                         },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: authorController,
-                        hintText: 'Автор',
-                        label: 'Автор',
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: createDateController,
-                        label: 'Дата создания',
-                        useCurrentDateAsDefault: true,
-                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

@@ -51,20 +51,13 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserName();
 
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
 
-  void _loadUserName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userName = prefs.getString('userName');
-    if (userName != null) {
-      authorController.text = userName;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -225,20 +218,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         controller: birthdayController,
                         label: 'Дата рождения',
                         withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: authorController,
-                        hintText: 'Автор',
-                        label: 'Автор',
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: createDateController,
-                        label: 'Дата создания',
-                        useCurrentDateAsDefault: true,
-                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

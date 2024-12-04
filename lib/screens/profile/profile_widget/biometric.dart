@@ -4,15 +4,14 @@ class PinChangeWidget extends StatelessWidget {
   const PinChangeWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to PIN setup screen
-        Navigator.pushNamed(context, '/pin_setup');
-      },
-      child: _buildPinOption(),
-    );
-  }
+Widget build(BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.pushReplacementNamed(context, '/pin_setup');
+    },
+    child: _buildPinOption(),
+  );
+}
 
   Widget _buildPinOption() {
     return Container(
