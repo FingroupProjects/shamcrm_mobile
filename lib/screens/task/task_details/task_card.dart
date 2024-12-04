@@ -252,11 +252,9 @@ class _TaskCardState extends State<TaskCard> {
                         widget.task.usersImage!.isNotEmpty
                     ? Stack(
                         children: [
-                          // First user image
                           if (widget.task.usersImage!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 20), // Adjust padding as needed
+                              padding: const EdgeInsets.only(right: 20), 
                               child:
                                   widget.task.usersImage![0].image.isNotEmpty &&
                                           widget.task.usersImage![0].image
