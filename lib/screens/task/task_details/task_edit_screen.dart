@@ -55,8 +55,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
-  final TextEditingController authorController = TextEditingController();
-  final TextEditingController createdAtController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedProject;
@@ -74,16 +72,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     super.initState();
     _initializeControllers();
     _loadInitialData();
-    _loadUserName();
   }
 
-  void _loadUserName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userName = prefs.getString('userName');
-    if (userName != null) {
-      authorController.text = userName;
-    }
-  }
 
   void _initializeControllers() {
     nameController.text = widget.taskName;
@@ -101,9 +91,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
 
     selectedPriority = widget.priority ?? 1;
-
-    createdAtController.text = widget.createdAt ?? '';
-
   }
 
   void _loadInitialData() {
@@ -354,19 +341,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                 .toList();
                           });
                         },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: authorController,
-                        hintText: 'Автор',
-                        label: 'Автор',
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: createdAtController,
-                        label: 'Дата создания',
-                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

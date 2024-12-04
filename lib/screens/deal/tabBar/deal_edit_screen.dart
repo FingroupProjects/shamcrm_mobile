@@ -79,7 +79,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
     selectedLead = widget.lead;
     startDateController.text = widget.startDate ?? '';
     endDateController.text = widget.endDate ?? '';
-    createdAtController.text = widget.createdAt ?? '';
     sumController.text = widget.sum ?? '';
 
     for (var customField in widget.dealCustomFields) {
@@ -90,7 +89,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
 
-    _loadUserName();
   }
 
   void _addCustomField(String fieldName) {
@@ -110,14 +108,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
         );
       },
     );
-  }
-
-  void _loadUserName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userName = prefs.getString('userName');
-    if (userName != null) {
-      authorController.text = userName;
-    }
   }
 
   @override
@@ -228,19 +218,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
                           }
                           return null;
                         },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: authorController,
-                        hintText: 'Автор',
-                        label: 'Автор',
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: createdAtController,
-                        label: 'Дата создания',
-                        readOnly: true,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
