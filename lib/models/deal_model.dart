@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 
 class Deal {
   final int id;
@@ -8,6 +9,7 @@ class Deal {
   final String? description;
   final String sum;
   final int statusId;
+  final ManagerData? manager;
   final Lead? lead;
   final List<DealCustomField> dealCustomFields;
 
@@ -15,10 +17,11 @@ class Deal {
     required this.id,
     required this.name,
     this.startDate,
-    this.endDate,
+    this.endDate, 
     this.description,
     required this.sum,
     required this.statusId,
+    this.manager,
     this.lead,
     required this.dealCustomFields,
   });
@@ -32,10 +35,11 @@ class Deal {
       description: json['description'] ?? '',
       sum: json['sum'] ?? '0.00',
       statusId: dealStatusId,
-      lead: json['lead'] != null ? Lead.fromJson(json['lead']['status_id'] ?? 0) : null,
+      manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
+      lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
-          ?.map((field) => DealCustomField.fromJson(field))
-          .toList() ?? [],
+              ?.map((field) => DealCustomField.fromJson(field))
+              .toList() ?? [],
     );
   }
 }
@@ -66,6 +70,7 @@ class DealStatus {
   final String color;
   final String? createdAt;
   final String? updatedAt;
+  final int? day;
 
   DealStatus({
     required this.id,
@@ -73,6 +78,7 @@ class DealStatus {
     required this.color,
     this.createdAt,
     this.updatedAt,
+    this.day,
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
@@ -82,6 +88,7 @@ class DealStatus {
       color: json['color'] is String ? json['color'] : '#000',
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
+      day: json['day'] is int ? json['day'] : null,
     );
   }
 }

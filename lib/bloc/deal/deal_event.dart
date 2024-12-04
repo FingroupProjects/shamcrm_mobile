@@ -4,8 +4,9 @@ class FetchDealStatuses extends DealEvent {}
 
 class FetchDeals extends DealEvent {
   final int statusId;
+  final String? query; // Добавьте параметр для поиска
 
-  FetchDeals(this.statusId);
+  FetchDeals(this.statusId, {this.query});
 }
 
 class FetchMoreDeals extends DealEvent {
@@ -17,10 +18,12 @@ class FetchMoreDeals extends DealEvent {
 
 class CreateDealStatus extends DealEvent {
   final String title;
+  final int day;
   final String color;
 
   CreateDealStatus({
     required this.title,
+    required this.day,
     required this.color,
   });
 }
@@ -33,10 +36,8 @@ class CreateDeal extends DealEvent {
   final DateTime? endDate;
   final String sum;
   final String? description;
-  final int? organizationId;
   final int? dealtypeId;
   final int? leadId;
-  final int? currencyId;
   final List<Map<String, String>>? customFields;
 
   CreateDeal({
@@ -47,10 +48,8 @@ class CreateDeal extends DealEvent {
     this.endDate,
     required this.sum,
     this.description,
-    this.organizationId,
     this.dealtypeId,
     this.leadId,
-    this.currencyId,
     this.customFields,
   });
 }
@@ -64,10 +63,8 @@ class UpdateDeal extends DealEvent {
   final DateTime? endDate;
   final String sum;
   final String? description;
-  final int? organizationId;
   final int? dealtypeId;
   final int? leadId;
-  final int? currencyId;
   final List<Map<String, String>>? customFields;
 
   UpdateDeal({
@@ -79,10 +76,8 @@ class UpdateDeal extends DealEvent {
     this.endDate,
     required this.sum,
     this.description,
-    this.organizationId,
     this.dealtypeId,
     this.leadId,
-    this.currencyId,
     this.customFields,
   });
 }

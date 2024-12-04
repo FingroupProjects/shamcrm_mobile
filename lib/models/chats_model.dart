@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
-import 'package:crm_task_manager/utils/global_value.dart';
 
 class Chats {
   final int id;
@@ -141,8 +140,6 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
-    print('--- from json');
-    print(json);
     String text;
 
     // Если тип сообщения 'file', используем text напрямую
@@ -158,9 +155,8 @@ class Message {
       type: json['type'],
       senderName: json['sender'] == null ? 'Без имени': json['sender']['name'] ?? 'Без имени',
       createMessateTime: json['created_at'] ?? '',
-      filePath: json['file_path'] ?? '',
-      isMyMessage:  json['is_my_message'] ?? false,
-
+      filePath: json['file_path'],
+      isMyMessage: json['is_my_message'] ?? false,
     );
   }
 

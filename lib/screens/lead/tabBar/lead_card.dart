@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,10 +8,15 @@ import 'package:intl/intl.dart';
 class LeadCard extends StatefulWidget {
   final Lead lead;
   final String title;
-  final VoidCallback onStatusUpdated; // Callback for status update
+  final int statusId;
+  final VoidCallback onStatusUpdated;
 
-  LeadCard(
-      {required this.lead, required this.title, required this.onStatusUpdated});
+  LeadCard({
+    required this.lead,
+    required this.title,
+    required this.statusId,
+    required this.onStatusUpdated,
+  });
 
   @override
   _LeadCardState createState() => _LeadCardState();
@@ -23,15 +28,13 @@ class _LeadCardState extends State<LeadCard> {
   @override
   void initState() {
     super.initState();
-    dropdownValue = widget.title; // Set dropdownValue to the title passed
+    dropdownValue = widget.title;
   }
+  
 
   String formatDate(String dateString) {
-    // Преобразуем строку в объект DateTime
     DateTime dateTime = DateTime.parse(dateString);
-    // Форматируем дату
-    return DateFormat('yyyy-MM-dd').format(dateTime); // Формат ГГГГ-ММ-ДД
-    // return DateFormat('MM/dd/yyyy').format(dateTime); // Для формата ММ/ДД/ГГГГ
+    return DateFormat('dd-MM-yyyy').format(dateTime);
   }
 
   final Map<String, String> sourceIcons = {
@@ -44,16 +47,29 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath = sourceIcons[widget.lead.source?.name] ??
-        'assets/images/avatar.png'; // Default avatar if not found
-
+    String iconPath =
+        sourceIcons[widget.lead.source?.name] ?? 'assets/images/avatar.png';
     return GestureDetector(
       onTap: () {
-        // Открываем экран tasks_details.dart при нажатии
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => LeadDetailsScreen(),
+            builder: (context) => LeadDetailsScreen(
+              leadId: widget.lead.id.toString(),
+              leadName: widget.lead.name ?? 'Без имени',
+              leadStatus: dropdownValue,
+              statusId: widget.statusId,
+              region: widget.lead.region?.name,
+              regionId: widget.lead.region?.id,
+              manager: widget.lead.manager?.name,
+              managerId: widget.lead.manager?.id,
+              birthday: widget.lead.birthday,
+              instagram: widget.lead.instagram,
+              facebook: widget.lead.facebook,
+              telegram: widget.lead.telegram,
+              phone: widget.lead.phone,
+              description: widget.lead.description,
+            ),
           ),
         );
       },
@@ -86,8 +102,7 @@ class _LeadCardState extends State<LeadCard> {
                       setState(() {
                         dropdownValue = newValue;
                       });
-                      widget
-                          .onStatusUpdated(); // Call the callback when status is updated
+                      widget.onStatusUpdated();
                     }, widget.lead);
                   },
                   child: Container(
@@ -96,39 +111,42 @@ class _LeadCardState extends State<LeadCard> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Color(0xff1E2E52), // Цвет рамки
-                          width: 0.2, // Толщина рамки
+                          color: Color(0xff1E2E52),
+                          width: 0.2,
                         ),
-                        borderRadius:
-                            BorderRadius.circular(8), // Радиус скругления углов
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
-                          Text(
-                            dropdownValue,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                          Container(
+                            constraints: BoxConstraints(
+                                maxWidth: 200), //Размер колонки Выбора Статуса
+                            child: Text(
+                              dropdownValue,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
+                              overflow:
+                                  TextOverflow.ellipsis, 
                             ),
                           ),
-                          const SizedBox(
-                              width: 8), // Отступ между текстом и иконкой
+                          const SizedBox(width: 8),
                           Image.asset(
-                            'assets/icons/tabBar/dropdown.png', // Path to your icon
-                            width: 20, // Width of the icon
-                            height: 20, // Height of the icon
+                            'assets/icons/tabBar/dropdown.png',
+                            width: 20,
+                            height: 20,
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-
-                const SizedBox(width: 8), // Adjust spacing as needed
+                const SizedBox(width: 8),
               ],
             ),
             const SizedBox(height: 8),
@@ -142,15 +160,15 @@ class _LeadCardState extends State<LeadCard> {
                       height: 28,
                     ),
                     const SizedBox(width: 18),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 2),
-                      decoration: TaskCardStyles.priorityContainerDecoration,
-                      child: const Text(
-                        'Высокая',
-                        style: TaskCardStyles.priorityStyle,
-                      ),
-                    ),
+                    // Container(
+                    //   padding: const EdgeInsets.symmetric(
+                    //       horizontal: 4, vertical: 2),
+                    //   decoration: TaskCardStyles.priorityContainerDecoration,
+                    //   child: const Text(
+                    //     'Высокая',
+                    //     style: TaskCardStyles.priorityStyle,
+                    //   ),
+                    // ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -199,7 +217,7 @@ class _LeadCardState extends State<LeadCard> {
                   ],
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),

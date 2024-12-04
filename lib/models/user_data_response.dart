@@ -61,6 +61,7 @@ class UserData {
 
   @override
   String toString() {
-    return 'UserData{id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image}';
+    // return 'UserData{id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image}';
+    return '$name';
   }
 }

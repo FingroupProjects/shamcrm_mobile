@@ -1,17 +1,39 @@
+// dashboard/tasks_box.dart
+import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/stats_state.dart';
+import 'package:crm_task_manager/screens/dashboard/style_dashboard.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/custom_widget/custom_card_dashboard.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class TasksBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return DashboardItem(
-      title: 'Задачи',
-      iconWidget: Image.asset(
-        'assets/icons/Dashboard/tasks_box.png', // Путь к вашей иконке
-        width: 36, // Задайте нужный размер
-        height: 36,
-      ),
-      stats: ['134 выполнено', '134 просрочено', '134 открытых'],
+    return BlocBuilder<DashboardStatsBloc, DashboardStatsState>(
+      builder: (context, state) {
+        if (state is DashboardStatsLoaded) {
+          return BaseStatsBox(
+            title: 'Задачи',
+            icon: Icons.task_outlined,
+            items: [
+              StatItem(
+                label: 'Активные',
+                value: state.stats.taskStats.finished.toString(),
+              ),
+              StatItem(
+                label: 'Просроченные',
+                value: state.stats.taskStats.outDated.toString(),
+              ),
+              StatItem(
+                label: 'Завершённые',
+                value: (state.stats.taskStats.all - 
+                       state.stats.taskStats.finished - 
+                       state.stats.taskStats.outDated).toString(),
+              ),
+            ],
+          );
+        }
+        return SizedBox.shrink();
+      },
     );
   }
-}
+} 

@@ -5,6 +5,8 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/models/msg_data_in_socket.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -29,15 +31,17 @@ import 'package:voice_message_package/voice_message_package.dart';
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
+    final String endPointInTab;
+
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
-  final String endPoint;
 
   ChatSmsScreen({
     super.key,
     required this.chatItem,
     required this.chatId,
-    required this.endPoint,
+        required this.endPointInTab,
+
   });
 
   @override
@@ -52,6 +56,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   late PusherChannelsClient socketClient;
 
   late VoiceController audioController;
+  final ApiService apiService = ApiService();
+
+  late String baseUrl;
+
 
   @override
   void initState() {
@@ -65,59 +73,70 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
+          _fetchBaseUrl();
+
     });
     // _connectWebSocket();
   }
 
-  @override
+Future<void> _fetchBaseUrl() async {
+  baseUrl = await apiService.getDynamicBaseUrl();
+}
+
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
-        title: Row(
-          children: [
-            /*
-            onTap() {
-
-              if(widget.endPoint =='lead') {
-                open chatByIdScreen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: ChatSmsStyles.appBarTitleColor),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: InkWell(
+          onTap: () {
+            if(widget.endPointInTab == 'lead') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
                   builder: (context) => UserProfileScreen(chatId: widget.chatId),
                 ),
-            );
-              } else
-              if(widget.endPoint =='task') {
-                open task
-              } else {
-                 open profile screen
-
-              }
-
+              );
+            } else if(widget.endPointInTab == 'task'){
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TaskByIdScreen(chatId: widget.chatId),
+                ),
+              );
             }
-             */
-            CircleAvatar(
-              backgroundImage: AssetImage(widget.chatItem.avatar),
-              radius: ChatSmsStyles.avatarRadius,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              widget.chatItem.name.isEmpty ? 'Без имени' : widget.chatItem.name,
-              style: const TextStyle(
-                fontSize: 16,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Gilroy',
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: AssetImage(widget.chatItem.avatar),
+                radius: ChatSmsStyles.avatarRadius,
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Text(
+                widget.chatItem.name.isEmpty ? 'Без имени' : widget.chatItem.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: ChatSmsStyles.appBarTitleColor,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       backgroundColor: const Color(0xffF4F7FD),
       body: Column(
         children: [
           Expanded(child: messageListUi()),
+
           /// bottom ui
           inputWidget(),
         ],
@@ -143,8 +162,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               style: TextStyle(color: AppColors.textPrimary700),
             ));
           }
-
-
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.builder(
@@ -157,6 +174,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 return MessageItemWidget(
                   message: state.messages[index],
                   apiServiceDownload: widget.apiServiceDownload,
+                  baseUrl: baseUrl, // Передаём baseUrl
                 );
               },
             ),
@@ -211,6 +229,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
+
+      final baseUrlSocket = await apiService.getSocketBaseUrl();
+      final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+
+
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
       uriResolver: (metadata) =>
@@ -237,7 +260,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Tenant': 'fingroup-back'
+          'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
@@ -248,50 +271,46 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) {
+      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('----sender');
         print(mm.message!.text);
         print(mm.message!.sender!);
         print(mm.message!.text!);
         print(userID.value);
-        print('--- end');
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String UUID = prefs.getString('userID').toString();
+        print('userID : $UUID');
 
+        print('--- end');
         context.read<ListenSenderFileCubit>().updateValue(false);
         context.read<ListenSenderVoiceCubit>().updateValue(false);
         context.read<ListenSenderTextCubit>().updateValue(false);
 
         Message msg;
-        if (mm.message!.type == 'voice' ||
-            mm.message!.type == 'file'  ||
-            mm.message!.type == 'image' ||
-            mm.message!.type == 'document') {
+        if (mm.message!.type == 'voice' || mm.message!.type == 'file'  || mm.message!.type == 'image' || mm.message!.type == 'document') {
           msg = Message(
-              id: mm.message!.id!,
-              filePath: mm.message!.filePath.toString(),
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
-              // isMyMessage:  (userID.value == mm.message!.sender!.id.toString()),
-              createMessateTime: mm.message!.createdAt.toString(),
-              duration: Duration(
-                  seconds: (mm.message!.voiceDuration != null)
-                      ? double.parse(mm.message!.voiceDuration.toString())
-                          .round()
-                      : 20), senderName: mm.message!.sender!.name!,
+            id: mm.message!.id!,
+            filePath: mm.message!.filePath.toString(),
+            text: mm.message!.text ??= mm.message!.type!,
+            type: mm.message!.type.toString(),
+            isMyMessage:  (UUID == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
+            createMessateTime: mm.message!.createdAt.toString(),
+            duration: Duration(
+                seconds: (mm.message!.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString())
+                    .round()
+                    : 20), senderName: mm.message!.sender!.name!,
           );
         } else {
           msg = Message(
-            id: mm.message!.id!,
-            text: mm.message!.text ??= mm.message!.type!,
-            type: mm.message!.type.toString(),
-            createMessateTime: mm.message!.createdAt.toString(),
-            // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-              isMyMessage: (userID.value == mm.message!.sender!.id.toString() &&
-                mm.message!.sender!.type ==
-                    'user'),
-
-
+              id: mm.message!.id!,
+              text: mm.message!.text ??= mm.message!.type!,
+              type: mm.message!.type.toString(),
+              createMessateTime: mm.message!.createdAt.toString(),
+              isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
+                  mm.message!.sender!.type ==
+                      'user'),
               senderName: mm.message!.sender!.name!
           );
         }
@@ -379,11 +398,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
+  final String baseUrl; // Новый параметр
 
-  const MessageItemWidget(
-      {super.key,
-        required this.message,
-        required this.apiServiceDownload});
+  const MessageItemWidget({
+    super.key,
+    required this.message,
+    required this.apiServiceDownload,
+    required this.baseUrl,
+  });
 
   @override
   Widget build(BuildContext context) {

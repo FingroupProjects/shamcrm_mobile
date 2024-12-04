@@ -24,7 +24,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    await Future.delayed(Duration(milliseconds: 800));
+    await Future.delayed(Duration(milliseconds: 300));
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
@@ -44,23 +44,27 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   // Метод для загрузки сделок
-  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-    emit(DealLoading());
-    if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
-      return;
-    }
-
-    try {
-      final deals = await apiService.getDeals(event.statusId);
-      allDealsFetched = deals.isEmpty; // Если сделок нет, устанавливаем флаг
-      emit(DealDataLoaded(deals,
-          currentPage: 1)); // Устанавливаем текущую страницу на 1
-    } catch (e) {
-      emit(DealError('Не удалось загрузить сделок: ${e.toString()}'));
-    }
+Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+  emit(DealLoading());
+  if (!await _checkInternetConnection()) {
+    emit(DealError('Нет подключения к интернету'));
+    return;
   }
 
+  try {
+    // Передаем правильный leadStatusId из события FetchLeads
+    final leads = await apiService.getDeals(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+    );
+    allDealsFetched = leads.isEmpty;
+    emit(DealDataLoaded(leads, currentPage: 1));
+  } catch (e) {
+    emit(DealError('Не удалось загрузить сделки: ${e.toString()}'));
+  }
+}
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {
     if (allDealsFetched)
@@ -99,7 +103,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
     try {
       final result =
-          await apiService.createDealStatus(event.title, event.color);
+          await apiService.createDealStatus(event.title, event.color, event.day);
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
@@ -127,15 +131,13 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         endDate: event.endDate,
         sum: event.sum,
         description: event.description,
-        organizationId: event.organizationId,
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
-        currencyId: event.currencyId,
         customFields: event.customFields,
       );
       if (result['success']) {
         emit(DealSuccess('Сделка создана успешно'));
-        add(FetchDeals(event.dealStatusId));
+        // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
@@ -162,16 +164,14 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         endDate: event.endDate,
         sum: event.sum,
         description: event.description,
-        organizationId: event.organizationId,
         dealtypeId: event.dealtypeId,
         leadId: event.leadId,
-        currencyId: event.currencyId,
         customFields: event.customFields,
       );
 
       if (result['success']) {
         emit(DealSuccess('Сделка обновлена успешно'));
-        add(FetchDeals(event.dealStatusId));
+        // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
@@ -196,7 +196,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       final response = await apiService.deleteDeal(event.dealId);
       if (response['result'] == 'Success') {
         emit(DealDeleted('Сделка удалена успешно'));
-        add(FetchDeals(event.dealId)); // Перезагрузка лида после удаления
       } else {
         emit(DealError('Ошибка удаления сделки'));
       }
@@ -212,7 +211,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       final response = await apiService.deleteDealStatuses(event.dealStatusId);
       if (response['result'] == 'Success') {
         emit(DealDeleted('Статус Лида удалена успешно'));
-        add(FetchDeals(event.dealStatusId)); // Перезагрузка лида после удаления
       } else {
         emit(DealError('Ошибка удаления статуса сделки'));
       }

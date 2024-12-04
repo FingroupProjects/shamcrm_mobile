@@ -7,50 +7,75 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class LeadColumn extends StatelessWidget {
-  final int statusId; // ID статуса для фильтрации лидов
-  final String title; // Add a title parameter
+class LeadColumn extends StatefulWidget {
+  final int statusId;
+  final String title;
 
-  LeadColumn(
-      {required this.statusId, required this.title}); // Update constructor
+  LeadColumn({required this.statusId, required this.title});
+
+  @override
+  _LeadColumnState createState() => _LeadColumnState();
+}
+
+class _LeadColumnState extends State<LeadColumn> {
+  bool _hasPermissionToAddLead = false;
+  final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    bool hasPermission = await _apiService.hasPermission('lead.create');
+    setState(() {
+      _hasPermissionToAddLead = hasPermission;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LeadBloc(ApiService())..add(FetchLeads()),
+      create: (context) => LeadBloc(ApiService())..add(FetchLeads(widget.statusId)),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
             if (state is LeadLoading) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Color(0xfff1E2E52)));
+              return const Center(child: CircularProgressIndicator(color: Color(0xfff1E2E52)));
             } else if (state is LeadDataLoaded) {
               final leads = state.leads
-                  .where((lead) => lead.statusId == statusId)
-                  .toList(); // Filter by statusId
-
+                  .where((lead) => lead.statusId == widget.statusId)
+                  .toList();
               if (leads.isEmpty) {
                 return Center(child: Text('Нет лидов для выбранного статуса'));
               }
+              
+              final ScrollController _scrollController = ScrollController();
+              _scrollController.addListener(() {
+                if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
+                    !context.read<LeadBloc>().allLeadsFetched) {
+                  context.read<LeadBloc>().add(FetchMoreLeads(widget.statusId, state.currentPage));
+                }
+              });
 
               return Column(
                 children: [
                   SizedBox(height: 15),
                   Expanded(
                     child: ListView.builder(
+                      controller: _scrollController,
                       itemCount: leads.length,
                       itemBuilder: (context, index) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: LeadCard(
                             lead: leads[index],
-                            title: title,
+                            title: widget.title,
+                            statusId: widget.statusId,
                             onStatusUpdated: () {
-                              context
-                                  .read<LeadBloc>()
-                                  .add(FetchLeads()); // Обновляем список лидов
+                              context.read<LeadBloc>().add(FetchLeads(widget.statusId));
                             },
                           ),
                         );
@@ -65,20 +90,21 @@ class LeadColumn extends StatelessWidget {
             return Container();
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // Передаем statusId в LeadAddScreen
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LeadAddScreen(statusId: statusId),
-              ),
-            );
-          },
-          backgroundColor: Color(0xff1E2E52),
-          child:
-              Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
-        ),
+        
+        floatingActionButton: _hasPermissionToAddLead
+            ? FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LeadAddScreen(statusId: widget.statusId),
+                    ),
+                  );
+                },
+                backgroundColor: Color(0xff1E2E52),
+                child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
+              )
+            : null,
       ),
     );
   }

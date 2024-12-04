@@ -15,15 +15,29 @@ class LoginModel {
 }
 
 class LoginResponse {
-  final String token; // Или другие поля, которые возвращает ваш API
+  final String token;
   final User user;
+  final List<String> permissions;
 
-  LoginResponse({required this.token, required this.user});
+  LoginResponse({
+    required this.token,
+    required this.user,
+    required this.permissions,
+  });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      token: json['token'], // Или другие поля
+      token: json['token'],
       user: User.fromMap(json['user']),
+      permissions: List<String>.from(json['permissions']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'token': token,
+      'user': user.toMap(),
+      'permissions': permissions,
+    };
   }
 }

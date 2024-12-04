@@ -1,43 +1,51 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# Системные файлы
 .DS_Store
-.atom/
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
+Thumbs.db
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
+# Файлы сборки
+build/
+*.apk
+*.aab
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Кэш и временные файлы
 .dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
+.packages
 .pub-cache/
-.pub/
-/build/
+pubspec.lock
 
-# Symbolication related
-app.*.symbols
+# Настройки IDE
+.idea/
+*.iml
+.vscode/
 
-# Obfuscation related
-app.*.map.json
+# Конфиденциальные файлы
+*.env
+secrets.yaml
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Android специфичные
+.android/
+gradle/
+local.properties
+
+# iOS специфичные
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/App.framework
+ios/Flutter/Debug.xcconfig
+ios/Flutter/Release.xcconfig
+ios/Runner/xcuserdata/
+ios/Runner/Runner.xcworkspace/
+ios/Runner/Info.plist
+ios/Runner/Runner.app
+ios/Runner.app.dSYM
+
+# Результаты тестов
+test_output/
+
+# Временные файлы редактора
+*.log
+*.tmp
+*.swp

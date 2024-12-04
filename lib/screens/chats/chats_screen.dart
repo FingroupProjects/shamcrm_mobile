@@ -42,15 +42,23 @@ class _ChatsScreenState extends State<ChatsScreen>
   final List<String> _tabTitles = ['Лиды', 'Задачи', 'Корпоративный чат'];
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
-  String endPointForTab = 'lead';
+  String endPointInTab = 'lead';
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _tabTitles.length, vsync: this);
-    setUpServices((context.read<LoginBloc>().state as LoginLoaded).user.id);
-    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+ @override
+void initState() {
+  super.initState();
+  _tabController = TabController(length: _tabTitles.length, vsync: this);
+
+  final currentState = context.read<LoginBloc>().state;
+  if (currentState is LoginLoaded) {
+    setUpServices(currentState.user.id);
+  } else {
+    // Логируем или обрабатываем случай, когда состояние ещё не `LoginLoaded`
+    print('Состояние LoginBloc: $currentState');
   }
+
+  context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+}
 
   void _filterChats(String query) {
     isClickAvatarIcon = false;
@@ -77,6 +85,9 @@ class _ChatsScreenState extends State<ChatsScreen>
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
+        final baseUrlSocket = await apiService.getSocketBaseUrl();
+        final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
       uriResolver: (metadata) =>
@@ -102,7 +113,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Tenant': 'fingroup-back'
+          'X-Tenant': '$enteredDomain-back'
         },
         onAuthFailed: (exception, trace) {
           debugPrint(exception);
@@ -146,7 +157,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void updateChats() {
-    context.read<ChatsBloc>().add(RefreshChats());
+    // context.read<ChatsBloc>().add(RefreshChats());
   }
 
   bool isClickAvatarIcon = false;
@@ -157,6 +168,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     return Unfocuser(
       child: Scaffold(
         appBar: AppBar(
+        forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
             title: 'Чаты',
@@ -168,6 +180,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             onChangedSearchInput: _filterChats,
             textEditingController: searchController,
             focusNode: focusNode,
+            clearButtonClick: (isSearching) {},
           ),
           backgroundColor: Colors.white,
         ),
@@ -210,6 +223,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       ),
     );
   }
+
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
     return GestureDetector(
@@ -218,19 +232,19 @@ class _ChatsScreenState extends State<ChatsScreen>
         selectTabIndex = index;
         _tabController.animateTo(index);
 
-
-        if (index == 0) {
-          endPointForTab = 'lead';
+        // String endPoint = '';
+         if (index == 0) {
+          endPointInTab = 'lead';
         }
-
+        // todo: 3. tab's key value for opened profile screen.
         if (index == 1) {
-          endPointForTab = 'task';
+          endPointInTab = 'task';
         }
-
+        // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
-          endPointForTab = 'corporate';
+          endPointInTab = 'corporate';
         }
-        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointForTab));
+        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -248,12 +262,12 @@ class _ChatsScreenState extends State<ChatsScreen>
     );
   }
 
-  Widget _buildTabBarView() {
+   Widget _buildTabBarView() {
     return TabBarView(
       controller: _tabController,
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(_tabTitles.length,
-          (index) => _ChatItemsWidget(updateChats: updateChats, endPointForTab: endPointForTab,)),
+          (index) => _ChatItemsWidget(updateChats: updateChats, endPointInTab: endPointInTab,)),
     );
   }
 
@@ -268,9 +282,9 @@ class _ChatsScreenState extends State<ChatsScreen>
 
 class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
-  final String endPointForTab;
+    final String endPointInTab;
 
-  const _ChatItemsWidget({required this.updateChats, required this.endPointForTab});
+  const _ChatItemsWidget({required this.updateChats, required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
@@ -303,7 +317,9 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           create: (context) => MessagingCubit(ApiService()),
           child: ChatSmsScreen(
             chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
-            chatId: chat.id, endPoint: widget.endPointForTab,
+            chatId: chat.id,
+                        endPointInTab: widget.endPointInTab,
+
           ),
         ),
       ),
@@ -312,7 +328,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     });
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
       listener: (context, state) {

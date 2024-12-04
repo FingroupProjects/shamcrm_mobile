@@ -12,9 +12,7 @@ class MessagingCubit extends Cubit<MessagingState> {
   Future<void> getMessages(final int chatId) async {
     try {
       emit(MessagesLoadingState());
-
       final messages = await apiService.getMessages(chatId);
-
       emit(MessagesLoadedState(messages: messages));
     } catch (e) {
       emit(MessagesErrorState(error: e.toString()));
