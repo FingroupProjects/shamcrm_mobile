@@ -545,6 +545,7 @@ class ApiService {
 
 // Метод для получения сообщений по chatId
   Future<List<Message>> getMessages(int chatId) async {
+    print('$baseUrl/chat/getMessages/$chatId');
     final token = await getToken(); // Получаем токен
     final response = await http.get(
       Uri.parse(
@@ -555,16 +556,30 @@ class ApiService {
       },
     );
 
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      print('data-----');
+      print(json.decode(response.body));
       if (data['result'] != null) {
-        return (data['result'] as List)
+
+        var list = (data['result'] as List)
             .map(
-                (msg) => Message.fromJson(msg)) // Создайте модель для сообщения
+                (msg)  {
+                  print('------------------');
+                  print(msg);
+                 return  Message.fromJson(msg);
+                }) // Создайте модель для сообщения
             .toList();
+
+        print('---------dataaaa');
+
+        return list;
       } else {
         throw Exception('Результат отсутствует в ответе');
       }
+
+      print('-----end');
     } else {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }

@@ -103,7 +103,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              '${widget.chatItem.name} ${widget.endPoint}',
+              widget.chatItem.name.isEmpty ? 'Без имени' : widget.chatItem.name,
               style: const TextStyle(
                 fontSize: 16,
                 color: ChatSmsStyles.appBarTitleColor,
@@ -143,6 +143,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               style: TextStyle(color: AppColors.textPrimary700),
             ));
           }
+
+
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.builder(
@@ -249,6 +251,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('----sender');
+        print(mm.message!.text);
         print(mm.message!.sender!);
         print(mm.message!.text!);
         print(userID.value);
