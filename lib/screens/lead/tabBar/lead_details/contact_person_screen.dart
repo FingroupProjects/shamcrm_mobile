@@ -56,7 +56,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Контактное Лицо'),
+        _buildTitleRow('Контактные лица'),
         SizedBox(height: 8),
         if (contactPerson.isEmpty)
           Padding(
