@@ -659,9 +659,12 @@ class ApiService {
         });
 
     if (response.statusCode == 200) {
-      print('Статус лида обновлен успешно.');
+      print('Статус задачи обновлен успешно.');
+    } else if (response.statusCode == 422) {
+      throw TaskStatusUpdateException(
+          422, 'Вы не можете переместить задачу на этот статус');
     } else {
-      throw Exception('Ошибка обновления статуса лида: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
     }
   }
 
@@ -1296,6 +1299,31 @@ class ApiService {
     }
   }
 
+//Метод для Отправки на 1С
+  Future<List> getLeadToC(int leadId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest('/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print("------------------------------------------------------------------------------------");
+        print('LEAD TO 1C');
+
+        print(data);
+
+        return data as List;
+      } else {
+        print('Ошибка загрузки 1С Лид: ${response.statusCode}');
+        throw Exception('Ошибка загрузки Лид 1С: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred: $e');
+      throw Exception('Ошибка загрузки 1С Лидд: $e');
+    }
+  }
+
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -1444,9 +1472,12 @@ class ApiService {
         });
 
     if (response.statusCode == 200) {
-      print('Статус сделки обновлен успешно.');
+      print('Статус задачи обновлен успешно.');
+    } else if (response.statusCode == 422) {
+      throw TaskStatusUpdateException(
+          422, 'Вы не можете переместить задачу на этот статус');
     } else {
-      throw Exception('Ошибка обновления статуса сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
     }
   }
 
@@ -1887,188 +1918,186 @@ class ApiService {
     }
   }
 
- // Метод для создания задачи
-Future<Map<String, dynamic>> createTask({
-  required String name,
-  required int? statusId,
-  required int? taskStatusId,
-  int? priority,
-  DateTime? startDate,
-  DateTime? endDate,
-  int? projectId,
-  List<int>? userId,
-  String? description,
-}) async {
-  try {
-    final Map<String, dynamic> requestBody = {
-      'name': name,
-      'status_id': statusId,
-      'task_status_id': taskStatusId,
-      'priority_level': priority, // Используем строковое значение приоритета
-      if (startDate != null) 'from': startDate.toIso8601String(),
-      if (endDate != null) 'to': endDate.toIso8601String(),
-      if (projectId != null) 'project_id': projectId,
-      if (userId != null)
-        'users': userId
-            .map((id) => {'user_id': id})
-            .toList(), // Передаем список как массив
-      if (description != null) 'description': description,
-    };
-
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-      '/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestBody,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Задача успешно создана.',
+  // Метод для создания задачи
+  Future<Map<String, dynamic>> createTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    int? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    List<int>? userId,
+    String? description,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'priority_level': priority, // Используем строковое значение приоритета
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null)
+          'users': userId
+              .map((id) => {'user_id': id})
+              .toList(), // Передаем список как массив
+        if (description != null) 'description': description,
       };
-    } else if (response.statusCode == 422) {
-      // Обработка ошибок валидации
-      if (response.body.contains('name')) {
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Задача успешно создана.',
+        };
+      } else if (response.statusCode == 422) {
+        // Обработка ошибок валидации
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'Название задачи должно быть не менее 3 символов.',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'Дата начала задачи указана некорректно.',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'Дата завершения задачи указана некорректно.',
+          };
+        }
+        if (response.body.contains('priority_level')) {
+          return {
+            'success': false,
+            'message': 'Указан некорректный уровень приоритета.',
+          };
+        }
         return {
           'success': false,
-          'message': 'Название задачи должно быть не менее 3 символов.',
+          'message': 'Неизвестная ошибка: ${response.body}',
         };
-      }
-      if (response.body.contains('from')) {
+      } else if (response.statusCode == 500) {
+        // Обработка ошибки сервера
         return {
           'success': false,
-          'message': 'Дата начала задачи указана некорректно.',
+          'message': 'Ошибка на сервере. Попробуйте позже.',
         };
-      }
-      if (response.body.contains('to')) {
+      } else {
         return {
           'success': false,
-          'message': 'Дата завершения задачи указана некорректно.',
+          'message': 'Ошибка создания задачи: ${response.body}',
         };
       }
-      if (response.body.contains('priority_level')) {
-        return {
-          'success': false,
-          'message': 'Указан некорректный уровень приоритета.',
-        };
-      }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}',
-      };
-    } else if (response.statusCode == 500) {
-      // Обработка ошибки сервера
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.',
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания задачи: ${response.body}',
+        'message': 'Ошибка при создании задачи: $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при создании задачи: $e',
-    };
   }
-}
-
 
 // Обновленный метод обновления задачи
-Future<Map<String, dynamic>> updateTask({
-  required int taskId,
-  required String name,
-  required int statusId,
-  required int taskStatusId,
-  String? priority,
-  DateTime? startDate,
-  DateTime? endDate,
-  int? projectId,
-  List<int>? userId,
-  String? description,
-  Map<String, dynamic>? file,
-}) async {
-  try {
-    final Map<String, dynamic> requestBody = {
-      'name': name,
-      'status_id': statusId,
-      'task_status_id': taskStatusId,
-      'priority_level': priority, // Используем строковое значение приоритета
-      if (startDate != null) 'from': startDate.toIso8601String(),
-      if (endDate != null) 'to': endDate.toIso8601String(),
-      if (projectId != null) 'project_id': projectId,
-      if (userId != null)
-        'users': userId.map((id) => {'user_id': id}).toList(),
-      if (file != null) 'file': file,
-      if (description != null) 'description': description,
-    };
-
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-      '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestBody,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Задача успешно обновлена.',
+  Future<Map<String, dynamic>> updateTask({
+    required int taskId,
+    required String name,
+    required int statusId,
+    required int taskStatusId,
+    String? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    List<int>? userId,
+    String? description,
+    Map<String, dynamic>? file,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'priority_level': priority, // Используем строковое значение приоритета
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (projectId != null) 'project_id': projectId,
+        if (userId != null)
+          'users': userId.map((id) => {'user_id': id}).toList(),
+        if (file != null) 'file': file,
+        if (description != null) 'description': description,
       };
-    } else if (response.statusCode == 422) {
-      // Обработка ошибок валидации
-      if (response.body.contains('name')) {
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Задача успешно обновлена.',
+        };
+      } else if (response.statusCode == 422) {
+        // Обработка ошибок валидации
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'Название задачи должно быть не менее 3 символов.',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'Дата начала задачи указана некорректно.',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'Дата завершения задачи указана некорректно.',
+          };
+        }
+        if (response.body.contains('priority_level')) {
+          return {
+            'success': false,
+            'message': 'Указан некорректный уровень приоритета.',
+          };
+        }
         return {
           'success': false,
-          'message': 'Название задачи должно быть не менее 3 символов.',
+          'message': 'Неизвестная ошибка: ${response.body}',
         };
-      }
-      if (response.body.contains('from')) {
+      } else if (response.statusCode == 500) {
+        // Обработка ошибки сервера
         return {
           'success': false,
-          'message': 'Дата начала задачи указана некорректно.',
+          'message': 'Ошибка на сервере. Попробуйте позже.',
         };
-      }
-      if (response.body.contains('to')) {
+      } else {
         return {
           'success': false,
-          'message': 'Дата завершения задачи указана некорректно.',
+          'message': 'Ошибка обновления задачи: ${response.body}',
         };
       }
-      if (response.body.contains('priority_level')) {
-        return {
-          'success': false,
-          'message': 'Указан некорректный уровень приоритета.',
-        };
-      }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}',
-      };
-    } else if (response.statusCode == 500) {
-      // Обработка ошибки сервера
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.',
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Ошибка обновления задачи: ${response.body}',
+        'message': 'Ошибка при обновлении задачи: $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при обновлении задачи: $e',
-    };
   }
-}
-
 
 // Метод для получения Истории Задачи
   Future<List<TaskHistory>> getTaskHistory(int taskId) async {
