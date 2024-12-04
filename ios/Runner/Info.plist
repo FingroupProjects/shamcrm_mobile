@@ -3,7 +3,7 @@
 <plist version="1.0">
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
+		<true />
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
@@ -33,34 +33,36 @@
 					<string>AppIcon</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
-				<false/>
+				<false />
 			</dict>
 		</dict>
 		<key>FirebaseAppDelegateProxyEnabled</key>
-		<true/>
+		<true />
 		<key>LSApplicationCategoryType</key>
 		<string>Bitcode</string>
 		<key>LSRequiresIPhoneOS</key>
-		<true/>
+		<true />
 		<key>LSSupportsOpeningDocumentsInPlace</key>
-		<true/>
+		<true />
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<true />
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<key>NSAllowsArbitraryLoads</key>
-			<true/>
+			<true />
 			<key>NSAllowsArbitraryLoadsForMedia</key>
-			<true/>
+			<true />
 		</dict>
 		<key>NSAppleMusicUsageDescription</key>
-		<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для улучшения управления задачами.</string>
+		<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для
+			улучшения управления задачами.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Access camera</string>
 		<key>NSDocumentsUsageDescription</key>
 		<string>Это приложение требует доступ к документам для управления файлами.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Это приложение требует доступ к вашему местоположению для улучшения пользовательского опыта.</string>
+		<string>Это приложение требует доступ к вашему местоположению для улучшения
+			пользовательского опыта.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Это приложение не требует доступа к микрофону.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
@@ -68,9 +70,10 @@
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Это приложение требует доступ к фотобиблиотеке.</string>
 		<key>NSUserTrackingUsageDescription</key>
-		<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений и рекламы.</string>
+		<string>Это приложение использует ваш идентификатор для предоставления персонализированных
+			уведомлений и рекламы.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
+		<true />
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>fetch</string>
@@ -100,14 +103,18 @@
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
 		<key>UISupportsDocumentBrowser</key>
-		<true/>
+		<true />
 		<key>com.apple.security.device.audio-input</key>
-		<true/>
+		<true />
 		<key>com.apple.security.device.microphone</key>
-		<true/>
+		<true />
 		<key>UIStatusBarHidden</key>
-		<true/>
+		<true />
 		<key>UIViewControllerBasedStatusBarAppearance</key>
-		<true/>
+		<true />
+		<key>NSFaceIDUsageDescription</key>
+		<string>Это приложение требует использование Face ID для аутентификации</string>
+		<key>NSBiometricUsageDescription</key>
+		<string>Нам нужно ваше разрешение на использование биометрии для безопасного входа в систему.</string>
 	</dict>
 </plist>
