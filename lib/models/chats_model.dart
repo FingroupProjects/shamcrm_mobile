@@ -153,7 +153,7 @@ class Message {
       id: json['id'],
       text: text, // Убедитесь, что именно text используется
       type: json['type'],
-      senderName: json['sender']['name'],
+      senderName: json['sender'] == null ? 'Без имени': json['sender']['name'] ?? 'Без имени',
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isMyMessage: json['is_my_message'] ?? false,

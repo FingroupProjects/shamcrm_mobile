@@ -48,17 +48,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-
-
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
-  
   late final String baseUrl;
   late final String baseUrlSocket;
 
-   ApiService() {
+  ApiService() {
     _initializeIfDomainExists();
   }
 
@@ -68,7 +65,6 @@ class ApiService {
       await initialize();
     }
   }
-
 
   Future<void> initialize() async {
     baseUrl = await getDynamicBaseUrl();
@@ -92,7 +88,7 @@ class ApiService {
       throw Exception('Домен не установлен в SharedPreferences');
     }
   }
-  
+
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -116,7 +112,6 @@ class ApiService {
     await _removeToken();
     await _removePermissions(); // Удаляем права доступа
     await _removeOrganizationId(); // Удаляем права доступа
-    
   }
 
   Future<void> _removePermissions() async {
@@ -375,17 +370,17 @@ class ApiService {
   }
 
   // Метод для сохранения введенного домена
-Future<void> saveDomain(String domain) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('enteredDomain', domain); 
-}
+  Future<void> saveDomain(String domain) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('enteredDomain', domain);
+  }
 
 // Метод для получения введенного домена
-Future<String?> getEnteredDomain() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('enteredDomain'); // Возвращаем введенный домен или null
-}
-
+  Future<String?> getEnteredDomain() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs
+        .getString('enteredDomain'); // Возвращаем введенный домен или null
+  }
 
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
@@ -402,7 +397,6 @@ Future<String?> getEnteredDomain() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final loginResponse = LoginResponse.fromJson(data);
-      
 
       await _saveToken(loginResponse.token);
       await _savePermissions(
@@ -433,45 +427,47 @@ Future<String?> getEnteredDomain() async {
     final permissions = await getPermissions();
     return permissions.contains(permission); // Проверяем наличие права
   }
+
   Future<String> forgotPin(LoginModel loginModel) async {
-  try {
-    // Получение ID организации (если необходимо)
-    final organizationId = await getSelectedOrganization();
+    try {
+      // Получение ID организации (если необходимо)
+      final organizationId = await getSelectedOrganization();
 
-    // Формирование URL с учетом ID организации
-    final url = '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
+      // Формирование URL с учетом ID организации
+      final url =
+          '/forgotPin${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-    // Запрос к API
-    final response = await _postRequest(
-      url,
-      {
-        'login': loginModel.login,
-        'password': loginModel.password,
-      },
-    );
+      // Запрос к API
+      final response = await _postRequest(
+        url,
+        {
+          'login': loginModel.login,
+          'password': loginModel.password,
+        },
+      );
 
-    // Обработка успешного ответа
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      // Обработка успешного ответа
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
 
-      if (decodedJson['result'] != null) {
-        return decodedJson['result'].toString();
-      } else {
-        throw Exception('Не удалось получить временный PIN.');
+        if (decodedJson['result'] != null) {
+          return decodedJson['result'].toString();
+        } else {
+          throw Exception('Не удалось получить временный PIN.');
+        }
       }
-    } 
-    // Обработка ошибок сервера
-    else if (response.statusCode == 400) {
-      throw Exception('Некорректные данные запроса.');
-    } else {
-      print('Ошибка API forgotPin: ${response.statusCode}');
-      throw Exception('Ошибка сервера: ${response.statusCode}');
+      // Обработка ошибок сервера
+      else if (response.statusCode == 400) {
+        throw Exception('Некорректные данные запроса.');
+      } else {
+        print('Ошибка API forgotPin: ${response.statusCode}');
+        throw Exception('Ошибка сервера: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка в forgotPin: $e');
+      throw Exception('Ошибка в запросе: $e');
     }
-  } catch (e) {
-    print('Ошибка в forgotPin: $e');
-    throw Exception('Ошибка в запросе: $e');
   }
-}
 
   //_________________________________ END___API__LOGIN____________________________________________//
 
@@ -499,7 +495,7 @@ Future<String?> getEnteredDomain() async {
     }
   }
 
- Future<ChatProfile> getChatProfile(int chatId) async {
+  Future<ChatProfile> getChatProfile(int chatId) async {
     try {
       final organizationId = await getSelectedOrganization();
 
@@ -826,7 +822,8 @@ Future<String?> getEnteredDomain() async {
   Future<List<LeadDeal>> getLeadDeals(int leadId,
       {int page = 1, int perPage = 20}) async {
     final organizationId = await getSelectedOrganization();
-    final path ='/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId';
+    final path =
+        '/deal/get-by-lead-id/$leadId?page=$page&per_page=$perPage&organization_id=$organizationId';
 
     final response = await _getRequest(path);
 
@@ -894,6 +891,13 @@ Future<String?> getEnteredDomain() async {
               'Неправильный номер телефона. Проверьте формат и количество цифр.'
         };
       }
+      if (response.body
+          .contains('The email field must be a valid email address.')) {
+        return {
+          'success': false,
+          'message': 'Неправильный e-mail!! Введите корректный e-mail.'
+        };
+      }
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
       }
@@ -920,14 +924,17 @@ Future<String?> getEnteredDomain() async {
           'success': false,
           'message': 'Этот номер Whatsapp уже существует.'
         };
-      }
-      // Другие проверки...
-      else {
+      } else {
         return {
           'success': false,
           'message': 'Неизвестная ошибка: ${response.body}'
         };
       }
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.'
+      };
     } else {
       return {
         'success': false,
@@ -990,6 +997,11 @@ Future<String?> getEnteredDomain() async {
       return {
         'success': false,
         'message': 'Неизвестная ошибка: ${response.body}'
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.'
       };
     } else {
       return {
@@ -1112,23 +1124,24 @@ Future<String?> getEnteredDomain() async {
     }
   }
 
+  // Метод для Получения Сделки в Окно Лида
+  Future<List<ContactPerson>> getContactPerson(int leadId) async {
+    final organizationId = await getSelectedOrganization();
+    final path = '/contactPerson/$leadId?organization_id=$organizationId';
 
-    // Метод для Получения Сделки в Окно Лида
-Future<List<ContactPerson>> getContactPerson(int leadId) async {
-  final organizationId = await getSelectedOrganization();
-  final path = '/contactPerson/$leadId?organization_id=$organizationId';
+    final response = await _getRequest(path);
 
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    return (data['result'] as List).map((contactPerson) => ContactPerson.fromJson(contactPerson)).toList();
-  } else {
-    throw Exception('Ошибка загрузки Контактное Лицо ');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result'] as List)
+          .map((contactPerson) => ContactPerson.fromJson(contactPerson))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки Контактное Лицо ');
+    }
   }
-}
 
- // Метод для Создания Контактного Лица
+  // Метод для Создания Контактного Лица
   Future<Map<String, dynamic>> createContactPerson({
     required int leadId,
     required String name,
@@ -1149,10 +1162,10 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Заметка создана успешно.'};
     } else if (response.statusCode == 422) {
-     if (response.body.contains('name')) {
+      if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
-      
-      } if (response.body.contains('The phone has already been taken.')) {
+      }
+      if (response.body.contains('The phone has already been taken.')) {
         return {
           'success': false,
           'message': 'Этот номер телефона уже существует.'
@@ -1164,11 +1177,9 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
           'message':
               'Неправильный номер телефона. Проверьте формат и количество цифр.'
         };
-      }
-      else if (response.body.contains('position')) {
+      } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'Поля не может быть пустым.'};
-      }
-       else {
+      } else {
         return {
           'success': false,
           'message': 'Неизвестная ошибка: ${response.body}'
@@ -1181,7 +1192,8 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
       };
     }
   }
- // Метод для Создания Контактного Лица
+
+  // Метод для Создания Контактного Лица
   Future<Map<String, dynamic>> updateContactPerson({
     required int leadId,
     required int contactpersonId,
@@ -1203,10 +1215,10 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Заметка создана успешно.'};
     } else if (response.statusCode == 422) {
-     if (response.body.contains('name')) {
+      if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
-      
-      } if (response.body.contains('The phone has already been taken.')) {
+      }
+      if (response.body.contains('The phone has already been taken.')) {
         return {
           'success': false,
           'message': 'Этот номер телефона уже существует.'
@@ -1218,11 +1230,9 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
           'message':
               'Неправильный номер телефона. Проверьте формат и количество цифр.'
         };
-      }
-      else if (response.body.contains('position')) {
+      } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'Поля не может быть пустым.'};
-      }
-       else {
+      } else {
         return {
           'success': false,
           'message': 'Неизвестная ошибка: ${response.body}'
@@ -1235,7 +1245,6 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
       };
     }
   }
-
 
 // Метод для Удаления конатного Лица
   Future<Map<String, dynamic>> deleteContactPerson(int contactpersonId) async {
@@ -1251,41 +1260,41 @@ Future<List<ContactPerson>> getContactPerson(int leadId) async {
     }
   }
 
+  // Метод для Получения Чата в Окно Лида
+  Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
+    final organizationId = await getSelectedOrganization();
+    final path = '/lead/$leadId/chats?organization_id=$organizationId';
 
+    final response = await _getRequest(path);
+    print('Request path: $path');
 
-    // Метод для Получения Чата в Окно Лида
-Future<List<LeadNavigateChat>> getLeadToChat(int leadId) async {
-  final organizationId = await getSelectedOrganization();
-  final path = '/lead/$leadId/chats?organization_id=$organizationId';
-
-  final response = await _getRequest(path);
-  print('Request path: $path');
-
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    return (data['result'] as List).map((leadtochat) => LeadNavigateChat.fromJson(leadtochat)).toList();
-  } else {
-    throw Exception('Ошибка загрузки чата в Лид');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result'] as List)
+          .map((leadtochat) => LeadNavigateChat.fromJson(leadtochat))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки чата в Лид');
+    }
   }
-}
 
 // Метод для получения Источников
-Future<List<SourceLead>> getSourceLead() async {
-  final organizationId = await getSelectedOrganization();
-  final path = '/source?organization_id=$organizationId';
+  Future<List<SourceLead>> getSourceLead() async {
+    final organizationId = await getSelectedOrganization();
+    final path = '/source?organization_id=$organizationId';
 
-  final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('Полученные данные: $data');
-    return (data as List).map((sourceLead) => SourceLead.fromJson(sourceLead)).toList();
-  } else {
-    throw Exception('Ошибка загрузки источников');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Полученные данные: $data');
+      return (data as List)
+          .map((sourceLead) => SourceLead.fromJson(sourceLead))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки источников');
+    }
   }
-}
-
 
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
@@ -1442,20 +1451,21 @@ Future<List<SourceLead>> getSourceLead() async {
   }
 
   // Метод для Получения Сделки в Окно Лида
-Future<List<DealTask>> getDealTasks(int dealId) async {
-  final organizationId = await getSelectedOrganization();
-  final path = '/task/getByDeal/$dealId?organization_id=$organizationId';
+  Future<List<DealTask>> getDealTasks(int dealId) async {
+    final organizationId = await getSelectedOrganization();
+    final path = '/task/getByDeal/$dealId?organization_id=$organizationId';
 
-  final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    return (data['result'] as List).map((task) => DealTask.fromJson(task)).toList();
-  } else {
-    throw Exception('Ошибка загрузки сделки задачи');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return (data['result'] as List)
+          .map((task) => DealTask.fromJson(task))
+          .toList();
+    } else {
+      throw Exception('Ошибка загрузки сделки задачи');
+    }
   }
-}
-
 
 // Метод для создания Сделки
   Future<Map<String, dynamic>> createDeal({
@@ -1499,19 +1509,23 @@ Future<List<DealTask>> getDealTasks(int dealId) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Сделка создана успешно.'};
     } else if (response.statusCode == 422) {
-      // Обработка ошибки дублирования номера телефона
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3 символа!.'};
-      } else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
-        };
+        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
       }
+      // Другие проверки на ошибки...
+      return {
+        'success': false,
+        'message': 'Неизвестная ошибка: ${response.body}'
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.'
+      };
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания лида: ${response.body}'
+        'message': 'Ошибка обновления лида: ${response.body}'
       };
     }
   }
@@ -1566,12 +1580,17 @@ Future<List<DealTask>> getDealTasks(int dealId) async {
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
       return {
         'success': false,
-        'message': 'Ошибка валидации данных: ${response.body}'
+        'message': 'Неизвестная ошибка: ${response.body}'
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.'
       };
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления сделки: ${response.body}'
+        'message': 'Ошибка обновления лида: ${response.body}'
       };
     }
   }
@@ -1868,92 +1887,188 @@ Future<List<DealTask>> getDealTasks(int dealId) async {
     }
   }
 
-  // Метод для создания задачи
-  Future<Map<String, dynamic>> createTask({
-    required String name,
-    required int? statusId,
-    required int? taskStatusId,
-    int? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    // Map<String, dynamic>? file,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'name': name,
-        'status_id': statusId,
-        'task_status_id': taskStatusId,
-        'priority_level': priority, // Используем строковое значение приоритета
-        if (startDate != null) 'from': startDate.toIso8601String(),
-        if (endDate != null) 'to': endDate.toIso8601String(),
-        if (projectId != null) 'project_id': projectId,
-        if (userId != null)
-          'users': userId
-              .map((id) => {'user_id': id})
-              .toList(), // Передаем список как массив
-        // if (file != null) "file": file,
-        if (description != null) 'description': description,
+ // Метод для создания задачи
+Future<Map<String, dynamic>> createTask({
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+}) async {
+  try {
+    final Map<String, dynamic> requestBody = {
+      'name': name,
+      'status_id': statusId,
+      'task_status_id': taskStatusId,
+      'priority_level': priority, // Используем строковое значение приоритета
+      if (startDate != null) 'from': startDate.toIso8601String(),
+      if (endDate != null) 'to': endDate.toIso8601String(),
+      if (projectId != null) 'project_id': projectId,
+      if (userId != null)
+        'users': userId
+            .map((id) => {'user_id': id})
+            .toList(), // Передаем список как массив
+      if (description != null) 'description': description,
+    };
+
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+      '/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      requestBody,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Задача успешно создана.',
       };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-          '/task${organizationId != null ? '?organization_id=$organizationId' : ''}',
-          requestBody);
-      return _handleTaskResponse(response, 'создания');
-    } catch (e) {
+    } else if (response.statusCode == 422) {
+      // Обработка ошибок валидации
+      if (response.body.contains('name')) {
+        return {
+          'success': false,
+          'message': 'Название задачи должно быть не менее 3 символов.',
+        };
+      }
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'Дата начала задачи указана некорректно.',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'Дата завершения задачи указана некорректно.',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'Указан некорректный уровень приоритета.',
+        };
+      }
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи: $e',
+        'message': 'Неизвестная ошибка: ${response.body}',
       };
-    }
-  }
-
-  // Обновленный метод обновления задачи
-  Future<Map<String, dynamic>> updateTask({
-    required int taskId,
-    required String name,
-    required int statusId,
-    required int taskStatusId,
-    String? priority,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? projectId,
-    List<int>? userId,
-    String? description,
-    Map<String, dynamic>? file,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'name': name,
-        'status_id': statusId,
-        'task_status_id': taskStatusId,
-        'priority_level': priority, // Используем строковое значение приоритета
-        if (startDate != null) 'from': startDate.toIso8601String(),
-        if (endDate != null) 'to': endDate.toIso8601String(),
-        if (projectId != null) 'project_id': projectId,
-        if (userId != null)
-          'users': userId.map((id) => {'user_id': id}).toList(),
-        if (file != null) 'file': file,
-        if (description != null) 'description': description,
-      };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-          requestBody);
-      return _handleTaskResponse(response, 'обновления');
-    } catch (e) {
+    } else if (response.statusCode == 500) {
+      // Обработка ошибки сервера
       return {
         'success': false,
-        'message': 'Ошибка при обновлении задачи: $e',
+        'message': 'Ошибка на сервере. Попробуйте позже.',
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания задачи: ${response.body}',
       };
     }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при создании задачи: $e',
+    };
   }
+}
+
+
+// Обновленный метод обновления задачи
+Future<Map<String, dynamic>> updateTask({
+  required int taskId,
+  required String name,
+  required int statusId,
+  required int taskStatusId,
+  String? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  Map<String, dynamic>? file,
+}) async {
+  try {
+    final Map<String, dynamic> requestBody = {
+      'name': name,
+      'status_id': statusId,
+      'task_status_id': taskStatusId,
+      'priority_level': priority, // Используем строковое значение приоритета
+      if (startDate != null) 'from': startDate.toIso8601String(),
+      if (endDate != null) 'to': endDate.toIso8601String(),
+      if (projectId != null) 'project_id': projectId,
+      if (userId != null)
+        'users': userId.map((id) => {'user_id': id}).toList(),
+      if (file != null) 'file': file,
+      if (description != null) 'description': description,
+    };
+
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+      '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      requestBody,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Задача успешно обновлена.',
+      };
+    } else if (response.statusCode == 422) {
+      // Обработка ошибок валидации
+      if (response.body.contains('name')) {
+        return {
+          'success': false,
+          'message': 'Название задачи должно быть не менее 3 символов.',
+        };
+      }
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'Дата начала задачи указана некорректно.',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'Дата завершения задачи указана некорректно.',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'Указан некорректный уровень приоритета.',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Неизвестная ошибка: ${response.body}',
+      };
+    } else if (response.statusCode == 500) {
+      // Обработка ошибки сервера
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.',
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка обновления задачи: ${response.body}',
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при обновлении задачи: $e',
+    };
+  }
+}
+
 
 // Метод для получения Истории Задачи
   Future<List<TaskHistory>> getTaskHistory(int taskId) async {
@@ -2062,25 +2177,23 @@ Future<List<DealTask>> getDealTasks(int dealId) async {
 
   // Метод для получение Роли
 
-Future<List<Role>> getRoles() async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _getRequest(
-    '/role${organizationId != null ? '?organization_id=$organizationId' : ''}'
-  );
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return (data['result'] as List)
-          .map((role) => Role.fromJson(role))
-          .toList();
+  Future<List<Role>> getRoles() async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _getRequest(
+        '/role${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((role) => Role.fromJson(role))
+            .toList();
+      } else {
+        throw Exception('Роли не найдены');
+      }
     } else {
-      throw Exception('Роли не найдены');
+      throw Exception('Ошибка при получении ролей: ${response.statusCode}');
     }
-  } else {
-    throw Exception('Ошибка при получении ролей: ${response.statusCode}');
   }
-}
-
 
 // Метод для получения Cтатуса задачи
   Future<List<StatusName>> getStatusName() async {

@@ -120,7 +120,7 @@ Future<void> _fetchBaseUrl() async {
               ),
               const SizedBox(width: 10),
               Text(
-                widget.chatItem.name,
+                widget.chatItem.name.isEmpty ? 'Без имени' : widget.chatItem.name,
                 style: const TextStyle(
                   fontSize: 16,
                   color: ChatSmsStyles.appBarTitleColor,
