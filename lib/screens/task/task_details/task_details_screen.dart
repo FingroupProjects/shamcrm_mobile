@@ -138,7 +138,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр Задачи'),
+        appBar: _buildAppBar(context, 'Просмотр задачи'),
         backgroundColor: Colors.white,
         body: BlocListener<TaskByIdBloc, TaskByIdState>(
           listener: (context, state) {

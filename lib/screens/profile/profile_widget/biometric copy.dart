@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class PinChangeWidget extends StatelessWidget {
-  const PinChangeWidget({super.key});
+class ProfileEdit extends StatelessWidget {
+  const ProfileEdit({super.key});
 
   @override
 Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ Widget build(BuildContext context) {
             ),
             child: const Center(
               child: Icon(
-                Icons.lock_outline,
+                Icons.person,
                 color: Color.fromARGB(255, 91,77,235),
                 size: 24,
               ),
@@ -43,7 +43,7 @@ Widget build(BuildContext context) {
           // "Изменить пин-код" text
           const Expanded(
             child: Text(
-              'Изменить пин-код',
+              'Редактор профиля',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,

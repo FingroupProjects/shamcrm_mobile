@@ -130,7 +130,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр Лида'),
+        appBar: _buildAppBar(context, 'Просмотр лида'),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {

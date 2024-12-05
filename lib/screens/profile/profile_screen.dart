@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/biometric%20copy.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:flutter/material.dart';
@@ -90,6 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const NotificationSettingsWidget(),
                       const PinChangeWidget(),
+                      const ProfileEdit(),
                       const LogoutButtonWidget(),
                       UpdateWidget1C(organization: selectedOrg,
                       ),
@@ -102,6 +104,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }
               },
             ),
+
+
           ],
         ),
       ),

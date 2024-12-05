@@ -92,7 +92,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     currentDeal = deal; // Сохраняем актуальную сделку
     details = [
       {'label': 'ID Сделки:', 'value': deal.id.toString()},
-      {'label': 'Имя сделки:', 'value': deal.name},
+      {'label': 'Название сделки:', 'value': deal.name},
       {'label': 'Менеджер:', 'value': deal.manager?.name ?? 'Не указано'},
       {'label': 'Клиент:', 'value': deal.lead?.name ?? 'Не указано'},
       {'label': 'Дата начала:', 'value': formatDate(deal.startDate)},
@@ -111,7 +111,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр Сделки'),
+        appBar: _buildAppBar(context, 'Просмотр сделки'),
         backgroundColor: Colors.white,
         body: BlocListener<DealByIdBloc, DealByIdState>(
           listener: (context, state) {

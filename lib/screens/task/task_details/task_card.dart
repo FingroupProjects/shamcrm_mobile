@@ -254,7 +254,7 @@ class _TaskCardState extends State<TaskCard> {
                         children: [
                           if (widget.task.usersImage!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(right: 20), 
+                              padding: const EdgeInsets.only(right: 20),
                               child:
                                   widget.task.usersImage![0].image.isNotEmpty &&
                                           widget.task.usersImage![0].image
@@ -272,7 +272,7 @@ class _TaskCardState extends State<TaskCard> {
                             ),
                           if (widget.task.usersImage!.length > 1)
                             Positioned(
-                              left: 20, 
+                              left: 20,
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 10),
                                 child: widget.task.usersImage![1].image
