@@ -136,7 +136,7 @@ class InputField extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    onSend();
+                    if(messageController.text.isNotEmpty) onSend();
                   },
                 ),
         ],
