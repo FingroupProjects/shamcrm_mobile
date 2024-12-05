@@ -274,9 +274,10 @@ Future<void> _fetchBaseUrl() async {
       chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('----sender');
+        print(mm.message);
         print(mm.message!.text);
-        print(mm.message!.sender!);
-        print(mm.message!.text!);
+        print(mm.message!.sender);
+        print(mm.message!.text.toString());
         print(userID.value);
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String UUID = prefs.getString('userID').toString();

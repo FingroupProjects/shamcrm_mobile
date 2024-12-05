@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
+import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_recorder/audio_encoder_type.dart';
 import 'package:social_media_recorder/screen/social_media_recorder.dart';
 
-class InputField extends StatelessWidget {
+class InputField extends StatefulWidget {
   final Function onSend;
   final VoidCallback onAttachFile;
   final Function onRecordVoice;
@@ -25,7 +26,11 @@ class InputField extends StatelessWidget {
     required this.sendRequestFunction,
   });
 
+  @override
+  State<InputField> createState() => _InputFieldState();
+}
 
+class _InputFieldState extends State<InputField> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -37,17 +42,18 @@ class InputField extends StatelessWidget {
             child: Stack(
               alignment: Alignment.centerRight,
               children: [
-                (context.watch<ListenSenderFileCubit>().state)
-                    ? Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
-                    )
-                    : Container(
+               Container(
                         height: 50,
                         child: Container(
                           padding: const EdgeInsets.only(left: 16),
                           child: TextField(
-                            controller: messageController,
+                            controller: widget.messageController,
+                            onChanged: (str) {
+                              setState(() {
+
+                              });
+                            },
+                            enabled: !context.watch<ListenSenderFileCubit>().state,
                             decoration: const InputDecoration(
                               hintText: "Введите ваше сообщение...",
                               hintStyle: TextStyle(
@@ -69,19 +75,29 @@ class InputField extends StatelessWidget {
                           ),
                         ),
                       ),
-                Positioned(
+                if(widget.messageController.text.isEmpty) (context.watch<ListenSenderFileCubit>().state)
+                    ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ],
+                ) : Positioned(
                   right: 0,
                   child: IconButton(
                     icon: Image.asset('assets/icons/chats/file.png',
                         width: 20, height: 20),
-                    onPressed: onAttachFile,
+                    onPressed: widget.onAttachFile,
                   ),
                 ),
               ],
             ),
           ),
           SizedBox(width: 8),
-          (context.watch<ListenSenderVoiceCubit>().state)
+          if(widget.messageController.text.isEmpty) (context.watch<ListenSenderVoiceCubit>().state)
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -94,22 +110,31 @@ class InputField extends StatelessWidget {
                 )
               : MediaQuery(
                   data: MediaQueryData(
-                    size: Size(300, 400),
+                    size: Size(MediaQuery.of(context).size.width * .9, 400),
                   ),
                   child: SocialMediaRecorder(
                     startRecording: () {
-                      // function called when start recording
+
                     },
+
+                    slideToCancelText: 'Свайпните для отмены.',
+                    slideToCancelTextStyle: TextStyle(fontSize: 12),
+                    recordIconBackGroundColor: ChatSmsStyles.messageBubbleSenderColor,
+
                     stopRecording: (_time) {
+
                       // function called when stop recording, return the recording time
                     },
-                    sendRequestFunction: sendRequestFunction,
+                    cancelText: 'Отмена',
+                    recordIconWhenLockBackGroundColor: ChatSmsStyles.messageBubbleSenderColor,
+                    sendRequestFunction:
+                      widget.sendRequestFunction,
                     encode: AudioEncoderType.AAC,
                     radius: BorderRadius.circular(12),
                   ),
                 ),
 
-          (context.watch<ListenSenderTextCubit>().state)
+           (context.watch<ListenSenderTextCubit>().state)
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -120,7 +145,7 @@ class InputField extends StatelessWidget {
                     ),
                   ],
                 )
-              : IconButton(
+              :(widget.messageController.text.isNotEmpty) ? IconButton(
                   icon: Container(
                     width: 48,
                     height: 48,
@@ -136,9 +161,9 @@ class InputField extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                   if(messageController.text.isNotEmpty) onSend();
+                   widget.onSend();
                   },
-                ),
+                ) : SizedBox(),
         ],
       ),
     );
