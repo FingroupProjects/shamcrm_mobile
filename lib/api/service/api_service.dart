@@ -39,6 +39,8 @@ import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_add_task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -648,25 +650,29 @@ class ApiService {
   }
 
 //Обновление статуса карточки Лида  в колонке
-  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
+Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _postRequest(
-        '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'position': position,
-          'status_id': statusId,
-        });
+  final response = await _postRequest(
+    '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'position': position,
+      'status_id': statusId,
+    },
+  );
 
-    if (response.statusCode == 200) {
-      print('Статус задачи обновлен успешно.');
-    } else if (response.statusCode == 422) {
-      throw TaskStatusUpdateException(
-          422, 'Вы не можете переместить задачу на этот статус');
-    } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
-    }
+  if (response.statusCode == 200) {
+    print('Статус задачи обновлен успешно.');
+  } else if (response.statusCode == 422) {
+    throw LeadStatusUpdateException(
+      422, 
+      'Вы не можете переместить задачу на этот статус',
+    );
+  } else {
+    throw Exception('Ошибка обновления задач лида: ${response.body}');
   }
+}
+
 
 // Метод для получения Истории Лида
   Future<List<LeadHistory>> getLeadHistory(int leadId) async {
@@ -1461,25 +1467,29 @@ class ApiService {
   }
 
   //Обновление статуса карточки Сделки  в колонке
-  Future<void> updateDealStatus(int dealId, int position, int statusId) async {
-    final organizationId = await getSelectedOrganization();
+Future<void> updateDealStatus(int dealId, int position, int statusId) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _postRequest(
-        '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'position': position,
-          'status_id': statusId,
-        });
+  final response = await _postRequest(
+    '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'position': position,
+      'status_id': statusId,
+    },
+  );
 
-    if (response.statusCode == 200) {
-      print('Статус задачи обновлен успешно.');
-    } else if (response.statusCode == 422) {
-      throw TaskStatusUpdateException(
-          422, 'Вы не можете переместить задачу на этот статус');
-    } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
-    }
+  if (response.statusCode == 200) {
+    print('Статус задачи обновлен успешно.');
+  } else if (response.statusCode == 422) {
+    throw DealStatusUpdateException(
+      422, 
+      'Вы не можете переместить задачу на этот статус',
+    );
+  } else {
+    throw Exception('Ошибка обновления задач сделки: ${response.body}');
   }
+}
+
 
   // Метод для Получения Сделки в Окно Лида
   Future<List<DealTask>> getDealTasks(int dealId) async {
