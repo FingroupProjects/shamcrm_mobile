@@ -650,29 +650,28 @@ class ApiService {
   }
 
 //Обновление статуса карточки Лида  в колонке
-Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
-  final organizationId = await getSelectedOrganization();
+  Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
+    final organizationId = await getSelectedOrganization();
 
-  final response = await _postRequest(
-    '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {
-      'position': position,
-      'status_id': statusId,
-    },
-  );
-
-  if (response.statusCode == 200) {
-    print('Статус задачи обновлен успешно.');
-  } else if (response.statusCode == 422) {
-    throw LeadStatusUpdateException(
-      422, 
-      'Вы не можете переместить задачу на этот статус',
+    final response = await _postRequest(
+      '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'position': position,
+        'status_id': statusId,
+      },
     );
-  } else {
-    throw Exception('Ошибка обновления задач лида: ${response.body}');
-  }
-}
 
+    if (response.statusCode == 200) {
+      print('Статус задачи обновлен успешно.');
+    } else if (response.statusCode == 422) {
+      throw LeadStatusUpdateException(
+        422,
+        'Вы не можете переместить задачу на этот статус',
+      );
+    } else {
+      throw Exception('Ошибка обновления задач лида: ${response.body}');
+    }
+  }
 
 // Метод для получения Истории Лида
   Future<List<LeadHistory>> getLeadHistory(int leadId) async {
@@ -1305,34 +1304,58 @@ Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
     }
   }
 
-/// Метод для отправки на 1С с POST-запросом, где передается только leadId в URL
-Future<List> postLeadToC(int leadId) async {
-  try {
+  /// Метод для отправки на 1С
+  Future<List> postLeadToC(int leadId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      // Формируем URL с параметрами запроса
+      final path =
+          '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+      // Выполняем POST-запрос (без тела)
+      final response = await _postRequest(path, {});
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print(
+            "------------------------------------------------------------------------------------");
+        print('LEAD TO 1C');
+        print(data);
+
+        return data as List;
+      } else {
+        print('Ошибка отправки в  1С Лид: ${response.statusCode}');
+        throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Произошла ошибка: $e');
+      throw Exception('Ошибка отправки 1С Лид: $e');
+    }
+  }
+
+// Метод для Обновления Данных 1С
+  Future<List> getData1C() async {
     final organizationId = await getSelectedOrganization();
 
-    // Формируем URL с параметрами запроса
-    final path = '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    // Выполняем POST-запрос (без тела)
-    final response = await _postRequest(path, {});
+    final response = await _getRequest(
+        '/get-all-data${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      print("------------------------------------------------------------------------------------");
-      print('LEAD TO 1C');
-      print(data);
-
-      return data as List;
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List).toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw Exception('Ошибка сервера (500): Внутреняя ошибка сервера');
+    } else if (response.statusCode == 422) {
+      throw Exception('Ошибка валидации (422): Некорректные данные');
     } else {
-      print('Ошибка отправки в  1С Лид: ${response.statusCode}');
-      throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } catch (e) {
-    print('Произошла ошибка: $e');
-    throw Exception('Ошибка отправки 1С Лид: $e');
   }
-}
-
 
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
@@ -1471,29 +1494,28 @@ Future<List> postLeadToC(int leadId) async {
   }
 
   //Обновление статуса карточки Сделки  в колонке
-Future<void> updateDealStatus(int dealId, int position, int statusId) async {
-  final organizationId = await getSelectedOrganization();
+  Future<void> updateDealStatus(int dealId, int position, int statusId) async {
+    final organizationId = await getSelectedOrganization();
 
-  final response = await _postRequest(
-    '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {
-      'position': position,
-      'status_id': statusId,
-    },
-  );
-
-  if (response.statusCode == 200) {
-    print('Статус задачи обновлен успешно.');
-  } else if (response.statusCode == 422) {
-    throw DealStatusUpdateException(
-      422, 
-      'Вы не можете переместить задачу на этот статус',
+    final response = await _postRequest(
+      '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'position': position,
+        'status_id': statusId,
+      },
     );
-  } else {
-    throw Exception('Ошибка обновления задач сделки: ${response.body}');
-  }
-}
 
+    if (response.statusCode == 200) {
+      print('Статус задачи обновлен успешно.');
+    } else if (response.statusCode == 422) {
+      throw DealStatusUpdateException(
+        422,
+        'Вы не можете переместить задачу на этот статус',
+      );
+    } else {
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+    }
+  }
 
   // Метод для Получения Сделки в Окно Лида
   Future<List<DealTask>> getDealTasks(int dealId) async {
@@ -2691,7 +2713,7 @@ Future<void> updateDealStatus(int dealId, int position, int statusId) async {
 
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
 
-  // Метод для получения Менеджера
+  // Метод для получения Организации
   Future<List<Organization>> getOrganization() async {
     final response = await _getRequest('/organization');
 

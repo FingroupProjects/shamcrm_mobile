@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
+import 'package:crm_task_manager/bloc/data_1c/data_1c_event.dart';
+import 'package:crm_task_manager/bloc/data_1c/data_1c_state.dart';
 
 class UpdateWidget1C extends StatefulWidget {
   const UpdateWidget1C({super.key});
@@ -30,58 +34,77 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        setState(() {
-          isLoading = true;
-        });
-
-        _controller.repeat();
-
-        await Future.delayed(const Duration(seconds: 3));
-
-        setState(() {
-          isLoading = false;
-          lastUpdated = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now());
-        });
-
-        // Останавливаем анимацию после завершения.
-        _controller.stop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Данные 1С успешно обновлены',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildProfileOption(
-            iconPath: 'assets/icons/1c/update.png',
-            text: 'Обновить данные 1С',
-          ),
-          if (lastUpdated != null)
-            Center(
-              child: Text(
-                'Последнее обновление: $lastUpdated',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+    return BlocListener<Data1CBloc, Data1CState>(
+      listener: (context, state) {
+        if (state is Data1CLoading) {
+          setState(() {
+            isLoading = true;
+          });
+          _controller.repeat();
+        } else if (state is Data1CLoaded) {
+          setState(() {
+            isLoading = false;
+            lastUpdated = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now());
+          });
+          _controller.stop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Данные 1С успешно обновлены',
+                style: TextStyle(
+                  fontSize: 16,
                   fontFamily: 'Gilroy',
-                  color: Color(0xFF1E1E1E),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+              backgroundColor: Colors.green,
             ),
-        ],
+          );
+        } else if (state is Data1CError) {
+          setState(() {
+            isLoading = false;
+          });
+          _controller.stop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Ошибка: ${state.message}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: GestureDetector(
+        onTap: () {
+          context.read<Data1CBloc>().add(FetchData1C());
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProfileOption(
+              iconPath: 'assets/icons/1c/update.png',
+              text: 'Обновить данные 1С',
+            ),
+            if (lastUpdated != null)
+              Center(
+                child: Text(
+                  'Последнее обновление: $lastUpdated',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -98,7 +121,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
         children: [
           isLoading
               ? RotationTransition(
-                  turns: Tween<double>(begin: 0, end: -1).animate(_controller), 
+                  turns: Tween<double>(begin: 0, end: -1).animate(_controller),
                   child: Image.asset(
                     iconPath,
                     width: 60,
@@ -122,12 +145,6 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
               ),
             ),
           ),
-          // if (!isLoading)
-          //   Image.asset(
-          //     'assets/icons/arrow-right.png',
-          //     width: 16,
-          //     height: 16,
-          //   ),
         ],
       ),
     );
