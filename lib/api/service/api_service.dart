@@ -1305,30 +1305,34 @@ Future<void> updateLeadStatus(int leadId, int position, int statusId) async {
     }
   }
 
-//Метод для Отправки на 1С
-  Future<List> getLeadToC(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+/// Метод для отправки на 1С с POST-запросом, где передается только leadId в URL
+Future<List> postLeadToC(int leadId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
 
-      final response = await _getRequest('/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    // Формируем URL с параметрами запроса
+    final path = '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print("------------------------------------------------------------------------------------");
-        print('LEAD TO 1C');
+    // Выполняем POST-запрос (без тела)
+    final response = await _postRequest(path, {});
 
-        print(data);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      print("------------------------------------------------------------------------------------");
+      print('LEAD TO 1C');
+      print(data);
 
-        return data as List;
-      } else {
-        print('Ошибка загрузки 1С Лид: ${response.statusCode}');
-        throw Exception('Ошибка загрузки Лид 1С: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки 1С Лидд: $e');
+      return data as List;
+    } else {
+      print('Ошибка отправки в  1С Лид: ${response.statusCode}');
+      throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Произошла ошибка: $e');
+    throw Exception('Ошибка отправки 1С Лид: $e');
   }
+}
+
 
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 

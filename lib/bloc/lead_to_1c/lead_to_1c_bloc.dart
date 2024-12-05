@@ -13,7 +13,7 @@ class LeadToCBloc extends Bloc<LeadToCEvent, LeadToCState> {
   Future<void> _onFetchLeadToC(FetchLeadToC event, Emitter<LeadToCState> emit) async {
     emit(LeadToCLoading());
     try {
-      final leadData = await apiService.getLeadToC(event.leadId);
+      final leadData = await apiService.postLeadToC(event.leadId);
       emit(LeadToCLoaded(leadData));
     } catch (e) {
       emit(LeadToCError(e.toString()));
