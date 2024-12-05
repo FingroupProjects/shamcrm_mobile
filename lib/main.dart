@@ -50,6 +50,7 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -155,7 +156,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -166,7 +168,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
@@ -198,10 +201,9 @@ class MyApp extends StatelessWidget {
           '/pin_setup': (context) => PinSetupScreen(),
           '/local_auth': (context) => const AuthScreen(),
           '/pin_screen': (context) => PinScreen(),
+          '/edit_profile': (context) => ProfileEditPage(),
         },
       ),
     );
   }
 }
-
-
