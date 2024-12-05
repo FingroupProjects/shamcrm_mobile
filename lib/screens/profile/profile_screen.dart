@@ -31,7 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadSelectedOrganization() async {
     final savedOrganization = await ApiService().getSelectedOrganization();
     if (savedOrganization == null) {
-      // Если организация не сохранена, то выберем первую из списка
       final firstOrganization = await _getFirstOrganization();
       if (firstOrganization != null) {
         _onOrganizationChanged(firstOrganization);
@@ -69,17 +68,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             OrganizationWidget(
-              selectedOrganization: _selectedOrganization,
-              onChanged: _onOrganizationChanged,
-            ),
-            const NotificationSettingsWidget(),
-            const PinChangeWidget(),
-                        const ProfileEdit(),
+            BlocBuilder<OrganizationBloc, OrganizationState>(
+              builder: (context, state) {
+                if (state is OrganizationLoading) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                       child: CircularProgressIndicator(color: Color(0xff1E2E52))
+                    ),
+                  );
+                } else if (state is OrganizationLoaded) {
+                  final selectedOrg = state.organizations.firstWhere(
+                    (org) => org.id.toString() == _selectedOrganization,
+                    orElse: () => state.organizations.first,
+                  );
 
-            const LogoutButtonWidget(),
-            const UpdateWidget1C(),
-            
+                  return Column(
+                    children: [
+                      OrganizationWidget(
+                        selectedOrganization: _selectedOrganization,
+                        onChanged: _onOrganizationChanged,
+                      ),
+                      const NotificationSettingsWidget(),
+                      const PinChangeWidget(),
+                      const ProfileEdit(),
+                      const LogoutButtonWidget(),
+                      UpdateWidget1C(organization: selectedOrg,
+                      ),
+                    ],
+                  );
+                } else if (state is OrganizationError) {
+                  return Text('Ошибка загрузки организаций: ${state.message}');
+                } else {
+                  return const SizedBox.shrink();
+                }
+              },
+            ),
+
 
           ],
         ),
