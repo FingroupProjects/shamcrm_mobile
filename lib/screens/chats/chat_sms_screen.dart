@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'dart:io';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -271,42 +272,46 @@ Future<void> _fetchBaseUrl() async {
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) {
+      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('----sender');
+        print(mm.message!.text);
         print(mm.message!.sender!);
+        print(mm.message!.text!);
+        print(userID.value);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String UUID = prefs.getString('userID').toString();
+        print('userID : $UUID');
 
+        print('--- end');
         context.read<ListenSenderFileCubit>().updateValue(false);
         context.read<ListenSenderVoiceCubit>().updateValue(false);
         context.read<ListenSenderTextCubit>().updateValue(false);
 
         Message msg;
-        if (mm.message!.type == 'voice' ||
-            mm.message!.type == 'file' ||
-            mm.message!.type == 'image' ||
-            mm.message!.type == 'document') {
+        if (mm.message!.type == 'voice' || mm.message!.type == 'file'  || mm.message!.type == 'image' || mm.message!.type == 'document') {
           msg = Message(
-              id: mm.message!.id!,
-              filePath: mm.message!.filePath.toString(),
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-              isMyMessage:  (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
-              createMessateTime: mm.message!.createdAt.toString(),
-              duration: Duration(
-                  seconds: (mm.message!.voiceDuration != null)
-                      ? double.parse(mm.message!.voiceDuration.toString())
-                          .round()
-                      : 20), senderName: mm.message!.sender!.name!,
+            id: mm.message!.id!,
+            filePath: mm.message!.filePath.toString(),
+            text: mm.message!.text ??= mm.message!.type!,
+            type: mm.message!.type.toString(),
+            isMyMessage:  (UUID == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
+            createMessateTime: mm.message!.createdAt.toString(),
+            duration: Duration(
+                seconds: (mm.message!.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString())
+                    .round()
+                    : 20), senderName: mm.message!.sender!.name!,
           );
         } else {
           msg = Message(
-            id: mm.message!.id!,
-            text: mm.message!.text ??= mm.message!.type!,
-            type: mm.message!.type.toString(),
-            createMessateTime: mm.message!.createdAt.toString(),
-            // isMyMessage: (userID.value == mm.message!.sender!.id.toString()),
-            isMyMessage: (userID.value == mm.message!.sender!.id.toString() && mm.message!.sender!.type =='user'),
+              id: mm.message!.id!,
+              text: mm.message!.text ??= mm.message!.type!,
+              type: mm.message!.type.toString(),
+              createMessateTime: mm.message!.createdAt.toString(),
+              isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
+                  mm.message!.sender!.type ==
+                      'user'),
               senderName: mm.message!.sender!.name!
           );
         }

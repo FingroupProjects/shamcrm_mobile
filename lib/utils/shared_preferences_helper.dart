@@ -5,6 +5,7 @@ class SharedPreferencesHelper {
   /// Instantiation of the SharedPreferences library
   ///
   static const String _password = "password";
+  static const String _userID = "user_id";
   static const String _token = "token";
   static const String _login = "login";
   static const String _isHasCheckDomain = 'check-domain';
@@ -42,6 +43,19 @@ class SharedPreferencesHelper {
 
     return prefs.getBool(_isHasCheckDomain) ?? null;
   }
+
+  static Future<bool?> getUserID() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    return prefs.getBool(_userID) ?? null;
+  }
+
+  static Future<bool> setUserID(String value) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    return prefs.setString(_userID, value);
+  }
+
 
 
   /// ----------------------------------------------------------
