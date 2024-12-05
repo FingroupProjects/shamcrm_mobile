@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
+import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
@@ -167,7 +168,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
-BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
+        BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
+        BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
       ],
       child: MaterialApp(
         color: Colors.white,
