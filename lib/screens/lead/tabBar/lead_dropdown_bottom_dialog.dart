@@ -81,17 +81,29 @@ void DropdownBottomSheet(
                               lead.id, lead.statusId, selectedStatusId!)
                           .then((_) {
                         // Закрываем диалог и обновляем данные
-                        Navigator.pop(context);
+                         Navigator.pop(context);
                         onSelect(selectedValue);
                       }).catchError((error) {
-                        print('Ошибка обновления статуса лида: $error');
+                        if (error is LeadStatusUpdateException &&
+                            error.code == 422) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Вы не можете переместить задачу на этот статус'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          Navigator.pop(context);
+                        } else {
+                          print('Ошибка обновления статуса задачи: $error');
+                        }
                       });
                     } else {
                       print('Статус не выбран');
                     }
                   },
                 ),
-                SizedBox(height: 16)
+                SizedBox(height: 16),
               ],
             ),
           );
@@ -99,4 +111,14 @@ void DropdownBottomSheet(
       );
     },
   );
+}
+
+class LeadStatusUpdateException implements Exception {
+  final int code;
+  final String message;
+
+  LeadStatusUpdateException(this.code, this.message);
+
+  @override
+  String toString() => 'DealtatusUpdateException($code, $message)';
 }

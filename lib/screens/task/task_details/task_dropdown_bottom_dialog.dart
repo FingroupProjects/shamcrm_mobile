@@ -13,14 +13,6 @@ void DropdownBottomSheet(
   String selectedValue = defaultValue;
   int? selectedStatusId;
 
-  void showErrorMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Вы не можете переместить задачу на этот статус'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
 
   showModalBottomSheet(
     context: context,
@@ -67,7 +59,8 @@ void DropdownBottomSheet(
                             },
                             child: buildDropDownStyles(
                               text: status.taskStatus.name,
-                              isSelected: selectedValue == status.taskStatus.name,
+                              isSelected:
+                                  selectedValue == status.taskStatus.name,
                             ),
                           );
                         }).toList(),
@@ -88,8 +81,15 @@ void DropdownBottomSheet(
                         Navigator.pop(context);
                         onSelect(selectedValue);
                       }).catchError((error) {
-                        if (error is TaskStatusUpdateException && error.statusCode == 422) {
-                          showErrorMessage(context);
+                        if (error is TaskStatusUpdateException &&
+                            error.statusCode == 422) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Вы не можете переместить задачу на этот статус'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                           Navigator.pop(context);
                         } else {
                           print('Ошибка обновления статуса задачи: $error');
@@ -116,4 +116,3 @@ class TaskStatusUpdateException implements Exception {
 
   TaskStatusUpdateException(this.statusCode, this.message);
 }
-
