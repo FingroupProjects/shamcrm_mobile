@@ -1,7 +1,7 @@
 class Organization {
   final int id;
   final String name;
-  final DateTime? last1cUpdate;
+  final String? last1cUpdate;
   final bool is1cIntegration;
 
   Organization({
@@ -15,9 +15,7 @@ class Organization {
     return Organization(
       id: json['id'],
       name: json['name'],
-      last1cUpdate: json['last_1c_update'] != null
-          ? DateTime.parse(json['last_1c_update'])
-          : null,
+      last1cUpdate: json['last_1c_update'] is String ? json['last_1c_update'] : null,
       is1cIntegration: json['1c_integration'] ?? false,
     );
   }

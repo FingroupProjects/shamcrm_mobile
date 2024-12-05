@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 
@@ -21,6 +22,7 @@ class Lead {
   final Author? author;
   final String? description;
   final LeadStatus? leadStatus;
+  final Organization? organization;
 
   Lead({
     required this.id,
@@ -41,6 +43,7 @@ class Lead {
     this.author,
     this.description,
     this.leadStatus,
+    this.organization,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -74,6 +77,10 @@ class Lead {
           ? Author.fromJson(json['author'])
           : null,
       description: json['description'] is String ? json['description'] : '',
+      organization: json['organization'] != null &&
+              json['organization'] is Map<String, dynamic>
+          ? Organization.fromJson(json['organization'])
+          : null,
     );
   }
 }
