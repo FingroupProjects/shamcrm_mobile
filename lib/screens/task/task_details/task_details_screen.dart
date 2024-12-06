@@ -167,7 +167,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       _buildDetailsList(),
                       const SizedBox(height: 8),
                       if (task.chat != null)
-                        TaskNavigateToChat(chatId: task.chat!.id),
+                        TaskNavigateToChat(
+                        chatId: task.chat!.id,
+                        taskName: widget.taskName, 
+                      ),   
                       const SizedBox(height: 16),
                       ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
                     ],
