@@ -2,7 +2,8 @@ import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dar
 import 'package:flutter/material.dart';
 
 class ProfileEdit extends StatelessWidget {
-  const ProfileEdit({super.key});
+
+  const ProfileEdit({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +12,7 @@ class ProfileEdit extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProfileEditPage(),
+            builder: (context) => ProfileEditPage(), // Передаем user
           ),
         );
       },

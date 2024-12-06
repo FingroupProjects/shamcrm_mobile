@@ -1,9 +1,17 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+import 'package:crm_task_manager/bloc/organization/organization_event.dart';
+import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/profile_organization_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({Key? key}) : super(key: key);
@@ -18,8 +26,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final TextEditingController roleController = TextEditingController();
   final TextEditingController organizationController = TextEditingController();
   final TextEditingController loginController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+
   File? _profileImage;
   String selectedDialCode = '';
+  String? _selectedOrganization;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -43,6 +54,72 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         SnackBar(content: Text('Ошибка при выборе изображения: $e')),
       );
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserPhone(); // Вызов асинхронного метода
+    _loadSelectedOrganization();
+    context.read<OrganizationBloc>().add(FetchOrganizations());
+  }
+
+  Future<void> _loadSelectedOrganization() async {
+    final savedOrganization = await ApiService().getSelectedOrganization();
+    if (savedOrganization == null) {
+      final firstOrganization = await _getFirstOrganization();
+      if (firstOrganization != null) {
+        _onOrganizationChanged(firstOrganization);
+      }
+    } else {
+      setState(() {
+        _selectedOrganization = savedOrganization;
+      });
+    }
+  }
+
+  Future<String?> _getFirstOrganization() async {
+    final state = context.read<OrganizationBloc>().state;
+    if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
+      return state.organizations.first.id.toString();
+    }
+    return null;
+  }
+
+  void _onOrganizationChanged(String? newOrganization) {
+    setState(() {
+      _selectedOrganization = newOrganization;
+    });
+
+    if (newOrganization != null) {
+      ApiService().saveSelectedOrganization(newOrganization);
+    }
+  }
+
+  void _loadUserPhone() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UUID = prefs.getString('userPhone') ?? 'Не найдено';
+    String UName = prefs.getString('userName') ?? 'Не найдено';
+    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+    String UImage = prefs.getString('userImage') ?? 'Не найдено';
+    String UEmail = prefs.getString('userEmail') ?? 'Не найдено';
+
+    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
+
+     // Установка данных в текстовые поля
+  loginController.text = ULogin;
+  phoneController.text = UUID;
+  fullNameController.text = UName;
+  emailController.text = UEmail;
+  roleController.text = URoleName;
+
+  // Логирование для отладки
+  print('Login: $ULogin');
+  print('Phone: $UUID');
+  print('Name: $UName');
+  print('Email: $UEmail');
+  print('Role: $URoleName');
+
   }
 
   // Диалоговое окно для выбора источника изображения
@@ -77,19 +154,22 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       },
     );
   }
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Text('Редактирование профиля'),
-      centerTitle: true,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back), // Иконка стрелки назад
-        onPressed: () {
-          Navigator.pop(context); // Возвращает пользователя на предыдущий экран
-        },
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Редактирование профиля'),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back), // Иконка стрелки назад
+          onPressed: () {
+            Navigator.pop(
+                context); // Возвращает пользователя на предыдущий экран
+          },
+        ),
+        backgroundColor: Color.fromARGB(255,255, 255, 255),
       ),
-    ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -111,7 +191,7 @@ Widget build(BuildContext context) {
                             ? Icon(
                                 Icons.person,
                                 size: 100,
-                                color: Colors.grey[600],
+                                color: const Color.fromARGB(255, 255, 255, 255),
                               )
                             : null,
                       ),
@@ -167,17 +247,20 @@ Widget build(BuildContext context) {
                 hintText: 'Введите роль',
                 label: 'Роль',
               ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: organizationController,
-                hintText: 'Введите организацию',
-                label: 'Организация',
-              ),
+           
+           
               const SizedBox(height: 8),
               CustomTextField(
                 controller: loginController,
                 hintText: 'Введите логин',
                 label: 'Логин',
+              ),
+              const SizedBox(height: 8),
+              CustomTextField(
+                controller: emailController,
+                hintText: 'Введите электронную почту',
+                label: 'Электронная почта',
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
               // Кнопка сохранения изменений
@@ -186,7 +269,8 @@ Widget build(BuildContext context) {
                   // Действие для сохранения изменений
                 },
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric( horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   backgroundColor: Color(0xff1E2E52), // Цвет фона кнопки
                   foregroundColor: Colors.white, // Цвет текста
                 ),

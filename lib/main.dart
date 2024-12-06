@@ -202,7 +202,6 @@ class MyApp extends StatelessWidget {
           '/pin_setup': (context) => PinSetupScreen(),
           '/local_auth': (context) => const AuthScreen(),
           '/pin_screen': (context) => PinScreen(),
-          '/edit_profile': (context) => ProfileEditPage(),
           // '/profile_screen': (context) => ProfileScreen(),
         },
       ),
