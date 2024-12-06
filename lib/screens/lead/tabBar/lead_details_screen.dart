@@ -155,8 +155,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     children: [
                       _buildDetailsList(),
                       const SizedBox(height: 16),
-                      LeadNavigateToChat(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 16),
+                      LeadNavigateToChat(
+                        leadId: int.parse(widget.leadId),
+                        leadName: widget.leadName, 
+                      ),                
+                        const SizedBox(height: 16),
                   if (selectedOrganization != null)
                       LeadToC(
                         leadId: int.parse(widget.leadId),

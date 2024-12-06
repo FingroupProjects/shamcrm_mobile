@@ -9,8 +9,10 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class TaskNavigateToChat extends StatefulWidget {
   final int chatId;
+  final String taskName; // Add the leadName parameter
 
-  TaskNavigateToChat({required this.chatId});
+
+  TaskNavigateToChat({required this.chatId, required this.taskName});
 
   @override
   _TaskNavigateToChatDialogState createState() => _TaskNavigateToChatDialogState();
@@ -36,7 +38,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                         child: ChatSmsScreen(
                           chatItem: Chats(
                             id: widget.chatId,
-                            name: "",
+                            name: widget.taskName,
                             taskFrom: "",
                             taskTo: "",
                             description: "",

@@ -12,8 +12,10 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
+  final String leadName; 
 
-  LeadNavigateToChat({required this.leadId});
+  LeadNavigateToChat(
+      {required this.leadId, required this.leadName}); 
 
   @override
   _LeadNavigateToChatDialogState createState() =>
@@ -33,6 +35,13 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     'whatsapp': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/facebook.png',
     'instagram': 'assets/icons/leads/instagram.png',
+  };
+  final Map<String, String> customChannelNames = {
+    'telegram_account': 'Telegram',
+    'telegram_bot': 'Telegram',
+    'whatsapp': 'WhatsApp',
+    'facebook': 'Facebook',
+    'instagram': 'Instagram',
   };
 
   @override
@@ -93,52 +102,60 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                 ),
               ),
               SizedBox(
-               height: 300,
-               child: BlocBuilder<LeadToChatBloc, LeadToChatState>(
-                 builder: (context, state) {
-                   if (state is LeadToChatLoading) {
-                     return Center(
-                       child: CircularProgressIndicator(
-                         color: Color(0xff1E2E52),
-                       ),
-                     );
-                   } else if (state is LeadToChatLoaded) {
-                     final leadtochat = state.leadtochat;
-                     if (leadtochat.isEmpty) {
-                       return Center(
-                         child: Text(
-                           'Нет чатов для текущего лида',
-                           style: TextStyle(color: Color(0xff1E2E52), fontSize: 16),
-                         ),
-                       );
-                     } else {
-                       return ListView.builder(
-                         itemCount: leadtochat.length,
-                         itemBuilder: (context, index) {
-                           final chat = leadtochat[index];
-                           final channelName = chat.channel.name;
-                           final iconPath = sourceIcons[channelName] ?? 'assets/icons/leads/default.png';
-                           return ListTile(
-                             leading: Image.asset(
-                               iconPath,
-                               width: 30,
-                               height: 30,
-                             ),
-                             title: Text(
-                               channelName.isNotEmpty ? channelName : 'Без названия',
-                               style: TextStyle(
-                                 color: Color(0xff1E2E52),
-                                 fontSize: 18,
-                               ),
-                             ),
-                             onTap: () {
-                               navigateToScreen(chat.id);
-                             },
-                           );
-                         },
-                       );
-                     }
-                   } else {
+                height: 300,
+                child: BlocBuilder<LeadToChatBloc, LeadToChatState>(
+                  builder: (context, state) {
+                    if (state is LeadToChatLoading) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xff1E2E52),
+                        ),
+                      );
+                    } else if (state is LeadToChatLoaded) {
+                      final leadtochat = state.leadtochat;
+                      if (leadtochat.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'Нет чатов для текущего лида',
+                            style: TextStyle(
+                                color: Color(0xff1E2E52), fontSize: 16),
+                          ),
+                        );
+                      } else {
+                        return ListView.builder(
+                          itemCount: leadtochat.length,
+                          itemBuilder: (context, index) {
+                            final chat = leadtochat[index];
+                            final channelName = chat.channel.name;
+                            final iconPath = sourceIcons[channelName] ??
+                                'assets/icons/leads/default.png';
+                            final displayName =
+                                customChannelNames[channelName] ??
+                                    (channelName.isNotEmpty
+                                        ? channelName
+                                        : 'Без названия');
+
+                            return ListTile(
+                              leading: Image.asset(
+                                iconPath,
+                                width: 30,
+                                height: 30,
+                              ),
+                              title: Text(
+                                displayName,
+                                style: TextStyle(
+                                  color: Color(0xff1E2E52),
+                                  fontSize: 18,
+                                ),
+                              ),
+                              onTap: () {
+                                navigateToScreen(chat.id);
+                              },
+                            );
+                          },
+                        );
+                      }
+                    } else {
                       return Center(
                         child: Text(
                           'Нет чатов для текущего лида',
@@ -166,29 +183,31 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
       },
     );
   }
+
   void navigateToScreen(int id) {
-      Navigator.pop(context);
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => BlocProvider(
-            create: (context) => MessagingCubit(ApiService()),
-            child: ChatSmsScreen(
-              chatItem: Chats(
-                id: id,
-                name: "",
-                taskFrom: "",
-                taskTo: "",
-                description: "",
-                channel: "",
-                lastMessage: "",
-                messageType: "",
-                createDate: "",
-                unredMessage: 0,
-              ).toChatItem("assets/images/AvatarChat.png"),
-              chatId: id, endPointInTab: 'lead',
-            ),
+    Navigator.pop(context);
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (context) => MessagingCubit(ApiService()),
+          child: ChatSmsScreen(
+            chatItem: Chats(
+              id: id,
+              name: widget.leadName,
+              taskFrom: "",
+              taskTo: "",
+              description: "",
+              channel: "",
+              lastMessage: "",
+              messageType: "",
+              createDate: "",
+              unredMessage: 0,
+            ).toChatItem("assets/images/AvatarChat.png"),
+            chatId: id,
+            endPointInTab: 'lead',
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 }
