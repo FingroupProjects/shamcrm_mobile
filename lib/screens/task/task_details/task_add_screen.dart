@@ -65,7 +65,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     // Подписываемся на изменения в блоках
   }
 
-
   void _setDefaultValues() {
     // Устанавливаем приоритет по умолчанию (Обычный)
     selectedPriority = 1;
@@ -321,8 +320,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Кнопки действий
   Widget _buildActionButtons(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-        child: Row(children: [
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+      child: Row(
+        children: [
           Expanded(
             child: CustomButton(
               buttonText: 'Отмена',
@@ -333,81 +333,103 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: CustomButton(
-              buttonText: 'Добавить',
-              buttonColor: const Color(0xff4759FF),
-              textColor: Colors.white,
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final String name = nameController.text;
-                  final String? startDateString =
-                      startDateController.text.isEmpty
-                          ? null
-                          : startDateController.text;
-                  final String? endDateString = endDateController.text.isEmpty
-                      ? null
-                      : endDateController.text;
-                  final String? description = descriptionController.text.isEmpty
-                      ? null
-                      : descriptionController.text;
+            child: BlocBuilder<TaskBloc, TaskState>(
+              builder: (context, state) {
+                if (state is TaskLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: const Color(0xff1E2E52),
+                    ),
+                  );
+                } else {
+                  return CustomButton(
+                    buttonText: 'Добавить',
+                    buttonColor: const Color(0xff4759FF),
+                    textColor: Colors.white,
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        final String name = nameController.text;
+                        final String? startDateString =
+                            startDateController.text.isEmpty
+                                ? null
+                                : startDateController.text;
+                        final String? endDateString =
+                            endDateController.text.isEmpty
+                                ? null
+                                : endDateController.text;
+                        final String? description =
+                            descriptionController.text.isEmpty
+                                ? null
+                                : descriptionController.text;
 
-                  DateTime? startDate;
-                  if (startDateString != null && startDateString.isNotEmpty) {
-                    try {
-                      startDate =
-                          DateFormat('dd/MM/yyyy').parse(startDateString);
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Введите корректную дату в формате ДД/ММ/ГГГГ'),
-                        ),
-                      );
-                      return;
-                    }
-                  }
+                        DateTime? startDate;
+                        if (startDateString != null &&
+                            startDateString.isNotEmpty) {
+                          try {
+                            startDate =
+                                DateFormat('dd/MM/yyyy').parse(startDateString);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Введите корректную дату в формате ДД/ММ/ГГГГ'),
+                              ),
+                            );
+                            return;
+                          }
+                        }
 
-                  DateTime? endDate;
-                  if (endDateString != null && endDateString.isNotEmpty) {
-                    try {
-                      endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Введите корректную дату в формате ДД/ММ/ГГГГ'),
-                        ),
-                      );
-                      return;
-                    }
-                  }
-                  // Подготовка данных о файле
-                  TaskFile? fileData;
-                  if (selectedFile != null) {
-                    fileData = TaskFile(
-                        name: fileName ?? "unknown", size: fileSize ?? "0KB");
-                  }
-                  context.read<TaskBloc>().add(CreateTask(
-                        name: name,
-                        statusId: widget.statusId,
-                        taskStatusId: widget.statusId,
-                        startDate: startDate,
-                        endDate: endDate,
-                        projectId: selectedProject != null
-                            ? int.parse(selectedProject!)
-                            : null,
-                        userId: selectedUsers != null
-                            ? selectedUsers!.map((id) => int.parse(id)).toList()
-                            : null,
-                        priority: selectedPriority,
-                        description: description,
-                        // file: fileData, // Pass the actual File object
-                      ));
+                        DateTime? endDate;
+                        if (endDateString != null && endDateString.isNotEmpty) {
+                          try {
+                            endDate =
+                                DateFormat('dd/MM/yyyy').parse(endDateString);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Введите корректную дату в формате ДД/ММ/ГГГГ'),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+
+                        TaskFile? fileData;
+                        if (selectedFile != null) {
+                          fileData = TaskFile(
+                            name: fileName ?? "unknown",
+                            size: fileSize ?? "0KB",
+                          );
+                        }
+
+                        context.read<TaskBloc>().add(CreateTask(
+                              name: name,
+                              statusId: widget.statusId,
+                              taskStatusId: widget.statusId,
+                              startDate: startDate,
+                              endDate: endDate,
+                              projectId: selectedProject != null
+                                  ? int.parse(selectedProject!)
+                                  : null,
+                              userId: selectedUsers != null
+                                  ? selectedUsers!
+                                      .map((id) => int.parse(id))
+                                      .toList()
+                                  : null,
+                              priority: selectedPriority,
+                              description: description,
+                            ));
+                      }
+                    },
+                  );
                 }
               },
             ),
           ),
-        ]));
+        ],
+      ),
+    );
   }
 }
 
