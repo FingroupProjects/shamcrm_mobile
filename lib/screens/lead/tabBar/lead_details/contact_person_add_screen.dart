@@ -131,7 +131,8 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
@@ -146,22 +147,34 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Сохранить',
-                        buttonColor: Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            final String phone = selectedDialCode;
+                      child: BlocBuilder<ContactPersonBloc, ContactPersonState>(
+                        builder: (context, state) {
+                          if (state is ContactPersonLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Сохранить',
+                              buttonColor: Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  final String phone = selectedDialCode;
 
-                            context.read<ContactPersonBloc>().add(
-                                  CreateContactPerson(
-                                    leadId: widget.leadId,
-                                    name: nameController.text,
-                                    phone: phone,
-                                    position: positionController.text,
-                                  ),
-                                );
+                                  context.read<ContactPersonBloc>().add(
+                                        CreateContactPerson(
+                                          leadId: widget.leadId,
+                                          name: nameController.text,
+                                          phone: phone,
+                                          position: positionController.text,
+                                        ),
+                                      );
+                                }
+                              },
+                            );
                           }
                         },
                       ),

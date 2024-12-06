@@ -237,57 +237,70 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Сохранить',
-                        buttonColor: const Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            DateTime? parsedBirthday;
+                      child: BlocBuilder<LeadBloc, LeadState>(
+                        builder: (context, state) {
+                          if (state is LeadLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Сохранить',
+                              buttonColor: const Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  DateTime? parsedBirthday;
 
-                            if (birthdayController.text.isNotEmpty) {
-                              try {
-                                parsedBirthday = DateFormat('dd/MM/yyyy')
-                                    .parseStrict(birthdayController.text);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        'Ошибка ввода даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                            }
+                                  if (birthdayController.text.isNotEmpty) {
+                                    try {
+                                      parsedBirthday = DateFormat('dd/MM/yyyy')
+                                          .parseStrict(birthdayController.text);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                              'Ошибка ввода даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
 
-                            final leadBloc = context.read<LeadBloc>();
-                            context.read<LeadBloc>().add(FetchLeadStatuses());
-                            leadBloc.add(UpdateLead(
-                              leadId: widget.leadId,
-                              name: titleController.text,
-                              phone: phoneController.text,
-                              regionId: selectedRegion != null
-                                  ? int.parse(selectedRegion!)
-                                  : null,
-                              managerId: selectedManager != null
-                                  ? int.parse(selectedManager!)
-                                  : null,
-                              instaLogin: instaLoginController.text,
-                              facebookLogin: facebookLoginController.text,
-                              tgNick: telegramController.text,
-                              birthday: parsedBirthday,
-                              email: emailController.text,
-                              description: descriptionController.text,
-                              leadStatusId: widget.statusId,
-                            ));
+                                  final leadBloc = context.read<LeadBloc>();
+                                  context.read<LeadBloc>().add(FetchLeadStatuses());
+                                  leadBloc.add(UpdateLead(
+                                    leadId: widget.leadId,
+                                    name: titleController.text,
+                                    phone: phoneController.text,
+                                    regionId: selectedRegion != null
+                                        ? int.parse(selectedRegion!)
+                                        : null,
+                                    managerId: selectedManager != null
+                                        ? int.parse(selectedManager!)
+                                        : null,
+                                    instaLogin: instaLoginController.text,
+                                    facebookLogin: facebookLoginController.text,
+                                    tgNick: telegramController.text,
+                                    birthday: parsedBirthday,
+                                    email: emailController.text,
+                                    description: descriptionController.text,
+                                    leadStatusId: widget.statusId,
+                                  ));
+                                }
+                              },
+                            );
                           }
                         },
                       ),
                     ),
                   ],
                 ),
-              ),
+              )
+
             ],
           ),
         ),

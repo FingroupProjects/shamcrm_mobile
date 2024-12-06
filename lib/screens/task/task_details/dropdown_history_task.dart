@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_event.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_state.dart';
@@ -31,7 +30,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
     return BlocBuilder<HistoryBlocTask, HistoryStateTask>(
       builder: (context, state) {
         if (state is HistoryLoadingTask) {
-          // return Center(child:  CircularProgressIndicator(color: Color(0xff1E2E52)));
+          return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         } else if (state is HistoryLoadedTask) {
           actionHistory = state.taskHistory;
         } else if (state is HistoryErrorTask) {
@@ -75,7 +74,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
               duration: const Duration(milliseconds: 200),
               child: isExpanded
                   ? SizedBox(
-                      height: 250, // Ограничиваем высоту для прокрутки
+                      height: 250, 
                       child: SingleChildScrollView(
                         child: _buildItemList(items),
                       ),
@@ -144,7 +143,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
       ),
     );
   }
- Row _buildStatusRow(String status, String userName) {
+
+  Row _buildStatusRow(String status, String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -157,49 +157,52 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
             ),
+            overflow: TextOverflow.ellipsis, 
           ),
         ),
         SizedBox(width: 8),
-        Text(
-          userName,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xfff1E2E52),
+        Expanded(
+          child: Text(
+            userName,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xfff1E2E52),
+            ),
+            maxLines: 3, 
+            overflow: TextOverflow.ellipsis, 
           ),
         ),
       ],
     );
   }
 
-
-Column _buildAdditionalDetails(List<String> details) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: details.where((detail) => detail.isNotEmpty).map((detail) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Expanded( 
-            child: Text(
-              detail,
-              style: TextStyle(
-                fontSize: 14, 
-                fontFamily: 'Gilroy', 
-                fontWeight: FontWeight.w400,
-                color: Color(0xff1E2E52), 
+  Column _buildAdditionalDetails(List<String> details) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: details.where((detail) => detail.isNotEmpty).map((detail) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Expanded( 
+              child: Text(
+                detail,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff1E2E52),
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis, 
               ),
-              maxLines: 2, 
-              overflow: TextOverflow.ellipsis, 
             ),
-          ),
-        ],
-      );
-    }).toList(),
-  );
-}
-
+          ],
+        );
+      }).toList(),
+    );
+  }
 
   List<String> _buildActionHistoryItems(List<TaskHistory> history) {
     return history.map((entry) {
