@@ -18,6 +18,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -62,15 +63,25 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canEditLead = false;
   bool _canDeleteLead = false;
   final ApiService _apiService = ApiService();
+    String? selectedOrganization;
+
 
   @override
   void initState() {
     super.initState();
     _checkPermissions();
     // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+        _loadSelectedOrganization(); // Загружаем выбранную организацию
+
     context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 
+  Future<void> _loadSelectedOrganization() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedOrganization = prefs.getString('selectedOrganization');
+    });
+  }
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
@@ -146,8 +157,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       const SizedBox(height: 16),
                       LeadNavigateToChat(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 16),
-                      LeadToC(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 16),
+                  if (selectedOrganization != null)
+                      LeadToC(
+                        leadId: int.parse(widget.leadId),
+                        selectedOrganization: selectedOrganization!,
+                      ),                      const SizedBox(height: 16),
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 16),
                       NotesWidget(leadId: int.parse(widget.leadId)),
