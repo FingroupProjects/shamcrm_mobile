@@ -7,7 +7,7 @@ class PinChangeWidget extends StatelessWidget {
 Widget build(BuildContext context) {
   return GestureDetector(
     onTap: () {
-      Navigator.pushReplacementNamed(context, '/edit_profile');
+      Navigator.pushReplacementNamed(context, '/pin_setup');
     },
     child: _buildPinOption(),
   );

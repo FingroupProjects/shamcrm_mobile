@@ -94,7 +94,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
         children: [
           if (is1cIntegration)  // Show only if integration is true
             _buildProfileOption(
-              iconPath: 'assets/icons/1c/update.png',
+              iconPath: 'assets/icons/1c/5.png',
               text: 'Обновить данные 1С',
             ),
           if (lastUpdated != null && !is1cIntegration)
