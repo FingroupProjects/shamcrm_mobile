@@ -50,6 +50,7 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -202,6 +203,7 @@ class MyApp extends StatelessWidget {
           '/local_auth': (context) => const AuthScreen(),
           '/pin_screen': (context) => PinScreen(),
           '/edit_profile': (context) => ProfileEditPage(),
+          // '/profile_screen': (context) => ProfileScreen(),
         },
       ),
     );

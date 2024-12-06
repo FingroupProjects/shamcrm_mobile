@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/biometric%20copy.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
