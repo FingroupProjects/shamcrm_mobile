@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'role_model.dart'; // Import the Role class
+import 'role_model.dart'; // Импорт модели Role
 
 class User {
   final int id;
@@ -8,7 +8,7 @@ class User {
   final String? email;
   final String? phone;
   final String? image;
-  final Role? role; // Added role property
+  final List<Role>? role; // Изменено на List<Role>
 
   User({
     required this.id,
@@ -17,7 +17,7 @@ class User {
     required this.email,
     required this.phone,
     required this.image,
-    this.role, // Added role parameter in the constructor
+    this.role, // Обновлен параметр конструктора
   });
 
   User copyWith({
@@ -27,7 +27,7 @@ class User {
     String? email,
     String? phone,
     String? image,
-    Role? role, // Added role parameter in copyWith
+    List<Role>? role, // Обновлен параметр copyWith
   }) {
     return User(
       id: id ?? this.id,
@@ -36,14 +36,15 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       image: image ?? this.image,
-      role: role ?? this.role, // Updated copyWith method
+      role: role ?? this.role, // Обновлен copyWith метод
     );
   }
 
   Map<String, dynamic> toMap() {
     final result = <String, dynamic>{};
-
+    
     result.addAll({'id': id});
+    
     if (name != null) {
       result.addAll({'name': name});
     }
@@ -60,9 +61,12 @@ class User {
       result.addAll({'image': image});
     }
     if (role != null) {
-      result.addAll({'role': role?.toMap()}); // Convert role to map
+      // Преобразование списка ролей в список Map
+      result.addAll({
+        'roles': role!.map((role) => role.toMap()).toList()
+      });
     }
-
+    
     return result;
   }
 
@@ -74,7 +78,11 @@ class User {
       email: map['email'],
       phone: map['phone'],
       image: map['image'],
-      role: map['role'] != null ? Role.fromJson(map['role']) : null, // Parse role from map
+      role: map['roles'] != null 
+        ? List<Role>.from(
+            map['roles']?.map((x) => Role.fromJson(x))
+          )
+        : null, // Парсинг списка ролей из Map
     );
   }
 
@@ -84,13 +92,13 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image, role: $role)';
+    return 'User(id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image, roles: $role)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
+  
     return other is User &&
         other.id == id &&
         other.name == name &&
@@ -98,7 +106,7 @@ class User {
         other.email == email &&
         other.phone == phone &&
         other.image == image &&
-        other.role == role; // Updated equality check
+        _listEquals(other.role, role); // Специальное сравнение списков
   }
 
   @override
@@ -109,6 +117,25 @@ class User {
         email.hashCode ^
         phone.hashCode ^
         image.hashCode ^
-        role.hashCode; // Updated hashCode
+        _listHash(role); // Специальный метод хэширования списка
+  }
+
+  // Вспомогательный метод для сравнения списков
+  bool _listEquals(List<Role>? list1, List<Role>? list2) {
+    if (list1 == null && list2 == null) return true;
+    if (list1 == null || list2 == null) return false;
+    if (list1.length != list2.length) return false;
+    
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i] != list2[i]) return false;
+    }
+    
+    return true;
+  }
+
+  // Вспомогательный метод для хэширования списка
+  int _listHash(List<Role>? list) {
+    if (list == null) return 0;
+    return list.fold(0, (prev, element) => prev ^ element.hashCode);
   }
 }
