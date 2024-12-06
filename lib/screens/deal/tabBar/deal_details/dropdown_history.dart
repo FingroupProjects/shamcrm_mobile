@@ -28,27 +28,26 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DealHistoryBloc, DealHistoryState>(
-      builder: (context, state) {
-        if (state is DealHistoryLoading) {
-          // return Center(child:  CircularProgressIndicator(color: Color(0xff1E2E52)));
-        } else if (state is DealHistoryLoaded) {
-          actionHistory = state.dealHistory;
-        } else if (state is DealHistoryError) {
-          return Center(child: Text(state.message));
-        }
+        builder: (context, state) {
+      if (state is DealHistoryLoading) {
+        // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+      } else if (state is DealHistoryLoaded) {
+        actionHistory = state.dealHistory;
+      } else if (state is DealHistoryError) {
+        return Center(child: Text(state.message));
+      }
 
-        return _buildExpandableActionContainer(
-          'История действий',
-          _buildActionHistoryItems(actionHistory),
-          isActionHistoryExpanded,
-          () {
-            setState(() {
-              isActionHistoryExpanded = !isActionHistoryExpanded;
-            });
-          },
-        );
-      },
-    );
+      return _buildExpandableActionContainer(
+        'История действий',
+        _buildActionHistoryItems(actionHistory),
+        isActionHistoryExpanded,
+        () {
+          setState(() {
+            isActionHistoryExpanded = !isActionHistoryExpanded;
+          });
+        },
+      );
+    });
   }
 
   Widget _buildExpandableActionContainer(
@@ -74,7 +73,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               duration: const Duration(milliseconds: 200),
               child: isExpanded
                   ? SizedBox(
-                      height: 250, // Ограничиваем высоту для прокрутки
+                      height: 250,
                       child: SingleChildScrollView(
                         child: _buildItemList(items),
                       ),
@@ -143,7 +142,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       ),
     );
   }
- Row _buildStatusRow(String status, String userName) {
+
+  Row _buildStatusRow(String status, String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -156,56 +156,60 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         SizedBox(width: 8),
-        Text(
-          userName,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xfff1E2E52),
+        Flexible(
+          child: Text(
+            userName,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xfff1E2E52),
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
 
-
-Column _buildAdditionalDetails(List<String> details) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: details.where((detail) => detail.isNotEmpty).map((detail) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Expanded( 
-            child: Text(
-              detail,
-              style: TextStyle(
-                fontSize: 14, 
-                fontFamily: 'Gilroy', 
-                fontWeight: FontWeight.w400,
-                color: Color(0xff1E2E52), 
+  Column _buildAdditionalDetails(List<String> details) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: details.where((detail) => detail.isNotEmpty).map((detail) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                detail,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff1E2E52),
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-              // maxLines: 2, 
-              // overflow: TextOverflow.ellipsis, 
             ),
-          ),
-        ],
-      );
-    }).toList(),
-  );
-}
-
+          ],
+        );
+      }).toList(),
+    );
+  }
 
   List<String> _buildActionHistoryItems(List<DealHistory> history) {
     return history.map((entry) {
       final changes = entry.changes;
       final formattedDate =
           DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
+      String actionDetail =
+          '${entry.status}\n${entry.user.name} $formattedDate';
 
       if (changes != null) {
         if (changes.positionNewValue != null &&

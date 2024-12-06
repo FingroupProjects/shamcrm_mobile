@@ -14,11 +14,11 @@ class ContactPersonUpdateScreen extends StatefulWidget {
   ContactPersonUpdateScreen({
     required this.leadId,
     required this.contactPerson,
-
   });
 
   @override
-  _ContactPersonUpdateScreenState createState() => _ContactPersonUpdateScreenState();
+  _ContactPersonUpdateScreenState createState() =>
+      _ContactPersonUpdateScreenState();
 }
 
 class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
@@ -34,7 +34,8 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
     super.initState();
     nameController = TextEditingController(text: widget.contactPerson.name);
     phoneController = TextEditingController(text: widget.contactPerson.phone);
-    positionController = TextEditingController(text: widget.contactPerson.position);
+    positionController =
+        TextEditingController(text: widget.contactPerson.position);
     selectedDialCode = widget.contactPerson.phone;
   }
 
@@ -131,7 +132,8 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
@@ -146,21 +148,34 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Сохранить',
-                        buttonColor: Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            context.read<ContactPersonBloc>().add(
-                                  UpdateContactPerson(
-                                    contactpersonId: widget.contactPerson.id,
-                                    leadId: widget.leadId,
-                                    name: nameController.text,
-                                    phone: selectedDialCode,
-                                    position: positionController.text,
-                                  ),
-                                );
+                      child: BlocBuilder<ContactPersonBloc, ContactPersonState>(
+                        builder: (context, state) {
+                          if (state is ContactPersonLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Сохранить',
+                              buttonColor: Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  context.read<ContactPersonBloc>().add(
+                                        UpdateContactPerson(
+                                          contactpersonId:
+                                              widget.contactPerson.id,
+                                          leadId: widget.leadId,
+                                          name: nameController.text,
+                                          phone: selectedDialCode,
+                                          position: positionController.text,
+                                        ),
+                                      );
+                                }
+                              },
+                            );
                           }
                         },
                       ),

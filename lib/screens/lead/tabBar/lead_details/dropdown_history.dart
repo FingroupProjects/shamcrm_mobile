@@ -30,7 +30,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
         if (state is HistoryLoading) {
-          // return Center(child:  CircularProgressIndicator(color: Color(0xff1E2E52)));
+          // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         } else if (state is HistoryLoaded) {
           actionHistory = state.leadHistory;
         } else if (state is HistoryError) {
@@ -143,7 +143,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       ),
     );
   }
- Row _buildStatusRow(String status, String userName) {
+
+  Row _buildStatusRow(String status, String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -155,50 +156,54 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
+              overflow: TextOverflow.ellipsis, 
             ),
+            maxLines: 3,
           ),
         ),
         SizedBox(width: 8),
-        Text(
-          userName,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xfff1E2E52),
+        Expanded(
+          child: Text(
+            userName,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xfff1E2E52),
+              overflow: TextOverflow.ellipsis, 
+            ),
+            maxLines: 3,
           ),
         ),
       ],
     );
   }
 
-
-Column _buildAdditionalDetails(List<String> details) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: details.where((detail) => detail.isNotEmpty).map((detail) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Expanded( 
-            child: Text(
-              detail,
-              style: TextStyle(
-                fontSize: 14, 
-                fontFamily: 'Gilroy', 
-                fontWeight: FontWeight.w400,
-                color: Color(0xff1E2E52), 
+  Column _buildAdditionalDetails(List<String> details) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: details.where((detail) => detail.isNotEmpty).map((detail) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                detail,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff1E2E52),
+                  overflow: TextOverflow.ellipsis, // Ensures long text is truncated
+                ),
+                maxLines: 2,
               ),
-              // maxLines: 2, 
-              // overflow: TextOverflow.ellipsis, 
             ),
-          ),
-        ],
-      );
-    }).toList(),
-  );
-}
-
+          ],
+        );
+      }).toList(),
+    );
+  }
 
   List<String> _buildActionHistoryItems(List<LeadHistory> history) {
     return history.map((entry) {

@@ -18,7 +18,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-
 class LeadDealAddScreen extends StatefulWidget {
   final int leadId;
 
@@ -27,7 +26,6 @@ class LeadDealAddScreen extends StatefulWidget {
   @override
   _LeadDealAddScreenState createState() => _LeadDealAddScreenState();
 }
-
 
 class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -120,8 +118,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             );
             Navigator.pop(context, widget.leadId);
 
-  // Добавьте это:
-  context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+            // Добавьте это:
+            context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
           }
         },
         child: Form(
@@ -155,9 +153,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           });
                         },
                       ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       ManagerRadioGroupWidget(
-                        selectedManager: selectedManager, 
+                        selectedManager: selectedManager,
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
@@ -193,8 +191,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         controller: sumController,
                         hintText: 'Введите сумму',
                         label: 'Сумма',
-                        keyboardType: TextInputType.number, 
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, 
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -255,34 +254,48 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Добавить',
-                        buttonColor: Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate() &&
-                              selectedManager != null &&
-                              selectedDealStatus != null) {
-                            final String name = titleController.text;
-
-                            // Остальная логика остается такой же
-                            context.read<DealBloc>().add(CreateDeal(
-                                  name: name,
-                                  dealStatusId: int.parse(selectedDealStatus!),
-                                  managerId: int.parse(selectedManager!),
-                                  leadId: widget.leadId,
-                                  dealtypeId: 1,
-                                  startDate: startDateController.text.isNotEmpty
-                                      ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
-                                      : null,
-                                  endDate: endDateController.text.isNotEmpty
-                                      ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
-                                      : null,
-                                  sum: sumController.text,
-                                  description: descriptionController.text,
-                                  customFields: [],
-                                ));
-
+                      child: BlocBuilder<DealBloc, DealState>(
+                        builder: (context, state) {
+                          if (state is DealLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Добавить',
+                              buttonColor: Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate() &&
+                                    selectedManager != null &&
+                                    selectedDealStatus != null) {
+                                  final String name = titleController.text;
+                                  context.read<DealBloc>().add(CreateDeal(
+                                        name: name,
+                                        dealStatusId:
+                                            int.parse(selectedDealStatus!),
+                                        managerId: int.parse(selectedManager!),
+                                        leadId: widget.leadId,
+                                        dealtypeId: 1,
+                                        startDate: startDateController
+                                                .text.isNotEmpty
+                                            ? DateFormat('dd/MM/yyyy')
+                                                .parse(startDateController.text)
+                                            : null,
+                                        endDate: endDateController
+                                                .text.isNotEmpty
+                                            ? DateFormat('dd/MM/yyyy')
+                                                .parse(endDateController.text)
+                                            : null,
+                                        sum: sumController.text,
+                                        description: descriptionController.text,
+                                        customFields: [],
+                                      ));
+                                }
+                              },
+                            );
                           }
                         },
                       ),

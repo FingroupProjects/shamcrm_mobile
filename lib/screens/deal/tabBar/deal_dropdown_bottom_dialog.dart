@@ -12,6 +12,7 @@ void DropdownBottomSheet(
 ) {
   String selectedValue = defaultValue;
   int? selectedStatusId;
+  bool isLoading = false; // Variable to manage the loading state
 
   showModalBottomSheet(
     context: context,
@@ -53,10 +54,8 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue =
-                                    status.title; 
-                                selectedStatusId =
-                                    status.id; 
+                                selectedValue = status.title; // Set the selected status
+                                selectedStatusId = status.id; // Set the status ID
                               });
                             },
                             child: buildDropDownStyles(
@@ -69,38 +68,57 @@ void DropdownBottomSheet(
                     },
                   ),
                 ),
-                CustomButton(
-                  buttonText: 'Сохранить',
-                  buttonColor: Color(0xfff4F40EC),
-                  textColor: Colors.white,
-                  onPressed: () {
-                    if (selectedStatusId != null) {
-                      ApiService()
-                          .updateDealStatus(
-                              deal.id, deal.statusId, selectedStatusId!)
-                          .then((_) {
-                         Navigator.pop(context);
-                        onSelect(selectedValue);
-                      }).catchError((error) {
-                        if (error is DealStatusUpdateException &&
-                            error.code == 422) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Вы не можете переместить задачу на этот статус'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          Navigator.pop(context);
-                        } else {
-                          print('Ошибка обновления статуса задачи: $error');
-                        }
-                      });
-                    } else {
-                      print('Статус не выбран');
-                    }
-                  },
-                ),
+                isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xff1E2E52),
+                        ),
+                      )
+                    : CustomButton(
+                        buttonText: 'Сохранить',
+                        buttonColor: Color(0xfff4F40EC),
+                        textColor: Colors.white,
+                        onPressed: () {
+                          if (selectedStatusId != null) {
+                            setState(() {
+                              isLoading = true; // Start loading
+                            });
+
+                            ApiService()
+                                .updateDealStatus(
+                                  deal.id, deal.statusId, selectedStatusId!
+                                )
+                                .then((_) {
+                              setState(() {
+                                isLoading = false; // Stop loading
+                              });
+
+                              Navigator.pop(context);
+                              onSelect(selectedValue);
+                            }).catchError((error) {
+                              setState(() {
+                                isLoading = false; // Stop loading
+                              });
+
+                              if (error is DealStatusUpdateException &&
+                                  error.code == 422) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Вы не можете переместить задачу на этот статус'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                Navigator.pop(context);
+                              } else {
+                                print('Ошибка обновления статуса задачи: $error');
+                              }
+                            });
+                          } else {
+                            print('Статус не выбран');
+                          }
+                        },
+                      ),
                 SizedBox(height: 16),
               ],
             ),

@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DealAddScreen extends StatefulWidget {
   final int statusId;
@@ -66,7 +65,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -254,94 +252,110 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Добавить',
-                        buttonColor: Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate() &&
-                              selectedManager != null &&
-                              selectedLead != null) {
-                            final String name = titleController.text;
+                      child: BlocBuilder<DealBloc, DealState>(
+                        builder: (context, state) {
+                          if (state is DealLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Добавить',
+                              buttonColor: Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate() &&
+                                    selectedManager != null &&
+                                    selectedLead != null) {
+                                  final String name = titleController.text;
 
-                            final String? startDateString =
-                                startDateController.text.isEmpty
-                                    ? null
-                                    : startDateController.text;
-                            final String? endDateString =
-                                endDateController.text.isEmpty
-                                    ? null
-                                    : endDateController.text;
+                                  final String? startDateString =
+                                      startDateController.text.isEmpty
+                                          ? null
+                                          : startDateController.text;
+                                  final String? endDateString =
+                                      endDateController.text.isEmpty
+                                          ? null
+                                          : endDateController.text;
 
-                            final String sum = sumController.text;
+                                  final String sum = sumController.text;
 
-                            final String? description =
-                                descriptionController.text.isEmpty
-                                    ? null
-                                    : descriptionController.text;
+                                  final String? description =
+                                      descriptionController.text.isEmpty
+                                          ? null
+                                          : descriptionController.text;
 
-                            DateTime? startDate;
-                            if (startDateString != null &&
-                                startDateString.isNotEmpty) {
-                              try {
-                                startDate = DateFormat('dd/MM/yyyy')
-                                    .parse(startDateString);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        'Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-                            DateTime? endDate;
-                            if (endDateString != null &&
-                                endDateString.isNotEmpty) {
-                              try {
-                                endDate = DateFormat('dd/MM/yyyy')
-                                    .parse(endDateString);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        'Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-                            // Создание сделки
-                            List<Map<String, String>> customFieldMap = [];
-                            for (var field in customFields) {
-                              String fieldName = field.fieldName.trim();
-                              String fieldValue = field.controller.text.trim();
-                              if (fieldName.isNotEmpty &&
-                                  fieldValue.isNotEmpty) {
-                                customFieldMap.add({fieldName: fieldValue});
-                              }
-                            }
+                                  DateTime? startDate;
+                                  if (startDateString != null &&
+                                      startDateString.isNotEmpty) {
+                                    try {
+                                      startDate = DateFormat('dd/MM/yyyy')
+                                          .parse(startDateString);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+                                  DateTime? endDate;
+                                  if (endDateString != null &&
+                                      endDateString.isNotEmpty) {
+                                    try {
+                                      endDate = DateFormat('dd/MM/yyyy')
+                                          .parse(endDateString);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+                                  // Создание сделки
+                                  List<Map<String, String>> customFieldMap = [];
+                                  for (var field in customFields) {
+                                    String fieldName = field.fieldName.trim();
+                                    String fieldValue =
+                                        field.controller.text.trim();
+                                    if (fieldName.isNotEmpty &&
+                                        fieldValue.isNotEmpty) {
+                                      customFieldMap
+                                          .add({fieldName: fieldValue});
+                                    }
+                                  }
 
-                            context.read<DealBloc>().add(CreateDeal(
-                                  name: name,
-                                  dealStatusId: widget.statusId,
-                                  managerId: int.parse(selectedManager!),
-                                  leadId: int.parse(selectedLead!),
-                                  dealtypeId: 1,
-                                  startDate: startDate,
-                                  endDate: endDate,
-                                  sum: sum,
-                                  description: description,
-                                  customFields: customFieldMap,
-                                ));
+                                  context.read<DealBloc>().add(CreateDeal(
+                                        name: name,
+                                        dealStatusId: widget.statusId,
+                                        managerId: int.parse(selectedManager!),
+                                        leadId: int.parse(selectedLead!),
+                                        dealtypeId: 1,
+                                        startDate: startDate,
+                                        endDate: endDate,
+                                        sum: sum,
+                                        description: description,
+                                        customFields: customFieldMap,
+                                      ));
+                                }
+                              },
+                            );
                           }
                         },
                       ),
                     ),
                   ],
                 ),
-              ),
+              )
             ],
           ),
         ),

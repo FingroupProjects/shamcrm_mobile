@@ -17,7 +17,6 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadAddScreen extends StatefulWidget {
   final int statusId;
@@ -56,8 +55,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -249,85 +246,101 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Добавить',
-                        buttonColor: Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            final String name = titleController.text;
-                            final String phone = selectedDialCode;
-                            final String? instaLogin =
-                                instaLoginController.text.isEmpty
-                                    ? null
-                                    : instaLoginController.text;
-                            final String? facebookLogin =
-                                facebookLoginController.text.isEmpty
-                                    ? null
-                                    : facebookLoginController.text;
-                            final String? tgNick = tgNickController.text.isEmpty
-                                ? null
-                                : tgNickController.text;
-                            final String? whatsapp =
-                                whatsappController.text.isEmpty ||
-                                        selectedDialCodeWhatsapp.isEmpty
-                                    ? null
-                                    : selectedDialCodeWhatsapp;
-                            final String? birthdayString =
-                                birthdayController.text.isEmpty
-                                    ? null
-                                    : birthdayController.text;
-                            final String? email = emailController.text.isEmpty
-                                ? null
-                                : emailController.text;
-                            final String? description =
-                                descriptionController.text.isEmpty
-                                    ? null
-                                    : descriptionController.text;
+                      child: BlocBuilder<LeadBloc, LeadState>(
+                        builder: (context, state) {
+                          if (state is LeadLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Добавить',
+                              buttonColor: Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  final String name = titleController.text;
+                                  final String phone = selectedDialCode;
+                                  final String? instaLogin =
+                                      instaLoginController.text.isEmpty
+                                          ? null
+                                          : instaLoginController.text;
+                                  final String? facebookLogin =
+                                      facebookLoginController.text.isEmpty
+                                          ? null
+                                          : facebookLoginController.text;
+                                  final String? tgNick =
+                                      tgNickController.text.isEmpty
+                                          ? null
+                                          : tgNickController.text;
+                                  final String? whatsapp =
+                                      whatsappController.text.isEmpty ||
+                                              selectedDialCodeWhatsapp.isEmpty
+                                          ? null
+                                          : selectedDialCodeWhatsapp;
+                                  final String? birthdayString =
+                                      birthdayController.text.isEmpty
+                                          ? null
+                                          : birthdayController.text;
+                                  final String? email =
+                                      emailController.text.isEmpty
+                                          ? null
+                                          : emailController.text;
+                                  final String? description =
+                                      descriptionController.text.isEmpty
+                                          ? null
+                                          : descriptionController.text;
 
-                            DateTime? birthday;
-                            if (birthdayString != null &&
-                                birthdayString.isNotEmpty) {
-                              try {
-                                birthday = DateFormat('dd/MM/yyyy')
-                                    .parse(birthdayString);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'Введите корректную дату рождения в формате ДД/ММ/ГГГГ')),
-                                );
-                                return;
-                              }
-                            }
-                            context.read<LeadBloc>().add(CreateLead(
-                                  name: name,
-                                  leadStatusId: widget.statusId,
-                                  phone: phone,
-                                  regionId: selectedRegion != null
-                                      ? int.parse(selectedRegion!)
-                                      : null,
-                                  managerId: selectedManager != null
-                                      ? int.parse(selectedManager!)
-                                      : null,
-                                  sourceId: selectedSourceLead != null
-                                      ? int.parse(selectedSourceLead!)
-                                      : null,
-                                  instaLogin: instaLogin,
-                                  facebookLogin: facebookLogin,
-                                  tgNick: tgNick,
-                                  waPhone: whatsapp,
-                                  birthday: birthday,
-                                  email: email,
-                                  description: description,
-                                ));
+                                  DateTime? birthday;
+                                  if (birthdayString != null &&
+                                      birthdayString.isNotEmpty) {
+                                    try {
+                                      birthday = DateFormat('dd/MM/yyyy')
+                                          .parse(birthdayString);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Введите корректную дату рождения в формате ДД/ММ/ГГГГ'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+                                  context.read<LeadBloc>().add(CreateLead(
+                                        name: name,
+                                        leadStatusId: widget.statusId,
+                                        phone: phone,
+                                        regionId: selectedRegion != null
+                                            ? int.parse(selectedRegion!)
+                                            : null,
+                                        managerId: selectedManager != null
+                                            ? int.parse(selectedManager!)
+                                            : null,
+                                        sourceId: selectedSourceLead != null
+                                            ? int.parse(selectedSourceLead!)
+                                            : null,
+                                        instaLogin: instaLogin,
+                                        facebookLogin: facebookLogin,
+                                        tgNick: tgNick,
+                                        waPhone: whatsapp,
+                                        birthday: birthday,
+                                        email: email,
+                                        description: description,
+                                      ));
+                                }
+                              },
+                            );
                           }
                         },
                       ),
                     ),
                   ],
                 ),
-              ),
+              )
             ],
           ),
         ),

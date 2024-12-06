@@ -18,7 +18,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DealEditScreen extends StatefulWidget {
   final int dealId;
@@ -88,7 +87,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
 
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-
   }
 
   void _addCustomField(String fieldName) {
@@ -268,82 +266,100 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Сохранить',
-                        buttonColor: const Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate() &&
-                              selectedManager != null &&
-                              selectedLead != null) {
-                            DateTime? parsedStartDate;
-                            DateTime? parsedEndDate;
-
-                            if (startDateController.text.isNotEmpty) {
-                              try {
-                                parsedStartDate = DateFormat('dd/MM/yyyy')
-                                    .parseStrict(startDateController.text);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        'Ошибка парсинга даты начала. Пожалуйста, используйте формат DD/MM/YYYY.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-                            if (endDateController.text.isNotEmpty) {
-                              try {
-                                parsedEndDate = DateFormat('dd/MM/yyyy')
-                                    .parseStrict(endDateController.text);
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        'Ошибка парсинга даты окончания. Пожалуйста, используйте формат DD/MM/YYYY.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-
-                            List<Map<String, String>> customFieldList = [];
-                            for (var field in customFields) {
-                              String fieldName = field.fieldName.trim();
-                              String fieldValue = field.controller.text.trim();
-                              if (fieldName.isNotEmpty &&
-                                  fieldValue.isNotEmpty) {
-                                customFieldList.add({fieldName: fieldValue});
-                              }
-                            }
-
-                            context.read<DealBloc>().add(UpdateDeal(
-                                  dealId: widget.dealId,
-                                  name: titleController.text,
-                                  dealStatusId: widget.statusId,
-                                  managerId: selectedManager != null
-                                      ? int.parse(selectedManager!)
-                                      : null,
-                                  leadId: selectedLead != null
-                                      ? int.parse(selectedLead!)
-                                      : null,
-                                  description: descriptionController.text,
-                                  startDate: parsedStartDate,
-                                  endDate: parsedEndDate,
-                                  sum: sumController.text,
-                                  dealtypeId: 1,
-                                  customFields: customFieldList,
-                                ));
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Пожалуйста, заполните все обязательные поля.'),
-                                backgroundColor: Colors.red,
+                      child: BlocBuilder<DealBloc, DealState>(
+                        builder: (context, state) {
+                          if (state is DealLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
                               ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Сохранить',
+                              buttonColor: const Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate() &&
+                                    selectedManager != null &&
+                                    selectedLead != null) {
+                                  DateTime? parsedStartDate;
+                                  DateTime? parsedEndDate;
+
+                                  if (startDateController.text.isNotEmpty) {
+                                    try {
+                                      parsedStartDate = DateFormat('dd/MM/yyyy')
+                                          .parseStrict(
+                                              startDateController.text);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                              'Ошибка парсинга даты начала. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+                                  if (endDateController.text.isNotEmpty) {
+                                    try {
+                                      parsedEndDate = DateFormat('dd/MM/yyyy')
+                                          .parseStrict(endDateController.text);
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                              'Ошибка парсинга даты окончания. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+
+                                  List<Map<String, String>> customFieldList =
+                                      [];
+                                  for (var field in customFields) {
+                                    String fieldName = field.fieldName.trim();
+                                    String fieldValue =
+                                        field.controller.text.trim();
+                                    if (fieldName.isNotEmpty &&
+                                        fieldValue.isNotEmpty) {
+                                      customFieldList
+                                          .add({fieldName: fieldValue});
+                                    }
+                                  }
+
+                                  context.read<DealBloc>().add(UpdateDeal(
+                                        dealId: widget.dealId,
+                                        name: titleController.text,
+                                        dealStatusId: widget.statusId,
+                                        managerId: selectedManager != null
+                                            ? int.parse(selectedManager!)
+                                            : null,
+                                        leadId: selectedLead != null
+                                            ? int.parse(selectedLead!)
+                                            : null,
+                                        description: descriptionController.text,
+                                        startDate: parsedStartDate,
+                                        endDate: parsedEndDate,
+                                        sum: sumController.text,
+                                        dealtypeId: 1,
+                                        customFields: customFieldList,
+                                      ));
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Пожалуйста, заполните все обязательные поля.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
                             );
                           }
                         },
@@ -351,7 +367,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     ),
                   ],
                 ),
-              ),
+              )
             ],
           ),
         ),
