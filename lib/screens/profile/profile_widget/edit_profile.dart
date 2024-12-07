@@ -146,10 +146,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   _pickImage(ImageSource.gallery);
                 },
               ),
-              
             ],
           ),
-          backgroundColor: Color.fromARGB(255,255, 255, 255),
+          backgroundColor: Color.fromARGB(255, 255, 255, 255),
         );
       },
     );
@@ -248,7 +247,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 controller: roleController,
                 hintText: 'Введите роль',
                 label: 'Роль',
+                readOnly: true,
               ),
+
               const SizedBox(height: 8),
               CustomTextField(
                 controller: loginController,
