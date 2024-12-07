@@ -2806,5 +2806,45 @@ class ApiService {
     }
   }
 
+  // Метод для Редактирование профиля
+   Future<Map<String, dynamic>> updateProfile({
+    required int userId,
+    required String name,
+    required String phone,
+    String? email,
+    String? login,
+    String? role,
+  }) async {    final organizationId = await getSelectedOrganization();
+
+    final response = await _patchRequest(
+      '/user/$userId/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'name': name,
+        'phone': phone,
+        if (email != null) 'email': email,
+        if (login != null) 'login': login,
+        if (role != null) 'role': role,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'Профиль обновлен успешно.'};
+    } else if (response.statusCode == 422) {
+      return {
+        'success': false,
+        'message': 'Ошибка валидации данных. Проверьте введенные данные.'
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка обновления профиля: ${response.body}'
+      };
+    }
+  }
   //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
 }

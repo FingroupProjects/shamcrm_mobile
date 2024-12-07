@@ -2,10 +2,13 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
+import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
+import 'package:crm_task_manager/bloc/profile/profile_event.dart';
+import 'package:crm_task_manager/bloc/profile/profile_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/profile_organization_list.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,10 +27,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController roleController = TextEditingController();
-  final TextEditingController organizationController = TextEditingController();
   final TextEditingController loginController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-
+  final TextEditingController imageController =
+      TextEditingController(); // Контроллер для изображения
   File? _profileImage;
   String selectedDialCode = '';
   String? _selectedOrganization;
@@ -98,31 +101,26 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   void _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userPhone') ?? 'Не найдено';
+    String UUID = prefs.getString('userId') ?? 'Не найдено';
+    String UPhone = prefs.getString('userPhone') ?? 'Не найдено';
     String UName = prefs.getString('userName') ?? 'Не найдено';
     String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
     String UImage = prefs.getString('userImage') ?? 'Не найдено';
     String UEmail = prefs.getString('userEmail') ?? 'Не найдено';
-
     String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
 
-     // Установка данных в текстовые поля
-  loginController.text = ULogin;
-  phoneController.text = UUID;
-  fullNameController.text = UName;
-  emailController.text = UEmail;
-  roleController.text = URoleName;
+    // Установка данных в контроллеры
+    loginController.text = ULogin;
+    phoneController.text = UPhone;
+    fullNameController.text = UName;
+    emailController.text = UEmail;
+    roleController.text = URoleName;
+    imageController.text =
+        UImage; // Установка значения в контроллер для изображения
 
-  // Логирование для отладки
-  print('Login: $ULogin');
-  print('Phone: $UUID');
-  print('Name: $UName');
-  print('Email: $UEmail');
-  print('Role: $URoleName');
-
+    print('ImageSVG: $UImage');
   }
 
-  // Диалоговое окно для выбора источника изображения
   void _showImagePickerDialog() {
     showDialog(
       context: context,
@@ -150,6 +148,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ),
             ],
           ),
+          backgroundColor: Color.fromARGB(255, 255, 255, 255),
         );
       },
     );
@@ -162,13 +161,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         title: Text('Редактирование профиля'),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back), // Иконка стрелки назад
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(
-                context); // Возвращает пользователя на предыдущий экран
+            Navigator.pop(context);
           },
         ),
-        backgroundColor: Color.fromARGB(255,255, 255, 255),
+        backgroundColor: Color.fromARGB(255, 255, 255, 255),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -186,8 +184,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         backgroundColor: Colors.grey[300],
                         backgroundImage: _profileImage != null
                             ? FileImage(_profileImage!)
-                            : null,
-                        child: _profileImage == null
+                            : (imageController.text != 'Не найдено'
+                                ? NetworkImage(imageController.text)
+                                : null),
+                        child: _profileImage == null &&
+                                (imageController.text == 'Не найдено' ||
+                                    imageController.text.isEmpty)
                             ? Icon(
                                 Icons.person,
                                 size: 100,
@@ -218,8 +220,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 ],
               ),
               const SizedBox(height: 20),
-              // Поля для редактирования профиля
-              const SizedBox(height: 8),
+              // Остальной код интерфейса
               CustomTextField(
                 controller: fullNameController,
                 hintText: 'Введите ФИО',
@@ -246,9 +247,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 controller: roleController,
                 hintText: 'Введите роль',
                 label: 'Роль',
+                readOnly: true,
               ),
-           
-           
+
               const SizedBox(height: 8),
               CustomTextField(
                 controller: loginController,
@@ -263,48 +264,48 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
-              // Кнопка сохранения изменений
               ElevatedButton(
-                onPressed: () {
-                  // Действие для сохранения изменений
-                },
                 style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Color(0xff1E2E52), // Цвет фона кнопки
-                  foregroundColor: Colors.white, // Цвет текста
+                  backgroundColor: const Color(0xff1E2E52), // Цвет фона кнопки
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8), // Отступы
                 ),
-                child: const Text(
-                  'Сохранить',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
+                onPressed: () {
+                  final name = fullNameController.text;
+                  final phone = phoneController.text;
+                  final email = emailController.text;
+                  final login = loginController.text;
+                  final role = roleController.text;
+
+                  context.read<ProfileBloc>().add(UpdateProfile(
+                        userId: 1,
+                        name: name,
+                        phone: phone,
+                        email: email,
+                        login: login,
+                        role: role,
+                      ));
+                },
+                child: Text('Сохранить', style: TextStyle(color: Colors.white)),
+              ),
+
+              BlocListener<ProfileBloc, ProfileState>(
+                listener: (context, state) {
+                  if (state is ProfileSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.message)),
+                    );
+                  } else if (state is ProfileError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.message)),
+                    );
+                  }
+                },
+                child: Container(),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class ProfileButton extends StatelessWidget {
-  const ProfileButton({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        // Действие для перехода на страницу редактирования профиля
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ProfileEditPage()));
-      },
-      icon: const Icon(Icons.edit),
-      label: const Text('Редактировать профиль'),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(fontSize: 16),
       ),
     );
   }

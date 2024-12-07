@@ -315,95 +315,98 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 ),
               ),
               Container(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-  child: Row(
-    children: [
-      Expanded(
-        child: CustomButton(
-          buttonText: 'Отмена',
-          buttonColor: const Color(0xffF4F7FD),
-          textColor: Colors.black,
-          onPressed: () => Navigator.pop(context, null),
-        ),
-      ),
-      const SizedBox(width: 16),
-      Expanded(
-        child: BlocBuilder<TaskBloc, TaskState>(
-          builder: (context, state) {
-            if (state is TaskLoading) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              );
-            } else {
-              return CustomButton(
-                buttonText: 'Сохранить',
-                buttonColor: const Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    DateTime? startDate;
-                    DateTime? endDate;
-
-                    try {
-                      if (startDateController.text.isNotEmpty) {
-                        startDate = DateFormat('dd/MM/yyyy')
-                            .parseStrict(startDateController.text);
-                      }
-                      if (endDateController.text.isNotEmpty) {
-                        endDate = DateFormat('dd/MM/yyyy')
-                            .parseStrict(endDateController.text);
-                      }
-
-                      context.read<TaskBloc>().add(
-                        UpdateTask(
-                          taskId: widget.taskId,
-                          name: nameController.text,
-                          statusId: widget.statusId,
-                          taskStatusId: widget.statusId,
-                          startDate: startDate,
-                          endDate: endDate,
-                          projectId: selectedProject != null
-                              ? int.parse(selectedProject!)
-                              : null,
-                          userId: selectedUsers != null
-                              ? selectedUsers!
-                                  .map((id) => int.parse(id))
-                                  .toList()
-                              : null,
-                          priority: selectedPriority?.toString(),
-                          description: descriptionController.text,
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Ошибка в формате даты: ${e.toString()}'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Пожалуйста, заполните все обязательные поля'),
-                        backgroundColor: Colors.red,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText: 'Отмена',
+                        buttonColor: const Color(0xffF4F7FD),
+                        textColor: Colors.black,
+                        onPressed: () => Navigator.pop(context, null),
                       ),
-                    );
-                  }
-                },
-              );
-            }
-          },
-        ),
-      ),
-    ],
-  ),
-),
-          
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: BlocBuilder<TaskBloc, TaskState>(
+                        builder: (context, state) {
+                          if (state is TaskLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Сохранить',
+                              buttonColor: const Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  DateTime? startDate;
+                                  DateTime? endDate;
+
+                                  try {
+                                    if (startDateController.text.isNotEmpty) {
+                                      startDate = DateFormat('dd/MM/yyyy')
+                                          .parseStrict(
+                                              startDateController.text);
+                                    }
+                                    if (endDateController.text.isNotEmpty) {
+                                      endDate = DateFormat('dd/MM/yyyy')
+                                          .parseStrict(endDateController.text);
+                                    }
+
+                                    context.read<TaskBloc>().add(
+                                          UpdateTask(
+                                            taskId: widget.taskId,
+                                            name: nameController.text,
+                                            statusId: widget.statusId,
+                                            taskStatusId: widget.statusId,
+                                            startDate: startDate,
+                                            endDate: endDate,
+                                            projectId: selectedProject != null
+                                                ? int.parse(selectedProject!)
+                                                : null,
+                                            userId: selectedUsers != null
+                                                ? selectedUsers!
+                                                    .map((id) => int.parse(id))
+                                                    .toList()
+                                                : null,
+                                            priority:
+                                                selectedPriority?.toString(),
+                                            description:
+                                                descriptionController.text,
+                                          ),
+                                        );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Ошибка в формате даты: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Пожалуйста, заполните все обязательные поля'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
