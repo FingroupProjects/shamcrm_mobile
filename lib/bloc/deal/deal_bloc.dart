@@ -24,7 +24,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    await Future.delayed(Duration(milliseconds: 300));
+    // await Future.delayed(Duration(milliseconds: 300));
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));

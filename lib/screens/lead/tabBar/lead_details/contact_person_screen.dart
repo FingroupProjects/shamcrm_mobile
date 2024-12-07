@@ -44,7 +44,27 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
         } else if (state is ContactPersonLoaded) {
           contactPerson = state.contactPerson;
         } else if (state is ContactPersonError) {
-          return Center(child: Text(state.message));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+          );
         }
 
         return _buildContactPersonList(contactPerson);

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart'; 
+import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_state.dart';
 import 'package:flutter/material.dart';
@@ -27,20 +27,42 @@ class _ProjectChartTableState extends State<ProjectChartTable> {
         }
 
         if (state is ProjectChartError) {
-          return Center(child: Text('Ошибка: ${state.message}'));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+          );
         }
 
         if (state is ProjectChartLoaded) {
           return Card(
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 16.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 0.0, vertical: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Заголовок таблицы с отступом вправо
                   Padding(
-                    padding: const EdgeInsets.only(left: 21.0), // Отступ слева для заголовка
+                    padding: const EdgeInsets.only(
+                        left: 21.0), // Отступ слева для заголовка
                     child: Text(
                       'Проекты',
                       style: const TextStyle(
@@ -58,25 +80,29 @@ class _ProjectChartTableState extends State<ProjectChartTable> {
                       DataColumn(
                         label: Text(
                           'Название',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                       ),
                       DataColumn(
                         label: Text(
                           'Активный',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                       ),
                       DataColumn(
                         label: Text(
                           'Готовый',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                       ),
                       DataColumn(
                         label: Text(
                           'Просроченные',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],

@@ -10,7 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadToC extends StatefulWidget {
   final int leadId;
-  final String selectedOrganization; // Параметр для переданной выбранной организации
+  final String
+      selectedOrganization; // Параметр для переданной выбранной организации
 
   LeadToC({required this.leadId, required this.selectedOrganization});
 
@@ -24,22 +25,26 @@ class _LeadToCState extends State<LeadToC> {
     return BlocBuilder<OrganizationBloc, OrganizationState>(
       builder: (context, organizationState) {
         if (organizationState is OrganizationLoading) {
-          return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          return Center(
+              child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         } else if (organizationState is OrganizationLoaded) {
-         final organization = organizationState.organizations.firstWhere(
-  (org) => org.id.toString() == widget.selectedOrganization,
-  orElse: () => organizationState.organizations.first,
-);
-
+          final organization = organizationState.organizations.firstWhere(
+            (org) => org.id.toString() == widget.selectedOrganization,
+            orElse: () => organizationState.organizations.first,
+          );
 
           // Проверка интеграции с 1С
           if (organization.is1cIntegration) {
             return _buildIntegrationButton(context);
           } else {
-            return Center(child: Text('Интеграция с 1С не доступна для этой организации.'));
+            return Center(
+                child:
+                    Text('Интеграция с 1С не доступна для этой организации.'));
           }
         } else if (organizationState is OrganizationError) {
-          return Center(child: Text('Ошибка загрузки организации: ${organizationState.message}'));
+          return Center(
+              child: Text(
+                  'Ошибка загрузки организации: ${organizationState.message}'));
         }
         return Center(child: Text(''));
       },
@@ -57,9 +62,33 @@ class _LeadToCState extends State<LeadToC> {
               BlocBuilder<LeadToCBloc, LeadToCState>(
                 builder: (context, state) {
                   if (state is LeadToCLoading) {
-                    return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                    return Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xff1E2E52)));
                   } else if (state is LeadToCError) {
-                    return Center(child: Text('Ошибка: ${state.message}'));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${state.message}',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.red,
+                        elevation: 3,
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      ),
+                    );
                   } else if (state is LeadToCLoaded) {
                     return Center(child: Text('Успешно отправлено в 1С!'));
                   }
@@ -138,7 +167,9 @@ class _LeadToCState extends State<LeadToC> {
                   child: CustomButton(
                     buttonText: 'Да',
                     onPressed: () {
-                      context.read<LeadToCBloc>().add(FetchLeadToC(widget.leadId));
+                      context
+                          .read<LeadToCBloc>()
+                          .add(FetchLeadToC(widget.leadId));
                       Navigator.of(context).pop();
                     },
                     buttonColor: Color(0xff1E2E52),

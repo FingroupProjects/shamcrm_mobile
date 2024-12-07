@@ -18,25 +18,26 @@ class UpdateWidget1C extends StatefulWidget {
   _UpdateWidget1CState createState() => _UpdateWidget1CState();
 }
 
-class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProviderStateMixin {
+class _UpdateWidget1CState extends State<UpdateWidget1C>
+    with SingleTickerProviderStateMixin {
   bool isLoading = false;
   String? lastUpdated;
   late AnimationController _controller;
 
- @override
-void initState() {
-  super.initState();
-  _controller = AnimationController(
-    duration: const Duration(seconds: 1),
-    vsync: this,
-  );
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
 
-  final organizationLastUpdate = widget.organization.last1cUpdate;
-  if (organizationLastUpdate != null) {
-    lastUpdated = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(organizationLastUpdate));
+    final organizationLastUpdate = widget.organization.last1cUpdate;
+    if (organizationLastUpdate != null) {
+      lastUpdated = DateFormat('dd.MM.yyyy HH:mm')
+          .format(DateTime.parse(organizationLastUpdate));
+    }
   }
-}
-
 
   @override
   void dispose() {
@@ -44,44 +45,44 @@ void initState() {
     super.dispose();
   }
 
-    @override
-    Widget build(BuildContext context) {
-      final organization = widget.organization;
-  
-      return BlocListener<Data1CBloc, Data1CState>(
-        listener: (context, state) {
-          if (state is Data1CLoading) {
-            setState(() {
-              isLoading = true;
-            });
-            _controller.repeat();
-          } else if (state is Data1CLoaded) {
-    setState(() {
-      isLoading = false;
-      final updatedOrganization = state.data1C.firstWhere(
-        (org) => org.id == widget.organization.id,
-        orElse: () => widget.organization,
-      );
-      lastUpdated = updatedOrganization.last1cUpdate != null
-          ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(updatedOrganization.last1cUpdate!))
-          : null;
-    });
-    _controller.stop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Данные 1С успешно обновлены',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-   else if (state is Data1CError) {
+  @override
+  Widget build(BuildContext context) {
+    final organization = widget.organization;
+
+    return BlocListener<Data1CBloc, Data1CState>(
+      listener: (context, state) {
+        if (state is Data1CLoading) {
+          setState(() {
+            isLoading = true;
+          });
+          _controller.repeat();
+        } else if (state is Data1CLoaded) {
+          setState(() {
+            isLoading = false;
+            final updatedOrganization = state.data1C.firstWhere(
+              (org) => org.id == widget.organization.id,
+              orElse: () => widget.organization,
+            );
+            lastUpdated = updatedOrganization.last1cUpdate != null
+                ? DateFormat('dd.MM.yyyy HH:mm')
+                    .format(DateTime.parse(updatedOrganization.last1cUpdate!))
+                : null;
+          });
+          _controller.stop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Данные 1С успешно обновлены',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (state is Data1CError) {
           setState(() {
             isLoading = false;
           });
@@ -89,24 +90,36 @@ void initState() {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Ошибка: ${state.message}',
-                style: const TextStyle(
-                  fontSize: 16,
+                '${state.message}',
+                style: TextStyle(
                   fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
           );
         }
       },
       child: GestureDetector(
-        onTap: organization.is1cIntegration ? () { context.read<Data1CBloc>().add(FetchData1C()); }: null, 
+        onTap: organization.is1cIntegration
+            ? () {
+                context.read<Data1CBloc>().add(FetchData1C());
+              }
+            : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (organization.is1cIntegration) 
+            if (organization.is1cIntegration)
               _buildProfileOption(
                 iconPath: 'assets/icons/1c/update.png',
                 text: 'Обновить данные 1С',

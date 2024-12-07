@@ -35,9 +35,27 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
             if (state is GetAllManagerLoading) {
               // return Center(child: CircularProgressIndicator());
             }
-
             if (state is GetAllManagerError) {
-              return Text(state.message);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16, 
+                      fontWeight: FontWeight.w500, 
+                      color: Colors.white, 
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), 
+                  ),
+                  backgroundColor: Colors.red, 
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+                ),
+              );
             }
             if (state is GetAllManagerSuccess) {
               managersList = state.dataManager.result ?? [];

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -14,16 +15,26 @@ class GetAllRegionBloc extends Bloc<GetAllRegionEvent, GetAllRegionState> {
   }
 
   Future<void> _getRegions(GetAllRegionEv event, Emitter<GetAllRegionState> emit) async {
+    emit(GetAllRegionLoading());
 
-    try {
-      emit(GetAllRegionLoading());
-
-      var res = await ApiService().getAllRegion();
-
-      emit(GetAllRegionSuccess(dataRegion: res));
-    } catch(e) {
-      emit(GetAllRegionError(message: e.toString()));
+    if (await _checkInternetConnection()) {
+      try {
+        var res = await ApiService().getAllRegion();
+        emit(GetAllRegionSuccess(dataRegion: res));
+      } catch (e) {
+        emit(GetAllRegionError(message: e.toString()));
+      }
+    } else {
+      emit(GetAllRegionError(message: 'Нет подключения к интернету'));
     }
+  }
 
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    }
   }
 }

@@ -44,17 +44,46 @@ class DealStatsChart extends StatelessWidget {
         // Обработка случая загрузки
         if (state is DealStatsLoading) {
           return const Center(child: CircularProgressIndicator());
-        } 
-        
-        // Обработка случая ошибки
-        if (state is DealStatsError) {
-          return Center(
-            child: Text(
-              'Ошибка при загрузке статистики сделок: ${state.message}', 
-              textAlign: TextAlign.center,
+        } else if (state is DealStatsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
           );
+        } else if (state is DealStatsLoaded) {
+          List<int> monthData = state.dealStatsData.monthlyStats;
+
+          int maxCount =
+              monthData.fold(0, (max, value) => value > max ? value : max);
+          // Add some padding to the max value to prevent bars from touching the top
+          double maxY = (maxCount * 1.1).ceilToDouble();
         } 
+        
+//         // Обработка случая ошибки
+//         if (state is DealStatsError) {
+//           return Center(
+//             child: Text(
+//               'Ошибка при загрузке статистики сделок: ${state.message}', 
+//               textAlign: TextAlign.center,
+//             ),
+//           );
+//         } 
         
         // Обработка случая успешной загрузки
         if (state is DealStatsLoaded) {
@@ -97,7 +126,8 @@ class DealStatsChart extends StatelessWidget {
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
                         tooltipRoundedRadius: 4,
-                        tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        tooltipPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         tooltipMargin: 4,
                         fitInsideVertically: true,
                         fitInsideHorizontally: true,
