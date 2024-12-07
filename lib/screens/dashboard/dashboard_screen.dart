@@ -20,6 +20,7 @@ import 'package:crm_task_manager/screens/dashboard/tasks_dart.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -28,19 +29,28 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
-  bool areBoxesLoaded = false; // Состояние для загрузки основных коробок
+  bool areBoxesLoaded = false;
+  String userRoleName = 'No role assigned';
 
   @override
   void initState() {
     super.initState();
-    // Загрузка данных конверсии лидов
+    _loadUserRole();
     context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
     _loadImportantBoxes();
   }
 
-  // Метод для имитации загрузки важных коробок
+  Future<void> _loadUserRole() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String role = prefs.getString('userRoleName') ?? 'No role assigned';
+    setState(() {
+      userRoleName = role;
+    });
+    print('Role: $userRoleName');
+  }
+
   Future<void> _loadImportantBoxes() async {
-    await Future.delayed(Duration(seconds: 2)); // Имитация загрузки
+    await Future.delayed(Duration(seconds: 2));
     setState(() {
       areBoxesLoaded = true;
     });
@@ -74,8 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           create: (context) => ProjectChartBloc(
             context.read<ApiService>(),
           ),
-          child: const ProjectChartTable(),
-        )
+        ),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -100,38 +109,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
             : SingleChildScrollView(
                 padding: EdgeInsets.all(16),
                 child: Column(
-                  children: [
-                    // Важные коробки
-                    LeadsBox(),
-                    SizedBox(height: 16),
-                    TasksBox(),
-                    SizedBox(height: 16),
-                    DealsBox(),
-                    SizedBox(height: 16),
-                    
-                    // Остальная часть интерфейса загружается только после отображения важных коробок
-                    if (areBoxesLoaded) ...[
-                  GraphicsDashboard(),
-                    SizedBox(height: 16),
-                      LeadConversionChart(),
-                      SizedBox(height: 16),
-                      DealStatsChart(),
-                      SizedBox(height: 16),
-                      TaskChartWidget(),
-                      SizedBox(height: 16),
-                      ProjectChartTable(),
-                    ] else ...[
-                      Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ]
-                  ],
+                  children: _buildDashboardContent(),
                 ),
               ),
       ),
     );
   }
 
+  List<Widget> _buildDashboardContent() {
+    if (userRoleName == 'admin') {
+      return [
+        LeadsBox(),
+        SizedBox(height: 16),
+        TasksBox(),
+        SizedBox(height: 16),
+        DealsBox(),
+        SizedBox(height: 16),
+        GraphicsDashboard(),
+        SizedBox(height: 16),
+        LeadConversionChart(),
+        SizedBox(height: 16),
+        DealStatsChart(),
+        SizedBox(height: 16),
+        TaskChartWidget(),
+        SizedBox(height: 16),
+        ProjectChartTable(),
+      ];
+    } else if (userRoleName == 'manager') {
+      return [
+        LeadsBox(),
+        SizedBox(height: 16),
+        TasksBox(),
+        SizedBox(height: 16),
+        DealsBox(),
+        SizedBox(height: 16),
+        GraphicsDashboard(),
+        SizedBox(height: 16),
+        LeadConversionChart(),
+        SizedBox(height: 16),
+        DealStatsChart(),
+        SizedBox(height: 16),
+        TaskChartWidget(),
+      ];
+    } else {
+      return [
+        TaskChartWidget(),
+      ];
+    }
+  }
+}
+
+   
   // Метод для стилизованных раскрывающихся карточек
   Widget _buildExpansionTile({required String title, required Widget child}) {
     return Card(
@@ -160,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-}
+
 
 /*import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
