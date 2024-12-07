@@ -36,7 +36,31 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
             }
 
             if (state is GetAllRegionError) {
-              return Text(state.message);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                      fontWeight: FontWeight.w500, // Жирность текста
+                      color: Colors.white, // Цвет текста для читаемости
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                        12), // Радиус, как у текстового поля
+                  ),
+                  backgroundColor:
+                      Colors.red, // Цвет фона, как у текстового поля
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16), // Паддинг для комфортного восприятия
+                ),
+              );
             }
             if (state is GetAllRegionSuccess) {
               regionsList = state.dataRegion.result ?? [];

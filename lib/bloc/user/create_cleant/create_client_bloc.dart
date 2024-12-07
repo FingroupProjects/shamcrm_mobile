@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -13,14 +13,30 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
   }
 
   Future<void> _createClientFun(CreateClientEv event, Emitter<CreateClientState> emit) async {
+    if (await _checkInternetConnection()) {
+      try {
+        emit(CreateClientLoading());
+
+        var res = await ApiService().createNewClient(event.userId);
+
+        emit(CreateClientSuccess());
+      } catch (e) {
+        print('Ошибка при создании клиента: $e'); // For debugging
+        emit(CreateClientError(message: 'Ошибка при создании клиента: ${e.toString()}'));
+      }
+    } else {
+      emit(CreateClientError(message: 'Нет подключения к интернету'));
+    }
+  }
+
+  // Method to check internet connection
+  Future<bool> _checkInternetConnection() async {
     try {
-      emit(CreateClientLoading());
-
-      var res = await ApiService().createNewClient(event.userId);
-
-      emit(CreateClientSuccess());
-    } catch(e) {
-      emit(CreateClientError(message: e.toString()));
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException catch (e) {
+      print('Нет интернета: $e'); // For debugging
+      return false;
     }
   }
 }

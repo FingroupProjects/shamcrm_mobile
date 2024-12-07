@@ -38,11 +38,11 @@ class _LeadCardState extends State<LeadCard> {
   }
 
   final Map<String, String> sourceIcons = {
-    'telegram_account': 'assets/icons/leads/telegram.png',
-    'telegram_bot': 'assets/icons/leads/telegram.png',
-    'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/facebook.png',
-    'instagram': 'assets/icons/leads/instagram.png',
+    'Телеграм Аккаунт': 'assets/icons/leads/telegram.png',
+    'Телеграм Бот': 'assets/icons/leads/telegram.png',
+    'WhatsApp': 'assets/icons/leads/whatsapp.png',
+    'Инстаграм': 'assets/icons/leads/facebook.png',
+    'Facebook': 'assets/icons/leads/instagram.png',
   };
 
   @override

@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
@@ -10,14 +10,26 @@ class GetAllProjectBloc extends Bloc<GetAllProjectEvent, GetAllProjectState> {
   }
 
   Future<void> _getProjects(GetAllProjectEv event, Emitter<GetAllProjectState> emit) async {
+    emit(GetAllProjectLoading());
+
+    if (await _checkInternetConnection()) {
+      try {
+        var res = await ApiService().getAllProject();
+        emit(GetAllProjectSuccess(dataProject: res));
+      } catch (e) {
+        emit(GetAllProjectError(message: e.toString()));
+      }
+    } else {
+      emit(GetAllProjectError(message: 'Нет подключения к интернету'));
+    }
+  }
+
+  Future<bool> _checkInternetConnection() async {
     try {
-      emit(GetAllProjectLoading());
-
-      var res = await ApiService().getAllProject();
-
-      emit(GetAllProjectSuccess(dataProject: res));
-    } catch (e) {
-      emit(GetAllProjectError(message: e.toString()));
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
     }
   }
 }

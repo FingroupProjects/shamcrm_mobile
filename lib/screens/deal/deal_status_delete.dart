@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,12 +10,39 @@ class DeleteDealStatusDialog extends StatelessWidget {
 
   DeleteDealStatusDialog({required this.dealStatusId});
 
-  @override
+ @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Center(
-        child: Text(
+    return BlocListener<DealBloc, DealState>(
+      listener: (context, state) {
+        if (state is DealError) {
+          // Показываем сообщение об ошибке через SnackBar
+          ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text(
+                 '${state.message}',
+                 style: TextStyle(
+                   fontFamily: 'Gilroy',
+                   fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                   fontWeight: FontWeight.w500, // Жирность текста
+                   color: Colors.white, // Цвет текста для читаемости
+                 ),
+               ),
+               behavior: SnackBarBehavior.floating,
+               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               shape: RoundedRectangleBorder(
+                 borderRadius: BorderRadius.circular(12), // Радиус, как у текстового поля
+               ),
+               backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+               elevation: 3,
+               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Паддинг для комфортного восприятия
+             ),
+          );
+        }
+      },
+      child: AlertDialog(
+        backgroundColor: Colors.white,
+        title: Center(
+          child: Text(
           'Удалить статус сделки',
           style: TextStyle(
             fontSize: 20,
@@ -69,6 +97,7 @@ class DeleteDealStatusDialog extends StatelessWidget {
           ],
         ),
       ],
+      ),
     );
   }
 }

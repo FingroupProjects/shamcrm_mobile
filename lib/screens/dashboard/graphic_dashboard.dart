@@ -27,10 +27,25 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
         }
 
         if (state is DashboardChartError) {
-          return const Center(
-            child: Text(
-              'Ошибка загрузки данных',
-              style: TextStyle(color: Colors.red),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
           );
         }
@@ -115,7 +130,8 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                 lineIndex == selectedLineIndex && index == selectedIndex;
             return FlDotCirclePainter(
               radius: isSelected ? 6 : 4,
-              color: isSelected ? const Color.fromARGB(255, 25, 2, 47) : lineColor,
+              color:
+                  isSelected ? const Color.fromARGB(255, 25, 2, 47) : lineColor,
               strokeWidth: 2,
               strokeColor: Colors.white,
             );
@@ -186,31 +202,31 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
       maxY: maxY * 1.1,
       lineBarsData: lineBars,
       lineTouchData: LineTouchData(
-  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
-    if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
-      // Проверяем, что список не пуст
-      final firstSpot = touchResponse!.lineBarSpots!.first;
-      setState(() {
-        selectedLineIndex = chartData.indexWhere(
-          (data) => data.data.contains(firstSpot.y.toInt()),
-        );
-        selectedIndex = firstSpot.spotIndex; // Убедитесь, что 'spotIndex' существует.
-      });
-    }
-  },
-  touchTooltipData: LineTouchTooltipData(
-    getTooltipItems: (List<LineBarSpot> spots) {
-      return spots.map((spot) {
-        // Найти соответствующий ChartData для линии и точки
-        final lineData = chartData[spots.indexOf(spot)];
-        final label = lineData.label; // Название статуса
-        return LineTooltipItem(
-          '$label: ${spot.y.toInt()}',
-          const TextStyle(color: Colors.white));
-      }).toList();
-    },
-  ),
-),
+        touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+          if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
+            // Проверяем, что список не пуст
+            final firstSpot = touchResponse!.lineBarSpots!.first;
+            setState(() {
+              selectedLineIndex = chartData.indexWhere(
+                (data) => data.data.contains(firstSpot.y.toInt()),
+              );
+              selectedIndex =
+                  firstSpot.spotIndex; // Убедитесь, что 'spotIndex' существует.
+            });
+          }
+        },
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipItems: (List<LineBarSpot> spots) {
+            return spots.map((spot) {
+              // Найти соответствующий ChartData для линии и точки
+              final lineData = chartData[spots.indexOf(spot)];
+              final label = lineData.label; // Название статуса
+              return LineTooltipItem('$label: ${spot.y.toInt()}',
+                  const TextStyle(color: Colors.white));
+            }).toList();
+          },
+        ),
+      ),
     );
   }
 

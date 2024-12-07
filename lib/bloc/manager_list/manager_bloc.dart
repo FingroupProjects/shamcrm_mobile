@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -13,17 +12,27 @@ class GetAllManagerBloc extends Bloc<GetAllManagerEvent, GetAllManagerState> {
     on<GetAllManagerEv>(_getManagers);
   }
 
-  Future<void> _getManagers(GetAllManagerEv event, Emitter<GetAllManagerState> emit) async {
-
+  Future<bool> _checkInternetConnection() async {
     try {
-      emit(GetAllManagerLoading());
-
-      var res = await ApiService().getAllManager();
-
-      emit(GetAllManagerSuccess(dataManager: res));
-    } catch(e) {
-      emit(GetAllManagerError(message: e.toString()));
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
     }
+  }
 
+  Future<void> _getManagers(GetAllManagerEv event, Emitter<GetAllManagerState> emit) async {
+    emit(GetAllManagerLoading());
+
+    if (await _checkInternetConnection()) {
+      try {
+        var res = await ApiService().getAllManager();
+        emit(GetAllManagerSuccess(dataManager: res));
+      } catch (e) {
+        emit(GetAllManagerError(message: e.toString()));
+      }
+    } else {
+      emit(GetAllManagerError(message: 'Нет подключения к интернету'));
+    }
   }
 }

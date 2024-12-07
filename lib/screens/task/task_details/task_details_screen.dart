@@ -145,7 +145,27 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             if (state is TaskByIdLoaded) {
               print("Задача Data: ${state.task.toString()}");
             } else if (state is TaskByIdError) {
-              print("Ошибка получения задачи: ${state.message}");
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
+              );
             }
           },
           child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
@@ -168,16 +188,36 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       const SizedBox(height: 8),
                       if (task.chat != null)
                         TaskNavigateToChat(
-                        chatId: task.chat!.id,
-                        taskName: widget.taskName, 
-                      ),   
+                          chatId: task.chat!.id,
+                          taskName: widget.taskName,
+                        ),
                       const SizedBox(height: 16),
                       ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
                     ],
                   ),
                 );
               } else if (state is TaskByIdError) {
-                return Center(child: Text('Ошибка: ${state.message}'));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.message}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  ),
+                );
               }
               return Center(child: Text(''));
             },
@@ -252,7 +292,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,
                             createdAt: createdAtString,
-
                           ),
                         ),
                       );
@@ -308,51 +347,50 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-  // Проверка на наличие запятой в значении, чтобы определить множественное число
-  if (label == 'Исполнитель:' && value.contains(',')) {
-    label = 'Исполнители:';
-  }
+    // Проверка на наличие запятой в значении, чтобы определить множественное число
+    if (label == 'Исполнитель:' && value.contains(',')) {
+      label = 'Исполнители:';
+    }
 
-  if (label == 'Исполнители:') {
-    return GestureDetector(
-      onTap: () => _showUsersDialog(value),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value.split(',').take(3).join(', ') +
-                  (value.split(',').length > 3
-                      ? ' и еще ${value.split(',').length - 3}...'
-                      : ''),
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+    if (label == 'Исполнители:') {
+      return GestureDetector(
+        onTap: () => _showUsersDialog(value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value.split(',').take(3).join(', ') +
+                    (value.split(',').length > 3
+                        ? ' и еще ${value.split(',').length - 3}...'
+                        : ''),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        SizedBox(width: 8),
+        Expanded(
+          child: _buildValue(value),
+        ),
+      ],
     );
   }
-
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildLabel(label),
-      SizedBox(width: 8),
-      Expanded(
-        child: _buildValue(value),
-      ),
-    ],
-  );
-}
-
 
   void _showUsersDialog(String users) {
     List<String> userList =

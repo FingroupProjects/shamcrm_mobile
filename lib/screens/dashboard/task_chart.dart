@@ -45,7 +45,8 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [const SizedBox(height: 12), // Отступ
+            children: [
+              const SizedBox(height: 12), // Отступ
               const Text(
                 'Задачи',
                 style: TextStyle(
@@ -72,10 +73,25 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     if (state is DashboardTaskChartLoading) {
       // return const Center(child: CircularProgressIndicator());
     } else if (state is DashboardTaskChartError) {
-      return Center(
-        child: Text(
-          'Ошибка загрузки данных: ${state.message}',
-          textAlign: TextAlign.center,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${state.message}',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         ),
       );
     } else if (state is DashboardTaskChartLoaded) {
