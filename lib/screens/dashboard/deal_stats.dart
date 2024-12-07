@@ -5,52 +5,70 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class DealStatsChart extends StatelessWidget {
-  DealStatsChart({Key? key}) : super(key: key);
+  const DealStatsChart({Key? key}) : super(key: key);
 
-  final List<String> months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
+  final List<String> months = const [
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь'
   ];
 
-  final List<Color> monthColors = [
-    Colors.lightBlue.shade300,
-    Colors.purple.shade300,
-    Colors.green.shade300,
-    Colors.orange.shade300,
-    Colors.pink.shade300,
-    Colors.teal.shade300,
-    Colors.cyan.shade300,
-    Colors.red.shade300,
-    Colors.amber.shade300,
-    Colors.blue.shade300,
-    Colors.deepPurple.shade300,
-    Colors.indigo.shade300,
+  final List<Color> monthColors = const [
+    Colors.lightBlue,
+    Colors.purple,
+    Colors.green,
+    Colors.orange,
+    Colors.pink,
+    Colors.teal,
+    Colors.cyan,
+    Colors.red,
+    Colors.amber,
+    Colors.blue,
+    Colors.deepPurple,
+    Colors.indigo,
   ];
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
+        // Обработка случая загрузки
         if (state is DealStatsLoading) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is DealStatsError) {
-          return Center(child: Text('Ошибка: ${state.message}'));
-        } else if (state is DealStatsLoaded) {
-          List<int> monthData = state.dealStatsData.monthlyStats;
+        } 
+        
+        // Обработка случая ошибки
+        if (state is DealStatsError) {
+          return Center(
+            child: Text(
+              'Ошибка при загрузке статистики сделок: ${state.message}', 
+              textAlign: TextAlign.center,
+            ),
+          );
+        } 
+        
+        // Обработка случая успешной загрузки
+        if (state is DealStatsLoaded) {
+          // Безопасная проверка и подготовка данных
+          List<int> monthData = state.dealStatsData.monthlyStats ?? List.filled(12, 0);
+          
+          // Если данные пустые или null, заполняем нулями
+          if (monthData.isEmpty) {
+            monthData = List.filled(12, 0);
+          }
 
+          // Расчет максимального значения с запасом
           int maxCount = monthData.fold(0, (max, value) => value > max ? value : max);
-          // Add some padding to the max value to prevent bars from touching the top
-          double maxY = (maxCount * 1.1).ceilToDouble();
+          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 10.0;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +76,7 @@ class DealStatsChart extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.only(left: 16, top: 16, bottom: 24),
                 child: Text(
-                  'Сделки',
+                  'Статистика сделок',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -137,7 +155,7 @@ class DealStatsChart extends StatelessWidget {
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
                             return SizedBox(
-                              width: 60, // Increased width for larger numbers
+                              width: 60,
                               child: Text(
                                 value.toInt().toString(),
                                 textAlign: TextAlign.right,
@@ -148,13 +166,13 @@ class DealStatsChart extends StatelessWidget {
                               ),
                             );
                           },
-                          reservedSize: 60, // Increased reserved size
+                          reservedSize: 60,
                         ),
                       ),
                       rightTitles: AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
-                      topTitles: AxisTitles(
+                      topTitles: AxisTitles(    
                         sideTitles: SideTitles(showTitles: false),
                       ),
                     ),
@@ -162,7 +180,7 @@ class DealStatsChart extends StatelessWidget {
                       show: true,
                       drawHorizontalLine: true,
                       drawVerticalLine: true,
-                      horizontalInterval: maxY / 5, // Adjust grid lines based on data
+                      horizontalInterval: maxY / 5,
                       verticalInterval: 1,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
@@ -185,12 +203,13 @@ class DealStatsChart extends StatelessWidget {
                       ),
                     ),
                     barGroups: List.generate(months.length, (index) {
-                      final value = monthData[index].toDouble();
+                      // Безопасное получение значения, по умолчанию 0
+                      final value = (monthData[index] ?? 0).toDouble();
                       return BarChartGroupData(
                         x: index,
                         barRods: [
                           BarChartRodData(
-                            toY: value > 0 ? value : 0.1,
+                            toY: value > 0 ? value : 0.1, // Всегда отображаем хотя бы маленькую линию
                             color: monthColors[index],
                             width: 16,
                             borderRadius: const BorderRadius.only(
@@ -207,7 +226,11 @@ class DealStatsChart extends StatelessWidget {
             ],
           );
         }
-        return const SizedBox.shrink();
+        
+        // Обработка неожиданных состояний
+        return const Center(
+          child: Text('Нет данных для отображения'),
+        );
       },
     );
   }

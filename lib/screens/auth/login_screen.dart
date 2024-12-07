@@ -41,6 +41,9 @@ class LoginScreen extends StatelessWidget {
                 // Обработка ситуации, когда role пусто или null
                 await prefs.setString('userRoleName', 'No role assigned');
               }
+              // await prefs.setString(
+              //     'userRoleName', state.user.role!.name.toString());
+
               await prefs.setString('userEmail', state.user.email.toString());
 
               // Получаем токен устройства и отправляем его на сервер

@@ -30,7 +30,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
     return BlocBuilder<HistoryBlocTask, HistoryStateTask>(
       builder: (context, state) {
         if (state is HistoryLoadingTask) {
-          return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         } else if (state is HistoryLoadedTask) {
           actionHistory = state.taskHistory;
         } else if (state is HistoryErrorTask) {

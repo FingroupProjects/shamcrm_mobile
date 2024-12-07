@@ -2805,90 +2805,46 @@ class ApiService {
       throw Exception('Ошибка удаления уведомления');
     }
   }
-Future<Map<String, dynamic>> updateUserProfile({
-  required String userId,
-  String? name,
-  String? login,
-  String? email,
-  String? phone,
-  String? telegramUserId,
-  List<String>? organizations,
-  List<String>? roles,
-  File? profileImage,
-}) async {
-  try {
-    // Prepare the request body
-    final Map<String, dynamic> body = {};
 
-    // Add non-null fields to the body
-    if (name != null) body['name'] = name;
-    if (login != null) body['login'] = login;
-    if (email != null) body['email'] = email;
-    if (phone != null) body['phone'] = phone;
-    if (telegramUserId != null) body['telegram_user_id'] = telegramUserId;
-    if (organizations != null) body['organizations'] = organizations;
-    if (roles != null) body['roles'] = roles;
+  // Метод для Редактирование профиля
+   Future<Map<String, dynamic>> updateProfile({
+    required int userId,
+    required String name,
+    required String phone,
+    String? email,
+    String? login,
+    String? role,
+  }) async {    final organizationId = await getSelectedOrganization();
 
-    // Prepare the multipart request
-    final request = http.MultipartRequest(
-      'PATCH', 
-      Uri.parse('$baseUrl/user/$userId')
+    final response = await _patchRequest(
+      '/user/$userId/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        'name': name,
+        'phone': phone,
+        if (email != null) 'email': email,
+        if (login != null) 'login': login,
+        if (role != null) 'role': role,
+      },
     );
 
-    // Add headers
-    final token = await getToken();
-    request.headers['Authorization'] = 'Bearer $token';
-    request.headers['Content-Type'] = 'multipart/form-data';
-
-    // Add JSON body
-    request.fields['data'] = json.encode(body);
-
-    // Add profile image if provided
-    if (profileImage != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file', 
-          profileImage.path, 
-          filename: 'profile_image.jpg'
-        )
-      );
-    }
-
-    // Send the request
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
-
-    // Handle the response
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = json.decode(responseBody);
-      
-      // Update local storage with new user info
-      final prefs = await SharedPreferences.getInstance();
-      if (name != null) await prefs.setString('userName', name);
-      if (login != null) await prefs.setString('userLogin', login);
-      if (email != null) await prefs.setString('userEmail', email);
-      if (phone != null) await prefs.setString('userPhone', phone);
-
-      return {
-        'success': true,
-        'message': 'Профиль успешно обновлен',
-        'data': data['result']
-      };
-    } else {
-      // Parse error response
-      final errorData = json.decode(responseBody);
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': 'Профиль обновлен успешно.'};
+    } else if (response.statusCode == 422) {
       return {
         'success': false,
-        'message': errorData['message'] ?? 'Ошибка обновления профиля',
-        'errors': errorData['errors']
+        'message': 'Ошибка валидации данных. Проверьте введенные данные.'
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка обновления профиля: ${response.body}'
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Произошла ошибка: $e'
-    };
   }
-}
   //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
 }

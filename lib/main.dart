@@ -35,6 +35,7 @@ import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
@@ -50,8 +51,6 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -157,8 +156,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -169,11 +167,12 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
+        BlocProvider(create: (context) => ProfileBloc(apiService: apiService)), // Add this line for ProfileBloc
+
       ],
       child: MaterialApp(
         color: Colors.white,
