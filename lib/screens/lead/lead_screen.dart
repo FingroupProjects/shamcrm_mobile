@@ -42,7 +42,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeadStatuses());
     print("Инициализация: отправлен запрос на получение статусов лидов");
-     _checkPermissions();
+    _checkPermissions();
   }
 
   @override
@@ -68,7 +68,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _searchLeads(query, currentStatusId);
   }
 
- // Метод для проверки разрешений
+  // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('leadStatus.read');
     final canCreate = await _apiService.hasPermission('leadStatus.create');
@@ -79,7 +79,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       _canDeleteLeadStatus = canDelete;
     });
   }
-
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -99,7 +98,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               final leadBloc = BlocProvider.of<LeadBloc>(context);
               leadBloc.add(FetchLeadStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
-
             });
           },
           onChangedSearchInput: (String value) {
@@ -175,32 +173,31 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCustomTabBar() {
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    controller: _scrollController,
-    child: Row(
-      children: [
-        ...List.generate(_tabTitles.length, (index) {
-          if (_tabKeys.length <= index) {
-            _tabKeys.add(GlobalKey());
-          }
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _buildTabButton(index),
-          );
-        }),
-        // Показываем кнопку добавления только если есть разрешение
-        if (_canCreateLeadStatus)
-          IconButton(
-            icon: Image.asset('assets/icons/tabBar/add_black.png',
-                width: 24, height: 24),
-            onPressed: _addNewTab,
-          ),
-      ],
-    ),
-  );
-}
-
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      controller: _scrollController,
+      child: Row(
+        children: [
+          ...List.generate(_tabTitles.length, (index) {
+            if (_tabKeys.length <= index) {
+              _tabKeys.add(GlobalKey());
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: _buildTabButton(index),
+            );
+          }),
+          // Показываем кнопку добавления только если есть разрешение
+          if (_canCreateLeadStatus)
+            IconButton(
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
+              onPressed: _addNewTab,
+            ),
+        ],
+      ),
+    );
+  }
 
   void _addNewTab() async {
     final result = await showDialog<String>(
@@ -217,39 +214,39 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
-  return GestureDetector(
-    key: _tabKeys[index],
-    onTap: () {
-      _tabController.animateTo(index);
-    },
-    onLongPress: () {
-      // Показываем диалог удаления только если есть разрешение
-      if (_canDeleteLeadStatus) {
-        _showDeleteDialog(index);
-      }
-    },
-    child: Container(
-      decoration: TaskStyles.tabButtonDecoration(isActive),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Text(
-              _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle.copyWith(
-                color:
-                    isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+    bool isActive = _tabController.index == index;
+    return GestureDetector(
+      key: _tabKeys[index],
+      onTap: () {
+        _tabController.animateTo(index);
+      },
+      onLongPress: () {
+        // Показываем диалог удаления только если есть разрешение
+        if (_canDeleteLeadStatus) {
+          _showDeleteDialog(index);
+        }
+      },
+      child: Container(
+        decoration: TaskStyles.tabButtonDecoration(isActive),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   void _showDeleteDialog(int index) async {
     final leadStatusId = _tabTitles[index]['id'];
@@ -281,9 +278,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         if (state is LeadLoaded) {
           setState(() {
             _tabTitles = state.leadStatuses
-            .where((status) => _canReadLeadStatus) // Только те статусы, которые можно читать
+                .where((status) =>
+                    _canReadLeadStatus && status.lead_status_id == null) 
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
+
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
@@ -323,7 +322,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             return searchWidget(leads);
           }
           if (state is LeadLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return const Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
               return const Center(child: Text('Нет статусов для отображения'));
@@ -344,16 +344,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-
-void _scrollToActiveTab() {
+  void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(

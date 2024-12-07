@@ -199,13 +199,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void navigateToScreen(String type, int notificationId, String id) {
-    // setState(() {
-    //   (notificationBloc.state as NotificationDataLoaded)
-    //       .notifications
-    //       .removeWhere((notification) => notification.id == notificationId);
-    // });
+    setState(() {
+      (notificationBloc.state as NotificationDataLoaded)
+          .notifications
+          .removeWhere((notification) => notification.id == notificationId);
+    });
     
-    // notificationBloc.add(DeleteNotification(notificationId));
+    notificationBloc.add(DeleteNotification(notificationId));
 
     if (type == 'message') {
       print('Переход на экран чата с ID: $id');

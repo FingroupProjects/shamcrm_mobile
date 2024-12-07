@@ -35,6 +35,7 @@ class LoginScreen extends StatelessWidget {
               await prefs.setString('userPhone', state.user.phone.toString());
               await prefs.setString('userLogin', state.user.login.toString());
               await prefs.setString('userImage', state.user.image.toString());
+
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
               } else {
