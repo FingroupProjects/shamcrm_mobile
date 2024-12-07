@@ -118,11 +118,13 @@ class LeadStatus {
   final int id;
   final String title;
   final String? color;
+  final String? lead_status_id;
 
   LeadStatus({
     required this.id,
     required this.title,
     this.color,
+    this.lead_status_id,
   });
 
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
@@ -130,6 +132,7 @@ class LeadStatus {
       id: json['id'],
       title: json['title'] ?? json['name'] ?? 'Не указан',
       color: json['color'],
+      lead_status_id: json['lead_status_id'] ?? null,
     );
   }
 }
