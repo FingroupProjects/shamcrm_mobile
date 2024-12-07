@@ -36,7 +36,8 @@ class LoginScreen extends StatelessWidget {
               await prefs.setString('userLogin', state.user.login.toString());
               await prefs.setString('userImage', state.user.image.toString());
               // await prefs.setString(
-              //     'userRoleName', state.user.role.name.toString());
+              //     'userRoleName', state.user.role!.name.toString());
+
               await prefs.setString('userEmail', state.user.email.toString());
 
               // Получаем токен устройства и отправляем его на сервер
