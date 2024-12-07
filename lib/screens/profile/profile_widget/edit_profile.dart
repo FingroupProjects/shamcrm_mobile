@@ -2,6 +2,10 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
+import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
+import 'package:crm_task_manager/bloc/profile/profile_event.dart';
+import 'package:crm_task_manager/bloc/profile/profile_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 
@@ -97,7 +101,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   void _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userPhone') ?? 'Не найдено';
+    String UUID = prefs.getString('userId') ?? 'Не найдено';
+    String UPhone = prefs.getString('userPhone') ?? 'Не найдено';
     String UName = prefs.getString('userName') ?? 'Не найдено';
     String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
     String UImage = prefs.getString('userImage') ?? 'Не найдено';
@@ -106,7 +111,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
     // Установка данных в контроллеры
     loginController.text = ULogin;
-    phoneController.text = UUID;
+    phoneController.text = UPhone;
     fullNameController.text = UName;
     emailController.text = UEmail;
     roleController.text = URoleName;
@@ -143,6 +148,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ),
             ],
           ),
+          backgroundColor: Color.fromARGB(255, 255, 255, 255),
         );
       },
     );
@@ -241,7 +247,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 controller: roleController,
                 hintText: 'Введите роль',
                 label: 'Роль',
+                readOnly: true,
               ),
+
               const SizedBox(height: 8),
               CustomTextField(
                 controller: loginController,
@@ -257,100 +265,47 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () async {
-                  // Validate input fields if needed
-                  final apiService = ApiService();
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff1E2E52), // Цвет фона кнопки
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8), // Отступы
+                ),
+                onPressed: () {
+                  final name = fullNameController.text;
+                  final phone = phoneController.text;
+                  final email = emailController.text;
+                  final login = loginController.text;
+                  final role = roleController.text;
 
-                  try {
-                    // Get the current user ID from SharedPreferences or wherever it's stored
-                    SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    String? userId = prefs.getString('userId');
+                  context.read<ProfileBloc>().add(UpdateProfile(
+                        userId: 1,
+                        name: name,
+                        phone: phone,
+                        email: email,
+                        login: login,
+                        role: role,
+                      ));
+                },
+                child: Text('Сохранить', style: TextStyle(color: Colors.white)),
+              ),
 
-                    if (userId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content:
-                                Text('Не удалось определить пользователя')),
-                      );
-                      return;
-                    }
-
-                    // Prepare the data to send
-                    final result = await apiService.updateUserProfile(
-                      userId: userId,
-                      name: fullNameController.text,
-                      login: loginController.text,
-                      email: emailController.text,
-                      phone: phoneController.text,
-                      // Add other fields as needed
-                      profileImage: _profileImage, // Optional profile image
-                    );
-
-                    // Handle the result
-                    if (result['success']) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Профиль успешно обновлен'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      // Optionally navigate back or refresh the page
-                      Navigator.pop(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              result['message'] ?? 'Ошибка обновления профиля'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } catch (e) {
+              BlocListener<ProfileBloc, ProfileState>(
+                listener: (context, state) {
+                  if (state is ProfileSuccess) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Произошла ошибка: $e'),
-                        backgroundColor: Colors.red,
-                      ),
+                      SnackBar(content: Text(state.message)),
+                    );
+                  } else if (state is ProfileError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.message)),
                     );
                   }
                 },
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text(
-                  'Сохранить',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
+                child: Container(),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class ProfileButton extends StatelessWidget {
-  const ProfileButton({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ProfileEditPage()));
-      },
-      icon: const Icon(Icons.edit),
-      label: const Text('Редактировать профиль'),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(fontSize: 16),
       ),
     );
   }
