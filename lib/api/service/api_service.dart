@@ -1328,7 +1328,7 @@ class ApiService {
   }
 
   /// Метод для отправки на 1С
-  Future<List> postLeadToC(int leadId) async {
+  Future postLeadToC(int leadId) async {
     try {
       final organizationId = await getSelectedOrganization();
 
@@ -1358,7 +1358,7 @@ class ApiService {
   }
 
 // Метод для Обновления Данных 1С
-  Future<List> getData1C() async {
+  Future getData1C() async {
     final organizationId = await getSelectedOrganization();
 
     final response = await _getRequest(
