@@ -1328,34 +1328,53 @@ class ApiService {
   }
 
   /// Метод для отправки на 1С
-  Future postLeadToC(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+     Future<void> postLeadToC(int leadId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
+    final path = '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-      // Формируем URL с параметрами запроса
-      final path =
-          '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    final response = await _postRequest(path, {});
 
-      // Выполняем POST-запрос (без тела)
-      final response = await _postRequest(path, {});
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print(
-            "------------------------------------------------------------------------------------");
-        print('LEAD TO 1C');
-        print(data);
-
-        return data as List;
-      } else {
-        print('Ошибка отправки в  1С Лид: ${response.statusCode}');
-        throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Произошла ошибка: $e');
-      throw Exception('Ошибка отправки 1С Лид: $e');
+    if (response.statusCode == 200) {
+      print('Успешно отправлено в 1С');
+    } else {
+      print('Ошибка отправки в 1С Лид: ${response.statusCode}');
+      throw Exception('Ошибка отправки в 1С: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Произошла ошибка: $e');
+    throw Exception('Ошибка отправки в 1С: $e');
   }
+}
+  // Future postLeadToC(int leadId) async {
+  //   try {
+  //     final organizationId = await getSelectedOrganization();
+
+  //     // Формируем URL с параметрами запроса
+  //     final path =
+  //         '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+  //     // Выполняем POST-запрос (без тела)
+  //     final response = await _postRequest(path, {});
+
+  //     if (response.statusCode == 200) {
+  //       // final data = jsonDecode(response.body);
+  //       print("------------------------------------------------------------------------------------");
+  //       print('LEAD TO 1C');
+  //       // print(data);
+
+  //       // return data;
+  //     } else {
+  //       print('Ошибка отправки в  1С Лид: ${response.statusCode}');
+  //       throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     print('Произошла ошибка: $e');
+  //     throw Exception('Ошибка отправки 1С Лид: $e');
+  //   }
+  // }
+
+
 
 // Метод для Обновления Данных 1С
   Future getData1C() async {
@@ -1369,7 +1388,7 @@ class ApiService {
       if (data['result'] != null) {
         return (data['result'] as List).toList();
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        // throw Exception('Результат отсутствует в ответе');
       }
     } else if (response.statusCode == 500) {
       throw Exception('Ошибка сервера (500): Внутреняя ошибка сервера');
