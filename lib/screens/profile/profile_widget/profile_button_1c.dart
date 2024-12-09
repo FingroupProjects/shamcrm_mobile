@@ -123,7 +123,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           children: [
             if (organization.is1cIntegration)
               _buildProfileOption(
-                iconPath: 'assets/icons/1c/update.png',
+                iconPath: 'assets/icons/1c/5.png',
                 text: 'Обновить данные 1С',
               ),
             if (lastUpdated != null)
@@ -144,44 +144,58 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
     );
   }
 
-  Widget _buildProfileOption({required String iconPath, required String text}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          isLoading
+ Widget _buildProfileOption({required String iconPath, required String text}) {
+  return Container(
+    margin: const EdgeInsets.symmetric(vertical: 8),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF4F7FD),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Row(
+      children: [
+        // Новый контейнер с фоном и скругленными углами
+        Container(
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255,  223, 225, 247), // Цвет фона
+            borderRadius: BorderRadius.circular(12), // Скругленные углы
+          ),
+          child: isLoading
               ? RotationTransition(
                   turns: Tween<double>(begin: 0, end: -1).animate(_controller),
-                  child: Image.asset(
-                    iconPath,
-                    width: 60,
-                    height: 60,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0), // Отступы для размера иконки
+                    child: Image.asset(
+                      iconPath,
+                      width: 60,
+                      height: 60,
+                    ),
                   ),
                 )
-              : Image.asset(
-                  iconPath,
-                  width: 40,
-                  height: 40,
+              : Padding(
+                  padding: const EdgeInsets.all(8.0), // Отступы для размера иконки
+                  child: Image.asset(
+                    iconPath,
+                    width: 40,
+                    height: 40,
+                  ),
                 ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xFF1E1E1E),
-              ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xFF1E1E1E),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 }

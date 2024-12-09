@@ -32,13 +32,31 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final TextEditingController userController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
-  
   File? _profileImage;
   String selectedDialCode = '';
   String? _selectedOrganization;
   String _userImage = '';
   File? _localImage;
   final ImagePicker _picker = ImagePicker();
+
+  // Новый метод для определения пути изображения
+  String? _getImageToUpload() {
+    // Если есть локально выбранное изображение
+    if (_localImage != null) {
+      return _localImage!.path;
+    }
+    
+    // Если существующее изображение имеет расширения png, jpeg, jpg, img
+    if (_userImage.endsWith('.png') || 
+        _userImage.endsWith('.jpg') || 
+        _userImage.endsWith('.jpeg') || 
+        _userImage.endsWith('.img')) {
+      return _userImage;
+    }
+    
+    // Для SVG или других форматов возвращаем null
+    return null;
+  }
 
   // Функция для выбора изображения с улучшенной обработкой
   Future<void> _pickImage(ImageSource source) async {
@@ -64,58 +82,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // Объединенный метод загрузки данных
+    _loadUserPhone();
+    _loadSelectedOrganization();
     context.read<OrganizationBloc>().add(FetchOrganizations());
-  }
-
-  Future<void> _loadUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? 'Не найдено';
-
-    // Загрузка данных из SharedPreferences
-    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
-    String UName = prefs.getString('userName') ?? 'Не найдено';
-    String UPhone = prefs.getString('userPhone') ?? 'Не найдено';
-    String UEmail = prefs.getString('userEmail') ?? 'Не найдено';
-    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
-    String UImage = prefs.getString('userImage') ?? 'Не найдено';
-
-    // Загрузка данных через API
-    try {
-      UserByIdProfile userProfile = await ApiService().getUserById(userId as int);
-      
-      setState(() {
-        // Приоритет данным из API
-        loginController.text = ULogin;
-        userController.text = userId;
-        phoneController.text = userProfile.phone.isNotEmpty ? userProfile.phone : UPhone;
-        fullNameController.text = userProfile.name.isNotEmpty ? userProfile.name : UName;
-        emailController.text = userProfile.email.isNotEmpty ? userProfile.email : UEmail;
-        roleController.text = URoleName;
-        _userImage = userProfile.image?.isNotEmpty == true ? userProfile.image! : UImage;
-
-        print('ImageSVG: $_userImage');
-        print('UUUID: $userId');
-      });
-    } catch (e) {
-      // Если API не сработал, используем данные из SharedPreferences
-      setState(() {
-        loginController.text = ULogin;
-        userController.text = userId;
-        phoneController.text = UPhone;
-        fullNameController.text = UName;
-        emailController.text = UEmail;
-        roleController.text = URoleName;
-        _userImage = UImage;
-
-        print('ImageSVG: $_userImage');
-        print('UUUID: $userId');
-      });
-      print('Ошибка загрузки профиля: $e');
-    }
-
-    // Загрузка организации
-    await _loadSelectedOrganization();
   }
 
   Future<void> _loadSelectedOrganization() async {
@@ -150,8 +119,33 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
+  void _loadUserPhone() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Выбор изображения из галереи или камеры
+    String UUID = prefs.getString('userID') ?? 'Не найдено';
+    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
+
+    setState(() {
+      userController.text = UUID;
+      loginController.text = ULogin;
+      roleController.text = URoleName;
+    });
+
+    try {
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+
+      setState(() {
+        fullNameController.text = userProfile.name;
+        emailController.text = userProfile.email;
+        phoneController.text = userProfile.phone;
+        _userImage = userProfile.image ?? '';
+      });
+    } catch (e) {
+      print('Ошибка при загрузке данных из API: $e');
+    }
+  }
+
   Future<void> _showImagePickerDialog() async {
     final XFile? pickedFile = await showModalBottomSheet<XFile?>(
       context: context,
@@ -163,8 +157,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               leading: const Icon(Icons.photo_library),
               title: const Text('Галерея'),
               onTap: () async {
-                final file =
-                    await _picker.pickImage(source: ImageSource.gallery);
+                final file = await _picker.pickImage(source: ImageSource.gallery);
                 Navigator.of(context).pop(file);
               },
             ),
@@ -172,8 +165,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               leading: const Icon(Icons.camera_alt),
               title: const Text('Камера'),
               onTap: () async {
-                final file =
-                    await _picker.pickImage(source: ImageSource.camera);
+                final file = await _picker.pickImage(source: ImageSource.camera);
                 Navigator.of(context).pop(file);
               },
             ),
@@ -244,7 +236,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                                 BorderRadius.circular(70),
                                             image: DecorationImage(
                                               image: NetworkImage(
-                                                  _userImage), // Замените на `FileImage` для локальных файлов
+                                                  _userImage),
                                               fit: BoxFit.cover,
                                             ),
                                           ),
@@ -293,7 +285,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ),
 
               const SizedBox(height: 20),
-              // Остальной код интерфейса
               CustomTextField(
                 controller: fullNameController,
                 hintText: 'Введите ФИО',
@@ -339,17 +330,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52), // Цвет фона кнопки
+                  backgroundColor: const Color(0xff1E2E52),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8), // Отступы
+                      horizontal: 16, vertical: 8),
                 ),
                 onPressed: () async {
-                  // Извлечение UUID из SharedPreferences
                   SharedPreferences prefs =
                       await SharedPreferences.getInstance();
                   String UUID = prefs.getString('userID') ?? '';
 
-                  // Проверка, если UUID не найден
                   if (UUID.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -360,27 +349,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   }
 
                   try {
-                    // Преобразование UUID в int
                     int userId = int.parse(UUID);
-                    // Получение данных из контроллеров
                     final name = fullNameController.text;
                     final phone = phoneController.text;
                     final email = emailController.text;
-                    // final login = loginController.text;
-                    // final role = roleController.text;
-                    final image = _userImage;
+                    
+                    // Используем новый метод _getImageToUpload()
+                    final image = _getImageToUpload();
 
-                    // Передача userId как int
                     context.read<ProfileBloc>().add(UpdateProfile(
-                        userId: userId, // Передаем преобразованный userId
+                        userId: userId,
                         name: name,
                         phone: phone,
                         email: email,
-                        // login: login,
-                        // role: role,
                         image: image));
                   } catch (e) {
-                    // Если UUID не удалось преобразовать в int
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content:
@@ -396,7 +379,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   if (state is ProfileSuccess) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(state.message)),
-                    ); // Закрываем окно
+                    );
                     Navigator.pop(context);
                   } else if (state is ProfileError) {
                     ScaffoldMessenger.of(context).showSnackBar(
