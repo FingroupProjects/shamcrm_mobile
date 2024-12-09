@@ -41,31 +41,19 @@ class DealStatsChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
-        // Обработка случая загрузки
+        // Обработка случая загрузкиs
         if (state is DealStatsLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         } else if (state is DealStatsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
+              return Text(
                 '${state.message}',
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            ),
-          );
+              );
         } else if (state is DealStatsLoaded) {
           List<int> monthData = state.dealStatsData.monthlyStats;
 
@@ -73,30 +61,37 @@ class DealStatsChart extends StatelessWidget {
               monthData.fold(0, (max, value) => value > max ? value : max);
           // Add some padding to the max value to prevent bars from touching the top
           double maxY = (maxCount * 1.1).ceilToDouble();
-        } 
-        
-//         // Обработка случая ошибки
-//         if (state is DealStatsError) {
-//           return Center(
-//             child: Text(
-//               'Ошибка при загрузке статистики сделок: ${state.message}', 
-//               textAlign: TextAlign.center,
-//             ),
-//           );
-//         } 
-        
+        }
+
+        // Обработка случая ошибки
+        if (state is DealStatsError) {
+          return Center(
+            child: Text(
+              '${state.message}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+            ),
+          );
+        }
+
         // Обработка случая успешной загрузки
         if (state is DealStatsLoaded) {
           // Безопасная проверка и подготовка данных
-          List<int> monthData = state.dealStatsData.monthlyStats ?? List.filled(12, 0);
-          
+          List<int> monthData =
+              state.dealStatsData.monthlyStats ?? List.filled(12, 0);
+
           // Если данные пустые или null, заполняем нулями
           if (monthData.isEmpty) {
             monthData = List.filled(12, 0);
           }
 
           // Расчет максимального значения с запасом
-          int maxCount = monthData.fold(0, (max, value) => value > max ? value : max);
+          int maxCount =
+              monthData.fold(0, (max, value) => value > max ? value : max);
           double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 10.0;
 
           return Column(
@@ -202,7 +197,7 @@ class DealStatsChart extends StatelessWidget {
                       rightTitles: AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
-                      topTitles: AxisTitles(    
+                      topTitles: AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
                     ),
@@ -239,7 +234,9 @@ class DealStatsChart extends StatelessWidget {
                         x: index,
                         barRods: [
                           BarChartRodData(
-                            toY: value > 0 ? value : 0.1, // Всегда отображаем хотя бы маленькую линию
+                            toY: value > 0
+                                ? value
+                                : 0.1, // Всегда отображаем хотя бы маленькую линию
                             color: monthColors[index],
                             width: 16,
                             borderRadius: const BorderRadius.only(
@@ -256,7 +253,7 @@ class DealStatsChart extends StatelessWidget {
             ],
           );
         }
-        
+
         // Обработка неожиданных состояний
         return const Center(
           child: Text('Нет данных для отображения'),

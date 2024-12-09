@@ -34,7 +34,7 @@ class DashboardConversionBloc
         final leadConversionData = await _apiService.getLeadConversionData();
         emit(DashboardConversionLoaded(leadConversionData: leadConversionData));
       } else {
-        emit(DashboardConversionError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        // emit(DashboardConversionError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
       }
     } catch (e) {
       emit(DashboardConversionError(message: e.toString()));

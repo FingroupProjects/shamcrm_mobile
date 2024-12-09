@@ -37,7 +37,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         emit(ContactPersonError('Не удалось загрузить Контакное Лицо: ${e.toString()}'));
       }
     } else {
-      emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+      // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
     }
   }
 
@@ -63,7 +63,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         emit(ContactPersonError('Ошибка создания Контакт Лицо: ${e.toString()}'));
       }
     } else {
-      emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+      // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
     }
   }
 
@@ -90,7 +90,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         emit(ContactPersonError('Ошибка обновленя Контактного Лица: ${e.toString()}'));
       }
     } else {
-      emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+      // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
     }
   }
 
@@ -110,7 +110,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         emit(ContactPersonError('Ошибка удаления Контакное лицо: ${e.toString()}'));
       }
     } else {
-      emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+      // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
     }
   }
 }

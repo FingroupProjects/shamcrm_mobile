@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
@@ -31,7 +30,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-   bool _canReadTaskStatus = false;
+  bool _canReadTaskStatus = false;
   bool _canCreateTaskStatus = false;
   bool _canDeleteTaskStatus = false;
   final ApiService _apiService = ApiService();
@@ -69,7 +68,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _searchTasks(query, currentStatusId);
   }
 
-   // Метод для проверки разрешений
+  // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('taskStatus.read');
     final canCreate = await _apiService.hasPermission('taskStatus.create');
@@ -189,11 +188,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             );
           }),
           if (_canCreateTaskStatus)
-          IconButton(
-            icon: Image.asset('assets/icons/tabBar/add_black.png',
-                width: 24, height: 24),
-            onPressed: _addNewTab,
-          ),
+            IconButton(
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
+              onPressed: _addNewTab,
+            ),
         ],
       ),
     );
@@ -220,12 +219,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       onTap: () {
         _tabController.animateTo(index);
       },
-       onLongPress: () {
-      // Показываем диалог удаления только если есть разрешение
-      if (_canDeleteTaskStatus) {
-        _showDeleteDialog(index);
-      }
-    },
+      onLongPress: () {
+        // Показываем диалог удаления только если есть разрешение
+        if (_canDeleteTaskStatus) {
+          _showDeleteDialog(index);
+        }
+      },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -272,8 +271,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (state is TaskLoaded) {
           setState(() {
             _tabTitles = state.taskStatuses
-                .where((status) => _canReadTaskStatus) 
-                .map((status) => {'id': status.id, 'title': status.taskStatus.name})
+                .where((status) => _canReadTaskStatus)
+                .map((status) =>
+                    {'id': status.id, 'title': status.taskStatus.name})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -306,25 +306,29 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         } else if (state is TaskError) {
           // Показываем сообщение об ошибке через SnackBar
           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-               content: Text(
-                 '${state.message}',
-                 style: TextStyle(
-                   fontFamily: 'Gilroy',
-                   fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                   fontWeight: FontWeight.w500, // Жирность текста
-                   color: Colors.white, // Цвет текста для читаемости
-                 ),
-               ),
-               behavior: SnackBarBehavior.floating,
-               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-               shape: RoundedRectangleBorder(
-                 borderRadius: BorderRadius.circular(12), // Радиус, как у текстового поля
-               ),
-               backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-               elevation: 3,
-               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Паддинг для комфортного восприятия
-             ),
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                  fontWeight: FontWeight.w500, // Жирность текста
+                  color: Colors.white, // Цвет текста для читаемости
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(12), // Радиус, как у текстового поля
+              ),
+              backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+              elevation: 3,
+              padding: EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16), // Паддинг для комфортного восприятия
+              duration: Duration(seconds: 2), // Установлено на 2 секунды
+            ),
           );
         }
       },
@@ -363,11 +367,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(

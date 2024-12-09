@@ -44,7 +44,7 @@ class _LeadToCState extends State<LeadToC> {
         } else if (organizationState is OrganizationError) {
           return Center(
               child: Text(
-                  'Ошибка загрузки организации: ${organizationState.message}'));
+                  '${organizationState.message}'));
         }
         return Center(child: Text(''));
       },
@@ -87,6 +87,7 @@ class _LeadToCState extends State<LeadToC> {
                         elevation: 3,
                         padding:
                             EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 2),
                       ),
                     );
                   } else if (state is LeadToCLoaded) {

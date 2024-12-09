@@ -34,7 +34,7 @@ class DashboardTaskChartBloc
         final taskChartData = await _apiService.getTaskChartData();
         emit(DashboardTaskChartLoaded(taskChartData: taskChartData));
       } else {
-        emit(DashboardTaskChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        // emit(DashboardTaskChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
       }
     } catch (e) {
       emit(DashboardTaskChartError(message: e.toString()));
