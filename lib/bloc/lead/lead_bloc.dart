@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
@@ -42,8 +43,12 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     allLeadsFetched = leads.isEmpty;
     emit(LeadDataLoaded(leads, currentPage: 1));
   } catch (e) {
-    emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
+  if (e is ApiException && e.statusCode == 401) {
+    emit(LeadError('Неавторизованный доступ!'));
+  } else {
+    emit(LeadError('Не удалось загрузить данные: ${e.toString()}'));
   }
+}
 }
 
 

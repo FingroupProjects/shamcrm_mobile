@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'deal_event.dart';
 import 'deal_state.dart';
@@ -62,8 +63,12 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     allDealsFetched = leads.isEmpty;
     emit(DealDataLoaded(leads, currentPage: 1));
   } catch (e) {
-    emit(DealError('Не удалось загрузить сделки: ${e.toString()}'));
+  if (e is ApiException && e.statusCode == 401) {
+    emit(DealError('Неавторизованный доступ!'));
+  } else {
+    emit(DealError('Не удалось загрузить данные: ${e.toString()}'));
   }
+}
 }
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {

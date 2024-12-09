@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
@@ -267,7 +268,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Widget _buildTabBarView() {
     return BlocListener<TaskBloc, TaskState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is TaskLoaded) {
           setState(() {
             _tabTitles = state.taskStatuses
@@ -304,32 +305,42 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is TaskError) {
-          // Показываем сообщение об ошибке через SnackBar
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                  fontWeight: FontWeight.w500, // Жирность текста
-                  color: Colors.white, // Цвет текста для читаемости
+          if (state.message.contains("Неавторизованный доступ!")) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            // Показываем сообщение об ошибке через SnackBar
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                    fontWeight: FontWeight.w500, // Жирность текста
+                    color: Colors.white, // Цвет текста для читаемости
+                  ),
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      12), // Радиус, как у текстового поля
+                ),
+                backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+                elevation: 3,
+                padding: EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16), // Паддинг для комфортного восприятия
+                duration: Duration(seconds: 2), // Установлено на 2 секунды
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(12), // Радиус, как у текстового поля
-              ),
-              backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-              elevation: 3,
-              padding: EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 16), // Паддинг для комфортного восприятия
-              duration: Duration(seconds: 2), // Установлено на 2 секунды
-            ),
-          );
+            );
+          }
         }
       },
       child: BlocBuilder<TaskBloc, TaskState>(

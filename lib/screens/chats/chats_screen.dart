@@ -318,7 +318,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           child: ChatSmsScreen(
             chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
             chatId: chat.id,
-                        endPointInTab: widget.endPointInTab,
+            endPointInTab: widget.endPointInTab,
 
           ),
         ),

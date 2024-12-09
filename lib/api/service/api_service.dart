@@ -57,6 +57,9 @@ import '../../models/login_model.dart';
 class ApiService {
   late final String baseUrl;
   late final String baseUrlSocket;
+    static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  
 
   ApiService() {
     _initializeIfDomainExists();
@@ -79,7 +82,7 @@ class ApiService {
     if (response.statusCode == 401) {
       await logout();
       _redirectToLogin();
-      throw Exception('Неавторизованный доступ');
+      throw Exception('Неавторизованный доступ!');
     }
     return response;
   }

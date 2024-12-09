@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'organization_event.dart';
 import 'organization_state.dart';
 
@@ -16,7 +17,12 @@ class OrganizationBloc extends Bloc<OrganizationEvent, OrganizationState> {
           final organizations = await apiService.getOrganization();
           emit(OrganizationLoaded(organizations));
         } catch (e) {
-          emit(OrganizationError('Ошибка при загрузке Организации: $e'));
+          if (e is ApiException && e.statusCode == 401) {
+            emit(OrganizationError('Неавторизованный доступ!'));
+          } else {
+            emit(OrganizationError(
+                'Не удалось загрузить данные: ${e.toString()}'));
+          }
         }
       } else {
         emit(OrganizationError('Нет подключения к интернету'));

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
@@ -267,7 +268,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Widget _buildTabBarView() {
     return BlocListener<DealBloc, DealState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is DealLoaded) {
           setState(() {
             _tabTitles = state.dealStatuses
@@ -303,33 +304,44 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is DealError) {
-          // Показываем сообщение об ошибке через SnackBar
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                  fontWeight: FontWeight.w500, // Жирность текста
-                  color: Colors.white, // Цвет текста для читаемости
+          if (state.message.contains("Неавторизованный доступ!")) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            // Показываем сообщение об ошибке через SnackBar
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                    fontWeight: FontWeight.w500, // Жирность текста
+                    color: Colors.white, // Цвет текста для читаемости
+                  ),
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      12), // Радиус, как у текстового поля
+                ),
+                backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+                elevation: 3,
+                padding: EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16), // Паддинг для комфортного восприятия
+                duration: Duration(seconds: 2),
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(12), // Радиус, как у текстового поля
-              ),
-              backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-              elevation: 3,
-              padding: EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 16), // Паддинг для комфортного восприятия
-                  duration: Duration(seconds: 2),
-            ),
-          );
+            );
+          }
         }
+        ;
       },
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
