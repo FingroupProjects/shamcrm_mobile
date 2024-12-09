@@ -9,6 +9,9 @@ abstract class LeadToCState extends Equatable {
 
 class LeadToCInitial extends LeadToCState {}
 
+class LeadToCSuccess extends LeadToCState {}
+
+
 class LeadToCLoading extends LeadToCState {}
 
 class LeadToCLoaded extends LeadToCState {

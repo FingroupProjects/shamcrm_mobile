@@ -14,8 +14,7 @@ class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
   final String leadName; 
 
-  LeadNavigateToChat(
-      {required this.leadId, required this.leadName}); 
+  LeadNavigateToChat({required this.leadId, required this.leadName}); 
 
   @override
   _LeadNavigateToChatDialogState createState() =>
@@ -36,6 +35,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     'facebook': 'assets/icons/leads/facebook.png',
     'instagram': 'assets/icons/leads/instagram.png',
   };
+
   final Map<String, String> customChannelNames = {
     'telegram_account': 'Telegram',
     'telegram_bot': 'Telegram',
@@ -46,35 +46,63 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(0),
-        child: Form(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CustomButton(
-                buttonText: '',
-                onPressed: () {
-                  _showChatListDialog(context);
-                },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Перейти в чат',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                    ),
-                  ],
+    return BlocListener<LeadToChatBloc, LeadToChatState>(
+      listener: (context, state) {
+        if (state is LeadToChatError) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
-            ],
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(0),
+          child: Form(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CustomButton(
+                  buttonText: '',
+                  onPressed: () {
+                    _showChatListDialog(context);
+                  },
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Перейти в чат',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

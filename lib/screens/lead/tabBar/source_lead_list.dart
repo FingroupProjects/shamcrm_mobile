@@ -24,32 +24,44 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SourceLeadBloc, SourceLeadState>(
-      builder: (context, state) {
-        List<DropdownMenuItem<String>> dropdownItems = [];
+    return BlocListener<SourceLeadBloc, SourceLeadState>(
+      listener: (context, state) {
+        if (state is SourceLeadError) {
+          // Если произошла ошибка, показываем SnackBar с сообщением об ошибке
+         ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text(
+                 '${state.message}',
+                 style: TextStyle(
+                   fontFamily: 'Gilroy',
+                   fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                   fontWeight: FontWeight.w500, // Жирность текста
+                   color: Colors.white, // Цвет текста для читаемости
+                 ),
+               ),
+               behavior: SnackBarBehavior.floating,
+               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               shape: RoundedRectangleBorder(
+                 borderRadius: BorderRadius.circular(12), // Радиус, как у текстового поля
+               ),
+               backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+               elevation: 3,
+               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Паддинг для комфортного восприятия
+               duration: Duration(seconds: 2),
+             ),
+          );
+        }
+      },
+      child: BlocBuilder<SourceLeadBloc, SourceLeadState>(
+        builder: (context, state) {
+          List<DropdownMenuItem<String>> dropdownItems = [];
 
-        if (state is SourceLeadLoading) {
-          dropdownItems = [
-            DropdownMenuItem(
-              value: null,
-              child: Text(
-                'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-          ];
-        } else if (state is SourceLeadLoaded) {
-          if (state.sourceLead.isEmpty) {
+          if (state is SourceLeadLoading) {
             dropdownItems = [
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                  'Нет источников',
+                  'Загрузка...',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -59,52 +71,13 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                 ),
               ),
             ];
-          } else {
-            dropdownItems = state.sourceLead.map<DropdownMenuItem<String>>(
-                (SourceLead sourceLead) {
-              return DropdownMenuItem<String>(
-                value: sourceLead.id.toString(),
-                child: Text(
-                  sourceLead.name,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList();
-          }
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Источник',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedSourceLead)
-                    ? widget.selectedSourceLead
-                    : null,
-                hint: Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: const Text(
-                    'Выберите источник',
+          } else if (state is SourceLeadLoaded) {
+            if (state.sourceLead.isEmpty) {
+              dropdownItems = [
+                DropdownMenuItem(
+                  value: null,
+                  child: Text(
+                    'Нет источников',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -113,40 +86,96 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     ),
                   ),
                 ),
-                items: dropdownItems,
-                onChanged: widget.onChanged,
-                validator: (value) {
-                  if (value == null) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+              ];
+            } else {
+              dropdownItems = state.sourceLead.map<DropdownMenuItem<String>>(
+                  (SourceLead sourceLead) {
+                return DropdownMenuItem<String>(
+                  value: sourceLead.id.toString(),
+                  child: Text(
+                    sourceLead.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
+                );
+              }).toList();
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Источник',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+              const SizedBox(height: 4),
+              Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFFF4F7FD),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButtonFormField<String>(
+                  value: dropdownItems.any((item) => item.value == widget.selectedSourceLead)
+                      ? widget.selectedSourceLead
+                      : null,
+                  hint: Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: const Text(
+                      'Выберите источник',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ),
+                  items: dropdownItems,
+                  onChanged: widget.onChanged,
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Поле обязательно для заполнения';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  dropdownColor: Colors.white,
+                  icon: Image.asset(
+                    'assets/icons/tabBar/dropdown.png',
+                    width: 16,
+                    height: 16,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

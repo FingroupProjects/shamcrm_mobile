@@ -16,7 +16,7 @@ class Organization {
       id: json['id'],
       name: json['name'],
       last1cUpdate: json['last_1c_update'] is String ? json['last_1c_update'] : null,
-      is1cIntegration: json['1c_integration'] ?? false,
+      is1cIntegration: json['integration_1c'] ?? false,
     );
   }
 }

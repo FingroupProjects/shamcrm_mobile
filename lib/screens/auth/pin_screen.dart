@@ -91,7 +91,7 @@ class _PinScreenState extends State<PinScreen>
               _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
           } else if (Platform.isAndroid &&
-              _availableBiometrics.contains(BiometricType.face)) {
+              _availableBiometrics.contains(BiometricType.strong)) {
             _authenticate();
           }
         }

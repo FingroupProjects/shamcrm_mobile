@@ -23,11 +23,63 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
-      listener: (context, state) {},
-      builder: (context, state) {
+ @override
+Widget build(BuildContext context) {
+  return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
+    listener: (context, state) {
+      // Можно добавить действия при изменении состояния, если нужно
+    },
+    builder: (context, state) {
+      if (state is DashboardTaskChartLoading) {
+        // Показать индикатор загрузки, если данные загружаются
+        return Container(
+          height: 250,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Colors.grey.withOpacity(0.1),
+            //     spreadRadius: 0,
+            //     blurRadius: 4,
+            //     offset: const Offset(0, 2),
+            //   ),
+            // ],
+          ),
+          child: Center(
+            // child: CircularProgressIndicator(), // Индикатор загрузки
+          ),
+        );
+      } else if (state is DashboardTaskChartError) {
+        // Показать сообщение об ошибке, если загрузка данных не удалась
+        return Container(
+          height: 250,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              'Ошибка загрузки данных',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      } else if (state is DashboardTaskChartLoaded) {
         return Container(
           height: 250,
           padding: const EdgeInsets.all(16),
@@ -45,7 +97,8 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [const SizedBox(height: 12), // Отступ
+            children: [
+              const SizedBox(height: 12), // Отступ
               const Text(
                 'Задачи',
                 style: TextStyle(
@@ -59,23 +112,41 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
                 child: _buildChart(state),
               ),
               const SizedBox(height: 16),
-              if (state is DashboardTaskChartLoaded)
-                _buildLegend(state.taskChartData),
+              _buildLegend(state.taskChartData),
             ],
           ),
         );
-      },
-    );
-  }
+      }
+      return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
+    },
+  );
+}
+
 
   Widget _buildChart(DashboardTaskChartState state) {
     if (state is DashboardTaskChartLoading) {
       // return const Center(child: CircularProgressIndicator());
     } else if (state is DashboardTaskChartError) {
-      return Center(
-        child: Text(
-          'Ошибка загрузки данных: ${state.message}',
-          textAlign: TextAlign.center,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${state.message}',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 2),
         ),
       );
     } else if (state is DashboardTaskChartLoaded) {

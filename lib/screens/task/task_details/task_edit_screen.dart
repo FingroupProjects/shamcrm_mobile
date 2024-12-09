@@ -207,20 +207,36 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
-          if (state is TaskError) {
+          // if (state is TaskError) {
+          //   ScaffoldMessenger.of(context).showSnackBar(
+          //     SnackBar(
+          //       content: Text(state.message),
+          //       duration: const Duration(seconds: 3),
+          //       backgroundColor: Colors.red,
+          //     ),
+          //   );
+          // } else
+          if (state is TaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message),
-                duration: const Duration(seconds: 3),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is TaskSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Задача успешно обновлена'),
-                duration: Duration(seconds: 3),
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2), // Установлено на 2 секунды
               ),
             );
             Navigator.pop(context, true);

@@ -1,5 +1,7 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_state.dart';
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -8,65 +10,42 @@ class DealStatsChart extends StatelessWidget {
   const DealStatsChart({Key? key}) : super(key: key);
 
   final List<String> months = const [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
   ];
 
   final List<Color> monthColors = const [
-    Colors.lightBlue,
-    Colors.purple,
-    Colors.green,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
-    Colors.cyan,
-    Colors.red,
-    Colors.amber,
-    Colors.blue,
-    Colors.deepPurple,
-    Colors.indigo,
+    Colors.lightBlue, Colors.purple, Colors.green, Colors.orange,
+    Colors.pink, Colors.teal, Colors.cyan, Colors.red, Colors.amber,
+    Colors.blue, Colors.deepPurple, Colors.indigo,
   ];
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
-        // Обработка случая загрузки
         if (state is DealStatsLoading) {
-          return const Center(child: CircularProgressIndicator());
-        } 
-        
-        // Обработка случая ошибки
-        if (state is DealStatsError) {
-          return Center(
-            child: Text(
-              'Ошибка при загрузке статистики сделок: ${state.message}', 
-              textAlign: TextAlign.center,
-            ),
-          );
-        } 
-        
-        // Обработка случая успешной загрузки
-        if (state is DealStatsLoaded) {
-          // Безопасная проверка и подготовка данных
-          List<int> monthData = state.dealStatsData.monthlyStats ?? List.filled(12, 0);
-          
-          // Если данные пустые или null, заполняем нулями
-          if (monthData.isEmpty) {
-            monthData = List.filled(12, 0);
+          return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+        } else if (state is DealStatsError) {
+          if (state.message.contains("Неавторизованный доступ!")) {
+            _handleLogout(context);
+            return const SizedBox(); 
+          } else {
+            return Center(
+              child: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            );
           }
+        } else if (state is DealStatsLoaded) {
+          List<int> monthData = state.dealStatsData.monthlyStats ?? List.filled(12, 0);
 
-          // Расчет максимального значения с запасом
           int maxCount = monthData.fold(0, (max, value) => value > max ? value : max);
           double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 10.0;
 
@@ -172,7 +151,7 @@ class DealStatsChart extends StatelessWidget {
                       rightTitles: AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
-                      topTitles: AxisTitles(    
+                      topTitles: AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
                     ),
@@ -203,13 +182,12 @@ class DealStatsChart extends StatelessWidget {
                       ),
                     ),
                     barGroups: List.generate(months.length, (index) {
-                      // Безопасное получение значения, по умолчанию 0
                       final value = (monthData[index] ?? 0).toDouble();
                       return BarChartGroupData(
                         x: index,
                         barRods: [
                           BarChartRodData(
-                            toY: value > 0 ? value : 0.1, // Всегда отображаем хотя бы маленькую линию
+                            toY: value > 0 ? value : 0.1,
                             color: monthColors[index],
                             width: 16,
                             borderRadius: const BorderRadius.only(
@@ -226,12 +204,23 @@ class DealStatsChart extends StatelessWidget {
             ],
           );
         }
-        
-        // Обработка неожиданных состояний
+
         return const Center(
           child: Text('Нет данных для отображения'),
         );
       },
+    );
+  }
+
+  // Метод выхода из системы
+  Future<void> _handleLogout(BuildContext context) async {
+    ApiService apiService = ApiService();
+    await apiService.logout();
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+      (Route<dynamic> route) => false,
     );
   }
 }

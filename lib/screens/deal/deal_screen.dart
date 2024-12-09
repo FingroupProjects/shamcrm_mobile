@@ -1,14 +1,15 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/screens/deal/deal_status_delete.dart'; 
-import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart'; 
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart'; 
+import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart'; 
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
@@ -43,7 +44,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     dealBloc.add(FetchDealStatuses());
     print("Инициализация: отправлен запрос на получение статусов сделок");
     _checkPermissions();
-
   }
 
   @override
@@ -189,11 +189,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             );
           }),
           if (_canCreateDealStatus)
-          IconButton(
-            icon: Image.asset('assets/icons/tabBar/add_black.png',
-                width: 24, height: 24),
-            onPressed: _addNewTab,
-          ),
+            IconButton(
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
+              onPressed: _addNewTab,
+            ),
         ],
       ),
     );
@@ -221,10 +221,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _tabController.animateTo(index);
       },
       onLongPress: () {
-           // Показываем диалог удаления только если есть разрешение
-      if (_canDeleteDealStatus) {
-        _showDeleteDialog(index);
-      }
+        // Показываем диалог удаления только если есть разрешение
+        if (_canDeleteDealStatus) {
+          _showDeleteDialog(index);
+        }
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -268,11 +268,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Widget _buildTabBarView() {
     return BlocListener<DealBloc, DealState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is DealLoaded) {
           setState(() {
             _tabTitles = state.dealStatuses
-                .where((status) => _canReadDealStatus) 
+                .where((status) => _canReadDealStatus)
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
@@ -303,7 +303,45 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               }
             }
           });
+        } else if (state is DealError) {
+          if (state.message.contains("Неавторизованный доступ!")) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            // Показываем сообщение об ошибке через SnackBar
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16, // Размер шрифта совпадает с CustomTextField
+                    fontWeight: FontWeight.w500, // Жирность текста
+                    color: Colors.white, // Цвет текста для читаемости
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      12), // Радиус, как у текстового поля
+                ),
+                backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+                elevation: 3,
+                padding: EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16), // Паддинг для комфортного восприятия
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
         }
+        ;
       },
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
@@ -336,15 +374,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     );
   }
 
- void _scrollToActiveTab() {
+  void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(

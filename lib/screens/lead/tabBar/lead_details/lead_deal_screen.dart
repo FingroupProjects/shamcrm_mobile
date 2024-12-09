@@ -49,8 +49,8 @@ class _DealsWidgetState extends State<DealsWidget> {
             _scrollController.position.maxScrollExtent &&
         !context.read<LeadDealsBloc>().allLeadDealsFetched) {
       context.read<LeadDealsBloc>().add(
-        FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()),
-      );
+            FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()),
+          );
     }
   }
 
@@ -63,7 +63,28 @@ class _DealsWidgetState extends State<DealsWidget> {
         } else if (state is LeadDealsLoaded) {
           deals = state.deals;
         } else if (state is LeadDealsError) {
-          return Center(child: Text(state.message));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 2),
+            ),
+          );
         }
 
         return _buildDealsList(deals);

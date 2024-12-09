@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_event.dart';
@@ -12,17 +13,27 @@ class LeadToChatBloc extends Bloc<LeadToChatEvent, LeadToChatState> {
   }
 
   Future<void> _fetchLeadToChat(FetchLeadToChat event, Emitter<LeadToChatState> emit) async {
-    emit(LeadToChatLoading());
+    if (await _checkInternetConnection()) {
+      emit(LeadToChatLoading());
 
-    try {
-      final leadtochat = await apiService.getLeadToChat(event.leadId); 
-      allLeadToChatFetched = leadtochat.isEmpty;
-      emit(LeadToChatLoaded(leadtochat)); 
-    } catch (e) {
-      emit(LeadToChatError('Не удалось загрузить чаты лида: ${e.toString()}'));
+      try {
+        final leadtochat = await apiService.getLeadToChat(event.leadId); 
+        allLeadToChatFetched = leadtochat.isEmpty;
+        emit(LeadToChatLoaded(leadtochat)); 
+      } catch (e) {
+        emit(LeadToChatError('Не удалось загрузить чаты лида: ${e.toString()}'));
+      }
+    } else {
+      emit(LeadToChatError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
     }
   }
 
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    }
+  }
 }
-
-
