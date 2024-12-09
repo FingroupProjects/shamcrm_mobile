@@ -102,16 +102,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   );
                 } else if (state is OrganizationError) {
-                  // Отображение ошибки в случае неудачной загрузки
                   return Padding(
-                    padding: const EdgeInsets.only(top: 16),
+                    padding: const EdgeInsets.only(top: 20),
                     child: Center(
                       child: Text(
                         '${state.message}',
                         style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Gilroy',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
                         ),
                       ),
                     ),

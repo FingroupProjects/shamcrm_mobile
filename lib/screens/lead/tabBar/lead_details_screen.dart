@@ -198,7 +198,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   ),
                 );
               } else if (state is LeadByIdError) {
-                return Center(child: Text('Ошибка: ${state.message}'));
+                return Center(child: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16, 
+                      fontWeight: FontWeight.w500, 
+                      color: Colors.black, 
+                    ),
+                  ),);
               }
               return Center(child: Text(''));
             },
