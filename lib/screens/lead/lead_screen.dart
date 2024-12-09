@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
@@ -42,7 +43,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeadStatuses());
     print("Инициализация: отправлен запрос на получение статусов лидов");
-     _checkPermissions();
+    _checkPermissions();
   }
 
   @override
@@ -68,7 +69,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _searchLeads(query, currentStatusId);
   }
 
- // Метод для проверки разрешений
+  // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('leadStatus.read');
     final canCreate = await _apiService.hasPermission('leadStatus.create');
@@ -85,55 +86,54 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   ValueChanged<String>? onChangedSearchInput;
 
   bool isClickAvatarIcon = false;
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    appBar: AppBar(
-      forceMaterialTransparency: true,
-      title: CustomAppBar(
-        title: 'Лиды',
-        onClickProfileAvatar: () {
-          setState(() {
-            final leadBloc = BlocProvider.of<LeadBloc>(context);
-            leadBloc.add(FetchLeadStatuses());
-            isClickAvatarIcon = !isClickAvatarIcon;
-
-          });
-        },
-        onChangedSearchInput: (String value) {
-          if (value.isNotEmpty) {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBar(
+          title: 'Лиды',
+          onClickProfileAvatar: () {
             setState(() {
-              _isSearching = true;
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
+              isClickAvatarIcon = !isClickAvatarIcon;
             });
-          }
+          },
+          onChangedSearchInput: (String value) {
+            if (value.isNotEmpty) {
+              setState(() {
+                _isSearching = true;
+              });
+            }
 
-          _onSearch(value);
-        },
-        textEditingController: textEditingController,
-        focusNode: focusNode,
-        clearButtonClick: (value) {
-          if (value == false) {
-            final leadBloc = BlocProvider.of<LeadBloc>(context);
-            leadBloc.add(FetchLeadStatuses());
-            setState(() {
-              _isSearching = false;
-            });
-          }
-        },
+            _onSearch(value);
+          },
+          textEditingController: textEditingController,
+          focusNode: focusNode,
+          clearButtonClick: (value) {
+            if (value == false) {
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
+              setState(() {
+                _isSearching = false;
+              });
+            }
+          },
+        ),
       ),
-    ),
-    body: isClickAvatarIcon
-        ? ProfileScreen()
-        : Column(
-            children: [
-              const SizedBox(height: 15),
-              if (!_isSearching) _buildCustomTabBar(),
-              Expanded(child: _buildTabBarView()),
-            ],
-          ),
-  );
-}
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                if (!_isSearching) _buildCustomTabBar(),
+                Expanded(child: _buildTabBarView()),
+              ],
+            ),
+    );
+  }
 
   Widget searchWidget(List<Lead> leads) {
     if (_isSearching && leads.isEmpty) {
@@ -174,31 +174,31 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildCustomTabBar() {
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    controller: _scrollController,
-    child: Row(
-      children: [
-        ...List.generate(_tabTitles.length, (index) {
-          if (_tabKeys.length <= index) {
-            _tabKeys.add(GlobalKey());
-          }
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _buildTabButton(index),
-          );
-        }),
-        // Показываем кнопку добавления только если есть разрешение
-        if (_canCreateLeadStatus)
-          IconButton(
-            icon: Image.asset('assets/icons/tabBar/add_black.png',
-                width: 24, height: 24),
-            onPressed: _addNewTab,
-          ),
-      ],
-    ),
-  );
-}
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      controller: _scrollController,
+      child: Row(
+        children: [
+          ...List.generate(_tabTitles.length, (index) {
+            if (_tabKeys.length <= index) {
+              _tabKeys.add(GlobalKey());
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: _buildTabButton(index),
+            );
+          }),
+          // Показываем кнопку добавления только если есть разрешение
+          if (_canCreateLeadStatus)
+            IconButton(
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
+              onPressed: _addNewTab,
+            ),
+        ],
+      ),
+    );
+  }
 
   void _addNewTab() async {
     final result = await showDialog<String>(
@@ -215,38 +215,39 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
-  return GestureDetector(
-    key: _tabKeys[index],
-    onTap: () {
-      _tabController.animateTo(index);
-    },
-    onLongPress: () {
-      // Показываем диалог удаления только если есть разрешение
-      if (_canDeleteLeadStatus) {
-        _showDeleteDialog(index);
-      }
-    },
-    child: Container(
-      decoration: TaskStyles.tabButtonDecoration(isActive),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Text(
-              _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle.copyWith(
-                color:
-                    isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+    bool isActive = _tabController.index == index;
+    return GestureDetector(
+      key: _tabKeys[index],
+      onTap: () {
+        _tabController.animateTo(index);
+      },
+      onLongPress: () {
+        // Показываем диалог удаления только если есть разрешение
+        if (_canDeleteLeadStatus) {
+          _showDeleteDialog(index);
+        }
+      },
+      child: Container(
+        decoration: TaskStyles.tabButtonDecoration(isActive),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showDeleteDialog(int index) async {
     final leadStatusId = _tabTitles[index]['id'];
@@ -274,11 +275,12 @@ Widget build(BuildContext context) {
 
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is LeadLoaded) {
           setState(() {
             _tabTitles = state.leadStatuses
-            .where((status) => _canReadLeadStatus) // Только те статусы, которые можно читать
+                .where((status) =>
+                    _canReadLeadStatus) // Только те статусы, которые можно читать
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
@@ -310,29 +312,38 @@ Widget build(BuildContext context) {
             }
           });
         } else if (state is LeadError) {
-          // Показываем сообщение об ошибке через SnackBar
-          ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-               content: Text(
-                 '${state.message}',
-                 style: TextStyle(
-                   fontFamily: 'Gilroy',
-                   fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                   fontWeight: FontWeight.w500, // Жирность текста
-                   color: Colors.white, // Цвет текста для читаемости
-                 ),
-               ),
-               behavior: SnackBarBehavior.floating,
-               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-               shape: RoundedRectangleBorder(
-                 borderRadius: BorderRadius.circular(12), // Радиус, как у текстового поля
-               ),
-               backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-               elevation: 3,
-               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Паддинг для комфортного восприятия
-               duration: Duration(seconds: 2),
-             ),
-          );
+          if (state.message.contains("Неавторизованный доступ!")) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            // Показываем сообщение об ошибке через SnackBar
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              ),
+            );
+          }
         }
       },
       child: BlocBuilder<LeadBloc, LeadState>(
@@ -344,14 +355,14 @@ Widget build(BuildContext context) {
             return searchWidget(leads);
           }
           if (state is LeadLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return const Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
               return const Center(child: Text('Нет статусов для отображения'));
             }
             return TabBarView(
               controller: _tabController,
-              // key: UniqueKey(),
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
@@ -365,15 +376,31 @@ Widget build(BuildContext context) {
     );
   }
 
-void _scrollToActiveTab() {
+// Future<void> _handleLogout(BuildContext context) async {
+//   ApiService apiService = ApiService();
+//   await apiService.logout();
+
+//   Navigator.pushAndRemoveUntil(
+//     context,
+//     MaterialPageRoute(builder: (context) => LoginScreen()),
+//     (Route<dynamic> route) => false,
+//   );
+// }
+
+  void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
