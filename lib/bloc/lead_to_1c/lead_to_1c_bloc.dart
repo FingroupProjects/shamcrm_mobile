@@ -20,18 +20,32 @@ class LeadToCBloc extends Bloc<LeadToCEvent, LeadToCState> {
     }
   }
 
-  Future<void> _onFetchLeadToC(FetchLeadToC event, Emitter<LeadToCState> emit) async {
-    emit(LeadToCLoading());
-
-    if (await _checkInternetConnection()) {
-      try {
-        final leadData = await apiService.postLeadToC(event.leadId);
-        emit(LeadToCLoaded(leadData));
-      } catch (e) {
-        emit(LeadToCError(e.toString()));
-      }
-    } else {
-      emit(LeadToCError('Нет соединения с интернетом'));
+Future<void> _onFetchLeadToC(FetchLeadToC event, Emitter<LeadToCState> emit) async {
+  emit(LeadToCLoading());
+  if (await _checkInternetConnection()) {
+    try {
+      await apiService.postLeadToC(event.leadId);
+      emit(LeadToCSuccess());
+    } catch (e) {
+      emit(LeadToCError(e.toString()));
     }
+  } else {
+    emit(LeadToCError('Нет соединения с интернетом'));
   }
+}
+
+  // Future<void> _onFetchLeadToC(FetchLeadToC event, Emitter<LeadToCState> emit) async {
+  //   emit(LeadToCLoading());
+
+  //   if (await _checkInternetConnection()) {
+  //     try {
+  //       final leadData = await apiService.postLeadToC(event.leadId);
+  //       emit(LeadToCLoaded(leadData));
+  //     } catch (e) {
+  //       emit(LeadToCError(e.toString()));
+  //     }
+  //   } else {
+  //     emit(LeadToCError('Нет соединения с интернетом'));
+  //   }
+  // }
 }

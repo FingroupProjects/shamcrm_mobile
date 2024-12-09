@@ -4,6 +4,8 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
+import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
@@ -68,6 +70,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     super.initState();
     _checkPermissions();
     // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
+    context.read<OrganizationBloc>().add(FetchOrganizations());
+
     _loadSelectedOrganization(); // Загружаем выбранную организацию
 
     context
