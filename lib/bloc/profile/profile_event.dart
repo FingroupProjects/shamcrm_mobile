@@ -7,7 +7,7 @@ class UpdateProfile extends ProfileEvent {
   final String? email;
   final String? login;
   final String? role;
-
+  final String? image;
   UpdateProfile({
     required this.userId,
     required this.name,
@@ -15,5 +15,6 @@ class UpdateProfile extends ProfileEvent {
     this.email,
     this.login,
     this.role,
+    this.image,
   });
 }
