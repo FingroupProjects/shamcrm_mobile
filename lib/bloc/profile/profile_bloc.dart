@@ -17,7 +17,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           phone: event.phone,
           email: event.email,
           login: event.login,
-          role: event.role,
+          image: event.image
         );
         if (result['success']) {
           emit(ProfileSuccess(result['message']));

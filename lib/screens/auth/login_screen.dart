@@ -25,6 +25,8 @@ class LoginScreen extends StatelessWidget {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) async {
             if (state is LoginLoaded) {
+               // Логирование успешного получения userId
+          print('Received userId: ${state.user.id}');
               // Сохраняем userID после успешного входа
               userID.value = state.user.id.toString();
 
@@ -32,6 +34,7 @@ class LoginScreen extends StatelessWidget {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('userName', state.user.name.toString());
               await prefs.setString('userID', state.user.id.toString());
+
               await prefs.setString('userPhone', state.user.phone.toString());
               await prefs.setString('userLogin', state.user.login.toString());
               await prefs.setString('userImage', state.user.image.toString());
@@ -49,6 +52,7 @@ class LoginScreen extends StatelessWidget {
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
+            print("UUID1 $prefs");
 
               // Проверяем сохранённую организацию
               final savedOrganization =

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
@@ -26,6 +27,8 @@ class _PinScreenState extends State<PinScreen>
   final LocalAuthentication _auth = LocalAuthentication();
   bool _canCheckBiometrics = false;
   List<BiometricType> _availableBiometrics = [];
+  String _userName = '';
+  String _userImage = '';
 
   @override
   void initState() {
@@ -33,6 +36,7 @@ class _PinScreenState extends State<PinScreen>
     _checkSavedPin();
     _initBiometrics();
     _checkIosVersion();
+    _loadUserPhone(); // Вызов асинхронного метода
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -48,6 +52,19 @@ class _PinScreenState extends State<PinScreen>
         _animationController.reset();
       }
     });
+  }
+
+  void _loadUserPhone() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UName = prefs.getString('userName') ?? 'Не найдено';
+    String UImage = prefs.getString('userImage') ?? 'Не найдено';
+
+    setState(() {
+      _userName = UName;
+      _userImage = UImage; // Сохраняем путь изображения
+    });
+    print('UName: $UName');
+    print('UImage: $UImage'); // Проверка пути к изображению
   }
 
   Future<void> _checkIosVersion() async {
@@ -143,7 +160,10 @@ class _PinScreenState extends State<PinScreen>
       setState(() {
         _pin += number;
       });
-
+      // Вибрация при каждом нажатии на кнопку
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: 50); // Вибрация длиной 50 миллисекунд
+      }
       if (_pin.length == 4) {
         final prefs = await SharedPreferences.getInstance();
         final savedPin = prefs.getString('user_pin');
@@ -160,7 +180,7 @@ class _PinScreenState extends State<PinScreen>
 
   void _triggerErrorEffect() async {
     if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 100);
+      Vibration.vibrate(duration: 200);
     }
     setState(() {
       _isWrongPin = true;
@@ -169,7 +189,7 @@ class _PinScreenState extends State<PinScreen>
 
     _animationController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
       setState(() {
         _isWrongPin = false;
@@ -196,27 +216,51 @@ class _PinScreenState extends State<PinScreen>
     super.dispose();
   }
 
+  String getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    final greetingPrefix;
+
+    if (hour >= 5 && hour < 12) {
+      greetingPrefix = 'Доброе утро';
+    } else if (hour >= 12 && hour < 18) {
+      greetingPrefix = 'Добрый день';
+    } else if (hour >= 18 && hour < 22) {
+      greetingPrefix = 'Добрый вечер';
+    } else {
+      greetingPrefix = 'Доброй ночи';
+    }
+
+    return '$greetingPrefix, $_userName';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
+          // В виджете используйте _userImage для отображения
           padding: const EdgeInsets.symmetric(horizontal: 36.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
-              Image.asset(
-                'assets/icons/playstore.png',
-                height: 160,
-              ),
+              const SizedBox(height: 180),
+              _userImage != 'Не найдено'
+                  ? SvgPicture.string(
+                      _userImage, // Строка SVG-кода
+                      height: 160,
+                    )
+                  : Image.asset(
+                      'assets/icons/playstore.png',
+                      height: 160,
+                    ),
               const SizedBox(height: 16),
-              const Text(
-                'Добро пожаловать',
-                style: TextStyle(
+              Text(
+                getGreetingMessage(),
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
@@ -300,7 +344,7 @@ class _PinScreenState extends State<PinScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).push(MaterialPageRoute(
