@@ -19,37 +19,42 @@ class LeadToC extends StatefulWidget {
 }
 
 
+
 class _LeadToCState extends State<LeadToC> {
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
     context.read<OrganizationBloc>().add(FetchOrganizations());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<OrganizationBloc, OrganizationState>(
       builder: (context, organizationState) {
         if (organizationState is OrganizationLoading) {
           // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-                  return SizedBox.shrink();
-
+                        // return SizedBox.shrink();
         } else if (organizationState is OrganizationLoaded) {
           final organization = organizationState.organizations.firstWhere(
             (org) => org.id.toString() == widget.selectedOrganization,
             orElse: () => organizationState.organizations.first,
           );
 
-          // Проверка интеграции с 1С
           if (organization.is1cIntegration) {
             return _buildIntegrationButton(context);
           } else {
-            return SizedBox.shrink();
+                        return SizedBox.shrink();
+
             // return Center(child: Text('Интеграция с 1С не доступна для этой организации.'));
           }
         } else if (organizationState is OrganizationError) {
-          return Center(
-              child: Text('${organizationState.message}'));
+          return Center(child: Text('${organizationState.message}'));
         }
         return Center(child: Text(''));
       },
     );
   }
+
 
   Widget _buildIntegrationButton(BuildContext context) {
     return SingleChildScrollView(
