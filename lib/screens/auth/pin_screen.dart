@@ -1,6 +1,8 @@
 // lib/screens/auth/auth_screen.dart
 import 'dart:io';
 
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -54,17 +56,22 @@ class _PinScreenState extends State<PinScreen>
     });
   }
 
-  void _loadUserPhone() async {
+void _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UName = prefs.getString('userName') ?? 'Не найдено';
-    String UImage = prefs.getString('userImage') ?? 'Не найдено';
+    String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-    setState(() {
-      _userName = UName;
-      _userImage = UImage; // Сохраняем путь изображения
-    });
-    print('UName: $UName');
-    print('UImage: $UImage'); // Проверка пути к изображению
+
+    try {
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
+
+      setState(() {
+        _userName = userProfile.name;
+        _userImage = userProfile.image ?? '';
+      });
+    } catch (e) {
+      print('Ошибка при загрузке данных из API: $e');
+    }
   }
 
   Future<void> _checkIosVersion() async {
@@ -79,6 +86,7 @@ class _PinScreenState extends State<PinScreen>
       }
     }
   }
+
 
   Future<void> _initBiometrics() async {
     try {

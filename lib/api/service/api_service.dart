@@ -2883,7 +2883,7 @@ class ApiService {
     String? image,
   }) async {
 
-    final response = await _patchRequest(
+    final response = await _postRequest(
       '/profile/$userId',
       {
         'name': name,
