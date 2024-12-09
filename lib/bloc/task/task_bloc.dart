@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'task_event.dart';
 import 'task_state.dart';
@@ -23,7 +24,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
-    await Future.delayed(Duration(milliseconds: 500));
+    // await Future.delayed(Duration(milliseconds: 500));
 
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
@@ -60,9 +61,13 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     );
     allTasksFetched = tasks.isEmpty;
     emit(TaskDataLoaded(tasks, currentPage: 1));
-  } catch (e) {
-    emit(TaskError('Не удалось загрузить задачи: ${e.toString()}'));
+  }  catch (e) {
+  if (e is ApiException && e.statusCode == 401) {
+    emit(TaskError('Неавторизованный доступ!'));
+  } else {
+    emit(TaskError('Не удалось загрузить данные: ${e.toString()}'));
   }
+}
 }
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {

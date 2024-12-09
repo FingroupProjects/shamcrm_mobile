@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,10 +12,37 @@ class DeleteLeadDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Center(
-        child: Text(
+    return BlocListener<LeadBloc, LeadState>(
+      listener: (context, state) {
+        if (state is LeadError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text(
+                 '${state.message}',
+                 style: TextStyle(
+                   fontFamily: 'Gilroy',
+                   fontSize: 16, 
+                   fontWeight: FontWeight.w500, 
+                   color: Colors.white,
+                 ),
+               ),
+               behavior: SnackBarBehavior.floating,
+               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               shape: RoundedRectangleBorder(
+                 borderRadius: BorderRadius.circular(12), 
+               ),
+               backgroundColor: Colors.red, 
+               elevation: 3,
+               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+               duration: Duration(seconds: 2),
+             ),
+          );
+        }
+      },
+      child: AlertDialog(
+        backgroundColor: Colors.white,
+        title: Center(
+          child: Text(
           'Удалить лида',
           style: TextStyle(
             fontSize: 20,
@@ -65,6 +93,7 @@ class DeleteLeadDialog extends StatelessWidget {
           ],
         ),
       ],
+      ),
     );
   }
 }

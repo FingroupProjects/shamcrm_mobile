@@ -4,7 +4,6 @@ import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/client_item_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
@@ -19,7 +18,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskAddScreen extends StatefulWidget {
   final int statusId;
@@ -210,20 +208,36 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
-          if (state is TaskError) {
+          // if (state is TaskError) {
+          //   ScaffoldMessenger.of(context).showSnackBar(
+          //     SnackBar(
+          //       content: Text(state.message),
+          //       duration: const Duration(seconds: 3),
+          //       backgroundColor: Colors.red,
+          //     ),
+          //   );
+          // } else
+          if (state is TaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message),
-                duration: const Duration(seconds: 3),
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is TaskSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                duration: const Duration(seconds: 3),
-                backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
               ),
             );
             Navigator.pop(context, widget.statusId);
@@ -433,82 +447,79 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 }
 
-
-
-
-  // // Виджет выбора файла
-  // Widget _buildFileSelection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text(
-  //         'Файл',
-  //         style: TextStyle(
-  //           fontSize: 16,
-  //           fontWeight: FontWeight.w500,
-  //           fontFamily: 'Gilroy',
-  //           color: Color(0xff1E2E52),
-  //         ),
-  //       ),
-  //       const SizedBox(height: 4),
-  //       GestureDetector(
-  //         onTap: _pickFile,
-  //         child: Container(
-  //           padding: const EdgeInsets.all(16),
-  //           decoration: BoxDecoration(
-  //             color: const Color(0xFFF4F7FD),
-  //             borderRadius: BorderRadius.circular(8),
-  //             border: Border.all(color: const Color(0xFFF4F7FD)),
-  //           ),
-  //           child: Row(
-  //             children: [
-  //               Expanded(
-  //                 child: Text(
-  //                   fileName ?? 'Выберите файл',
-  //                   style: TextStyle(
-  //                     color: fileName != null
-  //                         ? const Color(0xff1E2E52)
-  //                         : Colors.grey,
-  //                   ),
-  //                 ),
-  //               ),
-  //               Icon(
-  //                 Icons.attach_file,
-  //                 color: Colors.grey[600],
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //       // if (fileName != null) ...[
-  //       //   const SizedBox(height: 8),
-  //       //   Row(
-  //       //     children: [
-  //       //       const Text(
-  //       //         'Файл: ',
-  //       //         style: TextStyle(
-  //       //           fontSize: 14,
-  //       //           fontFamily: 'Gilroy',
-  //       //           color: Color(0xff1E2E52),
-  //       //         ),
-  //       //       ),
-  //       //       GestureDetector(
-  //       //         onTap: () {
-  //       //           // Здесь можно добавить логику предпросмотра файла
-  //       //         },
-  //       //         child: Text(
-  //       //           fileName!,
-  //       //           style: const TextStyle(
-  //       //             fontSize: 14,
-  //       //             fontFamily: 'Gilroy',
-  //       //             color: Color(0xff4759FF),
-  //       //             decoration: TextDecoration.underline,
-  //       //           ),
-  //       //         ),
-  //       //       ),
-  //       //     ],
-  //       //   ),
-  //       // ],
-  //     ],
-  //   );
-  // }
+// // Виджет выбора файла
+// Widget _buildFileSelection() {
+//   return Column(
+//     crossAxisAlignment: CrossAxisAlignment.start,
+//     children: [
+//       const Text(
+//         'Файл',
+//         style: TextStyle(
+//           fontSize: 16,
+//           fontWeight: FontWeight.w500,
+//           fontFamily: 'Gilroy',
+//           color: Color(0xff1E2E52),
+//         ),
+//       ),
+//       const SizedBox(height: 4),
+//       GestureDetector(
+//         onTap: _pickFile,
+//         child: Container(
+//           padding: const EdgeInsets.all(16),
+//           decoration: BoxDecoration(
+//             color: const Color(0xFFF4F7FD),
+//             borderRadius: BorderRadius.circular(8),
+//             border: Border.all(color: const Color(0xFFF4F7FD)),
+//           ),
+//           child: Row(
+//             children: [
+//               Expanded(
+//                 child: Text(
+//                   fileName ?? 'Выберите файл',
+//                   style: TextStyle(
+//                     color: fileName != null
+//                         ? const Color(0xff1E2E52)
+//                         : Colors.grey,
+//                   ),
+//                 ),
+//               ),
+//               Icon(
+//                 Icons.attach_file,
+//                 color: Colors.grey[600],
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//       // if (fileName != null) ...[
+//       //   const SizedBox(height: 8),
+//       //   Row(
+//       //     children: [
+//       //       const Text(
+//       //         'Файл: ',
+//       //         style: TextStyle(
+//       //           fontSize: 14,
+//       //           fontFamily: 'Gilroy',
+//       //           color: Color(0xff1E2E52),
+//       //         ),
+//       //       ),
+//       //       GestureDetector(
+//       //         onTap: () {
+//       //           // Здесь можно добавить логику предпросмотра файла
+//       //         },
+//       //         child: Text(
+//       //           fileName!,
+//       //           style: const TextStyle(
+//       //             fontSize: 14,
+//       //             fontFamily: 'Gilroy',
+//       //             color: Color(0xff4759FF),
+//       //             decoration: TextDecoration.underline,
+//       //           ),
+//       //         ),
+//       //       ),
+//       //     ],
+//       //   ),
+//       // ],
+//     ],
+//   );
+// }

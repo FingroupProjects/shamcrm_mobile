@@ -45,6 +45,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +58,9 @@ import '../../models/login_model.dart';
 class ApiService {
   late final String baseUrl;
   late final String baseUrlSocket;
+    static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  
 
   ApiService() {
     _initializeIfDomainExists();
@@ -73,6 +77,26 @@ class ApiService {
     baseUrl = await getDynamicBaseUrl();
     baseUrlSocket = await getSocketBaseUrl();
   }
+
+ // Общая обработка ответа от сервера 401
+  Future<http.Response> _handleResponse(http.Response response) async {
+    if (response.statusCode == 401) {
+      await logout();
+      _redirectToLogin();
+      throw Exception('Неавторизованный доступ!');
+    }
+    return response;
+  }
+
+  // Метод для перенаправления на окно входа
+  void _redirectToLogin() {
+    final navigatorKey = GlobalKey<NavigatorState>();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/login', 
+      (route) => false,
+    );
+  }
+  
 
   Future<String> getDynamicBaseUrl() async {
     String? domain = await getEnteredDomain();
@@ -119,8 +143,7 @@ class ApiService {
 
   Future<void> _removePermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs
-        .remove('permissions'); // Удаляем права доступа из SharedPreferences
+    await prefs.remove('permissions'); // Удаляем права доступа из SharedPreferences
   }
 
   // get all users
@@ -202,7 +225,7 @@ class ApiService {
     print('Статус ответа: ${response.statusCode}');
     print('Тело ответа: ${response.body}');
 
-    return response;
+    return _handleResponse(response);
   }
 
   // Метод для выполнения POST-запросов
@@ -224,7 +247,7 @@ class ApiService {
     print('Статус ответа: ${response.statusCode}');
     print('Тело ответа: ${response.body}');
 
-    return response;
+    return _handleResponse(response);
   }
 
 // Метод для выполнения PATCH-запросов
@@ -246,7 +269,7 @@ class ApiService {
     print('Статус ответа: ${response.statusCode}');
     print('Тело ответа: ${response.body}');
 
-    return response;
+    return _handleResponse(response);
   }
 
   // Метод для выполнения DELETE-запросов
@@ -265,7 +288,7 @@ class ApiService {
     print('Статус ответа: ${response.statusCode}');
     print('Тело ответа: ${response.body}');
 
-    return response;
+    return _handleResponse(response);
   }
 
   // Метод для выполнения POST-запросов
@@ -1306,37 +1329,56 @@ class ApiService {
   }
 
   /// Метод для отправки на 1С
-  Future<List> postLeadToC(int leadId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+     Future<void> postLeadToC(int leadId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
+    final path = '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-      // Формируем URL с параметрами запроса
-      final path =
-          '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    final response = await _postRequest(path, {});
 
-      // Выполняем POST-запрос (без тела)
-      final response = await _postRequest(path, {});
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print(
-            "------------------------------------------------------------------------------------");
-        print('LEAD TO 1C');
-        print(data);
-
-        return data as List;
-      } else {
-        print('Ошибка отправки в  1С Лид: ${response.statusCode}');
-        throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Произошла ошибка: $e');
-      throw Exception('Ошибка отправки 1С Лид: $e');
+    if (response.statusCode == 200) {
+      print('Успешно отправлено в 1С');
+    } else {
+      print('Ошибка отправки в 1С Лид: ${response.statusCode}');
+      throw Exception('Ошибка отправки в 1С: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Произошла ошибка: $e');
+    throw Exception('Ошибка отправки в 1С: $e');
   }
+}
+  // Future postLeadToC(int leadId) async {
+  //   try {
+  //     final organizationId = await getSelectedOrganization();
+
+  //     // Формируем URL с параметрами запроса
+  //     final path =
+  //         '/lead/sendToOneC/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+  //     // Выполняем POST-запрос (без тела)
+  //     final response = await _postRequest(path, {});
+
+  //     if (response.statusCode == 200) {
+  //       // final data = jsonDecode(response.body);
+  //       print("------------------------------------------------------------------------------------");
+  //       print('LEAD TO 1C');
+  //       // print(data);
+
+  //       // return data;
+  //     } else {
+  //       print('Ошибка отправки в  1С Лид: ${response.statusCode}');
+  //       throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     print('Произошла ошибка: $e');
+  //     throw Exception('Ошибка отправки 1С Лид: $e');
+  //   }
+  // }
+
+
 
 // Метод для Обновления Данных 1С
-  Future<List> getData1C() async {
+  Future getData1C() async {
     final organizationId = await getSelectedOrganization();
 
     final response = await _getRequest(
@@ -1347,7 +1389,7 @@ class ApiService {
       if (data['result'] != null) {
         return (data['result'] as List).toList();
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        // throw Exception('Результат отсутствует в ответе');
       }
     } else if (response.statusCode == 500) {
       throw Exception('Ошибка сервера (500): Внутреняя ошибка сервера');

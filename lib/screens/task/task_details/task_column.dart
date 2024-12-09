@@ -37,7 +37,8 @@ class _TaskColumnState extends State<TaskColumn> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => TaskBloc(ApiService())..add(FetchTasks(widget.statusId)),
+      create: (context) =>
+          TaskBloc(ApiService())..add(FetchTasks(widget.statusId)),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: BlocBuilder<TaskBloc, TaskState>(
@@ -55,9 +56,12 @@ class _TaskColumnState extends State<TaskColumn> {
 
               final ScrollController _scrollController = ScrollController();
               _scrollController.addListener(() {
-                if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
+                if (_scrollController.position.pixels ==
+                        _scrollController.position.maxScrollExtent &&
                     !context.read<TaskBloc>().allTasksFetched) {
-                  context.read<TaskBloc>().add(FetchMoreTasks(widget.statusId, state.currentPage));
+                  context
+                      .read<TaskBloc>()
+                      .add(FetchMoreTasks(widget.statusId, state.currentPage));
                 }
               });
 
@@ -70,13 +74,16 @@ class _TaskColumnState extends State<TaskColumn> {
                       itemCount: tasks.length,
                       itemBuilder: (context, index) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           child: TaskCard(
                             task: tasks[index],
                             name: widget.name,
                             statusId: widget.statusId,
                             onStatusUpdated: () {
-                              context.read<TaskBloc>().add(FetchTasks(widget.statusId));
+                              context
+                                  .read<TaskBloc>()
+                                  .add(FetchTasks(widget.statusId));
                             },
                           ),
                         );
@@ -86,24 +93,45 @@ class _TaskColumnState extends State<TaskColumn> {
                 ],
               );
             } else if (state is TaskError) {
-              return Center(child: Text('Ошибка: ${state.message}'));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
+              );
             }
             return Container();
           },
         ),
-        
         floatingActionButton: _hasPermissionToAddTask
             ? FloatingActionButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => TaskAddScreen(statusId: widget.statusId),
+                      builder: (context) =>
+                          TaskAddScreen(statusId: widget.statusId),
                     ),
                   );
                 },
                 backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
               )
             : null,
       ),

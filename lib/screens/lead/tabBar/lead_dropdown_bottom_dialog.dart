@@ -48,6 +48,7 @@ void DropdownBottomSheet(
                       }
 
                       List<LeadStatus> statuses = snapshot.data!;
+                      statuses = statuses.where((status) => status.lead_status_id == null).toList();
 
                       return ListView(
                         children: statuses.map((LeadStatus status) {

@@ -34,7 +34,28 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
         } else if (state is HistoryLoadedTask) {
           actionHistory = state.taskHistory;
         } else if (state is HistoryErrorTask) {
-          return Center(child: Text(state.message));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 2),
+            ),
+          );
         }
 
         return _buildExpandableActionContainer(
@@ -74,7 +95,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
               duration: const Duration(milliseconds: 200),
               child: isExpanded
                   ? SizedBox(
-                      height: 250, 
+                      height: 250,
                       child: SingleChildScrollView(
                         child: _buildItemList(items),
                       ),
@@ -157,7 +178,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
             ),
-            overflow: TextOverflow.ellipsis, 
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         SizedBox(width: 8),
@@ -170,8 +191,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
             ),
-            maxLines: 3, 
-            overflow: TextOverflow.ellipsis, 
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -185,7 +206,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Expanded( 
+            Expanded(
               child: Text(
                 detail,
                 style: TextStyle(
@@ -195,7 +216,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
                   color: Color(0xff1E2E52),
                 ),
                 maxLines: 3,
-                overflow: TextOverflow.ellipsis, 
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -209,7 +230,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
       final changes = entry.changes;
       final formattedDate =
           DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
+      String actionDetail =
+          '${entry.status}\n${entry.user.name} $formattedDate';
 
       if (changes != null) {
         if (changes.positionNewValue != null &&

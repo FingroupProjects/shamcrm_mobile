@@ -34,7 +34,28 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         } else if (state is HistoryLoaded) {
           actionHistory = state.leadHistory;
         } else if (state is HistoryError) {
-          return Center(child: Text(state.message));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 2),
+            ),
+          );
         }
 
         return _buildExpandableActionContainer(
@@ -156,7 +177,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
-              overflow: TextOverflow.ellipsis, 
+              overflow: TextOverflow.ellipsis,
             ),
             maxLines: 3,
           ),
@@ -170,7 +191,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
-              overflow: TextOverflow.ellipsis, 
+              overflow: TextOverflow.ellipsis,
             ),
             maxLines: 3,
           ),
@@ -194,7 +215,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
                   color: Color(0xff1E2E52),
-                  overflow: TextOverflow.ellipsis, // Ensures long text is truncated
+                  overflow:
+                      TextOverflow.ellipsis, // Ensures long text is truncated
                 ),
                 maxLines: 2,
               ),
@@ -210,7 +232,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       final changes = entry.changes;
       final formattedDate =
           DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
+      String actionDetail =
+          '${entry.status}\n${entry.user.name} $formattedDate';
 
       if (changes != null) {
         if (changes.positionNewValue != null &&
