@@ -23,11 +23,63 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
-      listener: (context, state) {},
-      builder: (context, state) {
+ @override
+Widget build(BuildContext context) {
+  return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
+    listener: (context, state) {
+      // Можно добавить действия при изменении состояния, если нужно
+    },
+    builder: (context, state) {
+      if (state is DashboardTaskChartLoading) {
+        // Показать индикатор загрузки, если данные загружаются
+        return Container(
+          height: 250,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Colors.grey.withOpacity(0.1),
+            //     spreadRadius: 0,
+            //     blurRadius: 4,
+            //     offset: const Offset(0, 2),
+            //   ),
+            // ],
+          ),
+          child: Center(
+            // child: CircularProgressIndicator(), // Индикатор загрузки
+          ),
+        );
+      } else if (state is DashboardTaskChartError) {
+        // Показать сообщение об ошибке, если загрузка данных не удалась
+        return Container(
+          height: 250,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              'Ошибка загрузки данных',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      } else if (state is DashboardTaskChartLoaded) {
         return Container(
           height: 250,
           padding: const EdgeInsets.all(16),
@@ -60,14 +112,16 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
                 child: _buildChart(state),
               ),
               const SizedBox(height: 16),
-              if (state is DashboardTaskChartLoaded)
-                _buildLegend(state.taskChartData),
+              _buildLegend(state.taskChartData),
             ],
           ),
         );
-      },
-    );
-  }
+      }
+      return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
+    },
+  );
+}
+
 
   Widget _buildChart(DashboardTaskChartState state) {
     if (state is DashboardTaskChartLoading) {
