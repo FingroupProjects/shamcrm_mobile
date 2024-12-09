@@ -46,14 +46,62 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<DashboardConversionBloc, DashboardConversionState>(
-      listener: (context, state) {
-        if (state is DashboardConversionLoaded) {
-          _animationController.forward(from: 0.0);
-        }
-      },
-      builder: (context, state) {
+Widget build(BuildContext context) {
+  return BlocConsumer<DashboardConversionBloc, DashboardConversionState>(
+    listener: (context, state) {
+      if (state is DashboardConversionLoaded) {
+        _animationController.forward(from: 0.0);
+      }
+    },
+    builder: (context, state) {
+      if (state is DashboardConversionLoading) {
+        // Показать индикатор загрузки, если данные загружаются
+        return Container(
+          height: 250,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Colors.grey.withOpacity(0.1),
+            //     spreadRadius: 0,
+            //     blurRadius: 4,
+            //     offset: const Offset(0, 2),
+            //   ),
+            // ],
+          ),
+          child: 
+          Center(
+            // child: CircularProgressIndicator(), 
+          ),
+        );
+      } else if (state is DashboardConversionError) {
+        // Показать сообщение об ошибке
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${state.message}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return Container(); // Возвращаем пустой контейнер при ошибке
+      } else if (state is DashboardConversionLoaded) {
         return Container(
           height: 250,
           padding: const EdgeInsets.all(16),
@@ -82,21 +130,22 @@ class _LeadConversionChartState extends State<LeadConversionChart>
               ),
               const SizedBox(height: 16),
               Expanded(
-                // Убрана стилизация "в коробке", чтобы график соответствовал минималистичному стилю
                 child: _buildChart(state),
               ),
               const SizedBox(height: 16),
-              if (state is DashboardConversionLoaded)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildLegend(state.leadConversionData),
-                )
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildLegend(state.leadConversionData),
+              ),
             ],
           ),
         );
-      },
-    );
-  }
+      }
+      return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
+    },
+  );
+}
+
 
   Widget _buildChart(DashboardConversionState state) {
     if (state is DashboardConversionLoading) {
