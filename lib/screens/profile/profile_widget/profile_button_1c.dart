@@ -90,7 +90,8 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                // '${state.message}',
+                'Данные успешно обновлены!',
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -103,7 +104,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.green,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 2),
