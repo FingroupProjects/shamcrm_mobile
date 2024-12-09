@@ -32,7 +32,7 @@ class DashboardStatsBloc extends Bloc<DashboardStatsEvent, DashboardStatsState> 
         final stats = await _apiService.getDashboardStats();
         emit(DashboardStatsLoaded(stats: stats));
       } else {
-        emit(DashboardStatsError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        // emit(DashboardStatsError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
       }
     } catch (e) {
       emit(DashboardStatsError(message: e.toString()));

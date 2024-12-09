@@ -107,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.only(top: 16),
                     child: Center(
                       child: Text(
-                        'Ошибка загрузки организаций: ${state.message}',
+                        '${state.message}',
                         style: TextStyle(
                           color: Colors.red,
                           fontSize: 16,

@@ -143,6 +143,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                   backgroundColor: Colors.green, 
                   elevation: 3,
                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+                  duration: Duration(seconds: 2),
                 ),
               );
             Navigator.pop(context, true);

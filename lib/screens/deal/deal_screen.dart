@@ -326,6 +326,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               padding: EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 16), // Паддинг для комфортного восприятия
+                  duration: Duration(seconds: 2),
             ),
           );
         }

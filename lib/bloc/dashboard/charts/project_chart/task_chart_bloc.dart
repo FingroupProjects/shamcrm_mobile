@@ -37,7 +37,7 @@ class ProjectChartBloc extends Bloc<ProjectChartEvent, ProjectChartState> {
         emit(ProjectChartLoaded(data: projectChartData));
         print('ProjectChartBloc: Состояние изменено на Loaded');
       } else {
-        emit(ProjectChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        // emit(ProjectChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
         print('ProjectChartBloc: Состояние изменено на Error (нет интернета)');
       }
     } catch (e) {

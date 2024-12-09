@@ -156,6 +156,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 backgroundColor: Colors.red,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
               ),
             );
           } else if (state is DealSuccess) {

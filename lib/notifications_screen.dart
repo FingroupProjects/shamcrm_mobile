@@ -76,7 +76,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (state is NotificationLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is NotificationError) {
-            return Center(child: Text('Ошибка: ${state.message}'));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
+              ),
+            );
           } else if (state is NotificationDataLoaded) {
             final notifications = state.notifications;
 
@@ -204,7 +225,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .notifications
           .removeWhere((notification) => notification.id == notificationId);
     });
-    
+
     notificationBloc.add(DeleteNotification(notificationId));
 
     if (type == 'message') {
@@ -226,7 +247,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 createDate: "",
                 unredMessage: 0,
               ).toChatItem("assets/images/AvatarChat.png"),
-              chatId: int.tryParse(id ?? '0') ?? 0, endPointInTab: 'lead',
+              chatId: int.tryParse(id ?? '0') ?? 0,
+              endPointInTab: 'lead',
             ),
           ),
         ),
