@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_event.dart';
@@ -6,12 +7,10 @@ import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadToC extends StatefulWidget {
   final int leadId;
-  final String
-      selectedOrganization; // Параметр для переданной выбранной организации
+  final String selectedOrganization; 
 
   LeadToC({required this.leadId, required this.selectedOrganization});
 
@@ -19,14 +18,17 @@ class LeadToC extends StatefulWidget {
   _LeadToCState createState() => _LeadToCState();
 }
 
+
 class _LeadToCState extends State<LeadToC> {
   @override
   Widget build(BuildContext context) {
+    context.read<OrganizationBloc>().add(FetchOrganizations());
     return BlocBuilder<OrganizationBloc, OrganizationState>(
       builder: (context, organizationState) {
         if (organizationState is OrganizationLoading) {
-          return Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                  return SizedBox.shrink();
+
         } else if (organizationState is OrganizationLoaded) {
           final organization = organizationState.organizations.firstWhere(
             (org) => org.id.toString() == widget.selectedOrganization,
@@ -37,14 +39,12 @@ class _LeadToCState extends State<LeadToC> {
           if (organization.is1cIntegration) {
             return _buildIntegrationButton(context);
           } else {
-            return Center(
-                child:
-                    Text('Интеграция с 1С не доступна для этой организации.'));
+            return SizedBox.shrink();
+            // return Center(child: Text('Интеграция с 1С не доступна для этой организации.'));
           }
         } else if (organizationState is OrganizationError) {
           return Center(
-              child: Text(
-                  '${organizationState.message}'));
+              child: Text('${organizationState.message}'));
         }
         return Center(child: Text(''));
       },
