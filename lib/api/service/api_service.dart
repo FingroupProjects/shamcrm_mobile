@@ -37,6 +37,7 @@ import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_add_task_model.dart';
+import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
@@ -2806,24 +2807,48 @@ class ApiService {
     }
   }
 
+//Метод для получения Пользователя через его ID
+ Future<UserByIdProfile> getUserById(int userId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+          '/user/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic>? jsonUser = decodedJson['result'];
+
+        if (jsonUser == null) {
+          throw Exception('Некорректные данные от API');
+        }
+
+        return UserByIdProfile.fromJson(jsonUser);
+      } else {
+        throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка загрузки User ID: $e');
+    }
+  }
   // Метод для Редактирование профиля
-   Future<Map<String, dynamic>> updateProfile({
+  Future<Map<String, dynamic>> updateProfile({
     required int userId,
     required String name,
     required String phone,
     String? email,
     String? login,
-    String? role,
-  }) async {    final organizationId = await getSelectedOrganization();
+    String? image,
+  }) async {
 
     final response = await _patchRequest(
-      '/user/$userId/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      '/profile/$userId',
       {
         'name': name,
         'phone': phone,
         if (email != null) 'email': email,
-        if (login != null) 'login': login,
-        if (role != null) 'role': role,
+        // if (login != null) 'login': login,
+        if (image != null) 'image': image,
       },
     );
 

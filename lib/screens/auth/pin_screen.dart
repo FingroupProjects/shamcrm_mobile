@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
@@ -16,23 +17,26 @@ class PinScreen extends StatefulWidget {
   State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen>
+    with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
-    bool _isIosVersionAbove15 = false; 
+  bool _isIosVersionAbove15 = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
   final LocalAuthentication _auth = LocalAuthentication();
   bool _canCheckBiometrics = false;
   List<BiometricType> _availableBiometrics = [];
+  String _userName = '';
+  String _userImage = '';
 
   @override
   void initState() {
     super.initState();
     _checkSavedPin();
     _initBiometrics();
-        _checkIosVersion();
-
+    _checkIosVersion();
+    _loadUserPhone(); // Вызов асинхронного метода
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -48,6 +52,19 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
         _animationController.reset();
       }
     });
+  }
+
+  void _loadUserPhone() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UName = prefs.getString('userName') ?? 'Не найдено';
+    String UImage = prefs.getString('userImage') ?? 'Не найдено';
+
+    setState(() {
+      _userName = UName;
+      _userImage = UImage; // Сохраняем путь изображения
+    });
+    print('UName: $UName');
+    print('UImage: $UImage'); // Проверка пути к изображению
   }
 
   Future<void> _checkIosVersion() async {
@@ -66,13 +83,15 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   Future<void> _initBiometrics() async {
     try {
       _canCheckBiometrics = await _auth.canCheckBiometrics;
-      
+
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
         if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
+          if (Platform.isIOS &&
+              _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
-          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.face)) {
+          } else if (Platform.isAndroid &&
+              _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
           }
         }
@@ -141,7 +160,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       setState(() {
         _pin += number;
       });
-
+      // Вибрация при каждом нажатии на кнопку
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: 50); // Вибрация длиной 50 миллисекунд
+      }
       if (_pin.length == 4) {
         final prefs = await SharedPreferences.getInstance();
         final savedPin = prefs.getString('user_pin');
@@ -158,7 +180,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
   void _triggerErrorEffect() async {
     if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 100);
+      Vibration.vibrate(duration: 200);
     }
     setState(() {
       _isWrongPin = true;
@@ -167,7 +189,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
 
     _animationController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
       setState(() {
         _isWrongPin = false;
@@ -194,124 +216,148 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  String getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    final greetingPrefix;
+
+    if (hour >= 5 && hour < 12) {
+      greetingPrefix = 'Доброе утро';
+    } else if (hour >= 12 && hour < 18) {
+      greetingPrefix = 'Добрый день';
+    } else if (hour >= 18 && hour < 22) {
+      greetingPrefix = 'Добрый вечер';
+    } else {
+      greetingPrefix = 'Доброй ночи';
+    }
+
+    return '$greetingPrefix, $_userName';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
+          // В виджете используйте _userImage для отображения
           padding: const EdgeInsets.symmetric(horizontal: 36.0),
           child: Column(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    const SizedBox(height: 40),
-    Image.asset(
-      'assets/icons/playstore.png',
-      height: 160,
-    ),
-    const SizedBox(height: 16),
-    const Text(
-      'Добро пожаловать',
-      style: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-    const SizedBox(height: 8),
-    Text(
-      _isWrongPin ? 'Неправильный пароль' : 'Введите ваш PIN-код',
-      style: TextStyle(
-        fontSize: 16,
-        color: _isWrongPin ? Colors.red : Colors.grey,
-      ),
-    ),
-    const SizedBox(height: 24),
-    AnimatedBuilder(
-      animation: _shakeAnimation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(_isWrongPin ? _shakeAnimation.value : 0, 0),
-          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              4,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: _isWrongPin
-                      ? Colors.red
-                      : (index < _pin.length
-                          ? const Color.fromARGB(255, 33, 41, 188)
-                          : Colors.grey.shade300),
-                  shape: BoxShape.circle,
+            children: [
+              const SizedBox(height: 180),
+              _userImage != 'Не найдено'
+                  ? SvgPicture.string(
+                      _userImage, // Строка SVG-кода
+                      height: 160,
+                    )
+                  : Image.asset(
+                      'assets/icons/playstore.png',
+                      height: 160,
+                    ),
+              const SizedBox(height: 16),
+              Text(
+                getGreetingMessage(),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isWrongPin ? 'Неправильный пароль' : 'Введите ваш PIN-код',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _isWrongPin ? Colors.red : Colors.grey,
                 ),
               ),
-            ),
-          ),
-        );
-      },
-    ),
-    const SizedBox(height: 24),
-    Expanded(
-      child: GridView.count(
-        crossAxisCount: 3,
-        shrinkWrap: true,
-        childAspectRatio: 1.5,
-        children: [
-          for (var i = 1; i <= 9; i++)
-            TextButton(
-              onPressed: () => _onNumberPressed(i.toString()),
-              child: Text(
-                i.toString(),
-                style: const TextStyle(fontSize: 24, color: Colors.black),
+              const SizedBox(height: 24),
+              AnimatedBuilder(
+                animation: _shakeAnimation,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(_isWrongPin ? _shakeAnimation.value : 0, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        4,
+                        (index) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: _isWrongPin
+                                ? Colors.red
+                                : (index < _pin.length
+                                    ? const Color.fromARGB(255, 33, 41, 188)
+                                    : Colors.grey.shade300),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
-          TextButton(
-            onPressed: _onExitPressed,
-            child: const Text(
-              'Выйти',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color.fromARGB(255, 33, 41, 188),
+              const SizedBox(height: 24),
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  childAspectRatio: 1.5,
+                  children: [
+                    for (var i = 1; i <= 9; i++)
+                      TextButton(
+                        onPressed: () => _onNumberPressed(i.toString()),
+                        child: Text(
+                          i.toString(),
+                          style: const TextStyle(
+                              fontSize: 24, color: Colors.black),
+                        ),
+                      ),
+                    TextButton(
+                      onPressed: _onExitPressed,
+                      child: const Text(
+                        'Выйти',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color.fromARGB(255, 33, 41, 188),
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _onNumberPressed('0'),
+                      child: const Text(
+                        '0',
+                        style: TextStyle(fontSize: 24, color: Colors.black),
+                      ),
+                    ),
+                    if (!_isIosVersionAbove15)
+                      TextButton(
+                        onPressed: _pin.isEmpty ? _authenticate : _onDelete,
+                        child: Icon(
+                          _pin.isEmpty
+                              ? Icons.fingerprint
+                              : Icons.backspace_outlined,
+                          color: const Color.fromARGB(255, 33, 41, 188),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => _onNumberPressed('0'),
-            child: const Text(
-              '0',
-              style: TextStyle(fontSize: 24, color: Colors.black),
-            ),
-          ),
-          if (!_isIosVersionAbove15) 
-            TextButton(
-              onPressed: _pin.isEmpty ? _authenticate : _onDelete,
-              child: Icon(
-                _pin.isEmpty
-                    ? Icons.fingerprint
-                    : Icons.backspace_outlined,
-                color: const Color.fromARGB(255, 33, 41, 188),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ForgotPinScreen(),
+                  ));
+                },
+                child: const Text(
+                  'Забыли PIN-код?',
+                  style: TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
+                ),
               ),
-            ),
-        ],
-      ),
-    ),
-    const SizedBox(height: 24),
-    TextButton(
-      onPressed: () {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => ForgotPinScreen(),
-        ));
-      },
-      child: const Text(
-        'Забыли PIN-код?',
-        style: TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
-      ),
-    ),
-  ],
-),
-
+            ],
+          ),
         ),
       ),
     );
