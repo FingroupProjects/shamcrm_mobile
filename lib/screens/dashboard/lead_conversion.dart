@@ -46,134 +46,124 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   }
 
   @override
-Widget build(BuildContext context) {
-  return BlocConsumer<DashboardConversionBloc, DashboardConversionState>(
-    listener: (context, state) {
-      if (state is DashboardConversionLoaded) {
-        _animationController.forward(from: 0.0);
-      }
-    },
-    builder: (context, state) {
-      if (state is DashboardConversionLoading) {
-        // Показать индикатор загрузки, если данные загружаются
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: Colors.grey.withOpacity(0.1),
-            //     spreadRadius: 0,
-            //     blurRadius: 4,
-            //     offset: const Offset(0, 2),
-            //   ),
-            // ],
-          ),
-          child: 
-          Center(
-            // child: CircularProgressIndicator(), 
-          ),
-        );
-      } else if (state is DashboardConversionError) {
-        // Показать сообщение об ошибке
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${state.message}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
+  Widget build(BuildContext context) {
+    return BlocConsumer<DashboardConversionBloc, DashboardConversionState>(
+      listener: (context, state) {
+        if (state is DashboardConversionLoaded) {
+          _animationController.forward(from: 0.0);
+        }
+      },
+      builder: (context, state) {
+        if (state is DashboardConversionLoading) {
+          // Показать индикатор загрузки, если данные загружаются
+          return Container(
+            height: 250,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
+              // boxShadow: [
+              //   BoxShadow(
+              //     color: Colors.grey.withOpacity(0.1),
+              //     spreadRadius: 0,
+              //     blurRadius: 4,
+              //     offset: const Offset(0, 2),
+              //   ),
+              // ],
             ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return Container(); // Возвращаем пустой контейнер при ошибке
-      } else if (state is DashboardConversionLoaded) {
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Конверсия лидов',
+            child: Center(
+                // child: CircularProgressIndicator(),
+                ),
+          );
+        } else if (state is DashboardConversionError) {
+          // Показать сообщение об ошибке
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A202C),
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _buildChart(state),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildLegend(state.leadConversionData),
-              ),
-            ],
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return Container(); // Возвращаем пустой контейнер при ошибке
+        } else if (state is DashboardConversionLoaded) {
+          return Container(
+            height: 250,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 0,
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Конверсия лидов',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A202C),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _buildChart(state),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildLegend(state.leadConversionData),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox
+            .shrink(); // Возвращаем пустой контейнер, если нет данных
+      },
+    );
+  }
+
+  Widget _buildChart(DashboardConversionState state) {
+    if (state is DashboardConversionLoaded) {
+      final data = state.leadConversionData;
+
+      // Проверяем, есть ли данные (оба значения 0)
+      if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
+        return const Center(
+          child: Text(
+            'Нет данных для отображения',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF718096),
+            ),
           ),
         );
       }
-      return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
-    },
-  );
-}
 
-
-  Widget _buildChart(DashboardConversionState state) {
-    if (state is DashboardConversionLoading) {
-      // return const Center(child: CircularProgressIndicator());
-    } else if (state is DashboardConversionError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${state.message}',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else if (state is DashboardConversionLoaded) {
       return AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
@@ -196,8 +186,7 @@ Widget build(BuildContext context) {
               ),
               sectionsSpace: 4,
               centerSpaceRadius: 40,
-              sections:
-                  _showingSections(state.leadConversionData, _animation.value),
+              sections: _showingSections(data, _animation.value),
             ),
           );
         },
@@ -208,6 +197,11 @@ Widget build(BuildContext context) {
 
   List<PieChartSectionData> _showingSections(
       LeadConversion data, double animationValue) {
+    // Если данные отсутствуют, возвращаем пустой график
+    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
+      return [];
+    }
+
     return List.generate(2, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 20.0 : 0.0;
@@ -232,6 +226,18 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildLegend(LeadConversion data) {
+    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
+      return const Center(
+        child: Text(
+          'Нет данных для легенды',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF718096),
+          ),
+        ),
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

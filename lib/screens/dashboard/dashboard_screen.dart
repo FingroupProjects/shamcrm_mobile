@@ -9,6 +9,7 @@ import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_
 import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
 import 'package:crm_task_manager/screens/dashboard/project_chart.dart';
@@ -41,12 +42,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadUserRole() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String role = prefs.getString('userRoleName') ?? 'No role assigned';
-    setState(() {
-      userRoleName = role;
-    });
-    print('Role: $userRoleName');
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      
+      if (userId.isEmpty) {
+        setState(() {
+          userRoleName = 'No user ID found';
+        });
+        return;
+      }
+
+      // Получение роли через API
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userRoleName = (userProfile.role?.isNotEmpty ?? false)
+            ? userProfile.role!.first.name
+            : 'No role assigned';
+      });
+
+      print('Role: $userRoleName');
+    } catch (e) {
+      print('Error loading user role: $e');
+      setState(() {
+        userRoleName = 'Error loading role';
+      });
+    }
   }
 
   Future<void> _loadImportantBoxes() async {
@@ -158,7 +179,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 }
-
    
   // Метод для стилизованных раскрывающихся карточек
   Widget _buildExpansionTile({required String title, required Widget child}) {

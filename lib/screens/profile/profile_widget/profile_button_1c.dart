@@ -125,6 +125,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               _buildProfileOption(
                 iconPath: 'assets/icons/1c/5.png',
                 text: 'Обновить данные 1С',
+                
               ),
             if (lastUpdated != null)
               Center(
@@ -164,16 +165,16 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               ? RotationTransition(
                   turns: Tween<double>(begin: 0, end: -1).animate(_controller),
                   child: Padding(
-                    padding: const EdgeInsets.all(8.0), // Отступы для размера иконки
+                    padding: const EdgeInsets.all(4.0), // Отступы для размера иконки
                     child: Image.asset(
                       iconPath,
-                      width: 60,
-                      height: 60,
+                      width: 50,
+                      height: 50,
                     ),
                   ),
                 )
               : Padding(
-                  padding: const EdgeInsets.all(8.0), // Отступы для размера иконки
+                  padding: const EdgeInsets.all(1.0), // Отступы для размера иконки
                   child: Image.asset(
                     iconPath,
                     width: 40,
