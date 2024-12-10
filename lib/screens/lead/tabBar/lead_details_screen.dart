@@ -62,6 +62,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   LeadById? currentLead;
   bool _canEditLead = false;
   bool _canDeleteLead = false;
+  bool _canReadNotes = false;
+  bool _canReadDeal = false;
+
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
 
@@ -90,9 +93,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
     final canDelete = await _apiService.hasPermission('lead.delete');
+    final canReadNotes = await _apiService.hasPermission('notice.read');
+    final canReadDeal = await _apiService.hasPermission('deal.read');
+
     setState(() {
       _canEditLead = canEdit;
       _canDeleteLead = canDelete;
+      _canReadNotes = canReadNotes;
+      _canReadDeal = canReadDeal;
     });
   }
 
@@ -192,11 +200,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         ),
                       const SizedBox(height: 16),
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 16),
-                      NotesWidget(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      if (_canReadNotes)
+                      NotesWidget(leadId: int.parse(widget.leadId)),                      
+                      // const SizedBox(height: 16),
+                      if (_canReadDeal)
                       DealsWidget(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 16),
+                      // const SizedBox(height: 16),
                       ContactPersonWidget(leadId: int.parse(widget.leadId)),
                     ],
                   ),

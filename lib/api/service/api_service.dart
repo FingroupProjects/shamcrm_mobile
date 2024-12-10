@@ -425,8 +425,7 @@ class ApiService {
       final loginResponse = LoginResponse.fromJson(data);
 
       await _saveToken(loginResponse.token);
-      await _savePermissions(
-          loginResponse.permissions); // Сохраняем права доступа
+      await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
 
       return loginResponse;
     } else {
