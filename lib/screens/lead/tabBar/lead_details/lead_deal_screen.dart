@@ -154,7 +154,7 @@ class _DealsWidgetState extends State<DealsWidget> {
 
   Widget _buildDealItem(LeadDeal deal) {
     final formattedDate = deal.startDate != null
-        ? DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse(deal.startDate!))
+        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.startDate!))
         : 'Не указано';
 
     return GestureDetector(

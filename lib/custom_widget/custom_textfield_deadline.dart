@@ -8,7 +8,7 @@ class CustomTextFieldDate extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool useCurrentDateAsDefault;
   final bool readOnly;
-  final TextInputType keyboardType; // New property for input type
+  final TextInputType keyboardType;
 
   CustomTextFieldDate({
     required this.controller,
@@ -17,7 +17,7 @@ class CustomTextFieldDate extends StatelessWidget {
     this.validator,
     this.useCurrentDateAsDefault = false,
     this.readOnly = false,
-    this.keyboardType = TextInputType.text, // Initialize the new property
+    this.keyboardType = TextInputType.text,
   }) {
     if (useCurrentDateAsDefault) {
       controller.text = withTime
@@ -51,16 +51,20 @@ class CustomTextFieldDate extends StatelessWidget {
           context: context,
           initialTime: TimeOfDay.now(),
           builder: (BuildContext context, Widget? child) {
-            return Theme(
-              data: ThemeData.light().copyWith(
-                primaryColor: Colors.blue,
-                hintColor: Colors.blue,
-                colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
-                dialogBackgroundColor: Colors.white,
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+              child: Theme(
+                data: ThemeData.light().copyWith(
+                  primaryColor: Colors.blue,
+                  hintColor: Colors.blue,
+                  colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
+                  dialogBackgroundColor: Colors.white,
+                ),
+                child: child ?? Container(),
               ),
-              child: child ?? Container(),
             );
           },
+          initialEntryMode: TimePickerEntryMode.dial, 
         );
 
         if (pickedTime != null) {
@@ -71,7 +75,7 @@ class CustomTextFieldDate extends StatelessWidget {
             pickedTime.hour,
             pickedTime.minute,
           );
-          controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+          controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime); 
         }
       } else {
         controller.text = DateFormat('dd/MM/yyyy').format(pickedDate);
@@ -101,7 +105,7 @@ class CustomTextFieldDate extends StatelessWidget {
               controller: controller,
               validator: validator,
               readOnly: readOnly,
-              keyboardType: keyboardType, // Set the input type
+              keyboardType: keyboardType,
               decoration: InputDecoration(
                 hintText: withTime ? '__/__/____ __:__' : '__/__/____',
                 hintStyle: TextStyle(fontSize: 12),
