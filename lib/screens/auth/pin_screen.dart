@@ -249,17 +249,17 @@ class _PinScreenState extends State<PinScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 180),
+              const SizedBox(height: 100),
               _userImage != 'Не найдено'
                   ? SvgPicture.string(
                       _userImage, // Строка SVG-кода
-                      height: 160,
+                      height: 100,
                     )
                   : Image.asset(
                       'assets/icons/playstore.png',
-                      height: 160,
+                      height: 100,
                     ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 100),
               Text(
                 getGreetingMessage(),
                 style: const TextStyle(
