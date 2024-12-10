@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -148,7 +149,13 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
   }
 
   void _navigateToPinSetup() {
-    Navigator.pushNamed(context, '/pin_setup');
+    // Navigator.push(context, '/pin_setup'); 
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PinSetupScreen(),
+      ),
+    );
   }
 
   @override

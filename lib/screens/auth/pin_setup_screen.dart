@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -74,7 +75,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     if (_pin == _confirmPin) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_pin', _pin);
-      Navigator.of(context).pushReplacementNamed('/home');
+      // Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+        (Route<dynamic> route) =>
+            false, // Условие для удаления всех предыдущих маршрутов
+      );
     } else {
       _triggerErrorEffect();
     }
@@ -148,8 +155,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       onPressed: () => _onNumberPressed(i.toString()),
                       child: Text(
                         i.toString(),
-                        style: const TextStyle(
-                            fontSize: 24, color: Colors.black),
+                        style:
+                            const TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
                   TextButton(
