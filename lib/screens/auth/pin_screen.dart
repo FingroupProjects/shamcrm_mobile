@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -31,6 +32,7 @@ class _PinScreenState extends State<PinScreen>
   List<BiometricType> _availableBiometrics = [];
   String _userName = '';
   String _userImage = '';
+  List<Role> _userRole = []; // Добавляем переменную для ролей пользователя
 
   @override
   void initState() {
@@ -38,7 +40,7 @@ class _PinScreenState extends State<PinScreen>
     _checkSavedPin();
     _initBiometrics();
     _checkIosVersion();
-    _loadUserPhone(); // Вызов асинхронного метода
+    _loadUserData(); // Вызов асинхронного метода для загрузки данных
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -56,22 +58,19 @@ class _PinScreenState extends State<PinScreen>
     });
   }
 
-void _loadUserPhone() async {
+  void _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String UUID = prefs.getString('userID') ?? 'Не найдено';
+    UserByIdProfile userProfile =
+        await ApiService().getUserById(int.parse(UUID));
 
-
-    try {
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
-
-      setState(() {
-        _userName = userProfile.name;
-        _userImage = userProfile.image ?? '';
-      });
-    } catch (e) {
-      print('Ошибка при загрузке данных из API: $e');
-    }
+    setState(() {
+      _userName =  userProfile.name;
+      _userImage = userProfile.image ?? '';
+      print('Имя пользователя: $_userName');
+      print('Изображение пользователя: $_userImage');
+      
+    });
   }
 
   Future<void> _checkIosVersion() async {
@@ -86,7 +85,6 @@ void _loadUserPhone() async {
       }
     }
   }
-
 
   Future<void> _initBiometrics() async {
     try {

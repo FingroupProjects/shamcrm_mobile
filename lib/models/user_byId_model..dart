@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/role_model.dart';
+
 class UserByIdProfile {
   final int id;
   final String name;
@@ -6,6 +8,7 @@ class UserByIdProfile {
   final String phone;
   final String? image;
   final String? lastSeen;
+  final List<Role>? role;
 
   UserByIdProfile({
     required this.id,
@@ -15,6 +18,7 @@ class UserByIdProfile {
     required this.phone,
     this.image,
     this.lastSeen,
+    this.role,
   });
 
   factory UserByIdProfile.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,9 @@ class UserByIdProfile {
       phone: json['phone'] ?? 'Не указано',
       image: json['image'] as String?,
       lastSeen: json['last_seen'] as String?,
+      role: (json['roles'] as List<dynamic>?)
+          ?.map((roleJson) => Role.fromJson(roleJson))
+          .toList(),
     );
   }
 }

@@ -1193,7 +1193,8 @@ class ApiService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Заметка создана успешно.'};
-    } else if (response.statusCode == 422) {
+    } 
+    else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
       }
@@ -1209,7 +1210,8 @@ class ApiService {
           'message':
               'Неправильный номер телефона. Проверьте формат и количество цифр.'
         };
-      } else if (response.body.contains('position')) {
+      } 
+      else if (response.body.contains('position')) {
         return {'success': false, 'message': 'Поля не может быть пустым.'};
       } else {
         return {

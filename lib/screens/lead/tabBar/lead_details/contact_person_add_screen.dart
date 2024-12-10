@@ -24,6 +24,33 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
 
   String selectedDialCode = '';
 
+void _showErrorSnackBar(BuildContext context, String message) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.red,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  });
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,38 +84,11 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
         ),
       ),
       body: BlocListener<ContactPersonBloc, ContactPersonState>(
-        listener: (context, state) {
-          if (state is ContactPersonError) {
-           ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w500, 
-                      color: Colors.white, 
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), 
-                  ),
-                  backgroundColor: Colors.green, 
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-                  duration: Duration(seconds: 2),
-                ),
-              );
-          } else if (state is ContactPersonSuccess) {
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(
-            //     content: Text(state.message),
-            //     duration: Duration(seconds: 3),
-            //     backgroundColor: Colors.green,
-            //   ),
-            // );
-            Navigator.pop(context, widget.leadId);
+  listener: (context, state) {
+    if (state is ContactPersonError) {
+      _showErrorSnackBar(context, state.message);
+    } else if (state is ContactPersonSuccess) {
+      Navigator.pop(context, widget.leadId);
           }
         },
         child: Form(
@@ -145,8 +145,7 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
