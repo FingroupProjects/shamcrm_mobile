@@ -1,9 +1,6 @@
 // lib/screens/auth/auth_screen.dart
 import 'dart:io';
 
-import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/role_model.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +29,6 @@ class _PinScreenState extends State<PinScreen>
   List<BiometricType> _availableBiometrics = [];
   String _userName = '';
   String _userImage = '';
-  List<Role> _userRole = []; // Добавляем переменную для ролей пользователя
 
   @override
   void initState() {
@@ -40,7 +36,7 @@ class _PinScreenState extends State<PinScreen>
     _checkSavedPin();
     _initBiometrics();
     _checkIosVersion();
-    _loadUserData(); // Вызов асинхронного метода для загрузки данных
+    _loadUserPhone(); // Вызов асинхронного метода
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -58,19 +54,17 @@ class _PinScreenState extends State<PinScreen>
     });
   }
 
-  void _loadUserData() async {
+  void _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userID') ?? 'Не найдено';
-    UserByIdProfile userProfile =
-        await ApiService().getUserById(int.parse(UUID));
+    String UName = prefs.getString('userName') ?? 'Не найдено';
+    String UImage = prefs.getString('userImage') ?? 'Не найдено';
 
     setState(() {
-      _userName =  userProfile.name;
-      _userImage = userProfile.image ?? '';
-      print('Имя пользователя: $_userName');
-      print('Изображение пользователя: $_userImage');
-      
+      _userName = UName;
+      _userImage = UImage; // Сохраняем путь изображения
     });
+    print('UName: $UName');
+    print('UImage: $UImage'); // Проверка пути к изображению
   }
 
   Future<void> _checkIosVersion() async {
@@ -245,19 +239,22 @@ class _PinScreenState extends State<PinScreen>
       body: SafeArea(
         child: Padding(
           // В виджете используйте _userImage для отображения
-          padding: const EdgeInsets.symmetric(horizontal: 36.0),
+          padding: const EdgeInsets.symmetric(horizontal: 30.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 180),
+              SizedBox(
+                height: MediaQuery.of(context).size.height *
+                    0.2, 
+              ),
               _userImage != 'Не найдено'
                   ? SvgPicture.string(
                       _userImage, // Строка SVG-кода
-                      height: 160,
+                      height: 100,
                     )
                   : Image.asset(
                       'assets/icons/playstore.png',
-                      height: 160,
+                      height: 100,
                     ),
               const SizedBox(height: 16),
               Text(

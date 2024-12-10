@@ -53,15 +53,13 @@ class _CustomAppBarState extends State<CustomAppBar> {
           await ApiService().getUserById(int.parse(UUID));
 
       setState(() {
-        _userImage = userProfile.image ??
-            ''; // Убедитесь, что image — это URL или строка SVG
+        _userImage = userProfile.image ?? ''; // Убедитесь, что image — это URL или строка SVG
         print('Изображение пользователя загружено: $_userImage');
       });
     } catch (e) {
       print('Ошибка при загрузке изображения: $e');
       setState(() {
-        _userImage =
-            ''; // В случае ошибки использовать пустую строку или резервное изображение
+        _userImage = ''; // В случае ошибки использовать пустую строку или резервное изображение
       });
     }
   }
@@ -101,10 +99,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
                           _userImage,
                           width: 40,
                           height: 40,
-                          placeholderBuilder: (context) {
-                            print('Загрузка SVG...');
-                            return CircularProgressIndicator();
-                          },
+                          // placeholderBuilder: (context) {
+                          //   print('Загрузка SVG...');
+                          //   return CircularProgressIndicator();
+                          // },
                         )
                       : Image.network(
                           _userImage,
@@ -119,14 +117,14 @@ class _CustomAppBarState extends State<CustomAppBar> {
                               print(
                                   'Загрузка изображения... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
                               return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes !=
-                                          null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          (loadingProgress.expectedTotalBytes ??
-                                              1)
-                                      : null,
-                                ),
+                                // child: CircularProgressIndicator(
+                                //   value: loadingProgress.expectedTotalBytes !=
+                                //           null
+                                //       ? loadingProgress.cumulativeBytesLoaded /
+                                //           (loadingProgress.expectedTotalBytes ??
+                                //               1)
+                                //       : null,
+                                // ),
                               );
                             }
                           },

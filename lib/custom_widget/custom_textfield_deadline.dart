@@ -27,9 +27,17 @@ class CustomTextFieldDate extends StatelessWidget {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    String formattedDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
+      fieldHintText: "дд/ММ/гггг",
+      cancelText: "Назад",
+      confirmText: "Ок",
+      helpText: "Выберите дату",
+      errorFormatText: "Ошибка! Пример: $formattedDate",
+      // errorInvalidText: "ЫЫЫ",
+      fieldLabelText: "Введите дату",
       firstDate: DateTime(1940),
       lastDate: DateTime(2101),
       builder: (BuildContext context, Widget? child) {
@@ -50,9 +58,15 @@ class CustomTextFieldDate extends StatelessWidget {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
           initialTime: TimeOfDay.now(),
+          cancelText: "Назад",
+          confirmText: "Ок",
+          helpText: "Выберите время",
+          minuteLabelText: "Минута",
+          hourLabelText: "Час",
           builder: (BuildContext context, Widget? child) {
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+              data:
+                  MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
               child: Theme(
                 data: ThemeData.light().copyWith(
                   primaryColor: Colors.blue,
@@ -64,7 +78,7 @@ class CustomTextFieldDate extends StatelessWidget {
               ),
             );
           },
-          initialEntryMode: TimePickerEntryMode.dial, 
+          initialEntryMode: TimePickerEntryMode.dial,
         );
 
         if (pickedTime != null) {
@@ -75,7 +89,7 @@ class CustomTextFieldDate extends StatelessWidget {
             pickedTime.hour,
             pickedTime.minute,
           );
-          controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime); 
+          controller.text = DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
         }
       } else {
         controller.text = DateFormat('dd/MM/yyyy').format(pickedDate);
