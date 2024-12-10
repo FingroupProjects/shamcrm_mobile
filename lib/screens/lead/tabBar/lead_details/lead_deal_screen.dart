@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
@@ -23,10 +24,26 @@ class DealsWidget extends StatefulWidget {
 class _DealsWidgetState extends State<DealsWidget> {
   List<LeadDeal> deals = [];
   late ScrollController _scrollController;
+  bool _canCreateDeal = false;
+  // bool _canUpdateDeal = false;
+  bool _canDeleteDeal = false;
+  final ApiService _apiService = ApiService();
+
+  Future<void> _checkPermissions() async {
+    final canCreate = await _apiService.hasPermission('deal.create');
+    // final canUpdate = await _apiService.hasPermission('deal.update');
+    final canDelete = await _apiService.hasPermission('deal.delete');
+    setState(() {
+      _canCreateDeal = canCreate;
+      // _canUpdateDeal = canUpdate;
+      _canDeleteDeal = canDelete;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+      _checkPermissions(); // Проверяем права пользователя
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
@@ -142,8 +159,14 @@ class _DealsWidgetState extends State<DealsWidget> {
 
     return GestureDetector(
       onTap: () {
-        _navigateToDealDetails(deal);
-      },
+              _navigateToDealDetails(deal);
+            }
+          ,
+      // onTap: _canUpdateDeal
+      //     ? () {
+      //         _navigateToDealDetails(deal);
+      //       }
+      //     : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
@@ -177,6 +200,7 @@ class _DealsWidgetState extends State<DealsWidget> {
                     ],
                   ),
                 ),
+              if (_canDeleteDeal)
                 IconButton(
                   icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
                   onPressed: () {
@@ -230,35 +254,39 @@ class _DealsWidgetState extends State<DealsWidget> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LeadDealAddScreen(leadId: widget.leadId),
+        if (_canCreateDeal)
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      LeadDealAddScreen(leadId: widget.leadId),
+                ),
+              ).then((_) {
+                context
+                    .read<LeadDealsBloc>()
+                    .add(FetchLeadDeals(widget.leadId));
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              backgroundColor: Color(0xff1E2E52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            ).then((_) {
-              context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
-            });
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: Color(0xff1E2E52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Добавить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
             ),
           ),
-          child: Text(
-            'Добавить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
       ],
     );
   }

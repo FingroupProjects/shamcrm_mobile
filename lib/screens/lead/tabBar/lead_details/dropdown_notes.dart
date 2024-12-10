@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
@@ -22,12 +23,28 @@ class NotesWidget extends StatefulWidget {
 class _NotesWidgetState extends State<NotesWidget> {
   List<Notes> notes = [];
   late ScrollController _scrollController;
+  bool _canCreateNotes = false;
+  bool _canUpdateNotes = false;
+  bool _canDeleteNotes = false;
+  final ApiService _apiService = ApiService();
+
+  Future<void> _checkPermissions() async {
+    final canCreate = await _apiService.hasPermission('notice.create');
+    final canUpdate = await _apiService.hasPermission('notice.update');
+    final canDelete = await _apiService.hasPermission('notice.delete');
+    setState(() {
+      _canCreateNotes = canCreate;
+      _canUpdateNotes = canUpdate;
+      _canDeleteNotes = canDelete;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _checkPermissions();
     context.read<NotesBloc>().add(FetchNotes(widget.leadId));
   }
 
@@ -134,9 +151,11 @@ class _NotesWidgetState extends State<NotesWidget> {
         : 'Не указано';
 
     return GestureDetector(
-      onTap: () {
-        _showEditNoteDialog(note);
-      },
+      onTap: _canUpdateNotes
+          ? () {
+              _showEditNoteDialog(note);
+            }
+          : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
@@ -170,12 +189,13 @@ class _NotesWidgetState extends State<NotesWidget> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
-                  onPressed: () {
-                    _showDeleteNoteDialog(note);
-                  },
-                ),
+                if (_canDeleteNotes)
+                  IconButton(
+                    icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                    onPressed: () {
+                      _showDeleteNoteDialog(note);
+                    },
+                  ),
               ],
             ),
           ),
@@ -194,28 +214,29 @@ class _NotesWidgetState extends State<NotesWidget> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        TextButton(
-          onPressed: () {
-            _showAddNoteDialog();
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: Color(0xff1E2E52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        if (_canCreateNotes)
+          TextButton(
+            onPressed: () {
+              _showAddNoteDialog();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              backgroundColor: Color(0xff1E2E52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Добавить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
             ),
           ),
-          child: Text(
-            'Добавить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
       ],
     );
   }
