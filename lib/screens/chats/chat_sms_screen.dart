@@ -58,9 +58,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ApiService apiService = ApiService();
 
   late String baseUrl;
+    bool _canCreateChat = false;
+
+  Future<void> _checkPermissions() async {
+    
+    final canCreate = await apiService.hasPermission('chat.create');
+    setState(() {
+      _canCreateChat = canCreate;
+    });
+  }
 
   @override
   void initState() {
+    _checkPermissions();
+
     context.read<MessagingCubit>().getMessages(widget.chatId);
 
     context.read<ListenSenderFileCubit>().updateValue(false);
@@ -138,6 +149,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           Expanded(child: messageListUi()),
 
           /// bottom ui
+        if(_canCreateChat)
           inputWidget(),
         ],
       ),
