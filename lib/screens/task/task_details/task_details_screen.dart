@@ -99,7 +99,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     currentTask = task;
     details = [
-      {'label': 'ID задачи:', 'value': task.id.toString()},
+      // {'label': 'ID задачи:', 'value': task.id.toString()},
       {'label': 'Название задачи:', 'value': task.name},
       {
         'label': 'От:',

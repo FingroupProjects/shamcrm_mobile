@@ -93,7 +93,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   void _updateDetails(DealById deal) {
     currentDeal = deal; // Сохраняем актуальную сделку
     details = [
-      {'label': 'ID Сделки:', 'value': deal.id.toString()},
+      // {'label': 'ID Сделки:', 'value': deal.id.toString()},
       {'label': 'Название сделки:', 'value': deal.name},
       {'label': 'Менеджер:', 'value': deal.manager?.name ?? 'Не указано'},
       {'label': 'Клиент:', 'value': deal.lead?.name ?? 'Не указано'},

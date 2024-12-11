@@ -121,7 +121,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     currentLead = lead; // Сохраняем актуального лида
     details = [
-      {'label': 'ID лида:', 'value': lead.id.toString()},
+      // {'label': 'ID лида:', 'value': lead.id.toString()},
       {'label': 'Наименование лида :', 'value': lead.name},
       {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
       {'label': 'Регион:', 'value': lead.region?.name ?? 'Не указано'},
