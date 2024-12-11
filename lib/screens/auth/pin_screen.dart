@@ -17,8 +17,7 @@ class PinScreen extends StatefulWidget {
   State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen>
-    with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -36,7 +35,7 @@ class _PinScreenState extends State<PinScreen>
     _checkSavedPin();
     _initBiometrics();
     _checkIosVersion();
-    _loadUserPhone(); // Вызов асинхронного метода
+    _loadUserPhone(); // Вызов асинхронного метода загрузки данных пользователя
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -54,19 +53,32 @@ class _PinScreenState extends State<PinScreen>
     });
   }
 
+  // Метод для загрузки данных пользователя из SharedPreferences
   void _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UName = prefs.getString('userName') ?? 'Не найдено';
-    String UImage = prefs.getString('userImage') ?? 'Не найдено';
+    String? UName = prefs.getString('userName');
+    String? UImage = prefs.getString('userImage');
 
-    setState(() {
-      _userName = UName;
-      _userImage = UImage; // Сохраняем путь изображения
-    });
-    print('UName: $UName');
-    print('UImage: $UImage'); // Проверка пути к изображению
+    // Проверяем, если изображение пользователя отсутствует, загружаем его с сервера
+    if (UName != null && UImage != null) {
+      setState(() {
+        _userName = UName;
+        _userImage = UImage; // Сохраняем путь изображения
+      });
+    } else {
+      // Если данных нет в SharedPreferences, можно загрузить их с сервера или установить дефолтные значения
+      setState(() {
+        _userName = 'Не найдено';
+        _userImage = ''; // Путь к изображению по умолчанию
+      });
+    }
+
+    // Выводим данные для отладки
+    print('UName: $_userName');
+    print('UImage: $_userImage');
   }
 
+  // Проверка версии iOS
   Future<void> _checkIosVersion() async {
     if (Platform.isIOS) {
       var deviceInfo = DeviceInfoPlugin();
@@ -79,6 +91,7 @@ class _PinScreenState extends State<PinScreen>
       }
     }
   }
+
 
   Future<void> _initBiometrics() async {
     try {
@@ -256,7 +269,7 @@ class _PinScreenState extends State<PinScreen>
                       'assets/icons/playstore.png',
                       height: 100,
                     ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 100),
               Text(
                 getGreetingMessage(),
                 style: const TextStyle(

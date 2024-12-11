@@ -33,29 +33,65 @@ class _CustomAppBarState extends State<CustomAppBar> {
   bool _isSearching = false;
   late TextEditingController _searchController;
   late FocusNode focusNode;
-  String _userImage = ''; // Переменная для хранения изображения
+  String _userImage = '';
+  
+  // Добавляем статическую переменную для кэширования
+  static String _cachedUserImage = '';
 
   @override
   void initState() {
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
-    _loadUserProfile(); // Загрузка изображения при инициализации
+    
+    // Используем кэшированное изображение, если оно есть
+    if (_cachedUserImage.isNotEmpty) {
+      _userImage = _cachedUserImage;
+    } else {
+      _loadUserProfile(); // Загрузка изображения только если нет кэша
+    }
+    
     super.initState();
   }
 
   Future<void> _loadUserProfile() async {
+    // Проверяем, было ли изображение уже загружено ранее
+    if (_cachedUserImage.isNotEmpty) {
+      setState(() {
+        _userImage = _cachedUserImage;
+      });
+      return;
+    }
+
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-      // Используем локальную переменную UUID, а не widget.UUID
+      // Проверяем, есть ли кэшированное изображение в ShajredPreferences
+      String? cachedImage = prefs.getString('userProfileImage_$UUID');
+      
+      if (cachedImage != null && cachedImage.isNotEmpty) {
+        setState(() {
+          _userImage = cachedImage;
+          _cachedUserImage = cachedImage; // Кэшируем статически
+          print('Изображение загружено из кэша: $_userImage');
+        });
+        return;
+      }
+
+      // Если нет кэшированного изображения, загружаем с сервера
       UserByIdProfile userProfile =
           await ApiService().getUserById(int.parse(UUID));
 
-      setState(() {
-        _userImage = userProfile.image ?? ''; // Убедитесь, что image — это URL или строка SVG
+      if (userProfile.image != null && userProfile.image!.isNotEmpty) {
+        setState(() {
+          _userImage = userProfile.image!;
+          _cachedUserImage = userProfile.image!; // Кэшируем статически
+        });
+
+        // Кэшируем изображение в SharedPreferences
+        await prefs.setString('userProfileImage_$UUID', _userImage);
         print('Изображение пользователя загружено: $_userImage');
-      });
+      }
     } catch (e) {
       print('Ошибка при загрузке изображения: $e');
       setState(() {
@@ -93,16 +129,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: _userImage.isNotEmpty
-                  ? _userImage.startsWith(
-                          '<svg') // Проверка, начинается ли строка с <svg
+                  ? _userImage.startsWith('<svg') // Проверка, начинается ли строка с <svg
                       ? SvgPicture.string(
                           _userImage,
                           width: 40,
                           height: 40,
-                          // placeholderBuilder: (context) {
-                          //   print('Загрузка SVG...');
-                          //   return CircularProgressIndicator();
-                          // },
                         )
                       : Image.network(
                           _userImage,
@@ -116,16 +147,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                             } else {
                               print(
                                   'Загрузка изображения... ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
-                              return Center(
-                                // child: CircularProgressIndicator(
-                                //   value: loadingProgress.expectedTotalBytes !=
-                                //           null
-                                //       ? loadingProgress.cumulativeBytesLoaded /
-                                //           (loadingProgress.expectedTotalBytes ??
-                                //               1)
-                                //       : null,
-                                // ),
-                              );
+                              return Center();
                             }
                           },
                           errorBuilder: (context, error, stackTrace) {

@@ -2804,7 +2804,7 @@ Future<LeadConversion> getLeadConversionData() async {
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
-
+ 
   // Метод для получения список Уведомления
   Future<List<Notifications>> getAllNotifications(
       {int page = 1, int perPage = 20}) async {
@@ -2856,6 +2856,9 @@ Future<LeadConversion> getLeadConversionData() async {
     }
   }
 
+
+  //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+ //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
 //Метод для получения Пользователя через его ID
  Future<UserByIdProfile> getUserById(int userId) async {
     try {
@@ -2880,6 +2883,9 @@ Future<LeadConversion> getLeadConversionData() async {
       throw Exception('Ошибка загрузки User ID: $e');
     }
   }
+
+
+
   // Метод для Редактирование профиля
   Future<Map<String, dynamic>> updateProfile({
     required int userId,
@@ -2920,5 +2926,8 @@ Future<LeadConversion> getLeadConversionData() async {
       };
     }
   }
-  //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+  //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
+
+
+
 }
