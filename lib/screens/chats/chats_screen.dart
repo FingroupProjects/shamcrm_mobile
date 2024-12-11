@@ -44,6 +44,9 @@ class _ChatsScreenState extends State<ChatsScreen>
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
 
+    bool showCorporateChat = true;
+
+
  @override
 void initState() {
   super.initState();
@@ -194,6 +197,9 @@ void initState() {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: List.generate(_tabTitles.length, (index) {
+                        if (index == 2 && !showCorporateChat) {
+                          return Container(); 
+                        }
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: _buildTabButton(index),

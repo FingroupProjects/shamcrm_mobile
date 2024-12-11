@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,7 +23,7 @@ class UpdateWidget1C extends StatefulWidget {
 class _UpdateWidget1CState extends State<UpdateWidget1C>
     with SingleTickerProviderStateMixin {
   bool isLoading = false;
-  String? lastUpdated;
+  late ValueNotifier<String?> lastUpdatedNotifier;
   late AnimationController _controller;
 
   @override
@@ -32,16 +34,16 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
       vsync: this,
     );
 
-    final organizationLastUpdate = widget.organization.last1cUpdate;
-    if (organizationLastUpdate != null) {
-      lastUpdated = DateFormat('dd.MM.yyyy HH:mm')
-          .format(DateTime.parse(organizationLastUpdate));
-    }
+    // Инициализация ValueNotifier с текущим значением времени
+    lastUpdatedNotifier = ValueNotifier<String?>(widget.organization.last1cUpdate != null
+        ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(widget.organization.last1cUpdate!))
+        : null);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    lastUpdatedNotifier.dispose(); // Освобождение ресурсов
     super.dispose();
   }
 
@@ -63,10 +65,13 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               (org) => org.id == widget.organization.id,
               orElse: () => widget.organization,
             );
-            lastUpdated = updatedOrganization.last1cUpdate != null
+            final updatedTime = updatedOrganization.last1cUpdate != null
                 ? DateFormat('dd.MM.yyyy HH:mm')
                     .format(DateTime.parse(updatedOrganization.last1cUpdate!))
                 : null;
+
+            // Обновление значения в ValueNotifier
+            lastUpdatedNotifier.value = updatedTime;
           });
           _controller.stop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -87,10 +92,14 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
             isLoading = false;
           });
           _controller.stop();
+
+          // Обновление времени при ошибке
+          final errorTime = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now());
+          lastUpdatedNotifier.value = errorTime;
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                // '${state.message}',
                 'Данные успешно обновлены!',
                 style: TextStyle(
                   fontFamily: 'Gilroy',
@@ -125,78 +134,82 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               _buildProfileOption(
                 iconPath: 'assets/icons/1c/5.png',
                 text: 'Обновить данные 1С',
-                
               ),
-            if (lastUpdated != null)
-              Center(
-                child: Text(
-                  'Последнее обновление 1C: $lastUpdated',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-              ),
+            ValueListenableBuilder<String?>(
+              valueListenable: lastUpdatedNotifier,
+              builder: (context, lastUpdated, child) {
+                return lastUpdated != null
+                    ? Center(
+                        child: Text(
+                          'Последнее обновление 1C: $lastUpdated',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                      )
+                    : Container();
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
- Widget _buildProfileOption({required String iconPath, required String text}) {
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 8),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF4F7FD),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Row(
-      children: [
-        // Новый контейнер с фоном и скругленными углами
-        Container(
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255,  223, 225, 247), // Цвет фона
-            borderRadius: BorderRadius.circular(12), // Скругленные углы
-          ),
-          child: isLoading
-              ? RotationTransition(
-                  turns: Tween<double>(begin: 0, end: -1).animate(_controller),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0), // Отступы для размера иконки
+  Widget _buildProfileOption({required String iconPath, required String text}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F7FD),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          // Новый контейнер с фоном и скругленными углами
+          Container(
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 223, 225, 247), // Цвет фона
+              borderRadius: BorderRadius.circular(12), // Скругленные углы
+            ),
+            child: isLoading
+                ? RotationTransition(
+                    turns: Tween<double>(begin: 0, end: -1).animate(_controller),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0), // Отступы для размера иконки
+                      child: Image.asset(
+                        iconPath,
+                        width: 50,
+                        height: 50,
+                      ),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(1.0), // Отступы для размера иконки
                     child: Image.asset(
                       iconPath,
-                      width: 50,
-                      height: 50,
+                      width: 40,
+                      height: 40,
                     ),
                   ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(1.0), // Отступы для размера иконки
-                  child: Image.asset(
-                    iconPath,
-                    width: 40,
-                    height: 40,
-                  ),
-                ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xFF1E1E1E),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xFF1E1E1E),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 }
