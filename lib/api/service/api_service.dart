@@ -2415,41 +2415,43 @@ class ApiService {
     }
   }
 
-//Метод для получение графика Конверсия
-  Future<LeadConversion> getLeadConversionData() async {
-    final organizationId = await getSelectedOrganization();
+Future<LeadConversion> getLeadConversionData() async {
+  final organizationId = await getSelectedOrganization();
 
-    String path =
-        '/dashboard/leadConversion-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      print('getLeadConversionData: Начало запроса');
-      final response = await _getRequest(path);
-      print("Response status code: ${response.statusCode}");
-      print("Raw response body: ${response.body}");
+  String path =
+      '/dashboard/leadConversion-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  
+    print('getLeadConversionData: Начало запроса');
+    final response = await _getRequest(path);
+    print("Response status code: ${response.statusCode}");
+    print("Raw response body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        print("Декодированные данные: $data");
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      print("Декодированные данные: $data");
 
-        if (data.isNotEmpty) {
-          final conversion = LeadConversion.fromJson(data);
-          print("Созданный объект LeadConversion: ${conversion.data}");
-          return conversion;
-        } else {
-          throw Exception('Нет данных графика в ответе');
-        }
+      if (data.isNotEmpty) {
+        final conversion = LeadConversion.fromJson(data);
+        print("Созданный объект LeadConversion: ${conversion.data}");
+        return conversion;
       } else {
-        throw Exception('Ошибка загрузки данных графика: ${response.body}');
+        throw Exception('Нет данных графика в ответе');
       }
-    } catch (e) {
-      print("Ошибка в получении данных: $e");
-      throw Exception('Ошибка при получении данных графика: $e');
+    } else if (response.statusCode == 500) {
+      print("Ошибка сервера: 500");
+      throw Exception('Ошибка сервера: 500');
+    } else {
+      throw Exception('Ошибка загрузки данных графика: ${response.body}');
     }
-  }
+ 
+}
+
 
   // Метод для получение графика Сделки
   Future<DealStatsResponse> getDealStatsData() async {
-    String path = '/dashboard/dealStats';
+  final organizationId = await getSelectedOrganization();
+
+    String path = '/dashboard/dealStats${organizationId != null ? '?organization_id=$organizationId' : ''}';
     try {
       print('getDealStatsData: Начало запроса');
       final response = await _getRequest(path);
@@ -2471,7 +2473,9 @@ class ApiService {
 
   // Метод для получение графика Зажачи
   Future<TaskChart> getTaskChartData() async {
-    String path = '/dashboard/task-chart';
+  final organizationId = await getSelectedOrganization();
+
+    String path = '/dashboard/task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
     try {
       print('getTaskChartData: Начало запроса');
       final response = await _getRequest(path);
@@ -2503,7 +2507,9 @@ class ApiService {
   // Метод для получение графика Проект
 
   Future<ProjectChartResponse> getProjectChartData() async {
-    String path = '/dashboard/projects-chart';
+  final organizationId = await getSelectedOrganization();
+
+    String path = '/dashboard/projects-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
     try {
       print('ApiService: getProjectChartData: Начало запроса');
       print('ApiService: URL запроса: $path');
@@ -2798,7 +2804,7 @@ class ApiService {
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
-
+ 
   // Метод для получения список Уведомления
   Future<List<Notifications>> getAllNotifications(
       {int page = 1, int perPage = 20}) async {
@@ -2850,6 +2856,9 @@ class ApiService {
     }
   }
 
+
+  //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+ //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
 //Метод для получения Пользователя через его ID
  Future<UserByIdProfile> getUserById(int userId) async {
     try {
@@ -2874,6 +2883,9 @@ class ApiService {
       throw Exception('Ошибка загрузки User ID: $e');
     }
   }
+
+
+
   // Метод для Редактирование профиля
   Future<Map<String, dynamic>> updateProfile({
     required int userId,
@@ -2914,5 +2926,8 @@ class ApiService {
       };
     }
   }
-  //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+  //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
+
+
+
 }
