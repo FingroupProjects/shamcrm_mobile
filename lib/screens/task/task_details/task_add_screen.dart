@@ -234,7 +234,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: Duration(seconds: 2),

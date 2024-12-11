@@ -51,32 +51,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       listener: (context, state) {
         if (state is DashboardConversionLoaded) {
           _animationController.forward(from: 0.0);
-        }
-      },
-      builder: (context, state) {
-        if (state is DashboardConversionLoading) {
-          // Показать индикатор загрузки, если данные загружаются
-          return Container(
-            height: 250,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              // boxShadow: [
-              //   BoxShadow(
-              //     color: Colors.grey.withOpacity(0.1),
-              //     spreadRadius: 0,
-              //     blurRadius: 4,
-              //     offset: const Offset(0, 2),
-              //   ),
-              // ],
-            ),
-            child: Center(
-                // child: CircularProgressIndicator(),
-                ),
-          );
         } else if (state is DashboardConversionError) {
-          // Показать сообщение об ошибке
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -99,50 +74,73 @@ class _LeadConversionChartState extends State<LeadConversionChart>
               duration: Duration(seconds: 2),
             ),
           );
+        }
+      },
+      builder: (context, state) {
+        if (state is DashboardConversionLoading) {
+          return _buildLoadingWidget();
+        } else if (state is DashboardConversionError) {
           return Container(); // Возвращаем пустой контейнер при ошибке
         } else if (state is DashboardConversionLoaded) {
-          return Container(
-            height: 250,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 0,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Конверсия лидов',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A202C),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _buildChart(state),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildLegend(state.leadConversionData),
-                ),
-              ],
-            ),
-          );
+          return _buildLoadedStateWidget(state);
         }
-        return const SizedBox
-            .shrink(); // Возвращаем пустой контейнер, если нет данных
+        return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
       },
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        // child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildLoadedStateWidget(DashboardConversionLoaded state) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 0,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Конверсия лидов',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A202C),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _buildChart(state),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: _buildLegend(state.leadConversionData),
+          ),
+        ],
+      ),
     );
   }
 
@@ -150,7 +148,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
     if (state is DashboardConversionLoaded) {
       final data = state.leadConversionData;
 
-      // Проверяем, есть ли данные (оба значения 0)
       if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
         return const Center(
           child: Text(
@@ -197,7 +194,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
   List<PieChartSectionData> _showingSections(
       LeadConversion data, double animationValue) {
-    // Если данные отсутствуют, возвращаем пустой график
     if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
       return [];
     }
