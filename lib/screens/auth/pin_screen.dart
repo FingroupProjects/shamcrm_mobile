@@ -58,6 +58,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? UName = prefs.getString('userName');
     String? UImage = prefs.getString('userImage');
+    // print("---------------------------------------------- SHARED PREF UIMAGE");
+
+    // print(UImage);
 
     // Проверяем, если изображение пользователя отсутствует, загружаем его с сервера
     if (UName != null && UImage != null) {
@@ -260,6 +263,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                 height: MediaQuery.of(context).size.height *
                     0.2, 
               ),
+     
               _userImage != 'Не найдено'
                   ? SvgPicture.string(
                       _userImage, // Строка SVG-кода
