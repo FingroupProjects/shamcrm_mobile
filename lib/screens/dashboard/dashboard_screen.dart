@@ -140,12 +140,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Widget> _buildDashboardContent() {
     if (userRoleName == 'admin') {
       return [
-        LeadsBox(),
-        SizedBox(height: 16),
-        TasksBox(),
-        SizedBox(height: 16),
-        DealsBox(),
-        SizedBox(height: 16),
+        // LeadsBox(),
+        // SizedBox(height: 16),
+        // TasksBox(),
+        // SizedBox(height: 16),
+        // DealsBox(),
+        // SizedBox(height: 16),
         GraphicsDashboard(),
         SizedBox(height: 16),
         LeadConversionChart(),
@@ -158,12 +158,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     } else if (userRoleName == 'manager') {
       return [
-        LeadsBox(),
-        SizedBox(height: 16),
-        TasksBox(),
-        SizedBox(height: 16),
-        DealsBox(),
-        SizedBox(height: 16),
+        // LeadsBox(),
+        // SizedBox(height: 16),
+        // TasksBox(),
+        // SizedBox(height: 16),
+        // DealsBox(),
+        // SizedBox(height: 16),
         GraphicsDashboard(),
         SizedBox(height: 16),
         LeadConversionChart(),
