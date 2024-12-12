@@ -54,7 +54,7 @@ dependencies:
   device_info_plus: ^11.1.1
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
-
+  app_tracking_transparency: ^2.0.6
 
   
 
@@ -74,10 +74,10 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 flutter_native_splash:
  android: true
- ios: true
- image: assets/icons/playstore.png
- color: "#000000"
- fullscreen: true
+#  ios: true
+ image_path: assets/icons/playstore.png  # Убедитесь, что путь правильный
+#  color: "#000000"
+#  fullscreen: true
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

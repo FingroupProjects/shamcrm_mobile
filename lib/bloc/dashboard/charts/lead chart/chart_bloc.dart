@@ -32,7 +32,7 @@ class DashboardChartBloc extends Bloc<DashboardChartEvent, DashboardChartState> 
         final chartData = await _apiService.getLeadChart();
         emit(DashboardChartLoaded(chartData: chartData));
       } else {
-        // emit(DashboardChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        emit(DashboardChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
       }
     } catch (e) {
       emit(DashboardChartError(message: e.toString()));

@@ -66,7 +66,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     try {
       final response = await apiService.getLeadStatuses();
       if (response.isEmpty) {
-        emit(LeadError('Ответ пустой'));
+        emit(LeadError('Нет статусов'));
         return;
       }
       emit(LeadLoaded(response));

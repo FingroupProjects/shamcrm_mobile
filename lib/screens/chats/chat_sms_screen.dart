@@ -156,67 +156,115 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     );
   }
 
-  Widget messageListUi() {
-    return BlocBuilder<MessagingCubit, MessagingState>(
-      builder: (context, state) {
-        if (state is MessagesErrorState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.error}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
+Widget messageListUi() { 
+  return BlocBuilder<MessagingCubit, MessagingState>(
+    builder: (context, state) {
+      if (state is MessagesErrorState) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${state.error}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
-          );
-        }
-        if (state is MessagesLoadingState) {
-          Center(child: CircularProgressIndicator.adaptive());
-        }
-
-        if (state is MessagesLoadedState) {
-          if (state.messages.isEmpty) {
-            return Center(
-                child: Text(
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          ),
+        );
+      }
+      
+      if (state is MessagesLoadingState) {
+        return Center(child: CircularProgressIndicator.adaptive());
+      }
+      
+      if (state is MessagesLoadedState) {
+        if (state.messages.isEmpty) {
+          return Center(
+            child: Text(
               'Нет сообщений',
               style: TextStyle(color: AppColors.textPrimary700),
-            ));
-          }
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView.builder(
-              controller: _scrollController,
-              // key: UniqueKey(),
-              itemCount: state.messages.length,
-              padding: EdgeInsets.zero,
-              reverse: true,
-              itemBuilder: (context, index) {
-                return MessageItemWidget(
-                  message: state.messages[index],
-                  apiServiceDownload: widget.apiServiceDownload,
-                  baseUrl: baseUrl, // Передаём baseUrl
-                );
-              },
             ),
           );
         }
+        
+        List<Widget> messageWidgets = [];
+        DateTime? previousDate;
+        
+        for (int index = 0; index < state.messages.length; index++) {
+          final message = state.messages[index];
+          final currentDate = DateTime.parse(message.createMessateTime);
+          
+          // Добавляем день к текущей дате
+          DateTime displayDate = currentDate.add(Duration(days: 1));
 
-        return Container();
-      },
-    );
-  }
+          // Если это не последнее сообщение, показываем дату
+          if (index < state.messages.length - 1 && (previousDate == null || !isSameDay(previousDate, currentDate))) {
+            messageWidgets.add(
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                child: Center(
+                  child: Text(
+                    formatDate(displayDate),
+                    style: TextStyle(
+                      fontSize: 14, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.grey
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+          
+          // Добавляем само сообщение
+          messageWidgets.add(
+            MessageItemWidget(
+              message: message,
+              apiServiceDownload: widget.apiServiceDownload,
+              baseUrl: baseUrl,
+            ),
+          );
+          
+          previousDate = currentDate;
+        }
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ListView(
+            controller: _scrollController,
+            padding: EdgeInsets.zero,
+            reverse: true,
+            children: messageWidgets,
+          ),
+        );
+      }
+      
+      return Container();
+    },
+  );
+}
+
+bool isSameDay(DateTime date1, DateTime date2) {
+  return date1.year == date2.year && 
+         date1.month == date2.month && 
+         date1.day == date2.day;
+}
+
+String formatDate(DateTime date) {
+  return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
+}
+
+
 
   Widget inputWidget() {
     return InputField(
