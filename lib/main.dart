@@ -1,3 +1,4 @@
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
@@ -64,7 +65,9 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  await AppTrackingTransparency.requestTrackingAuthorization();
+
   final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
@@ -156,8 +159,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -168,14 +170,11 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
-        BlocProvider(
-            create: (context) => ProfileBloc(
-                apiService: apiService)), // Add this line for ProfileBloc
+        BlocProvider(create: (context) => ProfileBloc(apiService: apiService)), 
       ],
       child: MaterialApp(
         color: Colors.white,
@@ -193,7 +192,7 @@ class MyApp extends StatelessWidget {
             } else if (pin == null) {
               return PinSetupScreen();
             } else {
-              return PinScreen(); // Для последующих входов
+              return PinScreen();
             }
           },
         ),
@@ -204,7 +203,6 @@ class MyApp extends StatelessWidget {
           '/pin_setup': (context) => PinSetupScreen(),
           '/local_auth': (context) => const AuthScreen(),
           '/pin_screen': (context) => PinScreen(),
-          // '/profile_screen': (context) => ProfileScreen(),
         },
       ),
     );
