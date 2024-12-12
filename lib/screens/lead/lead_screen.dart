@@ -376,17 +376,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-// Future<void> _handleLogout(BuildContext context) async {
-//   ApiService apiService = ApiService();
-//   await apiService.logout();
-
-//   Navigator.pushAndRemoveUntil(
-//     context,
-//     MaterialPageRoute(builder: (context) => LoginScreen()),
-//     (Route<dynamic> route) => false,
-//   );
-// }
-
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
