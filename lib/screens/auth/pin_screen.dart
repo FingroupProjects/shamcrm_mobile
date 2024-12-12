@@ -273,7 +273,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                       'assets/icons/playstore.png',
                       height: 100,
                     ),
-              const SizedBox(height: 100),
+              const SizedBox(height: 50),
               Text(
                 getGreetingMessage(),
                 style: const TextStyle(

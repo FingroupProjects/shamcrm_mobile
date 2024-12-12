@@ -91,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         selectedOrganization: _selectedOrganization,
                         onChanged: _onOrganizationChanged,
                       ),
-                      const NotificationSettingsWidget(),
+                      // const NotificationSettingsWidget(),
                       const PinChangeWidget(),
                       const ProfileEdit(),
                       const LogoutButtonWidget(),
