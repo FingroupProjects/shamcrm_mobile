@@ -76,9 +76,9 @@ dev_dependencies:
 flutter_native_splash:
  android: true
 #  ios: true
- image: assets/icons/playstore.png
- color: "#000000"
- fullscreen: true
+ image_path: assets/icons/playstore.png  # Убедитесь, что путь правильный
+#  color: "#000000"
+#  fullscreen: true
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
