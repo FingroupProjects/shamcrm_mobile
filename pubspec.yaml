@@ -75,7 +75,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 flutter_native_splash:
  android: true
- ios: true
+#  ios: true
  image: assets/icons/playstore.png
  color: "#000000"
  fullscreen: true
