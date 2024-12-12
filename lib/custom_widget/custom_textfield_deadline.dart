@@ -36,7 +36,7 @@ class CustomTextFieldDate extends StatelessWidget {
       confirmText: "Ок",
       helpText: "Выберите дату",
       errorFormatText: "Ошибка! Пример: $formattedDate",
-      // errorInvalidText: "ЫЫЫ",
+      errorInvalidText: "Неправильный формат даты! дд/ММ/гггг",
       fieldLabelText: "Введите дату",
       firstDate: DateTime(1940),
       lastDate: DateTime(2101),
