@@ -11,7 +11,7 @@ class Chats {
   final String messageType;
   final String createDate;
   final int unredMessage;
-
+  final bool canSendMessage;
   Chats({
     required this.id,
     required this.name,
@@ -23,6 +23,7 @@ class Chats {
     required this.messageType,
     required this.createDate,
     required this.unredMessage,
+    required this.canSendMessage,
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
@@ -30,13 +31,13 @@ class Chats {
     print(json);
     return Chats(
       id: json['id'] ?? 0, // Предположим, что ID должен быть числом, иначе 0
-      name:
-      json['user'] != null ? json['user']['name'] :
-      json['task'] != null
-          ? json['task']['name'] ?? ''
-          : json['lead'] != null
-              ? json['lead']['name'] ?? 'Без имени'
-              : '',
+      name: json['user'] != null
+          ? json['user']['name']
+          : json['task'] != null
+              ? json['task']['name'] ?? ''
+              : json['lead'] != null
+                  ? json['lead']['name'] ?? 'Без имени'
+                  : '',
       createDate: json['task'] != null
           ? json['task']['created_at'] ?? ''
           : json['lead'] != null
@@ -59,6 +60,7 @@ class Chats {
           : '',
       messageType:
           json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      canSendMessage: json["can_send_message"] ?? false,
     );
   }
 
@@ -91,7 +93,6 @@ class Chats {
       avatar,
       _mapChannelToIcon(channel),
       unredMessage,
-
     );
   }
 
@@ -153,7 +154,9 @@ class Message {
       id: json['id'],
       text: text, // Убедитесь, что именно text используется
       type: json['type'],
-      senderName: json['sender'] == null ? 'Без имени': json['sender']['name'] ?? 'Без имени',
+      senderName: json['sender'] == null
+          ? 'Без имени'
+          : json['sender']['name'] ?? 'Без имени',
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isMyMessage: json['is_my_message'] ?? false,

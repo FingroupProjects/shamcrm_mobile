@@ -325,7 +325,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
             chatId: chat.id,
             endPointInTab: widget.endPointInTab,
-
+            canSendMessage: chat.canSendMessage,
           ),
         ),
       ),

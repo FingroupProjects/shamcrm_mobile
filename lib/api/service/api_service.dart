@@ -2536,7 +2536,6 @@ Future<ProjectChartResponse> getProjectChartData() async {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-
       if (data['result'] != null) {
         return PaginationDTO<Chats>.fromJson(data['result'], (e) {
           return Chats.fromJson(e);
