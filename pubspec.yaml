@@ -56,7 +56,6 @@ dependencies:
   image_cropper: ^8.0.2
   app_tracking_transparency: ^2.0.6
 
-
   
 
   # bottom_navy_bar: ^6.1.0
