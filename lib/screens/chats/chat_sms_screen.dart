@@ -32,6 +32,7 @@ class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
   final int chatId;
   final String endPointInTab;
+  final bool canSendMessage;
 
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
@@ -41,6 +42,7 @@ class ChatSmsScreen extends StatefulWidget {
     required this.chatItem,
     required this.chatId,
     required this.endPointInTab,
+    required this.canSendMessage, 
   });
 
   @override
@@ -58,10 +60,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ApiService apiService = ApiService();
 
   late String baseUrl;
-    bool _canCreateChat = false;
+  bool _canCreateChat = false;
 
   Future<void> _checkPermissions() async {
-    
     final canCreate = await apiService.hasPermission('chat.create');
     setState(() {
       _canCreateChat = canCreate;
@@ -71,7 +72,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   @override
   void initState() {
     _checkPermissions();
-
     context.read<MessagingCubit>().getMessages(widget.chatId);
 
     context.read<ListenSenderFileCubit>().updateValue(false);
@@ -148,9 +148,28 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         children: [
           Expanded(child: messageListUi()),
 
-          /// bottom ui
-        if(_canCreateChat)
-          inputWidget(),
+          /// Conditional rendering
+          if (widget.canSendMessage && _canCreateChat)
+            inputWidget()
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 50),
+              child: Center(
+                child: Text(
+                  widget.canSendMessage
+                      ? 'У вас нет доступа для отправки сообщения!'
+                      : 'Прошло 24 часа как лид написал вам! Отправка сообщения будет доступна только после получения нового сообщения',
+                  textAlign:
+                      TextAlign.center, 
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    color: AppColors.textPrimary700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
