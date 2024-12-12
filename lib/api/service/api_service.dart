@@ -2380,13 +2380,13 @@ class ApiService {
         if (data['result'] != null) {
           return DashboardStats.fromJson(data);
         } else {
-          throw Exception('Нет данных о статистике в ответе');
+          throw ('Нет данных о статистике в ответе');
         }
       } else {
-        throw Exception('Ошибка загрузки статистики: ${response.body}');
+        throw ('Ошибка загрузки статистики: ${response.body}');
       }
     } catch (e) {
-      throw Exception('Ошибка при получении статистики: $e');
+      throw ('Ошибка при получении статистики: $e');
     }
   }
 
@@ -2397,7 +2397,7 @@ class ApiService {
     String path =
         '/dashboard/lead-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-    try {
+
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
@@ -2405,14 +2405,11 @@ class ApiService {
         if (data.isNotEmpty) {
           return data.map((json) => ChartData.fromJson(json)).toList();
         } else {
-          throw Exception('Нет данных графика в ответе');
+          throw ('Нет данных графика в ответе "Клиенты"');
         }
       } else {
-        throw Exception('Ошибка загрузки данных графика: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('Ошибка при получении данных графика: $e');
-    }
+        throw ('Ошибка загрузки данных графика: ${response.body}');
+    } 
   }
 
 Future<LeadConversion> getLeadConversionData() async {
@@ -2420,122 +2417,98 @@ Future<LeadConversion> getLeadConversionData() async {
 
   String path =
       '/dashboard/leadConversion-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-  
-    print('getLeadConversionData: Начало запроса');
     final response = await _getRequest(path);
-    print("Response status code: ${response.statusCode}");
-    print("Raw response body: ${response.body}");
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      print("Декодированные данные: $data");
 
       if (data.isNotEmpty) {
         final conversion = LeadConversion.fromJson(data);
-        print("Созданный объект LeadConversion: ${conversion.data}");
         return conversion;
       } else {
-        throw Exception('Нет данных графика в ответе');
+        throw ('Нет данных графика в ответе "Конверсия лидов');
       }
     } else if (response.statusCode == 500) {
-      print("Ошибка сервера: 500");
-      throw Exception('Ошибка сервера: 500');
+      throw ('Ошибка сервера: 500');
     } else {
-      throw Exception('Ошибка загрузки данных графика: ${response.body}');
+      throw ('Ошибка загрузки данных графика: ${response.body}');
     }
  
 }
 
 
-  // Метод для получение графика Сделки
-  Future<DealStatsResponse> getDealStatsData() async {
+// Метод для получения графика Сделки
+Future<DealStatsResponse> getDealStatsData() async {
   final organizationId = await getSelectedOrganization();
 
-    String path = '/dashboard/dealStats${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      print('getDealStatsData: Начало запроса');
-      final response = await _getRequest(path);
-      print("Response status code: ${response.statusCode}");
-      print("Raw response body: ${response.body}");
+  String path = '/dashboard/dealStats${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  try {
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        print("Принт $jsonData");
-        return DealStatsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Ошибка загрузки данных: ${response.body}');
-      }
-    } catch (e) {
-      print('Ошибка запроса: $e');
-      throw Exception('Ошибка получения данных: $e');
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = json.decode(response.body);
+      return DealStatsResponse.fromJson(jsonData);
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера!');
+    } else {
+      throw ('Ошибка загрузки данных!');
     }
+  } catch (e) {
+    print('Ошибка запроса!');
+    throw ('Ошибка получения данных');
   }
+}
 
-  // Метод для получение графика Зажачи
-  Future<TaskChart> getTaskChartData() async {
+// Метод для получения графика Задачи
+Future<TaskChart> getTaskChartData() async {
   final organizationId = await getSelectedOrganization();
 
-    String path = '/dashboard/task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      print('getTaskChartData: Начало запроса');
-      final response = await _getRequest(path);
-      print("Статус ответа: ${response.statusCode}");
-      print("Тело ответа: ${response.body}");
+  String path = '/dashboard/task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  try {
+    print('getTaskChartData: Начало запроса');
+    final response = await _getRequest(path);
 
-      if (response.statusCode == 200) {
-        // Декодируем ответ как Map
-        final Map<String, dynamic> jsonMap = json.decode(response.body);
-        print("Декодированные данные: $jsonMap");
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonMap = json.decode(response.body);
 
-        // Проверяем наличие данных в ключе "result" -> "data"
-        if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
-          final taskChart = TaskChart.fromJson(jsonMap);
-          print("Созданный объект TaskChart: ${taskChart.data}");
-          return taskChart;
-        } else {
-          throw Exception('Нет данных графика в ответе');
-        }
+      if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
+        final taskChart = TaskChart.fromJson(jsonMap);
+        return taskChart;
       } else {
-        throw Exception('Ошибка загрузки данных графика: ${response.body}');
+        throw ('Нет данных графика в ответе "Задачи');
       }
-    } catch (e) {
-      print("Ошибка в получении данных: $e");
-      throw Exception('Ошибка при получении данных графика: $e');
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера!');
+    } else {
+      throw ('Ошибка загрузки данных графика!');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных!');
   }
+}
 
-  // Метод для получение графика Проект
 
-  Future<ProjectChartResponse> getProjectChartData() async {
+ // Метод для получения графика Проект
+Future<ProjectChartResponse> getProjectChartData() async {
   final organizationId = await getSelectedOrganization();
+  String path = '/dashboard/projects-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+  try {
+    final response = await _getRequest(path);
 
-    String path = '/dashboard/projects-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      print('ApiService: getProjectChartData: Начало запроса');
-      print('ApiService: URL запроса: $path');
-
-      final response = await _getRequest(path);
-      print('ApiService: Статус ответа: ${response.statusCode}');
-      print('ApiService: Заголовки ответа: ${response.headers}');
-      print('ApiService: Тело ответа: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        print('ApiService: Декодированные данные: $jsonData');
-
-        final result = ProjectChartResponse.fromJson(jsonData);
-        print('ApiService: Данные успешно преобразованы в объект');
-        return result;
-      } else {
-        print('ApiService: Ошибка запроса. Статус: ${response.statusCode}');
-        throw Exception('Ошибка загрузки данных проектов: ${response.body}');
-      }
-    } catch (e) {
-      print('ApiService: Ошибка в получении данных проектов: $e');
-      print('ApiService: Stack trace: ${StackTrace.current}');
-      throw Exception('Ошибка при получении данных проектов: $e');
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = json.decode(response.body);
+      final result = ProjectChartResponse.fromJson(jsonData);
+      return result;
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера!');
+    } else {
+      throw ('Ошибка загрузки данных проектов!');
     }
+  } catch (e) {
+    throw ('Ошибка получения данных проектов!');
   }
+}
+
 
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
