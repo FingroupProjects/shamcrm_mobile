@@ -54,6 +54,7 @@ dependencies:
   device_info_plus: ^11.1.1
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
+  app_tracking_transparency: ^2.0.6
 
 
   

@@ -16,19 +16,3 @@ class PlaceholderScreen extends StatelessWidget {
     );
   }
 }
-
-// else {
-//       widgets.add(PlaceholderScreen(message: 'Экран Дашборд недоступен вам.'));
-//       titles.add('Дашборд');
-//       navBarTitles.add('Дашборд');
-//       activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
-//       inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
-//     }
-
-// else {
-//       widgets.add(PlaceholderScreen(message: 'Экран Задачи недоступен вам.'));
-//       titles.add('Задачи');
-//       navBarTitles.add('Задачи');
-//       activeIcons.add('assets/icons/MyNavBar/tasks_ON.png');
-//       inactiveIcons.add('assets/icons/MyNavBar/tasks_OFF.png');
-//     }
