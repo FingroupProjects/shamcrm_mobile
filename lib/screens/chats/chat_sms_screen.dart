@@ -225,8 +225,9 @@ Widget messageListUi() {
                       formatDate(displayDate),
                       style: TextStyle(
                         fontSize: 14, 
-                        fontWeight: FontWeight.bold, 
-                        color: Colors.grey
+                        fontFamily: "Gilroy",
+                        fontWeight: FontWeight.w400, 
+                        color: Colors.black
                       ),
                     ),
                   ),

@@ -1024,6 +1024,16 @@ class ApiService {
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
       }
+      if (response.body.contains('birthday')) {
+        return {'success': false, 'message': 'Не правильная дата рождения.'};
+      }
+      if (response.body
+          .contains('The email field must be a valid email address.')) {
+        return {
+          'success': false,
+          'message': 'Неправильный e-mail!! Введите корректный e-mail.'
+        };
+      }
       // Другие проверки на ошибки...
       return {
         'success': false,
