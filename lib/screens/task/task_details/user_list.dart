@@ -1,6 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
-import 'package:crm_task_manager/models/user.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -68,7 +67,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   Container(
                     decoration: BoxDecoration(
                       color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
                     ),
                     child: CustomDropdown<UserData>.multiSelectSearch(
@@ -93,6 +92,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return ListTile(
+                          minTileHeight: 1,
+                          minVerticalPadding: 2,
                           contentPadding: EdgeInsets.zero,
                           dense: true,
                           title: Padding(
@@ -101,8 +102,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 20,
-                                  height: 20,
+                                  width: 18,
+                                  height: 18,
                                   decoration: BoxDecoration(
                                     border: Border.all(
                                         color: Color(0xff1E2E52), width: 1),
@@ -116,16 +117,52 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       : null,
                                 ),
                                 const SizedBox(width: 10),
-                                Text(
-                                  item.name!,
-                                  style: TextStyle(fontSize: 16),
-                                ),
+                                Text(item.name!,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    )),
                               ],
                             ),
                           ),
                           onTap: () => onItemSelect(),
                         );
                       },
+                      // headerListBuilder: (context, hint, enabled) {
+                      //   String selectedUsersNames = selectedUsersData
+                      //       .map((user) => user.name)
+                      //       .join(', ');
+
+                      //   return Text(
+                      //     selectedUsersNames.isEmpty
+                      //         ? 'Выберите пользователей'
+                      //         : selectedUsersNames,
+                      //     style: TextStyle(
+                      //       fontSize: 16,
+                      //       fontWeight: FontWeight.w500,
+                      //       fontFamily: 'Gilroy',
+                      //       color: Color(0xff1E2E52),
+                      //     ),
+                      //   );
+                      // },
+                      headerListBuilder: (context, hint, enabled) {
+                        int selectedUsersCount = selectedUsersData.length;
+
+                        return Text(
+                          selectedUsersCount == 0
+                              ? 'Выберите пользователей'
+                              : 'Выбрано пользователей: $selectedUsersCount',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        );
+                      },
+
                       hintBuilder: (context, hint, enabled) =>
                           Text('Выберите пользователей',
                               style: TextStyle(

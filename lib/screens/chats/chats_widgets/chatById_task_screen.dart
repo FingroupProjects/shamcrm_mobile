@@ -23,8 +23,17 @@ class TaskByIdScreen extends StatelessWidget {
             "Информация о задаче",
             style: TextStyle(color: Colors.black),
           ),
-          backgroundColor: Colors.white,
-          iconTheme: IconThemeData(color: Colors.black),
+          backgroundColor: Colors.white, // Цвет фона AppBar
+                  leading: IconButton(
+           icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         ),
         body: BlocBuilder<TaskProfileBloc, TaskProfileState>(
           builder: (context, state) {

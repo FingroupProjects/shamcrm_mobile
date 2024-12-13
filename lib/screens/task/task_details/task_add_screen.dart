@@ -115,7 +115,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Theme(
             data: Theme.of(context).copyWith(
@@ -143,7 +143,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(entry.value),
+                      Text(
+                        entry.value,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -166,15 +174,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return InputDecoration(
       border: OutlineInputBorder(
         borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       enabledBorder: OutlineInputBorder(
         borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(
         borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }
@@ -265,9 +273,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       _buildPriorityDropdown(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'От',
@@ -278,7 +286,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'До',

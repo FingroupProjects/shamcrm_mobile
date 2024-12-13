@@ -30,7 +30,6 @@ class _LeadCardState extends State<LeadCard> {
     super.initState();
     dropdownValue = widget.title;
   }
-  
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -48,7 +47,7 @@ class _LeadCardState extends State<LeadCard> {
   @override
   Widget build(BuildContext context) {
     String iconPath =
-        sourceIcons[widget.lead.source?.name] ?? 'assets/images/avatar.png';
+        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -131,8 +130,7 @@ class _LeadCardState extends State<LeadCard> {
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
                               ),
-                              overflow:
-                                  TextOverflow.ellipsis, 
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -154,10 +152,14 @@ class _LeadCardState extends State<LeadCard> {
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      iconPath,
-                      width: 28,
-                      height: 28,
+                    ClipOval(
+                      child: Image.asset(
+                        iconPath,
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit
+                            .cover, // Ensures the image covers the circular shape
+                      ),
                     ),
                     const SizedBox(width: 18),
                     // Container(

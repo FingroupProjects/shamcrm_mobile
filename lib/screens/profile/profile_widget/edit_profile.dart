@@ -189,7 +189,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         title: Text('Редактирование профиля'),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+           icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () {
             Navigator.pop(context);
           },
