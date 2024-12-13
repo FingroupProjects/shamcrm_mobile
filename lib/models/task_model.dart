@@ -33,6 +33,8 @@ class Task {
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
+      print('JSON received: $json'); // Лог всего JSON объекта
+
     // Извлекаем и проверяем priority_level
     final rawPriority = json['priority_level'];
     // print('Raw priority from JSON: $rawPriority'); // Debug print
@@ -53,6 +55,7 @@ class Task {
             .map((userJson) => UserTaskImage.fromJson(userJson))
             .toList()
         : null;
+  print('File field in JSON: ${json['file']}'); // Лог поля file
 
     return Task(
       id: json['id'] is int ? json['id'] : 0,
@@ -75,9 +78,15 @@ class Task {
           ? UserTaskImage.fromJson(json['users'])
           : null,
       color: json['color'] is String ? json['color'] : null,
-      file: json['file'] != null && json['file'] is Map<String, dynamic>
-          ? TaskFile.fromJson(json['file'])
-          : null,
+     file: json['file'] != null
+    ? (json['file'] is Map<String, dynamic>
+        ? TaskFile.fromJson(json['file'])
+        : TaskFile(
+            name: json['file'].toString(),
+            size: 'Неизвестно',
+          ))
+    : null,
+
     );
   }
 }
@@ -120,11 +129,21 @@ class TaskFile {
         "name": name,
         "size": size,
       };
+factory TaskFile.fromJson(Map<String, dynamic> json) {
+    print('TaskFileById JSON received: $json'); // Лог входящего JSON для TaskFileById
 
-  factory TaskFile.fromJson(Map<String, dynamic> json) => TaskFile(
-        name: json["name"] as String,
-        size: json["size"] as String,
-      );
+  if (json['name'] is String && json['size'] is String) {
+        print('Parsed TaskFileById: name=${json['name']}, size=${json['size']}');
+
+    return TaskFile(
+      name: json["name"] as String,
+      size: json["size"] as String,
+    );
+  }
+    print('TaskFileById JSON format is invalid');
+
+  throw Exception('Unexpected file format');
+}
 }
 
 class TaskStatus {
