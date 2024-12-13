@@ -97,7 +97,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: ChatSmsStyles.appBarTitleColor),
+           icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () {
             Navigator.pop(context);
           },

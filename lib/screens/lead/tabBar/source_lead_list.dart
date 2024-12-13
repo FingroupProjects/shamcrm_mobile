@@ -123,7 +123,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
               Container(
                 decoration: BoxDecoration(
                   color: Color(0xFFF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: DropdownButtonFormField<String>(
                   value: dropdownItems.any((item) => item.value == widget.selectedSourceLead)
@@ -153,15 +153,15 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     labelStyle: TextStyle(color: Colors.grey),
                     border: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   dropdownColor: Colors.white,
