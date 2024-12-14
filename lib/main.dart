@@ -65,9 +65,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await AppTrackingTransparency.requestTrackingAuthorization();
-
   final apiService = ApiService();
   final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
@@ -76,15 +74,11 @@ void main() async {
   }
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   await FirebaseMessaging.instance.requestPermission();
-
   await getFCMTokens(apiService);
-
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -92,10 +86,8 @@ void main() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
-
   runApp(MyApp(
     apiService: apiService,
     authService: authService,
@@ -104,11 +96,9 @@ void main() async {
     pin: pin,
   ));
 }
-
 Future<void> getFCMTokens(ApiService apiService) async {
   // Функция оставлена пустой, как в оригинальном коде
 }
-
 class MyApp extends StatelessWidget {
   final ApiService apiService;
   final AuthService authService;

@@ -23,6 +23,9 @@ class Lead {
   final String? description;
   final LeadStatus? leadStatus;
   final Organization? organization;
+  final List<LeadCustomField> leadCustomFields;
+
+
 
   Lead({
     required this.id,
@@ -44,6 +47,7 @@ class Lead {
     this.description,
     this.leadStatus,
     this.organization,
+    required this.leadCustomFields,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -81,6 +85,9 @@ class Lead {
               json['organization'] is Map<String, dynamic>
           ? Organization.fromJson(json['organization'])
           : null,
+          leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
+              ?.map((field) => LeadCustomField.fromJson(field))
+              .toList() ?? [],
     );
   }
 }
@@ -133,6 +140,25 @@ class LeadStatus {
       title: json['title'] ?? json['name'] ?? 'Не указан',
       color: json['color'],
       lead_status_id: json['lead_status_id'] ?? null,
+    );
+  }
+}
+class LeadCustomField {
+  final int id;
+  final String key;
+  final String value;
+
+  LeadCustomField({
+    required this.id,
+    required this.key,
+    required this.value,
+  });
+
+  factory LeadCustomField.fromJson(Map<String, dynamic> json) {
+    return LeadCustomField(
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
     );
   }
 }

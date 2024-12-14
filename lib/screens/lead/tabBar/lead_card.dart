@@ -68,6 +68,7 @@ class _LeadCardState extends State<LeadCard> {
               telegram: widget.lead.telegram,
               phone: widget.lead.phone,
               description: widget.lead.description,
+              leadCustomFields: widget.lead.leadCustomFields,
             ),
           ),
         );

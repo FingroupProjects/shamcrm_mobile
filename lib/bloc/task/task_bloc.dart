@@ -17,7 +17,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<UpdateTask>(_updateTask);
     on<DeleteTask>(_deleteTask);
     on<DeleteTaskStatuses>(_deleteTaskStatuses);
-
   }
 
   Future<void> _fetchTaskStatuses(
@@ -44,31 +43,32 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
 // // Метод для поиска лидов
-Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
-  emit(TaskLoading());
-  if (!await _checkInternetConnection()) {
-    emit(TaskError('Нет подключения к интернету'));
-    return;
+  Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
+    if (!await _checkInternetConnection()) {
+      emit(TaskError('Нет подключения к интернету'));
+      return;
+    }
+
+    try {
+      // Передаем правильный leadStatusId из события FetchLeads
+      final tasks = await apiService.getTasks(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+      );
+      allTasksFetched = tasks.isEmpty;
+      emit(TaskDataLoaded(tasks, currentPage: 1));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 401) {
+        emit(TaskError('Неавторизованный доступ!'));
+      } else {
+        emit(TaskError('Не удалось загрузить данные: ${e.toString()}'));
+      }
+    }
   }
 
-  try {
-    // Передаем правильный leadStatusId из события FetchLeads
-    final tasks = await apiService.getTasks(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-    );
-    allTasksFetched = tasks.isEmpty;
-    emit(TaskDataLoaded(tasks, currentPage: 1));
-  }  catch (e) {
-  if (e is ApiException && e.statusCode == 401) {
-    emit(TaskError('Неавторизованный доступ!'));
-  } else {
-    emit(TaskError('Не удалось загрузить данные: ${e.toString()}'));
-  }
-}
-}
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {
     if (allTasksFetched) return;
@@ -114,6 +114,8 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
+        customFields: event.customFields,
+
         // file: event.file // C
       );
 
@@ -147,8 +149,11 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
-        taskStatusId: event.taskStatusId,
-        // file: event.file 
+        taskStatusId: event.taskStatusId,     
+           customFields: event.customFields,
+
+
+        // file: event.file
       );
 
       if (result['success']) {
@@ -161,6 +166,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       emit(TaskError('Ошибка обновления задачи: ${e.toString()}'));
     }
   }
+
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -170,8 +176,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     }
   }
 
-
-   Future<void> _deleteTask(DeleteTask event, Emitter<TaskState> emit) async {
+  Future<void> _deleteTask(DeleteTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     try {
@@ -185,8 +190,9 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       emit(TaskError('Ошибка удаления задача: ${e.toString()}'));
     }
   }
-  
-   Future<void> _deleteTaskStatuses(DeleteTaskStatuses event, Emitter<TaskState> emit) async {
+
+  Future<void> _deleteTaskStatuses(
+      DeleteTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     try {

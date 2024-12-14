@@ -15,6 +15,7 @@ class Task {
       usersImage; // Changed from UserTaskImage? to List<UserTaskImage>?
   final TaskFile? file;
   final int priority;
+  final List<TaskCustomField> taskCustomFields;
 
   Task({
     required this.id,
@@ -30,10 +31,11 @@ class Task {
     this.user,
     this.file,
     required this.priority,
+    required this.taskCustomFields,
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
-      print('JSON received: $json'); // Лог всего JSON объекта
+    print('JSON received: $json'); // Лог всего JSON объекта
 
     // Извлекаем и проверяем priority_level
     final rawPriority = json['priority_level'];
@@ -55,7 +57,7 @@ class Task {
             .map((userJson) => UserTaskImage.fromJson(userJson))
             .toList()
         : null;
-  print('File field in JSON: ${json['file']}'); // Лог поля file
+    print('File field in JSON: ${json['file']}'); // Лог поля file
 
     return Task(
       id: json['id'] is int ? json['id'] : 0,
@@ -78,15 +80,38 @@ class Task {
           ? UserTaskImage.fromJson(json['users'])
           : null,
       color: json['color'] is String ? json['color'] : null,
-     file: json['file'] != null
-    ? (json['file'] is Map<String, dynamic>
-        ? TaskFile.fromJson(json['file'])
-        : TaskFile(
-            name: json['file'].toString(),
-            size: 'Неизвестно',
-          ))
-    : null,
+      file: json['file'] != null
+          ? (json['file'] is Map<String, dynamic>
+              ? TaskFile.fromJson(json['file'])
+              : TaskFile(
+                  name: json['file'].toString(),
+                  size: 'Неизвестно',
+                ))
+          : null,
+      taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
+              ?.map((field) => TaskCustomField.fromJson(field))
+              .toList() ??
+          [],
+    );
+  }
+}
 
+class TaskCustomField {
+  final int id;
+  final String key;
+  final String value;
+
+  TaskCustomField({
+    required this.id,
+    required this.key,
+    required this.value,
+  });
+
+  factory TaskCustomField.fromJson(Map<String, dynamic> json) {
+    return TaskCustomField(
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
     );
   }
 }
@@ -129,21 +154,22 @@ class TaskFile {
         "name": name,
         "size": size,
       };
-factory TaskFile.fromJson(Map<String, dynamic> json) {
-    print('TaskFileById JSON received: $json'); // Лог входящего JSON для TaskFileById
+  factory TaskFile.fromJson(Map<String, dynamic> json) {
+    print(
+        'TaskFileById JSON received: $json'); // Лог входящего JSON для TaskFileById
 
-  if (json['name'] is String && json['size'] is String) {
-        print('Parsed TaskFileById: name=${json['name']}, size=${json['size']}');
+    if (json['name'] is String && json['size'] is String) {
+      print('Parsed TaskFileById: name=${json['name']}, size=${json['size']}');
 
-    return TaskFile(
-      name: json["name"] as String,
-      size: json["size"] as String,
-    );
-  }
+      return TaskFile(
+        name: json["name"] as String,
+        size: json["size"] as String,
+      );
+    }
     print('TaskFileById JSON format is invalid');
 
-  throw Exception('Unexpected file format');
-}
+    throw Exception('Unexpected file format');
+  }
 }
 
 class TaskStatus {

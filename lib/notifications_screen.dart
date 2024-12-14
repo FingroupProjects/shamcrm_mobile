@@ -276,6 +276,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             leadName: '',
             leadStatus: "",
             statusId: 1,
+           leadCustomFields: [],
           ),
         ),
       );

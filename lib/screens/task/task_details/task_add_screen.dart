@@ -1,9 +1,12 @@
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
@@ -43,6 +46,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   int? selectedPriority;
   String? selectedProject;
   List<String>? selectedUsers;
+  List<CustomField> customFields = [];
 
   // Карта уровней приоритета
   final Map<int, String> priorityLevels = {
@@ -70,6 +74,25 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     // Устанавливаем текущую дату в поле "От"
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+  }
+
+  void _addCustomField(String fieldName) {
+    setState(() {
+      customFields.add(CustomField(fieldName: fieldName));
+    });
+  }
+
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddCustomFieldDialog(
+          onAddField: (fieldName) {
+            _addCustomField(fieldName);
+          },
+        );
+      },
+    );
   }
 
   // Функция выбора файла
@@ -326,6 +349,29 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
+                       const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                       CustomButton(
+                        buttonText: 'Добавить поле',
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
+                      ),
                       const SizedBox(height: 8),
                       // _buildFileSelection(), // Добавляем виджет выбора файла
                     ],
@@ -425,7 +471,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             size: fileSize ?? "0KB",
                           );
                         }
-
+                        // Создание сделки
+                        List<Map<String, String>> customFieldMap = [];
+                        for (var field in customFields) {
+                          String fieldName = field.fieldName.trim();
+                          String fieldValue = field.controller.text.trim();
+                          if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+                            customFieldMap.add({fieldName: fieldValue});
+                          }
+                        }
                         context.read<TaskBloc>().add(CreateTask(
                               name: name,
                               statusId: widget.statusId,
@@ -442,6 +496,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                   : null,
                               priority: selectedPriority,
                               description: description,
+                              customFields: customFieldMap,
                             ));
                       }
                     },
