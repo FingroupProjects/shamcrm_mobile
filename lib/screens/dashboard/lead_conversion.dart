@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
-import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -35,8 +34,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       curve: Curves.easeInOutCubic,
     );
 
-    // Загрузка данных при инициализации
-    context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+    // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
   }
 
   @override
@@ -78,63 +76,38 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       },
       builder: (context, state) {
         if (state is DashboardConversionLoading) {
-          return _buildLoadingWidget();
         } else if (state is DashboardConversionError) {
-          return Container(); // Возвращаем пустой контейнер при ошибке
+          return Container(); 
         } else if (state is DashboardConversionLoaded) {
           return _buildLoadedStateWidget(state);
         }
-        return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
+        return const SizedBox.shrink(); 
       },
     );
   }
 
-  Widget _buildLoadingWidget() {
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        // child: CircularProgressIndicator(),
-      ),
-    );
-  }
 
   Widget _buildLoadedStateWidget(DashboardConversionLoaded state) {
     return Container(
       height: 250,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 0,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.only(left: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Конверсия лидов',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 24,
+              fontFamily: "Gilroy",
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A202C),
+              color: Colors.black,
             ),
           ),
-          const SizedBox(height: 16),
+          // const SizedBox(height: 16),
           Expanded(
             child: _buildChart(state),
           ),
-          const SizedBox(height: 16),
+          // const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: _buildLegend(state.leadConversionData),
@@ -154,8 +127,9 @@ class _LeadConversionChartState extends State<LeadConversionChart>
             'Нет данных для отображения',
             style: TextStyle(
               fontSize: 16,
+              fontFamily: "Gilroy",
               fontWeight: FontWeight.w500,
-              color: Color(0xFF718096),
+              color: Colors.black,
             ),
           ),
         );
@@ -214,7 +188,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
         radius: radius,
         titleStyle: TextStyle(
           fontSize: fontSize,
-          fontWeight: FontWeight.bold,
+          fontFamily: "Gilroy",
+          fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
       );
@@ -227,8 +202,10 @@ class _LeadConversionChartState extends State<LeadConversionChart>
         child: Text(
           'Нет данных для легенды',
           style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF718096),
+            fontSize: 16,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
           ),
         ),
       );
@@ -264,10 +241,12 @@ class _LeadConversionChartState extends State<LeadConversionChart>
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            color: Color(0xFF718096),
-            fontSize: 14,
-          ),
+           style: TextStyle(
+              fontSize: 14,
+              fontFamily: "Gilroy",
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
         ),
       ],
     );

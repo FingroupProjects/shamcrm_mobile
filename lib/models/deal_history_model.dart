@@ -36,10 +36,10 @@ class DealHistory {
         id: 0,
         user: DealUser(
             id: 0,
-            name: 'Не указано',
+            name: 'Система',
             email: 'Не указано',
             phone: 'Не указано'),
-        status: 'Не указано',
+        status: 'Система',
         date: DateTime.now(),
         changes: null,
       );

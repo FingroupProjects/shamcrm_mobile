@@ -207,7 +207,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               navigateToScreen(
                                   notification.type,
                                   notification.id,
-                                  notification.modelId.toString());
+                                  notification.modelId);
                             },
                           ),
                         ),
@@ -220,47 +220,62 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
     );
   }
-
-  void navigateToScreen(String type, int notificationId, String id) {
-    setState(() {
+void navigateToScreen(String type, int notificationId, int chatId) async {
+      setState(() {
       (notificationBloc.state as NotificationDataLoaded)
           .notifications
           .removeWhere((notification) => notification.id == notificationId);
     });
 
     notificationBloc.add(DeleteNotification(notificationId));
+  if (type == 'message') {
+    try {
+      final chatProfileLead = await ApiService().getChatProfile(chatId);
+      // final chatProfileTask = await ApiService().getTaskProfile(chatId);
+      final getChatById = await ApiService().getChatById(chatId);
 
-    if (type == 'message') {
-      print('Переход на экран чата с ID: $id');
+      // print('Данные профиля успешно полученыCAHT: ${getChatById.name}');
+      // print('Данные профиля успешно полученыBYCHAT: ${getChatById.type}');
+      print('Данные профиля успешно получены: ${getChatById.canSendMessage}');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => BlocProvider(
             create: (context) => MessagingCubit(ApiService()),
             child: ChatSmsScreen(
               chatItem: Chats(
-                id: int.tryParse(id ?? '0') ?? 0,
-                name: "",
-                taskFrom: "",
-                taskTo: "",
-                description: "",
+                id: chatId,
+                name: chatProfileLead.name,
                 channel: "",
                 lastMessage: "",
-                messageType: "",
                 createDate: "",
-                unredMessage: 0, canSendMessage: false,
+                unredMessage: 1,
+                canSendMessage: getChatById.canSendMessage,
               ).toChatItem("assets/images/AvatarChat.png"),
-              chatId: int.tryParse(id ?? '0') ?? 0,
-              endPointInTab: 'lead', canSendMessage: false,
+              chatId: chatId,
+              endPointInTab: 'lead',
+              canSendMessage: getChatById.canSendMessage,
             ),
           ),
         ),
       );
-    } else if (type == 'task') {
-      print('Переход на экран задачи с ID: $id');
+    } catch (e) {
+      print('Ошибка при загрузке профиля чата: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ошибка при загрузке данных чата',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } else if (type == 'task' || type == 'taskFinished') {
+      print('Переход на экран задачи с ID: $chatId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => TaskDetailsScreen(
-            taskId: id ?? '',
+            taskId: chatId.toString(),
             taskName: '',
             taskStatus: '',
             statusId: 1,
@@ -268,11 +283,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'notice') {
-      print('Переход на экран лида с ID: $id');
+      print('Переход на экран лида с ID: $chatId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => LeadDetailsScreen(
-            leadId: id ?? '',
+            leadId: chatId.toString(),
             leadName: '',
             leadStatus: "",
             statusId: 1,
@@ -280,7 +295,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'deal') {
-      print('Переход на экран сделки с ID: $id');
+      print('Переход на экран сделки с ID: $chatId');
       List<DealCustomField> defaultCustomFields = [
         DealCustomField(id: 1, key: '', value: ''),
         DealCustomField(id: 2, key: '', value: ''),
@@ -288,7 +303,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => DealDetailsScreen(
-            dealId: id ?? '',
+            dealId: chatId.toString(),
             dealName: '',
             sum: '',
             dealStatus: '',
@@ -302,3 +317,85 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 }
+
+//   void navigateToScreen(String type, int notificationId, int chatId) {
+//     setState(() {
+//       (notificationBloc.state as NotificationDataLoaded)
+//           .notifications
+//           .removeWhere((notification) => notification.id == notificationId);
+//     });
+
+//     notificationBloc.add(DeleteNotification(notificationId));
+
+//     if (type == 'message') {
+//       print('Переход на экран чата с ID: $chatId');
+//       navigatorKey.currentState?.push(
+//         MaterialPageRoute(
+//           builder: (context) => BlocProvider(
+//             create: (context) => MessagingCubit(ApiService()),
+//             child: ChatSmsScreen(
+//               chatItem: Chats(
+//                 id: chatId,
+//                 name: "",
+//                 taskFrom: "",
+//                 taskTo: "",
+//                 description: "",
+//                 channel: "",
+//                 lastMessage: "",
+//                 messageType: "",
+//                 createDate: "",
+//                 unredMessage: 0, canSendMessage: false,
+//               ).toChatItem("assets/images/AvatarChat.png"),
+//               chatId:chatId,
+//               endPointInTab: 'corporate', canSendMessage: false,
+//             ),
+//           ),
+//         ),
+//       );
+//     } else if (type == 'task' || type == 'taskFinished') {
+//       print('Переход на экран задачи с ID: $chatId');
+//       navigatorKey.currentState?.push(
+//         MaterialPageRoute(
+//           builder: (context) => TaskDetailsScreen(
+//             taskId: chatId.toString(),
+//             taskName: '',
+//             taskStatus: '',
+//             statusId: 1,
+//           ),
+//         ),
+//       );
+//     } else if (type == 'notice') {
+//       print('Переход на экран лида с ID: $chatId');
+//       navigatorKey.currentState?.push(
+//         MaterialPageRoute(
+//           builder: (context) => LeadDetailsScreen(
+//             leadId: chatId.toString(),
+//             leadName: '',
+//             leadStatus: "",
+//             statusId: 1,
+//           ),
+//         ),
+//       );
+//     } else if (type == 'deal') {
+//       print('Переход на экран сделки с ID: $chatId');
+//       List<DealCustomField> defaultCustomFields = [
+//         DealCustomField(id: 1, key: '', value: ''),
+//         DealCustomField(id: 2, key: '', value: ''),
+//       ];
+//       navigatorKey.currentState?.push(
+//         MaterialPageRoute(
+//           builder: (context) => DealDetailsScreen(
+//             dealId: chatId.toString(),
+//             dealName: '',
+//             sum: '',
+//             dealStatus: '',
+//             statusId: 1,
+//             dealCustomFields: defaultCustomFields,
+//           ),
+//         ),
+//       );
+//     } else {
+//       print('navigateToScreen: Неизвестный тип: $type');
+//     }
+//   }
+// }
