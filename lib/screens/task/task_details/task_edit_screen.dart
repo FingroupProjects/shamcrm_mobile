@@ -152,12 +152,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       const SizedBox(width: 8),
                       Text(
                         entry.value,
-                        style: const TextStyle(
-                          color: Colors.black,
+                        style: TextStyle(
                           fontSize: 16,
+                          fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight
-                              .bold, // Добавлено свойство для жирного текста
+                          color: Color(0xff1E2E52),
                         ),
                       ),
                     ],
@@ -187,6 +186,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
           icon: Image.asset(
             'assets/icons/arrow-left.png',
@@ -196,7 +196,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           onPressed: () => Navigator.pop(context, null),
         ),
         title: const Text(
-          'Редактирование Задачи',
+          'Редактирование задачи',
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',

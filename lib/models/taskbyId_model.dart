@@ -105,12 +105,14 @@ class ChatById {
   final String? lead;
   final String type;
   final String? user;
+  final bool canSendMessage;
 
   ChatById({
     required this.id,
     this.lead,
     required this.type,
     this.user,
+    required this.canSendMessage,
   });
 
   factory ChatById.fromJson(Map<String, dynamic> json) {
@@ -119,6 +121,7 @@ class ChatById {
       lead: json['lead'] as String?,
       type: json['type'] as String? ?? 'unknown',
       user: json['user'] as String?,
+      canSendMessage: json["can_send_message"] ?? false,
     );
   }
 
@@ -128,6 +131,7 @@ class ChatById {
       'lead': lead,
       'type': type,
       'user': user,
+      'can_send_message': canSendMessage,
     };
   }
 }

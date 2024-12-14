@@ -234,6 +234,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: Image.asset(
           'assets/icons/arrow-left.png',

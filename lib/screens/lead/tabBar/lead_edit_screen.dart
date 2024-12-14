@@ -95,6 +95,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
           icon: Image.asset(
             'assets/icons/arrow-left.png',

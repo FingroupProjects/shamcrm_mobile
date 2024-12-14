@@ -12,9 +12,9 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
-  final String leadName; 
+  final String leadName;
 
-  LeadNavigateToChat({required this.leadId, required this.leadName}); 
+  LeadNavigateToChat({required this.leadId, required this.leadName});
 
   @override
   _LeadNavigateToChatDialogState createState() =>
@@ -49,7 +49,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     return BlocListener<LeadToChatBloc, LeadToChatState>(
       listener: (context, state) {
         if (state is LeadToChatError) {
-         ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 '${state.message}',
@@ -153,8 +153,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                         return ListView.builder(
                           itemCount: leadtochat.length,
                           itemBuilder: (context, index) {
-                            final chat = leadtochat[index];
-                            final channelName = chat.channel.name;
+                            final LeadNavigateToChat = leadtochat[index];
+                            final channelName = LeadNavigateToChat.channel.name;
                             final iconPath = sourceIcons[channelName] ??
                                 'assets/icons/leads/default.png';
                             final displayName =
@@ -162,7 +162,6 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                     (channelName.isNotEmpty
                                         ? channelName
                                         : 'Без названия');
-
                             return ListTile(
                               leading: Image.asset(
                                 iconPath,
@@ -177,7 +176,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 ),
                               ),
                               onTap: () {
-                                navigateToScreen(chat.id);
+                                navigateToScreen(LeadNavigateToChat.id, LeadNavigateToChat.canSendMessage);
                               },
                             );
                           },
@@ -212,7 +211,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     );
   }
 
-  void navigateToScreen(int id) {
+  void navigateToScreen(int id, bool canSendMessage) {
     Navigator.pop(context);
     navigatorKey.currentState?.push(
       MaterialPageRoute(
@@ -229,10 +228,12 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               lastMessage: "",
               messageType: "",
               createDate: "",
-              unredMessage: 0, canSendMessage: false,
+              unredMessage: 0,
+              canSendMessage: canSendMessage,
             ).toChatItem("assets/images/AvatarChat.png"),
             chatId: id,
-            endPointInTab: 'lead', canSendMessage: true,
+            endPointInTab: 'lead',
+            canSendMessage: canSendMessage,
           ),
         ),
       ),

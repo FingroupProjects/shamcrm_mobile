@@ -191,6 +191,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         TaskNavigateToChat(
                           chatId: task.chat!.id,
                           taskName: widget.taskName,
+                          canSendMessage: task.chat!.canSendMessage,
                         ),
                       const SizedBox(height: 16),
                       ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
@@ -230,6 +231,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: Image.asset(
           'assets/icons/arrow-left.png',

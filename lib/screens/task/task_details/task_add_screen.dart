@@ -213,6 +213,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ),
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         // elevation: 5,
+        centerTitle: false,
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {

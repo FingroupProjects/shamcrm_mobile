@@ -9,10 +9,11 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class TaskNavigateToChat extends StatefulWidget {
   final int chatId;
-  final String taskName; // Add the leadName parameter
+  final String taskName; 
+  final bool canSendMessage; 
 
 
-  TaskNavigateToChat({required this.chatId, required this.taskName});
+  TaskNavigateToChat({required this.chatId, required this.taskName,  required this.canSendMessage});
 
   @override
   _TaskNavigateToChatDialogState createState() => _TaskNavigateToChatDialogState();
@@ -31,6 +32,10 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
               CustomButton(
                 buttonText: '',
                 onPressed: () {
+                  print("------------------------------------------------------------------------");
+                  print("CANSENDSSSSSMESAGE");
+                                    print('canSendMessage: ${widget.canSendMessage}');
+
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
                       builder: (context) => BlocProvider(
@@ -46,9 +51,9 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                             lastMessage: "",
                             messageType: "",
                             createDate: "",
-                            unredMessage: 0, canSendMessage: true,
+                            unredMessage: 0, canSendMessage: widget.canSendMessage,
                           ).toChatItem("assets/images/AvatarChat.png"),
-                          chatId: widget.chatId, endPointInTab: 'task', canSendMessage: true,
+                          chatId: widget.chatId, endPointInTab: 'task', canSendMessage: widget.canSendMessage,
                         ),
                       ),
                     ),
