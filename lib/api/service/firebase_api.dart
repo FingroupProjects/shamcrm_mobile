@@ -166,7 +166,8 @@ else if (type == 'task' || type == 'taskFinished') {
               leadId: leadId.toString(),
               leadName: '',
               leadStatus: "",
-              statusId: 1,
+              statusId: 1, 
+              leadCustomFields: [],
             ),
           ),
         );

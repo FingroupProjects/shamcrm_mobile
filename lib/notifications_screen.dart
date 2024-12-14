@@ -291,6 +291,7 @@ void navigateToScreen(String type, int notificationId, int chatId) async {
             leadName: '',
             leadStatus: "",
             statusId: 1,
+           leadCustomFields: [],
           ),
         ),
       );

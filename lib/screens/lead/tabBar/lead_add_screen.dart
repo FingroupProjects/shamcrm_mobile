@@ -3,11 +3,14 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
@@ -46,6 +49,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String? selectedSourceLead;
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
+  List<CustomField> customFields = [];
 
   @override
   void initState() {
@@ -54,6 +58,25 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+  }
+
+  void _addCustomField(String fieldName) {
+    setState(() {
+      customFields.add(CustomField(fieldName: fieldName));
+    });
+  }
+
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddCustomFieldDialog(
+          onAddField: (fieldName) {
+            _addCustomField(fieldName);
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -99,29 +122,30 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           //       backgroundColor: Colors.red,
           //     ),
           //   );
-          // } else 
+          // } else
           if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w500, 
-                      color: Colors.white, 
-                    ),
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), 
-                  ),
-                  backgroundColor: Colors.green, 
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-                  duration: Duration(seconds: 2),
                 ),
-              );
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
+              ),
+            );
             Navigator.pop(context, widget.statusId);
             context.read<LeadBloc>().add(FetchLeadStatuses());
           }
@@ -237,6 +261,28 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         hintText: 'Введите описание',
                         label: 'Описание',
                         maxLines: 5,
+                      ), const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                      CustomButton(
+                        buttonText: 'Добавить поле',
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -325,6 +371,18 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                       return;
                                     }
                                   }
+                                  // Создание сделки
+                                  List<Map<String, String>> customFieldMap = [];
+                                  for (var field in customFields) {
+                                    String fieldName = field.fieldName.trim();
+                                    String fieldValue =
+                                        field.controller.text.trim();
+                                    if (fieldName.isNotEmpty &&
+                                        fieldValue.isNotEmpty) {
+                                      customFieldMap
+                                          .add({fieldName: fieldValue});
+                                    }
+                                  }
                                   context.read<LeadBloc>().add(CreateLead(
                                         name: name,
                                         leadStatusId: widget.statusId,
@@ -345,6 +403,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                         birthday: birthday,
                                         email: email,
                                         description: description,
+                                        customFields: customFieldMap,
                                       ));
                                 }
                               },
@@ -362,4 +421,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       ),
     );
   }
+}class CustomField {
+  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+
+  CustomField({required this.fieldName});
 }

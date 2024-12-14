@@ -1,4 +1,3 @@
-// bloc/task_status/task_status_event.dart
 import 'package:equatable/equatable.dart';
 
 abstract class TaskStatusEvent extends Equatable {
@@ -14,6 +13,8 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
   final int organizationId;
   final bool needsPermission;
   final List<int>? roleIds;
+  final bool? finalStep; // Добавлено поле finalStep
+
 
   const CreateTaskStatusAdd({
     required this.taskStatusNameId,
@@ -21,6 +22,7 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
     required this.organizationId,
     required this.needsPermission,
     this.roleIds,
+    this.finalStep, // Инициализация нового поля
   });
 
   @override
@@ -30,5 +32,6 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
         organizationId,
         needsPermission,
         roleIds,
+        finalStep, // Добавлено поле в список props
       ];
 }

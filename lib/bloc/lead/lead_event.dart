@@ -42,6 +42,7 @@ class CreateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
+  final List<Map<String, String>>? customFields;
 
   CreateLead({
     required this.name,
@@ -57,8 +58,10 @@ class CreateLead extends LeadEvent {
     this.email,
     this.description,
     this.waPhone,
+    this.customFields,
   });
 }
+
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
@@ -73,6 +76,7 @@ class UpdateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
+  final List<Map<String, String>>? customFields;
 
   UpdateLead({
     required this.leadId,
@@ -88,6 +92,7 @@ class UpdateLead extends LeadEvent {
     this.email,
     this.description,
     this.waPhone,
+    this.customFields,
   });
 }
 
@@ -96,6 +101,7 @@ class DeleteLead extends LeadEvent {
 
   DeleteLead(this.leadId);
 }
+
 class DeleteLeadStatuses extends LeadEvent {
   final int leadStatusId;
 
