@@ -103,135 +103,142 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
   }
 
   LineChartData _buildChartData(List<ChartData> chartData) {
-    List<LineChartBarData> lineBars = chartData.asMap().entries.map((entry) {
-      int lineIndex = entry.key;
-      ChartData data = entry.value;
+  List<LineChartBarData> lineBars = chartData.asMap().entries.map((entry) {
+    int lineIndex = entry.key;
+    ChartData data = entry.value;
 
-      List<FlSpot> spots = data.data.asMap().entries.map((entry) {
-        double x = entry.key.toDouble();
-        double y = entry.value < 0 ? 0 : entry.value.toDouble();
-        return FlSpot(x, y);
-      }).toList();
+    List<FlSpot> spots = data.data.asMap().entries.map((entry) {
+      double x = entry.key.toDouble();
+      double y = entry.value < 0 ? 0 : entry.value.toDouble();
+      return FlSpot(x, y);
+    }).toList();
 
-      Color lineColor;
-      try {
-        lineColor = Color(int.parse(data.color.replaceFirst('#', '0xff')));
-      } catch (e) {
-        lineColor = Colors.black;
-      }
+    Color lineColor;
+    try {
+      lineColor = Color(int.parse(data.color.replaceFirst('#', '0xff')));
+    } catch (e) {
+      lineColor = Colors.black;
+    }
 
-      return LineChartBarData(
-        spots: spots,
-        isCurved: false,
-        color: lineColor,
-        barWidth: 3,
-        isStrokeCapRound: true,
-        dotData: FlDotData(
-          show: true,
-          getDotPainter: (spot, percent, barData, index) {
-            bool isSelected =
-                lineIndex == selectedLineIndex && index == selectedIndex;
-            return FlDotCirclePainter(
-              radius: isSelected ? 6 : 4,
-              color:
-                  isSelected ? const Color.fromARGB(255, 25, 2, 47) : lineColor,
-              strokeWidth: 2,
-              strokeColor: Colors.white,
+    return LineChartBarData(
+      spots: spots,
+      isCurved: false,
+      color: lineColor,
+      barWidth: 3,
+      isStrokeCapRound: true,
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, percent, barData, index) {
+          bool isSelected =
+              lineIndex == selectedLineIndex && index == selectedIndex;
+          return FlDotCirclePainter(
+            radius: isSelected ? 6 : 4,
+            color:
+                isSelected ? const Color.fromARGB(255, 25, 2, 47) : lineColor,
+            strokeWidth: 2,
+            strokeColor: Colors.white,
+          );
+        },
+      ),
+      belowBarData: BarAreaData(show: false),
+    );
+  }).toList();
+
+  double maxY = chartData
+      .expand((data) => data.data)
+      .reduce((a, b) => a > b ? a : b)
+      .toDouble();
+
+  // Обеспечиваем, чтобы horizontalInterval не был равен нулю
+  double horizontalInterval = maxY / 5;
+  if (horizontalInterval == 0) {
+    horizontalInterval = 1; // Устанавливаем минимальное значение интервала
+  }
+
+  return LineChartData(
+    gridData: FlGridData(
+      show: true,
+      drawVerticalLine: true,
+      horizontalInterval: horizontalInterval,
+      verticalInterval: 1,
+    ),
+    titlesData: FlTitlesData(
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          interval: horizontalInterval,
+          getTitlesWidget: (value, meta) {
+            return Text(
+              value.toInt().toString(),
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
             );
           },
         ),
-        belowBarData: BarAreaData(show: false),
-      );
-    }).toList();
-
-    double maxY = chartData
-        .expand((data) => data.data)
-        .reduce((a, b) => a > b ? a : b)
-        .toDouble();
-
-    return LineChartData(
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: true,
-        horizontalInterval: maxY / 5,
-        verticalInterval: 1,
       ),
-      titlesData: FlTitlesData(
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: maxY / 5,
-            getTitlesWidget: (value, meta) {
-              return Text(
-                value.toInt().toString(),
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              );
-            },
-          ),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              final months = [
-                'Январь',
-                'Февраль',
-                'Март',
-                'Апрель',
-                'Май',
-                'Июнь',
-                'Июль',
-                'Август',
-                'Сентябрь',
-                'Октябрь',
-                'Ноябрь',
-                'Декабрь'
-              ];
-              return Text(
-                months[value.toInt() % 12],
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              );
-            },
-          ),
-        ),
-      ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
-      ),
-      minX: 0,
-      maxX: 11,
-      minY: 0,
-      maxY: maxY * 1.1,
-      lineBarsData: lineBars,
-      lineTouchData: LineTouchData(
-        touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
-          if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
-            // Проверяем, что список не пуст
-            final firstSpot = touchResponse!.lineBarSpots!.first;
-            setState(() {
-              selectedLineIndex = chartData.indexWhere(
-                (data) => data.data.contains(firstSpot.y.toInt()),
-              );
-              selectedIndex =
-                  firstSpot.spotIndex; // Убедитесь, что 'spotIndex' существует.
-            });
-          }
-        },
-        touchTooltipData: LineTouchTooltipData(
-          getTooltipItems: (List<LineBarSpot> spots) {
-            return spots.map((spot) {
-              // Найти соответствующий ChartData для линии и точки
-              final lineData = chartData[spots.indexOf(spot)];
-              final label = lineData.label; // Название статуса
-              return LineTooltipItem('$label: ${spot.y.toInt()}',
-                  const TextStyle(color: Colors.white));
-            }).toList();
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (value, meta) {
+            final months = [
+              'Январь',
+              'Февраль',
+              'Март',
+              'Апрель',
+              'Май',
+              'Июнь',
+              'Июль',
+              'Август',
+              'Сентябрь',
+              'Октябрь',
+              'Ноябрь',
+              'Декабрь'
+            ];
+            return Text(
+              months[value.toInt() % 12],
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            );
           },
         ),
       ),
-    );
-  }
+    ),
+    borderData: FlBorderData(
+      show: true,
+      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+    ),
+    minX: 0,
+    maxX: 11,
+    minY: 0,
+    maxY: maxY * 1.1,
+    lineBarsData: lineBars,
+    lineTouchData: LineTouchData(
+      touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+        if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
+          // Проверяем, что список не пуст
+          final firstSpot = touchResponse!.lineBarSpots!.first;
+          setState(() {
+            selectedLineIndex = chartData.indexWhere(
+              (data) => data.data.contains(firstSpot.y.toInt()),
+            );
+            selectedIndex =
+                firstSpot.spotIndex; // Убедитесь, что 'spotIndex' существует.
+          });
+        }
+      },
+      touchTooltipData: LineTouchTooltipData(
+        getTooltipItems: (List<LineBarSpot> spots) {
+          return spots.map((spot) {
+            // Найти соответствующий ChartData для линии и точки
+            final lineData = chartData[spots.indexOf(spot)];
+            final label = lineData.label; // Название статуса
+            return LineTooltipItem('$label: ${spot.y.toInt()}',
+                const TextStyle(color: Colors.white));
+          }).toList();
+        },
+      ),
+    ),
+  );
+}
+
 
   Widget _buildStatsList(List<ChartData> chartData) {
     List<Widget> stats = chartData.map((data) {

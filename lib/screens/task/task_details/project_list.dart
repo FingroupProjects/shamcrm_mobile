@@ -91,7 +91,7 @@ class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
                   Container(
                     decoration: BoxDecoration(
                       color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
                     ),
                     child: CustomDropdown<Project>.search(
@@ -115,13 +115,19 @@ class _ProjectRadioGroupWidgetState extends State<ProjectRadioGroupWidget> {
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
-                        return Text(item.name!);
+                        return Text(item.name!,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ));
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
                           selectedItem.name ?? 'Выберите проект',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
                             color: Color(0xff1E2E52),

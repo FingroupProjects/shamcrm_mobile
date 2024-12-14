@@ -24,7 +24,16 @@ class UserProfileScreen extends StatelessWidget {
             style: TextStyle(color: Colors.black), // Цвет текста AppBar
           ),
           backgroundColor: Colors.white, // Цвет фона AppBar
-          iconTheme: IconThemeData(color: Colors.black), // Цвет иконки "Назад"
+                  leading: IconButton(
+           icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         ),
         body: BlocBuilder<ChatProfileBloc, ChatProfileState>(
           builder: (context, state) {
