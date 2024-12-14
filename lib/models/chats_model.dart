@@ -3,34 +3,37 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 class Chats {
   final int id;
   final String name;
-  final String taskFrom;
-  final String taskTo;
-  final String description;
+  final String? taskFrom;
+  final String? taskTo;
+  final String? description;
   final String channel;
   final String lastMessage;
-  final String messageType;
+  final String? messageType;
   final String createDate;
   final int unredMessage;
   final bool canSendMessage;
+  final String? type;
+
   Chats({
     required this.id,
     required this.name,
-    required this.taskFrom,
-    required this.taskTo,
-    required this.description,
+    this.taskFrom,
+    this.taskTo,
+    this.description,
     required this.channel,
     required this.lastMessage,
-    required this.messageType,
+    this.messageType,
     required this.createDate,
     required this.unredMessage,
     required this.canSendMessage,
+    this.type,
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
     print('----- for test');
     print(json);
     return Chats(
-      id: json['id'] ?? 0, // Предположим, что ID должен быть числом, иначе 0
+      id: json['id'] ?? 0,
       name: json['user'] != null
           ? json['user']['name']
           : json['task'] != null
@@ -43,13 +46,11 @@ class Chats {
           : json['lead'] != null
               ? json['lead']['created_at'] ?? ''
               : '',
-
       unredMessage: json['task'] != null
           ? json['task']['unread_messages_count'] ?? 0
           : json['lead'] != null
               ? json['lead']['unread_messages_count'] ?? 0
               : 0,
-
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
       description:
@@ -61,6 +62,7 @@ class Chats {
       messageType:
           json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json["can_send_message"] ?? false,
+      type: json['type'], // Added 'type' from JSON
     );
   }
 
@@ -98,7 +100,7 @@ class Chats {
 
   @override
   String toString() {
-    return 'Chats{id: $id, name: $name, taskFrom: $taskFrom, taskTo: $taskTo, description: $description, channel: $channel, lastMessage: $lastMessage, messageType: $messageType, createDate: $createDate, unredMessage: $unredMessage}';
+    return 'Chats{id: $id, name: $name, taskFrom: $taskFrom, taskTo: $taskTo, description: $description, channel: $channel, lastMessage: $lastMessage, messageType: $messageType, createDate: $createDate, unredMessage: $unredMessage, type: $type}';
   }
 
   String _mapChannelToIcon(String channel) {

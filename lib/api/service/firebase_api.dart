@@ -63,7 +63,7 @@ class FirebaseApi {
     }
   }
 
-  void handleMessage(RemoteMessage? message) {
+  Future<void> handleMessage(RemoteMessage? message) async {
     if (message == null || message.data.isEmpty) {
       print('handleMessage: сообщение пустое или данные отсутствуют');
       return;
@@ -79,39 +79,59 @@ class FirebaseApi {
     }
 
     if (type == 'message') {
-      print('Переход на экран чата с ID: $id');
-      screenIndex = 3;
-      navigatorKey.currentState?.pushReplacementNamed(
-        '/home',
-        arguments: {'id': id, 'screenIndex': screenIndex},
-      );
-      final chatId = int.tryParse(message.data['id'].toString()) ?? 0;
+  print('Переход на экран чата с ID: $id');
+  screenIndex = 3;
+  navigatorKey.currentState?.pushReplacementNamed(
+    '/home',
+    arguments: {'id': id, 'screenIndex': screenIndex},
+  );
 
-      if (chatId != null) {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => BlocProvider(
-              create: (context) => MessagingCubit(ApiService()),
-              child: ChatSmsScreen(
-                chatItem: Chats(
-                  id: chatId,
-                  name: "",
-                  taskFrom: "",
-                  taskTo: "",
-                  description: "",
-                  channel: "",
-                  lastMessage: "",
-                  messageType: "",
-                  createDate: "",
-                  unredMessage: 0, canSendMessage: false,
-                ).toChatItem("assets/images/AvatarChat.png"),
-                chatId: chatId, endPointInTab: 'lead', canSendMessage: false,
-              ),
+  final chatId = int.tryParse(message.data['id'].toString()) ?? 0;
+
+  if (chatId != 0) {
+    // Загружаем данные профиля чата
+    try {
+      final apiService = ApiService();
+      final chatProfile = await apiService.getChatProfile(chatId);
+
+      // Переходим на экран чата, передаем профиль
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => BlocProvider(
+            create: (context) => MessagingCubit(apiService),
+            child: ChatSmsScreen(
+              chatItem: Chats(
+                id: chatId,
+                name: chatProfile.name,
+                taskFrom: "",
+                taskTo: "",
+                description: "",
+                channel: "",
+                lastMessage:"",
+                messageType: "",
+                createDate: "",
+                unredMessage: 1,
+                canSendMessage: true, type: '',
+              ).toChatItem("assets/images/AvatarChat.png"),
+              chatId: chatId,
+              endPointInTab: 'lead',
+              canSendMessage: true,
             ),
           ),
-        );
-      }
-    } else if (type == 'task') {
+        ),
+      );
+    } catch (e) {
+      print('Ошибка загрузки профиля чата: $e');
+      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+        SnackBar(
+          content: Text('Не удалось загрузить профиль чата: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+else if (type == 'task' || type == 'taskFinished') {
       print('Переход на экран задачи с ID: $id');
       screenIndex = 1;
       navigatorKey.currentState?.pushReplacementNamed(

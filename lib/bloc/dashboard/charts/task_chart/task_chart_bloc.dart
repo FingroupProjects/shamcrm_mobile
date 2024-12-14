@@ -27,6 +27,12 @@ class DashboardTaskChartBloc
     Emitter<DashboardTaskChartState> emit,
   ) async {
     try {
+      // Проверяем, были ли уже загружены данные
+      if (state is DashboardTaskChartLoaded) {
+        // Если данные уже загружены, не загружаем их снова
+        return;
+      }
+
       emit(DashboardTaskChartLoading());
 
       // Check for internet connection
@@ -34,7 +40,7 @@ class DashboardTaskChartBloc
         final taskChartData = await _apiService.getTaskChartData();
         emit(DashboardTaskChartLoaded(taskChartData: taskChartData));
       } else {
-        // emit(DashboardTaskChartError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        emit(DashboardTaskChartError(message: 'Ошибка подключения к интернету.'));
       }
     } catch (e) {
       emit(DashboardTaskChartError(message: e.toString()));

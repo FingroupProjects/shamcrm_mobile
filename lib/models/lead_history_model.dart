@@ -36,10 +36,10 @@ class LeadHistory {
         id: 0,
         user: User(
             id: 0,
-            name: 'Не указано',
+            name: 'Система',
             email: 'Не указано',
             phone: 'Не указано'),
-        status: 'Не указано',
+        status: 'Система',
         date: DateTime.now(),
         changes: null,
       );
@@ -73,7 +73,7 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано', 
+      name: json['name'] ?? 'Система', 
       email: json['email'] ?? 'Не указано', 
       phone: json['phone'] ?? 'Не указано', 
     );

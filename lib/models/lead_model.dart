@@ -104,7 +104,7 @@ class Author {
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указан',
+      name: json['name'] ?? 'Не указано',
     );
   }
 }
@@ -137,7 +137,7 @@ class LeadStatus {
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
     return LeadStatus(
       id: json['id'],
-      title: json['title'] ?? json['name'] ?? 'Не указан',
+      title: json['title'] ?? json['name'] ?? '',
       color: json['color'],
       lead_status_id: json['lead_status_id'] ?? null,
     );
