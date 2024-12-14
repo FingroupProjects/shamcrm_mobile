@@ -40,8 +40,8 @@ class _LeadCardState extends State<LeadCard> {
     'Телеграм Аккаунт': 'assets/icons/leads/telegram.png',
     'Телеграм Бот': 'assets/icons/leads/telegram.png',
     'WhatsApp': 'assets/icons/leads/whatsapp.png',
-    'Инстаграм': 'assets/icons/leads/facebook.png',
-    'Facebook': 'assets/icons/leads/instagram.png',
+    'Facebook': 'assets/icons/leads/facebook.png',
+    'Инстаграм': 'assets/icons/leads/instagram.png',
   };
 
   @override
@@ -68,6 +68,7 @@ class _LeadCardState extends State<LeadCard> {
               telegram: widget.lead.telegram,
               phone: widget.lead.phone,
               description: widget.lead.description,
+              leadCustomFields: widget.lead.leadCustomFields,
             ),
           ),
         );

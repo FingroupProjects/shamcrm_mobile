@@ -231,33 +231,35 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     );
   }
 
-  void _createStatus() {
-    if (selectedStatusNameId == null || selectedProjectId == null) {
-      setState(() {
-        _errorMessage = 'Заполните обязательные поля';
-      });
-      return;
-    }
-
+void _createStatus() {
+  if (selectedStatusNameId == null || selectedProjectId == null) {
     setState(() {
-      _errorMessage = null;
+      _errorMessage = 'Заполните обязательные поля';
     });
-
-    // Создаем новый статус
-    context.read<task_status_add.TaskStatusBloc>().add(
-          task_status_add.CreateTaskStatusAdd(
-            taskStatusNameId: selectedStatusNameId!,
-            projectId: int.tryParse(selectedProjectId!) ?? 0, 
-            organizationId: 1,
-            needsPermission: needsPermission,
-            roleIds: needsPermission ? selectedRoleIds : null,
-          ),
-        );
-
-    Navigator.pop(context);
-
-    Future.delayed(Duration(milliseconds: 0), () {
-      context.read<TaskBloc>().add(FetchTaskStatuses());
-    });
+    return;
   }
+
+  setState(() {
+    _errorMessage = null;
+  });
+
+  // Создаем новый статус
+  context.read<task_status_add.TaskStatusBloc>().add(
+        task_status_add.CreateTaskStatusAdd(
+          taskStatusNameId: selectedStatusNameId!,
+          projectId: int.tryParse(selectedProjectId!) ?? 0, 
+          organizationId: 1,
+          needsPermission: needsPermission,
+          roleIds: needsPermission ? selectedRoleIds : null,
+          finalStep: isFinalStage, // Передаем состояние переключателя
+        ),
+      );
+
+  Navigator.pop(context);
+
+  Future.delayed(Duration(milliseconds: 0), () {
+    context.read<TaskBloc>().add(FetchTaskStatuses());
+  });
+}
+
 }

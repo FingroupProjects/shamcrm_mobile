@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
@@ -35,6 +36,8 @@ class LeadDetailsScreen extends StatefulWidget {
   final String? telegram;
   final String? phone;
   final String? description;
+  final List<LeadCustomField> leadCustomFields;
+
 
   LeadDetailsScreen({
     required this.leadId,
@@ -51,6 +54,7 @@ class LeadDetailsScreen extends StatefulWidget {
     this.telegram,
     this.phone,
     this.description,
+    required this.leadCustomFields,
   });
 
   @override
@@ -234,6 +238,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
       elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: Image.asset(
           'assets/icons/arrow-left.png',

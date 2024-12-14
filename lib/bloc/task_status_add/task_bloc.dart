@@ -26,6 +26,7 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
           organizationId: event.organizationId,
           needsPermission: event.needsPermission,
           roleIds: event.roleIds,
+          finalStep: event.finalStep,
         );
         
         if (response['success']) {

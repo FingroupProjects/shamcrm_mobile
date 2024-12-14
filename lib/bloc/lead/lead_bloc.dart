@@ -7,7 +7,8 @@ import 'lead_state.dart';
 
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
-  bool allLeadsFetched =false; // Переменная для отслеживания статуса завершения загрузки лидов
+  bool allLeadsFetched =
+      false; // Переменная для отслеживания статуса завершения загрузки лидов
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -19,38 +20,34 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<FetchAllLeads>(_fetchAllLeads);
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
-   
-
   }
-
 
 // // Метод для поиска лидов
-Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
-  emit(LeadLoading());
-  if (!await _checkInternetConnection()) {
-    emit(LeadError('Нет подключения к интернету'));
-    return;
-  }
+  Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+    if (!await _checkInternetConnection()) {
+      emit(LeadError('Нет подключения к интернету'));
+      return;
+    }
 
-  try {
-    // Передаем правильный leadStatusId из события FetchLeads
-    final leads = await apiService.getLeads(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-    );
-    allLeadsFetched = leads.isEmpty;
-    emit(LeadDataLoaded(leads, currentPage: 1));
-  } catch (e) {
-  if (e is ApiException && e.statusCode == 401) {
-    emit(LeadError('Неавторизованный доступ!'));
-  } else {
-    emit(LeadError('Не удалось загрузить данные: ${e.toString()}'));
+    try {
+      // Передаем правильный leadStatusId из события FetchLeads
+      final leads = await apiService.getLeads(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+      );
+      allLeadsFetched = leads.isEmpty;
+      emit(LeadDataLoaded(leads, currentPage: 1));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 401) {
+        emit(LeadError('Неавторизованный доступ!'));
+      } else {
+        emit(LeadError('Не удалось загрузить данные: ${e.toString()}'));
+      }
+    }
   }
-}
-}
-
 
   Future<void> _fetchLeadStatuses(
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
@@ -85,16 +82,13 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     }
 
     try {
-      final leads = await apiService
-          .getLeads(null); 
+      final leads = await apiService.getLeads(null);
       allLeadsFetched = leads.isEmpty;
       emit(LeadDataLoaded(leads, currentPage: 1));
     } catch (e) {
       emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
     }
   }
-
-
 
   Future<void> _fetchMoreLeads(
       FetchMoreLeads event, Emitter<LeadState> emit) async {
@@ -148,6 +142,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         email: event.email,
         description: event.description,
         waPhone: event.waPhone,
+        customFields: event.customFields,
       );
 
       // Если успешно, то обновляем состояние
@@ -199,6 +194,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         email: event.email,
         description: event.description,
         waPhone: event.waPhone,
+        customFields: event.customFields,
       );
 
       // Если успешно, то обновляем состояние
@@ -237,8 +233,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     }
   }
 
-
-   Future<void> _deleteLead(DeleteLead event, Emitter<LeadState> emit) async {
+  Future<void> _deleteLead(DeleteLead event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
     try {
@@ -252,8 +247,9 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       emit(LeadError('Ошибка удаления лида: ${e.toString()}'));
     }
   }
-  
-   Future<void> _deleteLeadStatuses(DeleteLeadStatuses event, Emitter<LeadState> emit) async {
+
+  Future<void> _deleteLeadStatuses(
+      DeleteLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
     try {

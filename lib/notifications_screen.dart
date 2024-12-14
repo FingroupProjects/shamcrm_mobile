@@ -49,7 +49,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
-        elevation: 1,
+        elevation: 0,
         centerTitle: true,
         title: const Text(
           'Уведомления',
@@ -276,6 +276,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             leadName: '',
             leadStatus: "",
             statusId: 1,
+           leadCustomFields: [],
           ),
         ),
       );
