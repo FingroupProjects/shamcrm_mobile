@@ -151,7 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // SizedBox(height: 16),
         // DealsBox(),
         // SizedBox(height: 16),
-        GraphicsDashboard(),
+                  // GraphicsDashboard(),
         // SizedBox(height: 16),
         LeadConversionChart(),
         // SizedBox(height: 16),
@@ -163,13 +163,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     } else if (userRoleName == 'manager') {
       return [
-        // LeadsBox(),
+        // LeadsBox(),суфк
         // SizedBox(height: 16),
         // TasksBox(),
         // SizedBox(height: 16),
         // DealsBox(),
         // SizedBox(height: 16),
-        GraphicsDashboard(),
+                 // GraphicsDashboard(),
         // SizedBox(height: 16),
         LeadConversionChart(),
         // SizedBox(height: 16),
