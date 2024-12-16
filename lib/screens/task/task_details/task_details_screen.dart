@@ -164,7 +164,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   backgroundColor: Colors.red,
                   elevation: 3,
                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 2), 
+                  duration: Duration(seconds: 2),
                 ),
               );
             }
@@ -421,9 +421,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               SizedBox(
                 height: 400,
                 child: ListView.builder(
+                  itemExtent: 40, // Уменьшаем высоту элемента
                   itemCount: userList.length,
                   itemBuilder: (context, index) {
                     return ListTile(
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 0), // Минимальный вертикальный отступ
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(

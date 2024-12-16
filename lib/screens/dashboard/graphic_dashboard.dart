@@ -238,8 +238,6 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
     ),
   );
 }
-
-
   Widget _buildStatsList(List<ChartData> chartData) {
     List<Widget> stats = chartData.map((data) {
       Color color = Color(int.parse(data.color.replaceFirst('#', '0xff')));

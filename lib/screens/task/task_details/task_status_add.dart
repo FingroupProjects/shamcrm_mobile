@@ -6,8 +6,10 @@ import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart' as task_status_add;
-import 'package:crm_task_manager/bloc/task_status_add/task_event.dart' as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
+    as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
+    as task_status_add;
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
@@ -23,7 +25,7 @@ class CreateStatusDialog extends StatefulWidget {
 
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   int? selectedStatusNameId;
-  String? selectedProjectId; 
+  String? selectedProjectId;
   List<int> selectedRoleIds = [];
   bool needsPermission = false;
   bool isFinalStage = false;
@@ -57,15 +59,16 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           children: [
             const SizedBox(height: 16),
             StatusList(
-              selectedTaskStatus: selectedStatusNameId?.toString(),
+              selectedTaskStatus:
+                  selectedStatusNameId?.toString(), // Передаем строку
               onChanged: (String? statusName, int? statusId) {
                 setState(() {
-                  selectedStatusNameId = statusId;
+                  selectedStatusNameId = statusId; // Обновляем статус
                 });
               },
             ),
             const SizedBox(height: 16),
-            ProjectRadioGroupWidget( 
+            ProjectRadioGroupWidget(
               selectedProject: selectedProjectId,
               onSelectProject: (project) {
                 setState(() {
@@ -102,9 +105,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
                           activeTrackColor:
-                              const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                              const Color.fromARGB(255, 51, 65, 98)
+                                  .withOpacity(0.5),
                           inactiveThumbColor:
                               const Color.fromARGB(255, 255, 255, 255),
                         ),
@@ -133,9 +138,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
                           activeTrackColor:
-                              const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                              const Color.fromARGB(255, 51, 65, 98)
+                                  .withOpacity(0.5),
                           inactiveThumbColor:
                               const Color.fromARGB(255, 255, 255, 255),
                         ),
@@ -231,35 +238,34 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     );
   }
 
-void _createStatus() {
-  if (selectedStatusNameId == null || selectedProjectId == null) {
+  void _createStatus() {
+    if (selectedStatusNameId == null || selectedProjectId == null) {
+      setState(() {
+        _errorMessage = 'Заполните обязательные поля';
+      });
+      return;
+    }
+
     setState(() {
-      _errorMessage = 'Заполните обязательные поля';
+      _errorMessage = null;
     });
-    return;
+
+    // Создаем новый статус
+    context.read<task_status_add.TaskStatusBloc>().add(
+          task_status_add.CreateTaskStatusAdd(
+            taskStatusNameId: selectedStatusNameId!,
+            projectId: int.tryParse(selectedProjectId!) ?? 0,
+            organizationId: 1,
+            needsPermission: needsPermission,
+            roleIds: needsPermission ? selectedRoleIds : null,
+            finalStep: isFinalStage, // Передаем состояние переключателя
+          ),
+        );
+
+    Navigator.pop(context);
+
+    Future.delayed(Duration(milliseconds: 0), () {
+      context.read<TaskBloc>().add(FetchTaskStatuses());
+    });
   }
-
-  setState(() {
-    _errorMessage = null;
-  });
-
-  // Создаем новый статус
-  context.read<task_status_add.TaskStatusBloc>().add(
-        task_status_add.CreateTaskStatusAdd(
-          taskStatusNameId: selectedStatusNameId!,
-          projectId: int.tryParse(selectedProjectId!) ?? 0, 
-          organizationId: 1,
-          needsPermission: needsPermission,
-          roleIds: needsPermission ? selectedRoleIds : null,
-          finalStep: isFinalStage, // Передаем состояние переключателя
-        ),
-      );
-
-  Navigator.pop(context);
-
-  Future.delayed(Duration(milliseconds: 0), () {
-    context.read<TaskBloc>().add(FetchTaskStatuses());
-  });
-}
-
 }
