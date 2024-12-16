@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 
+
 class Chats {
   final int id;
   final String name;
@@ -13,6 +14,8 @@ class Chats {
   final int unredMessage;
   final bool canSendMessage;
   final String? type;
+  final List<ChatUser> chatUsers; // Список пользователей
+  final Group? group; // Ссылка на группу
 
   Chats({
     required this.id,
@@ -27,11 +30,23 @@ class Chats {
     required this.unredMessage,
     required this.canSendMessage,
     this.type,
+    required this.chatUsers,
+    this.group,
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
-    print('----- for test');
-    print(json);
+    List<ChatUser> users = [];
+    if (json['chatUsers'] != null) {
+      for (var userJson in json['chatUsers']) {
+        users.add(ChatUser.fromJson(userJson));
+      }
+    }
+
+    Group? group;
+    if (json['group'] != null) {
+      group = Group.fromJson(json['group']);
+    }
+
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
@@ -62,8 +77,19 @@ class Chats {
       messageType:
           json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json["can_send_message"] ?? false,
-      type: json['type'], // Added 'type' from JSON
+      type: json['type'],
+      chatUsers: users, // Добавляем список пользователей
+      group: group, // Добавляем группу
     );
+  }
+
+  // Новый метод, который будет проверять и возвращать имя либо пользователя, либо группы
+  String get displayName {
+    if (group != null && group!.name.isNotEmpty) {
+      return group!.name; // Если группа существует, то возвращаем ее имя
+    } else {
+      return chatUsers.isNotEmpty ? chatUsers[0].name : name; // Если нет группы, то имя пользователя
+    }
   }
 
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
@@ -73,9 +99,9 @@ class Chats {
       case 'voice':
         return 'Вам пришло голосовое сообщение';
       case 'file':
-        return lastMessage['text'] ?? 'Файл: неизвестное имя';
+        return 'Файл: неизвестное имя';
       case 'image':
-        return lastMessage['text'] ?? 'Изображение';
+        return 'Изображение';
       case 'video':
         return 'Вам пришло видео сообщение';
       case 'location':
@@ -89,7 +115,8 @@ class Chats {
 
   ChatItem toChatItem(String avatar) {
     return ChatItem(
-      name,
+      
+      displayName,
       lastMessage,
       createDate,
       avatar,
@@ -114,6 +141,83 @@ class Chats {
     return channelIconMap[channel] ?? 'assets/icons/leads/default.png';
   }
 }
+
+// New ChatUser class
+class ChatUser {
+  final int id;
+  final String name;
+  final String login;
+  final String email;
+  final String phone;
+  final String image;
+  final String? lastSeen;
+
+  ChatUser({
+    required this.id,
+    required this.name,
+    required this.login,
+    required this.email,
+    required this.phone,
+    required this.image,
+    this.lastSeen,
+  });
+
+  factory ChatUser.fromJson(Map<String, dynamic> json) {
+    return ChatUser(
+      id: json['participant'] != null ? json['participant']['id'] ?? 0 : 0,
+      name: json['participant'] != null ? json['participant']['name'] ?? '' : '',
+      login: json['participant'] != null ? json['participant']['login'] ?? '' : '',
+      email: json['participant'] != null ? json['participant']['email'] ?? '' : '',
+      phone: json['participant'] != null ? json['participant']['phone'] ?? '' : '',
+      image: json['participant'] != null ? json['participant']['image'] ?? '' : '',
+      lastSeen: json['participant'] != null ? json['participant']['last_seen'] : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'ChatUser{id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image, lastSeen: $lastSeen}';
+  }
+}
+
+// New Group class
+class Group {
+  final int id;
+  final String name;
+  final String? imgUrl;
+  final int authorId;
+  final String createdAt;
+  final String updatedAt;
+  final int organizationId;
+
+  Group({
+    required this.id,
+    required this.name,
+    this.imgUrl,
+    required this.authorId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.organizationId,
+  });
+
+  factory Group.fromJson(Map<String, dynamic> json) {
+    return Group(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      imgUrl: json['img_url'],
+      authorId: json['author_id'] ?? 0,
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+      organizationId: json['organization_id'] ?? 0,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Group{id: $id, name: $name, imgUrl: $imgUrl, authorId: $authorId, createdAt: $createdAt, updatedAt: $updatedAt, organizationId: $organizationId}';
+  }
+}
+
 
 class Message {
   final int id;
