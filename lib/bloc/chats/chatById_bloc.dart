@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/chats/chat_profile/chatById_event.dart';
-import 'package:crm_task_manager/bloc/chats/chat_profile/chatById_state.dart';
+import 'package:crm_task_manager/bloc/chats/chatById_event.dart';
+import 'package:crm_task_manager/bloc/chats/chatById_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ChatByIdBloc extends Bloc<ChatByIdEvent, ChatByIdState> {

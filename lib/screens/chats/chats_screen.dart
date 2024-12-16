@@ -44,24 +44,23 @@ class _ChatsScreenState extends State<ChatsScreen>
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
 
-    bool showCorporateChat = true;
+  bool showCorporateChat = true;
 
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabTitles.length, vsync: this);
 
- @override
-void initState() {
-  super.initState();
-  _tabController = TabController(length: _tabTitles.length, vsync: this);
+    final currentState = context.read<LoginBloc>().state;
+    if (currentState is LoginLoaded) {
+      setUpServices(currentState.user.id);
+    } else {
+      // Логируем или обрабатываем случай, когда состояние ещё не `LoginLoaded`
+      print('Состояние LoginBloc: $currentState');
+    }
 
-  final currentState = context.read<LoginBloc>().state;
-  if (currentState is LoginLoaded) {
-    setUpServices(currentState.user.id);
-  } else {
-    // Логируем или обрабатываем случай, когда состояние ещё не `LoginLoaded`
-    print('Состояние LoginBloc: $currentState');
+    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
   }
-
-  context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
-}
 
   void _filterChats(String query) {
     isClickAvatarIcon = false;
@@ -88,8 +87,8 @@ void initState() {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
-        final baseUrlSocket = await apiService.getSocketBaseUrl();
-        final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+    final baseUrlSocket = await apiService.getSocketBaseUrl();
+    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
 
     final customOptions = PusherChannelsOptions.custom(
       // You may also apply the given metadata in your custom uri
@@ -100,8 +99,7 @@ void initState() {
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-      },
+      connectionErrorHandler: (exception, trace, refresh) {},
       minimumReconnectDelayDuration: const Duration(
         seconds: 1,
       ),
@@ -112,8 +110,7 @@ void initState() {
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint:
-            Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -171,7 +168,7 @@ void initState() {
     return Unfocuser(
       child: Scaffold(
         appBar: AppBar(
-        forceMaterialTransparency: true,
+          forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
             title: 'Чаты',
@@ -198,7 +195,7 @@ void initState() {
                     child: Row(
                       children: List.generate(_tabTitles.length, (index) {
                         if (index == 2 && !showCorporateChat) {
-                          return Container(); 
+                          return Container();
                         }
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -211,21 +208,22 @@ void initState() {
                   Expanded(child: _buildTabBarView()),
                 ],
               ),
-        floatingActionButton:(selectTabIndex == 2) ? FloatingActionButton(
-          onPressed: () {
-            showCupertinoModalBottomSheet(
-              context: context,
-              expand: false,
-              elevation: 4,
-              isDismissible: false,
-              builder: (context) => BottomSheetAddClientDialog(),
-            );
-
-          },
-          backgroundColor: Color(0xff1E2E52),
-          child:
-          Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
-        ) : null,
+        floatingActionButton: (selectTabIndex == 2)
+            ? FloatingActionButton(
+                onPressed: () {
+                  showCupertinoModalBottomSheet(
+                    context: context,
+                    expand: false,
+                    elevation: 4,
+                    isDismissible: false,
+                    builder: (context) => BottomSheetAddClientDialog(),
+                  );
+                },
+                backgroundColor: Color(0xff1E2E52),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
+              )
+            : null,
       ),
     );
   }
@@ -239,7 +237,7 @@ void initState() {
         _tabController.animateTo(index);
 
         // String endPoint = '';
-         if (index == 0) {
+        if (index == 0) {
           endPointInTab = 'lead';
         }
         // todo: 3. tab's key value for opened profile screen.
@@ -268,12 +266,16 @@ void initState() {
     );
   }
 
-   Widget _buildTabBarView() {
+  Widget _buildTabBarView() {
     return TabBarView(
       controller: _tabController,
       physics: const NeverScrollableScrollPhysics(),
-      children: List.generate(_tabTitles.length,
-          (index) => _ChatItemsWidget(updateChats: updateChats, endPointInTab: endPointInTab,)),
+      children: List.generate(
+          _tabTitles.length,
+          (index) => _ChatItemsWidget(
+                updateChats: updateChats,
+                endPointInTab: endPointInTab,
+              )),
     );
   }
 
@@ -288,9 +290,10 @@ void initState() {
 
 class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
-    final String endPointInTab;
+  final String endPointInTab;
 
-  const _ChatItemsWidget({required this.updateChats, required this.endPointInTab});
+  const _ChatItemsWidget(
+      {required this.updateChats, required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
@@ -334,7 +337,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     });
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
       listener: (context, state) {
@@ -354,29 +357,25 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
       child: PagedListView<int, Chats>(
         padding: EdgeInsets.symmetric(vertical: 0),
         pagingController: _pagingController,
-
         builderDelegate: PagedChildBuilderDelegate<Chats>(
-
             noItemsFoundIndicatorBuilder: (context) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Ничего не найдено.",
-                      style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "Список в данный момент пуст.",
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ],
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Ничего не найдено.",
+                  style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                 ),
-              );
-            },
-
-            itemBuilder: (context, item, index) {
+                SizedBox(height: 8),
+                Text(
+                  "Список в данный момент пуст.",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }, itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
             splashColor: AppColors.primaryBlue,
@@ -386,7 +385,6 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             ),
           );
         }),
-
       ),
     );
   }

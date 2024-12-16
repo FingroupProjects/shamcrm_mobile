@@ -38,7 +38,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
 
   final Map<String, String> customChannelNames = {
     'telegram_account': 'Telegram',
-    'telegram_bot': 'Telegram',
+    'telegram_bot': 'Telegram бот',
     'whatsapp': 'WhatsApp',
     'facebook': 'Facebook',
     'instagram': 'Instagram',
@@ -229,7 +229,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               messageType: "",
               createDate: "",
               unredMessage: 0,
-              canSendMessage: canSendMessage,
+              canSendMessage: canSendMessage, chatUsers: [],
             ).toChatItem("assets/images/AvatarChat.png"),
             chatId: id,
             endPointInTab: 'lead',
