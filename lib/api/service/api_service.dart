@@ -3,6 +3,7 @@ import 'dart:io';
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
+import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
@@ -349,14 +350,14 @@ class ApiService {
   }
 
   // Метод для получения чата по ID
-  Future<Chats> getChatById(int chatId) async {
+  Future<ChatsGetId> getChatById(int chatId) async {
     final organizationId = await getSelectedOrganization();
 
     final response = await _getRequest(
         '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
-      return Chats.fromJson(json.decode(response.body));
+      return ChatsGetId.fromJson(json.decode(response.body));
     } else {
       throw Exception('Ошибка получения чата: ${response.body}');
     }

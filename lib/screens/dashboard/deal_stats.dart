@@ -10,26 +10,43 @@ class DealStatsChart extends StatelessWidget {
   const DealStatsChart({Key? key}) : super(key: key);
 
   final List<String> months = const [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь'
   ];
 
   final List<Color> monthColors = const [
-    Colors.lightBlue, Colors.purple, Colors.green, Colors.orange,
-    Colors.pink, Colors.teal, Colors.cyan, Colors.red, Colors.amber,
-    Colors.blue, Colors.deepPurple, Colors.indigo,
+    Colors.lightBlue,
+    Colors.purple,
+    Colors.green,
+    Colors.orange,
+    Colors.pink,
+    Colors.teal,
+    Colors.cyan,
+    Colors.red,
+    Colors.amber,
+    Colors.blue,
+    Colors.deepPurple,
+    Colors.indigo,
   ];
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
-        if (state is DealStatsLoading) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-        } else if (state is DealStatsError) {
+      if (state is DealStatsError) {
           if (state.message.contains("Неавторизованный доступ!")) {
             _handleLogout(context);
-            return const SizedBox(); 
+            return const SizedBox();
           } else {
             return Center(
               child: Text(
@@ -44,21 +61,25 @@ class DealStatsChart extends StatelessWidget {
             );
           }
         } else if (state is DealStatsLoaded) {
-          List<int> monthData = state.dealStatsData.monthlyStats ?? List.filled(12, 0);
+          List<int> monthData =
+              state.dealStatsData.monthlyStats ?? List.filled(12, 0);
 
-          int maxCount = monthData.fold(0, (max, value) => value > max ? value : max);
+          int maxCount =
+              monthData.fold(0, (max, value) => value > max ? value : max);
           double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 10.0;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Padding(
-                padding: EdgeInsets.only(left: 16, top: 16, bottom: 24),
+                padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
                   'Статистика сделок',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Gilroy',
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
                 ),
               ),
@@ -75,7 +96,7 @@ class DealStatsChart extends StatelessWidget {
                     barTouchData: BarTouchData(
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
-                        tooltipRoundedRadius: 4,
+                        tooltipRoundedRadius: 6,
                         tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         tooltipMargin: 4,
                         fitInsideVertically: true,
@@ -84,17 +105,19 @@ class DealStatsChart extends StatelessWidget {
                           return BarTooltipItem(
                             '${months[groupIndex]}\n',
                             const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.normal,
+                              fontFamily: 'Gilroy',
                               fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
                             ),
                             children: [
                               TextSpan(
                                 text: rod.toY.toInt().toString(),
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
                                 ),
                               ),
                             ],
@@ -112,15 +135,17 @@ class DealStatsChart extends StatelessWidget {
                               return const SizedBox.shrink();
                             }
                             return Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
+                              padding: const EdgeInsets.only(top: 16),
                               child: Transform.rotate(
                                 angle: -1.55,
                                 child: Text(
                                   months[value.toInt()],
                                   textAlign: TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 10,
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
                                   ),
                                 ),
                               ),
@@ -138,9 +163,11 @@ class DealStatsChart extends StatelessWidget {
                               child: Text(
                                 value.toInt().toString(),
                                 textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
                                   fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
                                 ),
                               ),
                             );
@@ -189,10 +216,10 @@ class DealStatsChart extends StatelessWidget {
                           BarChartRodData(
                             toY: value > 0 ? value : 0.1,
                             color: monthColors[index],
-                            width: 16,
+                            width: 20,
                             borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(4),
-                              topRight: Radius.circular(4),
+                              topLeft: Radius.circular(6),
+                              topRight: Radius.circular(6),
                             ),
                           ),
                         ],
@@ -206,7 +233,15 @@ class DealStatsChart extends StatelessWidget {
         }
 
         return const Center(
-          child: Text('Нет данных для отображения'),
+          child: Text(
+            '',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
         );
       },
     );

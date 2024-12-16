@@ -17,116 +17,66 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     with SingleTickerProviderStateMixin {
   int touchedIndex = -1;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  final state = context.read<DashboardTaskChartBloc>().state;
+  if (state is! DashboardTaskChartLoaded) {
     context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
   }
+}
 
- @override
-Widget build(BuildContext context) {
-  return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
-    listener: (context, state) {
-      // Можно добавить действия при изменении состояния, если нужно
-    },
-    builder: (context, state) {
-      if (state is DashboardTaskChartLoading) {
-        // Показать индикатор загрузки, если данные загружаются
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: Colors.grey.withOpacity(0.1),
-            //     spreadRadius: 0,
-            //     blurRadius: 4,
-            //     offset: const Offset(0, 2),
-            //   ),
-            // ],
-          ),
-          child: Center(
-            // child: CircularProgressIndicator(), // Индикатор загрузки
-          ),
-        );
-      } else if (state is DashboardTaskChartError) {
-        // Показать сообщение об ошибке, если загрузка данных не удалась
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Center(
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
+      listener: (context, state) {},
+      builder: (context, state) {
+        if (state is DashboardTaskChartLoaded) {
+          return Container(
+            height: 280,
+            padding: const EdgeInsets.only(left: 12, top: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Задачи',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontFamily: "Gilroy",
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A202C),
+                  ),
+                ),
+                // const SizedBox(height: 16),
+                Expanded(
+                  child: _buildChart(state),
+                ),
+                _buildLegend(state.taskChartData),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        } else if (state is DashboardTaskChartError) {
+          return Center(
             child: Text(
               'Ошибка загрузки данных',
               style: TextStyle(
                 color: Colors.red,
                 fontSize: 16,
+                fontFamily: "Gilroy",
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-        );
-      } else if (state is DashboardTaskChartLoaded) {
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12), // Отступ
-              const Text(
-                'Задачи',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A202C),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _buildChart(state),
-              ),
-              const SizedBox(height: 16),
-              _buildLegend(state.taskChartData),
-            ],
-          ),
-        );
-      }
-      return const SizedBox.shrink(); // Возвращаем пустой контейнер, если нет данных
-    },
-  );
-}
-
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
 
   Widget _buildChart(DashboardTaskChartState state) {
-    if (state is DashboardTaskChartLoading) {
-      // return const Center(child: CircularProgressIndicator());
-    } else if (state is DashboardTaskChartError) {
+    if (state is DashboardTaskChartError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -195,8 +145,9 @@ Widget build(BuildContext context) {
         radius: radius,
         titleStyle: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+          fontFamily: "Gilroy",
+          fontWeight: FontWeight.w500,
+          color: Colors.black,
         ),
       );
     });
@@ -205,7 +156,6 @@ Widget build(BuildContext context) {
   Widget _buildLegend(TaskChart taskChart) {
     return Column(
       children: [
-        const SizedBox(height: 30),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -220,7 +170,6 @@ Widget build(BuildContext context) {
             ),
           ],
         ),
-        const SizedBox(height: 8),
         _buildLegendItem(
           'Завершённые ',
           const Color(0xFF34D399),
@@ -245,8 +194,10 @@ Widget build(BuildContext context) {
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF718096),
             fontSize: 14,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1A202C),
           ),
         ),
       ],

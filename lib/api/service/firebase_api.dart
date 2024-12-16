@@ -63,7 +63,7 @@ class FirebaseApi {
     }
   }
 
-  void handleMessage(RemoteMessage? message) {
+  Future<void> handleMessage(RemoteMessage? message) async {
     if (message == null || message.data.isEmpty) {
       print('handleMessage: сообщение пустое или данные отсутствуют');
       return;
@@ -79,15 +79,22 @@ class FirebaseApi {
     }
 
     if (type == 'message') {
-      print('Переход на экран чата с ID: $id');
-      screenIndex = 3;
-      navigatorKey.currentState?.pushReplacementNamed(
-        '/home',
-        arguments: {'id': id, 'screenIndex': screenIndex},
-      );
-      final chatId = int.tryParse(message.data['id'].toString()) ?? 0;
+  print('Переход на экран чата с ID: $id');
+  screenIndex = 3;
+  navigatorKey.currentState?.pushReplacementNamed(
+    '/home',
+    arguments: {'id': id, 'screenIndex': screenIndex},
+  );
 
-      if (chatId != null) {
+  final chatId = int.tryParse(message.data['id'].toString()) ?? 0;
+
+  if (chatId != 0) {
+    // Загружаем данные профиля чата
+    try {
+      final getChatById = await ApiService().getChatById(chatId);
+
+
+      if (getChatById.type == "lead") {
         navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => BlocProvider(
@@ -95,23 +102,51 @@ class FirebaseApi {
               child: ChatSmsScreen(
                 chatItem: Chats(
                   id: chatId,
-                  name: "",
-                  taskFrom: "",
-                  taskTo: "",
-                  description: "",
+                  name: getChatById.name,
                   channel: "",
                   lastMessage: "",
                   messageType: "",
                   createDate: "",
-                  unredMessage: 0, canSendMessage: false,
+                  unredMessage: 0,
+                  canSendMessage: getChatById.canSendMessage,
                 ).toChatItem("assets/images/AvatarChat.png"),
-                chatId: chatId, endPointInTab: 'lead', canSendMessage: false,
+                chatId: chatId,
+                endPointInTab: 'lead',
+                canSendMessage: getChatById.canSendMessage,
+              ),
+            ),
+          ),
+        );
+      } else if (getChatById.type == "task") {
+        final chatProfileTask = await ApiService().getTaskProfile(chatId);
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => MessagingCubit(ApiService()),
+              child: ChatSmsScreen(
+                chatItem: Chats(
+                  id: chatId,
+                  name: chatProfileTask.name,
+                  channel: "",
+                  lastMessage: "",
+                  messageType: "",
+                  createDate: "",
+                  unredMessage: 0,
+                  canSendMessage: getChatById.canSendMessage,
+                ).toChatItem("assets/images/AvatarChat.png"),
+                chatId: chatId,
+                endPointInTab: 'task',
+                canSendMessage: getChatById.canSendMessage,
               ),
             ),
           ),
         );
       }
-    } else if (type == 'task') {
+    } catch (e) {
+      // Закрыть индикатор загрузки в случае ошибки
+      print("Ошибка загрузки данных: $e");
+    }
+  } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
       print('Переход на экран задачи с ID: $id');
       screenIndex = 1;
       navigatorKey.currentState?.pushReplacementNamed(
@@ -198,4 +233,4 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
   print('Заголовок: ${message.notification?.title}');
   print('Сообщение: ${message.notification?.body}');
-}
+}}

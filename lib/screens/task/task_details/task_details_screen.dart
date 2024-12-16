@@ -144,6 +144,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           listener: (context, state) {
             if (state is TaskByIdLoaded) {
               print("Задача Data: ${state.task.toString()}");
+
             } else if (state is TaskByIdError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -199,27 +200,31 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   ),
                 );
               } else if (state is TaskByIdError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${state.message}',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 2),
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  ),
-                );
+                  );
+                });
               }
               return Center(child: Text(''));
             },

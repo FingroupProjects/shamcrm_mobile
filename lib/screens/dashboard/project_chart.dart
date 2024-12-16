@@ -8,7 +8,7 @@ class ProjectChartTable extends StatefulWidget {
   const ProjectChartTable({Key? key}) : super(key: key);
 
   @override
-  State<ProjectChartTable> createState() => _ProjectChartTableState();
+  _ProjectChartTableState createState() => _ProjectChartTableState();
 }
 
 class _ProjectChartTableState extends State<ProjectChartTable> {
@@ -23,119 +23,117 @@ class _ProjectChartTableState extends State<ProjectChartTable> {
     return BlocBuilder<ProjectChartBloc, ProjectChartState>(
       builder: (context, state) {
         if (state is ProjectChartLoading) {
-          // return const Center(child: CircularProgressIndicator());
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         }
 
         if (state is ProjectChartError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          return _buildErrorSnackbar(state.message);
         }
 
         if (state is ProjectChartLoaded) {
-          return Card(
-            color: Colors.white,
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 0.0, vertical: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Заголовок таблицы с отступом вправо
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        left: 21.0), // Отступ слева для заголовка
-                    child: Text(
-                      'Проекты',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12), // Отступ
-
-                  // Таблица без горизонтальной прокрутки
-                  DataTable(
-                    columnSpacing: 8, // Расстояние между столбцами
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Название',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Активный',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Готовый',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Просроченные',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                    // Построение строк таблицы
-                    rows: state.data.result.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final project = entry.value;
-
-                      // Цвет строки (зебра)
-                      final rowColor = index % 2 == 0
-                          ? Colors.white
-                          : const Color.fromARGB(255, 244, 247, 254);
-
-                      return DataRow(
-                        color: MaterialStateProperty.all(rowColor),
-                        cells: [
-                          DataCell(Text(project.name)),
-                          DataCell(Text(project.data[0].toString())),
-                          DataCell(Text(project.data[1].toString())),
-                          DataCell(Text(project.data[2].toString())),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _buildProjectTable(state);
         }
 
         return const SizedBox.shrink();
       },
     );
   }
+
+  Widget _buildErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.red,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildProjectTable(ProjectChartLoaded state) {
+    return Card(
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: const Text(
+                'Проекты',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            // const SizedBox(height: 12),
+            DataTable(
+              columnSpacing: 8,
+              columns: const [
+                DataColumn(label: Text('Название', style: _columnTextStyle)),
+                DataColumn(label: Text('Активный', style: _columnTextStyle)),
+                DataColumn(label: Text('Готовый', style: _columnTextStyle)),
+                DataColumn(label: Text('Просроченные', style: _columnTextStyle)),
+              ],
+              rows: _buildDataRows(state),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+      List<DataRow> _buildDataRows(ProjectChartLoaded state) {
+      return state.data.result.asMap().entries.map((entry) {
+        final index = entry.key;
+        final project = entry.value;
+
+        final rowColor = index.isEven ? Colors.white : const Color(0xFFF4F7FE);
+
+        return DataRow(
+          color: MaterialStateProperty.all(rowColor),
+          cells: [
+            DataCell(Text(project.name, style: _cellTextStyle)),
+            DataCell(Center(child: Text(project.data[0].toString(), style: _cellTextStyle))),
+            DataCell(Center(child: Text(project.data[1].toString(), style: _cellTextStyle))),
+            DataCell(Center(child: Text(project.data[2].toString(), style: _cellTextStyle))),
+          ],
+        );
+      }).toList();
+    }
+
+
+  static const TextStyle _columnTextStyle = TextStyle(
+    fontFamily: 'Gilroy',
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: Colors.black,
+  );
+
+  static const TextStyle _cellTextStyle = TextStyle(
+    fontFamily: 'Gilroy',
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: Colors.black,
+  );
 }
