@@ -91,47 +91,62 @@ class FirebaseApi {
   if (chatId != 0) {
     // Загружаем данные профиля чата
     try {
-      final apiService = ApiService();
-      final chatProfile = await apiService.getChatProfile(chatId);
+      final getChatById = await ApiService().getChatById(chatId);
 
-      // Переходим на экран чата, передаем профиль
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => BlocProvider(
-            create: (context) => MessagingCubit(apiService),
-            child: ChatSmsScreen(
-              chatItem: Chats(
-                id: chatId,
-                name: chatProfile.name,
-                taskFrom: "",
-                taskTo: "",
-                description: "",
-                channel: "",
-                lastMessage:"",
-                messageType: "",
-                createDate: "",
-                unredMessage: 1,
-                canSendMessage: true, type: '',
-              ).toChatItem("assets/images/AvatarChat.png"),
-              chatId: chatId,
-              endPointInTab: 'lead',
-              canSendMessage: true,
+
+      if (getChatById.type == "lead") {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => MessagingCubit(ApiService()),
+              child: ChatSmsScreen(
+                chatItem: Chats(
+                  id: chatId,
+                  name: getChatById.name,
+                  channel: "",
+                  lastMessage: "",
+                  messageType: "",
+                  createDate: "",
+                  unredMessage: 0,
+                  canSendMessage: getChatById.canSendMessage,
+                ).toChatItem("assets/images/AvatarChat.png"),
+                chatId: chatId,
+                endPointInTab: 'lead',
+                canSendMessage: getChatById.canSendMessage,
+              ),
             ),
           ),
-        ),
-      );
+        );
+      } else if (getChatById.type == "task") {
+        final chatProfileTask = await ApiService().getTaskProfile(chatId);
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => BlocProvider(
+              create: (context) => MessagingCubit(ApiService()),
+              child: ChatSmsScreen(
+                chatItem: Chats(
+                  id: chatId,
+                  name: chatProfileTask.name,
+                  channel: "",
+                  lastMessage: "",
+                  messageType: "",
+                  createDate: "",
+                  unredMessage: 0,
+                  canSendMessage: getChatById.canSendMessage,
+                ).toChatItem("assets/images/AvatarChat.png"),
+                chatId: chatId,
+                endPointInTab: 'task',
+                canSendMessage: getChatById.canSendMessage,
+              ),
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      print('Ошибка загрузки профиля чата: $e');
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        SnackBar(
-          content: Text('Не удалось загрузить профиль чата: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // Закрыть индикатор загрузки в случае ошибки
+      print("Ошибка загрузки данных: $e");
     }
-  }
-}
-else if (type == 'task' || type == 'taskFinished') {
+  } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
       print('Переход на экран задачи с ID: $id');
       screenIndex = 1;
       navigatorKey.currentState?.pushReplacementNamed(
@@ -218,4 +233,4 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
   print('Заголовок: ${message.notification?.title}');
   print('Сообщение: ${message.notification?.body}');
-}
+}}

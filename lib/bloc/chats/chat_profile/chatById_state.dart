@@ -1,5 +1,6 @@
 
-import 'package:crm_task_manager/models/chats_model.dart';
+
+import 'package:crm_task_manager/models/chatGetId_model.dart';
 
 abstract class ChatByIdState {}
 
@@ -8,7 +9,7 @@ class ChatByIdInitial extends ChatByIdState {}
 class ChatByIdLoading extends ChatByIdState {}
 
 class ChatByIdLoaded extends ChatByIdState {
-  final Chats chat;
+  final ChatsGetId chat;
   ChatByIdLoaded(this.chat);
 }
 
