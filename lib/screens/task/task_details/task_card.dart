@@ -392,6 +392,7 @@ class _TaskCardState extends State<TaskCard> {
                           //     ),
                           //   ),
                           // Иконка и текст даты
+                          // Иконка и текст даты
                           Row(
                             crossAxisAlignment: CrossAxisAlignment
                                 .center, // Выровнять по центру по вертикали
@@ -415,8 +416,7 @@ class _TaskCardState extends State<TaskCard> {
                                   width: 4), // Отступ между иконкой и текстом
                               Text(
                                 formatDate(widget.task.endDate ??
-                                    DateTime.now()
-                                        .toString()), // Отображение даты окончания задачи
+                                    DateTime.now().toString()),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
@@ -433,8 +433,10 @@ class _TaskCardState extends State<TaskCard> {
                           // Индикатор просрочки слева
                           if (overdueDays > 0)
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 220), // Отступ справа для индикатора
+                              padding: EdgeInsets.only(
+                                left: MediaQuery.of(context).size.width *
+                                    0.52 , // Отступ в процентах от ширины экрана
+                              ),
                               child: Container(
                                 width: 24,
                                 height: 24,
@@ -446,7 +448,7 @@ class _TaskCardState extends State<TaskCard> {
                                 child: Center(
                                   child: Text(
                                     overdueDays.toString(),
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
                                     ),

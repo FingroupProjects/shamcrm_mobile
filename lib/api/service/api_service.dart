@@ -2946,7 +2946,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Профиль обновлен успешно.'};
+      return {'success': true, 'message': 'Профиль успешно обновлен'};
     } else if (response.statusCode == 422) {
       return {
         'success': false,

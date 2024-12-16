@@ -157,7 +157,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                       Row(
                         children: [
                           Text(
-                            'С: $formattedDateFrom',
+                            'От: $formattedDateFrom',
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
