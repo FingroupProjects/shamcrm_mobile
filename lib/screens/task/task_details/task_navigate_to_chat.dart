@@ -68,10 +68,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                       'Перейти в чат',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                    ),
+                   
                   ],
                 ),
               ),

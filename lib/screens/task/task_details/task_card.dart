@@ -117,7 +117,6 @@ class _TaskCardState extends State<TaskCard> {
     }
     return '';
   }
-
   @override
   Widget build(BuildContext context) {
     // Получаем количество просроченных дней
@@ -368,30 +367,7 @@ class _TaskCardState extends State<TaskCard> {
                         mainAxisAlignment: MainAxisAlignment
                             .spaceBetween, // Пространство между элементами
                         children: [
-                          // Индикатор просрочки слева
-                          // if (overdueDays > 0)
-                          //   Padding(
-                          //     padding: const EdgeInsets.only(
-                          //         right: 10), // Отступ справа для индикатора
-                          //     child: Container(
-                          //       width: 24,
-                          //       height: 24,
-                          //       decoration: BoxDecoration(
-                          //         color: const Color.fromARGB(255, 255, 17, 0), // Цвет фона индикатора
-                          //         shape: BoxShape.circle,
-                          //       ),
-                          //       child: Center(
-                          //         child: Text(
-                          //           overdueDays.toString(),
-                          //           style: TextStyle(
-                          //             color: Colors.white,
-                          //             fontSize: 12,
-                          //           ),
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ),
-                          // Иконка и текст даты
+              
                           // Иконка и текст даты
                           Row(
                             crossAxisAlignment: CrossAxisAlignment

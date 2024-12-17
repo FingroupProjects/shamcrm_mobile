@@ -36,11 +36,11 @@ class TaskHistory {
         id: 0,
         user: User(
             id: 0,
-            name: 'Не указано',
+            name: 'Система',
             email: 'Не указано',
             image: 'Не указано',
             phone: 'Не указано'),
-        status: 'Не указано',
+        status: 'Система',
         date: DateTime.now(),
         changes: null,
       );

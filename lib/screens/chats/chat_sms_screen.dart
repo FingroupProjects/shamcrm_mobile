@@ -42,7 +42,7 @@ class ChatSmsScreen extends StatefulWidget {
     required this.chatItem,
     required this.chatId,
     required this.endPointInTab,
-    required this.canSendMessage, 
+    required this.canSendMessage,
   });
 
   @override
@@ -83,9 +83,18 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
       _fetchBaseUrl();
+         _markMessagesAsRead();
     });
     // _connectWebSocket();
   }
+// Новый метод для отметки сообщений как прочитанных
+void _markMessagesAsRead() {
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState && state.messages.isNotEmpty) {
+    final messageIds = state.messages.map((msg) => msg.id).toList();
+    widget.apiService.readChatMessages(widget.chatId, messageIds);
+  }
+}
 
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
@@ -97,7 +106,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
         leading: IconButton(
-           icon: Image.asset(
+          icon: Image.asset(
             'assets/icons/arrow-left.png',
             width: 24,
             height: 24,
@@ -109,6 +118,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         title: InkWell(
           onTap: () {
             if (widget.endPointInTab == 'lead') {
+              print(
+                  "-------------------------------------------------------------------------------------");
+              print("CHAT IDD DDDDDDD");
+              print(widget.chatId);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -117,12 +130,42 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 ),
               );
             } else if (widget.endPointInTab == 'task') {
+              print(
+                  "-------------------------------------------------------------------------------------");
+              print("CHAT IDD TASK");
+              print(widget.chatId);
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => TaskByIdScreen(chatId: widget.chatId),
                 ),
               );
+            } else {
+              // Показываем Snackbar
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Это корпоративный чат!',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              });
             }
           },
           child: Row(
@@ -163,8 +206,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   widget.canSendMessage
                       ? 'У вас нет доступа для отправки сообщения!'
                       : 'Прошло 24 часа как лид написал вам! Отправка сообщения будет доступна только после получения нового сообщения',
-                  textAlign:
-                      TextAlign.center, 
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -179,104 +221,99 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     );
   }
 
-Widget messageListUi() { 
-  return BlocBuilder<MessagingCubit, MessagingState>(
-    builder: (context, state) {
-      if (state is MessagesErrorState) {
-        // ... (предыдущий код обработки ошибок остается без изменений)
-      }
-      
-      if (state is MessagesLoadingState) {
-        return Center(child: CircularProgressIndicator.adaptive());
-      }
-      
-      if (state is MessagesLoadedState) {
-        if (state.messages.isEmpty) {
-          return Center(
-            child: Text(
-              'Нет сообщений',
-              style: TextStyle(color: AppColors.textPrimary700),
-            ),
-          );
+  Widget messageListUi() {
+    return BlocBuilder<MessagingCubit, MessagingState>(
+      builder: (context, state) {
+        if (state is MessagesErrorState) {
+          // ... (предыдущий код обработки ошибок остается без изменений)
         }
-        
-        List<Widget> messageWidgets = [];
-        DateTime? previousDate;
-        DateTime today = DateTime.now();
-        DateTime tomorrow = today.add(Duration(days: 1));
-        
-        for (int index = 0; index < state.messages.length; index++) {
-          final message = state.messages[index];
-          final currentDate = DateTime.parse(message.createMessateTime);
-          
-          // Добавляем день к текущей дате
-          DateTime displayDate = currentDate.add(Duration(days: 1));
+        if (state is MessagesLoadingState) {
+          return Center(child: CircularProgressIndicator.adaptive());
+        }
+        if (state is MessagesLoadedState) {
+          if (state.messages.isEmpty) {
+            return Center(
+              child: Text(
+                'Нет сообщений',
+                style: TextStyle(color: AppColors.textPrimary700),
+              ),
+            );
+          }
 
-          // Проверяем, что displayDate не совпадает только с завтрашней датой
-          bool isDateExcluded = 
-            (displayDate.year == tomorrow.year && 
-             displayDate.month == tomorrow.month && 
-             displayDate.day == tomorrow.day);
+          List<Widget> messageWidgets = [];
+          DateTime? previousDate;
+          DateTime today = DateTime.now();
+          DateTime tomorrow = today.add(Duration(days: 1));
 
-          if (!isDateExcluded) {
-            if (index < state.messages.length - 1 && 
-                (previousDate == null || !isSameDay(previousDate, currentDate))) {
-              messageWidgets.add(
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-                  child: Center(
-                    child: Text(
-                      formatDate(displayDate),
-                      style: TextStyle(
-                        fontSize: 14, 
-                        fontFamily: "Gilroy",
-                        fontWeight: FontWeight.w400, 
-                        color: Colors.black
+          for (int index = 0; index < state.messages.length; index++) {
+            final message = state.messages[index];
+            final currentDate = DateTime.parse(message.createMessateTime);
+            // Добавляем день к текущей дате
+            DateTime displayDate = currentDate.add(Duration(days: 1));
+            // Проверяем, что displayDate не совпадает только с завтрашней датой
+            bool isDateExcluded = (displayDate.year == tomorrow.year &&
+                displayDate.month == tomorrow.month &&
+                displayDate.day == tomorrow.day);
+
+            if (!isDateExcluded) {
+              if (index < state.messages.length - 1 &&
+                  (previousDate == null ||
+                      !isSameDay(previousDate, currentDate))) {
+                messageWidgets.add(
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                    child: Center(
+                      child: Text(
+                        formatDate(displayDate),
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: "Gilroy",
+                            fontWeight: FontWeight.w400,
+                            color: Colors.black),
                       ),
                     ),
                   ),
-                ),
-              );
+                );
+              }
             }
+
+            // Добавляем само сообщение
+            messageWidgets.add(
+              MessageItemWidget(
+                message: message,
+                apiServiceDownload: widget.apiServiceDownload,
+                baseUrl: baseUrl,
+              ),
+            );
+
+            previousDate = currentDate;
           }
-          
-          // Добавляем само сообщение
-          messageWidgets.add(
-            MessageItemWidget(
-              message: message,
-              apiServiceDownload: widget.apiServiceDownload,
-              baseUrl: baseUrl,
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ListView(
+              controller: _scrollController,
+              padding: EdgeInsets.zero,
+              reverse: true,
+              children: messageWidgets,
             ),
           );
-          
-          previousDate = currentDate;
         }
-        
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView(
-            controller: _scrollController,
-            padding: EdgeInsets.zero,
-            reverse: true,
-            children: messageWidgets,
-          ),
-        );
-      }
-      
-      return Container();
-    },
-  );
-}
 
-bool isSameDay(DateTime date1, DateTime date2) {
-  return date1.year == date2.year && 
-         date1.month == date2.month && 
-         date1.day == date2.day;
-}
+        return Container();
+      },
+    );
+  }
 
-String formatDate(DateTime date) {
-  return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
-}
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  String formatDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
+  }
 
   Widget inputWidget() {
     return InputField(

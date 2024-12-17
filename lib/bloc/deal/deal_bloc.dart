@@ -141,7 +141,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         customFields: event.customFields,
       );
       if (result['success']) {
-        emit(DealSuccess('Сделка создана успешно'));
+        emit(DealSuccess('Сделка успешно создана'));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
@@ -175,7 +175,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       );
 
       if (result['success']) {
-        emit(DealSuccess('Сделка обновлена успешно'));
+        emit(DealSuccess('Сделка успешно обновлена'));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
@@ -200,7 +200,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     try {
       final response = await apiService.deleteDeal(event.dealId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Сделка удалена успешно'));
+        emit(DealDeleted('Сделка успешно удалена'));
       } else {
         emit(DealError('Ошибка удаления сделки'));
       }
@@ -215,7 +215,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     try {
       final response = await apiService.deleteDealStatuses(event.dealStatusId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Статус Лида удалена успешно'));
+        emit(DealDeleted('Статус Лида успешно удалена'));
       } else {
         emit(DealError('Ошибка удаления статуса сделки'));
       }

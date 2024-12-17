@@ -76,7 +76,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         );
 
         if (result['success']) {
-          emit(NotesSuccess('Заметка создана успешно'));
+          emit(NotesSuccess('Заметка успешно создана'));
           add(FetchNotes(event.leadId));
         } else {
           emit(NotesError(result['message']));
@@ -103,7 +103,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         );
 
         if (result['success']) {
-          emit(NotesSuccess('Заметка обновлена успешно'));
+          emit(NotesSuccess('Заметка успешно обновлена'));
           add(FetchNotes(event.leadId));
         } else {
           emit(NotesError(result['message']));
@@ -123,7 +123,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       try {
         final response = await apiService.deleteNotes(event.noteId);
         if (response['result'] == 'Success') {
-          emit(NotesDeleted('Заметка удалена успешно'));
+          emit(NotesDeleted('Заметка успешно удалена'));
           add(FetchNotes(event.leadId));
         } else {
           emit(NotesError('Ошибка удаления заметки'));

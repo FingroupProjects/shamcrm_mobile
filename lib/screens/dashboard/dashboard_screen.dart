@@ -6,18 +6,21 @@ import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_event.
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
-import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
+// import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
 import 'package:crm_task_manager/screens/dashboard/project_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
-import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
-import 'package:crm_task_manager/screens/dashboard/tasks_dart.dart';
+// import 'package:crm_task_manager/screens/dashboard/leads_box.dart';
+// import 'package:crm_task_manager/screens/dashboard/tasks_dart.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,7 +40,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadUserRole();
-    context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+    // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+
     _loadImportantBoxes();
   }
 
@@ -45,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
-      
+
       if (userId.isEmpty) {
         setState(() {
           userRoleName = 'No user ID found';
@@ -54,7 +58,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       // Получение роли через API
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       setState(() {
         userRoleName = (userProfile.role?.isNotEmpty ?? false)
             ? userProfile.role!.first.name
@@ -128,7 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         body: isClickAvatarIcon
             ? ProfileScreen()
             : SingleChildScrollView(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.only(left: 16, right: 16),
                 child: Column(
                   children: _buildDashboardContent(),
                 ),
@@ -147,29 +152,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // DealsBox(),
         // SizedBox(height: 16),
         GraphicsDashboard(),
-        SizedBox(height: 16),
         LeadConversionChart(),
-        SizedBox(height: 16),
         DealStatsChart(),
-        SizedBox(height: 16),
         TaskChartWidget(),
-        SizedBox(height: 16),
         ProjectChartTable(),
       ];
     } else if (userRoleName == 'manager') {
       return [
-        // LeadsBox(),
+        // LeadsBox(),суфк
         // SizedBox(height: 16),
         // TasksBox(),
         // SizedBox(height: 16),
         // DealsBox(),
         // SizedBox(height: 16),
         GraphicsDashboard(),
-        SizedBox(height: 16),
         LeadConversionChart(),
-        SizedBox(height: 16),
         DealStatsChart(),
-        SizedBox(height: 16),
         TaskChartWidget(),
       ];
     } else {
@@ -179,33 +177,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 }
-   
-  // Метод для стилизованных раскрывающихся карточек
-  Widget _buildExpansionTile({required String title, required Widget child}) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      color: const Color.fromARGB(255, 244, 247, 254),
-      elevation: 4,
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        iconColor: Color(0xFF2D3748),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: child,
-          ),
-        ],
-      ),
-    );
-  }
 
+// Метод для стилизованных раскрывающихся карточек
+Widget _buildExpansionTile({required String title, required Widget child}) {
+  return Card(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    color: const Color.fromARGB(255, 244, 247, 254),
+    elevation: 4,
+    child: ExpansionTile(
+      tilePadding: EdgeInsets.symmetric(horizontal: 160, vertical: 8),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2D3748),
+        ),
+      ),
+      iconColor: Color(0xFF2D3748),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: child,
+        ),
+      ],
+    ),
+  );
+}
