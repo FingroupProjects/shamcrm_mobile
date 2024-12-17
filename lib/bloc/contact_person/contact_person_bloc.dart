@@ -54,7 +54,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         );
 
         if (result['success']) {
-          emit(ContactPersonSuccess('Контакное лицо создана успешно'));
+          emit(ContactPersonSuccess('Контакное лицо успешно создана '));
           add(FetchContactPerson(event.leadId));
         } else {
           emit(ContactPersonError(result['message']));
@@ -81,7 +81,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         );
 
         if (result['success']) {
-          emit(ContactPersonSuccess('Контакное лицо обновлено успешно'));
+          emit(ContactPersonSuccess('Контакное лицо  успешно обновлено'));
           add(FetchContactPerson(event.leadId));
         } else {
           emit(ContactPersonError(result['message']));
@@ -101,7 +101,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
       try {
         final response = await apiService.deleteContactPerson(event.contactpersonId);
         if (response['result'] == 'Success') {
-          emit(ContactPersonDeleted('Контакное лицо удалена успешно'));
+          emit(ContactPersonDeleted('Контакное лицоуспешно удалена'));
           add(FetchContactPerson(event.leadId));
         } else {
           emit(ContactPersonError('Ошибка удаления Контакное лицо'));

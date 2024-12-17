@@ -12,13 +12,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(ProfileLoading());
       try {
         final result = await apiService.updateProfile(
-          userId: event.userId,
-          name: event.name,
-          phone: event.phone,
-          email: event.email,
-          login: event.login,
-          image: event.image
-        );
+            userId: event.userId,
+            name: event.name,
+            sname: event.sname,
+            pname: event.pname,
+            phone: event.phone,
+            email: event.email,
+            login: event.login,
+            image: event.image);
         if (result['success']) {
           emit(ProfileSuccess(result['message']));
         } else {

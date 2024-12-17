@@ -3,6 +3,9 @@ import 'package:crm_task_manager/models/role_model.dart';
 class UserByIdProfile {
   final int id;
   final String name;
+  final String Sname;
+  final String Pname;
+
   final String login;
   final String email;
   final String phone;
@@ -13,6 +16,8 @@ class UserByIdProfile {
   UserByIdProfile({
     required this.id,
     required this.name,
+    required this.Sname,
+    required this.Pname,
     required this.login,
     required this.email,
     required this.phone,
@@ -25,6 +30,8 @@ class UserByIdProfile {
     return UserByIdProfile(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указано',
+      Sname: json['surname'] ?? 'Не указано',
+      Pname: json['patronymic'] ?? 'Не указано',
       login: json['login'] ?? 'Не указано',
       email: json['email'] ?? 'Не указано',
       phone: json['phone'] ?? 'Не указано',

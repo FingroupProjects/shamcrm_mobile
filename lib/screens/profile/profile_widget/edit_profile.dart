@@ -25,7 +25,9 @@ class ProfileEditPage extends StatefulWidget {
 }
 
 class _ProfileEditPageState extends State<ProfileEditPage> {
-  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController NameController = TextEditingController();
+  final TextEditingController SurnameController = TextEditingController();
+  final TextEditingController PatronymicController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController roleController = TextEditingController();
   final TextEditingController loginController = TextEditingController();
@@ -45,15 +47,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (_localImage != null) {
       return _localImage!.path;
     }
-    
+
     // Если существующее изображение имеет расширения png, jpeg, jpg, img
-    if (_userImage.endsWith('.png') || 
-        _userImage.endsWith('.jpg') || 
-        _userImage.endsWith('.jpeg') || 
+    if (_userImage.endsWith('.png') ||
+        _userImage.endsWith('.jpg') ||
+        _userImage.endsWith('.jpeg') ||
         _userImage.endsWith('.img')) {
       return _userImage;
     }
-    
+
     // Для SVG или других форматов возвращаем null
     return null;
   }
@@ -100,7 +102,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     }
   }
-
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
     if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
@@ -133,10 +134,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     });
 
     try {
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       setState(() {
-        fullNameController.text = userProfile.name;
+        NameController.text = userProfile.name;
+        SurnameController.text = userProfile.Sname;
+        PatronymicController.text = userProfile.Pname;
         emailController.text = userProfile.email;
         phoneController.text = userProfile.phone;
         _userImage = userProfile.image ?? '';
@@ -157,7 +161,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               leading: const Icon(Icons.photo_library),
               title: const Text('Галерея'),
               onTap: () async {
-                final file = await _picker.pickImage(source: ImageSource.gallery);
+                final file =
+                    await _picker.pickImage(source: ImageSource.gallery);
                 Navigator.of(context).pop(file);
               },
             ),
@@ -165,7 +170,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               leading: const Icon(Icons.camera_alt),
               title: const Text('Камера'),
               onTap: () async {
-                final file = await _picker.pickImage(source: ImageSource.camera);
+                final file =
+                    await _picker.pickImage(source: ImageSource.camera);
                 Navigator.of(context).pop(file);
               },
             ),
@@ -189,7 +195,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         title: Text('Редактирование профиля'),
         centerTitle: true,
         leading: IconButton(
-           icon: Image.asset(
+          icon: Image.asset(
             'assets/icons/arrow-left.png',
             width: 24,
             height: 24,
@@ -239,8 +245,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                             borderRadius:
                                                 BorderRadius.circular(70),
                                             image: DecorationImage(
-                                              image: NetworkImage(
-                                                  _userImage),
+                                              image: NetworkImage(_userImage),
                                               fit: BoxFit.cover,
                                             ),
                                           ),
@@ -290,9 +295,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
               const SizedBox(height: 20),
               CustomTextField(
-                controller: fullNameController,
-                hintText: 'Введите ФИО',
-                label: 'ФИО',
+                controller: NameController,
+                hintText: 'Введите Имя',
+                label: 'Имя',
+              ),
+              const SizedBox(height: 20),
+              CustomTextField(
+                controller: SurnameController,
+                hintText: 'Введите Фамилию',
+                label: 'Фамилия',
+              ),
+              const SizedBox(height: 20),
+              CustomTextField(
+                controller: PatronymicController,
+                hintText: 'Введите Отчество',
+                label: 'Отчество',
               ),
               const SizedBox(height: 8),
               CustomPhoneNumberInput(
@@ -335,8 +352,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff1E2E52),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
                 onPressed: () async {
                   SharedPreferences prefs =
@@ -354,16 +371,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                   try {
                     int userId = int.parse(UUID);
-                    final name = fullNameController.text;
+                    final name = NameController.text;
+                                        final surname = SurnameController.text;
+                    final patronymic = PatronymicController.text;
+
                     final phone = phoneController.text;
                     final email = emailController.text;
-                    
+
                     // Используем новый метод _getImageToUpload()
                     final image = _getImageToUpload();
 
                     context.read<ProfileBloc>().add(UpdateProfile(
                         userId: userId,
                         name: name,
+                        sname: surname,
+                        pname: patronymic,
                         phone: phone,
                         email: email,
                         image: image));

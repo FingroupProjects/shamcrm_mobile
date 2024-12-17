@@ -521,9 +521,6 @@ class ApiService {
     }
   }
 
-
-
-
 //Метод для получения список Лидов с пагинацией
   Future<List<Lead>> getLeads(int? leadStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -614,7 +611,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      print('Статус задачи обновлен успешно.');
+      print('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       throw LeadStatusUpdateException(
         422,
@@ -687,7 +684,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка создана успешно.'};
+      return {'success': true, 'message': 'Заметка успешно создана.'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
         return {
@@ -736,7 +733,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Заметка обновлена успешно.'};
+      return {'success': true, 'message': 'Заметка успешно обновлена'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
         return {
@@ -845,7 +842,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Лид создан успешно.'};
+      return {'success': true, 'message': 'Лид успешно создан'};
     } else if (response.statusCode == 422) {
       // Обработка ошибки дублирования номера телефона
       if (response.body.contains('The phone has already been taken.')) {
@@ -952,7 +949,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Лид обновлен успешно.'};
+      return {'success': true, 'message': 'Лид успешно обновлен'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('phone')) {
         return {
@@ -1141,7 +1138,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка создана успешно.'};
+      return {'success': true, 'message': 'Заметка успешно создана'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
@@ -1194,7 +1191,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка создана успешно.'};
+      return {'success': true, 'message': 'Заметка успешно создана'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
@@ -1451,7 +1448,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Статус сделки создан успешно'};
+      return {'success': true, 'message': 'Статус сделки успешно создан'};
     } else {
       return {
         'success': false,
@@ -1497,7 +1494,7 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      print('Статус задачи обновлен успешно.');
+      print('Статус задачи успешно обновлен.');
     } else if (response.statusCode == 422) {
       throw DealStatusUpdateException(
         422,
@@ -1565,7 +1562,7 @@ class ApiService {
         requestBody);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Сделка создана успешно.'};
+      return {'success': true, 'message': 'Сделка успешно создана.'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
@@ -1627,7 +1624,7 @@ class ApiService {
 
     // Обработка ответа
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Сделка обновлена успешно.'};
+      return {'success': true, 'message': 'Сделка успешно обновлена.'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('"name"')) {
         return {
@@ -1684,7 +1681,7 @@ class ApiService {
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
-//Метод для получения Задачи через его ID
+  //Метод для получения Задачи через его ID
   Future<TaskById> getTaskById(int taskId) async {
     try {
       final organizationId = await getSelectedOrganization();
@@ -1784,7 +1781,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200) {
-      print('Статус задачи обновлен успешно.');
+      print('Статус задачи успешно обновлен');
     } else if (response.statusCode == 422) {
       throw TaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
@@ -2070,8 +2067,7 @@ class ApiService {
     List<int>? userId,
     String? description,
     Map<String, dynamic>? file,
-        List<Map<String, String>>? customFields,
-
+    List<Map<String, String>>? customFields,
   }) async {
     try {
       final Map<String, dynamic> requestBody = {
@@ -2331,6 +2327,31 @@ class ApiService {
       throw Exception('Failed to delete taskStatus: ${response.body}');
     }
   }
+  // Метод для завершения задачи
+  Future<Map<String, dynamic>> finishTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'task_id': taskId,
+        });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача успешно завершена'};
+    } else if (response.statusCode == 422) {
+      return {
+        'success': false,
+        'message': 'Этот проект не имеет завершающего этапа'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка завершения задачи: ${response.body}'
+      };
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
@@ -2728,7 +2749,36 @@ class ApiService {
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+//Метод для передачи всех iD-сообщениях чата в сервер
+  Future<void> readChatMessages(int chatId, List<int> messageIds) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
 
+    final url = Uri.parse('$baseUrl/chat/read');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'chat_id': chatId,
+          'organization_id': organizationId,
+          'messages': messageIds,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Messages marked as read');
+      } else {
+        print('Error marking messages as read: ${response.body}');
+      }
+    } catch (e) {
+      print('Exception when marking messages as read: $e');
+    }
+  }
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
@@ -2830,8 +2880,7 @@ class ApiService {
 
   //_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
 
-
-    Future<ChatProfile> getChatProfile(int chatId) async {
+  Future<ChatProfile> getChatProfile(int chatId) async {
     try {
       final organizationId = await getSelectedOrganization();
 
@@ -2935,7 +2984,6 @@ class ApiService {
 
   //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
 
-
   //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
 //Метод для получения Пользователя через его ID
   Future<UserByIdProfile> getUserById(int userId) async {
@@ -2966,6 +3014,8 @@ class ApiService {
   Future<Map<String, dynamic>> updateProfile({
     required int userId,
     required String name,
+    required String sname,
+    required String pname,
     required String phone,
     String? email,
     String? login,
@@ -3001,5 +3051,7 @@ class ApiService {
       };
     }
   }
+
+  
   //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
 }

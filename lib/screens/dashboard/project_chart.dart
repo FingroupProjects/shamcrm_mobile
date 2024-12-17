@@ -88,7 +88,7 @@ class _ProjectChartTableState extends State<ProjectChartTable> {
             ),
             // const SizedBox(height: 12),
             DataTable(
-              columnSpacing: 8,
+              columnSpacing: 4,
               columns: const [
                 DataColumn(label: Text('Название', style: _columnTextStyle)),
                 DataColumn(label: Text('Активный', style: _columnTextStyle)),
