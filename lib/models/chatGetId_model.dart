@@ -29,7 +29,7 @@ class ChatsGetId {
   });
 
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
-  final data = json['result']; // Здесь достаем вложенные данные
+  final data = json['result']; 
   if (data == null) {
     throw Exception("Ответ не содержит поля 'result'");
   }

@@ -521,81 +521,6 @@ class ApiService {
     }
   }
 
-  Future<ChatProfile> getChatProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        if (decodedJson['result'] != null) {
-          return ChatProfile.fromJson(decodedJson['result']);
-        } else {
-          throw Exception('Данные профиля не найдены');
-        }
-      } else if (response.statusCode == 404) {
-        throw ('Такого Лида не существует');
-      } else {
-        print('Ошибка загрузки профиля чата: ${response.statusCode}');
-        throw Exception('${response.statusCode}');
-      }
-    } catch (e) {
-      print('Ошибка в getChatProfile: $e');
-      throw ('$e');
-    }
-  }
-
-  Future<TaskProfile> getTaskProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      print('Organization ID: $organizationId'); // Добавим логирование
-
-      final response = await _getRequest(
-        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      print(
-          'Response status code: ${response.statusCode}'); // Логируем статус ответа
-      print('Response body: ${response.body}'); // Логируем тело ответа
-
-      if (response.statusCode == 200) {
-        try {
-          final dynamic decodedJson = json.decode(response.body);
-          print(
-              'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
-          print('Decoded JSON: $decodedJson'); // Отладочный вывод
-
-          if (decodedJson is Map<String, dynamic>) {
-            if (decodedJson['result'] != null) {
-              print(
-                  'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
-              return TaskProfile.fromJson(decodedJson['result']);
-            } else {
-              print('Result is null');
-              throw Exception('Данные задачи не найдены');
-            }
-          } else {
-            print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
-            throw Exception('Неверный формат ответа');
-          }
-        } catch (parseError) {
-          print('Ошибка парсинга JSON: $parseError');
-          throw Exception('Ошибка парсинга ответа: $parseError');
-        }
-      } else {
-        print('Ошибка загрузки задачи: ${response.statusCode}');
-        throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Полная ошибка в getTaskProfile: $e');
-      print('Трассировка стека: ${StackTrace.current}');
-      throw Exception('Ошибка загрузки задачи: $e');
-    }
-  }
-
 //Метод для получения список Лидов с пагинацией
   Future<List<Lead>> getLeads(int? leadStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -2402,6 +2327,31 @@ class ApiService {
       throw Exception('Failed to delete taskStatus: ${response.body}');
     }
   }
+  // Метод для завершения задачи
+  Future<Map<String, dynamic>> finishTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'task_id': taskId,
+        });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача успешно завершена'};
+    } else if (response.statusCode == 422) {
+      return {
+        'success': false,
+        'message': 'Этот проект не имеет завершающего этапа'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка завершения задачи: ${response.body}'
+      };
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
   //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
@@ -2799,7 +2749,36 @@ class ApiService {
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+//Метод для передачи всех iD-сообщениях чата в сервер
+  Future<void> readChatMessages(int chatId, List<int> messageIds) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
 
+    final url = Uri.parse('$baseUrl/chat/read');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'chat_id': chatId,
+          'organization_id': organizationId,
+          'messages': messageIds,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Messages marked as read');
+      } else {
+        print('Error marking messages as read: ${response.body}');
+      }
+    } catch (e) {
+      print('Exception when marking messages as read: $e');
+    }
+  }
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
@@ -2898,6 +2877,113 @@ class ApiService {
   }
 
   //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
+
+  //_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
+
+  Future<ChatProfile> getChatProfile(int chatId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        if (decodedJson['result'] != null) {
+          return ChatProfile.fromJson(decodedJson['result']);
+        } else {
+          throw Exception('Данные профиля не найдены');
+        }
+      } else if (response.statusCode == 404) {
+        throw ('Такого Лида не существует');
+      } else {
+        print('Ошибка загрузки профиля чата: ${response.statusCode}');
+        throw Exception('${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка в getChatProfile: $e');
+      throw ('$e');
+    }
+  }
+
+  Future<TaskProfile> getTaskProfile(int chatId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      print('Organization ID: $organizationId'); // Добавим логирование
+
+      final response = await _getRequest(
+        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      print(
+          'Response status code: ${response.statusCode}'); // Логируем статус ответа
+      print('Response body: ${response.body}'); // Логируем тело ответа
+
+      if (response.statusCode == 200) {
+        try {
+          final dynamic decodedJson = json.decode(response.body);
+          print(
+              'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
+          print('Decoded JSON: $decodedJson'); // Отладочный вывод
+
+          if (decodedJson is Map<String, dynamic>) {
+            if (decodedJson['result'] != null) {
+              print(
+                  'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
+              return TaskProfile.fromJson(decodedJson['result']);
+            } else {
+              print('Result is null');
+              throw Exception('Данные задачи не найдены');
+            }
+          } else {
+            print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
+            throw Exception('Неверный формат ответа');
+          }
+        } catch (parseError) {
+          print('Ошибка парсинга JSON: $parseError');
+          throw Exception('Ошибка парсинга ответа: $parseError');
+        }
+      } else {
+        print('Ошибка загрузки задачи: ${response.statusCode}');
+        throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Полная ошибка в getTaskProfile: $e');
+      print('Трассировка стека: ${StackTrace.current}');
+      throw Exception('Ошибка загрузки задачи: $e');
+    }
+  }
+
+  Future<ChatProfile> getCorporateProfile(int chatId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+        '/lead/getByCorporate/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        if (decodedJson['result'] != null) {
+          return ChatProfile.fromJson(decodedJson['result']);
+        } else {
+          throw Exception('Данные профиля не найдены');
+        }
+      } else if (response.statusCode == 404) {
+        throw ('Такого корпоротивного чата не существует');
+      } else {
+        print('Ошибка загрузки профиля чата: ${response.statusCode}');
+        throw Exception('${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка в getCorporateProfile: $e');
+      throw ('$e');
+    }
+  }
+
+  //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
+
   //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
 //Метод для получения Пользователя через его ID
   Future<UserByIdProfile> getUserById(int userId) async {
@@ -2928,6 +3014,8 @@ class ApiService {
   Future<Map<String, dynamic>> updateProfile({
     required int userId,
     required String name,
+    required String sname,
+    required String pname,
     required String phone,
     String? email,
     String? login,
@@ -2964,59 +3052,6 @@ class ApiService {
     }
   }
 
-  // Метод для завершения задачи
-  Future<Map<String, dynamic>> finishTask(int taskId) async {
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-        '/task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'task_id': taskId,
-        });
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Задача успешно завершена'};
-    } else if (response.statusCode == 422) {
-      return {
-        'success': false,
-        'message': 'Этот проект не имеет завершающего этапа'
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Ошибка завершения задачи: ${response.body}'
-      };
-    }
-  }
-
-  Future<void> readChatMessages(int chatId, List<int> messageIds) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-
-    final url = Uri.parse('$baseUrl/chat/read');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'chat_id': chatId,
-          'organization_id': organizationId,
-          'messages': messageIds,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('Messages marked as read');
-      } else {
-        print('Error marking messages as read: ${response.body}');
-      }
-    } catch (e) {
-      print('Exception when marking messages as read: $e');
-    }
-  }
+  
   //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
 }

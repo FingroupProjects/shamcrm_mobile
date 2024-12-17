@@ -140,6 +140,17 @@ void _markMessagesAsRead() {
                   builder: (context) => TaskByIdScreen(chatId: widget.chatId),
                 ),
               );
+            } else if (widget.endPointInTab == 'corporate') {
+              print(
+                  "-------------------------------------------------------------------------------------");
+              print("CHAT IDD corporate");
+              print(widget.chatId);
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => CorporateProfileScreen(chatId: widget.chatId),
+              //   ),
+              // );
             } else {
               // Показываем Snackbar
               WidgetsBinding.instance.addPostFrameCallback((_) {
