@@ -4,13 +4,14 @@ import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dar
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart'; // Для форматирования даты
+import 'package:intl/intl.dart'; 
 
 class UserProfileScreen extends StatelessWidget {
   final int chatId;
-  
 
-  UserProfileScreen({required this.chatId, });
+  UserProfileScreen({
+    required this.chatId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,94 +19,86 @@ class UserProfileScreen extends StatelessWidget {
       create: (context) =>
           ChatProfileBloc(ApiService())..add(FetchChatProfile(chatId)),
       child: Scaffold(
+        backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
           title: Text(
             "Профиль пользователя",
-            style: TextStyle(color: Colors.black), // Цвет текста AppBar
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
           ),
-          backgroundColor: Colors.white, // Цвет фона AppBar
-                  leading: IconButton(
-           icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+          backgroundColor: Color(0xffF4F7FD),
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+          centerTitle: false,
         ),
         body: BlocBuilder<ChatProfileBloc, ChatProfileState>(
           builder: (context, state) {
             if (state is ChatProfileLoading) {
-              return Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+);
             } else if (state is ChatProfileLoaded) {
               final profile = state.profile;
-              // Преобразование и форматирование даты
               final DateTime parsedDate = DateTime.parse(profile.createdAt);
               final String formattedDate =
                   DateFormat('dd-MM-yyyy').format(parsedDate);
 
-              return ListView(
+              return SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text("Имя: ${profile.name}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.phone),
-                    title: Text("Телефон: ${profile.phone ?? 'Не указано'}"),
-                  ),
-                  ListTile(
-                    leading: Image.asset('assets/icons/leads/instagram.png',
-                        width: 24, height: 24),
-                    title: Text(
-                        "Instagram: ${profile.instaLogin ?? 'Не указано'}"),
-                  ),
-                  ListTile(
-                    leading: Image.asset('assets/icons/leads/telegram.png',
-                        width: 24, height: 24),
-                    title: Text("Telegram: ${profile.tgNick ?? 'Не указано'}"),
-                  ),
-                  ListTile(
-                    leading: Image.asset(
-                      'assets/icons/leads/whatsapp.png',
-                      width: 24,
-                      height: 24,
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      child: Column(
+                        children: [
+                      buildInfoRow("Имя", profile.name, Icons.person, null),
+                      buildDivider(),
+                      buildInfoRow("Телефон", profile.phone ?? 'Не указано', Icons.phone, null),
+                      buildDivider(),
+                      buildInfoRow("Instagram", profile.instaLogin ?? 'Не указано', null, 
+                      'assets/icons/leads/instagram.png' 
+                      ),
+                      buildDivider(),
+                      buildInfoRow("Telegram", profile.tgNick ?? 'Не указано', null, 
+                      'assets/icons/leads/telegram.png' 
+                      ),
+                      buildDivider(),
+                      buildInfoRow("WhatsApp", profile.waPhone ?? 'Не указано', null, 
+                      'assets/icons/leads/whatsapp.png' 
+                      ),
+                      buildDivider(),
+                      buildInfoRow("WhatsApp", profile.facebookLogin ?? 'Не указано', null, 
+                      'assets/icons/leads/facebook.png' 
+                      ),                      buildDivider(),
+                      buildInfoRow("Описание", profile.description ?? 'Не указано', Icons.description, null),
+                      buildDivider(),
+                      buildInfoRow("Дата создания", formattedDate, Icons.calendar_today, null),
+                      buildDivider(),
+                      buildInfoRow("Менеджер", profile.manager?.name ?? 'Не указано', Icons.supervisor_account, null),
+                      buildDivider(),
+                      buildInfoRow("Статус", profile.leadStatus?.title ?? 'Не указано', Icons.assignment, null),
+                      
+                        ],
+                      ),
                     ),
-                    title: Text(
-                      "WhatsApp: ${profile.waName ?? 'Имя не указано'}, Номер: ${profile.waPhone ?? 'Телефон не указан'}",
-                    ),
-                  ),
-                  ListTile(
-                    leading: Image.asset('assets/icons/leads/facebook.png',
-                        width: 24, height: 24),
-                    title: Text(
-                        "Facebook: ${profile.facebookLogin ?? 'Не указано'}"),
-                  ),
-                  // ListTile(
-                  //   leading: Icon(Icons.location_on),
-                  //   title: Text("Адрес: ${profile.address ?? 'Не указано'}"),
-                  // ),
-                  ListTile(
-                    leading: Icon(Icons.description),
-                    title: Text(
-                        "Описание: ${profile.description ?? 'Не указано'}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.calendar_today),
-                    title: Text("Дата создания: $formattedDate"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.supervisor_account),
-                    title: Text("Менеджер: ${profile.manager ?? 'Не указано'}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.assignment),
-                    title: Text("Статус: ${profile.leadStatus?.title ?? 'Не указано'}"), // Только name
-                  ),
-                ],
+                  ],
+                ),
               );
             } else if (state is ChatProfileError) {
               return Center(child: Text(state.error));
@@ -114,6 +107,53 @@ class UserProfileScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  // Info row widget to match the design
+ Widget buildInfoRow(String title, String value, IconData? icon, String? customIconPath) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      // If a custom icon path is provided, use it; otherwise, fall back to the default icon.
+      customIconPath != null
+          ? Image.asset(customIconPath, width: 32, height: 32) 
+          : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff6E7C97),
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+  Widget buildDivider() {
+    return const Divider(
+      color: Color(0xffE1E6F0),
+      thickness: 1,
+      height: 24,
     );
   }
 }

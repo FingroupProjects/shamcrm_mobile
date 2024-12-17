@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -92,6 +93,8 @@ class _BottomSheetAddClientDialogState
                           );
                         }, listener: (BuildContext context, CreateClientState state) {
                           if(state is CreateClientSuccess) {
+                            context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+
                             Navigator.pop(context);
                           }
                       },

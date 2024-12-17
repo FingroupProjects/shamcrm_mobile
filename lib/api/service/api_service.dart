@@ -2906,33 +2906,6 @@ class ApiService {
     }
   }
 
-  Future<ChatProfile> getCorporateProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-        '/lead/getByCorporate/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        if (decodedJson['result'] != null) {
-          return ChatProfile.fromJson(decodedJson['result']);
-        } else {
-          throw Exception('Данные профиля не найдены');
-        }
-      } else if (response.statusCode == 404) {
-        throw ('Такого корпоротивного чата не существует');
-      } else {
-        print('Ошибка загрузки профиля чата: ${response.statusCode}');
-        throw Exception('${response.statusCode}');
-      }
-    } catch (e) {
-      print('Ошибка в getCorporateProfile: $e');
-      throw ('$e');
-    }
-  }
-
   //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
 
 

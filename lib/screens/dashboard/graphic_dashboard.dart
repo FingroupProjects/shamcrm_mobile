@@ -297,9 +297,8 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
         ),
       ),
 
-    ),
-  );
-}
+   
+
     );
   }
 

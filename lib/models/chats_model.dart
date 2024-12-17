@@ -88,7 +88,7 @@ class Chats {
     if (group != null && group!.name.isNotEmpty) {
       return group!.name; // Если группа существует, то возвращаем ее имя
     } else {
-      return chatUsers.isNotEmpty ? chatUsers[0].name : name; // Если нет группы, то имя пользователя
+      return  name; // Если нет группы, то имя пользователя
     }
   }
 
@@ -114,8 +114,10 @@ class Chats {
   }
 
   ChatItem toChatItem(String avatar) {
+    String avatar = group != null
+      ? "assets/images/GroupChat.png" 
+      : "assets/images/AvatarChat.png";
     return ChatItem(
-      
       displayName,
       lastMessage,
       createDate,
@@ -180,7 +182,6 @@ class ChatUser {
   }
 }
 
-// New Group class
 class Group {
   final int id;
   final String name;

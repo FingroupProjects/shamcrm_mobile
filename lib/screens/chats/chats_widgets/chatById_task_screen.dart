@@ -2,7 +2,6 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -18,22 +17,30 @@ class TaskByIdScreen extends StatelessWidget {
       create: (context) =>
           TaskProfileBloc(ApiService())..add(FetchTaskProfile(chatId)),
       child: Scaffold(
+        backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
           title: Text(
             "Информация о задаче",
-            style: TextStyle(color: Colors.black),
+            style: TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
           ),
-          backgroundColor: Colors.white, // Цвет фона AppBar
-                  leading: IconButton(
-           icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+          backgroundColor: Colors.white,
+          forceMaterialTransparency: true,
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+          centerTitle: false,
         ),
         body: BlocBuilder<TaskProfileBloc, TaskProfileState>(
           builder: (context, state) {
@@ -73,99 +80,38 @@ class TaskByIdScreen extends StatelessWidget {
                   priorityLevelText = 'Не указано';
               }
 
-              return ListView(
+              return SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.assignment),
-                    title: Text("Название задачи: ${task.name}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.format_list_numbered),
-                    title: Text("Номер задачи: ${task.taskNumber}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.low_priority),
-                    title: Text("Уровень приоритета: $priorityLevelText"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.assignment),
-                    title: Text("Статус: ${task.taskStatus.taskStatus.name}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text("Автор: ${task.authorName}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.group),
-                    title: GestureDetector(
-                      onTap: () {
-                        // Показать всплывающее окно со списком всех пользователей
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              backgroundColor: Colors.white,
-                              title: Text(
-                                "Список исполнителей",
-                                style: TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                              content: Container(
-                                height: 400,
-                                child: SingleChildScrollView(
-                                  child: ListBody(
-                                    children: userNamesList
-                                        .asMap()
-                                        .entries
-                                        .map((entry) {
-                                      int index =
-                                          entry.key + 1; // Нумерация с 1
-                                      String name = entry.value;
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 4.0),
-                                        child: Text(
-                                          '$index. $name',
-                                          style: TextStyle(fontSize: 18),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              ),
-                              actions: [
-                                Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: CustomButton(
-                                    buttonText: 'Закрыть',
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    buttonColor: Color(0xff1E2E52),
-                                    textColor: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      child: Text(
-                        "Исполнители: $displayUserNames",
-                        style: TextStyle(color: Colors.black, fontSize: 16),
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      child: Column(
+                        children: [
+                          buildInfoRow("Название задачи", task.name, Icons.assignment, null),
+                          buildDivider(),
+                          buildInfoRow("Номер задачи", task.taskNumber.toString(), Icons.format_list_numbered, null),
+                          buildDivider(),
+                          buildInfoRow("Уровень приоритета", priorityLevelText, Icons.low_priority, null),
+                          buildDivider(),
+                          buildInfoRow("Статус", task.taskStatus.taskStatus.name, Icons.assignment, null),
+                          buildDivider(),
+                          buildInfoRow("Автор", task.authorName, Icons.person, null),
+                          buildDivider(),
+                          buildInfoRow("Исполнители", displayUserNames, Icons.group, null),
+                          buildDivider(),
+                          buildInfoRow("От", formattedFromDate, Icons.calendar_today, null),
+                          buildDivider(),
+                          buildInfoRow("До", formattedToDate, Icons.calendar_today, null),
+                        ],
                       ),
                     ),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.calendar_today),
-                    title: Text("От: ${formattedFromDate}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.calendar_today),
-                    title: Text("До: ${formattedToDate}"),
-                  ),
-                ],
+                  ],
+                ),
               );
             } else if (state is TaskProfileError) {
               return Center(child: Text(state.error));
@@ -174,6 +120,53 @@ class TaskByIdScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  // Info row widget to match the design
+  Widget buildInfoRow(String title, String value, IconData? icon, String? customIconPath) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // If a custom icon path is provided, use it; otherwise, fall back to the default icon.
+        customIconPath != null
+            ? Image.asset(customIconPath, width: 32, height: 32)
+            : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff6E7C97),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildDivider() {
+    return const Divider(
+      color: Color(0xffE1E6F0),
+      thickness: 1,
+      height: 24,
     );
   }
 }

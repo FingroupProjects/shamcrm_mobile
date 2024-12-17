@@ -93,7 +93,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: 'Сделки',
+          title: isClickAvatarIcon ? 'Настройки' : 'Сделки',
           onClickProfileAvatar: () {
             setState(() {
               final dealBloc = BlocProvider.of<DealBloc>(context);

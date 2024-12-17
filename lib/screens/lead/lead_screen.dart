@@ -93,7 +93,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: 'Лиды',
+          title: isClickAvatarIcon ? 'Настройки' : 'Лиды',
           onClickProfileAvatar: () {
             setState(() {
               final leadBloc = BlocProvider.of<LeadBloc>(context);

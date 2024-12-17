@@ -8,6 +8,7 @@ import 'package:crm_task_manager/models/msg_data_in_socket.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
@@ -109,10 +110,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         title: InkWell(
           onTap: () {
             if (widget.endPointInTab == 'lead') {
-              print(
-                  "-------------------------------------------------------------------------------------");
-              print("CHAT IDD DDDDDDD");
-              print(widget.chatId);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -121,10 +118,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 ),
               );
             } else if (widget.endPointInTab == 'task') {
-              print(
-                  "-------------------------------------------------------------------------------------");
-              print("CHAT IDD TASK");
-              print(widget.chatId);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -132,23 +125,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 ),
               );
             } else if (widget.endPointInTab == 'corporate') {
-              print(
-                  "-------------------------------------------------------------------------------------");
-              print("CHAT IDD corporate");
-              print(widget.chatId);
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (context) => CorporateProfileScreen(chatId: widget.chatId),
-              //   ),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CorporateProfileScreen(
+                    chatId: widget.chatId,
+                    chatItem: widget.chatItem,
+                  ),
+                ),
+              );
             } else {
-              // Показываем Snackbar
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Это корпоративный чат!',
+                      'ОШИБКА!!!!!',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -172,9 +163,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           },
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundImage: AssetImage(widget.chatItem.avatar),
-                radius: ChatSmsStyles.avatarRadius,
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.black,
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  backgroundImage: AssetImage(widget.chatItem.avatar),
+                  radius: ChatSmsStyles.avatarRadius,
+                  backgroundColor: Colors.white,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -182,7 +183,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     ? 'Без имени'
                     : widget.chatItem.name,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   color: ChatSmsStyles.appBarTitleColor,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',

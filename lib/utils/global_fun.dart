@@ -75,7 +75,7 @@ String date(String dateAndTime) {
 
 class AppStyles {
   static const TextStyle chatNameStyle = TextStyle(
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: FontWeight.w600,
     fontFamily: 'Gilroy',
     color: Color(0xFF1E2E52),
