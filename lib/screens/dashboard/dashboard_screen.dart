@@ -42,7 +42,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadUserRole();
     // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
 
-
     _loadImportantBoxes();
   }
 
@@ -50,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String userId = prefs.getString('userID') ?? '';
-      
+
       if (userId.isEmpty) {
         setState(() {
           userRoleName = 'No user ID found';
@@ -59,7 +58,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       // Получение роли через API
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       setState(() {
         userRoleName = (userProfile.role?.isNotEmpty ?? false)
             ? userProfile.role!.first.name
@@ -154,11 +154,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         GraphicsDashboard(),
         // SizedBox(height: 16),
         LeadConversionChart(),
-        // SizedBox(height: 16),
         DealStatsChart(),
-        // SizedBox(height: 16),
         TaskChartWidget(),
-        // SizedBox(height: 4),
         ProjectChartTable(),
       ];
     } else if (userRoleName == 'manager') {
@@ -172,9 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         GraphicsDashboard(),
         // SizedBox(height: 16),
         LeadConversionChart(),
-        // SizedBox(height: 16),
         DealStatsChart(),
-        // SizedBox(height: 16),
         TaskChartWidget(),
       ];
     } else {
@@ -184,33 +179,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 }
-   
-  // Метод для стилизованных раскрывающихся карточек
-  Widget _buildExpansionTile({required String title, required Widget child}) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      color: const Color.fromARGB(255, 244, 247, 254),
-      elevation: 4,
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.symmetric(horizontal: 160, vertical: 8),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        iconColor: Color(0xFF2D3748),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: child,
-          ),
-        ],
-      ),
-    );
-  }
 
+// Метод для стилизованных раскрывающихся карточек
+Widget _buildExpansionTile({required String title, required Widget child}) {
+  return Card(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    color: const Color.fromARGB(255, 244, 247, 254),
+    elevation: 4,
+    child: ExpansionTile(
+      tilePadding: EdgeInsets.symmetric(horizontal: 160, vertical: 8),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2D3748),
+        ),
+      ),
+      iconColor: Color(0xFF2D3748),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: child,
+        ),
+      ],
+    ),
+  );
+}

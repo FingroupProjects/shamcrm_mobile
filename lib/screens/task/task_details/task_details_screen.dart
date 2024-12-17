@@ -83,7 +83,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (dateString == null || dateString.isEmpty) return 'Не указано';
     try {
       final parsedDate = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy').format(parsedDate);
+      return DateFormat('dd.MM.yyyy').format(parsedDate);
     } catch (e) {
       return 'Неверный формат';
     }
@@ -99,7 +99,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     currentTask = task;
     details = [
-      // {'label': 'ID задачи:', 'value': task.id.toString()},
+      {'label': 'ID задачи:', 'value': task.id.toString()},
       {'label': 'Название задачи:', 'value': task.name},
       {
         'label': 'От:',
@@ -194,6 +194,91 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           taskName: widget.taskName,
                           canSendMessage: task.chat!.canSendMessage,
                         ),
+                      // Custom button to finish the task
+                      const SizedBox(height: 14, width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final taskId = int.parse(widget.taskId);
+                            context
+                                .read<ApiService>()
+                                .finishTask(taskId)
+                                .then((result) {
+                              if (result['success']) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result['message'],
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                Navigator.pop(context);
+                                context
+                                    .read<TaskBloc>()
+                                    .add(FetchTaskStatuses());
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result['message'],
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: Color(0xFF1E2E52),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Готов',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
                     ],
@@ -432,7 +517,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     return ListTile(
                       contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 0), // Минимальный вертикальный отступ
+                          vertical: 2), // Минимальный вертикальный отступ
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(

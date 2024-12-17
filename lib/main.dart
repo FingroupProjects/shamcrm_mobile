@@ -105,7 +105,6 @@ class MyApp extends StatelessWidget {
   final bool isDomainChecked;
   final String? token;
   final String? pin;
-
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -113,7 +112,6 @@ class MyApp extends StatelessWidget {
     this.token,
     this.pin,
   });
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(

@@ -84,9 +84,18 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
       _fetchBaseUrl();
+         _markMessagesAsRead();
     });
     // _connectWebSocket();
   }
+// Новый метод для отметки сообщений как прочитанных
+void _markMessagesAsRead() {
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState && state.messages.isNotEmpty) {
+    final messageIds = state.messages.map((msg) => msg.id).toList();
+    widget.apiService.readChatMessages(widget.chatId, messageIds);
+  }
+}
 
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
@@ -230,11 +239,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         if (state is MessagesErrorState) {
           // ... (предыдущий код обработки ошибок остается без изменений)
         }
-
         if (state is MessagesLoadingState) {
           return Center(child: CircularProgressIndicator.adaptive());
         }
-
         if (state is MessagesLoadedState) {
           if (state.messages.isEmpty) {
             return Center(
@@ -253,10 +260,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           for (int index = 0; index < state.messages.length; index++) {
             final message = state.messages[index];
             final currentDate = DateTime.parse(message.createMessateTime);
-
             // Добавляем день к текущей дате
             DateTime displayDate = currentDate.add(Duration(days: 1));
-
             // Проверяем, что displayDate не совпадает только с завтрашней датой
             bool isDateExcluded = (displayDate.year == tomorrow.year &&
                 displayDate.month == tomorrow.month &&

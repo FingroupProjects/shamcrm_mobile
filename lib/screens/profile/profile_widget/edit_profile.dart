@@ -25,7 +25,9 @@ class ProfileEditPage extends StatefulWidget {
 }
 
 class _ProfileEditPageState extends State<ProfileEditPage> {
-  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController NameController = TextEditingController();
+  final TextEditingController SurnameController = TextEditingController();
+  final TextEditingController PatronymicController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController roleController = TextEditingController();
   final TextEditingController loginController = TextEditingController();
@@ -100,7 +102,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     }
   }
-
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
     if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
@@ -137,7 +138,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           await ApiService().getUserById(int.parse(UUID));
 
       setState(() {
-        fullNameController.text = userProfile.name;
+        NameController.text = userProfile.name;
+        SurnameController.text = userProfile.Sname;
+        PatronymicController.text = userProfile.Pname;
         emailController.text = userProfile.email;
         phoneController.text = userProfile.phone;
         _userImage = userProfile.image ?? '';
@@ -298,9 +301,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
               const SizedBox(height: 20),
               CustomTextField(
-                controller: fullNameController,
-                hintText: 'Введите ФИО',
-                label: 'ФИО',
+                controller: NameController,
+                hintText: 'Введите Имя',
+                label: 'Имя',
+              ),
+              const SizedBox(height: 20),
+              CustomTextField(
+                controller: SurnameController,
+                hintText: 'Введите Фамилию',
+                label: 'Фамилия',
+              ),
+              const SizedBox(height: 20),
+              CustomTextField(
+                controller: PatronymicController,
+                hintText: 'Введите Отчество',
+                label: 'Отчество',
               ),
               const SizedBox(height: 8),
               CustomPhoneNumberInput(
@@ -362,7 +377,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                   try {
                     int userId = int.parse(UUID);
-                    final name = fullNameController.text;
+                    final name = NameController.text;
+                                        final surname = SurnameController.text;
+                    final patronymic = PatronymicController.text;
+
                     final phone = phoneController.text;
                     final email = emailController.text;
 
@@ -372,6 +390,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     context.read<ProfileBloc>().add(UpdateProfile(
                         userId: userId,
                         name: name,
+                        sname: surname,
+                        pname: patronymic,
                         phone: phone,
                         email: email,
                         image: image));
