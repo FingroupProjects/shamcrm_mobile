@@ -183,7 +183,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (pickedFile != null) {
       setState(() {
         _localImage = File(pickedFile.path);
-        _userImage = ''; // Очищаем строку SVG или URL
+        _userImage = ''; 
       });
     }
   }
@@ -192,8 +192,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Редактирование профиля'),
-        centerTitle: true,
+        title: Text('Редактирование профиля',
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            )),
+        centerTitle: false,
         leading: IconButton(
           icon: Image.asset(
             'assets/icons/arrow-left.png',

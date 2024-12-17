@@ -23,13 +23,22 @@ class ChatListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.white, // Укажите желаемый цвет фона
-            backgroundImage: AssetImage(chatItem.avatar),
-            radius: 24,
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.black,
+                width: 2,
+              ),
+            ),
+            child: CircleAvatar(
+              backgroundColor: Colors.white, 
+              backgroundImage: AssetImage(chatItem.avatar),
+              radius: 24,
+            ),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -38,13 +47,12 @@ class ChatListItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // Здесь добавлено использование иконки
                     Image.asset(
-                      chatItem.icon, // Используем поле иконки
+                      chatItem.icon, 
                       width: 20,
                       height: 20,
                     ),
-                    SizedBox(width: 4), // Отступ между иконкой и текстом
+                    SizedBox(width: 4), 
                     Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty ? chatItem.name : 'Без имени',

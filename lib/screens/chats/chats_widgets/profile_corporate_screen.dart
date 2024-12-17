@@ -1,119 +1,229 @@
-// import 'package:crm_task_manager/api/service/api_service.dart';
-// import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
-// import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dart';
-// import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_state.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:intl/intl.dart'; // Для форматирования даты
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
-// class CorporateProfileScreen extends StatelessWidget {
-//   final int chatId;
-  
+class CorporateProfileScreen extends StatefulWidget {
+  final int chatId;
+  final ChatItem chatItem;
 
-//   CorporateProfileScreen({required this.chatId, });
+  const CorporateProfileScreen({required this.chatId, required this.chatItem});
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return BlocProvider(
-//       create: (context) =>
-//           CorporateProfileBloc(ApiService())..add(FetchCorporateProfile(chatId)),
-//       child: Scaffold(
-//         appBar: AppBar(
-//           title: Text(
-//             "Профиль пользователя",
-//             style: TextStyle(color: Colors.black), // Цвет текста AppBar
-//           ),
-//           backgroundColor: Colors.white, // Цвет фона AppBar
-//                   leading: IconButton(
-//            icon: Image.asset(
-//             'assets/icons/arrow-left.png',
-//             width: 24,
-//             height: 24,
-//           ),
-//           onPressed: () {
-//             Navigator.pop(context);
-//           },
-//         ),
-//         ),
-//         body: BlocBuilder<CorporateProfileBloc, CorporateProfileState>(
-//           builder: (context, state) {
-//             if (state is CorporateProfileLoading) {
-//               return Center(child: CircularProgressIndicator());
-//             } else if (state is CorporateProfileLoaded) {
-//               final profile = state.profile;
-//               // Преобразование и форматирование даты
-//               final DateTime parsedDate = DateTime.parse(profile.createdAt);
-//               final String formattedDate =
-//                   DateFormat('dd-MM-yyyy').format(parsedDate);
+  @override
+  State<CorporateProfileScreen> createState() => _CorporateProfileScreenState();
+}
 
-//               return ListView(
-//                 padding: const EdgeInsets.all(16.0),
-//                 children: [
-//                   ListTile(
-//                     leading: Icon(Icons.person),
-//                     title: Text("Имя: ${profile.name}"),
-//                   ),
-//                   ListTile(
-//                     leading: Icon(Icons.phone),
-//                     title: Text("Телефон: ${profile.phone ?? 'Не указано'}"),
-//                   ),
-//                   ListTile(
-//                     leading: Image.asset('assets/icons/leads/instagram.png',
-//                         width: 24, height: 24),
-//                     title: Text(
-//                         "Instagram: ${profile.instaLogin ?? 'Не указано'}"),
-//                   ),
-//                   ListTile(
-//                     leading: Image.asset('assets/icons/leads/telegram.png',
-//                         width: 24, height: 24),
-//                     title: Text("Telegram: ${profile.tgNick ?? 'Не указано'}"),
-//                   ),
-//                   ListTile(
-//                     leading: Image.asset(
-//                       'assets/icons/leads/whatsapp.png',
-//                       width: 24,
-//                       height: 24,
-//                     ),
-//                     title: Text(
-//                       "WhatsApp: ${profile.waName ?? 'Имя не указано'}, Номер: ${profile.waPhone ?? 'Телефон не указан'}",
-//                     ),
-//                   ),
-//                   ListTile(
-//                     leading: Image.asset('assets/icons/leads/facebook.png',
-//                         width: 24, height: 24),
-//                     title: Text(
-//                         "Facebook: ${profile.facebookLogin ?? 'Не указано'}"),
-//                   ),
-//                   // ListTile(
-//                   //   leading: Icon(Icons.location_on),
-//                   //   title: Text("Адрес: ${profile.address ?? 'Не указано'}"),
-//                   // ),
-//                   ListTile(
-//                     leading: Icon(Icons.description),
-//                     title: Text(
-//                         "Описание: ${profile.description ?? 'Не указано'}"),
-//                   ),
-//                   ListTile(
-//                     leading: Icon(Icons.calendar_today),
-//                     title: Text("Дата создания: $formattedDate"),
-//                   ),
-//                   ListTile(
-//                     leading: Icon(Icons.supervisor_account),
-//                     title: Text("Менеджер: ${profile.manager ?? 'Не указано'}"),
-//                   ),
-//                   ListTile(
-//                     leading: Icon(Icons.assignment),
-//                     title: Text("Статус: ${profile.leadStatus?.title ?? 'Не указано'}"), // Только name
-//                   ),
-//                 ],
-//               );
-//             } else if (state is CorporateProfileError) {
-//               return Center(child: Text(state.error));
-//             }
-//             return Center(child: Text("Загрузите данные"));
-//           },
-//         ),
-//       ),
-//     );
-//   }
-// }
+class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
+  late String groupName;
+  late int memberCount;
+  late List<String> members;
+  late List<Map<String, String>> memberDetails;
+  bool isLoading = true;
+  bool isGroupChat = false;
+
+  @override
+  void initState() {
+    super.initState();
+    groupName = widget.chatItem.name;
+    memberCount = 1;
+    members = [widget.chatItem.name];
+    memberDetails = [];
+    _fetchChatData();
+  }
+
+  Future<void> _fetchChatData() async {
+    try {
+      final getChatById = await ApiService().getChatById(widget.chatId);
+
+      if (getChatById.chatUsers.isNotEmpty) {
+        setState(() {
+          groupName = widget.chatItem.name;
+          memberCount = getChatById.chatUsers.length;
+          members = getChatById.chatUsers
+              .map((user) => user.participant.name)
+              .toList();
+          memberDetails = getChatById.chatUsers
+              .map((user) => {
+                    'image': user.participant.image,
+                    'name': user.participant.name,
+                    'email': user.participant.email,
+                    'phone': user.participant.phone,
+                    'login': user.participant.login,
+                    'last_seen': user.participant.lastSeen.toString(),
+                  })
+              .toList();
+          isGroupChat = getChatById.group != null;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Ошибка загрузки данных Корп чата: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          title: Text(
+            "Профиль",
+            style: TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          backgroundColor: Colors.white,
+          leading: IconButton(
+            icon: Image.asset('assets/icons/arrow-left.png',
+                width: 24, height: 24),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          centerTitle: false,
+        ),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: Text(
+          "Профиль",
+          style: TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon:
+              Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        centerTitle: false,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 6),
+              ),
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                backgroundImage: isGroupChat
+                    ? AssetImage('assets/images/GroupChat.png')
+                    : AssetImage('assets/images/AvatarChat.png'),
+                radius: 60,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              groupName,
+              style: TextStyle(
+                  fontSize: 24,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600),
+            ),
+            Text(
+              "$memberCount участников",
+              style: TextStyle(
+                  fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
+            ),
+            SizedBox(height: 10),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Участники",
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 10),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: members.length,
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ParticipantProfileScreen(
+                                image: memberDetails[index]['image']!,
+                                name: memberDetails[index]['name']!,
+                                email: memberDetails[index]['email']!,
+                                phone: memberDetails[index]['phone']!,
+                                login: memberDetails[index]['login']!,
+                                lastSeen: memberDetails[index]['last_seen']!,
+                              ),
+                            ),
+                          );
+                        },
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blueAccent,
+                            child: memberDetails[index]['image']!
+                                    .startsWith('<svg')
+                                ? SvgPicture.string(
+                                    memberDetails[index]['image']!,
+                                    height: 100,
+                                    width: 100,
+                                  )
+                                : Image.network(
+                                    memberDetails[index]['image']!,
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          title: Text(
+                            members[index],
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

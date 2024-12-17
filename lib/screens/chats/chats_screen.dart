@@ -171,9 +171,10 @@ class _ChatsScreenState extends State<ChatsScreen>
           forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
-            title: 'Чаты',
+           title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
             onClickProfileAvatar: () {
               setState(() {
+                context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },

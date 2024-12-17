@@ -93,7 +93,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: 'Задачи',
+          title: isClickAvatarIcon ? 'Настройки' : 'Задачи',
           onClickProfileAvatar: () {
             setState(() {
               final taskBloc = BlocProvider.of<TaskBloc>(context);

@@ -304,17 +304,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         print("Ошибка загрузки данных: $e");
       }
     } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
+        showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.transparent,
+        builder: (context) {
+          return Center(
+            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+          );
+        },
+      );
+      try {
+
+      final taskDetails = await ApiService().getTaskById(chatId);
+      Navigator.of(context).pop();
+      
       print('Переход на экран задачи с ID: $chatId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => TaskDetailsScreen(
             taskId: chatId.toString(),
-            taskName: '',
+            taskName: taskDetails.name,
             taskStatus: '',
             statusId: 1,
           ),
         ),
       );
+     } catch (e) {
+        Navigator.of(context).pop();
+        print("Ошибка загрузки данных: $e");
+      }
     } else if (type == 'notice') {
       // Переход на экран лида
       print('Переход на экран лида с ID: $chatId');

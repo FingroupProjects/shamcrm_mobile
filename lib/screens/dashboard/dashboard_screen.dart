@@ -117,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: CustomAppBar(
-            title: "Дашборд",
+          title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
@@ -152,6 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // DealsBox(),
         // SizedBox(height: 16),
         GraphicsDashboard(),
+        // SizedBox(height: 16),
         LeadConversionChart(),
         DealStatsChart(),
         TaskChartWidget(),
@@ -166,6 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // DealsBox(),
         // SizedBox(height: 16),
         GraphicsDashboard(),
+        // SizedBox(height: 16),
         LeadConversionChart(),
         DealStatsChart(),
         TaskChartWidget(),
