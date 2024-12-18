@@ -102,7 +102,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xffF4F7FD),
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: Text(
@@ -177,67 +177,103 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                       bool isDeletedAccount =
                           memberDetails[index]['name'] == 'Удаленный аккаунт';
                       return InkWell(
-                          onTap: isDeletedAccount
-                              ? null
-                              : () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ParticipantProfileScreen(
-                                        image: memberDetails[index]['image']!,
-                                        name: memberDetails[index]['name']!,
-                                        email: memberDetails[index]['email']!,
-                                        phone: memberDetails[index]['phone']!,
-                                        login: memberDetails[index]['login']!,
-                                        lastSeen: memberDetails[index]['last_seen']!,
-                                      ),
+                        onTap: isDeletedAccount
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ParticipantProfileScreen(
+                                      image: memberDetails[index]['image']!,
+                                      name: memberDetails[index]['name']!,
+                                      email: memberDetails[index]['email']!,
+                                      phone: memberDetails[index]['phone']!,
+                                      login: memberDetails[index]['login']!,
+                                      lastSeen: memberDetails[index]['last_seen']!,
                                     ),
-                                  );
-                                },
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.white,
-                              child: isDeletedAccount
-                                  ? Image.asset(
-                                      'assets/images/delete_user.png',
-                                      height: 40,
-                                      width: 40,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : memberDetails[index]['image']!.isEmpty
-                                      ? Container(
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.black, width: 4),
+                                  ),
+                                );
+                              },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 5),
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 0,
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.white,
+                                child: isDeletedAccount
+                                    ? Image.asset(
+                                        'assets/images/delete_user.png',
+                                        height: 36,
+                                        width: 36,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : memberDetails[index]['image']!.isEmpty
+                                        ? Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                  color: Colors.black,
+                                                  width: 4),
                                             ),
-                                          child: Image.asset(
-                                            'assets/images/AvatarChat.png',
-                                            height: 30,
-                                            width: 30,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ) : memberDetails[index]['image']!.startsWith('<svg')
-                                          ? SvgPicture.string(
-                                              memberDetails[index]['image']!,
-                                              height: 100,
-                                              width: 100,
-                                            ) : Image.network(
-                                              memberDetails[index]['image']!,
-                                              height: 100,
-                                              width: 100,
+                                            child: Image.asset(
+                                              'assets/images/AvatarChat.png',
+                                              height: 30,
+                                              width: 30,
                                               fit: BoxFit.cover,
                                             ),
-                            ),
-                            title: Text(
-                              members[index],
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
+                                          )
+                                        : memberDetails[index]['image']!
+                                                .startsWith('<svg')
+                                            ? SvgPicture.string(
+                                                memberDetails[index]['image']!,
+                                                height: 40,
+                                                width: 40,
+                                              )
+                                            : Image.network(
+                                                memberDetails[index]['image']!,
+                                                height: 40,
+                                                width: 40,
+                                                fit: BoxFit.cover,
+                                              ),
                               ),
-                            ),
-                          ));
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  members[index],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                              if (!isDeletedAccount)
+                                Transform.rotate(
+                                  angle: 3.14159,
+                                  child: Image.asset(
+                                    'assets/icons/arrow-left.png',
+                                    width: 16,
+                                    height: 16,
+                                  ),
+                                )
+                            ],
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ],
