@@ -15,7 +15,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             userId: event.userId,
             name: event.name,
             sname: event.sname,
-            pname: event.pname,
+            // pnme: event.pname,
             phone: event.phone,
             email: event.email,
             login: event.login,

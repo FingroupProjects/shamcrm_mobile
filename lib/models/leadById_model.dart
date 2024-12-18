@@ -21,6 +21,7 @@ class LeadById {
   final Author? author;
   final String? description;
   final LeadStatusById? leadStatus;
+  final List<LeadCustomFieldsById> leadCustomFields;
 
   LeadById({
     required this.id,
@@ -41,6 +42,7 @@ class LeadById {
     this.author,
     this.description,
     this.leadStatus,
+    required this.leadCustomFields,
   });
 
   factory LeadById.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -60,9 +62,10 @@ class LeadById {
           json['manager'] != null && json['manager'] is Map<String, dynamic>
               ? ManagerData.fromJson(json['manager'])
               : null,
-      sourceLead: json['source_lead'] != null && json['source_lead'] is Map<String, dynamic>
-      ? SourceLead.fromJson(json['source_lead'])
-      : null,
+      sourceLead: json['source_lead'] != null &&
+              json['source_lead'] is Map<String, dynamic>
+          ? SourceLead.fromJson(json['source_lead'])
+          : null,
       birthday: json['birthday'] is String ? json['birthday'] : '',
       instagram: json['insta_login'] is String ? json['insta_login'] : '',
       facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
@@ -77,6 +80,10 @@ class LeadById {
               json['leadStatus'] is Map<String, dynamic>
           ? LeadStatusById.fromJson(json['leadStatus'])
           : null,
+           leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
+              ?.map((field) => LeadCustomFieldsById.fromJson(field))
+              .toList() ??
+          [],
     );
   }
 }
@@ -109,7 +116,25 @@ class Source {
     );
   }
 }
+class LeadCustomFieldsById {
+  final int id;
+  final String key;
+  final String value;
 
+  LeadCustomFieldsById({
+    required this.id,
+    required this.key,
+    required this.value,
+  });
+
+  factory LeadCustomFieldsById.fromJson(Map<String, dynamic> json) {
+    return LeadCustomFieldsById(
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
+    );
+  }
+}
 class LeadStatusById {
   final int id;
   final String title;

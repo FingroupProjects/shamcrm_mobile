@@ -16,7 +16,6 @@ class FetchMoreTasks extends TaskEvent {
   FetchMoreTasks(this.statusId, this.currentPage);
 }
 
-
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -25,10 +24,11 @@ class CreateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>?
+      userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   // final TaskFile? file;
-      final List<Map<String, String>>? customFields;
+  final List<Map<String, String>>? customFields;
 
   CreateTask({
     required this.name,
@@ -46,7 +46,6 @@ class CreateTask extends TaskEvent {
   });
 }
 
-
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
@@ -55,10 +54,11 @@ class UpdateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>?
+      userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   final int taskStatusId;
-    final List<Map<String, String>>? customFields;
+  final List<Map<String, String>>? customFields;
 
   // final TaskFile? file;
 

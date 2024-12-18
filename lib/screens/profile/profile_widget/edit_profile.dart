@@ -102,6 +102,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     }
   }
+
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
     if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
@@ -139,7 +140,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
       setState(() {
         NameController.text = userProfile.name;
-        SurnameController.text = userProfile.Sname;
+        SurnameController.text = userProfile.lastname;
         PatronymicController.text = userProfile.Pname;
         emailController.text = userProfile.email;
         phoneController.text = userProfile.phone;
@@ -183,7 +184,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (pickedFile != null) {
       setState(() {
         _localImage = File(pickedFile.path);
-        _userImage = ''; 
+        _userImage = '';
       });
     }
   }
@@ -311,12 +312,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 hintText: 'Введите Фамилию',
                 label: 'Фамилия',
               ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                controller: PatronymicController,
-                hintText: 'Введите Отчество',
-                label: 'Отчество',
-              ),
+
               const SizedBox(height: 8),
               CustomPhoneNumberInput(
                 controller: phoneController,
@@ -378,7 +374,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   try {
                     int userId = int.parse(UUID);
                     final name = NameController.text;
-                                        final surname = SurnameController.text;
+                    final sname = SurnameController.text;
                     final patronymic = PatronymicController.text;
 
                     final phone = phoneController.text;
@@ -390,7 +386,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     context.read<ProfileBloc>().add(UpdateProfile(
                         userId: userId,
                         name: name,
-                        sname: surname,
+                        sname: sname,
                         pname: patronymic,
                         phone: phone,
                         email: email,

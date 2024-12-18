@@ -149,9 +149,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
-        taskStatusId: event.taskStatusId,     
-           customFields: event.customFields,
-
+        taskStatusId: event.taskStatusId,
+        customFields: event.customFields,
 
         // file: event.file
       );

@@ -117,6 +117,7 @@ class _TaskCardState extends State<TaskCard> {
     }
     return '';
   }
+
   @override
   Widget build(BuildContext context) {
     // Получаем количество просроченных дней
@@ -140,6 +141,7 @@ class _TaskCardState extends State<TaskCard> {
                 project: widget.task.project?.name ??
                     widget.project ??
                     'Без проекта',
+                taskCustomFields: widget.task.taskCustomFields,
               ),
             ),
           );
@@ -367,7 +369,6 @@ class _TaskCardState extends State<TaskCard> {
                         mainAxisAlignment: MainAxisAlignment
                             .spaceBetween, // Пространство между элементами
                         children: [
-              
                           // Иконка и текст даты
                           Row(
                             crossAxisAlignment: CrossAxisAlignment
@@ -406,19 +407,16 @@ class _TaskCardState extends State<TaskCard> {
                             ],
                           ),
 
-                          // Индикатор просрочки слева
                           if (overdueDays > 0)
                             Padding(
                               padding: EdgeInsets.only(
-                                left: MediaQuery.of(context).size.width *
-                                    0.52 , // Отступ в процентах от ширины экрана
+                                left: MediaQuery.of(context).size.width * 0.52,
                               ),
                               child: Container(
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(
-                                      255, 253, 98, 87), // Цвет фона индикатора
+                                  color: const Color.fromARGB(255, 253, 98, 87),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
