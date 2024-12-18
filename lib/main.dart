@@ -98,7 +98,6 @@ void main() async {
   ));
 }
 Future<void> getFCMTokens(ApiService apiService) async {
-  // Функция оставлена пустой, как в оригинальном коде
 }
 class MyApp extends StatelessWidget {
   final ApiService apiService;

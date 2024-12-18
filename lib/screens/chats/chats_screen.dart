@@ -20,7 +20,6 @@ import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_unfocuser/flutter_unfocuser.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -30,9 +29,8 @@ class ChatsScreen extends StatefulWidget {
   State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen>
-    with TickerProviderStateMixin {
-  final ApiService apiService = ApiService(); // Инициализация ApiService
+class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin {
+  final ApiService apiService = ApiService(); 
   bool isNavigating = false;
   late Future<List<Chats>> futureChats;
   List<Chats> allChats = [];
@@ -395,7 +393,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     }, itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
-            splashColor: AppColors.primaryBlue,
+            splashColor: Colors.grey,
             focusColor: Colors.black87,
             child: ChatListItem(
               chatItem: item.toChatItem("assets/images/AvatarChat.png"),
