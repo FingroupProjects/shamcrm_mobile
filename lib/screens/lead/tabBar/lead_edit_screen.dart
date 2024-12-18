@@ -2,8 +2,12 @@ import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
+import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:flutter/material.dart';
@@ -30,23 +34,24 @@ class LeadEditScreen extends StatefulWidget {
   final String? email;
   final String? description;
   final int statusId;
+  final List<LeadCustomFieldsById> leadCustomFields;
 
-  LeadEditScreen({
-    required this.leadId,
-    required this.leadName,
-    // required this.leadStatus,
-    required this.statusId,
-    this.region,
-    this.manager,
-    this.birthday,
-    this.createAt,
-    this.instagram,
-    this.facebook,
-    this.telegram,
-    this.phone,
-    this.email,
-    this.description,
-  });
+  LeadEditScreen(
+      {required this.leadId,
+      required this.leadName,
+      // required this.leadStatus,
+      required this.statusId,
+      this.region,
+      this.manager,
+      this.birthday,
+      this.createAt,
+      this.instagram,
+      this.facebook,
+      this.telegram,
+      this.phone,
+      this.email,
+      this.description,
+      required this.leadCustomFields});
 
   @override
   _LeadEditScreenState createState() => _LeadEditScreenState();
@@ -67,6 +72,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   String? selectedRegion;
   String? selectedManager;
+  List<CustomField> customFields = [];
 
   @override
   void initState() {
@@ -81,12 +87,31 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     descriptionController.text = widget.description ?? '';
     selectedRegion = widget.region;
     selectedManager = widget.manager;
-
+    for (var customField in widget.leadCustomFields) {
+      customFields.add(CustomField(fieldName: customField.key)
+        ..controller.text = customField.value);
+    }
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
+ void _addCustomField(String fieldName) {
+    setState(() {
+      customFields.add(CustomField(fieldName: fieldName));
+    });
+  }
 
-
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddCustomFieldDialog(
+          onAddField: (fieldName) {
+            _addCustomField(fieldName);
+          },
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,29 +149,30 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           //       backgroundColor: Colors.red,
           //     ),
           //   );
-          // } else 
+          // } else
           if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w500, 
-                      color: Colors.white, 
-                    ),
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), 
-                  ),
-                  backgroundColor: Colors.green, 
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-                  duration: Duration(seconds: 2),
                 ),
-              );
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
+              ),
+            );
             Navigator.pop(context, true);
           }
         },
@@ -232,6 +258,28 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         hintText: 'Введите описание',
                         label: 'Описание',
                         maxLines: 5,
+                      ),  const SizedBox(height: 20),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                      CustomButton(
+                        buttonText: 'Добавить поле',
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -275,7 +323,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       parsedBirthday = DateFormat('dd/MM/yyyy')
                                           .parseStrict(birthdayController.text);
                                     } catch (e) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: const Text(
                                               'Ошибка ввода даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
@@ -285,9 +334,22 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       return;
                                     }
                                   }
-
+                                  List<Map<String, String>> customFieldList =
+                                      [];
+                                  for (var field in customFields) {
+                                    String fieldName = field.fieldName.trim();
+                                    String fieldValue =
+                                        field.controller.text.trim();
+                                    if (fieldName.isNotEmpty &&
+                                        fieldValue.isNotEmpty) {
+                                      customFieldList
+                                          .add({fieldName: fieldValue});
+                                    }
+                                  }
                                   final leadBloc = context.read<LeadBloc>();
-                                  context.read<LeadBloc>().add(FetchLeadStatuses());
+                                  context
+                                      .read<LeadBloc>()
+                                      .add(FetchLeadStatuses());
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
@@ -305,6 +367,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     email: emailController.text,
                                     description: descriptionController.text,
                                     leadStatusId: widget.statusId,
+                                    customFields: customFieldList,
                                   ));
                                 }
                               },
@@ -316,7 +379,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                   ],
                 ),
               )
-
             ],
           ),
         ),

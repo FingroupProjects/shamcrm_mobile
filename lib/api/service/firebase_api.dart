@@ -161,7 +161,7 @@ class FirebaseApi {
               taskId: taskId,
               taskName: '',
               taskStatus: '',
-              statusId: 1,
+              statusId: 1, taskCustomFields: [],
             ),
           ),
         );
