@@ -38,7 +38,6 @@ class LeadDetailsScreen extends StatefulWidget {
   final String? description;
   final List<LeadCustomField> leadCustomFields;
 
-
   LeadDetailsScreen({
     required this.leadId,
     required this.leadName,
@@ -141,6 +140,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
     ];
+    for (var field in lead.leadCustomFields) {
+      details.add({'label': field.key, 'value': field.value});
+    }
   }
 
   @override
@@ -153,31 +155,30 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             if (state is LeadByIdLoaded) {
               print("Лид Data: ${state.lead.toString()}");
             } else if (state is LeadByIdError) {
-               WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${state.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.message}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
                     ),
-                  );
-                });
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              });
             }
           },
           child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
@@ -209,25 +210,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 8),
                       if (_canReadNotes)
-                      NotesWidget(leadId: int.parse(widget.leadId)),                      
+                        NotesWidget(leadId: int.parse(widget.leadId)),
                       // const SizedBox(height: 16),
                       if (_canReadDeal)
-                      DealsWidget(leadId: int.parse(widget.leadId)),
+                        DealsWidget(leadId: int.parse(widget.leadId)),
                       // const SizedBox(height: 16),
                       ContactPersonWidget(leadId: int.parse(widget.leadId)),
                     ],
                   ),
                 );
               } else if (state is LeadByIdError) {
-                return Center(child: Text(
+                return Center(
+                  child: Text(
                     '${state.message}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w500, 
-                      color: Colors.black, 
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
                     ),
-                  ),);
+                  ),
+                );
               }
               return Center(child: Text(''));
             },
@@ -309,6 +312,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             phone: currentLead!.phone,
                             email: currentLead!.email,
                             description: currentLead!.description,
+                            leadCustomFields: currentLead!.leadCustomFields,
                           ),
                         ),
                       );

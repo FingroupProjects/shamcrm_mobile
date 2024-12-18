@@ -1001,6 +1001,13 @@ class ApiService {
           if (description != null) 'description': description,
           if (organizationId != null) 'organization_id': organizationId,
           if (waPhone != null) 'wa_phone': waPhone,
+          'lead_custom_fields': customFields?.map((field) {
+                return {
+                  'key': field.keys.first,
+                  'value': field.values.first,
+                };
+              }).toList() ??
+              [],
         });
 
     if (response.statusCode == 200) {
@@ -2109,7 +2116,7 @@ class ApiService {
     }
   }
 
-// Обновленный метод обновления задачи
+// Метод для обновления задачи
   Future<Map<String, dynamic>> updateTask({
     required int taskId,
     required String name,
@@ -2137,6 +2144,13 @@ class ApiService {
           'users': userId.map((id) => {'user_id': id}).toList(),
         if (file != null) 'file': file,
         if (description != null) 'description': description,
+        'task_custom_fields': customFields?.map((field) {
+                return {
+                  'key': field.keys.first,
+                  'value': field.values.first,
+                };
+              }).toList() ??
+              [],
       };
 
       final organizationId = await getSelectedOrganization();
@@ -2382,6 +2396,7 @@ class ApiService {
       throw Exception('Failed to delete taskStatus: ${response.body}');
     }
   }
+
   // Метод для завершения задачи
   Future<Map<String, dynamic>> finishTask(int taskId) async {
     final organizationId = await getSelectedOrganization();
@@ -2804,6 +2819,7 @@ class ApiService {
       throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
     }
   }
+
 //Метод для передачи всех iD-сообщениях чата в сервер
   Future<void> readChatMessages(int chatId, List<int> messageIds) async {
     final token = await getToken();
@@ -3043,7 +3059,6 @@ class ApiService {
     required int userId,
     required String name,
     required String sname,
-    required String pname,
     required String phone,
     String? email,
     String? login,
@@ -3053,6 +3068,7 @@ class ApiService {
       '/profile/$userId',
       {
         'name': name,
+        'lastname': sname,
         'phone': phone,
         if (email != null) 'email': email,
         // if (login != null) 'login': login,
@@ -3080,6 +3096,5 @@ class ApiService {
     }
   }
 
-  
   //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
 }

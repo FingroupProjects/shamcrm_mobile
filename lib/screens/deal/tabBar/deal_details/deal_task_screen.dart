@@ -190,7 +190,7 @@ class _TasksWidgetState extends State<TasksWidget> {
           taskId: task.id.toString(),
           taskName: task.name ?? '',
           taskStatus: '',
-          statusId: 1,
+          statusId: 1, taskCustomFields: [],
         ),
       ),
     ).then((_) {

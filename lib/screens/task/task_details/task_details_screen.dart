@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
@@ -29,6 +30,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final String? endDate;
   final String? sum;
   final int? priority;
+  final List<TaskCustomField> taskCustomFields;
 
   TaskDetailsScreen({
     required this.taskId,
@@ -45,6 +47,7 @@ class TaskDetailsScreen extends StatefulWidget {
     this.sum,
     // this.projectName,
     this.priority,
+    required this.taskCustomFields,
   });
 
   @override
@@ -133,6 +136,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       {'label': 'Автор:', 'value': task.author?.name ?? 'Не указано'},
       {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
     ];
+
+    for (var field in task.taskCustomFields) {
+      details.add({'label': field.key, 'value': field.value});
+    }
   }
 
   @override
@@ -144,7 +151,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           listener: (context, state) {
             if (state is TaskByIdLoaded) {
               print("Задача Data: ${state.task.toString()}");
-
             } else if (state is TaskByIdError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -385,6 +391,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             startDate: currentTask!.startDate,
                             endDate: currentTask!.endDate,
                             createdAt: createdAtString,
+                            taskCustomFields: currentTask!.taskCustomFields,
                           ),
                         ),
                       );

@@ -587,3 +587,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 //     ],
 //   );
 // }
+class CustomField {
+  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+
+  CustomField({required this.fieldName});
+}

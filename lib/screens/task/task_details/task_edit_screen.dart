@@ -6,11 +6,15 @@ import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,6 +33,7 @@ class TaskEditScreen extends StatefulWidget {
   final String? description;
   final int? priority;
   final String? fail;
+  final List<TaskCustomFieldsById> taskCustomFields;
 
   TaskEditScreen({
     required this.taskId,
@@ -43,6 +48,7 @@ class TaskEditScreen extends StatefulWidget {
     this.description,
     this.priority,
     this.fail,
+    required this.taskCustomFields,
   });
 
   @override
@@ -59,6 +65,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   String? selectedProject;
   List<String>? selectedUsers;
   int? selectedPriority;
+  List<CustomField> customFields = [];
 
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
@@ -89,12 +96,35 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
 
     selectedPriority = widget.priority ?? 1;
+    for (var customField in widget.taskCustomFields) {
+      customFields.add(CustomField(fieldName: customField.key)
+        ..controller.text = customField.value);
+    }
   }
 
   void _loadInitialData() {
     context.read<GetAllProjectBloc>().add(GetAllProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     context.read<TaskBloc>().add(FetchTaskStatuses());
+  }
+
+  void _addCustomField(String fieldName) {
+    setState(() {
+      customFields.add(CustomField(fieldName: fieldName));
+    });
+  }
+
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddCustomFieldDialog(
+          onAddField: (fieldName) {
+            _addCustomField(fieldName);
+          },
+        );
+      },
+    );
   }
 
   InputDecoration _inputDecoration() {
@@ -312,6 +342,29 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
+                      const SizedBox(height: 20),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                      CustomButton(
+                        buttonText: 'Добавить поле',
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
+                      ),
                     ],
                   ),
                 ),
@@ -359,7 +412,18 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
                                     }
-
+                                    List<Map<String, String>> customFieldList =
+                                        [];
+                                    for (var field in customFields) {
+                                      String fieldName = field.fieldName.trim();
+                                      String fieldValue =
+                                          field.controller.text.trim();
+                                      if (fieldName.isNotEmpty &&
+                                          fieldValue.isNotEmpty) {
+                                        customFieldList
+                                            .add({fieldName: fieldValue});
+                                      }
+                                    }
                                     context.read<TaskBloc>().add(
                                           UpdateTask(
                                             taskId: widget.taskId,
@@ -380,6 +444,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                                 selectedPriority?.toString(),
                                             description:
                                                 descriptionController.text,
+                                            customFields: customFieldList,
                                           ),
                                         );
                                   } catch (e) {

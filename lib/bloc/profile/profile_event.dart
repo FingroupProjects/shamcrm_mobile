@@ -5,7 +5,6 @@ class UpdateProfile extends ProfileEvent {
   final String name;
   final String sname;
   final String pname;
-
   final String phone;
   final String? email;
   final String? login;

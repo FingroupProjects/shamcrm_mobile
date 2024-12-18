@@ -326,7 +326,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             taskId: chatId.toString(),
             taskName: taskDetails.name,
             taskStatus: '',
-            statusId: 1,
+            statusId: 1, taskCustomFields: [],
           ),
         ),
       );

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/models/project_model.dart';
 class Task {
   final int id;
   final String name;
+  final int? overdue; // Added here
   final String? startDate;
   final String? endDate;
   final String? description;
@@ -11,8 +12,7 @@ class Task {
   final String? color;
   final Project? project;
   final UserTaskImage? user;
-  final List<UserTaskImage>?
-      usersImage; // Changed from UserTaskImage? to List<UserTaskImage>?
+  final List<UserTaskImage>? usersImage;
   final TaskFile? file;
   final int priority;
   final List<TaskCustomField> taskCustomFields;
@@ -20,6 +20,7 @@ class Task {
   Task({
     required this.id,
     required this.name,
+    this.overdue, // Added here
     required this.startDate,
     required this.endDate,
     this.description,
@@ -35,13 +36,21 @@ class Task {
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
-    print('JSON received: $json'); // Лог всего JSON объекта
+    print('JSON received: $json'); // Log the entire JSON object
 
-    // Извлекаем и проверяем priority_level
+    // Extract and validate overdue
+    final overdueValue = json['overdue'];
+    final int? parsedOverdue;
+    if (overdueValue is int) {
+      parsedOverdue = overdueValue;
+    } else if (overdueValue is String) {
+      parsedOverdue = int.tryParse(overdueValue);
+    } else {
+      parsedOverdue = null;
+    }
+
+    // Extract and validate priority_level
     final rawPriority = json['priority_level'];
-    // print('Raw priority from JSON: $rawPriority'); // Debug print
-
-    // Преобразуем priority_level в int
     final int priorityLevel;
     if (rawPriority is int) {
       priorityLevel = rawPriority;
@@ -51,22 +60,23 @@ class Task {
       priorityLevel = 0;
     }
 
-    // Parsing the users list
+    // Parse the users list
     final usersList = json['users'] != null && json['users'] is List
         ? (json['users'] as List)
             .map((userJson) => UserTaskImage.fromJson(userJson))
             .toList()
         : null;
-    print('File field in JSON: ${json['file']}'); // Лог поля file
+    print('File field in JSON: ${json['file']}'); // Log the file field
 
     return Task(
       id: json['id'] is int ? json['id'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
+      overdue: parsedOverdue, // Added here
       startDate: json['from'],
       endDate: json['to'],
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
-      priority: priorityLevel, // Используем обработанное значение
+      priority: priorityLevel, // Use processed value
       taskStatus: json['taskStatus'] != null &&
               json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])
