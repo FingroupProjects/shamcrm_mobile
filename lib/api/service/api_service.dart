@@ -207,6 +207,61 @@ class ApiService {
     return response;
   }
 
+  // Метод для создания задачи
+ Future<Map<String, dynamic>> createGroupChat({
+  required String name,
+  List<int>? userId,
+}) async {
+  try {
+    final Map<String, dynamic> requestBody = {
+      'name': name,
+      'users': userId?.map((id) => {'id': id}).toList() ?? [],
+    };
+
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+      '/chat/createGroup${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      requestBody,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Групповой чат успешно создан.',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
+        return {
+          'success': false,
+          'message': 'Название группы должно быть не менее 3 символов.',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Ошибки валидации: ${response.body}',
+      };
+    } else if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка на сервере. Попробуйте позже.',
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания гр. чата: ${response.body}',
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при создании гр. чата: $e',
+    };
+  }
+}
+
+  
+
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
 // Метод для выполнения GET-запросов

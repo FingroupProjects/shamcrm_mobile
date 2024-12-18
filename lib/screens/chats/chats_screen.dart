@@ -4,9 +4,10 @@ import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/bottom_sheet_add_client_dialog.dart';
+import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -171,10 +172,12 @@ class _ChatsScreenState extends State<ChatsScreen>
           forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
-           title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
+            title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
             onClickProfileAvatar: () {
               setState(() {
-                context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
+                context
+                    .read<ChatsBloc>()
+                    .add(FetchChats(endPoint: endPointInTab));
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
@@ -212,12 +215,10 @@ class _ChatsScreenState extends State<ChatsScreen>
         floatingActionButton: (selectTabIndex == 2)
             ? FloatingActionButton(
                 onPressed: () {
-                  showCupertinoModalBottomSheet(
+                  showDialog(
                     context: context,
-                    expand: false,
-                    elevation: 4,
-                    isDismissible: false,
-                    builder: (context) => BottomSheetAddClientDialog(),
+                    builder: (context) =>
+                        AddClientDialog(), 
                   );
                 },
                 backgroundColor: Color(0xff1E2E52),
@@ -248,6 +249,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
           endPointInTab = 'corporate';
+          context.read<GetAllClientBloc>().add(GetAllClientEv());
         }
         context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
@@ -376,7 +378,21 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               ],
             ),
           );
-        }, itemBuilder: (context, item, index) {
+        },
+        firstPageProgressIndicatorBuilder: (context) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+        ),
+      );
+    },
+    newPageProgressIndicatorBuilder: (context) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)), 
+        ),
+      );
+    }, itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
             splashColor: AppColors.primaryBlue,
