@@ -174,48 +174,70 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     physics: NeverScrollableScrollPhysics(),
                     itemCount: members.length,
                     itemBuilder: (context, index) {
+                      bool isDeletedAccount =
+                          memberDetails[index]['name'] == 'Удаленный аккаунт';
                       return InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ParticipantProfileScreen(
-                                image: memberDetails[index]['image']!,
-                                name: memberDetails[index]['name']!,
-                                email: memberDetails[index]['email']!,
-                                phone: memberDetails[index]['phone']!,
-                                login: memberDetails[index]['login']!,
-                                lastSeen: memberDetails[index]['last_seen']!,
-                              ),
+                          onTap: isDeletedAccount
+                              ? null
+                              : () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ParticipantProfileScreen(
+                                        image: memberDetails[index]['image']!,
+                                        name: memberDetails[index]['name']!,
+                                        email: memberDetails[index]['email']!,
+                                        phone: memberDetails[index]['phone']!,
+                                        login: memberDetails[index]['login']!,
+                                        lastSeen: memberDetails[index]['last_seen']!,
+                                      ),
+                                    ),
+                                  );
+                                },
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white,
+                              child: isDeletedAccount
+                                  ? Image.asset(
+                                      'assets/images/delete_user.png',
+                                      height: 40,
+                                      width: 40,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : memberDetails[index]['image']!.isEmpty
+                                      ? Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.black, width: 4),
+                                            ),
+                                          child: Image.asset(
+                                            'assets/images/AvatarChat.png',
+                                            height: 30,
+                                            width: 30,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ) : memberDetails[index]['image']!.startsWith('<svg')
+                                          ? SvgPicture.string(
+                                              memberDetails[index]['image']!,
+                                              height: 100,
+                                              width: 100,
+                                            ) : Image.network(
+                                              memberDetails[index]['image']!,
+                                              height: 100,
+                                              width: 100,
+                                              fit: BoxFit.cover,
+                                            ),
                             ),
-                          );
-                        },
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.blueAccent,
-                            child: memberDetails[index]['image']!
-                                    .startsWith('<svg')
-                                ? SvgPicture.string(
-                                    memberDetails[index]['image']!,
-                                    height: 100,
-                                    width: 100,
-                                  )
-                                : Image.network(
-                                    memberDetails[index]['image']!,
-                                    height: 100,
-                                    width: 100,
-                                    fit: BoxFit.cover,
-                                  ),
-                          ),
-                          title: Text(
-                            members[index],
-                            style: TextStyle(
+                            title: Text(
+                              members[index],
+                              style: TextStyle(
                                 color: Colors.black,
                                 fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      );
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ));
                     },
                   ),
                 ],

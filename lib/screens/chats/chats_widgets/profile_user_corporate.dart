@@ -19,18 +19,18 @@ class ParticipantProfileScreen extends StatelessWidget {
     required this.lastSeen,
   });
   
-String formatDate(String? date) {
-  if (date == null || date.isEmpty) {
-    return "Неизвестно";  
+  String formatDate(String? date) {
+    if (date == null || date.isEmpty) {
+      return "Неизвестно";  
+    }
+    
+    try {
+      DateTime parsedDate = DateTime.parse(date); 
+      return DateFormat('dd-MM-yyyy HH:mm:ss').format(parsedDate);
+    } catch (e) {
+      return "Неизвестно";  
+    }
   }
-  
-  try {
-    DateTime parsedDate = DateTime.parse(date); 
-    return DateFormat('dd-MM-yyyy HH:mm:ss').format(parsedDate);
-  } catch (e) {
-    return "Неизвестно";  
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +40,11 @@ String formatDate(String? date) {
         title: Text(
           "Профиль пользователя",
           style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
-        ),
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
         backgroundColor: Color(0xffF4F7FD), 
         leading: IconButton(
@@ -62,18 +62,25 @@ String formatDate(String? date) {
               Center(
                 child: Container(
                   child: ClipOval(
-                    child: image.startsWith('<svg')
-                        ? SvgPicture.string(
-                            image,
-                            height: 140,
-                            width: 140,
-                          )
-                        : Image.network(
-                            image,
+                    child: image.isEmpty || image == 'assets/images/AvatarChat.png'
+                        ? Image.asset(
+                            'assets/images/AvatarChat.png', 
                             height: 140,
                             width: 140,
                             fit: BoxFit.cover,
-                          ),
+                          )
+                        : image.startsWith('<svg')
+                            ? SvgPicture.string(
+                                image,
+                                height: 140,
+                                width: 140,
+                              )
+                            : Image.network(
+                                image,
+                                height: 140,
+                                width: 140,
+                                fit: BoxFit.cover,
+                              ),
                   ),
                 ),
               ),

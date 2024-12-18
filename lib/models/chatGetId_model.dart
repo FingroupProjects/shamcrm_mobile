@@ -50,11 +50,14 @@ class ChatUser {
   });
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
-    return ChatUser(
-      type: json['type'] ?? '',
-      participant: Participant.fromJson(json['participant']),
-    );
-  }
+  return ChatUser(
+    type: json['type'] ?? '',
+    participant: json['participant'] != null
+        ? Participant.fromJson(json['participant'])
+        : Participant.empty(),
+  );
+}
+
 }
 
 class Participant {
@@ -88,6 +91,18 @@ class Participant {
       image: json['image'] ?? '',
       lastSeen: json['last_seen'],
       deletedAt: json['deleted_at'],
+    );
+  }
+  static Participant empty() {
+    return Participant(
+      id: 0,
+      name: 'Удаленный аккаунт',
+      login: '',
+      email: '',
+      phone: '',
+      image: '',
+      lastSeen: null,
+      deletedAt: null,
     );
   }
 }
