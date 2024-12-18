@@ -3,6 +3,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CorporateProfileScreen extends StatefulWidget {
   final int chatId;
@@ -30,7 +31,18 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     members = [widget.chatItem.name];
     memberDetails = [];
     _fetchChatData();
+    // _UserNameUU();
+
   }
+
+//   Future<void> _UserNameUU() async {
+//         SharedPreferences prefs = await SharedPreferences.getInstance();
+
+//     String UserName = prefs.getString('userName') ?? 'Не найдено';
+
+  
+//   print(UserName);
+// }
 
   Future<void> _fetchChatData() async {
     try {
@@ -45,6 +57,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               .toList();
           memberDetails = getChatById.chatUsers
               .map((user) => {
+                    'id': user.participant.id.toString(),
                     'image': user.participant.image,
                     'name': user.participant.name,
                     'email': user.participant.email,
@@ -176,15 +189,16 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     itemBuilder: (context, index) {
                       bool isDeletedAccount =
                           memberDetails[index]['name'] == 'Удаленный аккаунт';
+                      bool isOwner = index == 0; 
                       return InkWell(
-                        onTap: isDeletedAccount
-                            ? null
+                        onTap: isDeletedAccount || isOwner ? null 
                             : () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         ParticipantProfileScreen(
+                                      userId: memberDetails[index]['id']!,
                                       image: memberDetails[index]['image']!,
                                       name: memberDetails[index]['name']!,
                                       email: memberDetails[index]['email']!,
@@ -197,7 +211,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               },
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 5),
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 18),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -261,7 +276,17 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                   ),
                                 ),
                               ),
-                              if (!isDeletedAccount)
+                              if (isOwner)
+                                Text(
+                                  'Владелец',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                )
+                              else if (!isDeletedAccount)
                                 Transform.rotate(
                                   angle: 3.14159,
                                   child: Image.asset(
@@ -269,7 +294,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     width: 16,
                                     height: 16,
                                   ),
-                                )
+                                ),
                             ],
                           ),
                         ),

@@ -1,8 +1,12 @@
+import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
+import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 class ParticipantProfileScreen extends StatelessWidget {
+  final String userId;
   final String image;
   final String name;
   final String email;
@@ -11,6 +15,7 @@ class ParticipantProfileScreen extends StatelessWidget {
   final String lastSeen;
 
   const ParticipantProfileScreen({
+    required this.userId,
     required this.image,
     required this.name,
     required this.email,
@@ -103,6 +108,31 @@ class ParticipantProfileScreen extends StatelessWidget {
                     buildDivider(),
                     buildInfoRow("Последний вход", formatDate(lastSeen), Icons.access_time)
                   ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+              //   context.read<CreateClientBloc>().add(
+              //   CreateClientEv(userId: userId.toString()),
+              // );
+              // context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xff1E2E52),
+                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 30),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  "Перейти в чат",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
