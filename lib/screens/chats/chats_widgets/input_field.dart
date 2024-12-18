@@ -40,7 +40,7 @@ class InputField extends StatelessWidget {
                 (context.watch<ListenSenderFileCubit>().state)
                     ? Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
                     )
                     : Container(
                         height: 50,
@@ -88,7 +88,7 @@ class InputField extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
                     ),
                   ],
                 )
@@ -116,7 +116,7 @@ class InputField extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
                     ),
                   ],
                 )
