@@ -114,6 +114,7 @@ void _markMessagesAsRead() {
           ),
           onPressed: () {
             Navigator.pop(context);
+                // context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
           },
         ),
         title: InkWell(

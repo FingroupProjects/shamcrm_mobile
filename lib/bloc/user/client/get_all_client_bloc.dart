@@ -9,21 +9,33 @@ part 'get_all_client_event.dart';
 part 'get_all_client_state.dart';
 
 class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
-  GetAllClientBloc() : super(GetAllClientInitial()) {
+  final ApiService apiService;
+
+  GetAllClientBloc({required this.apiService}) : super(GetAllClientInitial()) {
     on<GetAllClientEv>(_getUsers);
+    on<GetAnotherClientEv>(_getAnotherUsers);
   }
 
-  Future<void> _getUsers(GetAllClientEv event, Emitter<GetAllClientState> emit) async {
-
+  Future<void> _getUsers(
+      GetAllClientEv event, Emitter<GetAllClientState> emit) async {
     try {
       emit(GetAllClientLoading());
-
-      var res = await ApiService().getAllUser();
-
+      var res = await apiService.getAllUser();
       emit(GetAllClientSuccess(dataUser: res));
-    } catch(e) {
+    } catch (e) {
       emit(GetAllClientError(message: e.toString()));
     }
+  }
 
+  Future<void> _getAnotherUsers(
+      GetAnotherClientEv event, Emitter<GetAllClientState> emit) async {
+    try {
+      emit(GetAllClientLoading());
+      var res = await apiService.getAnotherUsers();
+      emit(GetAllClientSuccess(dataUser: res));
+    } catch (e) {
+      emit(GetAllClientError(message: e.toString()));
+    }
   }
 }
+

@@ -98,7 +98,6 @@ void main() async {
   ));
 }
 Future<void> getFCMTokens(ApiService apiService) async {
-  // Функция оставлена пустой, как в оригинальном коде
 }
 class MyApp extends StatelessWidget {
   final ApiService apiService;
@@ -138,7 +137,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DealByIdBloc(apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-        BlocProvider(create: (context) => GetAllClientBloc()),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(apiService)),
         BlocProvider(create: (context) => ListenSenderTextCubit()),

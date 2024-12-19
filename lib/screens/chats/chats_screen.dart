@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
-import 'package:crm_task_manager/bloc/login/login_bloc.dart';
-import 'package:crm_task_manager/bloc/login/login_state.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
@@ -20,7 +18,6 @@ import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_unfocuser/flutter_unfocuser.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -30,9 +27,8 @@ class ChatsScreen extends StatefulWidget {
   State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen>
-    with TickerProviderStateMixin {
-  final ApiService apiService = ApiService(); // Инициализация ApiService
+class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin {
+  final ApiService apiService = ApiService(); 
   bool isNavigating = false;
   late Future<List<Chats>> futureChats;
   List<Chats> allChats = [];
@@ -51,15 +47,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabTitles.length, vsync: this);
-
-    final currentState = context.read<LoginBloc>().state;
-    if (currentState is LoginLoaded) {
-      setUpServices(currentState.user.id);
-    } else {
-      // Логируем или обрабатываем случай, когда состояние ещё не `LoginLoaded`
-      print('Состояние LoginBloc: $currentState');
-    }
-
+    setUpServices();
     context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
   }
 
@@ -83,16 +71,15 @@ class _ChatsScreenState extends State<ChatsScreen>
     context.read<ChatsBloc>().add(UpdateChatsFromSocket());
   }
 
-  Future<void> setUpServices(int userId) async {
+  Future<void> setUpServices() async {
     debugPrint('--------------------------- start socket:::::::');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+    final enteredDomain = await apiService.getEnteredDomain();
 
     final customOptions = PusherChannelsOptions.custom(
-      // You may also apply the given metadata in your custom uri
       uriResolver: (metadata) =>
           Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
@@ -105,6 +92,8 @@ class _ChatsScreenState extends State<ChatsScreen>
         seconds: 1,
       ),
     );
+        String userId = prefs.getString('userID').toString();
+        print('userID : $userId');
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -249,7 +238,8 @@ class _ChatsScreenState extends State<ChatsScreen>
         // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
           endPointInTab = 'corporate';
-          context.read<GetAllClientBloc>().add(GetAllClientEv());
+          context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+
         }
         context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
@@ -395,7 +385,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     }, itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
-            splashColor: AppColors.primaryBlue,
+            splashColor: Colors.grey,
             focusColor: Colors.black87,
             child: ChatListItem(
               chatItem: item.toChatItem("assets/images/AvatarChat.png"),
