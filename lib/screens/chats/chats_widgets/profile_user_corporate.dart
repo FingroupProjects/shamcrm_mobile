@@ -17,6 +17,7 @@ class ParticipantProfileScreen extends StatelessWidget {
   final String phone;
   final String login;
   final String lastSeen;
+  final bool? buttonChat;
 
   const ParticipantProfileScreen({
     required this.userId,
@@ -26,6 +27,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     required this.phone,
     required this.login,
     required this.lastSeen,
+    this.buttonChat,
   });
 
   String formatDate(String? date) {
@@ -170,36 +172,38 @@ class ParticipantProfileScreen extends StatelessWidget {
                   }
                 },
                 child: BlocBuilder<CreateClientBloc, CreateClientState>(
-                  builder: (context, state) {
-                    if (state is CreateClientLoading) {
-                      return Center(
-                        child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                      );
-                    }
-                    return ElevatedButton(
-                      onPressed: () {
-                        context.read<CreateClientBloc>().add(CreateClientEv(userId: userId));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff1E2E52),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 30),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        "Перейти в чат",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Gilroy',
-                          color: Colors.white,
-                        ),
-                      ),
+                builder: (context, state) {
+                  if (state is CreateClientLoading) {
+                    return Center(
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                     );
-                  },
-                ),
+                  }
+                  return buttonChat == true
+                      ? ElevatedButton(
+                          onPressed: () {
+                            context.read<CreateClientBloc>().add(CreateClientEv(userId: userId));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff1E2E52),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 30),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            "Перейти в чат",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Gilroy',
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : SizedBox.shrink(); 
+                },
+              ),
+
               )
             ],
           ),

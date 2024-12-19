@@ -205,6 +205,7 @@ Widget build(BuildContext context) {
                                     phone: memberDetails[index]['phone']!,
                                     login: memberDetails[index]['login']!,
                                     lastSeen: memberDetails[index]['last_seen']!,
+                                    buttonChat: true,
                                   ),
                                 ),
                               );
