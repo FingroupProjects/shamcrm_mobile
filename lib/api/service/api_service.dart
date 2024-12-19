@@ -157,7 +157,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
         if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+          'Authorization': 'Bearer $token',
       },
     );
     late UsersDataResponse dataUser;
@@ -182,6 +182,40 @@ class ApiService {
     return dataUser;
   }
 
+ Future<UsersDataResponse> getAnotherUsers() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/user/getAnotherUsers${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', 
+      },
+    );
+    late UsersDataResponse dataUser;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getAll user: ${response.body}');
+    }
+
+    return dataUser;
+  }
   // create new client
   Future<http.Response> createNewClient(String userID) async {
     final token = await getToken();

@@ -130,23 +130,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           onTap: () => onItemSelect(),
                         );
                       },
-                      // headerListBuilder: (context, hint, enabled) {
-                      //   String selectedUsersNames = selectedUsersData
-                      //       .map((user) => user.name)
-                      //       .join(', ');
-
-                      //   return Text(
-                      //     selectedUsersNames.isEmpty
-                      //         ? 'Выберите пользователей'
-                      //         : selectedUsersNames,
-                      //     style: TextStyle(
-                      //       fontSize: 16,
-                      //       fontWeight: FontWeight.w500,
-                      //       fontFamily: 'Gilroy',
-                      //       color: Color(0xff1E2E52),
-                      //     ),
-                      //   );
-                      // },
                       headerListBuilder: (context, hint, enabled) {
                         int selectedUsersCount = selectedUsersData.length;
 
