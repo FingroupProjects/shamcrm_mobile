@@ -217,29 +217,33 @@ class ApiService {
     return dataUser;
   }
   // create new client
-  Future<http.Response> createNewClient(String userID) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+  Future<Map<String, dynamic>> createNewClient(String userID) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
 
-    final response = await http.post(
-      Uri.parse(
-          '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-      },
-    );
+  final response = await http.post(
+    Uri.parse(
+        '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
 
-    if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-    }
-    if (kDebugMode) {
-      print('data: ${response.body}');
-    }
-
-    return response;
+  if (kDebugMode) {
+    print('Статус ответа: ${response.statusCode}');
+    print('data: ${response.body}');
   }
+
+  if (response.statusCode == 200) {
+    var jsonResponse = jsonDecode(response.body);
+    var chatId = jsonResponse['result']['id']; // Извлекаем chatId
+    return {'chatId': chatId}; // Возвращаем chatId
+  } else {
+    throw Exception('Failed to create chat');
+  }
+}
+
 
   // Метод для создания задачи
  Future<Map<String, dynamic>> createGroupChat({

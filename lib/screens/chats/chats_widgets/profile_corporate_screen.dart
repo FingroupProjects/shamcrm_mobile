@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -90,7 +91,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: Text(
-            "Профиль",
+            "Профиль группы",
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -119,7 +120,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: Text(
-          "Профиль",
+          "Профиль группы",
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',

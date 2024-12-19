@@ -49,15 +49,7 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabTitles.length, vsync: this);
-
-    final currentState = context.read<LoginBloc>().state;
-    if (currentState is LoginLoaded) {
-      setUpServices(currentState.user.id);
-    } else {
-      // Логируем или обрабатываем случай, когда состояние ещё не `LoginLoaded`
-      print('Состояние LoginBloc: $currentState');
-    }
-
+    setUpServices();
     context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
   }
 
@@ -81,7 +73,7 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
     context.read<ChatsBloc>().add(UpdateChatsFromSocket());
   }
 
-  Future<void> setUpServices(int userId) async {
+  Future<void> setUpServices() async {
     debugPrint('--------------------------- start socket:::::::');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
@@ -103,6 +95,8 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
         seconds: 1,
       ),
     );
+        String userId = prefs.getString('userID').toString();
+        print('userID : $userId');
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -247,7 +241,6 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
         // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
           endPointInTab = 'corporate';
-          // context.read<GetAllClientBloc>().add(GetAllClientEv());
           context.read<GetAllClientBloc>().add(GetAnotherClientEv());
 
         }

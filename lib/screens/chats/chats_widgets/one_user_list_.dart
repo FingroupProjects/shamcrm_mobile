@@ -1,13 +1,9 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
-import 'package:crm_task_manager/models/user.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:radio_group_v2/utils/radio_group_decoration.dart';
 import 'package:radio_group_v2/widgets/view_models/radio_group_controller.dart';
-import 'package:radio_group_v2/widgets/views/radio_group.dart';
 
 class ClientRadioGroupWidget extends StatefulWidget {
   Function(UserData) onSelectUser;

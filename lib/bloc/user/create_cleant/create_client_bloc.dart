@@ -13,21 +13,24 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
   }
 
   Future<void> _createClientFun(CreateClientEv event, Emitter<CreateClientState> emit) async {
-    if (await _checkInternetConnection()) {
-      try {
-        emit(CreateClientLoading());
+  if (await _checkInternetConnection()) {
+    try {
+      emit(CreateClientLoading());
 
-        var res = await ApiService().createNewClient(event.userId);
+      var res = await ApiService().createNewClient(event.userId);
 
-        emit(CreateClientSuccess());
-      } catch (e) {
-        print('Ошибка при создании клиента: $e'); // For debugging
-        emit(CreateClientError(message: 'Ошибка при создании клиента: ${e.toString()}'));
-      }
-    } else {
-      emit(CreateClientError(message: 'Нет подключения к интернету'));
+      var chatId = res['chatId']; // Извлекаем chatId из ответа
+
+      emit(CreateClientSuccess(chatId: chatId)); // Передаем chatId в состояние
+    } catch (e) {
+      print('Ошибка при создании клиента: $e');
+      emit(CreateClientError(message: 'Ошибка при создании клиента: ${e.toString()}'));
     }
+  } else {
+    emit(CreateClientError(message: 'Нет подключения к интернету'));
   }
+}
+
 
   // Method to check internet connection
   Future<bool> _checkInternetConnection() async {
