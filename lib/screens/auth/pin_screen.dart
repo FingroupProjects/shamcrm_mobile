@@ -263,7 +263,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                 height: MediaQuery.of(context).size.height *
                     0.2, 
               ),
-     
               _userImage != 'Не найдено'
                   ? SvgPicture.string(
                       _userImage, // Строка SVG-кода

@@ -1444,7 +1444,26 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
+//Метод для получение кастомных полей Задачи
+  Future<Map<String, dynamic>> getCustomFieldslead() async {
+  final organizationId = await getSelectedOrganization();
 
+  // Выполняем запрос
+  final response = await _getRequest(
+    '/lead/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -1777,6 +1796,29 @@ class ApiService {
       throw Exception('Failed to delete deal: ${response.body}');
     }
   }
+
+    //Метод для получение кастомных полей Задачи
+  Future<Map<String, dynamic>> getCustomFieldsdeal() async {
+  final organizationId = await getSelectedOrganization();
+
+  // Выполняем запрос
+  final response = await _getRequest(
+    '/deal/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
+
 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
@@ -2459,6 +2501,27 @@ class ApiService {
       };
     }
   }
+  //Метод для получение кастомных полей Задачи
+  Future<Map<String, dynamic>> getCustomFields() async {
+  final organizationId = await getSelectedOrganization();
+
+  // Выполняем запрос
+  final response = await _getRequest(
+    '/task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return data; // Возвращаем данные, если они есть
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
@@ -2608,6 +2671,8 @@ class ApiService {
       throw ('Ошибка получения данных проектов!');
     }
   }
+
+
 
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
