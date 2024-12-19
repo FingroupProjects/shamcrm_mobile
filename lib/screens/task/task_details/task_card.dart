@@ -407,7 +407,7 @@ class _TaskCardState extends State<TaskCard> {
                             ],
                           ),
 
-                          if (overdueDays > 0)
+                          if (widget.task.overdue!>0)
                             Padding(
                               padding: EdgeInsets.only(
                                 left: MediaQuery.of(context).size.width * 0.52,
@@ -421,7 +421,7 @@ class _TaskCardState extends State<TaskCard> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    overdueDays.toString(),
+                                    widget.task.overdue.toString(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
