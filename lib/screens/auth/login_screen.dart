@@ -35,9 +35,11 @@ class LoginScreen extends StatelessWidget {
               await prefs.setString('userName', state.user.name.toString());
               await prefs.setString('userID', state.user.id.toString());
 
-              await prefs.setString('userPhone', state.user.phone.toString());
+              // await prefs.setString('userPhone', state.user.phone.toString());
               await prefs.setString('userLogin', state.user.login.toString());
-              await prefs.setString('userImage', state.user.image.toString());
+              // await prefs.setString('userImage', state.user.image.toString());
+              // await prefs.setString('userEmail', state.user.email.toString());
+
 
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
@@ -45,7 +47,6 @@ class LoginScreen extends StatelessWidget {
                 // Обработка ситуации, когда role пусто или null
                 await prefs.setString('userRoleName', 'No role assigned');
               }
-              await prefs.setString('userEmail', state.user.email.toString());
 
               // Получаем токен устройства и отправляем его на сервер
               String? fcmToken = await FirebaseMessaging.instance.getToken();
@@ -65,14 +66,32 @@ class LoginScreen extends StatelessWidget {
                       firstOrganization.id.toString());
                 }
               }
-
-              // Проверяем состояние PIN-настройки
               await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
-              // Показываем сообщение об ошибке
+              WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 2),
+                ),
               );
+            });
             }
           },
           child: BlocBuilder<LoginBloc, LoginState>(
