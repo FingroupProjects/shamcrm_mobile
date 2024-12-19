@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
-import 'package:crm_task_manager/bloc/login/login_bloc.dart';
-import 'package:crm_task_manager/bloc/login/login_state.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
@@ -79,10 +77,9 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
     String? token = prefs.getString('token');
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+    final enteredDomain = await apiService.getEnteredDomain();
 
     final customOptions = PusherChannelsOptions.custom(
-      // You may also apply the given metadata in your custom uri
       uriResolver: (metadata) =>
           Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),

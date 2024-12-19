@@ -245,7 +245,7 @@ class ApiService {
 }
 
 
-  // Метод для создания задачи
+  // Метод для создания Групповго чата
  Future<Map<String, dynamic>> createGroupChat({
   required String name,
   List<int>? userId,

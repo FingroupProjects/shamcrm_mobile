@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
@@ -31,7 +30,6 @@ class _AddClientDialogState extends State<AddClientDialog> {
   final TextEditingController groupNameController = TextEditingController();
   List<UserData> selectedUsers = [];
 
-  // Поля для ошибок валидации
   String? groupNameError;
   String? selectedUsersError;
 
@@ -199,7 +197,6 @@ class _AddClientDialogState extends State<AddClientDialog> {
                             ),
                           );
                         });
-                          // context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
                           Navigator.pop(context);
                         }
                       },
@@ -215,33 +212,6 @@ class _AddClientDialogState extends State<AddClientDialog> {
                   : BlocConsumer<CreateClientBloc, CreateClientState>(
                   listener: (context, state) {
                     if (state is CreateClientSuccess) {
-                      // Show a success SnackBar
-                      // WidgetsBinding.instance.addPostFrameCallback((_) {
-                      //   ScaffoldMessenger.of(context).showSnackBar(
-                      //     SnackBar(
-                      //       content: Text(
-                      //         'Чат с клиентом успешно создан!',
-                      //         style: TextStyle(
-                      //           fontFamily: 'Gilroy',
-                      //           fontSize: 16,
-                      //           fontWeight: FontWeight.w500,
-                      //           color: Colors.white,
-                      //         ),
-                      //       ),
-                      //       behavior: SnackBarBehavior.floating,
-                      //       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      //       shape: RoundedRectangleBorder(
-                      //         borderRadius: BorderRadius.circular(12),
-                      //       ),
-                      //       backgroundColor: Colors.green,
-                      //       elevation: 3,
-                      //       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      //       duration: Duration(seconds: 2),
-                      //     ),
-                      //   );
-                      // });
-                        
-
                       navigatorKey.currentState?.pushReplacement(
                         MaterialPageRoute(
                           builder: (context) => BlocProvider(
