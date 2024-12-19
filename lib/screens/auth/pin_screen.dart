@@ -236,9 +236,9 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     final hour = DateTime.now().hour;
     final greetingPrefix;
 
-    if (hour >= 5 && hour < 12) {
+    if (hour >= 5 && hour < 11) {
       greetingPrefix = 'Доброе утро';
-    } else if (hour >= 12 && hour < 18) {
+    } else if (hour >= 11 && hour < 18) {
       greetingPrefix = 'Добрый день';
     } else if (hour >= 18 && hour < 22) {
       greetingPrefix = 'Добрый вечер';
@@ -263,7 +263,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                 height: MediaQuery.of(context).size.height *
                     0.2, 
               ),
-     
               _userImage != 'Не найдено'
                   ? SvgPicture.string(
                       _userImage, // Строка SVG-кода

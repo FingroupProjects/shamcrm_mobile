@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
@@ -63,8 +64,24 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     context.read<UserTaskBloc>().add(FetchUsers());
     // Устанавливаем значения по умолчанию
     _setDefaultValues();
-
+    _fetchAndAddCustomFields();
     // Подписываемся на изменения в блоках
+  }
+
+  void _fetchAndAddCustomFields() async {
+    try {
+      // Здесь предполагается, что getCustomFields определён в ApiService
+      final data = await ApiService().getCustomFields(); // Выполнить GET-запрос
+      if (data['result'] != null) {
+        data['result'].forEach((key, value) {
+          setState(() {
+            customFields.add(CustomField(fieldName: value));
+          });
+        });
+      }
+    } catch (e) {
+      print('Ошибка: $e');
+    }
   }
 
   void _setDefaultValues() {
@@ -349,7 +366,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
-                       const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
@@ -366,7 +383,30 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           );
                         },
                       ),
-                       CustomButton(
+                      const SizedBox(height: 8),
+// Динамические поля с сервера
+                      // ListView.builder(
+                      //   shrinkWrap: true,
+                      //   physics: NeverScrollableScrollPhysics(),
+                      //   itemCount: customFields.length,
+                      //   itemBuilder: (context, index) {
+                      //     return CustomTextField(
+                      //       controller: customFields[index].controller,
+                      //       hintText: 'Введите значение',
+                      //       label: customFields[index]
+                      //           .fieldName, // Устанавливаем метку из данных
+                      //       validator: (value) {
+                      //         if (value == null || value.isEmpty) {
+                      //           return 'Поле обязательно для заполнения';
+                      //         }
+                      //         return null;
+                      //       },
+                      //     );
+                      //   },
+                      // ),
+                      const SizedBox(height: 8),
+
+                      CustomButton(
                         buttonText: 'Добавить поле',
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
@@ -471,7 +511,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             size: fileSize ?? "0KB",
                           );
                         }
-                        // Создание сделки
+                        // Создание задачи
                         List<Map<String, String>> customFieldMap = [];
                         for (var field in customFields) {
                           String fieldName = field.fieldName.trim();
