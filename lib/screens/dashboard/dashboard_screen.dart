@@ -117,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
+            title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
@@ -151,12 +151,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // SizedBox(height: 16),
         // DealsBox(),
         // SizedBox(height: 16),
-        GraphicsDashboard(),
+
         // SizedBox(height: 16),
         LeadConversionChart(),
-        DealStatsChart(),
         TaskChartWidget(),
-        ProjectChartTable(),
+        GraphicsDashboard(),
+        DealStatsChart(),
+
+        // ProjectChartTable(),
       ];
     } else if (userRoleName == 'manager') {
       return [
@@ -166,11 +168,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // SizedBox(height: 16),
         // DealsBox(),
         // SizedBox(height: 16),
-        GraphicsDashboard(),
         // SizedBox(height: 16),
         LeadConversionChart(),
-        DealStatsChart(),
         TaskChartWidget(),
+        GraphicsDashboard(),
+        DealStatsChart(),
       ];
     } else {
       return [
