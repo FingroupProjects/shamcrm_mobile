@@ -3,7 +3,6 @@ import 'package:crm_task_manager/models/project_model.dart';
 class Task {
   final int id;
   final String name;
-  final int? overdue; // Added here
   final String? startDate;
   final String? endDate;
   final String? description;
@@ -16,11 +15,11 @@ class Task {
   final TaskFile? file;
   final int priority;
   final List<TaskCustomField> taskCustomFields;
+  final int? overdue; // Добавлено новое поле
 
   Task({
     required this.id,
     required this.name,
-    this.overdue, // Added here
     required this.startDate,
     required this.endDate,
     this.description,
@@ -33,6 +32,7 @@ class Task {
     this.file,
     required this.priority,
     required this.taskCustomFields,
+    this.overdue, // Добавлено в конструктор
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -70,8 +70,8 @@ class Task {
 
     return Task(
       id: json['id'] is int ? json['id'] : 0,
+      overdue: json['overdue'] is int ? json['overdue'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
-      overdue: parsedOverdue, // Added here
       startDate: json['from'],
       endDate: json['to'],
       description: json['description'] is String ? json['description'] : '',
