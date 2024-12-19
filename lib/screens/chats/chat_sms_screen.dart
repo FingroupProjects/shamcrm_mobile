@@ -9,6 +9,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dar
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
@@ -114,11 +115,10 @@ void _markMessagesAsRead() {
           ),
           onPressed: () {
             Navigator.pop(context);
-                // context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
           },
         ),
         title: InkWell(
-          onTap: () {
+          onTap: () async {
             if (widget.endPointInTab == 'lead') {
               Navigator.push(
                 context,
@@ -134,17 +134,43 @@ void _markMessagesAsRead() {
                   builder: (context) => TaskByIdScreen(chatId: widget.chatId),
                 ),
               );
-            } else if (widget.endPointInTab == 'corporate') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CorporateProfileScreen(
-                    chatId: widget.chatId,
-                    chatItem: widget.chatItem,
-                  ),
-                ),
-              );
-            } else {
+              } else if (widget.endPointInTab == 'corporate') {
+                final getChatById = await ApiService().getChatById(widget.chatId);
+                if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
+                    String userIdCheck = ''; 
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                userIdCheck = prefs.getString('userID') ?? '';
+                print('USERID: $userIdCheck');
+                  final participant = getChatById.chatUsers
+                      .firstWhere((user) => user.participant.id.toString() != userIdCheck)
+                      .participant;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ParticipantProfileScreen(
+                        userId: participant.id.toString(),
+                        image: participant.image,
+                        name: participant.name,
+                        email: participant.email,
+                        phone: participant.phone,
+                        login: participant.login,
+                        lastSeen: participant.lastSeen.toString(),
+                        buttonChat: false,
+                      ),
+                    ),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CorporateProfileScreen(
+                        chatId: widget.chatId,
+                        chatItem: widget.chatItem,
+                      ),
+                    ),
+                  );
+                }
+              } else {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

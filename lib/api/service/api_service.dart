@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/process_speed%20_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -156,8 +157,7 @@ class ApiService {
           '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token',
+        if (token != null) 'Authorization': 'Bearer $token',
       },
     );
     late UsersDataResponse dataUser;
@@ -182,7 +182,7 @@ class ApiService {
     return dataUser;
   }
 
- Future<UsersDataResponse> getAnotherUsers() async {
+  Future<UsersDataResponse> getAnotherUsers() async {
     final token = await getToken(); // Получаем токен перед запросом
     final organizationId = await getSelectedOrganization();
 
@@ -191,8 +191,7 @@ class ApiService {
           '$baseUrl/user/getAnotherUsers${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', 
+        if (token != null) 'Authorization': 'Bearer $token',
       },
     );
     late UsersDataResponse dataUser;
@@ -216,89 +215,87 @@ class ApiService {
 
     return dataUser;
   }
+
   // create new client
   Future<Map<String, dynamic>> createNewClient(String userID) async {
-  final token = await getToken();
-  final organizationId = await getSelectedOrganization();
-
-  final response = await http.post(
-    Uri.parse(
-        '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-    headers: {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    },
-  );
-
-  if (kDebugMode) {
-    print('Статус ответа: ${response.statusCode}');
-    print('data: ${response.body}');
-  }
-
-  if (response.statusCode == 200) {
-    var jsonResponse = jsonDecode(response.body);
-    var chatId = jsonResponse['result']['id']; // Извлекаем chatId
-    return {'chatId': chatId}; // Возвращаем chatId
-  } else {
-    throw Exception('Failed to create chat');
-  }
-}
-
-
-  // Метод для создания Групповго чата
- Future<Map<String, dynamic>> createGroupChat({
-  required String name,
-  List<int>? userId,
-}) async {
-  try {
-    final Map<String, dynamic> requestBody = {
-      'name': name,
-      'users': userId?.map((id) => {'id': id}).toList() ?? [],
-    };
-
+    final token = await getToken();
     final organizationId = await getSelectedOrganization();
 
-    final response = await _postRequest(
-      '/chat/createGroup${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestBody,
+    final response = await http.post(
+      Uri.parse(
+          '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
     );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Групповой чат успешно создан.',
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+      print('data: ${response.body}');
+    }
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
+      var chatId = jsonResponse['result']['id']; // Извлекаем chatId
+      return {'chatId': chatId}; // Возвращаем chatId
+    } else {
+      throw Exception('Failed to create chat');
+    }
+  }
+
+  // Метод для создания Групповго чата
+  Future<Map<String, dynamic>> createGroupChat({
+    required String name,
+    List<int>? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'users': userId?.map((id) => {'id': id}).toList() ?? [],
       };
-    } else if (response.statusCode == 422) {
-      if (response.body.contains('name')) {
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/createGroup${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Групповой чат успешно создан.',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'Название группы должно быть не менее 3 символов.',
+          };
+        }
         return {
           'success': false,
-          'message': 'Название группы должно быть не менее 3 символов.',
+          'message': 'Ошибки валидации: ${response.body}',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка создания гр. чата: ${response.body}',
         };
       }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибки валидации: ${response.body}',
-      };
-    } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.',
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания гр. чата: ${response.body}',
+        'message': 'Ошибка при создании гр. чата: $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при создании гр. чата: $e',
-    };
   }
-}
-
-  
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
@@ -1444,26 +1441,27 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
+
 //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getCustomFieldslead() async {
-  final organizationId = await getSelectedOrganization();
+    final organizationId = await getSelectedOrganization();
 
-  // Выполняем запрос
-  final response = await _getRequest(
-    '/lead/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-  );
+    // Выполняем запрос
+    final response = await _getRequest(
+      '/lead/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return data; // Возвращаем данные, если они есть
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return data; // Возвращаем данные, если они есть
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Результат отсутствует в ответе');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
-}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -1797,28 +1795,26 @@ class ApiService {
     }
   }
 
-    //Метод для получение кастомных полей Задачи
+  //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getCustomFieldsdeal() async {
-  final organizationId = await getSelectedOrganization();
+    final organizationId = await getSelectedOrganization();
 
-  // Выполняем запрос
-  final response = await _getRequest(
-    '/deal/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-  );
+    // Выполняем запрос
+    final response = await _getRequest(
+      '/deal/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return data; // Возвращаем данные, если они есть
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return data; // Возвращаем данные, если они есть
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Результат отсутствует в ответе');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
-}
-
-
 
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
@@ -2225,12 +2221,12 @@ class ApiService {
         if (file != null) 'file': file,
         if (description != null) 'description': description,
         'task_custom_fields': customFields?.map((field) {
-                return {
-                  'key': field.keys.first,
-                  'value': field.values.first,
-                };
-              }).toList() ??
-              [],
+              return {
+                'key': field.keys.first,
+                'value': field.values.first,
+              };
+            }).toList() ??
+            [],
       };
 
       final organizationId = await getSelectedOrganization();
@@ -2501,27 +2497,27 @@ class ApiService {
       };
     }
   }
+
   //Метод для получение кастомных полей Задачи
   Future<Map<String, dynamic>> getCustomFields() async {
-  final organizationId = await getSelectedOrganization();
+    final organizationId = await getSelectedOrganization();
 
-  // Выполняем запрос
-  final response = await _getRequest(
-    '/task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
-  );
+    // Выполняем запрос
+    final response = await _getRequest(
+      '/task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return data; // Возвращаем данные, если они есть
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return data; // Возвращаем данные, если они есть
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Результат отсутствует в ответе');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
   }
-}
-
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
@@ -2672,8 +2668,31 @@ class ApiService {
     }
   }
 
+  // Метод для получения графика Скорость обработки
 
+  Future<ProcessSpeed> getProcessSpeedData() async {
+    final organizationId = await getSelectedOrganization();
 
+    String path =
+        '/dashboard/lead-process-speed${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data.isNotEmpty) {
+        final speed = ProcessSpeed.fromJson(data);
+        return speed;
+      } else {
+        throw ('Нет данных графика в ответе "Скорость обработки"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных графика: ${response.body}');
+    }
+  }
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
