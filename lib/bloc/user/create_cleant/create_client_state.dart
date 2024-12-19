@@ -11,4 +11,8 @@ final class CreateClientError extends CreateClientState {
   CreateClientError({required this.message});
 }
 
-final class CreateClientSuccess extends CreateClientState {}
+final class CreateClientSuccess extends CreateClientState {
+  final int chatId; // Новый параметр для chatId
+
+  CreateClientSuccess({required this.chatId});
+}
