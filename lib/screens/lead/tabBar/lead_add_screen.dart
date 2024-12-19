@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
@@ -58,6 +59,23 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    _fetchAndAddCustomFields();
+  }
+void _fetchAndAddCustomFields() async {
+    try {
+      // Здесь предполагается, что getCustomFields определён в ApiService
+      final data =
+          await ApiService().getCustomFieldslead(); // Выполнить GET-запрос
+      if (data['result'] != null) {
+        data['result'].forEach((key, value) {
+          setState(() {
+            customFields.add(CustomField(fieldName: value));
+          });
+        });
+      }
+    } catch (e) {
+      print('Ошибка: $e');
+    }
   }
 
   void _addCustomField(String fieldName) {
@@ -66,6 +84,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     });
   }
 
+  
   void _showAddFieldDialog() {
     showDialog(
       context: context,
@@ -261,7 +280,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         hintText: 'Введите описание',
                         label: 'Описание',
                         maxLines: 5,
-                      ), const SizedBox(height: 8),
+                      ),
+                      const SizedBox(height: 8),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
@@ -421,7 +441,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       ),
     );
   }
-}class CustomField {
+}
+
+class CustomField {
   final String fieldName;
   final TextEditingController controller = TextEditingController();
 

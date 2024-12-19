@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
@@ -42,6 +43,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchAndAddCustomFields();
 
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
@@ -65,7 +67,21 @@ class _DealAddScreenState extends State<DealAddScreen> {
       },
     );
   }
-
+ void _fetchAndAddCustomFields() async {
+    try {
+      // Здесь предполагается, что getCustomFields определён в ApiService
+      final data = await ApiService().getCustomFieldsdeal(); // Выполнить GET-запрос
+      if (data['result'] != null) {
+        data['result'].forEach((key, value) {
+          setState(() {
+            customFields.add(CustomField(fieldName: value));
+          });
+        });
+      }
+    } catch (e) {
+      print('Ошибка: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
