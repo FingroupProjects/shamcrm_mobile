@@ -27,8 +27,9 @@ class ChatsScreen extends StatefulWidget {
   State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin {
-  final ApiService apiService = ApiService(); 
+class _ChatsScreenState extends State<ChatsScreen>
+    with TickerProviderStateMixin {
+  final ApiService apiService = ApiService();
   bool isNavigating = false;
   late Future<List<Chats>> futureChats;
   List<Chats> allChats = [];
@@ -41,15 +42,54 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
 
-  bool showCorporateChat = true;
+  bool _showCorporateChat = false;
+  bool _showLeadChat = false;
+  bool _isPermissionsChecked = false;
 
-  @override
+  Future<void> _checkPermissions() async {
+    final LeadChat = await apiService.hasPermission('chat.read');
+    final CorporateChat = await apiService.hasPermission('corporateСhat.read');
+
+    setState(() {
+      _showLeadChat = LeadChat;
+      _showCorporateChat = CorporateChat;
+
+      if (!_showLeadChat && !_showCorporateChat) {
+        selectTabIndex = 1; 
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+      } else if (!_showLeadChat){
+        selectTabIndex = 1; 
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+      } else if (!_showCorporateChat){
+        selectTabIndex = 0; 
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+      } else {
+        selectTabIndex = 0; 
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+      }
+      _isPermissionsChecked = true;
+    });
+  }
+
+
+ @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabTitles.length, vsync: this);
-    setUpServices();
-    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+    _checkPermissions().then((_) {
+      if (_isPermissionsChecked) {
+        setState(() {
+          _tabController = TabController(
+            length: _tabTitles.length,
+            vsync: this,
+            initialIndex: selectTabIndex,
+          );
+        });
+      }
+      setUpServices();
+    });
   }
+
+
 
   void _filterChats(String query) {
     isClickAvatarIcon = false;
@@ -92,8 +132,8 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
         seconds: 1,
       ),
     );
-        String userId = prefs.getString('userID').toString();
-        print('userID : $userId');
+    String userId = prefs.getString('userID').toString();
+    print('userID : $userId');
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
@@ -154,70 +194,83 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
   int selectTabIndex = 0;
 
   @override
-  Widget build(BuildContext context) {
-    return Unfocuser(
-      child: Scaffold(
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          elevation: 1,
-          title: CustomAppBar(
-            title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
-            onClickProfileAvatar: () {
-              setState(() {
-                context
-                    .read<ChatsBloc>()
-                    .add(FetchChats(endPoint: endPointInTab));
-                isClickAvatarIcon = !isClickAvatarIcon;
-              });
-            },
-            onChangedSearchInput: _filterChats,
-            textEditingController: searchController,
-            focusNode: focusNode,
-            clearButtonClick: (isSearching) {},
-          ),
-          backgroundColor: Colors.white,
+Widget build(BuildContext context) {
+  return Unfocuser(
+    child: Scaffold(
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        elevation: 1,
+        title: CustomAppBar(
+          title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
+         // Код для onClickProfileAvatar
+onClickProfileAvatar: () {
+  setState(() {
+    isClickAvatarIcon = !isClickAvatarIcon;
+
+    if (!isClickAvatarIcon) {
+      if (selectTabIndex == 0) {
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+      } else if (selectTabIndex == 1) {
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+      } else if (selectTabIndex == 2) {
+        context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+      }
+    }
+  });
+},
+
+          onChangedSearchInput: _filterChats,
+          textEditingController: searchController,
+          focusNode: focusNode,
+          clearButtonClick: (isSearching) {},
         ),
         backgroundColor: Colors.white,
-        body: isClickAvatarIcon == true
-            ? ProfileScreen()
-            : Column(
-                children: [
-                  SizedBox(height: 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: List.generate(_tabTitles.length, (index) {
-                        if (index == 2 && !showCorporateChat) {
-                          return Container();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: _buildTabButton(index),
-                        );
-                      }),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Expanded(child: _buildTabBarView()),
-                ],
-              ),
-        floatingActionButton: (selectTabIndex == 2)
-            ? FloatingActionButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) =>
-                        AddClientDialog(), 
-                  );
-                },
-                backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png',
-                    width: 24, height: 24),
-              )
-            : null,
       ),
-    );
-  }
+      backgroundColor: Colors.white,
+      body: isClickAvatarIcon
+          ? ProfileScreen() 
+          : _isPermissionsChecked
+              ? Column(
+                  children: [
+                    SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(_tabTitles.length, (index) {
+                          if ((index == 0 && !_showLeadChat) ||
+                              (index == 2 && !_showCorporateChat)) {
+                            return Container();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _buildTabButton(index),
+                          );
+                        }),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Expanded(child: _buildTabBarView()),
+                  ],
+                )
+              : Center(child: CircularProgressIndicator()), 
+      floatingActionButton: (selectTabIndex == 2)
+          ? FloatingActionButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AddClientDialog(),
+                );
+              },
+              backgroundColor: Color(0xff1E2E52),
+              child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
+            )
+          : null,
+    ),
+  );
+}
+
+
+
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
@@ -239,7 +292,6 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
         if (index == 2) {
           endPointInTab = 'corporate';
           context.read<GetAllClientBloc>().add(GetAnotherClientEv());
-
         }
         context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
@@ -260,17 +312,18 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
   }
 
   Widget _buildTabBarView() {
-    return TabBarView(
-      controller: _tabController,
-      physics: const NeverScrollableScrollPhysics(),
-      children: List.generate(
-          _tabTitles.length,
-          (index) => _ChatItemsWidget(
-                updateChats: updateChats,
-                endPointInTab: endPointInTab,
-              )),
-    );
-  }
+  return TabBarView(
+    controller: _tabController,
+    physics: const NeverScrollableScrollPhysics(),
+    children: List.generate(
+        _tabTitles.length,
+        (index) => _ChatItemsWidget(
+              updateChats: updateChats,
+              endPointInTab: index == 1 ? 'task' : endPointInTab,
+            )),
+  );
+}
+
 
   @override
   void dispose() {
@@ -368,21 +421,19 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               ],
             ),
           );
-        },
-        firstPageProgressIndicatorBuilder: (context) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-        ),
-      );
-    },
-    newPageProgressIndicatorBuilder: (context) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)), 
-        ),
-      );
-    }, itemBuilder: (context, item, index) {
+        }, firstPageProgressIndicatorBuilder: (context) {
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+            ),
+          );
+        }, newPageProgressIndicatorBuilder: (context) {
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+            ),
+          );
+        }, itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
             splashColor: Colors.grey,
