@@ -75,14 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
       hasAvailableScreens = true;
     }
-    if (await _apiService.hasPermission('chat.read')) {
+    // if (await _apiService.hasPermission('chat.read')) {
       widgets.add(ChatsScreen());
       titles.add('Чаты');
       navBarTitles.add('Чаты');
       activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
       hasAvailableScreens = true;
-    }
+    // }
     if (await _apiService.hasPermission('deal.read')) {
       widgets.add(DealScreen());
       titles.add('Сделки');
