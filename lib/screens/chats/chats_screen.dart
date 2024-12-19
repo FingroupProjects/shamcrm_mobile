@@ -247,7 +247,9 @@ class _ChatsScreenState extends State<ChatsScreen>with TickerProviderStateMixin 
         // todo: 4. tab's key value for opened profile screen.
         if (index == 2) {
           endPointInTab = 'corporate';
-          context.read<GetAllClientBloc>().add(GetAllClientEv());
+          // context.read<GetAllClientBloc>().add(GetAllClientEv());
+          context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+
         }
         context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
       },
