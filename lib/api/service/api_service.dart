@@ -1820,30 +1820,32 @@ class ApiService {
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
   //Метод для получения Задачи через его ID
-  Future<TaskById> getTaskById(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+ Future<TaskById> getTaskById(int taskId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
 
-      final response = await _getRequest(
-          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonTask = decodedJson['result'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonTask = decodedJson['result'];
 
-        if (jsonTask == null || jsonTask['taskStatus'] == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
-        return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
-      } else {
-        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+      if (jsonTask == null || jsonTask['taskStatus'] == null) {
+        throw Exception('Некорректные данные от API');
       }
-    } catch (e) {
-      throw Exception('Ошибка загрузки task ID: $e');
+
+      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+    } else if (response.statusCode == 404) {
+      throw ('Ресурс с задачи $taskId не найден');
+    } else {
+      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Ошибка загрузки task ID');
   }
+}
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {

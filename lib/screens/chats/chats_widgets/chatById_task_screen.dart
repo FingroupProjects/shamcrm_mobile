@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -96,7 +97,20 @@ class TaskByIdScreen extends StatelessWidget {
                           buildDivider(),
                           buildInfoRow("Автор", task.authorName, Icons.person, null),
                           buildDivider(),
-                          buildInfoRow("Исполнители", userNamesList.join(', '), Icons.group, null), 
+                          GestureDetector(
+                                onTap: () {
+                                  _showUsersDialog(context, userNamesList);
+                                },
+                                child: buildInfoRow(
+                                  userNamesList.length == 1 ? 'Исполнитель' : 'Исполнители', 
+                                  userNamesList.take(3).join(', ') +
+                                    (userNamesList.length > 3
+                                        ? ' и еще ${userNamesList.length - 3}...'
+                                        : ''),
+                                  Icons.group, 
+                                  null,
+                                ),
+                              ),
                           buildDivider(),
                           buildInfoRow("От", formattedFromDate, Icons.calendar_today, null),
                           buildDivider(),
@@ -118,12 +132,76 @@ class TaskByIdScreen extends StatelessWidget {
     );
   }
 
-  // Info row widget to match the design
+  void _showUsersDialog(BuildContext context, List<String> users) {
+  List<String> userNamesList = users.map((user) => user.trim()).toList();
+
+  // Проверка количества исполнителей
+  String dialogTitle = userNamesList.length == 1 ? 'Исполнитель' : 'Исполнители';
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        backgroundColor: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                dialogTitle,  // Используем динамическое название
+                style: TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 400,
+              child: ListView.builder(
+                itemExtent: 40, 
+                itemCount: userNamesList.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 2), 
+                    title: Text(
+                      '${index + 1}. ${userNamesList[index]}',
+                      style: TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 16,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: CustomButton(
+                buttonText: 'Закрыть',
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                buttonColor: Color(0xff1E2E52),
+                textColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+
+
   Widget buildInfoRow(String title, String value, IconData? icon, String? customIconPath) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // If a custom icon path is provided, use it; otherwise, fall back to the default icon.
         customIconPath != null
             ? Image.asset(customIconPath, width: 32, height: 32)
             : Icon(icon, size: 32, color: const Color(0xff1E2E52)),

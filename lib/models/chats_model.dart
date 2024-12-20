@@ -93,25 +93,29 @@ class Chats {
   }
 
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
-    switch (lastMessage['type']) {
-      case 'text':
-        return lastMessage['text'] ?? 'Текстовое сообщение';
-      case 'voice':
-        return 'Вам пришло голосовое сообщение';
-      case 'file':
-        return 'Файл: неизвестное имя';
-      case 'image':
-        return 'Изображение';
-      case 'video':
-        return 'Вам пришло видео сообщение';
-      case 'location':
-        return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
-      case 'sticker':
-        return 'Вам пришел стикер';
-      default:
-        return 'Новое сообщение';
-    }
+  final isMyMessage = lastMessage['is_my_message'] ?? false; // Проверяем, отправлено ли сообщение вами
+  switch (lastMessage['type']) {
+    case 'text':
+      return lastMessage['text'] ?? 'Текстовое сообщение';
+    case 'voice':
+      return isMyMessage 
+          ? 'Отправлено голосовое сообщение' 
+          : 'Вам пришло голосовое сообщение';
+    case 'file':
+      return 'Файл: неизвестное имя';
+    case 'image':
+      return 'Изображение';
+    case 'video':
+      return 'Вам пришло видео сообщение';
+    case 'location':
+      return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
+    case 'sticker':
+      return 'Вам пришел стикер';
+    default:
+      return 'Новое сообщение';
   }
+}
+
 
   ChatItem toChatItem(String avatar) {
     String avatar = group != null
