@@ -135,8 +135,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     });
 
     try {
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
 
       setState(() {
         NameController.text = userProfile.name;
@@ -372,6 +371,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   }
 
                   try {
+
+                        SharedPreferences USNAME = await SharedPreferences.getInstance();
+                         String UserNameProfile =(NameController.text);
+                        await USNAME.setString('userNameProfile', UserNameProfile.toString());
+
                     int userId = int.parse(UUID);
                     final name = NameController.text;
                     final sname = SurnameController.text;
