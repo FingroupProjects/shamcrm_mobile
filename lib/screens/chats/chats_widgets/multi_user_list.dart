@@ -117,13 +117,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       : null,
                                 ),
                                 const SizedBox(width: 10),
-                                Text(item.name!,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    )),
+                                // Wrap the Text widget in a Flexible
+                                Flexible(
+                                  child: Text(item.name!,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: Color(0xff1E2E52),
+                                      )),
+                                ),
                               ],
                             ),
                           ),

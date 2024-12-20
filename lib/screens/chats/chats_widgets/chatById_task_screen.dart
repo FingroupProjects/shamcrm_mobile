@@ -45,11 +45,10 @@ class TaskByIdScreen extends StatelessWidget {
         body: BlocBuilder<TaskProfileBloc, TaskProfileState>(
           builder: (context, state) {
             if (state is TaskProfileLoading) {
-              return Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
             } else if (state is TaskProfileLoaded) {
               final task = state.profile;
 
-              // Преобразование и форматирование даты
               final DateTime fromDate = DateTime.parse(task.from);
               final DateTime toDate = DateTime.parse(task.to);
 
@@ -58,13 +57,8 @@ class TaskByIdScreen extends StatelessWidget {
               final String formattedToDate =
                   DateFormat('dd-MM-yyyy').format(toDate);
 
-              // Разделяем строку пользователей на список и обрезаем его, если больше 3 пользователей
               List<String> userNamesList = task.usersNames.split(',');
-              String displayUserNames = userNamesList.length > 1
-                  ? '${userNamesList.sublist(0, 1).join(', ')}...'
-                  : userNamesList.join(', ');
 
-              // Преобразование уровня приоритета
               String priorityLevelText;
               switch (task.priority_level) {
                 case '1':
@@ -102,7 +96,7 @@ class TaskByIdScreen extends StatelessWidget {
                           buildDivider(),
                           buildInfoRow("Автор", task.authorName, Icons.person, null),
                           buildDivider(),
-                          buildInfoRow("Исполнители", displayUserNames, Icons.group, null),
+                          buildInfoRow("Исполнители", userNamesList.join(', '), Icons.group, null), 
                           buildDivider(),
                           buildInfoRow("От", formattedFromDate, Icons.calendar_today, null),
                           buildDivider(),
@@ -113,6 +107,7 @@ class TaskByIdScreen extends StatelessWidget {
                   ],
                 ),
               );
+
             } else if (state is TaskProfileError) {
               return Center(child: Text(state.error));
             }
