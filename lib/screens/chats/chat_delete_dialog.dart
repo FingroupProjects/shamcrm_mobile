@@ -11,32 +11,56 @@ class DeleteChatDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
-      listener: (context, state) {
-        if (state is ChatsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 2),
+  listener: (context, state) {
+    if (state is ChatsError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${state.message}',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
             ),
-          );
-        }
-      },
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else if (state is ChatsDeleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${state.message}',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.green,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  },
+
       child: AlertDialog(
         backgroundColor: Colors.white,
         title: Center(
@@ -92,3 +116,48 @@ class DeleteChatDialog extends StatelessWidget {
     );
   }
 }
+
+
+//  Expanded(
+//   child: CustomButton(
+//     buttonText: 'Удалить',
+//     onPressed: () {
+//       // Сохраняем текущий контекст родителя
+//       final parentContext = context;
+
+//       // Отправляем событие для удаления чата
+//       context.read<ChatsBloc>().add(DeleteChat(chatId));
+
+//       // Закрываем диалоговое окно
+//       Navigator.of(context).pop();
+
+//       // Показываем сообщение после закрытия диалога
+//       Future.microtask(() {
+//         ScaffoldMessenger.of(parentContext).showSnackBar(
+//           SnackBar(
+//             content: Text(
+//               'Чат успешно удалён!', // Сообщение об успешном удалении
+//               style: TextStyle(
+//                 fontFamily: 'Gilroy',
+//                 fontSize: 16,
+//                 fontWeight: FontWeight.w500,
+//                 color: Colors.white,
+//               ),
+//             ),
+//             behavior: SnackBarBehavior.floating,
+//             margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//             shape: RoundedRectangleBorder(
+//               borderRadius: BorderRadius.circular(12),
+//             ),
+//             backgroundColor: Colors.green,
+//             elevation: 3,
+//             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+//             duration: Duration(seconds: 2),
+//           ),
+//         );
+//       });
+//     },
+//     buttonColor: Color(0xff1E2E52),
+//     textColor: Colors.white,
+//   ),
+// ),

@@ -92,21 +92,24 @@ class _ChatsScreenState extends State<ChatsScreen>
 
 
 
-  void _filterChats(String query) {
-    isClickAvatarIcon = false;
-    if (query.isEmpty) {
-      setState(() {
-        filteredChats = allChats;
-      });
-    } else {
-      setState(() {
-        filteredChats = allChats
-            .where(
-                (chat) => chat.name.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      });
-    }
+void _filterChats(String query) {
+  isClickAvatarIcon = false;
+  if (query.isEmpty) {
+    setState(() {
+      filteredChats = allChats;
+    });
+    context.read<ChatsBloc>().add(SearchChats(query, endPointInTab));  
+  } else {
+    setState(() {
+      filteredChats = allChats
+        .where((chat) => chat.name.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+    });
+    context.read<ChatsBloc>().add(SearchChats(query, endPointInTab));  
+    
   }
+}
+
 
   void updateFromSocket() {
     context.read<ChatsBloc>().add(UpdateChatsFromSocket());
@@ -204,22 +207,21 @@ Widget build(BuildContext context) {
         title: CustomAppBar(
           title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
          // Код для onClickProfileAvatar
-onClickProfileAvatar: () {
-  setState(() {
-    isClickAvatarIcon = !isClickAvatarIcon;
-
-    if (!isClickAvatarIcon) {
-      if (selectTabIndex == 0) {
-        context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
-      } else if (selectTabIndex == 1) {
-        context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
-      } else if (selectTabIndex == 2) {
-        context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
-      }
-    }
-  });
-},
-
+            onClickProfileAvatar: () {
+              setState(() {
+                isClickAvatarIcon = !isClickAvatarIcon;
+            
+                if (!isClickAvatarIcon) {
+                  if (selectTabIndex == 0) {
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+                  } else if (selectTabIndex == 1) {
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+                  } else if (selectTabIndex == 2) {
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                  }
+                }
+              });
+            },
           onChangedSearchInput: _filterChats,
           textEditingController: searchController,
           focusNode: focusNode,
