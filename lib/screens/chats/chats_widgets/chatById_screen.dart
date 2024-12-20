@@ -22,7 +22,7 @@ class UserProfileScreen extends StatelessWidget {
         backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
           title: Text(
-            "Профиль пользователя",
+            "Профиль лида",
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

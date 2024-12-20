@@ -53,7 +53,7 @@ class LoginScreen extends StatelessWidget {
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
-            print("UUID1 $prefs");
+            // print("UUID1 $prefs");
 
               // Проверяем сохранённую организацию
               final savedOrganization =
