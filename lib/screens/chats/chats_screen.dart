@@ -389,7 +389,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
    void onLongPress(Chats chat) {
     showDialog(
     context: context,
-    builder: (context) => DeleteChatDialog(chatId: chat.id),
+    builder: (context) => DeleteChatDialog(chatId: chat.id, endPointInTab: widget.endPointInTab,),
   );
   }
 
