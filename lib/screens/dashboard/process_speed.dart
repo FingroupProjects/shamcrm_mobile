@@ -84,6 +84,8 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
           const Text(
             'Скорость обработки',
