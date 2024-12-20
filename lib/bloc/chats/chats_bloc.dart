@@ -18,6 +18,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     on<RefreshChats>(_refetchChatsEvent);
     on<GetNextPageChats>(_getNextPageChatsEvent);
     on<UpdateChatsFromSocket>(_updateChatsFromSocketFetch);
+    on<DeleteChat>(_deleteChat);
   }
 
   Future<void> _fetchChatsEvent(
@@ -69,6 +70,21 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       emit(ChatsLoaded(chatsPagination!));
     } catch (e) {
       emit(ChatsError(e.toString()));
+    }
+  }
+
+   Future<void> _deleteChat(DeleteChat event, Emitter<ChatsState> emit) async {
+    emit(ChatsLoading());
+
+    try {
+      final response = await apiService.deleteChat(event.chatId);
+      if (response['result'] == 'Success') {
+        emit(ChatsDeleted('Чат успешно удалена'));
+      } else {
+        emit(ChatsError('Ошибка удаления чата'));
+      }
+    } catch (e) {
+      emit(ChatsError('Ошибка удаления чата: ${e.toString()}'));
     }
   }
 }

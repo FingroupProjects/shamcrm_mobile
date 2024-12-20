@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
@@ -383,6 +384,13 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     });
   }
 
+   void onLongPress(Chats chat) {
+    showDialog(
+    context: context,
+    builder: (context) => DeleteChatDialog(chatId: chat.id),
+  );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
@@ -436,6 +444,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         }, itemBuilder: (context, item, index) {
           return InkWell(
             onTap: () => onTap(item),
+            onLongPress: () => onLongPress(item),  
             splashColor: Colors.grey,
             focusColor: Colors.black87,
             child: ChatListItem(

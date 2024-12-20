@@ -2974,6 +2974,20 @@ class ApiService {
       print('Exception when marking messages as read: $e');
     }
   }
+
+   // Метод для Удаления Чата
+  Future<Map<String, dynamic>> deleteChat(int chatId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Ошибка удаления чата: ${response.body}');
+    }
+  }
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
