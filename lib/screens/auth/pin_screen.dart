@@ -17,7 +17,8 @@ class PinScreen extends StatefulWidget {
   State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen>
+    with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -94,7 +95,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       }
     }
   }
-
 
   Future<void> _initBiometrics() async {
     try {
@@ -246,7 +246,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
       greetingPrefix = 'Доброй ночи';
     }
 
-    return '$greetingPrefix, $_userName';
+    return '$greetingPrefix, $_userName!';
   }
 
   @override
@@ -260,18 +260,12 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height *
-                    0.2, 
+                height: MediaQuery.of(context).size.height * 0.2,
               ),
-              _userImage != 'Не найдено'
-                  ? SvgPicture.string(
-                      _userImage, // Строка SVG-кода
-                      height: 100,
-                    )
-                  : Image.asset(
-                      'assets/icons/playstore.png',
-                      height: 100,
-                    ),
+              Image.asset(
+                'assets/icons/playstore.png',
+                height: 100,
+              ),
               const SizedBox(height: 50),
               Text(
                 getGreetingMessage(),

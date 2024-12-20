@@ -207,7 +207,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                               canSendMessage: task.chat!.canSendMessage,
                             ),
                           ),
-                          SizedBox(width: 8),
+                          SizedBox(width: 8, height: 60,),
                           Expanded(
                             flex: 45,
                             child: ElevatedButton(
