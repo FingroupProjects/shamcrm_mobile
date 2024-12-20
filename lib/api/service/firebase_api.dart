@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
@@ -141,7 +142,30 @@ class FirebaseApi {
             ),
           ),
         );
-      }
+       } else if (getChatById.type == "corporate") {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => BlocProvider(
+                create: (context) => MessagingCubit(ApiService()),
+                child: ChatSmsScreen(
+                  chatItem: Chats(
+                    id: chatId,
+                    name: '',
+                    channel: "",
+                    lastMessage: "",
+                    messageType: "",
+                    createDate: "",
+                    unredMessage: 0,
+                    canSendMessage: getChatById.canSendMessage, chatUsers: [],
+                  ).toChatItem("assets/images/AvatarChat.png"),
+                  chatId: chatId,
+                  endPointInTab: 'corporate',
+                  canSendMessage: getChatById.canSendMessage,
+                ),
+              ),
+            ),
+          );
+        }
     } catch (e) {
       // Закрыть индикатор загрузки в случае ошибки
       print("Ошибка загрузки данных: $e");
@@ -213,6 +237,22 @@ class FirebaseApi {
           ),
         );
       }
+       } else if (type == 'lead') {
+   List<LeadCustomField> defaultCustomFields = [
+        LeadCustomField(id: 1, key: '', value: ''),
+        LeadCustomField(id: 2, key: '', value: ''),
+      ];
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => LeadDetailsScreen(
+              leadId: chatId.toString(),
+              leadName: '',
+              leadStatus: '',
+              statusId: 1,
+              leadCustomFields: defaultCustomFields,
+            ),
+        ),
+      );
     } else {
       print('handleMessage: Неизвестный тип: $type');
     }
