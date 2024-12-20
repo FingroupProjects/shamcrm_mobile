@@ -27,6 +27,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   bool _canCheckBiometrics = false;
   List<BiometricType> _availableBiometrics = [];
   String _userName = '';
+  String _userNameProfile = '';
   String _userImage = '';
 
   @override
@@ -57,21 +58,21 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   void _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? UName = prefs.getString('userName');
+    String? UserNameProfile = prefs.getString('userNameProfile');
     String? UImage = prefs.getString('userImage');
-    // print("---------------------------------------------- SHARED PREF UIMAGE");
-
-    // print(UImage);
 
     // Проверяем, если изображение пользователя отсутствует, загружаем его с сервера
-    if (UName != null && UImage != null) {
+    if (UName != null && UImage != null && UserNameProfile != null) {
       setState(() {
         _userName = UName;
+        _userNameProfile = UserNameProfile!;
         _userImage = UImage; // Сохраняем путь изображения
       });
     } else {
       // Если данных нет в SharedPreferences, можно загрузить их с сервера или установить дефолтные значения
       setState(() {
         _userName = 'Не найдено';
+        _userNameProfile = (UserNameProfile = prefs.getString('userNameProfile'))!;    
         _userImage = ''; // Путь к изображению по умолчанию
       });
     }
@@ -245,8 +246,10 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     } else {
       greetingPrefix = 'Доброй ночи';
     }
-
-    return '$greetingPrefix, $_userName';
+print('-----------------------------------------------------------------------------');
+print('-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
+print(_userNameProfile);
+    return '$greetingPrefix, $_userNameProfile';
   }
 
   @override
@@ -263,12 +266,7 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
                 height: MediaQuery.of(context).size.height *
                     0.2, 
               ),
-              _userImage != 'Не найдено'
-                  ? SvgPicture.string(
-                      _userImage, // Строка SVG-кода
-                      height: 100,
-                    )
-                  : Image.asset(
+                   Image.asset(
                       'assets/icons/playstore.png',
                       height: 100,
                     ),
