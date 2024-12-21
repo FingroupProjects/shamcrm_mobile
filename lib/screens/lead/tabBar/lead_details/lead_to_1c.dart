@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_event.dart';
@@ -41,7 +40,9 @@ class _LeadToCState extends State<LeadToC> {
           if (organization.is1cIntegration) {
             return _buildIntegrationButton(context);
           } else {
-            // return SizedBox.shrink();
+            return SizedBox.shrink();
+          // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+
 
             // return Center(child: Text('Интеграция с 1С не доступна для этой организации.'));
           }

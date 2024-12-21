@@ -190,23 +190,22 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 LeadById lead = state.lead;
                 _updateDetails(lead);
                 return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListView(
                     children: [
                       _buildDetailsList(),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       LeadNavigateToChat(
                         leadId: int.parse(widget.leadId),
                         leadName: widget.leadName,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       if (selectedOrganization != null)
                         LeadToC(
                           leadId: int.parse(widget.leadId),
                           selectedOrganization: selectedOrganization!,
                         ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 8),
                       if (_canReadNotes)
