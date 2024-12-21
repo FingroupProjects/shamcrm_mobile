@@ -163,10 +163,9 @@ Widget build(BuildContext context) {
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600),
           ),
-          Text(
-            "$memberCount участников",
-            style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
-          ),
+         Text("$memberCount ${(memberCount >= 2 && memberCount <= 4) ? 'участника' : 'участников'}",
+              style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
+            ),
           SizedBox(height: 10),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
