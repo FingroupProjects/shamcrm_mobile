@@ -436,15 +436,19 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     });
   }
 
-  void onLongPress(Chats chat) {
-    showDialog(
-      context: context,
-      builder: (context) => DeleteChatDialog(
-        chatId: chat.id,
-        endPointInTab: widget.endPointInTab,
-      ),
-    );
+ void onLongPress(Chats chat) {
+  if (widget.endPointInTab == 'task') {
+    return; 
   }
+  showDialog(
+    context: context,
+    builder: (context) => DeleteChatDialog(
+      chatId: chat.id,
+      endPointInTab: widget.endPointInTab,
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
