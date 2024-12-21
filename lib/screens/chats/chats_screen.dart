@@ -48,7 +48,6 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _isPermissionsChecked = false;
   bool _isSearching = false;
   String searchQuery = '';
-  int _currentTabIndex = 0;
 
 
   Future<void> _checkPermissions() async {
@@ -251,29 +250,27 @@ void _searchChats(String query, String endPoint) {
               _onSearch(value);
             },
             clearButtonClick: (isSearching) {
-              if (!isSearching) {
-                searchController.clear();
-                if (!isClickAvatarIcon) {
-                  if (selectTabIndex == 0) {
-                    final chatsBloc = context.read<ChatsBloc>();
-                    chatsBloc.add(ClearChats());
-                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
-                  } else if (selectTabIndex == 1) {
-                    final chatsBloc = context.read<ChatsBloc>();
-                    chatsBloc.add(ClearChats());
-                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
-                  } else if (selectTabIndex == 2) {
-                    final chatsBloc = context.read<ChatsBloc>();
-                    chatsBloc.add(ClearChats());
-                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                if (!isSearching) {
+                  searchController.clear();
+                  if (!isClickAvatarIcon) {
+                    if (_debounce?.isActive ?? false) _debounce?.cancel();
+                    _debounce = Timer(const Duration(milliseconds: 600), () {
+                      final chatsBloc = context.read<ChatsBloc>();
+                      chatsBloc.add(ClearChats());
+                      if (selectTabIndex == 0) {
+                        context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+                      } else if (selectTabIndex == 1) {
+                        context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+                      } else if (selectTabIndex == 2) {
+                        context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                      }
+                    });
                   }
+                  setState(() {
+                    _isSearching = false;
+                  });
                 }
-
-                setState(() {
-                  _isSearching = false;
-                });
-              }
-            },
+              },
           ),
           backgroundColor: Colors.white,
         ),
@@ -323,45 +320,48 @@ void _searchChats(String query, String endPoint) {
   }
 
   Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {});
+  bool isActive = _tabController.index == index;
+  return GestureDetector(
+    onTap: () {
+      setState(() {
         selectTabIndex = index;
-        _tabController.animateTo(index);
+      });
+      _tabController.animateTo(index);
 
-        // String endPoint = '';
-        if (index == 0) {
-          endPointInTab = 'lead';
-        }
-        // todo: 3. tab's key value for opened profile screen.
-        if (index == 1) {
-          endPointInTab = 'task';
-        }
-        // todo: 4. tab's key value for opened profile screen.
-        if (index == 2) {
-          endPointInTab = 'corporate';
-          context.read<GetAllClientBloc>().add(GetAnotherClientEv());
-        }
+      if (index == 0) {
+        endPointInTab = 'lead';
+      }
+      if (index == 1) {
+        endPointInTab = 'task';
+      }
+      if (index == 2) {
+        endPointInTab = 'corporate';
+        context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+      }
+
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+
+      _debounce = Timer(const Duration(milliseconds: 700), () {
         final chatsBloc = context.read<ChatsBloc>();
         chatsBloc.add(ClearChats());
-        chatsBloc.add(FetchChats(endPoint: endPointInTab));
-      },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
-            _tabTitles[index],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-            ),
+        chatsBloc.add(FetchChats(endPoint: endPointInTab)); 
+      });
+    },
+    child: Container(
+      decoration: TaskStyles.tabButtonDecoration(isActive),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: Center(
+        child: Text(
+          _tabTitles[index],
+          style: TaskStyles.tabTextStyle.copyWith(
+            color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildTabBarView() {
     return TabBarView(
@@ -440,6 +440,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   if (widget.endPointInTab == 'task') {
     return; 
   }
+
   showDialog(
     context: context,
     builder: (context) => DeleteChatDialog(
