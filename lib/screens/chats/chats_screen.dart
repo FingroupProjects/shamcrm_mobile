@@ -46,6 +46,10 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _showCorporateChat = false;
   bool _showLeadChat = false;
   bool _isPermissionsChecked = false;
+  bool _isSearching = false;
+  String searchQuery = '';
+  int _currentTabIndex = 0;
+
 
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
@@ -56,24 +60,23 @@ class _ChatsScreenState extends State<ChatsScreen>
       _showCorporateChat = CorporateChat;
 
       if (!_showLeadChat && !_showCorporateChat) {
-        selectTabIndex = 1; 
+        selectTabIndex = 1;
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
-      } else if (!_showLeadChat){
-        selectTabIndex = 1; 
+      } else if (!_showLeadChat) {
+        selectTabIndex = 1;
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
-      } else if (!_showCorporateChat){
-        selectTabIndex = 0; 
+      } else if (!_showCorporateChat) {
+        selectTabIndex = 0;
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
       } else {
-        selectTabIndex = 0; 
+        selectTabIndex = 0;
         context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
       }
       _isPermissionsChecked = true;
     });
   }
 
-
- @override
+  @override
   void initState() {
     super.initState();
     _checkPermissions().then((_) {
@@ -90,25 +93,41 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
 
+ final PagingController<int, Chats> _pagingController = PagingController(firstPageKey: 0);
 
+void _searchChats(String query, String endPoint) {
+  _pagingController.refresh();
 
-void _filterChats(String query) {
-  isClickAvatarIcon = false;
+  final chatsBloc = BlocProvider.of<ChatsBloc>(context);
   if (query.isEmpty) {
-    setState(() {
-      filteredChats = allChats;
-    });
-    context.read<ChatsBloc>().add(SearchChats(query, endPointInTab));  
+    chatsBloc.add(FetchChats(endPoint: endPoint)); 
   } else {
-    setState(() {
-      filteredChats = allChats
-        .where((chat) => chat.name.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-    });
-    context.read<ChatsBloc>().add(SearchChats(query, endPointInTab));  
-    
+    chatsBloc.add(FetchChats(endPoint: endPoint, query: query)); 
   }
 }
+
+
+  Timer? _debounce;
+
+  void _onSearch(String query) {
+    setState(() {
+      searchQuery = query;
+      _isSearching = query.isNotEmpty;
+    });
+
+    final endPoint = endPointInTab;
+
+    final chatsBloc = context.read<ChatsBloc>();
+    chatsBloc.add(ClearChats());
+
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 600), () {
+      chatsBloc.add(FetchChats(endPoint: endPoint, query: query)); 
+    });
+  }
+
+
 
 
   void updateFromSocket() {
@@ -198,82 +217,110 @@ void _filterChats(String query) {
   int selectTabIndex = 0;
 
   @override
-Widget build(BuildContext context) {
-  return Unfocuser(
-    child: Scaffold(
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        elevation: 1,
-        title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
-         // Код для onClickProfileAvatar
+  Widget build(BuildContext context) {
+    return Unfocuser(
+      child: Scaffold(
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          elevation: 1,
+          title: CustomAppBar(
+            title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
-            
+
                 if (!isClickAvatarIcon) {
                   if (selectTabIndex == 0) {
                     context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
                   } else if (selectTabIndex == 1) {
                     context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
                   } else if (selectTabIndex == 2) {
-                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                    context
+                        .read<ChatsBloc>()
+                        .add(FetchChats(endPoint: 'corporate'));
                   }
                 }
               });
             },
-          onChangedSearchInput: _filterChats,
-          textEditingController: searchController,
-          focusNode: focusNode,
-          clearButtonClick: (isSearching) {},
+            textEditingController: searchController,
+            focusNode: focusNode,
+            onChangedSearchInput: (String value) {
+              setState(() {
+                _isSearching = value.isNotEmpty;
+              });
+              _onSearch(value);
+            },
+            clearButtonClick: (isSearching) {
+              if (!isSearching) {
+                searchController.clear();
+                if (!isClickAvatarIcon) {
+                  if (selectTabIndex == 0) {
+                    final chatsBloc = context.read<ChatsBloc>();
+                    chatsBloc.add(ClearChats());
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+                  } else if (selectTabIndex == 1) {
+                    final chatsBloc = context.read<ChatsBloc>();
+                    chatsBloc.add(ClearChats());
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+                  } else if (selectTabIndex == 2) {
+                    final chatsBloc = context.read<ChatsBloc>();
+                    chatsBloc.add(ClearChats());
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                  }
+                }
+
+                setState(() {
+                  _isSearching = false;
+                });
+              }
+            },
+          ),
+          backgroundColor: Colors.white,
         ),
         backgroundColor: Colors.white,
-      ),
-      backgroundColor: Colors.white,
-      body: isClickAvatarIcon
-          ? ProfileScreen() 
-          : _isPermissionsChecked
-              ? Column(
-                  children: [
-                    SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: List.generate(_tabTitles.length, (index) {
-                          if ((index == 0 && !_showLeadChat) ||
-                              (index == 2 && !_showCorporateChat)) {
-                            return Container();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: _buildTabButton(index),
-                          );
-                        }),
+        body: isClickAvatarIcon
+            ? ProfileScreen()
+            : _isPermissionsChecked
+                ? Column(
+                    children: [
+                      SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: List.generate(_tabTitles.length, (index) {
+                            if ((index == 0 && !_showLeadChat) ||
+                                (index == 2 && !_showCorporateChat)) {
+                              return Container();
+                            }
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: _buildTabButton(index),
+                            );
+                          }),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 12),
-                    Expanded(child: _buildTabBarView()),
-                  ],
-                )
-              : Center(child: CircularProgressIndicator()), 
-      floatingActionButton: (selectTabIndex == 2)
-          ? FloatingActionButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AddClientDialog(),
-                );
-              },
-              backgroundColor: Color(0xff1E2E52),
-              child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
-            )
-          : null,
-    ),
-  );
-}
-
-
-
+                      SizedBox(height: 12),
+                      Expanded(child: _buildTabBarView()),
+                    ],
+                  )
+                : Center(child: CircularProgressIndicator()),
+        floatingActionButton: (selectTabIndex == 2)
+            ? FloatingActionButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AddClientDialog(),
+                  );
+                },
+                backgroundColor: Color(0xff1E2E52),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
+              )
+            : null,
+      ),
+    );
+  }
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
@@ -296,7 +343,9 @@ Widget build(BuildContext context) {
           endPointInTab = 'corporate';
           context.read<GetAllClientBloc>().add(GetAnotherClientEv());
         }
-        context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
+        final chatsBloc = context.read<ChatsBloc>();
+        chatsBloc.add(ClearChats());
+        chatsBloc.add(FetchChats(endPoint: endPointInTab));
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -315,18 +364,17 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildTabBarView() {
-  return TabBarView(
-    controller: _tabController,
-    physics: const NeverScrollableScrollPhysics(),
-    children: List.generate(
-        _tabTitles.length,
-        (index) => _ChatItemsWidget(
-              updateChats: updateChats,
-              endPointInTab: index == 1 ? 'task' : endPointInTab,
-            )),
-  );
-}
-
+    return TabBarView(
+      controller: _tabController,
+      physics: const NeverScrollableScrollPhysics(),
+      children: List.generate(
+          _tabTitles.length,
+          (index) => _ChatItemsWidget(
+                updateChats: updateChats,
+                endPointInTab: index == 1 ? 'task' : endPointInTab,
+              )),
+    );
+  }
 
   @override
   void dispose() {
@@ -341,8 +389,7 @@ class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
   final String endPointInTab;
 
-  const _ChatItemsWidget(
-      {required this.updateChats, required this.endPointInTab});
+  const _ChatItemsWidget({required this.updateChats, required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
@@ -356,6 +403,9 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   void initState() {
     super.initState();
     _pagingController.addPageRequestListener((pageKey) {
+      if (pageKey == 0) {
+        _pagingController.refresh(); 
+      }
       context.read<ChatsBloc>().add(GetNextPageChats());
     });
   }
@@ -386,11 +436,14 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     });
   }
 
-   void onLongPress(Chats chat) {
+  void onLongPress(Chats chat) {
     showDialog(
-    context: context,
-    builder: (context) => DeleteChatDialog(chatId: chat.id, endPointInTab: widget.endPointInTab,),
-  );
+      context: context,
+      builder: (context) => DeleteChatDialog(
+        chatId: chat.id,
+        endPointInTab: widget.endPointInTab,
+      ),
+    );
   }
 
   @override
@@ -398,11 +451,10 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     return BlocListener<ChatsBloc, ChatsState>(
       listener: (context, state) {
         if (state is ChatsInitial) {
-          _pagingController.refresh();
+          _pagingController.refresh(); 
         }
         if (state is ChatsLoaded) {
-          if (state.chatsPagination.currentPage ==
-              state.chatsPagination.totalPage) {
+          if (state.chatsPagination.currentPage == state.chatsPagination.totalPage) {
             _pagingController.appendLastPage(state.chatsPagination.data);
           } else {
             _pagingController.appendPage(state.chatsPagination.data,
@@ -414,47 +466,52 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         padding: EdgeInsets.symmetric(vertical: 0),
         pagingController: _pagingController,
         builderDelegate: PagedChildBuilderDelegate<Chats>(
-            noItemsFoundIndicatorBuilder: (context) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Ничего не найдено.",
-                  style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Список в данный момент пуст.",
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              ],
-            ),
-          );
-        }, firstPageProgressIndicatorBuilder: (context) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-            ),
-          );
-        }, newPageProgressIndicatorBuilder: (context) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-            ),
-          );
-        }, itemBuilder: (context, item, index) {
-          return InkWell(
-            onTap: () => onTap(item),
-            onLongPress: () => onLongPress(item),  
-            splashColor: Colors.grey,
-            focusColor: Colors.black87,
-            child: ChatListItem(
-              chatItem: item.toChatItem("assets/images/AvatarChat.png"),
-            ),
-          );
-        }),
+          noItemsFoundIndicatorBuilder: (context) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Ничего не найдено.",
+                    style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Список в данный момент пуст.",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          },
+          firstPageProgressIndicatorBuilder: (context) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+              ),
+            );
+          },
+          newPageProgressIndicatorBuilder: (context) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+              ),
+            );
+          },
+          itemBuilder: (context, item, index) {
+            return InkWell(
+              onTap: () => onTap(item),
+              onLongPress: () => onLongPress(item),
+              splashColor: Colors.grey,
+              focusColor: Colors.black87,
+              child: ChatListItem(
+                chatItem: item.toChatItem("assets/images/AvatarChat.png"),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 }
+

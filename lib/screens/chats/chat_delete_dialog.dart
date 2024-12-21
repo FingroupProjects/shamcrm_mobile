@@ -41,7 +41,10 @@ class DeleteChatDialog extends StatelessWidget {
             ),
           );
         } else if (state is ChatsDeleted) {
-          context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
+           final chatsBloc = context.read<ChatsBloc>();
+           chatsBloc.add(ClearChats());
+           chatsBloc.add(FetchChats(endPoint: endPointInTab));
+          // context.read<ChatsBloc>().add(FetchChats(endPoint: endPointInTab));
           MessageSneckbar = state.message;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

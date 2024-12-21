@@ -2700,13 +2700,11 @@ class ApiService {
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
   // Метод для получения список чатов
- Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
-    final token = await getToken(); // Получаем токен
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
 
-    // Формируем URL с параметром organization_id и опционально параметр search
     String url =
         '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
@@ -2980,23 +2978,44 @@ class ApiService {
     }
   }
 
-   // Метод для Удаления Чата
- Future<Map<String, dynamic>> deleteChat(int chatId) async {
+Future<Map<String, dynamic>> deleteChat(int chatId) async {
   final organizationId = await getSelectedOrganization();
 
-  final response = await _deleteRequest(
-      '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  try {
+    final response = await _deleteRequest(
+        '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-  if (response.statusCode == 200) {
-    final responseBody = jsonDecode(response.body);
-    return {
-      'result': responseBody['result'],
-      'errors': responseBody['errors'],
-    };
-  } else {
-    throw Exception('Ошибка удаления чата: ${response.body}');
+    if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
+      return {
+        'result': responseBody['result'],
+        'errors': responseBody['errors'],
+      };
+    } else if (response.statusCode == 400) {
+      // Ошибка запроса
+      throw Exception('Ошибка запроса: Неверные данные');
+    } else if (response.statusCode == 401) {
+      // Ошибка авторизации
+      throw Exception('Ошибка авторизации: Некорректные учетные данные');
+    } else if (response.statusCode == 403) {
+      // Ошибка доступа
+      throw Exception('Ошибка доступа: Недостаточно прав');
+    } else if (response.statusCode == 404) {
+      // Чат не найден
+      throw Exception('Ошибка: Чат не найден');
+    } else if (response.statusCode >= 500 && response.statusCode < 600) {
+      // Ошибка сервера
+      throw Exception('Ошибка сервера: Попробуйте позже');
+    } else {
+      // Обработка других ошибок
+      throw Exception('Неизвестная ошибка: ${response.body}');
+    }
+  } catch (e) {
+    // Обработка ошибок сети или других непредвиденных исключений
+    throw Exception('Не удалось выполнить запрос: $e');
   }
 }
+
 
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
