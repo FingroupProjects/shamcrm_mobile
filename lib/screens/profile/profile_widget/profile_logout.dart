@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LogoutButtonWidget extends StatelessWidget {
   const LogoutButtonWidget({super.key});
@@ -9,9 +10,18 @@ class LogoutButtonWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
+        // Получаем экземпляр SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+
+        // Удаляем только данные userNameProfile и userName
+        await prefs.remove('userName');  // Удаляем userName
+        await prefs.remove('userNameProfile');  // Удаляем userNameProfile
+
+        // Логика выхода (например, вызов logout API)
         ApiService apiService = ApiService();
         await apiService.logout();
 
+        // Перенаправление на экран входа после выхода
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => LoginScreen()),

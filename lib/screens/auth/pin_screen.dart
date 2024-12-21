@@ -1,6 +1,8 @@
 // lib/screens/auth/auth_screen.dart
 import 'dart:io';
 
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +19,8 @@ class PinScreen extends StatefulWidget {
   State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen>
+    with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -35,7 +38,6 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     super.initState();
     _checkSavedPin();
     _initBiometrics();
-    _checkIosVersion();
     _loadUserPhone(); // Вызов асинхронного метода загрузки данных пользователя
 
     _animationController = AnimationController(
@@ -55,46 +57,73 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
   }
 
   // Метод для загрузки данных пользователя из SharedPreferences
-  void _loadUserPhone() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? UName = prefs.getString('userName');
-    String? UserNameProfile = prefs.getString('userNameProfile');
-    String? UImage = prefs.getString('userImage');
+ void _loadUserPhone() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Проверяем, если изображение пользователя отсутствует, загружаем его с сервера
-    if (UName != null && UImage != null && UserNameProfile != null) {
+  // Получаем данные из SharedPreferences
+  String? savedUserName = prefs.getString('userName');
+  String? savedUserNameProfile = prefs.getString('userNameProfile');
+  String? savedUserImage = prefs.getString('userImage');
+
+  // Если данные есть в SharedPreferences, проверяем их с данными с сервера
+  if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+    // Попробуем получить данные с сервера
+    try {
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(savedUserName)); // Предположим, что userName это ID
+      if (userProfile.name == savedUserName) {
+        // Если name из сервера совпадает с name из SharedPreferences, используем данные с сервера
+        setState(() {
+          _userName = userProfile.name;
+          _userNameProfile = savedUserNameProfile; // Используем имя профиля из SharedPreferences
+          _userImage = savedUserImage; // Используем изображение из SharedPreferences
+        });
+      } else {
+        // Если данные не совпадают, берем данные с сервера
+        setState(() {
+          _userName = userProfile.name;
+          _userNameProfile = userProfile.lastname ?? ''; // Обновляем профиль на основе данных с сервера
+          _userImage = userProfile.image ?? ''; // Используем изображение с сервера
+        });
+
+        // Обновляем SharedPreferences данными с сервера
+        await prefs.setString('userName', userProfile.name);
+        await prefs.setString('userNameProfile', userProfile.lastname ?? '');
+        await prefs.setString('userImage', userProfile.image ?? '');
+      }
+    } catch (e) {
+      print('Ошибка при загрузке данных с сервера: $e');
+      // Если произошла ошибка при запросе с сервера, выводим сохраненные данные
       setState(() {
-        _userName = UName;
-        _userNameProfile = UserNameProfile!;
-        _userImage = UImage; // Сохраняем путь изображения
+        _userName = savedUserName;
+        _userNameProfile = savedUserNameProfile;
+        _userImage = savedUserImage;
       });
-    } else {
-      // Если данных нет в SharedPreferences, можно загрузить их с сервера или установить дефолтные значения
+    }
+  } else {
+    // Если данных нет в SharedPreferences, загружаем их с сервера
+    try {
+      UserByIdProfile userProfile = await ApiService().getUserById(1); // Предположим, что это какой-то ID
+      setState(() {
+        _userName = userProfile.name;
+        _userNameProfile = userProfile.lastname ?? '';
+        _userImage = userProfile.image ?? '';
+      });
+
+      // Сохраняем данные в SharedPreferences
+      await prefs.setString('userName', userProfile.name);
+      await prefs.setString('userNameProfile', userProfile.lastname ?? '');
+      await prefs.setString('userImage', userProfile.image ?? '');
+    } catch (e) {
+      print('Ошибка при загрузке данных с сервера: $e');
+      // Обрабатываем ошибку, если данные не удалось загрузить с сервера
       setState(() {
         _userName = 'Не найдено';
-        _userNameProfile = (UserNameProfile = prefs.getString('userNameProfile'))!;    
-        _userImage = ''; // Путь к изображению по умолчанию
+        _userNameProfile = 'Не найдено';
+        _userImage = '';
       });
     }
-
-    // Выводим данные для отладки
-    print('UName: $_userName');
-    print('UImage: $_userImage');
   }
-
-  // Проверка версии iOS
-  Future<void> _checkIosVersion() async {
-    if (Platform.isIOS) {
-      var deviceInfo = DeviceInfoPlugin();
-      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      if (iosInfo.systemVersion != null) {
-        double version = double.tryParse(iosInfo.systemVersion) ?? 0;
-        setState(() {
-          _isIosVersionAbove15 = version > 15;
-        });
-      }
-    }
-  }
+}
 
 
   Future<void> _initBiometrics() async {
@@ -246,10 +275,12 @@ class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMix
     } else {
       greetingPrefix = 'Доброй ночи';
     }
-print('-----------------------------------------------------------------------------');
-print('-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
-print(_userNameProfile);
-    return '$greetingPrefix, $_userNameProfile';
+    print(
+        '-----------------------------------------------------------------------------');
+    print(
+        '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
+    print(_userNameProfile);
+    return '$greetingPrefix!';
   }
 
   @override
@@ -263,14 +294,13 @@ print(_userNameProfile);
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height *
-                    0.2, 
+                height: MediaQuery.of(context).size.height * 0.2,
               ),
-                   Image.asset(
-                      'assets/icons/playstore.png',
-                      height: 100,
-                    ),
-              const SizedBox(height: 50),
+              Image.asset(
+                'assets/icons/playstore.png',
+                height: 150,
+              ),
+              const SizedBox(height: 20),
               Text(
                 getGreetingMessage(),
                 style: const TextStyle(

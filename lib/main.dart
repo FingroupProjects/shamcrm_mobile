@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
@@ -173,6 +174,9 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
         BlocProvider(
           create: (context) => ProcessSpeedBloc(apiService),
+        ),
+        BlocProvider(
+          create: (context) => TaskCompletionBloc(apiService),
         ),
       ],
       child: MaterialApp(

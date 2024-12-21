@@ -135,7 +135,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     });
 
     try {
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       setState(() {
         NameController.text = userProfile.name;
@@ -304,12 +305,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 controller: NameController,
                 hintText: 'Введите Имя',
                 label: 'Имя',
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Поле обязательно для заполнения';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 20),
               CustomTextField(
                 controller: SurnameController,
                 hintText: 'Введите Фамилию',
                 label: 'Фамилия',
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Поле обязательно для заполнения';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 8),
@@ -371,10 +384,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   }
 
                   try {
-
-                        SharedPreferences USNAME = await SharedPreferences.getInstance();
-                         String UserNameProfile =(NameController.text);
-                        await USNAME.setString('userNameProfile', UserNameProfile.toString());
+                    SharedPreferences USNAME =
+                        await SharedPreferences.getInstance();
+                    String UserNameProfile = (NameController.text);
+                    await USNAME.setString(
+                        'userNameProfile', UserNameProfile.toString());
 
                     int userId = int.parse(UUID);
                     final name = NameController.text;

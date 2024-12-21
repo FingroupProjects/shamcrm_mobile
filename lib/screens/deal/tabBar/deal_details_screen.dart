@@ -106,7 +106,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     ];
 
     for (var field in deal.dealCustomFields) {
-      details.add({'label': field.key, 'value': field.value});
+      details.add({'label': '${field.key}:', 'value': field.value});
     }
   }
 

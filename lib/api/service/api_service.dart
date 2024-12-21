@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/process_speed%20_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/user_task%20_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -55,6 +56,8 @@ import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+// final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
+
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
@@ -98,15 +101,15 @@ class ApiService {
     );
   }
 
-  Future<String> getDynamicBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+Future<String> getDynamicBaseUrl() async { 
+    String? domain = await getEnteredDomain(); 
+    if (domain != null && domain.isNotEmpty) { 
+      // return 'https://$domain-back.shamcrm.com/api'; 
+      return 'https://8e00-95-142-94-22.ngrok-free.app/api'; 
+    } else { 
+      throw Exception('Домен не установлен в SharedPreferences'); 
+    } 
   }
-
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
@@ -2695,6 +2698,32 @@ class ApiService {
       throw ('Ошибка загрузки данных графика: ${response.body}');
     }
   }
+
+  
+   Future<List<UserTaskCompletion>> getUsersChartData() async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/dashboard/users-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    
+    final response = await _getRequest(path);
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      
+      if (data['result'] != null) {
+        final List<dynamic> resultList = data['result'];
+        return resultList
+            .map((item) => UserTaskCompletion.fromJson(item))
+            .toList();
+      } else {
+        throw ('Нет данных графика в ответе "Выполнение целей"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных графика: ${response.body}');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
@@ -3228,7 +3257,7 @@ Future<Map<String, dynamic>> deleteChat(int chatId) async {
     required String sname,
     required String phone,
     String? email,
-    String? login,
+    // String? login,
     String? image,
   }) async {
     final response = await _postRequest(
@@ -3258,7 +3287,7 @@ Future<Map<String, dynamic>> deleteChat(int chatId) async {
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления профиля: ${response.body}'
+        'message': 'Ошибка обновления профиля:'
       };
     }
   }

@@ -13,6 +13,8 @@ class CustomTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final int maxLines; 
   final String? Function(String?)? validator;
+    final Function(String)? onChanged; // Add onChanged parameter
+
 
   CustomTextField({
     required this.controller,
@@ -26,6 +28,8 @@ class CustomTextField extends StatefulWidget {
     this.inputFormatters,
     this.maxLines = 1, 
     this.validator, 
+        this.onChanged, // Add to constructor
+
   });
 
   @override

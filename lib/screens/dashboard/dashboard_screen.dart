@@ -5,6 +5,8 @@ import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.d
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
@@ -16,6 +18,7 @@ import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
+import 'package:crm_task_manager/screens/dashboard/users_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/process_speed.dart';
 // import 'package:crm_task_manager/screens/dashboard/deals_box.dart';
 import 'package:crm_task_manager/screens/dashboard/project_chart.dart';
@@ -38,14 +41,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
   bool areBoxesLoaded = false;
   String userRoleName = 'No role assigned';
+  bool isChartsLoaded = false; // Только одна переменная для состояния
 
   @override
   void initState() {
     super.initState();
     _loadUserRole();
     // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+    _startChartsLoading(); // Добавляем загрузку графиков
 
     _loadImportantBoxes();
+  }
+
+  Future<void> _startChartsLoading() async {
+    await Future.delayed(
+        Duration(seconds: 3)); // Задержка для имитации загрузки
+    setState(() {
+      isChartsLoaded = true;
+    });
   }
 
   Future<void> _loadUserRole() async {
@@ -119,6 +132,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context.read<ApiService>(),
           )..add(LoadProcessSpeedData()),
         ),
+        BlocProvider(
+          create: (context) => TaskCompletionBloc(
+            context.read<ApiService>(),
+          )..add(LoadTaskCompletionData()),
+        ),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -151,6 +169,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<Widget> _buildDashboardContent() {
+    List<Widget> charts = [
+      LeadConversionChart(),
+      // TaskCompletionChart(),
+    ];
     if (userRoleName == 'admin') {
       return [
         // LeadsBox(),
@@ -162,6 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // SizedBox(height: 16),
         LeadConversionChart(),
+        TaskCompletionChart(),
         TaskChartWidget(),
         GraphicsDashboard(),
         DealStatsChart(),
@@ -178,6 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // SizedBox(height: 16),
         // SizedBox(height: 16),
         LeadConversionChart(),
+        // TaskCompletionChart(),
         TaskChartWidget(),
         GraphicsDashboard(),
         DealStatsChart(),
@@ -185,7 +209,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     } else {
       return [
+        // TaskCompletionChart(),
+        LeadConversionChart(),
+        // TaskCompletionChart(),
         TaskChartWidget(),
+        GraphicsDashboard(),
+        DealStatsChart(),
         ProcessSpeedGauge(),
       ];
     }
