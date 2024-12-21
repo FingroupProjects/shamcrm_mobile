@@ -19,21 +19,22 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     on<GetNextPageChats>(_getNextPageChatsEvent);
     on<UpdateChatsFromSocket>(_updateChatsFromSocketFetch);
     on<DeleteChat>(_deleteChat);
-    on<SearchChats>(_searchChatsEvent);  // Handle search event
+    on<ClearChats>(_clearChatsEvent);
 
   }
 
-  Future<void> _fetchChatsEvent(
-      FetchChats event, Emitter<ChatsState> emit) async {
-    endPoint = event.endPoint;
-    emit(ChatsInitial());
-    try {
-      chatsPagination = await apiService.getAllChats(event.endPoint);
-      emit(ChatsLoaded(chatsPagination!));
-    } catch (e) {
-      emit(ChatsError(e.toString()));
-    }
+ Future<void> _fetchChatsEvent(
+    FetchChats event, Emitter<ChatsState> emit) async {
+  endPoint = event.endPoint;
+  emit(ChatsLoading());
+  try {
+    chatsPagination = await apiService.getAllChats(event.endPoint, 1, event.query);
+    emit(ChatsLoaded(chatsPagination!));
+  } catch (e) {
+    emit(ChatsError(e.toString()));
   }
+}
+
 
   Future<void> _refetchChatsEvent(
       RefreshChats event, Emitter<ChatsState> emit) async {
@@ -89,17 +90,10 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     emit(ChatsError('Ошибка удаления чата: ${e.toString()}'));
   }
 }
-
-  
- Future<void> _searchChatsEvent(SearchChats event, Emitter<ChatsState> emit) async {
-  endPoint = event.endPoint;  
-  emit(ChatsLoading());
-  try {
-    final result = await apiService.getAllChats(endPoint, 1, event.query); 
-    emit(ChatsSearched(result));  
-  } catch (e) {
-    emit(ChatsError(e.toString()));
-  }
+Future<void> _clearChatsEvent(ClearChats event, Emitter<ChatsState> emit) async {
+  emit(ChatsInitial());
+  chatsPagination = null; 
+}
 }
 
-}
+
