@@ -21,3 +21,18 @@ class GroupChatDeleted extends GroupChatState {
 
   GroupChatDeleted(this.message);
 }
+
+class AddUserToGroupLoading extends GroupChatState {}
+
+class AddUserToGroupSuccess extends GroupChatState {
+  final String message;
+
+  AddUserToGroupSuccess(this.message);
+}
+
+class AddUserToGroupError extends GroupChatState {
+  final String message;
+
+  AddUserToGroupError(this.message);
+}
+
