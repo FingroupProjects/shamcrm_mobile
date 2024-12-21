@@ -23,3 +23,9 @@ class RefreshChats extends ChatsEvent {
 class UpdateChatsFromSocket extends ChatsEvent {
   const UpdateChatsFromSocket();
 }
+
+class DeleteChat extends ChatsEvent {
+    final int chatId;
+
+  const DeleteChat(this.chatId);
+}

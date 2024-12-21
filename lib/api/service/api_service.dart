@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/process_speed%20_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/user_task%20_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -55,6 +56,8 @@ import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
 // final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+// final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
+
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
@@ -98,15 +101,15 @@ class ApiService {
     );
   }
 
-  Future<String> getDynamicBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+Future<String> getDynamicBaseUrl() async { 
+    String? domain = await getEnteredDomain(); 
+    if (domain != null && domain.isNotEmpty) { 
+      // return 'https://$domain-back.shamcrm.com/api'; 
+      return 'https://8e00-95-142-94-22.ngrok-free.app/api'; 
+    } else { 
+      throw Exception('Домен не установлен в SharedPreferences'); 
+    } 
   }
-
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
@@ -1820,30 +1823,32 @@ class ApiService {
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
   //Метод для получения Задачи через его ID
-  Future<TaskById> getTaskById(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+ Future<TaskById> getTaskById(int taskId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
 
-      final response = await _getRequest(
-          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonTask = decodedJson['result'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonTask = decodedJson['result'];
 
-        if (jsonTask == null || jsonTask['taskStatus'] == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
-        return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
-      } else {
-        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+      if (jsonTask == null || jsonTask['taskStatus'] == null) {
+        throw Exception('Некорректные данные от API');
       }
-    } catch (e) {
-      throw Exception('Ошибка загрузки task ID: $e');
+
+      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+    } else if (response.statusCode == 404) {
+      throw ('Ресурс с задачи $taskId не найден');
+    } else {
+      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Ошибка загрузки task ID');
   }
+}
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -2693,6 +2698,32 @@ class ApiService {
       throw ('Ошибка загрузки данных графика: ${response.body}');
     }
   }
+
+  
+   Future<List<UserTaskCompletion>> getUsersChartData() async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/dashboard/users-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    
+    final response = await _getRequest(path);
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      
+      if (data['result'] != null) {
+        final List<dynamic> resultList = data['result'];
+        return resultList
+            .map((item) => UserTaskCompletion.fromJson(item))
+            .toList();
+      } else {
+        throw ('Нет данных графика в ответе "Выполнение целей"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных графика: ${response.body}');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
@@ -2972,6 +3003,20 @@ class ApiService {
       print('Exception when marking messages as read: $e');
     }
   }
+
+   // Метод для Удаления Чата
+  Future<Map<String, dynamic>> deleteChat(int chatId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Ошибка удаления чата: ${response.body}');
+    }
+  }
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
@@ -3183,7 +3228,7 @@ class ApiService {
     required String sname,
     required String phone,
     String? email,
-    String? login,
+    // String? login,
     String? image,
   }) async {
     final response = await _postRequest(
@@ -3213,7 +3258,7 @@ class ApiService {
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления профиля: ${response.body}'
+        'message': 'Ошибка обновления профиля:'
       };
     }
   }

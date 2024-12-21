@@ -141,7 +141,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
     ];
     for (var field in lead.leadCustomFields) {
-      details.add({'label': field.key, 'value': field.value});
+      details.add({'label': '${field.key}:', 'value': field.value});
     }
   }
 

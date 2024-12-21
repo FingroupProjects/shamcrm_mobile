@@ -138,7 +138,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     ];
 
     for (var field in task.taskCustomFields) {
-      details.add({'label': field.key, 'value': field.value});
+      details.add({'label': '${field.key}:', 'value': field.value});
     }
   }
 
@@ -188,7 +188,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   return Center(child: Text('Task data is not available.'));
                 }
                 _updateDetails(task);
-                
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
@@ -207,82 +207,156 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                               canSendMessage: task.chat!.canSendMessage,
                             ),
                           ),
-                          SizedBox(width: 8, height: 60,),
+                          SizedBox(
+                            width: 8,
+                            height: 60,
+                          ),
                           Expanded(
                             flex: 45,
                             child: ElevatedButton(
                               onPressed: () {
-                                final taskId = int.parse(widget.taskId);
-                                context
-                                    .read<ApiService>()
-                                    .finishTask(taskId)
-                                    .then((result) {
-                                  if (result['success']) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          result['message'],
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) =>
+                                      AlertDialog(
+                                          title: Text(
+                                            'Хотите завершить задачу',
+                                            style: TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                        margin: EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        backgroundColor: Colors.green,
-                                        elevation: 3,
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 16,
-                                        ),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                    Navigator.pop(context);
-                                    context
-                                        .read<TaskBloc>()
-                                        .add(FetchTaskStatuses());
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          result['message'],
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                        margin: EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        elevation: 3,
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 16,
-                                        ),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                });
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                final taskId =
+                                                    int.parse(widget.taskId);
+                                                context
+                                                    .read<ApiService>()
+                                                    .finishTask(taskId)
+                                                    .then((result) {
+                                                  if (result['success']) {
+                                                    Navigator.pop(
+                                                        context); // Закрываем диалог
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          result['message'],
+                                                          style: TextStyle(
+                                                            fontFamily:
+                                                                'Gilroy',
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                        behavior:
+                                                            SnackBarBehavior
+                                                                .floating,
+                                                        margin: EdgeInsets
+                                                            .symmetric(
+                                                          horizontal: 16,
+                                                          vertical: 8,
+                                                        ),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                        ),
+                                                        backgroundColor:
+                                                            Colors.green,
+                                                        elevation: 3,
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                          vertical: 12,
+                                                          horizontal: 16,
+                                                        ),
+                                                        duration: Duration(
+                                                            seconds: 2),
+                                                      ),
+                                                    );
+                                                    Navigator.pop(context);
+                                                    context.read<TaskBloc>().add(
+                                                        FetchTaskStatuses());
+                                                  } else {
+                                                    Navigator.pop(
+                                                        context); // Закрываем диалог
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          result['message'],
+                                                          style: TextStyle(
+                                                            fontFamily:
+                                                                'Gilroy',
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                        behavior:
+                                                            SnackBarBehavior
+                                                                .floating,
+                                                        margin: EdgeInsets
+                                                            .symmetric(
+                                                          horizontal: 16,
+                                                          vertical: 8,
+                                                        ),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                        ),
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                        elevation: 3,
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                          vertical: 12,
+                                                          horizontal: 16,
+                                                        ),
+                                                        duration: Duration(
+                                                            seconds: 2),
+                                                      ),
+                                                    );
+                                                  }
+                                                });
+                                              },
+                                              child: Text(
+                                                'Подтвердить',
+                                                style: TextStyle(
+                                                  color: Color(0xFF4B3FD8),
+                                                  fontFamily: 'Gilroy',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: Text(
+                                                'Отмена',
+                                                style: TextStyle(
+                                                  color: Colors.black54,
+                                                  fontFamily: 'Gilroy',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                          backgroundColor: Color.fromARGB(
+                                              255, 255, 255, 255)),
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 padding:

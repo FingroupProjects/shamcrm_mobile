@@ -200,7 +200,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
     if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
       return const Center(
         child: Text(
-          'Нет данных для легенды',
+          '',
           style: TextStyle(
             fontSize: 16,
             fontFamily: "Gilroy",
