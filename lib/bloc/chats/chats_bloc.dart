@@ -19,19 +19,22 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     on<GetNextPageChats>(_getNextPageChatsEvent);
     on<UpdateChatsFromSocket>(_updateChatsFromSocketFetch);
     on<DeleteChat>(_deleteChat);
+    on<ClearChats>(_clearChatsEvent);
+
   }
 
-  Future<void> _fetchChatsEvent(
-      FetchChats event, Emitter<ChatsState> emit) async {
-    endPoint = event.endPoint;
-    emit(ChatsInitial());
-    try {
-      chatsPagination = await apiService.getAllChats(event.endPoint);
-      emit(ChatsLoaded(chatsPagination!));
-    } catch (e) {
-      emit(ChatsError(e.toString()));
-    }
+ Future<void> _fetchChatsEvent(
+    FetchChats event, Emitter<ChatsState> emit) async {
+  endPoint = event.endPoint;
+  emit(ChatsLoading());
+  try {
+    chatsPagination = await apiService.getAllChats(event.endPoint, 1, event.query);
+    emit(ChatsLoaded(chatsPagination!));
+  } catch (e) {
+    emit(ChatsError(e.toString()));
   }
+}
+
 
   Future<void> _refetchChatsEvent(
       RefreshChats event, Emitter<ChatsState> emit) async {
@@ -73,18 +76,24 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     }
   }
 
-   Future<void> _deleteChat(DeleteChat event, Emitter<ChatsState> emit) async {
-    emit(ChatsLoading());
+  Future<void> _deleteChat(DeleteChat event, Emitter<ChatsState> emit) async {
+  emit(ChatsLoading());
 
-    try {
-      final response = await apiService.deleteChat(event.chatId);
-      if (response['result'] == 'Success') {
-        emit(ChatsDeleted('Чат успешно удалена'));
-      } else {
-        emit(ChatsError('Ошибка удаления чата'));
-      }
-    } catch (e) {
-      emit(ChatsError('Ошибка удаления чата: ${e.toString()}'));
+  try {
+    final response = await apiService.deleteChat(event.chatId);
+    if (response['result'] == true) {
+      emit(ChatsDeleted('Чат успешно удален'));
+    } else {
+      emit(ChatsError('Нельзя удалить группу!'));
     }
+  } catch (e) {
+    emit(ChatsError('Ошибка удаления чата: ${e.toString()}'));
   }
 }
+Future<void> _clearChatsEvent(ClearChats event, Emitter<ChatsState> emit) async {
+  emit(ChatsInitial());
+  chatsPagination = null; 
+}
+}
+
+
