@@ -17,15 +17,14 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     with SingleTickerProviderStateMixin {
   int touchedIndex = -1;
 
-@override
-void initState() {
-  super.initState();
-  final state = context.read<DashboardTaskChartBloc>().state;
-  if (state is! DashboardTaskChartLoaded) {
-    context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+  @override
+  void initState() {
+    super.initState();
+    final state = context.read<DashboardTaskChartBloc>().state;
+    if (state is! DashboardTaskChartLoaded) {
+      context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -141,13 +140,13 @@ void initState() {
       return PieChartSectionData(
         color: colors[i].withOpacity(opacity),
         value: taskChart.data[i],
-        title: isTouched ? '${taskChart.data[i].toStringAsFixed(1)}' : '',
+        title: isTouched ? '${taskChart.data[i].toStringAsFixed(0)}' : '',
         radius: radius,
         titleStyle: const TextStyle(
           fontSize: 16,
           fontFamily: "Gilroy",
           fontWeight: FontWeight.w500,
-          color: Colors.black,
+          color: Color.fromARGB(255, 255, 255, 255),
         ),
       );
     });

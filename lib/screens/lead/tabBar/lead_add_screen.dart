@@ -67,7 +67,7 @@ void _fetchAndAddCustomFields() async {
       final data =
           await ApiService().getCustomFieldslead(); // Выполнить GET-запрос
       if (data['result'] != null) {
-        data['result'].forEach((key, value) {
+        data['result'].forEach(( value) {
           setState(() {
             customFields.add(CustomField(fieldName: value));
           });
@@ -120,7 +120,7 @@ void _fetchAndAddCustomFields() async {
         title: const Row(
           children: [
             Text(
-              'Создание Лида',
+              'Новый Лид',
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',

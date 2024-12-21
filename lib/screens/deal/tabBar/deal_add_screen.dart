@@ -72,7 +72,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
       // Здесь предполагается, что getCustomFields определён в ApiService
       final data = await ApiService().getCustomFieldsdeal(); // Выполнить GET-запрос
       if (data['result'] != null) {
-        data['result'].forEach((key, value) {
+        data['result'].forEach(( value) {
           setState(() {
             customFields.add(CustomField(fieldName: value));
           });
