@@ -25,7 +25,7 @@ class UsersDataResponse {
 }
 
 class UserData {
-  int? id;
+  int id;
   String? name;
   String? login;
   String? email;
@@ -33,7 +33,7 @@ class UserData {
   String? image;
 
   UserData({
-    this.id,
+    required this.id,
     this.name,
     this.login,
     this.email,
