@@ -115,6 +115,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
       );
     }
 
+    // Получаем id владельца (первый элемент в списке участников)
+    String ownerId = memberDetails.isNotEmpty ? memberDetails[0]['id']! : '';
+
     return Scaffold(
       backgroundColor: Color(0xffF4F7FD),
       appBar: AppBar(
@@ -182,32 +185,36 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600),
                       ),
-                      ElevatedButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => BlocProvider.value(
-                            value: context.read<GroupChatBloc>(),
-                            child: AddUserToGroupDialog(chatId: widget.chatId),
+                      // Только владельцу разрешено добавлять участников
+                      if (userIdCheck == ownerId) 
+                        ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => BlocProvider.value(
+                                value: context.read<GroupChatBloc>(),
+                                child: AddUserToGroupDialog(
+                                  chatId: widget.chatId,
+                                  onUserAdded: _fetchChatData,  
+                                ),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xff1E2E52),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xff1E2E52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          child: Text(
+                            "Добавить участника",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        "Добавить участника",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-
                     ],
                   ),
                   SizedBox(height: 10),
@@ -241,12 +248,13 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 );
                               },
                         onLongPress: () {
-                          if (!isDeletedAccount && !isCurrentUser) {
+                          if (!isDeletedAccount && !isCurrentUser && userIdCheck == ownerId) {
                             showDialog(
                               context: context,
                               builder: (context) => DeleteChatDialog(
                                 chatId: widget.chatId,
                                 userId: int.parse(memberDetails[index]['id']!),
+                                onUserAdded: _fetchChatData,  
                               ),
                             );
                           }

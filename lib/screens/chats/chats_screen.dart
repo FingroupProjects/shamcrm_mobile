@@ -53,6 +53,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateСhat.read');
+    // final CorporateChat = await apiService.hasPermission('chat.read');
 
     setState(() {
       _showLeadChat = LeadChat;

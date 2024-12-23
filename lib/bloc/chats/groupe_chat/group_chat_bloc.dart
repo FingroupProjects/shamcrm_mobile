@@ -10,8 +10,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
   GroupChatBloc(this.apiService) : super(GroupChatInitial()) {
     on<CreateGroupChat>(_createGroupChat);
     on<AddUserToGroup>(_addUserToGroup);
-    on<DeleteUserFromGroup>(
-        _deleteUserFromGroup); // Добавляем новый обработчик события
+    on<DeleteUserFromGroup>(_deleteUserFromGroup);
   }
 
   Future<void> _createGroupChat(
@@ -39,8 +38,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
     }
   }
 
-  Future<void> _addUserToGroup(
-      AddUserToGroup event, Emitter<GroupChatState> emit) async {
+  Future<void> _addUserToGroup(AddUserToGroup event, Emitter<GroupChatState> emit) async {
     emit(AddUserToGroupLoading());
 
     if (!await _checkInternetConnection()) {
@@ -49,17 +47,17 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
     }
 
     try {
-      final result = await apiService.addUserToGroup(
-        chatId: event.chatId,
-        userId: event.userId,
-      );
+  final result = await apiService.addUserToGroup(chatId: event.chatId, userId: event.userId);
 
-      if (result['success']) {
-        emit(AddUserToGroupSuccess(result['message']));
-      } else {
-        emit(AddUserToGroupError(result['message']));
-      }
-    } catch (e) {
+  if (result['success']) {
+    emit(AddUserToGroupSuccess(result['Пользователь успешно добавленв группу!']));
+  } else {
+    emit(AddUserToGroupError(result['Ошибка доб поль']));
+  }
+} on SocketException {
+  emit(AddUserToGroupError('Проблема с интернет-соединением.'));
+}
+ catch (e) {
       emit(AddUserToGroupError(
           'Ошибка добавления пользователя: ${e.toString()}'));
     }
@@ -76,11 +74,11 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
     }
 
     try {
-      final result = await apiService.deleteUserFromGroup(
-          event.chatId, event.userId 
-          );
+        final result = await apiService.deleteUserFromGroup(chatId: event.chatId, userId: event.userId);
 
-              if (result['result'] == true) {
+        // if (result['result'] == true) {
+  if (result['success']) {
+          
         emit(GroupChatDeleted('Пользователь успешно удален из группы'));
       } else {
         emit(GroupChatError(result['Нельзя удалить участника']));
