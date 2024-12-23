@@ -53,6 +53,7 @@ class ChatSmsScreen extends StatefulWidget {
 
 class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ScrollController _scrollController = ScrollController();
+  String? _currentDate; // Текущая дата, отображаемая в верхнем AppBar.
   final TextEditingController _messageController = TextEditingController();
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
@@ -85,18 +86,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
       _fetchBaseUrl();
-         _markMessagesAsRead();
+      _markMessagesAsRead();
     });
     // _connectWebSocket();
   }
+
 // Новый метод для отметки сообщений как прочитанных
-void _markMessagesAsRead() {
-  final state = context.read<MessagingCubit>().state;
-  if (state is MessagesLoadedState && state.messages.isNotEmpty) {
-    final messageIds = state.messages.map((msg) => msg.id).toList();
-    widget.apiService.readChatMessages(widget.chatId, messageIds);
+  void _markMessagesAsRead() {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState && state.messages.isNotEmpty) {
+      final messageIds = state.messages.map((msg) => msg.id).toList();
+      widget.apiService.readChatMessages(widget.chatId, messageIds);
+    }
   }
-}
 
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
@@ -134,43 +136,45 @@ void _markMessagesAsRead() {
                   builder: (context) => TaskByIdScreen(chatId: widget.chatId),
                 ),
               );
-              } else if (widget.endPointInTab == 'corporate') {
-                final getChatById = await ApiService().getChatById(widget.chatId);
-                if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
-                    String userIdCheck = ''; 
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
+            } else if (widget.endPointInTab == 'corporate') {
+              final getChatById = await ApiService().getChatById(widget.chatId);
+              if (getChatById.chatUsers.length == 2 &&
+                  getChatById.group == null) {
+                String userIdCheck = '';
+                SharedPreferences prefs = await SharedPreferences.getInstance();
                 userIdCheck = prefs.getString('userID') ?? '';
                 print('USERID: $userIdCheck');
-                  final participant = getChatById.chatUsers
-                      .firstWhere((user) => user.participant.id.toString() != userIdCheck)
-                      .participant;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ParticipantProfileScreen(
-                        userId: participant.id.toString(),
-                        image: participant.image,
-                        name: participant.name,
-                        email: participant.email,
-                        phone: participant.phone,
-                        login: participant.login,
-                        lastSeen: participant.lastSeen.toString(),
-                        buttonChat: false,
-                      ),
+                final participant = getChatById.chatUsers
+                    .firstWhere(
+                        (user) => user.participant.id.toString() != userIdCheck)
+                    .participant;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ParticipantProfileScreen(
+                      userId: participant.id.toString(),
+                      image: participant.image,
+                      name: participant.name,
+                      email: participant.email,
+                      phone: participant.phone,
+                      login: participant.login,
+                      lastSeen: participant.lastSeen.toString(),
+                      buttonChat: false,
                     ),
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CorporateProfileScreen(
-                        chatId: widget.chatId,
-                        chatItem: widget.chatItem,
-                      ),
-                    ),
-                  );
-                }
+                  ),
+                );
               } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CorporateProfileScreen(
+                      chatId: widget.chatId,
+                      chatItem: widget.chatItem,
+                    ),
+                  ),
+                );
+              }
+            } else {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -264,7 +268,7 @@ void _markMessagesAsRead() {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
         if (state is MessagesErrorState) {
-          // ... (предыдущий код обработки ошибок остается без изменений)
+          return Center(child: CircularProgressIndicator.adaptive());
         }
         if (state is MessagesLoadingState) {
           return Center(child: CircularProgressIndicator.adaptive());
@@ -280,52 +284,67 @@ void _markMessagesAsRead() {
           }
 
           List<Widget> messageWidgets = [];
-          DateTime? previousDate;
-          DateTime today = DateTime.now();
-          DateTime tomorrow = today.add(Duration(days: 1));
+          DateTime? currentDate;
+          List<Widget> currentGroup = [];
 
-          for (int index = 0; index < state.messages.length; index++) {
-            final message = state.messages[index];
-            final currentDate = DateTime.parse(message.createMessateTime);
-            // Добавляем день к текущей дате
-            DateTime displayDate = currentDate.add(Duration(days: 1));
-            // Проверяем, что displayDate не совпадает только с завтрашней датой
-            bool isDateExcluded = (displayDate.year == tomorrow.year &&
-                displayDate.month == tomorrow.month &&
-                displayDate.day == tomorrow.day);
+          // Проходим по сообщениям в обратном порядке
+          for (int i = state.messages.length - 1; i >= 0; i--) {
+            final message = state.messages[i];
+            final messageDate = DateTime.parse(message.createMessateTime);
 
-            if (!isDateExcluded) {
-              if (index < state.messages.length - 1 &&
-                  (previousDate == null ||
-                      !isSameDay(previousDate, currentDate))) {
-                messageWidgets.add(
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+            // Если дата изменилась или это первое сообщение
+            if (currentDate == null || !isSameDay(currentDate, messageDate)) {
+              // Добавляем предыдущую группу, если она есть
+              if (currentGroup.isNotEmpty) {
+                messageWidgets.addAll(currentGroup);
+                currentGroup = [];
+              }
+
+              // Добавляем новую дату
+              currentGroup.add(
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      // Перематываем список к самому последнему сообщению
+                      if (_scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          _scrollController.position.maxScrollExtent,
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
                     child: Center(
                       child: Text(
-                        formatDate(displayDate),
+                        formatDate(messageDate),
                         style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: "Gilroy",
-                            fontWeight: FontWeight.w400,
-                            color: Colors.black),
+                          fontSize: 14,
+                          fontFamily: "Gilroy",
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ),
-                );
-              }
+                ),
+              );
+              currentDate = messageDate;
             }
 
-            // Добавляем само сообщение
-            messageWidgets.add(
+            // Добавляем сообщение в текущую группу
+            currentGroup.add(
               MessageItemWidget(
                 message: message,
                 apiServiceDownload: widget.apiServiceDownload,
                 baseUrl: baseUrl,
               ),
             );
+          }
 
-            previousDate = currentDate;
+          // Добавляем последнюю группу
+          if (currentGroup.isNotEmpty) {
+            messageWidgets.addAll(currentGroup);
           }
 
           return Padding(
@@ -334,7 +353,8 @@ void _markMessagesAsRead() {
               controller: _scrollController,
               padding: EdgeInsets.zero,
               reverse: true,
-              children: messageWidgets,
+              children:
+                  messageWidgets.reversed.toList(), // Переворачиваем список
             ),
           );
         }
@@ -352,6 +372,125 @@ void _markMessagesAsRead() {
 
   String formatDate(DateTime date) {
     return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
+  }
+  Widget messageListView() {
+    return BlocBuilder<MessagingCubit, MessagingState>(
+      builder: (context, state) {
+        if (state is MessagesErrorState) {
+          return Center(child: CircularProgressIndicator.adaptive());
+        }
+        if (state is MessagesLoadingState) {
+          return Center(child: CircularProgressIndicator.adaptive());
+        }
+        if (state is MessagesLoadedState) {
+          if (state.messages.isEmpty) {
+            return Center(
+              child: Text(
+                'Нет сообщений',
+                style: TextStyle(color: AppColors.textPrimary700),
+              ),
+            );
+          }
+
+          List<Widget> messageWidgets = [];
+          DateTime? currentDate;
+          List<Widget> currentGroup = [];
+          _messagePositions.clear(); // Очистка перед созданием списка
+
+          for (int i = state.messages.length - 1; i >= 0; i--) {
+            final message = state.messages[i];
+            final messageDate = DateTime.parse(message.createMessateTime);
+
+            if (currentDate == null || !isSameDay(currentDate, messageDate)) {
+              if (currentGroup.isNotEmpty) {
+                messageWidgets.addAll(currentGroup);
+                currentGroup = [];
+              }
+
+              currentGroup.add(
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                  child: Center(
+                    child: Text(
+                      formatDate(messageDate),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: "Gilroy",
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+final GlobalKey key = GlobalKey();
+currentGroup.add(
+  Padding(
+    key: key, // Устанавливаем GlobalKey для виджета
+    padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+    child: Center(
+      child: Text(
+        formatDate(messageDate),
+        style: TextStyle(
+          fontSize: 14,
+          fontFamily: "Gilroy",
+          fontWeight: FontWeight.w400,
+          color: Colors.black,
+        ),
+      ),
+    ),
+  ),
+);
+
+// Получаем BuildContext из GlobalKey
+final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+if (renderBox != null) {
+  final position = renderBox.localToGlobal(Offset.zero).dy;
+  _messagePositions[formatDate(messageDate)] = position;
+}
+
+              // Сохраняем позицию для отображения
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final context = currentGroup.last.key?.currentContext;
+                if (context != null) {
+                  final renderBox = context.findRenderObject() as RenderBox?;
+                  if (renderBox != null) {
+                    final position = renderBox.localToGlobal(Offset.zero).dy;
+                    _messagePositions[formatDate(messageDate)] = position;
+                  }
+                }
+              });
+
+              currentDate = messageDate;
+            }
+
+            currentGroup.add(
+              MessageItemWidget(
+                message: message,
+                apiServiceDownload: widget.apiServiceDownload,
+                baseUrl: baseUrl,
+              ),
+            );
+          }
+
+          if (currentGroup.isNotEmpty) {
+            messageWidgets.addAll(currentGroup);
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ListView(
+              controller: _scrollController,
+              padding: EdgeInsets.zero,
+              reverse: true,
+              children: messageWidgets.reversed.toList(),
+            ),
+          );
+        }
+
+        return Container();
+      },
+    );
   }
 
   Widget inputWidget() {
@@ -545,20 +684,45 @@ void _markMessagesAsRead() {
       context.read<ListenSenderFileCubit>().updateValue(false);
     }
   }
+void _onScroll() {
+    if (_scrollController.hasClients) {
+          print("Scroll position: ${_scrollController.position.pixels}");
 
+      // Получаем видимые элементы
+      final position = _scrollController.position;
+      final viewportOffset = position.pixels;
+      final viewportExtent = position.viewportDimension;
+
+      // Проверяем позиции сообщений
+      for (final entry in _messagePositions.entries) {
+        if (viewportOffset < entry.value && entry.value < viewportOffset + viewportExtent) {
+          setState(() {
+            _currentDate = entry.key;
+          });
+          break;
+        }
+      }
+    }
+  }
   @override
   void dispose() {
     chatSubscribtion.cancel();
     _scrollController.dispose();
-
+    
+_scrollController.addListener(_onScroll);
     _messageController.dispose();
     socketClient.dispose();
     _webSocket?.close();
-
+ print("ScrollController is initialized");
     super.dispose();
   }
 }
 
+extension on Key? {
+   get currentContext => null;
+}
+// Храним позиции сообщений и их даты
+  final Map<String, double> _messagePositions = {};
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
