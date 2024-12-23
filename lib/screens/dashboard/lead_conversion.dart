@@ -211,20 +211,21 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       );
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildLegendItem(
-          'Новые (${data.newLeads.toStringAsFixed(1)}%)',
-          const Color(0xFF60A5FA),
-        ),
-        const SizedBox(width: 24),
-        _buildLegendItem(
-          'Повторные (${data.repeatedLeads.toStringAsFixed(1)}%)',
-          const Color.fromARGB(255, 33, 41, 188),
-        ),
-      ],
-    );
+   return Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    _buildLegendItem(
+      'Новые (${data.newLeads.toStringAsFixed(1)}%)',
+      const Color(0xFF3935E7), // Используется шестнадцатеричный цветовой код
+    ),
+    const SizedBox(width: 24),
+    _buildLegendItem(
+      'Повторные (${data.repeatedLeads.toStringAsFixed(1)}%)',
+      const Color(0xFF27A945), // Исправленный код для ARGB
+    ),
+  ],
+);
+
   }
 
   Widget _buildLegendItem(String title, Color color) {

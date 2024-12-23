@@ -101,14 +101,15 @@ class ApiService {
     );
   }
 
-Future<String> getDynamicBaseUrl() async { 
-    String? domain = await getEnteredDomain(); 
-    if (domain != null && domain.isNotEmpty) { 
-      // return 'https://$domain-back.shamcrm.com/api'; 
-      return 'https://8e00-95-142-94-22.ngrok-free.app/api'; 
-    } else { 
-      throw Exception('Домен не установлен в SharedPreferences'); 
-    } 
+  Future<String> getDynamicBaseUrl() async {
+    String? domain = await getEnteredDomain();
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.shamcrm.com/api';
+//       return 'https://8e00-95-142-94-22.ngrok-free.app/api';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
+
   }
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
@@ -299,6 +300,90 @@ Future<String> getDynamicBaseUrl() async {
       };
     }
   }
+
+// Метод для создания Групповго чата
+  Future<Map<String, dynamic>> addUserToGroup({
+    required String chatId,
+    List<int>? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'chatId': chatId,
+        'users': userId?.map((id) => {'id': id}).toList() ?? [],
+      };
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/addUserToGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Участник успешно добавлен.',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка добавления участника: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при добавление участника : $e',
+      };
+    }
+  }
+
+//Метод для дулаенния Польз из группы
+Future<Map<String, dynamic>> deleteUserFromGroup(int chatId, int userId) async {
+  final organizationId = await getSelectedOrganization();
+
+  try {
+    final response = await _deleteRequest(
+      '/chat/removeUserFromGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
+      return {
+        'result': responseBody['result'],
+        'errors': responseBody['errors'],
+      };
+    } else if (response.statusCode == 400) {
+      // Ошибка запроса
+      throw Exception('Ошибка запроса: Неверные данные');
+    } else if (response.statusCode == 401) {
+      // Ошибка авторизации
+      throw Exception('Ошибка авторизации: Некорректные учетные данные');
+    } else if (response.statusCode == 403) {
+      // Ошибка доступа
+      throw Exception('Ошибка доступа: Недостаточно прав');
+    } else if (response.statusCode == 404) {
+      // Чат или пользователь не найден
+      throw Exception('Ошибка: Чат или пользователь не найден');
+    } else if (response.statusCode >= 500 && response.statusCode < 600) {
+      // Ошибка сервера
+      throw Exception('Ошибка сервера: Попробуйте позже');
+    } else {
+      // Обработка других ошибок
+      throw Exception('Неизвестная ошибка: ${response.body}');
+    }
+  } catch (e) {
+    // Обработка ошибок сети или других непредвиденных исключений
+    throw Exception('Не удалось выполнить запрос: $e');
+  }
+}
+
+
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
@@ -2618,7 +2703,7 @@ Future<String> getDynamicBaseUrl() async {
       }
     } catch (e) {
       print('Ошибка запроса!');
-      throw ('Ошибка получения данных');
+      throw ('');
     }
   }
 
@@ -2669,7 +2754,7 @@ Future<String> getDynamicBaseUrl() async {
         throw ('Ошибка загрузки данных проектов!');
       }
     } catch (e) {
-      throw ('Ошибка получения данных проектов!');
+      throw ('');
     }
   }
 
