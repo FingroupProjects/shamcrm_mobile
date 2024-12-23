@@ -14,14 +14,15 @@ class CreateGroupChat extends GroupChatEvent {
 
 
 class AddUserToGroup extends GroupChatEvent {
-  final String chatId;
-  final List<int>? userId;
+  final int chatId; 
+  final int? userId; 
 
   AddUserToGroup({
     required this.chatId,
     this.userId,
   });
 }
+
 class DeleteUserFromGroup extends GroupChatEvent {
   final int chatId;  
   final int userId;  
