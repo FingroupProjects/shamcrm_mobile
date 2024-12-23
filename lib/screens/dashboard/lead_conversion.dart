@@ -180,8 +180,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
       return PieChartSectionData(
         color: i == 0
-            ? const Color(0xFF60A5FA).withOpacity(isTouched ? 1 : 0.6)
-            : const Color.fromARGB(255, 33, 41, 188)
+            ? const Color(0xFF3935E7).withOpacity(isTouched ? 1 : 0.6)
+            : const Color(0xFF27A945)
                 .withOpacity(isTouched ? 1 : 0.6),
         value: value,
         title: isTouched ? '${value.toStringAsFixed(1)}%' : '',

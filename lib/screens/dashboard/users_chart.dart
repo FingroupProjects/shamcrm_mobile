@@ -18,47 +18,46 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
     context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
   }
 
-@override
-Widget build(BuildContext context) {
-  final state = context.watch<TaskCompletionBloc>().state;
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<TaskCompletionBloc>().state;
 
-  // Если состояние TaskCompletionError, вернуть пустой контейнер
-  if (state is TaskCompletionError) {
-    return const SizedBox.shrink();
+    // Если состояние TaskCompletionError, вернуть пустой контейнер
+    if (state is TaskCompletionError) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.all(16),
+      child: BlocBuilder<TaskCompletionBloc, TaskCompletionState>(
+        builder: (context, state) {
+          if (state is TaskCompletionLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+            );
+          }
+
+          if (state is TaskCompletionLoaded) {
+            return _buildTaskList(state);
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+    );
   }
-
-  return Container(
-    width: double.infinity,
-    height: 400, // Фиксированная высота контейнера
-    decoration: BoxDecoration(
-      color: Colors.grey[50],
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    margin: const EdgeInsets.all(16),
-    child: BlocBuilder<TaskCompletionBloc, TaskCompletionState>(
-      builder: (context, state) {
-        if (state is TaskCompletionLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-          );
-        }
-
-        if (state is TaskCompletionLoaded) {
-          return _buildTaskList(state);
-        }
-
-        return const SizedBox.shrink();
-      },
-    ),
-  );
-}
 
   Widget _buildErrorSnackbar(String message) {
     return Center(
@@ -75,6 +74,13 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildTaskList(TaskCompletionLoaded state) {
+    // Высота одного элемента
+    const double itemHeight = 60.0;
+
+    // Рассчитать динамическую высоту
+    double calculatedHeight =
+        (state.data.length * itemHeight).clamp(0, 400).toDouble();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,7 +96,8 @@ Widget build(BuildContext context) {
           ),
         ),
         const SizedBox(height: 16),
-        Expanded(
+        Container(
+          height: calculatedHeight,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 0.0),
             itemCount: state.data.length,
