@@ -39,16 +39,16 @@ class AuthScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Ваш UI для ввода поддомена
-                  const Text(
-                    'SHAMCRM',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Gilroy',
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        right: 0), // Отступ в 5 пикселей от левого края
+                    child: Image.asset(
+                      'assets/icons/11.png',
+                      height: 80,
                     ),
                   ),
-                  SizedBox(height: 8),
+
+                  SizedBox(height: 30),
                   const Text(
                     'Введите ваш поддомен',
                     textAlign: TextAlign.center,

@@ -14,6 +14,7 @@ class CustomTextField extends StatefulWidget {
   final int maxLines; 
   final String? Function(String?)? validator;
     final Function(String)? onChanged; // Add onChanged parameter
+  final String? errorText; // Добавляем поддержку errorText
 
 
   CustomTextField({
@@ -29,6 +30,7 @@ class CustomTextField extends StatefulWidget {
     this.maxLines = 1, 
     this.validator, 
         this.onChanged, // Add to constructor
+    this.errorText, // Добавляем в конструктор
 
   });
 

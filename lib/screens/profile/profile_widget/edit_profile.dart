@@ -40,6 +40,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String _userImage = '';
   File? _localImage;
   final ImagePicker _picker = ImagePicker();
+  // Добавляем переменные для хранения ошибок
+  String? _nameError;
+  String? _surnameError;
+  String? _phoneError;
+  String? _emailError;
+  // Функция валидации email
+  bool isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  // Функция валидации телефона (пример базовой валидации)
+  bool isValidPhone(String phone) {
+    return phone.length >= 9 && phone.length <= 12;
+  }
+ bool isValidName(String name) {
+    return name.trim().isNotEmpty && name.length >= 2;
+  }
+
 
   // Новый метод для определения пути изображения
   String? _getImageToUpload() {
@@ -300,37 +318,67 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
               CustomTextField(
                 controller: NameController,
                 hintText: 'Введите Имя',
                 label: 'Имя',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
+                onChanged: (value) {
+                  setState(() {
+                    _nameError = null;
+                  });
                 },
               ),
-              const SizedBox(height: 20),
+              if (_nameError != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 12),
+                    child: Text(
+                      _nameError!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
               CustomTextField(
                 controller: SurnameController,
                 hintText: 'Введите Фамилию',
                 label: 'Фамилия',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Поле обязательно для заполнения';
-                  }
-                  return null;
+                onChanged: (value) {
+                  setState(() {
+                    _surnameError = null;
+                  });
                 },
               ),
-
+              if (_surnameError != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 12),
+                    child: Text(
+                      _surnameError!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                  ),
+                ),
+              
               const SizedBox(height: 8),
               CustomPhoneNumberInput(
                 controller: phoneController,
+                label: 'Телефон',
                 onInputChanged: (String number) {
                   setState(() {
                     selectedDialCode = number;
+                    _phoneError = null;
                   });
                 },
                 validator: (value) {
@@ -339,8 +387,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   }
                   return null;
                 },
-                label: 'Телефон',
               ),
+              if (_phoneError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, right: 75),
+                  child: Text(
+                    _phoneError!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
+
               const SizedBox(height: 8),
               CustomTextField(
                 controller: roleController,
@@ -361,75 +421,184 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 hintText: 'Введите электронную почту',
                 label: 'Электронная почта',
                 keyboardType: TextInputType.emailAddress,
+                onChanged: (value) {
+                  setState(() {
+                    _emailError = null;
+                  });
+                },
               ),
-              const SizedBox(height: 20),
+              if (_emailError != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 12),
+                    child: Text(
+                      _emailError!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 30),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff1E2E52),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: Size(double.infinity, 48),
                 ),
                 onPressed: () async {
-                  SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                  String UUID = prefs.getString('userID') ?? '';
+                  // Сбрасываем состояние ошибок
+                  setState(() {
+                    _nameError = null;
+                    _surnameError = null;
+                    _phoneError = null;
+                    _emailError = null;
+                  });
 
-                  if (UUID.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              'Ошибка: UUID не найден в SharedPreferences')),
-                    );
-                    return;
+                  // Проверяем валидацию
+                  bool isValid = true;
+
+                  if (NameController.text.trim().isEmpty) {
+                    setState(() {
+                      _nameError = 'Поле имя обязательно для заполнения';
+                    });
+                    isValid = false;
                   }
+
+                  if (SurnameController.text.trim().isEmpty) {
+                    setState(() {
+                      _surnameError = 'Поле фамилия обязательно для заполнения';
+                    });
+                    isValid = false;
+                  }
+
+                  if (phoneController.text.trim().isEmpty) {
+                    setState(() {
+                      _phoneError = 'Поле телефон обязательно для заполнения';
+                    });
+                    isValid = false;
+                  } else if (!isValidPhone(phoneController.text.trim())) {
+                    setState(() {
+                      _phoneError = 'Введите корректный номер телефона';
+                    });
+                    isValid = false;
+                  }
+
+                  if (emailController.text.trim().isNotEmpty &&
+                      !isValidEmail(emailController.text.trim())) {
+                    setState(() {
+                      _emailError = 'Введите корректный email адрес';
+                    });
+                    isValid = false;
+                  }
+
+                  if (!isValid) return;
 
                   try {
-                    SharedPreferences USNAME =
+                    SharedPreferences prefs =
                         await SharedPreferences.getInstance();
-                    String UserNameProfile = (NameController.text);
-                    await USNAME.setString(
-                        'userNameProfile', UserNameProfile.toString());
+                    String UUID = prefs.getString('userID') ?? '';
+
+                    if (UUID.isEmpty) {
+                      _showErrorMessage('Ошибка: UUID не найден');
+                      return;
+                    }
+
+                    String UserNameProfile = NameController.text;
+                    await prefs.setString('userNameProfile', UserNameProfile);
 
                     int userId = int.parse(UUID);
-                    final name = NameController.text;
-                    final sname = SurnameController.text;
-                    final patronymic = PatronymicController.text;
-
-                    final phone = phoneController.text;
-                    final email = emailController.text;
-
-                    // Используем новый метод _getImageToUpload()
                     final image = _getImageToUpload();
-
                     context.read<ProfileBloc>().add(UpdateProfile(
                         userId: userId,
-                        name: name,
-                        sname: sname,
-                        pname: patronymic,
-                        phone: phone,
-                        email: email,
-                        image: image));
+                        name: NameController.text.trim(),
+                        sname: SurnameController.text.trim(),
+                        phone: phoneController.text.trim(),
+                        email: emailController.text.trim(),
+                        image: image,
+                        pname: ''));
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('Ошибка: UUID имеет некорректный формат')),
-                    );
+                    _showErrorMessage(
+                        'Произошла ошибка при обновлении профиля');
                   }
                 },
-                child: Text('Сохранить', style: TextStyle(color: Colors.white)),
+                child: Text('Сохранить',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    )),
               ),
 
               BlocListener<ProfileBloc, ProfileState>(
                 listener: (context, state) {
                   if (state is ProfileSuccess) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(state.message)),
+                      SnackBar(
+                        content: Text(
+                          'Профиль успешно обновлен!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.green,
+                        elevation: 3,
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 2),
+                      ),
                     );
                     Navigator.pop(context);
                   } else if (state is ProfileError) {
+                    String message;
+
+                    if (state.message.contains('500')) {
+                      message = 'Ошибка на сервере. Попробуйте позже.';
+                    } else if (state.message.contains('422')) {
+                      message = 'Проверьте введенные данные';
+                    } else if (state.message.contains('404')) {
+                      message = 'Ресурс не найден';
+                    } else {
+                      message = 'Произошла ошибка при обновлении профиля';
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(state.message)),
+                      SnackBar(
+                        content: Text(
+                          message,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                         behavior: SnackBarBehavior.floating,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.red,
+                        elevation: 3,
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 2),
+                      ),
                     );
                   }
                 },
@@ -438,6 +607,31 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.red,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 2),
       ),
     );
   }

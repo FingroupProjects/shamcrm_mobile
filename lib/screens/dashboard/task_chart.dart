@@ -127,11 +127,10 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
 
   List<PieChartSectionData> _showingSections(TaskChart taskChart) {
     final List<Color> colors = [
-      const Color.fromARGB(255, 29, 93, 197), // Активный - голубой
-      const Color.fromARGB(255, 255, 0, 0), // Просрочен - фиолетовый
-      const Color(0xFF34D399), // Завершён - зеленый
+      const Color(0xFF3935E7), // Активный - голубой
+      const Color(0xFFC30202), // Просрочен - фиолетовый
+      const Color(0xFF27A945), // Завершён - зеленый
     ];
-
     return List.generate(3, (i) {
       final isTouched = i == touchedIndex;
       final opacity = isTouched ? 1.0 : 0.8;
@@ -160,18 +159,18 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
           children: [
             _buildLegendItem(
               'Активные ',
-              const Color.fromARGB(255, 29, 93, 197),
+              const Color(0xFF3935E7),
             ),
             const SizedBox(width: 24),
             _buildLegendItem(
               'Просроченные',
-              const Color.fromARGB(255, 245, 0, 0),
+              const Color(0xFFC30202),
             ),
           ],
         ),
         _buildLegendItem(
           'Завершённые ',
-          const Color(0xFF34D399),
+          const Color(0xFF27A945),
         ),
       ],
     );
