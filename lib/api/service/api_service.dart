@@ -2703,7 +2703,7 @@ Future<Map<String, dynamic>> deleteUserFromGroup(int chatId, int userId) async {
       }
     } catch (e) {
       print('Ошибка запроса!');
-      throw ('Ошибка получения данных');
+      throw ('');
     }
   }
 
@@ -2754,7 +2754,7 @@ Future<Map<String, dynamic>> deleteUserFromGroup(int chatId, int userId) async {
         throw ('Ошибка загрузки данных проектов!');
       }
     } catch (e) {
-      throw ('Ошибка получения данных проектов!');
+      throw ('');
     }
   }
 

@@ -96,4 +96,3 @@ Future<void> _clearChatsEvent(ClearChats event, Emitter<ChatsState> emit) async 
 }
 }
 
-
