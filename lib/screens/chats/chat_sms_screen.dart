@@ -530,113 +530,96 @@ if (renderBox != null) {
     return '${directory.path}/$fileName';
   }
 
-  Future<void> setUpServices() async {
-    debugPrint('--------------------------- start socket:::::::');
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+  void setUpServices() async {
+  debugPrint('--------------------------- start socket:::::::');
+  final prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('token');
 
-    final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+  final baseUrlSocket = await apiService.getSocketBaseUrl();
+  final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
 
-    final customOptions = PusherChannelsOptions.custom(
-      // You may also apply the given metadata in your custom uri
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
+  final customOptions = PusherChannelsOptions.custom(
+    uriResolver: (metadata) =>
+        Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+    metadata: PusherChannelsOptionsMetadata.byDefault(),
+  );
 
-    socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint(exception);
-        // refresh();
+  socketClient = PusherChannelsClient.websocket(
+    options: customOptions,
+    connectionErrorHandler: (exception, trace, refresh) {
+      debugPrint(exception);
+      // refresh();
+    },
+    minimumReconnectDelayDuration: const Duration(
+      seconds: 1,
+    ),
+  );
+
+  final myPresenceChannel = socketClient.presenceChannel(
+    'presence-chat.${widget.chatId}',
+    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+      authorizationEndpoint: Uri.parse(baseUrlSocket),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'X-Tenant': '$enteredDomain-back',
       },
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
-      ),
-    );
+      onAuthFailed: (exception, trace) {
+        debugPrint(exception);
+      },
+    ),
+  );
 
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(exception);
-        },
-      ),
-    );
+  socketClient.onConnectionEstablished.listen((_) {
+    myPresenceChannel.subscribeIfNotUnsubscribed();
+    
+    chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+      MessageSocketData mm = messageSocketDataFromJson(event.data);
+      print('----sender');
+      print(mm.message?.text ?? 'No text');
+      print(mm.message?.sender?.name ?? 'Unknown sender');
 
-    socketClient.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String UUID = prefs.getString('userID') ?? '';
+      print('userID : $UUID');
 
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
-        MessageSocketData mm = messageSocketDataFromJson(event.data);
-        print('----sender');
-        print(mm.message!.text);
-        print(mm.message!.sender!);
-        print(mm.message!.text!);
-        print(userID.value);
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String UUID = prefs.getString('userID').toString();
-        print('userID : $UUID');
-
-        print('--- end');
-        context.read<ListenSenderFileCubit>().updateValue(false);
-        context.read<ListenSenderVoiceCubit>().updateValue(false);
-        context.read<ListenSenderTextCubit>().updateValue(false);
-
-        Message msg;
-        if (mm.message!.type == 'voice' ||
-            mm.message!.type == 'file' ||
-            mm.message!.type == 'image' ||
-            mm.message!.type == 'document') {
-          msg = Message(
-            id: mm.message!.id!,
-            filePath: mm.message!.filePath.toString(),
-            text: mm.message!.text ??= mm.message!.type!,
-            type: mm.message!.type.toString(),
-            isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
-                mm.message!.sender!.type == 'user'),
-            createMessateTime: mm.message!.createdAt.toString(),
-            duration: Duration(
-                seconds: (mm.message!.voiceDuration != null)
-                    ? double.parse(mm.message!.voiceDuration.toString()).round()
-                    : 20),
-            senderName: mm.message!.sender!.name!,
-          );
-        } else {
-          msg = Message(
-              id: mm.message!.id!,
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              createMessateTime: mm.message!.createdAt.toString(),
-              isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
-                  mm.message!.sender!.type == 'user'),
-              senderName: mm.message!.sender!.name!);
-        }
-
-        setState(() {
-          context.read<MessagingCubit>().addMessageFormSocket(msg);
-        });
-        _scrollToBottom();
-      });
-    });
-
-    try {
-      await socketClient.connect();
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
+      Message msg;
+      if (mm.message?.type == 'voice' || mm.message?.type == 'file' || mm.message?.type == 'image' || mm.message?.type == 'document') {
+        msg = Message(
+          id: mm.message?.id ?? 0,
+          filePath: mm.message?.filePath.toString() ?? '',
+          text: mm.message?.text ?? mm.message?.type ?? '',
+          type: mm.message?.type ?? '',
+          isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
+          createMessateTime: mm.message?.createdAt?.toString() ?? '',
+          duration: Duration(seconds: (mm.message?.voiceDuration != null) ? double.parse(mm.message!.voiceDuration.toString()).round() : 20),
+          senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        );
+      } else {
+        msg = Message(
+          id: mm.message?.id ?? 0,
+          text: mm.message?.text ?? mm.message?.type ?? '',
+          type: mm.message?.type ?? '',
+          createMessateTime: mm.message?.createdAt?.toString() ?? '',
+          isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
+          senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        );
       }
+
+      setState(() {
+        context.read<MessagingCubit>().addMessageFormSocket(msg);
+      });
+      _scrollToBottom();
+    });
+  });
+
+  try {
+    await socketClient.connect();
+  } catch (e) {
+    if (kDebugMode) {
+      print(e);
     }
   }
+}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {

@@ -37,7 +37,7 @@ class ParticipantProfileScreen extends StatelessWidget {
 
     try {
       DateTime parsedDate = DateTime.parse(date);
-      return DateFormat('dd-MM-yyyy HH:mm:ss').format(parsedDate);
+      return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
     } catch (e) {
       return "Неизвестно";
     }
@@ -106,11 +106,11 @@ class ParticipantProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 child: Column(
                   children: [
-                    buildInfoRow("ФИО", name, Icons.person),
+                    buildInfoRow("Имя пользователя", name, Icons.person),
                     buildDivider(),
                     buildInfoRow("Email", email, Icons.email),
                     buildDivider(),
-                    buildInfoRow("Номер телефона", phone, Icons.phone),
+                    buildInfoRow("Номер телефона", "+$phone", Icons.phone),
                     buildDivider(),
                     buildInfoRow("Логин", login, Icons.account_circle),
                     buildDivider(),
