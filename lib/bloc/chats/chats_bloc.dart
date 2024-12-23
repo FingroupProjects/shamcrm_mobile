@@ -84,7 +84,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     if (response['result'] == true) {
       emit(ChatsDeleted('Чат успешно удален'));
     } else {
-      emit(ChatsError('Нельзя удалить группу!'));
+      emit(ChatsError('Вы не можете удалить эту группу!'));
     }
   } catch (e) {
     emit(ChatsError('Ошибка удаления чата: ${e.toString()}'));
