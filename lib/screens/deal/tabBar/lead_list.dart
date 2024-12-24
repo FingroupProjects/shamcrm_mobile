@@ -149,6 +149,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                           setState(() {
                             selectedLeadData = value;
                           });
+                         FocusScope.of(context).unfocus();
+
                         }
                       },
                     ),

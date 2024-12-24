@@ -154,6 +154,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                           setState(() {
                             selectedManagerData = value;
                           });
+                           FocusScope.of(context).unfocus();
+
                         }
                       },
                     ),

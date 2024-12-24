@@ -151,6 +151,8 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                           setState(() {
                             selectedRegionData = value;
                           });
+                           FocusScope.of(context).unfocus();
+
                         }
                       },
                     ),
