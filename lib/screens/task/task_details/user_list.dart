@@ -89,8 +89,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return ListTile(
                           minTileHeight: 1,
                           minVerticalPadding: 2,
@@ -127,7 +126,10 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               ],
                             ),
                           ),
-                          onTap: () => onItemSelect(),
+                          onTap: () {
+                            onItemSelect(); 
+                            FocusScope.of(context).unfocus();  
+                          },
                         );
                       },
                       headerListBuilder: (context, hint, enabled) {
