@@ -181,10 +181,10 @@ class _LeadCardState extends State<LeadCard> {
                       children: [
                         Image.asset(
                           'assets/icons/tabBar/sms.png',
-                          width: 17,
-                          height: 17,
+                          width: 18,
+                          height: 18,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 0),
                         Text(
                           ' ${widget.lead.messageAmount ?? 0}',
                           style: const TextStyle(
@@ -196,15 +196,15 @@ class _LeadCardState extends State<LeadCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     Row(
                       children: [
                         Image.asset(
                           'assets/icons/tabBar/date.png',
-                          width: 17,
-                          height: 17,
+                          width: 18,
+                          height: 18,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 0),
                         Text(
                           ' ${formatDate(widget.lead.createdAt ?? 'Неизвестно')}',
                           style: const TextStyle(
