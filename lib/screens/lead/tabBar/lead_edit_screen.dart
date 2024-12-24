@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -17,12 +18,10 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LeadEditScreen extends StatefulWidget {
   final int leadId;
   final String leadName;
-  // final String leadStatus;
   final String? region;
   final String? manager;
   final String? birthday;
@@ -39,7 +38,6 @@ class LeadEditScreen extends StatefulWidget {
   LeadEditScreen(
       {required this.leadId,
       required this.leadName,
-      // required this.leadStatus,
       required this.statusId,
       this.region,
       this.manager,
@@ -70,15 +68,32 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+
   String? selectedRegion;
   String? selectedManager;
+ String selectedDialCode = '+992'; // Default country code
+
+  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1']; // Country codes list
+
   List<CustomField> customFields = [];
 
   @override
   void initState() {
     super.initState();
     titleController.text = widget.leadName;
-    phoneController.text = widget.phone ?? '';
+   if (widget.phone != null) {
+      // Extract country code from the phone number if it exists
+      String phoneNumber = widget.phone!;
+      for (var code in countryCodes) {
+        if (phoneNumber.startsWith(code)) {
+          setState(() {
+            selectedDialCode = code;
+            phoneController.text = phoneNumber.substring(code.length); // Set phone number without code
+          });
+          break;
+        }
+      }
+    }  
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
     telegramController.text = widget.telegram ?? '';
@@ -194,15 +209,31 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             ? 'Поле обязательно для заполнения'
                             : null,
                       ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
+                      CustomPhoneNumberInput(
                         controller: phoneController,
-                        hintText: 'Введите номер телефона',
+                        selectedDialCode: selectedDialCode, 
+                        onInputChanged: (String number) {
+                          setState(() {
+                            selectedDialCode = number;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
                         label: 'Телефон',
-                        validator: (value) => value!.isEmpty
-                            ? 'Поле обязательно для заполнения'
-                            : null,
                       ),
+                      // const SizedBox(height: 8),
+                      // CustomTextField(
+                      //   controller: phoneController,
+                      //   hintText: 'Введите номер телефона',
+                      //   label: 'Телефон',
+                      //   validator: (value) => value!.isEmpty
+                      //       ? 'Поле обязательно для заполнения'
+                      //       : null,
+                      // ),
                       const SizedBox(height: 8),
                       RegionRadioGroupWidget(
                         selectedRegion: selectedRegion,
@@ -353,7 +384,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
-                                    phone: phoneController.text,
+                                    phone: selectedDialCode,
                                     regionId: selectedRegion != null
                                         ? int.parse(selectedRegion!)
                                         : null,

@@ -40,7 +40,7 @@ class TaskHistory {
             email: 'Не указано',
             image: 'Не указано',
             phone: 'Не указано'),
-        status: 'Система',
+        status: 'Создан',
         date: DateTime.now(),
         changes: null,
       );
