@@ -39,7 +39,7 @@ class LeadHistory {
             name: 'Система',
             email: 'Не указано',
             phone: 'Не указано'),
-        status: 'Система',
+        status: 'Создан',
         date: DateTime.now(),
         changes: null,
       );

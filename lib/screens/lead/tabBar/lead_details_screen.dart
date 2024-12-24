@@ -126,19 +126,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     details = [
       // {'label': 'ID лида:', 'value': lead.id.toString()},
       {'label': 'Наименование лида :', 'value': lead.name},
-      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
+      {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
       {'label': 'Регион:', 'value': lead.region?.name ?? 'Не указано'},
       {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Не указано'},
-      {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
+      {'label': 'Источник:', 'value': lead.sourceLead?.name ?? 'Не указано'},
       {'label': 'Instagram:', 'value': lead.instagram ?? 'Не указано'},
       {'label': 'Facebook:', 'value': lead.facebook ?? 'Не указано'},
       {'label': 'Telegram:', 'value': lead.telegram ?? 'Не указано'},
-      {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
       {'label': 'Email:', 'value': lead.email ?? 'Не указано'},
-      {'label': 'Автор:', 'value': lead.author?.name ?? 'Не указано'},
-      {'label': 'Источник:', 'value': lead.sourceLead?.name ?? 'Не указано'},
-      {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
+      {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
       {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
+      {'label': 'Автор:', 'value': lead.author?.name ?? 'Не указано'},
+      {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
+      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
     ];
     for (var field in lead.leadCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ChatItem {
   final String name;
@@ -76,10 +77,10 @@ class ChatListItem extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                date(chatItem.time),
-                style: AppStyles.chatTimeStyle,
-              ),
+            Text(
+              DateFormat('dd/MM/yyyy').format(DateTime.parse(chatItem.time)),
+              style: AppStyles.chatTimeStyle,
+            ),
               getUnredMessageWidget(chatItem.unredMessageCount)
             ],
           ),

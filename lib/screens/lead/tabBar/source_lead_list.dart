@@ -27,28 +27,28 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
     return BlocListener<SourceLeadBloc, SourceLeadState>(
       listener: (context, state) {
         if (state is SourceLeadError) {
-          // Если произошла ошибка, показываем SnackBar с сообщением об ошибке
-         ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-               content: Text(
-                 '${state.message}',
-                 style: TextStyle(
-                   fontFamily: 'Gilroy',
-                   fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                   fontWeight: FontWeight.w500, // Жирность текста
-                   color: Colors.white, // Цвет текста для читаемости
-                 ),
-               ),
-               behavior: SnackBarBehavior.floating,
-               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-               shape: RoundedRectangleBorder(
-                 borderRadius: BorderRadius.circular(12), // Радиус, как у текстового поля
-               ),
-               backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-               elevation: 3,
-               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), // Паддинг для комфортного восприятия
-               duration: Duration(seconds: 2),
-             ),
+          // Показать сообщение об ошибке
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 2),
+            ),
           );
         }
       },
@@ -89,21 +89,22 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
               ];
             } else {
               dropdownItems = state.sourceLead.map<DropdownMenuItem<String>>(
-                  (SourceLead sourceLead) {
-                return DropdownMenuItem<String>(
-                  value: sourceLead.id.toString(),
-                  child: Text(
-                    sourceLead.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                (SourceLead sourceLead) {
+                  return DropdownMenuItem<String>(
+                    value: sourceLead.id.toString(),
+                    child: Text(
+                      sourceLead.name,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }).toList();
+                  );
+                },
+              ).toList();
             }
           }
 
@@ -142,7 +143,12 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     ),
                   ),
                   items: dropdownItems,
-                  onChanged: widget.onChanged,
+                  onChanged: (value) {
+                    widget.onChanged(value);
+
+                    // Скрыть клавиатуру при выборе элемента
+                    FocusScope.of(context).unfocus();
+                  },
                   validator: (value) {
                     if (value == null) {
                       return 'Поле обязательно для заполнения';

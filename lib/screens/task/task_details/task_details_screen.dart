@@ -116,22 +116,22 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : 'Не указано'
       },
-      {
-        'label': 'Статус:',
-        'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
-      },
-      {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
-      {
+       {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
+          {
         'label': 'Исполнитель:',
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
             : 'Не указано',
       },
-      {
+        {
         'label': 'Описание:',
         'value': task.description?.isNotEmpty == true
             ? task.description!
             : 'Не указано'
+      },
+      {
+        'label': 'Статус:',
+        'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
       },
       {'label': 'Автор:', 'value': task.author?.name ?? 'Не указано'},
       {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
