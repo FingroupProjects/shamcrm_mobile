@@ -34,7 +34,7 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
         if (state is DashboardTaskChartLoaded) {
           final totalTasks = state.taskChartData.data.reduce((a, b) => a + b);
           return Container(
-            height: 300,
+            height: 330,
             padding: const EdgeInsets.only(left: 12, top: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,22 +48,24 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
                     color: Color(0xFF1A202C),
                   ),
                 ),
-               
                 const SizedBox(height: 16),
                 _buildLegend(state.taskChartData),
+                const SizedBox(height: 16),
                 Expanded(
                   child: _buildChart(state),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Общее количество задач: $totalTasks',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: "Gilroy",
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A202C),
+                Center(
+                  child: Text(
+                    'Общее количество задач: ${totalTasks.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Gilroy",
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1A202C),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -173,7 +175,10 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
               'Активные ',
               const Color(0xFF3935E7),
             ),
-            const SizedBox(width: 24, height: 12, ),
+            const SizedBox(
+              width: 24,
+              height: 12,
+            ),
             _buildLegendItem(
               'Просроченные',
               const Color(0xFFC30202),
