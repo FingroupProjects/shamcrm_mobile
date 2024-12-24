@@ -352,7 +352,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         selectedUsers: selectedUsers,
                         onSelectUsers: (List<UserData> selectedUsersData) {
                           setState(() {
-                            // Update selected user IDs
                             selectedUsers = selectedUsersData
                                 .map((user) => user.id.toString())
                                 .toList();

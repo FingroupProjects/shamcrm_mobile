@@ -143,7 +143,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           child: const Icon(
                             Icons.delete,
                             color: Colors.white,
-                            size: 28,
+                            size: 24,
                           ),
                         ),
                         onDismissed: (direction) {
@@ -171,28 +171,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: const Icon(Icons.notifications,
-                                color: Color(0xff1E2E52), size: 28),
+                                color: Color(0xff1E2E52), size: 24),
                             title: Text(
-                              notification.type == 'message'
-                                  ? 'Новое сообщение'
-                                  : notification.type == 'deal'
-                                      ? 'Сделка'
-                                      : notification.type == 'notice'
-                                          ? 'Напоминание о заметке'
-                                          : notification.type == 'task'
-                                              ? 'Новая задача'
-                                              : notification.type == 'taskFinished'
-                                                  ? 'Задача закрыто'
-                                                  : notification.type == 'taskOutDated'
-                                                      ? 'Напоминание о просроченном'
-                                                      : notification.type == 'lead' 
-                                                      ? 'Вас назначили менеджером лида' 
-                                                      : notification.type,
-                              style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52)),
-                            ),
+                            notification.type == 'message'
+                                ? 'Новое сообщение'
+                                : notification.type == 'deal'
+                                    ? 'Сделка'
+                                    : notification.type == 'notice'
+                                        ? 'Напоминание о заметке'
+                                        : notification.type == 'task'
+                                            ? 'Новая задача'
+                                            : notification.type == 'taskFinished'
+                                                ? 'Задача закрыто'
+                                                : notification.type == 'taskOutDated'
+                                                    ? 'Напоминание о просроченном'
+                                                    : notification.type == 'lead' 
+                                                        ? 'Вас назначили менеджером лида' 
+                                                        : notification.type,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xff1E2E52)),
+                            overflow: TextOverflow.ellipsis, 
+                            softWrap: false, 
+                            ),                           
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(notification.message,
