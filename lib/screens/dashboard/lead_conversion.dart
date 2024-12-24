@@ -180,11 +180,11 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
       return PieChartSectionData(
         color: i == 0
-            ? const Color(0xFF3935E7).withOpacity(isTouched ? 1 : 0.6)
+            ? const Color(0xFF3935E7).withOpacity(isTouched ? 0.8 : 1)
             : const Color(0xFF27A945)
-                .withOpacity(isTouched ? 1 : 0.6),
+                .withOpacity(isTouched ? 0.8 : 1),
         value: value,
-        title: isTouched ? '${value.toStringAsFixed(1)}%' : '',
+        title: isTouched ? '${value.toStringAsFixed(1)}' : '',
         radius: radius,
         titleStyle: TextStyle(
           fontSize: fontSize,
@@ -215,12 +215,12 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   mainAxisAlignment: MainAxisAlignment.center,
   children: [
     _buildLegendItem(
-      'Новые (${data.newLeads.toStringAsFixed(1)}%)',
+      'Новые (${data.newLeads.toStringAsFixed(1)})',
       const Color(0xFF3935E7), // Используется шестнадцатеричный цветовой код
     ),
     const SizedBox(width: 24),
     _buildLegendItem(
-      'Повторные (${data.repeatedLeads.toStringAsFixed(1)}%)',
+      'Повторные (${data.repeatedLeads.toStringAsFixed(1)})',
       const Color(0xFF27A945), // Исправленный код для ARGB
     ),
   ],

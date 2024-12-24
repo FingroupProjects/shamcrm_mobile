@@ -53,7 +53,7 @@ class ChatSmsScreen extends StatefulWidget {
 
 class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ScrollController _scrollController = ScrollController();
-  String? _currentDate; // Текущая дата, отображаемая в верхнем AppBar.
+  String? _currentDate;
   final TextEditingController _messageController = TextEditingController();
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
@@ -61,7 +61,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   late VoiceController audioController;
   final ApiService apiService = ApiService();
-
+  String? _visibleDate; // Для отображения даты на экране
   late String baseUrl;
   bool _canCreateChat = false;
 
@@ -88,10 +88,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _fetchBaseUrl();
       _markMessagesAsRead();
     });
-    // _connectWebSocket();
   }
 
-// Новый метод для отметки сообщений как прочитанных
   void _markMessagesAsRead() {
     final state = context.read<MessagingCubit>().state;
     if (state is MessagesLoadedState && state.messages.isNotEmpty) {
@@ -102,6 +100,93 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
+  }
+
+  void _showDatePicker(BuildContext context, List<Message> messages) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16), // Отступы вокруг окна
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20), // Скруглённые углы
+        ),
+        child: Container(
+          color: Colors.white, // Белый фон для всего окна
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Выбрать дни',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Закрыть',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(
+                height: 400,
+                child: CalendarDatePicker(
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                  onDateChanged: (date) {
+                    final index = _findMessageIndexByDate(messages, date);
+                    if (index != -1) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToMessageIndex(index);
+                      });
+                    }
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
+    for (int i = 0; i < messages.length; i++) {
+      final messageDate = DateTime.parse(messages[i].createMessateTime);
+      if (isSameDay(messageDate, targetDate)) {
+        return i; // Найден индекс сообщения с нужной датой
+      }
+    }
+    return -1; // Если такого сообщения нет
+  }
+
+  void _scrollToMessageIndex(int index) {
+    if (_scrollController.hasClients) {
+      // Учитываем, что сообщения могут быть сгруппированы по датам, и каждый блок сообщения может иметь отступы
+      final position = index *
+          50.0; // 50.0 — это предполагаемая высота одного сообщения, подкорректируй при необходимости
+      _scrollController.animateTo(
+        position,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -143,7 +228,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 String userIdCheck = '';
                 SharedPreferences prefs = await SharedPreferences.getInstance();
                 userIdCheck = prefs.getString('userID') ?? '';
-                print('USERID: $userIdCheck');
                 final participant = getChatById.chatUsers
                     .firstWhere(
                         (user) => user.participant.id.toString() != userIdCheck)
@@ -237,8 +321,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       body: Column(
         children: [
           Expanded(child: messageListUi()),
-
-          /// Conditional rendering
           if (widget.canSendMessage && _canCreateChat)
             inputWidget()
           else
@@ -287,34 +369,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           DateTime? currentDate;
           List<Widget> currentGroup = [];
 
-          // Проходим по сообщениям в обратном порядке
           for (int i = state.messages.length - 1; i >= 0; i--) {
             final message = state.messages[i];
             final messageDate = DateTime.parse(message.createMessateTime);
 
-            // Если дата изменилась или это первое сообщение
             if (currentDate == null || !isSameDay(currentDate, messageDate)) {
-              // Добавляем предыдущую группу, если она есть
               if (currentGroup.isNotEmpty) {
                 messageWidgets.addAll(currentGroup);
                 currentGroup = [];
               }
 
-              // Добавляем новую дату
               currentGroup.add(
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                   child: GestureDetector(
-                    onTap: () {
-                      // Перематываем список к самому последнему сообщению
-                      if (_scrollController.hasClients) {
-                        _scrollController.animateTo(
-                          _scrollController.position.maxScrollExtent,
-                          duration: Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    },
+                    onLongPress: () => _showDatePicker(context, state.messages),
                     child: Center(
                       child: Text(
                         formatDate(messageDate),
@@ -332,7 +401,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               currentDate = messageDate;
             }
 
-            // Добавляем сообщение в текущую группу
             currentGroup.add(
               MessageItemWidget(
                 message: message,
@@ -342,7 +410,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             );
           }
 
-          // Добавляем последнюю группу
           if (currentGroup.isNotEmpty) {
             messageWidgets.addAll(currentGroup);
           }
@@ -353,8 +420,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               controller: _scrollController,
               padding: EdgeInsets.zero,
               reverse: true,
-              children:
-                  messageWidgets.reversed.toList(), // Переворачиваем список
+              children: messageWidgets.reversed.toList(),
             ),
           );
         }
@@ -369,10 +435,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         date1.month == date2.month &&
         date1.day == date2.day;
   }
-
   String formatDate(DateTime date) {
     return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
   }
+
   Widget messageListView() {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
@@ -423,31 +489,32 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   ),
                 ),
               );
-final GlobalKey key = GlobalKey();
-currentGroup.add(
-  Padding(
-    key: key, // Устанавливаем GlobalKey для виджета
-    padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-    child: Center(
-      child: Text(
-        formatDate(messageDate),
-        style: TextStyle(
-          fontSize: 14,
-          fontFamily: "Gilroy",
-          fontWeight: FontWeight.w400,
-          color: Colors.black,
-        ),
-      ),
-    ),
-  ),
-);
+              final GlobalKey key = GlobalKey();
+              currentGroup.add(
+                Padding(
+                  key: key, // Устанавливаем GlobalKey для виджета
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                  child: Center(
+                    child: Text(
+                      formatDate(messageDate),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: "Gilroy",
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              );
 
 // Получаем BuildContext из GlobalKey
-final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
-if (renderBox != null) {
-  final position = renderBox.localToGlobal(Offset.zero).dy;
-  _messagePositions[formatDate(messageDate)] = position;
-}
+              final renderBox =
+                  key.currentContext?.findRenderObject() as RenderBox?;
+              if (renderBox != null) {
+                final position = renderBox.localToGlobal(Offset.zero).dy;
+                _messagePositions[formatDate(messageDate)] = position;
+              }
 
               // Сохраняем позицию для отображения
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -530,96 +597,113 @@ if (renderBox != null) {
     return '${directory.path}/$fileName';
   }
 
-  void setUpServices() async {
-  debugPrint('--------------------------- start socket:::::::');
-  final prefs = await SharedPreferences.getInstance();
-  String? token = prefs.getString('token');
+  Future<void> setUpServices() async {
+    debugPrint('--------------------------- start socket:::::::');
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
 
-  final baseUrlSocket = await apiService.getSocketBaseUrl();
-  final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+    final baseUrlSocket = await apiService.getSocketBaseUrl();
+    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
 
-  final customOptions = PusherChannelsOptions.custom(
-    uriResolver: (metadata) =>
-        Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
-    metadata: PusherChannelsOptionsMetadata.byDefault(),
-  );
+    final customOptions = PusherChannelsOptions.custom(
+      // You may also apply the given metadata in your custom uri
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
 
-  socketClient = PusherChannelsClient.websocket(
-    options: customOptions,
-    connectionErrorHandler: (exception, trace, refresh) {
-      debugPrint(exception);
-      // refresh();
-    },
-    minimumReconnectDelayDuration: const Duration(
-      seconds: 1,
-    ),
-  );
-
-  final myPresenceChannel = socketClient.presenceChannel(
-    'presence-chat.${widget.chatId}',
-    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-      authorizationEndpoint: Uri.parse(baseUrlSocket),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'X-Tenant': '$enteredDomain-back',
-      },
-      onAuthFailed: (exception, trace) {
+    socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {
         debugPrint(exception);
+        // refresh();
       },
-    ),
-  );
+      minimumReconnectDelayDuration: const Duration(
+        seconds: 1,
+      ),
+    );
 
-  socketClient.onConnectionEstablished.listen((_) {
-    myPresenceChannel.subscribeIfNotUnsubscribed();
-    
-    chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-      MessageSocketData mm = messageSocketDataFromJson(event.data);
-      print('----sender');
-      print(mm.message?.text ?? 'No text');
-      print(mm.message?.sender?.name ?? 'Unknown sender');
+    final myPresenceChannel = socketClient.presenceChannel(
+      'presence-chat.${widget.chatId}',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back'
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint(exception);
+        },
+      ),
+    );
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? '';
-      print('userID : $UUID');
+    socketClient.onConnectionEstablished.listen((_) {
+      myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      Message msg;
-      if (mm.message?.type == 'voice' || mm.message?.type == 'file' || mm.message?.type == 'image' || mm.message?.type == 'document') {
-        msg = Message(
-          id: mm.message?.id ?? 0,
-          filePath: mm.message?.filePath.toString() ?? '',
-          text: mm.message?.text ?? mm.message?.type ?? '',
-          type: mm.message?.type ?? '',
-          isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
-          createMessateTime: mm.message?.createdAt?.toString() ?? '',
-          duration: Duration(seconds: (mm.message?.voiceDuration != null) ? double.parse(mm.message!.voiceDuration.toString()).round() : 20),
-          senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        );
-      } else {
-        msg = Message(
-          id: mm.message?.id ?? 0,
-          text: mm.message?.text ?? mm.message?.type ?? '',
-          type: mm.message?.type ?? '',
-          createMessateTime: mm.message?.createdAt?.toString() ?? '',
-          isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
-          senderName: mm.message?.sender?.name ?? 'Unknown sender',
-        );
-      }
+      chatSubscribtion =
+          myPresenceChannel.bind('chat.message').listen((event) async {
+        MessageSocketData mm = messageSocketDataFromJson(event.data);
+        print('----sender');
+        print(mm.message!.text);
+        print(mm.message!.sender!);
+        print(mm.message!.text!);
+        print(userID.value);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String UUID = prefs.getString('userID').toString();
+        print('userID : $UUID');
 
-      setState(() {
-        context.read<MessagingCubit>().addMessageFormSocket(msg);
+        print('--- end');
+        context.read<ListenSenderFileCubit>().updateValue(false);
+        context.read<ListenSenderVoiceCubit>().updateValue(false);
+        context.read<ListenSenderTextCubit>().updateValue(false);
+
+        Message msg;
+        if (mm.message!.type == 'voice' ||
+            mm.message!.type == 'file' ||
+            mm.message!.type == 'image' ||
+            mm.message!.type == 'document') {
+          msg = Message(
+            id: mm.message!.id!,
+            filePath: mm.message!.filePath.toString(),
+            text: mm.message!.text ??= mm.message!.type!,
+            type: mm.message!.type.toString(),
+            isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
+                mm.message!.sender!.type == 'user'),
+            createMessateTime: mm.message!.createdAt.toString(),
+            duration: Duration(
+                seconds: (mm.message!.voiceDuration != null)
+                    ? double.parse(mm.message!.voiceDuration.toString()).round()
+                    : 20),
+            senderName: mm.message!.sender!.name!,
+          );
+        } else {
+          msg = Message(
+              id: mm.message!.id!,
+              text: mm.message!.text ??= mm.message!.type!,
+              type: mm.message!.type.toString(),
+              createMessateTime: mm.message!.createdAt.toString(),
+              isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
+                  mm.message!.sender!.type == 'user'),
+              senderName: mm.message!.sender!.name!);
+        }
+
+        setState(() {
+          context.read<MessagingCubit>().addMessageFormSocket(msg);
+        });
+        _scrollToBottom();
       });
-      _scrollToBottom();
     });
-  });
 
-  try {
-    await socketClient.connect();
-  } catch (e) {
-    if (kDebugMode) {
-      print(e);
+    try {
+      await socketClient.connect();
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
     }
   }
-}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -667,9 +751,10 @@ if (renderBox != null) {
       context.read<ListenSenderFileCubit>().updateValue(false);
     }
   }
-void _onScroll() {
+
+  void _onScroll() {
     if (_scrollController.hasClients) {
-          print("Scroll position: ${_scrollController.position.pixels}");
+      print("Scroll position: ${_scrollController.position.pixels}");
 
       // Получаем видимые элементы
       final position = _scrollController.position;
@@ -678,7 +763,8 @@ void _onScroll() {
 
       // Проверяем позиции сообщений
       for (final entry in _messagePositions.entries) {
-        if (viewportOffset < entry.value && entry.value < viewportOffset + viewportExtent) {
+        if (viewportOffset < entry.value &&
+            entry.value < viewportOffset + viewportExtent) {
           setState(() {
             _currentDate = entry.key;
           });
@@ -687,25 +773,28 @@ void _onScroll() {
       }
     }
   }
+
   @override
   void dispose() {
     chatSubscribtion.cancel();
     _scrollController.dispose();
-    
-_scrollController.addListener(_onScroll);
+
+    _scrollController.addListener(_onScroll);
     _messageController.dispose();
     socketClient.dispose();
     _webSocket?.close();
- print("ScrollController is initialized");
+    print("ScrollController is initialized");
     super.dispose();
   }
 }
 
 extension on Key? {
-   get currentContext => null;
+  get currentContext => null;
 }
+
 // Храним позиции сообщений и их даты
-  final Map<String, double> _messagePositions = {};
+final Map<String, double> _messagePositions = {};
+
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;

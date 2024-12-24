@@ -32,8 +32,9 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
       listener: (context, state) {},
       builder: (context, state) {
         if (state is DashboardTaskChartLoaded) {
+          final totalTasks = state.taskChartData.data.reduce((a, b) => a + b);
           return Container(
-            height: 280,
+            height: 300,
             padding: const EdgeInsets.only(left: 12, top: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,12 +48,23 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
                     color: Color(0xFF1A202C),
                   ),
                 ),
-                // const SizedBox(height: 16),
+               
+                const SizedBox(height: 16),
+                _buildLegend(state.taskChartData),
                 Expanded(
                   child: _buildChart(state),
                 ),
-                _buildLegend(state.taskChartData),
                 const SizedBox(height: 16),
+                Text(
+                  'Общее количество задач: $totalTasks',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: "Gilroy",
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A202C),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           );
@@ -133,7 +145,7 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     ];
     return List.generate(3, (i) {
       final isTouched = i == touchedIndex;
-      final opacity = isTouched ? 1.0 : 0.8;
+      final opacity = isTouched ? 0.8 : 1.0;
       final radius = isTouched ? 50.0 : 40.0;
 
       return PieChartSectionData(
@@ -161,7 +173,7 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
               'Активные ',
               const Color(0xFF3935E7),
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 24, height: 12, ),
             _buildLegendItem(
               'Просроченные',
               const Color(0xFFC30202),

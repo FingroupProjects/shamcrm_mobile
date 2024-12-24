@@ -90,14 +90,7 @@ class Task {
           ? UserTaskImage.fromJson(json['users'])
           : null,
       color: json['color'] is String ? json['color'] : null,
-      file: json['file'] != null
-          ? (json['file'] is Map<String, dynamic>
-              ? TaskFile.fromJson(json['file'])
-              : TaskFile(
-                  name: json['file'].toString(),
-                  size: 'Неизвестно',
-                ))
-          : null,
+     
       taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
               ?.map((field) => TaskCustomField.fromJson(field))
               .toList() ??

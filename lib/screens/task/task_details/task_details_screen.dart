@@ -140,6 +140,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     for (var field in task.taskCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
     }
+    
   }
 
   @override
@@ -220,14 +221,35 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   builder: (BuildContext context) =>
                                       AlertDialog(
                                     title: Text(
-                                      'Хотите завершить задачу',
+                                      'Хотите завершить задачу?',
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
-                                        fontSize: 16,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text(
+                                          'Отмена',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          minimumSize: Size(120,
+                                              48), // Увеличена ширина кнопки
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
                                       TextButton(
                                         onPressed: () {
                                           final taskId =
@@ -323,30 +345,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                             color: Colors.white,
                                             fontFamily: 'Gilroy',
                                             fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                         style: TextButton.styleFrom(
                                           backgroundColor: Color(0xff1E2E52),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text(
-                                          'Отмена',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        style: TextButton.styleFrom(
-                                          backgroundColor: Colors.red,
+                                          minimumSize: Size(120,
+                                              48), // Увеличена ширина кнопки
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8),

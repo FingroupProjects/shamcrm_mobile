@@ -79,7 +79,7 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
 
     // Рассчитать динамическую высоту
     double calculatedHeight =
-        (state.data.length * itemHeight).clamp(0, 400).toDouble();
+        (state.data.length * itemHeight).clamp(0, 300).toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

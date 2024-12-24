@@ -53,7 +53,7 @@ class DeleteLeadDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        'Вы уверены, что хотите удалить этого лида?',
+        'Вы уверены, что хотите удалить этот лид?',
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
