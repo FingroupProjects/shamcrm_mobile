@@ -12,12 +12,10 @@ class TaskById {
   final String? color;
   final Project? project;
   final List<UserById>? user;
-  final TaskFileById? file;
   final int priority;
   final ChatById? chat;
   final AuthorTask? author;
-    final List<TaskCustomFieldsById> taskCustomFields;
-
+  final List<TaskCustomFieldsById> taskCustomFields;
 
   TaskById({
     required this.id,
@@ -31,7 +29,6 @@ class TaskById {
     this.color,
     this.project,
     this.user,
-    this.file,
     required this.priority,
     this.chat, // Инициализация нового поля
     this.author, // Инициализация нового поля
@@ -73,9 +70,7 @@ class TaskById {
               .toList()
           : null,
       color: json['color'] is String ? json['color'] : null,
-      file: json['file'] != null && json['file'] is Map<String, dynamic>
-          ? TaskFileById.fromJson(json['file'])
-          : null,
+     
       chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
           ? ChatById.fromJson(json['chat']) // Преобразуем JSON для чата
           : null,
@@ -126,6 +121,7 @@ class TaskCustomFieldsById {
     );
   }
 }
+
 class ChatById {
   final int id;
   final String? lead;
@@ -265,3 +261,8 @@ class TaskStatusNameById {
     };
   }
 }
+
+
+/*
+
+*/

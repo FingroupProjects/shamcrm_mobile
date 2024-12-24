@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/task_model.dart';
+
 abstract class TaskEvent {}
 
 class FetchTaskStatuses extends TaskEvent {}
@@ -27,8 +29,8 @@ class CreateTask extends TaskEvent {
   final List<int>?
       userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
-  // final TaskFile? file;
-  final List<Map<String, String>>? customFields;
+ final String? filePath; // Изменяем тип на String
+   final List<Map<String, String>>? customFields;
 
   CreateTask({
     required this.name,
@@ -42,7 +44,7 @@ class CreateTask extends TaskEvent {
     this.description,
     this.customFields,
 
-    // this.file,
+    this.filePath,
   });
 }
 
@@ -60,7 +62,7 @@ class UpdateTask extends TaskEvent {
   final int taskStatusId;
   final List<Map<String, String>>? customFields;
 
-  // final TaskFile? file;
+  final TaskFile? file;
 
   UpdateTask({
     required this.taskId,
@@ -75,7 +77,7 @@ class UpdateTask extends TaskEvent {
     required this.taskStatusId,
     this.customFields,
 
-    // this.file,
+    this.file,
   });
 }
 

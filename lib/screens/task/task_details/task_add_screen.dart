@@ -43,6 +43,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   String? selectedFile;
   String? fileName;
   String? fileSize;
+  String? selectedFilePath; // Вместо TaskFile используем путь к файлу
 
   int? selectedPriority;
   String? selectedProject;
@@ -112,29 +113,104 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     );
   }
 
-  // Функция выбора файла
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+  // В методе _pickFile:
+Future<void> _pickFile() async {
+  try {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
 
-      if (result != null) {
-        setState(() {
-          selectedFile = result.files.single.path!;
-          fileName = result.files.single.name;
-          // Конвертируем размер в КБ
-          fileSize =
-              '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
-        });
-      }
-    } catch (e) {
-      print('Ошибка при выборе файла: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ошибка при выборе файла'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (result != null) {
+      setState(() {
+        selectedFilePath = result.files.single.path!;
+        fileName = result.files.single.name;
+        fileSize = '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
+      });
     }
+  } catch (e) {
+    print('Ошибка при выборе файла: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Ошибка при выборе файла'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+  // Виджет выбора файла
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Файл',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: _pickFile,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F7FD),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFF4F7FD)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    fileName ?? 'Выберите файл',
+                    style: TextStyle(
+                      color: fileName != null
+                          ? const Color(0xff1E2E52)
+                          : Colors.grey,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.attach_file,
+                  color: Colors.grey[600],
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (fileName != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text(
+                'Файл: ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Здесь можно добавить логику предпросмотра файла
+                },
+                child: Text(
+                  fileName!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff4759FF),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 
   // Построение выпадающего списка приоритетов
@@ -365,6 +441,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
+                      // const SizedBox(height: 16),
+                      // _buildFileSelection(), // Добавляем виджет выбора файла
                       const SizedBox(height: 8),
                       ListView.builder(
                         shrinkWrap: true,
@@ -536,6 +614,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                               priority: selectedPriority,
                               description: description,
                               customFields: customFieldMap,
+                               filePath: selectedFilePath,// Передаем подготовленный fileData
                             ));
                       }
                     },
@@ -550,82 +629,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 }
 
-// // Виджет выбора файла
-// Widget _buildFileSelection() {
-//   return Column(
-//     crossAxisAlignment: CrossAxisAlignment.start,
-//     children: [
-//       const Text(
-//         'Файл',
-//         style: TextStyle(
-//           fontSize: 16,
-//           fontWeight: FontWeight.w500,
-//           fontFamily: 'Gilroy',
-//           color: Color(0xff1E2E52),
-//         ),
-//       ),
-//       const SizedBox(height: 4),
-//       GestureDetector(
-//         onTap: _pickFile,
-//         child: Container(
-//           padding: const EdgeInsets.all(16),
-//           decoration: BoxDecoration(
-//             color: const Color(0xFFF4F7FD),
-//             borderRadius: BorderRadius.circular(8),
-//             border: Border.all(color: const Color(0xFFF4F7FD)),
-//           ),
-//           child: Row(
-//             children: [
-//               Expanded(
-//                 child: Text(
-//                   fileName ?? 'Выберите файл',
-//                   style: TextStyle(
-//                     color: fileName != null
-//                         ? const Color(0xff1E2E52)
-//                         : Colors.grey,
-//                   ),
-//                 ),
-//               ),
-//               Icon(
-//                 Icons.attach_file,
-//                 color: Colors.grey[600],
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//       // if (fileName != null) ...[
-//       //   const SizedBox(height: 8),
-//       //   Row(
-//       //     children: [
-//       //       const Text(
-//       //         'Файл: ',
-//       //         style: TextStyle(
-//       //           fontSize: 14,
-//       //           fontFamily: 'Gilroy',
-//       //           color: Color(0xff1E2E52),
-//       //         ),
-//       //       ),
-//       //       GestureDetector(
-//       //         onTap: () {
-//       //           // Здесь можно добавить логику предпросмотра файла
-//       //         },
-//       //         child: Text(
-//       //           fileName!,
-//       //           style: const TextStyle(
-//       //             fontSize: 14,
-//       //             fontFamily: 'Gilroy',
-//       //             color: Color(0xff4759FF),
-//       //             decoration: TextDecoration.underline,
-//       //           ),
-//       //         ),
-//       //       ),
-//       //     ],
-//       //   ),
-//       // ],
-//     ],
-//   );
-// }
 class CustomField {
   final String fieldName;
   final TextEditingController controller = TextEditingController();
