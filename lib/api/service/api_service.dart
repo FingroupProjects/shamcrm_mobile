@@ -756,6 +756,20 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
     }
   }
 
+Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Lead> leads = await getLeads(leadStatusId, page: 1, perPage: 1);
+
+    // Если список лидов не пуст, значит статус содержит элементы
+    return leads.isNotEmpty;
+  } catch (e) {
+    print('Error while checking if status has leads: $e');
+    return false;
+  }
+}
+
+
   // Метод для создания Cтатуса Лида
   Future<Map<String, dynamic>> createLeadStatus(
       String title, String color) async {
