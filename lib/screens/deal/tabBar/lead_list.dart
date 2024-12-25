@@ -76,7 +76,6 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // SizedBox(height: 8),
                   const Text(
                     'Лиды',
                     style: TextStyle(
@@ -149,8 +148,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                           setState(() {
                             selectedLeadData = value;
                           });
-                         FocusScope.of(context).unfocus();
-
+                          FocusScope.of(context).unfocus();
                         }
                       },
                     ),

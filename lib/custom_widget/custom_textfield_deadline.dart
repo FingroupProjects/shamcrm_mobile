@@ -104,7 +104,7 @@ class CustomTextFieldDate extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -122,7 +122,7 @@ class CustomTextFieldDate extends StatelessWidget {
               keyboardType: keyboardType,
               decoration: InputDecoration(
                 hintText: withTime ? '__/__/____ __:__' : '__/__/____',
-                hintStyle: TextStyle(fontSize: 12),
+                hintStyle: const TextStyle(fontSize: 12),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12),
                   child: SizedBox(
@@ -136,12 +136,36 @@ class CustomTextFieldDate extends StatelessWidget {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: const BorderSide(color: Colors.transparent),
+                ),
+              errorStyle: const TextStyle(
+              fontSize: 14, 
+              fontFamily: 'Gilroy',
+              color: Colors.red,
+              fontWeight: FontWeight.w500, 
+            ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.transparent),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Colors.red,
+                    width: 1.5,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Colors.red,
+                    width: 1.5,
+                  ),
                 ),
                 filled: true,
-                fillColor: Color(0xffF4F7FD),
+                fillColor: const Color(0xffF4F7FD),
                 contentPadding:
-                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),

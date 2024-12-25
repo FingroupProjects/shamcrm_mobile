@@ -147,7 +147,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           ),
                         );
                       },
-
                       hintBuilder: (context, hint, enabled) =>
                           Text('Выберите пользователей',
                               style: TextStyle(
@@ -173,7 +172,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 ],
               );
             }
-
             return SizedBox();
           },
         ),
