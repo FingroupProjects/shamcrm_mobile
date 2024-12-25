@@ -31,7 +31,6 @@ import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
 import 'package:crm_task_manager/models/project_model.dart';
@@ -39,7 +38,6 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
-import 'package:crm_task_manager/models/user_add_task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
@@ -109,8 +107,8 @@ class ApiService {
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
-
   }
+
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
@@ -302,90 +300,88 @@ class ApiService {
   }
 
 // Метод для создания Групповго чата
-Future<Map<String, dynamic>> addUserToGroup({
-  required int chatId,
-  int? userId,
-}) async {
-  try {
-    final Map<String, dynamic> requestBody = {
-      'chatId': chatId,
-      'userId': userId,
-    };
-
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-      '/chat/addUserToGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestBody,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Участник успешно добавлен.',
+  Future<Map<String, dynamic>> addUserToGroup({
+    required int chatId,
+    int? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'chatId': chatId,
+        'userId': userId,
       };
-    } else if (response.statusCode == 500) {
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/addUserToGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Участник успешно добавлен.',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка добавления участника: ${response.body}',
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.',
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Ошибка добавления участника: ${response.body}',
+        'message': 'Ошибка при добавление участника : $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при добавление участника : $e',
-    };
   }
-}
-
 
 // Метод для создания Групповго чата
-Future<Map<String, dynamic>> deleteUserFromGroup({
-  required int chatId,
-  int? userId,
-}) async {
-  try {
-    final Map<String, dynamic> requestBody = {
-      'chatId': chatId,
-      'userId': userId,
-    };
-
-    final organizationId = await getSelectedOrganization();
-
-    final response = await _postRequest(
-      '/chat/removeUserFromGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      requestBody,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {
-        'success': true,
-        'message': 'Участник успешно добавлен.',
+  Future<Map<String, dynamic>> deleteUserFromGroup({
+    required int chatId,
+    int? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'chatId': chatId,
+        'userId': userId,
       };
-    } else if (response.statusCode == 500) {
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/removeUserFromGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Участник успешно добавлен.',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка добавления участника: ${response.body}',
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.',
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Ошибка добавления участника: ${response.body}',
+        'message': 'Ошибка при добавление участника : $e',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при добавление участника : $e',
-    };
   }
-}
-
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
@@ -1910,32 +1906,32 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
   //Метод для получения Задачи через его ID
- Future<TaskById> getTaskById(int taskId) async {
-  try {
-    final organizationId = await getSelectedOrganization();
+  Future<TaskById> getTaskById(int taskId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
 
-    final response = await _getRequest(
-        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+      final response = await _getRequest(
+          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      final Map<String, dynamic>? jsonTask = decodedJson['result'];
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic>? jsonTask = decodedJson['result'];
 
-      if (jsonTask == null || jsonTask['taskStatus'] == null) {
-        throw Exception('Некорректные данные от API');
+        if (jsonTask == null || jsonTask['taskStatus'] == null) {
+          throw Exception('Некорректные данные от API');
+        }
+
+        // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+        return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+      } else if (response.statusCode == 404) {
+        throw ('Ресурс с задачи $taskId не найден');
+      } else {
+        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
       }
-
-      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
-      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
-    } else if (response.statusCode == 404) {
-      throw ('Ресурс с задачи $taskId не найден');
-    } else {
-      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Ошибка загрузки task ID');
     }
-  } catch (e) {
-    throw Exception('Ошибка загрузки task ID');
   }
-}
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -2196,7 +2192,6 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
     List<int>? userId,
     String? description,
     List<Map<String, String>>? customFields,
-    
   }) async {
     try {
       final Map<String, dynamic> requestBody = {
@@ -2297,7 +2292,7 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
     int? projectId,
     List<int>? userId,
     String? description,
-    Map<String, dynamic>? file,
+    TaskFile? file,
     List<Map<String, String>>? customFields,
   }) async {
     try {
@@ -2787,16 +2782,16 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
     }
   }
 
-  
-   Future<List<UserTaskCompletion>> getUsersChartData() async {
+  Future<List<UserTaskCompletion>> getUsersChartData() async {
     final organizationId = await getSelectedOrganization();
-    String path = '/dashboard/users-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    
+    String path =
+        '/dashboard/users-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
     final response = await _getRequest(path);
-    
+
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      
+
       if (data['result'] != null) {
         final List<dynamic> resultList = data['result'];
         return resultList
@@ -2817,7 +2812,7 @@ Future<Map<String, dynamic>> deleteUserFromGroup({
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
   // Метод для получения список чатов
-Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
     final token = await getToken();
     final organizationId = await getSelectedOrganization();
@@ -2826,7 +2821,7 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
         '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
     if (search != null && search.isNotEmpty) {
-      url += '&search=$search';  // Добавляем параметр поиска
+      url += '&search=$search'; // Добавляем параметр поиска
     }
 
     final response = await http.get(
@@ -2850,7 +2845,6 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
-
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();
@@ -3095,44 +3089,43 @@ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
     }
   }
 
-Future<Map<String, dynamic>> deleteChat(int chatId) async {
-  final organizationId = await getSelectedOrganization();
+  Future<Map<String, dynamic>> deleteChat(int chatId) async {
+    final organizationId = await getSelectedOrganization();
 
-  try {
-    final response = await _deleteRequest(
-        '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    try {
+      final response = await _deleteRequest(
+          '/chat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
-      return {
-        'result': responseBody['result'],
-        'errors': responseBody['errors'],
-      };
-    } else if (response.statusCode == 400) {
-      // Ошибка запроса
-      throw Exception('Ошибка запроса: Неверные данные');
-    } else if (response.statusCode == 401) {
-      // Ошибка авторизации
-      throw Exception('Ошибка авторизации: Некорректные учетные данные');
-    } else if (response.statusCode == 403) {
-      // Ошибка доступа
-      throw Exception('Ошибка доступа: Недостаточно прав');
-    } else if (response.statusCode == 404) {
-      // Чат не найден
-      throw Exception('Ошибка: Чат не найден');
-    } else if (response.statusCode >= 500 && response.statusCode < 600) {
-      // Ошибка сервера
-      throw Exception('Ошибка сервера: Попробуйте позже');
-    } else {
-      // Обработка других ошибок
-      throw Exception('Неизвестная ошибка: ${response.body}');
+      if (response.statusCode == 200) {
+        final responseBody = jsonDecode(response.body);
+        return {
+          'result': responseBody['result'],
+          'errors': responseBody['errors'],
+        };
+      } else if (response.statusCode == 400) {
+        // Ошибка запроса
+        throw Exception('Ошибка запроса: Неверные данные');
+      } else if (response.statusCode == 401) {
+        // Ошибка авторизации
+        throw Exception('Ошибка авторизации: Некорректные учетные данные');
+      } else if (response.statusCode == 403) {
+        // Ошибка доступа
+        throw Exception('Ошибка доступа: Недостаточно прав');
+      } else if (response.statusCode == 404) {
+        // Чат не найден
+        throw Exception('Ошибка: Чат не найден');
+      } else if (response.statusCode >= 500 && response.statusCode < 600) {
+        // Ошибка сервера
+        throw Exception('Ошибка сервера: Попробуйте позже');
+      } else {
+        // Обработка других ошибок
+        throw Exception('Неизвестная ошибка: ${response.body}');
+      }
+    } catch (e) {
+      // Обработка ошибок сети или других непредвиденных исключений
+      throw Exception('Не удалось выполнить запрос: $e');
     }
-  } catch (e) {
-    // Обработка ошибок сети или других непредвиденных исключений
-    throw Exception('Не удалось выполнить запрос: $e');
   }
-}
-
 
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
@@ -3373,10 +3366,7 @@ Future<Map<String, dynamic>> deleteChat(int chatId) async {
         'message': 'Ошибка на сервере. Попробуйте позже.'
       };
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка обновления профиля:'
-      };
+      return {'success': false, 'message': 'Ошибка обновления профиля:'};
     }
   }
 

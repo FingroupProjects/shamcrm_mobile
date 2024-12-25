@@ -5,8 +5,7 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_event.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:flutter/material.dart';
@@ -35,7 +34,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
   File? _profileImage;
-  String selectedDialCode = '';
   String? _selectedOrganization;
   String _userImage = '';
   File? _localImage;
@@ -45,6 +43,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _surnameError;
   String? _phoneError;
   String? _emailError;
+
   // Функция валидации email
   bool isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
@@ -54,11 +53,19 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   bool isValidPhone(String phone) {
     return phone.length >= 9 && phone.length <= 12;
   }
- bool isValidName(String name) {
+
+  bool isValidName(String name) {
     return name.trim().isNotEmpty && name.length >= 2;
   }
 
-
+  String selectedDialCode = '+992'; // Default country code
+  List<String> countryCodes = [
+    '+992',
+    '+7',
+    '+996',
+    '+998',
+    '+1'
+  ]; // Country codes list
   // Новый метод для определения пути изображения
   String? _getImageToUpload() {
     // Если есть локально выбранное изображение
@@ -161,8 +168,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         SurnameController.text = userProfile.lastname;
         PatronymicController.text = userProfile.Pname;
         emailController.text = userProfile.email;
-        phoneController.text = userProfile.phone;
-        _userImage = userProfile.image ?? '';
+        // Extract country code from phone if necessary
+        String phoneNumber = userProfile.phone;
+        for (var code in countryCodes) {
+          if (phoneNumber.startsWith(code)) {
+            setState(() {
+              selectedDialCode = code;
+              phoneController.text = phoneNumber
+                  .substring(code.length); // Remove code from phone number
+            });
+            break;
+          }
+        }
       });
     } catch (e) {
       print('Ошибка при загрузке данных из API: $e');
@@ -344,7 +361,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+              const SizedBox(height: 8),
               CustomTextField(
                 controller: SurnameController,
                 hintText: 'Введите Фамилию',
@@ -370,7 +387,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     ),
                   ),
                 ),
-              
+
               const SizedBox(height: 8),
               CustomPhoneNumberInput(
                 controller: phoneController,
@@ -517,7 +534,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         userId: userId,
                         name: NameController.text.trim(),
                         sname: SurnameController.text.trim(),
-                        phone: phoneController.text.trim(),
+                        phone: selectedDialCode,
                         email: emailController.text.trim(),
                         image: image,
                         pname: ''));
@@ -587,7 +604,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             fontSize: 14,
                           ),
                         ),
-                         behavior: SnackBarBehavior.floating,
+                        behavior: SnackBarBehavior.floating,
                         margin:
                             EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(

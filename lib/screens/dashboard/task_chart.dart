@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
+import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,7 +84,11 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
             ),
           );
         }
-        return const SizedBox.shrink();
+        // Добавляем анимацию загрузки
+        return const ChartSkeletonLoading(
+          height: 300, // Можно настроить высоту
+          width: double.infinity, // Ширина адаптируется под экран
+        );
       },
     );
   }

@@ -33,7 +33,7 @@ class UserByIdProfile {
       Pname: json['patronymic'] ?? 'Не указано',
       login: json['login'] ?? 'Не указано',
       email: json['email'] ?? 'Не указано',
-      phone: json['phone'] ?? 'Не указано',
+      phone: json['phone'] ?? '',
       image: json['image'] as String?,
       lastSeen: json['last_seen'] as String?,
       role: (json['roles'] as List<dynamic>?)

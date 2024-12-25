@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_state.dart';
+import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -72,7 +73,10 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
         if (state is ProcessSpeedLoaded) {
           return _buildGauge(state);
         } else if (state is ProcessSpeedLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const ChartSkeletonLoading(
+            height: 300, // You can adjust this value
+            width: double.infinity,
+          );
         }
         return const SizedBox.shrink();
       },
@@ -84,8 +88,7 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Скорость обработки',
@@ -151,11 +154,11 @@ class GaugePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.25;
-    
+
     const startAngle = 135 * math.pi / 180; // 225 degrees in radians
-    const endAngle = -45 * math.pi / 180;  // -45 degrees in radians
+    const endAngle = -45 * math.pi / 180; // -45 degrees in radians
     const totalAngle = math.pi * 1.5; // Total sweep angle (270 degrees)
-    
+
     final colors = [
       const Color(0xFFc30202), // Red
       const Color(0xFF3935E7), // Blue
@@ -163,7 +166,7 @@ class GaugePainter extends CustomPainter {
     ];
 
     final double sweepAnglePerSection = totalAngle / 3;
-    
+
     // Draw the main arc segments
     for (int i = 0; i < 3; i++) {
       final paint = Paint()
@@ -173,7 +176,7 @@ class GaugePainter extends CustomPainter {
         ..strokeCap = StrokeCap.butt;
 
       final segmentStartAngle = startAngle + (i * sweepAnglePerSection);
-      
+
       // Draw the main segment
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -196,7 +199,7 @@ class GaugePainter extends CustomPainter {
           center.dx + (radius + 10) * math.cos(dividerAngle),
           center.dy + (radius + 10) * math.sin(dividerAngle),
         );
-        
+
         final innerPoint = Offset(
           center.dx + (radius - 10) * math.cos(dividerAngle),
           center.dy + (radius - 10) * math.sin(dividerAngle),
@@ -212,7 +215,7 @@ class GaugePainter extends CustomPainter {
           center.dx + (radius + 10) * math.cos(dividerAngle),
           center.dy + (radius + 10) * math.sin(dividerAngle),
         );
-        
+
         final innerPoint = Offset(
           center.dx + (radius - 10) * math.cos(dividerAngle),
           center.dy + (radius - 10) * math.sin(dividerAngle),
@@ -227,11 +230,19 @@ class GaugePainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
 
-    final times = ['06:00', '05:00', '04:00', '03:00', '02:00', '01:00', '00:00'];
+    final times = [
+      '06:00',
+      '05:00',
+      '04:00',
+      '03:00',
+      '02:00',
+      '01:00',
+      '00:00'
+    ];
     for (int i = 0; i < times.length; i++) {
       final angle = startAngle + (totalAngle * i / 6);
       final markerRadius = radius + 25;
-      
+
       textPainter.text = TextSpan(
         text: times[i],
         style: const TextStyle(
@@ -241,24 +252,27 @@ class GaugePainter extends CustomPainter {
           fontWeight: FontWeight.w500,
         ),
       );
-      
+
       textPainter.layout();
-      
-      final x = center.dx + markerRadius * math.cos(angle) - textPainter.width / 2;
-      final y = center.dy + markerRadius * math.sin(angle) - textPainter.height / 2;
-      
+
+      final x =
+          center.dx + markerRadius * math.cos(angle) - textPainter.width / 2;
+      final y =
+          center.dy + markerRadius * math.sin(angle) - textPainter.height / 2;
+
       textPainter.paint(canvas, Offset(x, y));
     }
 
     // Draw animated needle with initial sweep
     final needleLength = radius - 10;
     final normalizedSpeed = math.min(math.max(speed, 0), 6) / 6;
-    
+
     // Calculate the initial sweep angle (from left to target position)
     final targetAngle = startAngle + (totalAngle * (1 - normalizedSpeed));
     final sweepStartAngle = startAngle;
-    final currentAngle = sweepStartAngle + (targetAngle - sweepStartAngle) * initialAnimation.value;
-    
+    final currentAngle = sweepStartAngle +
+        (targetAngle - sweepStartAngle) * initialAnimation.value;
+
     final needlePaint = Paint()
       ..color = Colors.grey
       ..style = PaintingStyle.stroke
@@ -283,8 +297,8 @@ class GaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant GaugePainter oldDelegate) {
-    return oldDelegate.speed != speed || 
-           oldDelegate.animation != animation ||
-           oldDelegate.initialAnimation != initialAnimation;
+    return oldDelegate.speed != speed ||
+        oldDelegate.animation != animation ||
+        oldDelegate.initialAnimation != initialAnimation;
   }
 }

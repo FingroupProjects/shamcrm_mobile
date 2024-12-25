@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
+import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -34,7 +35,8 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       curve: Curves.easeInOutCubic,
     );
 
-    // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+    // Загрузка данных
+    context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
   }
 
   @override
@@ -54,7 +56,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
             SnackBar(
               content: Text(
                 '${state.message}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -62,30 +64,40 @@ class _LeadConversionChartState extends State<LeadConversionChart>
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor: Colors.red,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 2),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
       },
       builder: (context, state) {
         if (state is DashboardConversionLoading) {
+          return const ChartSkeletonLoading();
         } else if (state is DashboardConversionError) {
-          return Container(); 
+          return const Center(
+            child: Text(
+              'Ошибка загрузки данных',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: "Gilroy",
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+            ),
+          );
         } else if (state is DashboardConversionLoaded) {
           return _buildLoadedStateWidget(state);
         }
-        return const SizedBox.shrink(); 
+        return const SizedBox.shrink();
       },
     );
   }
-
 
   Widget _buildLoadedStateWidget(DashboardConversionLoaded state) {
     return Container(
@@ -103,11 +115,9 @@ class _LeadConversionChartState extends State<LeadConversionChart>
               color: Colors.black,
             ),
           ),
-          // const SizedBox(height: 16),
           Expanded(
             child: _buildChart(state),
           ),
-          // const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: _buildLegend(state.leadConversionData),
@@ -168,10 +178,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
   List<PieChartSectionData> _showingSections(
       LeadConversion data, double animationValue) {
-    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
-      return [];
-    }
-
     return List.generate(2, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 20.0 : 0.0;
@@ -184,7 +190,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
             : const Color(0xFF27A945)
                 .withOpacity(isTouched ? 0.8 : 1),
         value: value,
-        title: isTouched ? '${value.toStringAsFixed(1)}' : '',
+        title: isTouched ? '${value.toInt()}' : '',
         radius: radius,
         titleStyle: TextStyle(
           fontSize: fontSize,
@@ -197,35 +203,20 @@ class _LeadConversionChartState extends State<LeadConversionChart>
   }
 
   Widget _buildLegend(LeadConversion data) {
-    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
-      return const Center(
-        child: Text(
-          '',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: "Gilroy",
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildLegendItem(
+          'Новые: ${data.newLeads.toInt()}',
+          const Color(0xFF3935E7),
         ),
-      );
-    }
-
-   return Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    _buildLegendItem(
-      'Новые (${data.newLeads.toStringAsFixed(1)})',
-      const Color(0xFF3935E7), // Используется шестнадцатеричный цветовой код
-    ),
-    const SizedBox(width: 24),
-    _buildLegendItem(
-      'Повторные (${data.repeatedLeads.toStringAsFixed(1)})',
-      const Color(0xFF27A945), // Исправленный код для ARGB
-    ),
-  ],
-);
-
+        const SizedBox(width: 24),
+        _buildLegendItem(
+          'Повторные: ${data.repeatedLeads.toInt()}',
+          const Color(0xFF27A945),
+        ),
+      ],
+    );
   }
 
   Widget _buildLegendItem(String title, Color color) {
@@ -242,12 +233,12 @@ class _LeadConversionChartState extends State<LeadConversionChart>
         const SizedBox(width: 8),
         Text(
           title,
-           style: TextStyle(
-              fontSize: 14,
-              fontFamily: "Gilroy",
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
+          style: const TextStyle(
+            fontSize: 14,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
         ),
       ],
     );

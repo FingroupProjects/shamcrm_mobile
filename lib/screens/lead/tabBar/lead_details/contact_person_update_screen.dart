@@ -28,7 +28,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
   late TextEditingController phoneController;
   late TextEditingController positionController;
 
-  String selectedDialCode = '+992'; // Default country code
+  String selectedDialCode = '+7'; // Default country code
   List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1']; // Country codes list
 
   @override
