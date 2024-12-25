@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
+import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +35,7 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
         if (state is DashboardTaskChartLoaded) {
           final totalTasks = state.taskChartData.data.reduce((a, b) => a + b);
           return Container(
-            height: 300,
+            height: 330,
             padding: const EdgeInsets.only(left: 12, top: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,22 +49,24 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
                     color: Color(0xFF1A202C),
                   ),
                 ),
-               
                 const SizedBox(height: 16),
                 _buildLegend(state.taskChartData),
+                const SizedBox(height: 16),
                 Expanded(
                   child: _buildChart(state),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Общее количество задач: $totalTasks',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: "Gilroy",
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A202C),
+                Center(
+                  child: Text(
+                    'Общее количество задач: ${totalTasks.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Gilroy",
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1A202C),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -81,7 +84,11 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
             ),
           );
         }
-        return const SizedBox.shrink();
+        // Добавляем анимацию загрузки
+        return const ChartSkeletonLoading(
+          height: 300, // Можно настроить высоту
+          width: double.infinity, // Ширина адаптируется под экран
+        );
       },
     );
   }
@@ -173,7 +180,10 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
               'Активные ',
               const Color(0xFF3935E7),
             ),
-            const SizedBox(width: 24, height: 12, ),
+            const SizedBox(
+              width: 24,
+              height: 12,
+            ),
             _buildLegendItem(
               'Просроченные',
               const Color(0xFFC30202),

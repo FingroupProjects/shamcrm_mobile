@@ -68,12 +68,17 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController authorController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-
   String? selectedRegion;
   String? selectedManager;
- String selectedDialCode = '+992'; // Default country code
+  String selectedDialCode = '+992'; // Default country code
 
-  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1']; // Country codes list
+  List<String> countryCodes = [
+    '+992',
+    '+7',
+    '+996',
+    '+998',
+    '+1'
+  ]; // Country codes list
 
   List<CustomField> customFields = [];
 
@@ -81,19 +86,20 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   void initState() {
     super.initState();
     titleController.text = widget.leadName;
-   if (widget.phone != null) {
+    if (widget.phone != null) {
       // Extract country code from the phone number if it exists
       String phoneNumber = widget.phone!;
       for (var code in countryCodes) {
         if (phoneNumber.startsWith(code)) {
           setState(() {
             selectedDialCode = code;
-            phoneController.text = phoneNumber.substring(code.length); // Set phone number without code
+            phoneController.text = phoneNumber
+                .substring(code.length); // Set phone number without code
           });
           break;
         }
       }
-    }  
+    }
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
     telegramController.text = widget.telegram ?? '';
@@ -109,7 +115,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
   }
- void _addCustomField(String fieldName) {
+
+  void _addCustomField(String fieldName) {
     setState(() {
       customFields.add(CustomField(fieldName: fieldName));
     });
@@ -127,6 +134,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,7 +219,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       ),
                       CustomPhoneNumberInput(
                         controller: phoneController,
-                        selectedDialCode: selectedDialCode, 
+                        selectedDialCode: selectedDialCode,
                         onInputChanged: (String number) {
                           setState(() {
                             selectedDialCode = number;
@@ -289,7 +297,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         hintText: 'Введите описание',
                         label: 'Описание',
                         maxLines: 5,
-                      ),  const SizedBox(height: 20),
+                      ),
+                      const SizedBox(height: 20),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),

@@ -152,7 +152,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         taskStatusId: event.taskStatusId,
         customFields: event.customFields,
 
-        // file: event.file
+        file: event.file
       );
 
       if (result['success']) {
