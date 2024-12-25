@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:flutter/material.dart';
@@ -27,16 +28,27 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
   late TextEditingController phoneController;
   late TextEditingController positionController;
 
-  String selectedDialCode = '';
+  String selectedDialCode = '+992'; // Default country code
+  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1']; // Country codes list
 
   @override
   void initState() {
     super.initState();
     nameController = TextEditingController(text: widget.contactPerson.name);
     phoneController = TextEditingController(text: widget.contactPerson.phone);
-    positionController =
-        TextEditingController(text: widget.contactPerson.position);
-    selectedDialCode = widget.contactPerson.phone;
+    positionController = TextEditingController(text: widget.contactPerson.position);
+    
+    // Extract country code from phone if necessary
+    String phoneNumber = widget.contactPerson.phone;
+    for (var code in countryCodes) {
+      if (phoneNumber.startsWith(code)) {
+        setState(() {
+          selectedDialCode = code;
+          phoneController.text = phoneNumber.substring(code.length); // Remove code from phone number
+        });
+        break;
+      }
+    }
   }
 
   @override
@@ -57,18 +69,14 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
             Navigator.pop(context);
           },
         ),
-        title: const Row(
-          children: [
-            Text(
-              'Редактировать контакт',
-              style: TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ],
+        title: const Text(
+          'Редактировать контакт',
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
       body: BlocListener<ContactPersonBloc, ContactPersonState>(
@@ -122,13 +130,18 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      CustomTextField(
+                      CustomPhoneNumberInput(
                         controller: phoneController,
-                        hintText: 'Введите номер телефона',
-                        label: 'Телефон',
+                        selectedDialCode: selectedDialCode,
+                        onInputChanged: (String number) {
+                          setState(() {
+                            selectedDialCode = number;
+                          });
+                        },
                         validator: (value) => value!.isEmpty
                             ? 'Поле обязательно для заполнения'
                             : null,
+                        label: 'Телефон',
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -147,14 +160,13 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
                         buttonText: 'Отмена',
-                        buttonColor: Color(0xffF4F7FD),
+                        buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
                           Navigator.pop(context);
@@ -174,7 +186,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                           } else {
                             return CustomButton(
                               buttonText: 'Сохранить',
-                              buttonColor: Color(0xff4759FF),
+                              buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
