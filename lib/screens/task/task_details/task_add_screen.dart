@@ -428,6 +428,7 @@ Future<void> _pickFile() async {
                         selectedUsers: selectedUsers,
                         onSelectUsers: (List<UserData> selectedUsersData) {
                           setState(() {
+                            // Update selected user IDs
                             selectedUsers = selectedUsersData
                                 .map((user) => user.id.toString())
                                 .toList();
@@ -441,8 +442,8 @@ Future<void> _pickFile() async {
                         label: 'Описание',
                         maxLines: 5,
                       ),
-                      // const SizedBox(height: 16),
-                      // _buildFileSelection(), // Добавляем виджет выбора файла
+                      const SizedBox(height: 16),
+                      _buildFileSelection(), // Добавляем виджет выбора файла
                       const SizedBox(height: 8),
                       ListView.builder(
                         shrinkWrap: true,
@@ -614,7 +615,8 @@ Future<void> _pickFile() async {
                               priority: selectedPriority,
                               description: description,
                               customFields: customFieldMap,
-                               filePath: selectedFilePath,// Передаем подготовленный fileData
+                              file:
+                                  fileData, // Передаем подготовленный fileData
                             ));
                       }
                     },

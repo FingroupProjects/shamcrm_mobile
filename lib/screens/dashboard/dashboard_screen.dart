@@ -168,57 +168,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  List<Widget> _buildDashboardContent() {
+    List<Widget> _buildDashboardContent() {
     List<Widget> charts = [
       LeadConversionChart(),
       // TaskCompletionChart(),
     ];
+
     if (userRoleName == 'admin') {
       return [
-        // LeadsBox(),
-        // SizedBox(height: 16),
-        // TasksBox(),
-        // SizedBox(height: 16),
-        // DealsBox(),
-        // SizedBox(height: 16),
-
-        // SizedBox(height: 16),
         LeadConversionChart(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         TaskCompletionChart(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidget(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         GraphicsDashboard(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         DealStatsChart(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(),
-        // ProjectChartTable(),
       ];
     } else if (userRoleName == 'manager') {
       return [
-        // LeadsBox(),суфк
-        // SizedBox(height: 16),
-        // TasksBox(),
-        // SizedBox(height: 16),
-        // DealsBox(),
-        // SizedBox(height: 16),
-        // SizedBox(height: 16),
         LeadConversionChart(),
+        
+        Divider(thickness: 1, color: Colors.grey[300]),
+        GraphicsDashboard(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         // TaskCompletionChart(),
         TaskChartWidget(),
-        GraphicsDashboard(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         DealStatsChart(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(),
       ];
     } else {
       return [
         // TaskCompletionChart(),
         LeadConversionChart(),
+        
+        Divider(thickness: 1, color: Colors.grey[300]),
+        GraphicsDashboard(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         // TaskCompletionChart(),
         TaskChartWidget(),
-        GraphicsDashboard(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         DealStatsChart(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(),
       ];
     }
   }
+
 }
 
 // Метод для стилизованных раскрывающихся карточек

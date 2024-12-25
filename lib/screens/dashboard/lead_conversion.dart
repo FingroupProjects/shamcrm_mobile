@@ -184,7 +184,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
             : const Color(0xFF27A945)
                 .withOpacity(isTouched ? 0.8 : 1),
         value: value,
-        title: isTouched ? '${value.toStringAsFixed(1)}' : '',
+        title: isTouched ? '${value.toInt()}' : '',
         radius: radius,
         titleStyle: TextStyle(
           fontSize: fontSize,
@@ -211,16 +211,16 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       );
     }
 
-   return Row(
+  return Row(
   mainAxisAlignment: MainAxisAlignment.center,
   children: [
     _buildLegendItem(
-      'Новые (${data.newLeads.toStringAsFixed(1)})',
+      'Новые: ${data.newLeads.toInt()}',
       const Color(0xFF3935E7), // Используется шестнадцатеричный цветовой код
     ),
     const SizedBox(width: 24),
     _buildLegendItem(
-      'Повторные (${data.repeatedLeads.toStringAsFixed(1)})',
+      'Повторные: ${data.repeatedLeads.toInt()}',
       const Color(0xFF27A945), // Исправленный код для ARGB
     ),
   ],
