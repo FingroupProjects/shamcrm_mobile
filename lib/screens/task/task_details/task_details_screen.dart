@@ -100,11 +100,21 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       return;
     }
 
+      // Карта уровней приоритета
+  final Map<int, String> priorityLevels = {
+    1: 'Обычный',
+    3: 'Критический',
+    2: 'Сложный'
+  };
+
     currentTask = task;
     details = [
       // {'label': 'ID задачи:', 'value': task.id.toString()},
       {'label': 'Название задачи:', 'value': task.name},
       {
+        'label': 'Уровень приоритета:',
+        'value': priorityLevels[task.priority] ?? 'Не указано',
+      },      {
         'label': 'От:',
         'value': task.startDate != null && task.startDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))

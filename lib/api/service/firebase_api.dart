@@ -19,10 +19,6 @@ class FirebaseApi {
     // Запрос разрешений на уведомления
     await _firebaseMessaging.requestPermission();
 
-    // Получение APNS токена для iOS
-    // final apnsToken = await _firebaseMessaging.getAPNSToken();
-    // print('APNS Token: ${apnsToken ?? "Не удалось получить APNS токен"}');
-
     // Получение FCM токена
     final fcmToken = await _firebaseMessaging.getToken();
     print('FCM Token: $fcmToken');
@@ -34,23 +30,20 @@ class FirebaseApi {
 
   void initPushNotification() {
     FirebaseMessaging.instance.getInitialMessage().then((message) {
-      print(
-          'Получено уведомление при запуске приложения: ${message?.messageId}');
+      print('Получено уведомление при запуске приложения: ${message?.messageId}');
       handleMessage(message);
-      _printCustomData(message); // Печать кастомных данных
+      _printCustomData(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       print('Пользователь нажал на уведомление: ${message.messageId}');
       handleMessage(message);
-      _printCustomData(message); // Печать кастомных данных
+      _printCustomData(message);
     });
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print(
-          'Уведомление при активном приложении: ${message.notification?.title}');
-      print('Содержимое: ${message.notification?.body}');
-      _printCustomData(message); // Печать кастомных данных
+      print('Уведомление при активном приложении: ${message.notification?.title}');
+      _printCustomData(message);
     });
   }
 
@@ -72,189 +65,183 @@ class FirebaseApi {
 
     final type = message.data['type'];
     final id = message.data['id'];
-    int? screenIndex;
 
-    if (type == null) {
-      print('handleMessage: отсутствует тип уведомления');
+    if (type == null || id == null) {
+      print('handleMessage: отсутствует тип или id уведомления');
       return;
     }
 
-    if (type == 'message') {
-  print('Переход на экран чата с ID: $id');
-  screenIndex = 3;
-  navigatorKey.currentState?.pushReplacementNamed(
-    '/home',
-    arguments: {'id': id, 'screenIndex': screenIndex},
-  );
+    print('Обработка уведомления с типом: $type, ID: $id');
 
-  final chatId = int.tryParse(message.data['id'].toString()) ?? 0;
+    int? screenIndex;
+    switch (type) {
+      case 'message':
+        print('Переход на экран чата с ID: $id');
+        screenIndex = 3;
+        await navigateToScreen(screenIndex, id, 'message', message);
+        break;
 
+      case 'task':
+      case 'taskFinished':
+      case 'taskOutDated':
+        print('Переход на экран задачи с ID: $id');
+        screenIndex = 1;
+        await navigateToScreen(screenIndex, id, 'task', message);
+        break;
+
+      case 'notice':
+        print('Переход на экран лида с ID: $id');
+        screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'lead', message);
+        break;
+
+      case 'deal':
+        print('Переход на экран сделки с ID: $id');
+        screenIndex = 4;
+        await navigateToScreen(screenIndex, id, 'deal', message);
+        break;
+
+      case 'lead':
+        print('Переход на экран лида с ID: $id');
+        screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'lead', message);
+        break;
+
+      default:
+        print('handleMessage: Неизвестный тип: $type');
+    }
+  }
+
+  Future<void> navigateToScreen(int screenIndex, String id, String type, RemoteMessage message) async {
+    navigatorKey.currentState?.pushReplacementNamed(
+      '/home',
+      arguments: {'id': id, 'screenIndex': screenIndex},
+    );
+
+    switch (type) {
+      case 'message':
+        await navigateToChatScreen(id, message);
+        break;
+
+      case 'task':
+        await navigateToTaskScreen(id, message);
+        break;
+
+      case 'lead':
+        await navigateToLeadScreen(id, message);
+        break;
+
+      case 'deal':
+        await navigateToDealScreen(id, message);
+        break;
+
+      default:
+        print('Не удалось перейти на экран: $type');
+    }
+  }
+
+  Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
+  final chatId = int.tryParse(id) ?? 0;
   if (chatId != 0) {
-    // Загружаем данные профиля чата
     try {
       final getChatById = await ApiService().getChatById(chatId);
+      Widget screen;
+      String? chatName;
 
+      switch (getChatById.type) {
+        case 'lead':
+          chatName = getChatById.name;
+          break;
+        case 'task':
+          final chatProfileTask = await ApiService().getTaskProfile(chatId);
+          chatName = chatProfileTask.name;
+          break;
+     case 'corporate':
+         final getChatById = await ApiService().getChatById(chatId);
 
-      if (getChatById.type == "lead") {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => BlocProvider(
-              create: (context) => MessagingCubit(ApiService()),
-              child: ChatSmsScreen(
-                chatItem: Chats(
-                  id: chatId,
-                  name: getChatById.name,
-                  channel: "",
-                  lastMessage: "",
-                  messageType: "",
-                  createDate: "",
-                  unredMessage: 0,
-                  canSendMessage: getChatById.canSendMessage, chatUsers: [],
-                ).toChatItem("assets/images/AvatarChat.png"),
-                chatId: chatId,
-                endPointInTab: 'lead',
-                canSendMessage: getChatById.canSendMessage,
-              ),
-            ),
-          ),
-        );
-      } else if (getChatById.type == "task") {
-        final chatProfileTask = await ApiService().getTaskProfile(chatId);
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => BlocProvider(
-              create: (context) => MessagingCubit(ApiService()),
-              child: ChatSmsScreen(
-                chatItem: Chats(
-                  id: chatId,
-                  name: chatProfileTask.name,
-                  channel: "",
-                  lastMessage: "",
-                  messageType: "",
-                  createDate: "",
-                  unredMessage: 0,
-                  canSendMessage: getChatById.canSendMessage, chatUsers: [],
-                ).toChatItem("assets/images/AvatarChat.png"),
-                chatId: chatId,
-                endPointInTab: 'task',
-                canSendMessage: getChatById.canSendMessage,
-              ),
-            ),
-          ),
-        );
-       } else if (getChatById.type == "corporate") {
-          navigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) => BlocProvider(
-                create: (context) => MessagingCubit(ApiService()),
-                child: ChatSmsScreen(
-                  chatItem: Chats(
-                    id: chatId,
-                    name: '',
-                    channel: "",
-                    lastMessage: "",
-                    messageType: "",
-                    createDate: "",
-                    unredMessage: 0,
-                    canSendMessage: getChatById.canSendMessage, chatUsers: [],
-                  ).toChatItem("assets/images/AvatarChat.png"),
-                  chatId: chatId,
-                  endPointInTab: 'corporate',
-                  canSendMessage: getChatById.canSendMessage,
-                ),
-              ),
-            ),
-          );
-        }
+         chatName = getChatById.group != null 
+             ? getChatById.group!.name 
+             : getChatById.chatUsers.length > 1
+                 ? '${getChatById.chatUsers[1].participant.name}'
+                 : getChatById.chatUsers[0].participant.name;
+         break;
+        default:
+          print('Неизвестный тип чата');
+          return;
+      }
+
+      screen = ChatSmsScreen(
+        chatItem: Chats(
+          id: chatId,
+          name: chatName ?? 'Без имени',  
+          canSendMessage: getChatById.canSendMessage,
+          channel: '',
+          lastMessage: '',
+          createDate: '',
+          unredMessage: 1,
+          chatUsers: [],
+        ).toChatItem("assets/images/AvatarChat.png"),
+        chatId: chatId,
+        endPointInTab: getChatById.type.toString(),
+        canSendMessage: getChatById.canSendMessage,
+      );
+
+      navigatorKey.currentState?.push(MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (context) => MessagingCubit(ApiService()), 
+          child: screen,
+        ),
+      ));
     } catch (e) {
-      // Закрыть индикатор загрузки в случае ошибки
       print("Ошибка загрузки данных: $e");
     }
-  } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
-      print('Переход на экран задачи с ID: $id');
-      screenIndex = 1;
-      navigatorKey.currentState?.pushReplacementNamed(
-        '/home',
-        arguments: {'id': id, 'screenIndex': screenIndex},
+  }
+}
+
+
+  Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
+    final taskId = message.data['id'];
+    if (taskId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => TaskDetailsScreen(taskId: taskId, taskName: '', taskStatus: '', statusId: 1, taskCustomFields: []),
+        ),
       );
-      final taskId = message.data['id']; 
-      if (taskId != null) {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => TaskDetailsScreen(
-              taskId: taskId,
-              taskName: '',
-              taskStatus: '',
-              statusId: 1, taskCustomFields: [],
-            ),
-          ),
-        );
-      }
-    } else if (type == 'notice') {
-      print('Переход на экран лида с ID: $id');
-      screenIndex = 2;
-      navigatorKey.currentState?.pushReplacementNamed(
-        '/home',
-        arguments: {'id': id, 'screenIndex': screenIndex},
-      );
-      final leadId = message.data['id'];
-      if (leadId != null) {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => LeadDetailsScreen(
-              leadId: leadId.toString(),
-              leadName: '',
-              leadStatus: "",
-              statusId: 1, 
-              leadCustomFields: [],
-            ),
-          ),
-        );
-      }
-    } else if (type == 'deal') {
-      print('Переход на экран сделки с ID: $id');
-      screenIndex = 4;
-      navigatorKey.currentState?.pushReplacementNamed(
-        '/home',
-        arguments: {'id': id, 'screenIndex': screenIndex},
-      );
-      final dealId = message.data['id']; 
-      if (dealId != null) {
-        List<DealCustomField> defaultCustomFields = [
-          DealCustomField(id: 1, key: '', value: ''),
-          DealCustomField(id: 2, key: '', value: ''),
-        ];
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => DealDetailsScreen(
-              dealId: dealId.toString(),
-              dealName: '',
-              sum: '',
-              dealStatus: '',
-              statusId: 1,
-              dealCustomFields: defaultCustomFields,
-            ),
-          ),
-        );
-      }
-       } else if (type == 'lead') {
-   List<LeadCustomField> defaultCustomFields = [
-        LeadCustomField(id: 1, key: '', value: ''),
-        LeadCustomField(id: 2, key: '', value: ''),
-      ];
+    }
+  }
+
+  Future<void> navigateToLeadScreen(String id, RemoteMessage message) async {
+    final leadId = message.data['id'];
+    if (leadId != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => LeadDetailsScreen(
-              leadId: chatId.toString(),
-              leadName: '',
-              leadStatus: '',
-              statusId: 1,
-              leadCustomFields: defaultCustomFields,
-            ),
+            leadId: leadId.toString(),
+            leadName: '',
+            leadStatus: '',
+            statusId: 1,
+            leadCustomFields: [LeadCustomField(id: 1, key: '', value: ''), LeadCustomField(id: 2, key: '', value: '')],
+          ),
         ),
       );
-    } else {
-      print('handleMessage: Неизвестный тип: $type');
+    }
+  }
+
+  Future<void> navigateToDealScreen(String id, RemoteMessage message) async {
+    final dealId = message.data['id'];
+    if (dealId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => DealDetailsScreen(
+            dealId: dealId.toString(),
+            dealName: '',
+            sum: '',
+            dealStatus: '',
+            statusId: 1,
+            dealCustomFields: [DealCustomField(id: 1, key: '', value: ''), DealCustomField(id: 2, key: '', value: '')],
+          ),
+        ),
+      );
     }
   }
 }
@@ -262,8 +249,6 @@ class FirebaseApi {
 // Фоновый обработчик сообщений
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Фоновое уведомление: ${message.messageId}');
-
-  print('Message data: ${message.data}');
   if (message.data.isNotEmpty) {
     message.data.forEach((key, value) {
       print('Custom Data - Key: $key, Value: $value');
@@ -273,4 +258,4 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
   print('Заголовок: ${message.notification?.title}');
   print('Сообщение: ${message.notification?.body}');
-}}
+}

@@ -304,6 +304,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         } else if (getChatById.type == "corporate") {
+            final getChatById = await ApiService().getChatById(chatId);
+         String? chatName;
+         chatName = getChatById.group != null 
+             ? getChatById.group!.name 
+             : getChatById.chatUsers.length > 1
+                 ? '${getChatById.chatUsers[1].participant.name}'
+                 : getChatById.chatUsers[0].participant.name;
+
           navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (context) => BlocProvider(
@@ -311,7 +319,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: ChatSmsScreen(
                   chatItem: Chats(
                     id: chatId,
-                    name: '',
+                    name: chatName.toString(),
                     channel: "",
                     lastMessage: "",
                     messageType: "",
@@ -406,30 +414,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'lead') {
-  
-  //     final lead = await ApiService().getLeadById(chatId);
-  //  List<LeadCustomField> defaultCustomFields = [
-  //       LeadCustomField(id: 1, key: '', value: ''),
-  //       LeadCustomField(id: 2, key: '', value: ''),
-  //     ];
-
-  //     navigatorKey.currentState?.push(
-  //       MaterialPageRoute(
-  //         builder: (context) => LeadDetailsScreen(
-  //             leadId: chatId.toString(),
-  //             leadName: lead.name ?? 'Без имени',
-  //             leadStatus: lead.leadStatus.toString(),
-  //             statusId: 1,
-  //             region: lead.region?.name,
-  //             regionId: lead.region?.id,
-  //             manager: lead.manager?.name,
-  //             managerId: lead.manager?.id,
-  //             birthday: lead.birthday,
-  //             leadCustomFields: defaultCustomFields,
-  //           ),
-  //       ),
-  //     );
-
    List<LeadCustomField> defaultCustomFields = [
         LeadCustomField(id: 1, key: '', value: ''),
         LeadCustomField(id: 2, key: '', value: ''),
