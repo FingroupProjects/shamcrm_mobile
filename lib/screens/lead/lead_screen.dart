@@ -35,6 +35,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _canCreateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
   final ApiService _apiService = ApiService();
+bool navigateToEnd = false;
 
   @override
   void initState() {
@@ -200,19 +201,27 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _addNewTab() async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => CreateStatusDialog(),
-    );
+void _addNewTab() async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) => CreateStatusDialog(),
+  );
 
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        _tabTitles.add({'id': _tabTitles.length + 1, 'title': result});
-        _tabKeys.add(GlobalKey());
-      });
+  if (result == true) {
+    setState(() {
+      navigateToEnd = true; 
+    });
+
+    _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
+    _tabKeys.add(GlobalKey());
+
+    if (_tabController != null) {
+      _tabController.animateTo(_tabTitles.length - 1);
+      _currentTabIndex = _tabTitles.length - 1;
     }
   }
+}
+
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
@@ -222,7 +231,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _tabController.animateTo(index);
       },
       onLongPress: () {
-        // Показываем диалог удаления только если есть разрешение
         if (_canDeleteLeadStatus) {
           _showDeleteDialog(index);
         }
@@ -275,105 +283,115 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) async {
-        if (state is LeadLoaded) {
-          setState(() {
-            _tabTitles = state.leadStatuses
-                .where((status) =>
-                    _canReadLeadStatus) // Только те статусы, которые можно читать
-                .map((status) => {'id': status.id, 'title': status.title})
-                .toList();
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+  listener: (context, state) async {
+    if (state is LeadLoaded) {
+      setState(() {
+        _tabTitles = state.leadStatuses
+            .where((status) => _canReadLeadStatus) 
+            .map((status) => {'id': status.id, 'title': status.title})
+            .toList();
+        _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
-            if (_tabTitles.isNotEmpty) {
-              _tabController =
-                  TabController(length: _tabTitles.length, vsync: this);
-              _tabController.addListener(() {
-                setState(() {
-                  _currentTabIndex = _tabController.index;
-                });
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                if (_scrollController.hasClients) {
-                  _scrollToActiveTab();
-                }
-              });
-              int initialIndex = state.leadStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
-              if (initialIndex != -1) {
-                _tabController.index = initialIndex;
-                _currentTabIndex = initialIndex;
-              } else {
-                _tabController.index = _currentTabIndex;
-              }
-
-              if (_scrollController.hasClients) {
-                _scrollToActiveTab();
-              }
+        if (_tabTitles.isNotEmpty) {
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
+          _tabController.addListener(() {
+            setState(() {
+              _currentTabIndex = _tabController.index;
+            });
+            final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+            if (_scrollController.hasClients) {
+              _scrollToActiveTab();
             }
           });
-        } else if (state is LeadError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
-            );
+          int initialIndex = state.leadStatuses
+              .indexWhere((status) => status.id == widget.initialStatusId);
+          if (initialIndex != -1) {
+            _tabController.index = initialIndex;
+            _currentTabIndex = initialIndex;
           } else {
-            // Показываем сообщение об ошибке через SnackBar
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${state.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              ),
-            );
+            _tabController.index = _currentTabIndex;
           }
+
+          if (_scrollController.hasClients) {
+            _scrollToActiveTab();
+          }
+
+         if (navigateToEnd) {
+         navigateToEnd = false; 
+         if (_tabController != null) {
+           _tabController.animateTo(_tabTitles.length - 1); 
+         }
+      }
+
+
+          
         }
-      },
-      child: BlocBuilder<LeadBloc, LeadState>(
-        builder: (context, state) {
-          print('state: ${state.runtimeType}');
-          if (state is LeadDataLoaded) {
-            final List<Lead> leads = state.leads;
-            print(leads);
-            return searchWidget(leads);
-          }
-          if (state is LeadLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-          } else if (state is LeadLoaded) {
-            if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет статусов для отображения'));
-            }
-            return TabBarView(
-              controller: _tabController,
-              children: List.generate(_tabTitles.length, (index) {
-                final statusId = _tabTitles[index]['id'];
-                final title = _tabTitles[index]['title'];
-                return LeadColumn(statusId: statusId, title: title);
-              }),
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-    );
+      });
+    } else if (state is LeadError) {
+      if (state.message.contains("Неавторизованный доступ!")) {
+        ApiService apiService = ApiService();
+        await apiService.logout();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+          (Route<dynamic> route) => false,
+        );
+      } else {
+        // Show error message through SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${state.message}',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          ),
+        );
+      }
+    }
+  },
+  child: BlocBuilder<LeadBloc, LeadState>(
+    builder: (context, state) {
+      print('state: ${state.runtimeType}');
+      if (state is LeadDataLoaded) {
+        final List<Lead> leads = state.leads;
+        print(leads);
+        return searchWidget(leads);
+      }
+      if (state is LeadLoading) {
+        return const Center(
+            child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+      } else if (state is LeadLoaded) {
+        if (_tabTitles.isEmpty) {
+          return const Center(child: Text('Нет статусов для отображения'));
+        }
+        return TabBarView(
+          controller: _tabController,
+          children: List.generate(_tabTitles.length, (index) {
+            final statusId = _tabTitles[index]['id'];
+            final title = _tabTitles[index]['title'];
+            return LeadColumn(statusId: statusId, title: title);
+          }),
+        );
+      }
+      return const SizedBox();
+    },
+  ),
+);
+
   }
 
   void _scrollToActiveTab() {

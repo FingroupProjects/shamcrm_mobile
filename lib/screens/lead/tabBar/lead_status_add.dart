@@ -112,14 +112,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   buttonText: 'Добавить',
                   onPressed: () {
                     final title = _controller.text;
-                    final color = '#000'; // Пример цвета по умолчанию
+                    final color = '#000'; 
 
                     if (title.isNotEmpty) {
                       setState(() {
-                        _errorMessage = null; // Сброс ошибки
+                        _errorMessage = null; 
                       });
                       context.read<LeadBloc>().add(CreateLeadStatus(title: title, color: color));
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(true);
                     } else {
                       setState(() {
                         _errorMessage = 'Заполните поля';
