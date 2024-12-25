@@ -43,6 +43,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -52,21 +54,21 @@ class _CustomTextFieldState extends State<CustomTextField> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xfff1E2E52),
+            color: const Color(0xfff1E2E52),
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword && !_isPasswordVisible,
-          readOnly: widget.readOnly, 
+          readOnly: widget.readOnly,
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,
           maxLines: widget.maxLines,
           validator: widget.validator,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: TextStyle(
+            hintStyle: const TextStyle(
               fontFamily: 'Gilroy',
               color: Color(0xff99A4BA),
             ),
@@ -75,8 +77,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: Color(0xffF4F7FD),
-            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            fillColor: const Color(0xffF4F7FD),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.isPassword
                 ? IconButton(
@@ -84,7 +87,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                       _isPasswordVisible
                           ? Icons.visibility
                           : Icons.visibility_off,
-                      color: Color(0xff99A4BA),
+                      color: const Color(0xff99A4BA),
                     ),
                     onPressed: () {
                       setState(() {
@@ -93,6 +96,33 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     },
                   )
                 : widget.suffixIcon,
+            errorText: widget.errorText,
+            errorStyle: const TextStyle(
+              fontSize: 14, 
+              fontFamily: 'Gilroy',
+              color: Colors.red,
+              fontWeight: FontWeight.w500, 
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.transparent,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.5,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.5,
+              ),
+            ),
           ),
         ),
       ],
