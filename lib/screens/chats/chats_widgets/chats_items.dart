@@ -8,10 +8,9 @@ class ChatItem {
   final String time;
   final int unredMessageCount;
   final String avatar;
-  final String icon; // Добавлено поле для иконки
+  final String icon;
 
-  ChatItem(this.name, this.message, this.time, this.avatar, this.icon,
-      this.unredMessageCount);
+  ChatItem(this.name, this.message, this.time, this.avatar, this.icon, this.unredMessageCount);
 
   get id => null;
 }
@@ -36,7 +35,7 @@ class ChatListItem extends StatelessWidget {
               ),
             ),
             child: CircleAvatar(
-              backgroundColor: Colors.white, 
+              backgroundColor: Colors.white,
               backgroundImage: AssetImage(chatItem.avatar),
               radius: 24,
             ),
@@ -49,11 +48,11 @@ class ChatListItem extends StatelessWidget {
                 Row(
                   children: [
                     Image.asset(
-                      chatItem.icon, 
+                      chatItem.icon,
                       width: 20,
                       height: 20,
                     ),
-                    SizedBox(width: 4), 
+                    SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty ? chatItem.name : 'Без имени',
@@ -77,16 +76,30 @@ class ChatListItem extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-            Text(
-              DateFormat('dd/MM/yyyy').format(DateTime.parse(chatItem.time)),
-              style: AppStyles.chatTimeStyle,
-            ),
+              Text(
+                formatChatTime(chatItem.time),
+                style: AppStyles.chatTimeStyle,
+              ),
               getUnredMessageWidget(chatItem.unredMessageCount)
             ],
           ),
         ],
       ),
     );
+  }
+
+  String formatChatTime(String time) {
+    if (time.isEmpty) {
+      return ''; 
+    }
+    
+    try {
+      DateTime parsedTime = DateTime.parse(time);
+      return DateFormat('dd/MM/yyyy').format(parsedTime); 
+    } catch (e) {
+      print("Ошибка парсинга даты: $e");
+      return ''; 
+    }
   }
 
   Widget getUnredMessageWidget(int unreadMessageCount) {

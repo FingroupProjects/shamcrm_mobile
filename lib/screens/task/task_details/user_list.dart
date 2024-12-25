@@ -55,7 +55,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Пользователи',
+                    'Исполнители',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -137,8 +137,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
                         return Text(
                           selectedUsersCount == 0
-                              ? 'Выберите пользователей'
-                              : 'Выбрано пользователей: $selectedUsersCount',
+                              ? 'Выберите исполнителей'
+                              : 'Выбрано исполнителей: $selectedUsersCount',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -147,9 +147,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           ),
                         );
                       },
-
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите пользователей',
+                          Text('Выберите исполнителей',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -173,7 +172,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 ],
               );
             }
-
             return SizedBox();
           },
         ),

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
@@ -22,7 +23,6 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
   Widget build(BuildContext context) {
     final state = context.watch<TaskCompletionBloc>().state;
 
-    // Если состояние TaskCompletionError, вернуть пустой контейнер
     if (state is TaskCompletionError) {
       return const SizedBox.shrink();
     }
@@ -44,8 +44,10 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
       child: BlocBuilder<TaskCompletionBloc, TaskCompletionState>(
         builder: (context, state) {
           if (state is TaskCompletionLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+            // Replace CircularProgressIndicator with ChartSkeletonLoading
+            return const ChartSkeletonLoading(
+              height: 300, // You can adjust this value
+              width: double.infinity,
             );
           }
 
@@ -74,10 +76,7 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
   }
 
   Widget _buildTaskList(TaskCompletionLoaded state) {
-    // Высота одного элемента
     const double itemHeight = 60.0;
-
-    // Рассчитать динамическую высоту
     double calculatedHeight =
         (state.data.length * itemHeight).clamp(0, 300).toDouble();
 

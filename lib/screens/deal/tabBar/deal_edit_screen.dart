@@ -218,7 +218,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'Дата окончания',
+                        label: 'Дата завершения',
                         withTime: false,
                       ),
                       const SizedBox(height: 8),

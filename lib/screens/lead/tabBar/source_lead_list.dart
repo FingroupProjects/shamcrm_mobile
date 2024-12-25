@@ -27,7 +27,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
     return BlocListener<SourceLeadBloc, SourceLeadState>(
       listener: (context, state) {
         if (state is SourceLeadError) {
-          // Показать сообщение об ошибке
+          // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -146,7 +146,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                   onChanged: (value) {
                     widget.onChanged(value);
 
-                    // Скрыть клавиатуру при выборе элемента
+                    // Hide keyboard when selecting an item
                     FocusScope.of(context).unfocus();
                   },
                   validator: (value) {
@@ -167,6 +167,20 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    errorStyle: TextStyle(
+                      fontSize: 14, 
+                      fontFamily: 'Gilroy', 
+                      fontWeight: FontWeight.w500, 
+                      color: Colors.red, 
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 1.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 1.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
+import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,7 +24,10 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
     return BlocBuilder<DashboardChartBloc, DashboardChartState>(
       builder: (context, state) {
         if (state is DashboardChartLoading) {
-          // return const Center(child: CircularProgressIndicator());
+          // return const ChartSkeletonLoading(
+          //   height: 300, // You can adjust this value
+          //   width: double.infinity,
+          // );
         }
 
         if (state is DashboardChartError) {
