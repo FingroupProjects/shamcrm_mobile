@@ -2021,6 +2021,19 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
     }
   }
 
+Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Task> tasks = await getTasks(taskStatusId, page: 1, perPage: 1);
+
+    // Если список лидов не пуст, значит статус содержит элементы
+    return tasks.isNotEmpty;
+  } catch (e) {
+    print('Error while checking if status has deals: $e');
+    return false;
+  }
+}
+
 //Обновление статуса карточки Задачи  в колонке
 
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
@@ -2125,7 +2138,6 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
   Future<Map<String, dynamic>> CreateTaskStatusAdd({
     required int taskStatusNameId,
     required int projectId,
-    required int organizationId,
     required bool needsPermission,
     List<int>? roleIds,
     bool? finalStep,
@@ -2135,7 +2147,6 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
       final Map<String, dynamic> data = {
         'task_status_name_id': taskStatusNameId,
         'project_id': projectId,
-        'organization_id': organizationId,
         'needs_permission': needsPermission ? 1 : 0,
       };
 

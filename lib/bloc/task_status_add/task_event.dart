@@ -10,7 +10,6 @@ abstract class TaskStatusEvent extends Equatable {
 class CreateTaskStatusAdd extends TaskStatusEvent {
   final int taskStatusNameId;
   final int projectId;
-  final int organizationId;
   final bool needsPermission;
   final List<int>? roleIds;
   final bool? finalStep; // Добавлено поле finalStep
@@ -19,7 +18,6 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
   const CreateTaskStatusAdd({
     required this.taskStatusNameId,
     required this.projectId,
-    required this.organizationId,
     required this.needsPermission,
     this.roleIds,
     this.finalStep, // Инициализация нового поля
@@ -29,7 +27,6 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
   List<Object?> get props => [
         taskStatusNameId,
         projectId,
-        organizationId,
         needsPermission,
         roleIds,
         finalStep, // Добавлено поле в список props

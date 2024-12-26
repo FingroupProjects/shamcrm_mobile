@@ -35,6 +35,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _canCreateTaskStatus = false;
   bool _canDeleteTaskStatus = false;
   final ApiService _apiService = ApiService();
+  bool navigateToEnd = false;
+bool navigateAfterDelete = false;
+int? _deletedIndex;
 
   @override
   void initState() {
@@ -200,16 +203,21 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   void _addNewTab() async {
-    final result = await showDialog<String>(
+    final result = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => CreateStatusDialog(),
     );
 
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        _tabTitles.add({'id': _tabTitles.length + 1, 'title': result});
-        _tabKeys.add(GlobalKey());
-      });
+     if (result == true) {
+    setState(() {
+      navigateToEnd = true; 
+    });
+
+    // if (result != null && result.isNotEmpty) {
+    //   setState(() {
+    //     _tabTitles.add({'id': _tabTitles.length + 1, 'title': result});
+    //     _tabKeys.add(GlobalKey());
+    //   });
     }
   }
 
@@ -253,6 +261,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
     if (result != null && result) {
       setState(() {
+            setState(() {
+             _deletedIndex = _currentTabIndex;
+             navigateAfterDelete = true; 
+           });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -265,6 +277,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       });
     }
   }
+
 
   Widget _buildTabBarView() {
     return BlocListener<TaskBloc, TaskState>(
@@ -302,6 +315,28 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
+
+              //Логика для перехода к созданн статусе
+         if (navigateToEnd) {
+         navigateToEnd = false;
+         if (_tabController != null) {
+           _tabController.animateTo(_tabTitles.length -1); 
+         }
+      }
+
+//Логика для перехода к после удаления статусе на лево
+           if (navigateAfterDelete) {
+          navigateAfterDelete = false;
+          if (_deletedIndex != null) {
+            if (_deletedIndex == 0 && _tabTitles.length > 1) {
+              _tabController.animateTo(1); 
+            } else if (_deletedIndex == _tabTitles.length) {
+              _tabController.animateTo(_tabTitles.length - 1); 
+            } else {
+              _tabController.animateTo(_deletedIndex! - 1); 
+            }
+          }
+        }
             }
           });
         } else if (state is TaskError) {
@@ -315,31 +350,31 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             );
           } else {
             // Показываем сообщение об ошибке через SnackBar
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${state.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                    fontWeight: FontWeight.w500, // Жирность текста
-                    color: Colors.white, // Цвет текста для читаемости
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                      12), // Радиус, как у текстового поля
-                ),
-                backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-                elevation: 3,
-                padding: EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16), // Паддинг для комфортного восприятия
-                duration: Duration(seconds: 2), // Установлено на 2 секунды
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(
+            //       '${state.message}',
+            //       style: TextStyle(
+            //         fontFamily: 'Gilroy',
+            //         fontSize: 16, // Размер шрифта совпадает с CustomTextField
+            //         fontWeight: FontWeight.w500, // Жирность текста
+            //         color: Colors.white, // Цвет текста для читаемости
+            //       ),
+            //     ),
+            //     behavior: SnackBarBehavior.floating,
+            //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(
+            //           12), // Радиус, как у текстового поля
+            //     ),
+            //     backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+            //     elevation: 3,
+            //     padding: EdgeInsets.symmetric(
+            //         vertical: 12,
+            //         horizontal: 16), // Паддинг для комфортного восприятия
+            //     duration: Duration(seconds: 2), // Установлено на 2 секунды
+            //   ),
+            // );
           }
         }
       },
