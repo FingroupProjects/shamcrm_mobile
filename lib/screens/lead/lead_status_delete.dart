@@ -110,7 +110,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
         Navigator.of(context).pop(); 
       } else {
         context.read<LeadBloc>().add(DeleteLeadStatuses(leadStatusId));
-        Navigator.of(context).pop();
+                      Navigator.of(context).pop(true);
         context.read<LeadBloc>().add(FetchLeadStatuses());
 
       }
