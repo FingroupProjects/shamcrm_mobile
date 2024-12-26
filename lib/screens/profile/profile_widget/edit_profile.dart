@@ -58,7 +58,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
       return name.trim().isNotEmpty && name.length >= 2;
     }
 
-    String selectedDialCode = '+7'; // Default country code
+    String selectedDialCode = '+992'; // Default country code
     List<String> countryCodes = [
       '+992',
       '+7',
