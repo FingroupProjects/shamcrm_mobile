@@ -40,11 +40,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   // Переменные для файла
+  // Переменные для файла
   String? selectedFile;
   String? fileName;
   String? fileSize;
-  String? selectedFilePath; // Вместо TaskFile используем путь к файлу
-
   int? selectedPriority;
   String? selectedProject;
   List<String>? selectedUsers;
@@ -113,28 +112,30 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     );
   }
 
-  // В методе _pickFile:
-Future<void> _pickFile() async {
-  try {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+  // Функция выбора файла
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
 
-    if (result != null) {
-      setState(() {
-        selectedFilePath = result.files.single.path!;
-        fileName = result.files.single.name;
-        fileSize = '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
-      });
+      if (result != null) {
+        setState(() {
+          selectedFile = result.files.single.path!;
+          fileName = result.files.single.name;
+          // Конвертируем размер в КБ
+          fileSize =
+              '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
+        });
+      }
+    } catch (e) {
+      print('Ошибка при выборе файла: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ошибка при выборе файла'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  } catch (e) {
-    print('Ошибка при выборе файла: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ошибка при выборе файла'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
 
   // Виджет выбора файла
   Widget _buildFileSelection() {
@@ -168,13 +169,13 @@ Future<void> _pickFile() async {
                     style: TextStyle(
                       color: fileName != null
                           ? const Color(0xff1E2E52)
-                          : Colors.grey,
+                          : const Color(0xff99A4BA),
                     ),
                   ),
                 ),
                 Icon(
                   Icons.attach_file,
-                  color: Colors.grey[600],
+                  color: const Color(0xff99A4BA),
                 ),
               ],
             ),
@@ -184,28 +185,28 @@ Future<void> _pickFile() async {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text(
-                'Файл: ',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // Здесь можно добавить логику предпросмотра файла
-                },
-                child: Text(
-                  fileName!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff4759FF),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
+              // const Text(
+              //   'Файл: ',
+              //   style: TextStyle(
+              //     fontSize: 14,
+              //     fontFamily: 'Gilroy',
+              //     color: Color(0xff1E2E52),
+              //   ),
+              // ),
+              // GestureDetector(
+              //   onTap: () {
+              //     // Здесь можно добавить логику предпросмотра файла
+              //   },
+              //   // child: Text(
+              //   //   fileName!,
+              //   //   style: const TextStyle(
+              //   //     fontSize: 14,
+              //   //     fontFamily: 'Gilroy',
+              //   //     color: Color(0xff4759FF),
+              //   //     decoration: TextDecoration.underline,
+              //   //   ),
+              //   // ),
+              // ),
             ],
           ),
         ],
@@ -598,6 +599,8 @@ Future<void> _pickFile() async {
                             customFieldMap.add({fieldName: fieldValue});
                           }
                         }
+                        print("fileData: $fileData");
+
                         context.read<TaskBloc>().add(CreateTask(
                               name: name,
                               statusId: widget.statusId,
@@ -615,8 +618,7 @@ Future<void> _pickFile() async {
                               priority: selectedPriority,
                               description: description,
                               customFields: customFieldMap,
-                              file:
-                                  fileData, // Передаем подготовленный fileData
+                              filePath: selectedFile, // Передаем путь к файлу
                             ));
                       }
                     },

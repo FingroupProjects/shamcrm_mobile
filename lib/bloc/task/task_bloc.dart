@@ -115,8 +115,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         userId: event.userId,
         description: event.description,
         customFields: event.customFields,
-
-        // file: event.file // C
+        filePath: event.filePath,
       );
 
       if (result['success']) {
@@ -151,8 +150,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         description: event.description,
         taskStatusId: event.taskStatusId,
         customFields: event.customFields,
-
-        file: event.file
+        filePath: event.filePath,
       );
 
       if (result['success']) {
