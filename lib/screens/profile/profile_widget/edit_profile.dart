@@ -5,7 +5,7 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_event.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:flutter/material.dart';
@@ -58,7 +58,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return name.trim().isNotEmpty && name.length >= 2;
   }
 
-  String selectedDialCode = '+992'; // Default country code
+  String selectedDialCode = '+7'; // Default country code
   List<String> countryCodes = [
     '+992',
     '+7',

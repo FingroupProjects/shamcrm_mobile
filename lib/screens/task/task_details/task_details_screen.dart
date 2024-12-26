@@ -10,9 +10,13 @@ import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -31,6 +35,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final String? sum;
   final int? priority;
   final List<TaskCustomField> taskCustomFields;
+  final String? taskFile; // Добавлено поле для файла
 
   TaskDetailsScreen({
     required this.taskId,
@@ -48,6 +53,7 @@ class TaskDetailsScreen extends StatefulWidget {
     // this.projectName,
     this.priority,
     required this.taskCustomFields,
+    this.taskFile, // Инициализация опционального параметра
   });
 
   @override
@@ -100,12 +106,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       return;
     }
 
-      // Карта уровней приоритета
-  final Map<int, String> priorityLevels = {
-    1: 'Обычный',
-    3: 'Критический',
-    2: 'Сложный'
-  };
+    // Карта уровней приоритета
+    final Map<int, String> priorityLevels = {
+      1: 'Обычный',
+      3: 'Критический',
+      2: 'Сложный'
+    };
 
     currentTask = task;
     details = [
@@ -114,7 +120,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       {
         'label': 'Уровень приоритета:',
         'value': priorityLevels[task.priority] ?? 'Не указано',
-      },      {
+      },
+      {
         'label': 'От:',
         'value': task.startDate != null && task.startDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
@@ -126,14 +133,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : 'Не указано'
       },
-       {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
-          {
+      {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
+      {
         'label': 'Исполнитель:',
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
             : 'Не указано',
       },
-        {
+      {
         'label': 'Описание:',
         'value': task.description?.isNotEmpty == true
             ? task.description!
@@ -145,12 +152,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       {'label': 'Автор:', 'value': task.author?.name ?? 'Не указано'},
       {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
+      if (task.taskFile != null && task.taskFile!.isNotEmpty)
+        {'label': 'Файл:', 'value': 'Ссылка'},
     ];
 
     for (var field in task.taskCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
     }
-    
   }
 
   @override
@@ -589,6 +597,33 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       );
     }
+// Специальная обработка для файла
+    if (label == 'Файл:') {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              if (currentTask?.taskFile != null) {
+                _showFile(currentTask!.taskFile!);
+              }
+            },
+            child: Text(
+              'Ссылка',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -599,6 +634,67 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           child: _buildValue(value),
         ),
       ],
+    );
+  }
+
+ void _showFile(String fileUrl) async {
+  try {
+    print('Входящий fileUrl: $fileUrl');
+
+    // Получаем базовый домен из ApiService
+    final domain = await _apiService.getEnteredDomain();
+    print('Полученный базовый домен: $domain');
+
+    // Формируем полный URL файла
+    final fullUrl = Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
+    print('Сформированный полный URL: $fullUrl');
+
+    // Путь для сохранения файла
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName = fileUrl.split('/').last;
+    final filePath = '${directory.path}/$fileName';
+
+    // Загружаем файл
+    final dio = Dio();
+    await dio.download(fullUrl.toString(), filePath);
+
+    print('Файл успешно скачан в $filePath');
+
+    // Открываем файл
+    final result = await OpenFile.open(filePath);
+    if (result.type == ResultType.error) {
+      print('Не удалось открыть файл: ${result.message}');
+      _showErrorSnackBar('Не удалось открыть файл.');
+    } else {
+      print('Файл открыт успешно.');
+    }
+  } catch (e) {
+    print('Ошибка при скачивании или открытии файла: $e');
+    _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+  }
+}
+
+
+// Функция для показа ошибки
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 

@@ -186,6 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Divider(thickness: 1, color: Colors.grey[300]),
         DealStatsChart(),
         Divider(thickness: 1, color: Colors.grey[300]),
+
         ProcessSpeedGauge(),
       ];
     } else if (userRoleName == 'manager') {

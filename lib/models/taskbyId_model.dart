@@ -16,6 +16,7 @@ class TaskById {
   final ChatById? chat;
   final AuthorTask? author;
   final List<TaskCustomFieldsById> taskCustomFields;
+  final String? taskFile;
 
   TaskById({
     required this.id,
@@ -33,6 +34,7 @@ class TaskById {
     this.chat, // Инициализация нового поля
     this.author, // Инициализация нового поля
     required this.taskCustomFields,
+    this.taskFile,
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -70,7 +72,7 @@ class TaskById {
               .toList()
           : null,
       color: json['color'] is String ? json['color'] : null,
-     
+      taskFile: json['file'],
       chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
           ? ChatById.fromJson(json['chat']) // Преобразуем JSON для чата
           : null,
