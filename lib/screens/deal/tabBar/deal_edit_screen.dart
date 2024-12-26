@@ -126,7 +126,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Редактирование Сделки',
+          'Редактирование сделки',
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',

@@ -103,6 +103,53 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка при выборе изображения: $e')),
         );
+
+Future<void> _loadUserPhone() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  String UUID = prefs.getString('userID') ?? 'Не найдено';
+  String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+  String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
+
+  setState(() {
+    userController.text = UUID;
+    loginController.text = ULogin;
+    roleController.text = URoleName;
+  });
+
+  try {
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+
+    setState(() {
+      NameController.text = userProfile.name;
+      SurnameController.text = userProfile.lastname;
+      PatronymicController.text = userProfile.Pname;
+      emailController.text = userProfile.email;
+
+      String phoneNumber = userProfile.phone;
+
+      // Пробуем извлечь код страны из телефона и сопоставить с countryCodes
+      for (var code in countryCodes) {
+        if (phoneNumber.startsWith(code)) {
+          setState(() {
+            selectedDialCode = code;
+            phoneController.text = phoneNumber.substring(code.length); // Убираем код из номера
+          });
+          break; // Прерываем цикл, если нашли соответствие
+        }
+      }
+    });
+  } catch (e) {
+    print('Ошибка при загрузке данных из API: $e');
+  }
+}
+
+  Future<void> _loadSelectedOrganization() async {
+    final savedOrganization = await ApiService().getSelectedOrganization();
+    if (savedOrganization == null) {
+      final firstOrganization = await _getFirstOrganization();
+      if (firstOrganization != null) {
+        _onOrganizationChanged(firstOrganization);
       }
     }
 
@@ -193,8 +240,6 @@ import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
       print('Ошибка при загрузке данных из API: $e');
     }
   }
-
-
     Future<void> _showImagePickerDialog() async {
       final XFile? pickedFile = await showModalBottomSheet<XFile?>(
         context: context,

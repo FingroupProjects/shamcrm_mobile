@@ -111,8 +111,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     controller: _scrollController,
                     itemCount: notifications.length +
                         (notificationBloc.allNotificationsFetched ? 0 : 1),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     itemBuilder: (context, index) {
                       if (index == notifications.length) {
                         return const Padding(
@@ -123,103 +122,117 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       final notification = notifications[index];
 
                       return Dismissible(
-                        key: Key(notification.id.toString()),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                          key: Key(notification.id.toString()),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.centerRight,
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
-                          alignment: Alignment.centerRight,
-                          child: const Icon(
-                            Icons.delete,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        onDismissed: (direction) {
-                          setState(() {
-                            notifications.removeAt(index);
-                          });
+                          onDismissed: (direction) {
+                            setState(() {
+                              notifications.removeAt(index);
+                            });
 
-                          notificationBloc
-                              .add(DeleteNotification(notification.id));
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.notifications,
-                                color: Color(0xff1E2E52), size: 24),
-                            title: Text(
-                            notification.type == 'message'
-                                ? 'Новое сообщение'
-                                : notification.type == 'deal'
-                                    ? 'Сделка'
-                                    : notification.type == 'notice'
-                                        ? 'Напоминание о заметке'
-                                        : notification.type == 'task'
-                                            ? 'Новая задача'
-                                            : notification.type == 'taskFinished'
-                                                ? 'Задача закрыто'
-                                                : notification.type == 'taskOutDated'
-                                                    ? 'Напоминание о просроченном'
-                                                    : notification.type == 'lead' 
-                                                        ? 'Вас назначили менеджером лида' 
-                                                        : notification.type,
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xff1E2E52)),
-                            overflow: TextOverflow.ellipsis, 
-                            softWrap: false, 
-                            ),                           
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(notification.message,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xff5A6B87))),
+                            notificationBloc
+                                .add(DeleteNotification(notification.id));
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            trailing: Text(
-                              DateFormat('dd.MM.yyyy HH:mm')
-                                  .format(notification.createdAt),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
+                            child: ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(
+                                Icons.notifications,
                                 color: Color(0xff1E2E52),
+                                size: 24,
                               ),
+                              title: Text(
+                                notification.type == 'message'
+                                    ? 'Новое сообщение'
+                                    : notification.type == 'deal'
+                                        ? 'Сделка'
+                                        : notification.type == 'notice'
+                                            ? 'Напоминание о заметке'
+                                            : notification.type == 'task'
+                                                ? 'Новая задача'
+                                                : notification.type ==
+                                                        'taskFinished'
+                                                    ? 'Задача закрыто'
+                                                    : notification.type ==
+                                                            'taskOutDated'
+                                                        ? 'Напоминание о просроченном'
+                                                        : notification.type ==
+                                                                'lead'
+                                                            ? 'Вас назначили менеджером лида'
+                                                            : notification.type,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52)),
+                                // overflow: TextOverflow.ellipsis,
+                                // softWrap: false,
+                              ),
+                              
+                              subtitle: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      notification.message,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xff5A6B87)),
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    DateFormat('dd.MM.yyyy HH:mm')
+                                        .format(notification.createdAt),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                navigateToScreen(notification.type,
+                                    notification.id, notification.modelId);
+                              },
                             ),
-                            onTap: () {
-                              navigateToScreen(notification.type,
-                                  notification.id, notification.modelId);
-                            },
-                          ),
-                        ),
-                      );
+                          ));
                     },
                   );
           }
@@ -231,7 +244,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> navigateToScreen(
       String type, int notificationId, int chatId) async {
-          setState(() {
+    setState(() {
       (notificationBloc.state as NotificationDataLoaded)
           .notifications
           .removeWhere((notification) => notification.id == notificationId);
@@ -270,7 +283,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     messageType: "",
                     createDate: "",
                     unredMessage: 0,
-                    canSendMessage: getChatById.canSendMessage, chatUsers: [],
+                    canSendMessage: getChatById.canSendMessage,
+                    chatUsers: [],
                   ).toChatItem("assets/images/AvatarChat.png"),
                   chatId: chatId,
                   endPointInTab: 'lead',
@@ -294,7 +308,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     messageType: "",
                     createDate: "",
                     unredMessage: 0,
-                    canSendMessage: getChatById.canSendMessage, chatUsers: [],
+                    canSendMessage: getChatById.canSendMessage,
+                    chatUsers: [],
                   ).toChatItem("assets/images/AvatarChat.png"),
                   chatId: chatId,
                   endPointInTab: 'task',
@@ -304,13 +319,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         } else if (getChatById.type == "corporate") {
-            final getChatById = await ApiService().getChatById(chatId);
-         String? chatName;
-         chatName = getChatById.group != null 
-             ? getChatById.group!.name 
-             : getChatById.chatUsers.length > 1
-                 ? '${getChatById.chatUsers[1].participant.name}'
-                 : getChatById.chatUsers[0].participant.name;
+          final getChatById = await ApiService().getChatById(chatId);
+          String? chatName;
+          chatName = getChatById.group != null
+              ? getChatById.group!.name
+              : getChatById.chatUsers.length > 1
+                  ? '${getChatById.chatUsers[1].participant.name}'
+                  : getChatById.chatUsers[0].participant.name;
 
           navigatorKey.currentState?.push(
             MaterialPageRoute(
@@ -325,7 +340,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     messageType: "",
                     createDate: "",
                     unredMessage: 0,
-                    canSendMessage: getChatById.canSendMessage, chatUsers: [],
+                    canSendMessage: getChatById.canSendMessage,
+                    chatUsers: [],
                   ).toChatItem("assets/images/AvatarChat.png"),
                   chatId: chatId,
                   endPointInTab: 'corporate',
@@ -335,22 +351,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         }
-       } catch (e) {
-      Navigator.of(context).pop();
-      if (e.toString().contains('404')) {
-        // Handle 404 error (resource not found)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ресурс не найден для задачи.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
-        print("Ошибка загрузки данных: $e");
+      } catch (e) {
+        Navigator.of(context).pop();
+        if (e.toString().contains('404')) {
+          // Handle 404 error (resource not found)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ресурс не найден для задачи.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          print("Ошибка загрузки данных: $e");
+        }
       }
-    }
-  } else if (type == 'task' || type == 'taskFinished' || type == 'taskOutDated') {
-        showDialog(
+    } else if (type == 'task' ||
+        type == 'taskFinished' ||
+        type == 'taskOutDated') {
+      showDialog(
         context: context,
         barrierDismissible: false,
         barrierColor: Colors.transparent,
@@ -361,22 +379,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         },
       );
       try {
+        final taskDetails = await ApiService().getTaskById(chatId);
+        Navigator.of(context).pop();
 
-      final taskDetails = await ApiService().getTaskById(chatId);
-      Navigator.of(context).pop();
-      
-      print('Переход на экран задачи с ID: $chatId');
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => TaskDetailsScreen(
-            taskId: chatId.toString(),
-            taskName: taskDetails.name,
-            taskStatus: '',
-            statusId: 1, taskCustomFields: [],
+        print('Переход на экран задачи с ID: $chatId');
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => TaskDetailsScreen(
+              taskId: chatId.toString(),
+              taskName: taskDetails.name,
+              taskStatus: '',
+              statusId: 1,
+              taskCustomFields: [],
+            ),
           ),
-        ),
-      );
-     } catch (e) {
+        );
+      } catch (e) {
         Navigator.of(context).pop();
         print("Ошибка загрузки данных: $e");
       }
@@ -414,19 +432,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } else if (type == 'lead') {
-   List<LeadCustomField> defaultCustomFields = [
+      List<LeadCustomField> defaultCustomFields = [
         LeadCustomField(id: 1, key: '', value: ''),
         LeadCustomField(id: 2, key: '', value: ''),
       ];
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => LeadDetailsScreen(
-              leadId: chatId.toString(),
-              leadName: '',
-              leadStatus: '',
-              statusId: 1,
-              leadCustomFields: defaultCustomFields,
-            ),
+            leadId: chatId.toString(),
+            leadName: '',
+            leadStatus: '',
+            statusId: 1,
+            leadCustomFields: defaultCustomFields,
+          ),
         ),
       );
     } else {

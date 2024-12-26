@@ -255,7 +255,7 @@ void _searchChats(String query, String endPoint) {
                   searchController.clear();
                   if (!isClickAvatarIcon) {
                     if (_debounce?.isActive ?? false) _debounce?.cancel();
-                    _debounce = Timer(const Duration(milliseconds: 800), () {
+                    _debounce = Timer(const Duration(seconds: 1), () {
                       final chatsBloc = context.read<ChatsBloc>();
                       chatsBloc.add(ClearChats());
                       if (selectTabIndex == 0) {
