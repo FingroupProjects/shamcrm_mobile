@@ -114,6 +114,46 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     context.read<OrganizationBloc>().add(FetchOrganizations());
   }
 
+Future<void> _loadUserPhone() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  String UUID = prefs.getString('userID') ?? 'Не найдено';
+  String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+  String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
+
+  setState(() {
+    userController.text = UUID;
+    loginController.text = ULogin;
+    roleController.text = URoleName;
+  });
+
+  try {
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+
+    setState(() {
+      NameController.text = userProfile.name;
+      SurnameController.text = userProfile.lastname;
+      PatronymicController.text = userProfile.Pname;
+      emailController.text = userProfile.email;
+
+      String phoneNumber = userProfile.phone;
+
+      // Пробуем извлечь код страны из телефона и сопоставить с countryCodes
+      for (var code in countryCodes) {
+        if (phoneNumber.startsWith(code)) {
+          setState(() {
+            selectedDialCode = code;
+            phoneController.text = phoneNumber.substring(code.length); // Убираем код из номера
+          });
+          break; // Прерываем цикл, если нашли соответствие
+        }
+      }
+    });
+  } catch (e) {
+    print('Ошибка при загрузке данных из API: $e');
+  }
+}
+
   Future<void> _loadSelectedOrganization() async {
     final savedOrganization = await ApiService().getSelectedOrganization();
     if (savedOrganization == null) {
@@ -146,45 +186,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-  void _loadUserPhone() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+ 
 
-    String UUID = prefs.getString('userID') ?? 'Не найдено';
-    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
-    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
 
-    setState(() {
-      userController.text = UUID;
-      loginController.text = ULogin;
-      roleController.text = URoleName;
-    });
-
-    try {
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
-
-      setState(() {
-        NameController.text = userProfile.name;
-        SurnameController.text = userProfile.lastname;
-        PatronymicController.text = userProfile.Pname;
-        emailController.text = userProfile.email;
-        // Extract country code from phone if necessary
-        String phoneNumber = userProfile.phone;
-        for (var code in countryCodes) {
-          if (phoneNumber.startsWith(code)) {
-            setState(() {
-              selectedDialCode = code;
-              phoneController.text = phoneNumber
-                  .substring(code.length); // Remove code from phone number
-            });
-            break;
-          }
-        }
-      });
-    } catch (e) {
-      print('Ошибка при загрузке данных из API: $e');
-    }
-  }
 
   Future<void> _showImagePickerDialog() async {
     final XFile? pickedFile = await showModalBottomSheet<XFile?>(

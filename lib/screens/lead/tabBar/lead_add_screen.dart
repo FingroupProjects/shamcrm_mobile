@@ -120,7 +120,7 @@ void _fetchAndAddCustomFields() async {
         title: const Row(
           children: [
             Text(
-              'Новый Лид',
+              'Новый лид',
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',

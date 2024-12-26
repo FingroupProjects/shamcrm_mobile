@@ -9,10 +9,10 @@ Future<File?> convertAudioFile(String inputPath, String outputPath) async {
   await FFmpegKit.execute('-i $inputPath $outputPath').then((session) async {
     final returnCode = await session.getReturnCode();
     if (returnCode!.isValueSuccess()) {
-      print('Konvertatsiya muvaffaqiyatli yakunlandi!');
+      print('Conversion successful!');
       return File(outputPath);
     } else {
-      print('Konvertatsiya muvaffaqiyatsiz yakunlandi: $returnCode');
+      print('Conversion failed: $returnCode');
       return null;
     }
   });
@@ -102,3 +102,6 @@ class AppStyles {
     color: Colors.white,
   );
 }
+
+
+
