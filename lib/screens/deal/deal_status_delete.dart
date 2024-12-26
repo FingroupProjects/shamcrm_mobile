@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
@@ -78,23 +79,74 @@ class DeleteDealStatusDialog extends StatelessWidget {
             ),
             SizedBox(width: 8),
             Expanded(
-              child: CustomButton(
-                buttonText: 'Удалить',
-                onPressed: () {
-                  // Отправляем событие на удаление статуса
-                  context.read<DealBloc>().add(DeleteDealStatuses(dealStatusId));
+  child: CustomButton(
+    buttonText: 'Удалить',
+    onPressed: () async {
+      final _apiService = ApiService();
+      final hasLeads = await _apiService.checkIfStatusHasDeals(dealStatusId);
 
-                  // Закрываем диалог после удаления
-                  Navigator.of(context).pop();
-
-                  // После удаления, загружаем обновленные статусы
-                  context.read<DealBloc>().add(FetchDealStatuses());
-                  
-                },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
+      if (hasLeads) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Сначала уберите карточки из этого статуса!',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
             ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+      } else {
+        // Отправляем событие на удаление статуса
+        context.read<DealBloc>().add(DeleteDealStatuses(dealStatusId));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Статус успешно удален!',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.green,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Закрываем диалог после удаления
+        Navigator.of(context).pop(true);
+
+        // После удаления, загружаем обновленные статусы
+        context.read<DealBloc>().add(FetchDealStatuses());
+      }
+    },
+    buttonColor: Color(0xff1E2E52),
+    textColor: Colors.white,
+  ),
+)
+
           ],
         ),
       ],

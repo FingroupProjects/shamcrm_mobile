@@ -1651,6 +1651,19 @@ Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     }
   }
 
+Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Deal> deals = await getDeals(dealStatusId, page: 1, perPage: 1);
+
+    // Если список лидов не пуст, значит статус содержит элементы
+    return deals.isNotEmpty;
+  } catch (e) {
+    print('Error while checking if status has deals: $e');
+    return false;
+  }
+}
+
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
       String title, String color, int day) async {

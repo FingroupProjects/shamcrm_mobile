@@ -215,13 +215,13 @@ void _addNewTab() async {
       navigateToEnd = true; 
     });
 
-    _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
-    _tabKeys.add(GlobalKey());
+    // _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
+    // _tabKeys.add(GlobalKey());
 
-    if (_tabController != null) {
-      _tabController.animateTo(_tabTitles.length - 1);
-      _currentTabIndex = _tabTitles.length - 1;
-    }
+    // if (_tabController != null) {
+    //   _tabController.animateTo(_tabTitles.length - 1);
+    //   _currentTabIndex = _tabTitles.length - 1;
+    // }
   }
 }
 
@@ -323,7 +323,7 @@ void _addNewTab() async {
           if (_scrollController.hasClients) {
             _scrollToActiveTab();
           }
-//Логика для перехода к создан статусе
+//Логика для перехода к созданн статусе
          if (navigateToEnd) {
          navigateToEnd = false;
          if (_tabController != null) {
@@ -331,6 +331,7 @@ void _addNewTab() async {
          }
       }
 
+//Логика для перехода к после удаления статусе на лево
            if (navigateAfterDelete) {
           navigateAfterDelete = false;
           if (_deletedIndex != null) {

@@ -25,7 +25,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    // await Future.delayed(Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: 600));
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
@@ -210,17 +210,23 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
   }
 
   Future<void> _deleteDealStatuses(DeleteDealStatuses event, Emitter<DealState> emit) async {
-    emit(DealLoading());
+  emit(DealLoading());
 
-    try {
-      final response = await apiService.deleteDealStatuses(event.dealStatusId);
-      if (response['result'] == 'Success') {
-        emit(DealDeleted('Статус Лида успешно удалена'));
-      } else {
-        emit(DealError('Ошибка удаления статуса сделки'));
-      }
-    } catch (e) {
-      emit(DealError('Ошибка удаления статуса сделки: ${e.toString()}'));
+  try {
+    if (event.dealStatusId == 0) {
+      emit(DealError('Некорректный статус для удаления'));
+      return;
     }
+
+    final response = await apiService.deleteDealStatuses(event.dealStatusId);
+    if (response['result'] == 'Success') {
+      emit(DealDeleted('Статус сделки успешно удален'));
+    } else {
+      emit(DealError('Ошибка удаления статуса сделки'));
+    }
+  } catch (e) {
+    emit(DealError('Ошибка удаления статуса сделки: ${e.toString()}'));
   }
+}
+
 }
