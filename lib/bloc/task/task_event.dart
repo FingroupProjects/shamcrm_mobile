@@ -29,7 +29,7 @@ class CreateTask extends TaskEvent {
   final List<int>?
       userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
-  final TaskFile? file;
+  final String? filePath;
   final List<Map<String, String>>? customFields;
 
   CreateTask({
@@ -43,8 +43,7 @@ class CreateTask extends TaskEvent {
     this.userId, // Передаём новый параметр в конструктор
     this.description,
     this.customFields,
-
-    this.file,
+    this.filePath,
   });
 }
 
@@ -62,7 +61,7 @@ class UpdateTask extends TaskEvent {
   final int taskStatusId;
   final List<Map<String, String>>? customFields;
 
-  final TaskFile? file;
+  final String? filePath;
 
   UpdateTask({
     required this.taskId,
@@ -76,8 +75,7 @@ class UpdateTask extends TaskEvent {
     this.description,
     required this.taskStatusId,
     this.customFields,
-
-    this.file,
+    this.filePath,
   });
 }
 

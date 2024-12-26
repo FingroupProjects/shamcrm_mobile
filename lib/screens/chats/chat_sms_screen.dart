@@ -88,7 +88,36 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _fetchBaseUrl();
       _markMessagesAsRead();
     });
-  }
+    
+  
+  // Добавляем слушатель скролла для обновления текущей даты
+  _scrollController.addListener(() {
+    if (_scrollController.hasClients) {
+      final state = context.read<MessagingCubit>().state;
+      if (state is MessagesLoadedState) {
+        final position = _scrollController.position.pixels;
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        final messagesLength = state.messages.length;
+        
+        if (messagesLength > 0) {
+          final itemHeight = maxScroll / messagesLength;
+          final currentIndex = ((maxScroll - position) / itemHeight).floor();
+          
+          if (currentIndex >= 0 && currentIndex < messagesLength) {
+            final currentMessage = state.messages[currentIndex];
+            final currentDateTime = DateTime.parse(currentMessage.createMessateTime);
+            
+            setState(() {
+              _currentDate = formatDate(currentDateTime);
+            });
+          }
+        }
+      }
+    }
+  });
+}
+
+  
 
   void _markMessagesAsRead() {
     final state = context.read<MessagingCubit>().state;
@@ -102,92 +131,122 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
 
-  void _showDatePicker(BuildContext context, List<Message> messages) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16), // Отступы вокруг окна
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20), // Скруглённые углы
-        ),
-        child: Container(
-          color: Colors.white, // Белый фон для всего окна
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+  // Обновляем показ календаря
+void _showDatePicker(BuildContext context, List<Message> messages) {
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        color: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade200,
+                  ),
+                ),
+              ),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Выбрать дни',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                      ),
+                  Text(
+                    'Перейти к дате',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
                     ),
                   ),
-                  TextButton(
+                  IconButton(
+                    icon: Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Закрыть',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
                   ),
                 ],
               ),
-              SizedBox(
-                height: 400,
-                child: CalendarDatePicker(
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                  onDateChanged: (date) {
-                    final index = _findMessageIndexByDate(messages, date);
-                    if (index != -1) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToMessageIndex(index);
-                      });
-                    }
+            ),
+            SizedBox(
+              height: 400,
+              child: CalendarDatePicker(
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+                onDateChanged: (date) {
+                  final index = _findMessageIndexByDate(messages, date);
+                  if (index != -1) {
                     Navigator.pop(context);
-                  },
-                ),
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _scrollToMessageIndex(index);
+                    });
+                  } else {
+                    // Обработка, если нет сообщений на выбранную дату
+                  }
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
-    for (int i = 0; i < messages.length; i++) {
-      final messageDate = DateTime.parse(messages[i].createMessateTime);
-      if (isSameDay(messageDate, targetDate)) {
-        return i; // Найден индекс сообщения с нужной датой
-      }
+
+int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
+  // Ищем последний индекс сообщения с указанной датой
+  int lastIndex = -1;
+  for (int i = 0; i < messages.length; i++) {
+    final messageDate = DateTime.parse(messages[i].createMessateTime);
+    if (isSameDay(messageDate, targetDate)) {
+      lastIndex = i; // Сохраняем последний найденный индекс
     }
-    return -1; // Если такого сообщения нет
   }
+  return lastIndex;
+}
 
-  void _scrollToMessageIndex(int index) {
-    if (_scrollController.hasClients) {
-      // Учитываем, что сообщения могут быть сгруппированы по датам, и каждый блок сообщения может иметь отступы
-      final position = index *
-          50.0; // 50.0 — это предполагаемая высота одного сообщения, подкорректируй при необходимости
+
+
+void _scrollToMessageIndex(int index) {
+  if (_scrollController.hasClients) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState) {
+      final messagesLength = state.messages.length;
+
+      // Вычисляем высоту одного элемента
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final itemHeight = maxScroll / messagesLength;
+
+      // Целевая позиция для движения
+      final targetPosition = index * itemHeight;
+
+      // Скроллим к позиции
       _scrollController.animateTo(
-        position,
+        targetPosition.clamp(0.0, maxScroll), // Ограничение для корректности
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+
+      // Обновляем текущую видимую дату
+      if (index >= 0 && index < state.messages.length) {
+        setState(() {
+          _currentDate = formatDate(
+            DateTime.parse(state.messages[index].createMessateTime),
+          );
+        });
+      }
     }
   }
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +322,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'ОШИБКА!!!!!',
+                      'ОШИБКА!',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -383,7 +442,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                   child: GestureDetector(
-                    onLongPress: () => _showDatePicker(context, state.messages),
+                    onTap: () => _showDatePicker(context, state.messages),
                     child: Center(
                       child: Text(
                         formatDate(messageDate),

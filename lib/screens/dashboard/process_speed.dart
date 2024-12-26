@@ -160,9 +160,9 @@ class GaugePainter extends CustomPainter {
     const totalAngle = math.pi * 1.5; // Total sweep angle (270 degrees)
 
     final colors = [
-      const Color(0xFFc30202), // Red
+      const Color(0xFF27a945), // Red
       const Color(0xFF3935E7), // Blue
-      const Color(0xFF27a945), // Green
+      const Color(0xFFc30202), // Green
     ];
 
     final double sweepAnglePerSection = totalAngle / 3;
@@ -231,14 +231,15 @@ class GaugePainter extends CustomPainter {
     );
 
     final times = [
-      '06:00',
-      '05:00',
-      '04:00',
-      '03:00',
-      '02:00',
+      '00:00',
       '01:00',
-      '00:00'
-    ];
+      '02:00',
+      '03:00',
+      '04:00',
+      '05:00',
+      '06:00',
+    ]; // Временные метки в обратном порядке
+
     for (int i = 0; i < times.length; i++) {
       final angle = startAngle + (totalAngle * i / 6);
       final markerRadius = radius + 25;
@@ -265,13 +266,13 @@ class GaugePainter extends CustomPainter {
 
     // Draw animated needle with initial sweep
     final needleLength = radius - 10;
-    final normalizedSpeed = math.min(math.max(speed, 0), 6) / 6;
+final normalizedSpeed = math.min(math.max(speed, 0), 6) / 6;
 
     // Calculate the initial sweep angle (from left to target position)
-    final targetAngle = startAngle + (totalAngle * (1 - normalizedSpeed));
+   final targetAngle = startAngle - (totalAngle * normalizedSpeed);
     final sweepStartAngle = startAngle;
-    final currentAngle = sweepStartAngle +
-        (targetAngle - sweepStartAngle) * initialAnimation.value;
+final currentAngle = sweepStartAngle +
+    (targetAngle - sweepStartAngle) * initialAnimation.value;
 
     final needlePaint = Paint()
       ..color = Colors.grey

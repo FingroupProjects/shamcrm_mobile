@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -10,15 +11,20 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 class TaskEditScreen extends StatefulWidget {
   final int taskId;
@@ -32,7 +38,7 @@ class TaskEditScreen extends StatefulWidget {
   final String? createdAt;
   final String? description;
   final int? priority;
-  final String? fail;
+  final String? file;
   final List<TaskCustomFieldsById> taskCustomFields;
 
   TaskEditScreen({
@@ -47,7 +53,7 @@ class TaskEditScreen extends StatefulWidget {
     this.createdAt,
     this.description,
     this.priority,
-    this.fail,
+    this.file,
     required this.taskCustomFields,
   });
 
@@ -66,6 +72,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   List<String>? selectedUsers;
   int? selectedPriority;
   List<CustomField> customFields = [];
+  // Добавьте эти переменные в класс _TaskEditScreenState
+  String? selectedFile;
+  String? fileName;
+  String? fileSize;
+  final ApiService _apiService = ApiService();
 
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
@@ -78,6 +89,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     super.initState();
     _initializeControllers();
     _loadInitialData();
+    // Инициализируем информацию о файле, если он есть
+    if (widget.file != null) {
+      fileName = widget.file;
+    }
   }
 
   void _initializeControllers() {
@@ -133,6 +148,198 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       border: InputBorder.none,
       filled: true,
       fillColor: Color(0xFFF4F7FD),
+    );
+  }
+
+  Widget _buildLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Gilroy',
+        color: Color(0xff1E2E52),
+      ),
+    );
+  }
+
+  Widget _buildFileSelection(TaskEditScreen task) {
+    if (task.file != null && task.file!.isNotEmpty) {
+      // Если файл уже существует, показываем ссылку
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Файл',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              _buildLabel('Файл:'),
+              SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  if (task.file != null) {
+                    _showFile(task
+                        .file!); // Обработчик для скачивания и открытия файла
+                  }
+                },
+                child: Text(
+                  'Ссылка',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else {
+      // Если файл не выбран, показываем обычный виджет для выбора файла
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Файл',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: _pickFile,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F7FD),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFF4F7FD)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      fileName ?? 'Выберите файл',
+                      style: TextStyle(
+                        color: fileName != null
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.attach_file,
+                    color: const Color(0xff99A4BA),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (fileName != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (fileName != null)
+                  IconButton(
+                    icon: Icon(Icons.close, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        fileName = null;
+                        selectedFile = null;
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ],
+        ],
+      );
+    }
+  }
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      setState(() {
+        selectedFile = result.files.single.path;
+        fileName = result.files.single.name;
+        fileSize = '${(result.files.single.size / 1024).toStringAsFixed(2)} KB';
+      });
+    }
+  }
+
+  void _showFile(String fileUrl) async {
+    try {
+      print('Входящий fileUrl: $fileUrl');
+
+      // Получаем базовый домен из ApiService
+      final domain = await _apiService.getEnteredDomain();
+      print('Полученный базовый домен: $domain');
+
+      // Формируем полный URL файла
+      final fullUrl =
+          Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
+      print('Сформированный полный URL: $fullUrl');
+
+      // Путь для сохранения файла
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = fileUrl.split('/').last;
+      final filePath = '${directory.path}/$fileName';
+
+      // Загружаем файл
+      final dio = Dio();
+      await dio.download(fullUrl.toString(), filePath);
+
+      print('Файл успешно скачан в $filePath');
+
+      // Открываем файл
+      final result = await OpenFile.open(filePath);
+      if (result.type == ResultType.error) {
+        print('Не удалось открыть файл: ${result.message}');
+        _showErrorSnackBar('Не удалось открыть файл.');
+      } else {
+        print('Файл открыт успешно.');
+      }
+    } catch (e) {
+      print('Ошибка при скачивании или открытии файла: $e');
+      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 
@@ -342,6 +549,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         label: 'Описание',
                         maxLines: 5,
                       ),
+                      const SizedBox(height: 16),
+                      _buildFileSelection(widget),
+                      // Добавляем виджет выбора файла
                       const SizedBox(height: 20),
                       ListView.builder(
                         shrinkWrap: true,
@@ -445,6 +655,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                             description:
                                                 descriptionController.text,
                                             customFields: customFieldList,
+                                            filePath:
+                                                selectedFile, // Добавляем путь к файлу
                                           ),
                                         );
                                   } catch (e) {

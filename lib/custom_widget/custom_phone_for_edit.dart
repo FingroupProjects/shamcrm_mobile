@@ -20,6 +20,7 @@ List<Country> countries = [
   Country(name: "KG", flag: "🇰🇬", dialCode: "+996"),
   Country(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
   Country(name: "US", flag: "🇺🇸", dialCode: "+1"), // Added USA
+  
 ];
 
 class CustomPhoneNumberInput extends StatefulWidget {
