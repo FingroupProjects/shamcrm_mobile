@@ -619,37 +619,39 @@ void _scrollToMessageIndex(int index) {
     );
   }
 
-  Widget inputWidget() {
-    return InputField(
-      onSend: _onSendInButton,
-      onAttachFile: _onPickFilePressed,
-      onRecordVoice: () {
-        debugPrint('Record voice triggered');
-      },
-      messageController: _messageController,
-      sendRequestFunction: (File soundFile, String time) async {
-        context.read<ListenSenderVoiceCubit>().updateValue(true);
-        debugPrint("the current path is ${soundFile.path}");
-        String inputPath = '/path/to/recorded/file.mp4a';
-        String outputPath = await getOutputPath('converted_file.ogg');
+Widget inputWidget() {
+  return InputField(
+    onSend: _onSendInButton,
+    onAttachFile: _onPickFilePressed,
+    onRecordVoice: () {
+      debugPrint('Record voice triggered');
+    },
+    messageController: _messageController,
+    sendRequestFunction: (File soundFile, String time) async {
+      context.read<ListenSenderVoiceCubit>().updateValue(true);
+      debugPrint("The current path is ${soundFile.path}");
+      String inputPath = soundFile.path; 
+      String outputPath = await getOutputPath('converted_file.ogg');
 
-        File? convertedFile = await convertAudioFile(inputPath, outputPath);
-        if (convertedFile != null) {
-          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
-          await uploadFile(convertedFile, uploadUrl);
-        } else {
-          debugPrint('Conversion failed');
-        }
+      File? convertedFile = await convertAudioFile(inputPath, outputPath);
+      if (convertedFile != null) {
+        String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
+        await uploadFile(convertedFile, uploadUrl);
+      } else {
+        debugPrint('Conversion failed');
+      }
 
-        try {
-          await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
-        } catch (e) {
-          context.read<ListenSenderVoiceCubit>().updateValue(false);
-        }
+      try {
+        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+      } catch (e) {
         context.read<ListenSenderVoiceCubit>().updateValue(false);
-      },
-    );
-  }
+        debugPrint('Audio sending failed: $e');
+      }
+
+      context.read<ListenSenderVoiceCubit>().updateValue(false);
+    },
+  );
+}
 
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();
@@ -665,7 +667,6 @@ void _scrollToMessageIndex(int index) {
     final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
 
     final customOptions = PusherChannelsOptions.custom(
-      // You may also apply the given metadata in your custom uri
       uriResolver: (metadata) =>
           Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
@@ -699,61 +700,47 @@ void _scrollToMessageIndex(int index) {
     );
 
     socketClient.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
+  myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
-        MessageSocketData mm = messageSocketDataFromJson(event.data);
-        print('----sender');
-        print(mm.message!.text);
-        print(mm.message!.sender!);
-        print(mm.message!.text!);
-        print(userID.value);
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String UUID = prefs.getString('userID').toString();
-        print('userID : $UUID');
+  chatSubscribtion =
+      myPresenceChannel.bind('chat.message').listen((event) async {
+    MessageSocketData mm = messageSocketDataFromJson(event.data);
+    debugPrint('Received message: ${mm.message!.text}');
+    
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UUID = prefs.getString('userID') ?? '';
+    debugPrint('UserID : $UUID');
 
-        print('--- end');
-        context.read<ListenSenderFileCubit>().updateValue(false);
-        context.read<ListenSenderVoiceCubit>().updateValue(false);
-        context.read<ListenSenderTextCubit>().updateValue(false);
+    Message msg;
+    if (mm.message!.type == 'voice' || mm.message!.type == 'file') {
+      msg = Message(
+        id: mm.message!.id!,
+        filePath: mm.message!.filePath.toString(),
+        text: mm.message!.text ?? mm.message!.type!,
+        type: mm.message!.type!,
+        isMyMessage: (UUID == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
+        createMessateTime: mm.message!.createdAt.toString(),
+        // duration: Duration(seconds: (mm.message!.voiceDuration ?? 20).toInt),
+        senderName: mm.message!.sender!.name!,
+      );
+    } else {
+      msg = Message(
+        id: mm.message!.id!,
+        text: mm.message!.text ?? mm.message!.type!,
+        type: mm.message!.type!,
+        createMessateTime: mm.message!.createdAt.toString(),
+        isMyMessage: (UUID == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
+        senderName: mm.message!.sender!.name!,
+      );
+    }
 
-        Message msg;
-        if (mm.message!.type == 'voice' ||
-            mm.message!.type == 'file' ||
-            mm.message!.type == 'image' ||
-            mm.message!.type == 'document') {
-          msg = Message(
-            id: mm.message!.id!,
-            filePath: mm.message!.filePath.toString(),
-            text: mm.message!.text ??= mm.message!.type!,
-            type: mm.message!.type.toString(),
-            isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
-                mm.message!.sender!.type == 'user'),
-            createMessateTime: mm.message!.createdAt.toString(),
-            duration: Duration(
-                seconds: (mm.message!.voiceDuration != null)
-                    ? double.parse(mm.message!.voiceDuration.toString()).round()
-                    : 20),
-            senderName: mm.message!.sender!.name!,
-          );
-        } else {
-          msg = Message(
-              id: mm.message!.id!,
-              text: mm.message!.text ??= mm.message!.type!,
-              type: mm.message!.type.toString(),
-              createMessateTime: mm.message!.createdAt.toString(),
-              isMyMessage: (UUID == mm.message!.sender!.id.toString() &&
-                  mm.message!.sender!.type == 'user'),
-              senderName: mm.message!.sender!.name!);
-        }
-
-        setState(() {
-          context.read<MessagingCubit>().addMessageFormSocket(msg);
-        });
-        _scrollToBottom();
-      });
+    setState(() {
+      context.read<MessagingCubit>().addMessageFormSocket(msg);
     });
+    _scrollToBottom();
+  });
+});
+
 
     try {
       await socketClient.connect();
