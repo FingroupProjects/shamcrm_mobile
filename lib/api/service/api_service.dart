@@ -2730,7 +2730,7 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     } else if (response.statusCode == 422) {
       return {
         'success': false,
-        'message': 'Этот проект не имеет завершающего этапа'
+        'message': 'Это проект не имеет завершающий этап!'
       };
     } else {
       return {
