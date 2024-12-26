@@ -172,9 +172,30 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     });
                     final day = int.tryParse(dayString);
                     if (day != null) {
-                      context.read<DealBloc>().add(CreateDealStatus(
-                          title: title, color: color, day: day));
-                      Navigator.of(context).pop();
+                      context.read<DealBloc>().add(CreateDealStatus(title: title, color: color, day: day));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Статус успешно создан!',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.green,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      Navigator.of(context).pop(true);
                     }
                   } else {
                     setState(() {

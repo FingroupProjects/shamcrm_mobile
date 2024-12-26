@@ -1681,6 +1681,19 @@ class ApiService {
     }
   }
 
+Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Deal> deals = await getDeals(dealStatusId, page: 1, perPage: 1);
+
+    // Если список лидов не пуст, значит статус содержит элементы
+    return deals.isNotEmpty;
+  } catch (e) {
+    print('Error while checking if status has deals: $e');
+    return false;
+  }
+}
+
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
       String title, String color, int day) async {
@@ -2040,6 +2053,19 @@ class ApiService {
     }
   }
 
+Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
+  try {
+    // Получаем список лидов для указанного статуса, берем только первую страницу
+    final List<Task> tasks = await getTasks(taskStatusId, page: 1, perPage: 1);
+
+    // Если список лидов не пуст, значит статус содержит элементы
+    return tasks.isNotEmpty;
+  } catch (e) {
+    print('Error while checking if status has deals: $e');
+    return false;
+  }
+}
+
 //Обновление статуса карточки Задачи  в колонке
 
   Future<void> updateTaskStatus(int taskId, int position, int statusId) async {
@@ -2144,7 +2170,6 @@ class ApiService {
   Future<Map<String, dynamic>> CreateTaskStatusAdd({
     required int taskStatusNameId,
     required int projectId,
-    required int organizationId,
     required bool needsPermission,
     List<int>? roleIds,
     bool? finalStep,
@@ -2154,7 +2179,6 @@ class ApiService {
       final Map<String, dynamic> data = {
         'task_status_name_id': taskStatusNameId,
         'project_id': projectId,
-        'organization_id': organizationId,
         'needs_permission': needsPermission ? 1 : 0,
       };
 

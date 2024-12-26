@@ -23,7 +23,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
-    // await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 600));
 
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));

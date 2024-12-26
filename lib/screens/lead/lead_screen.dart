@@ -36,6 +36,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _canDeleteLeadStatus = false;
   final ApiService _apiService = ApiService();
 bool navigateToEnd = false;
+bool navigateAfterDelete = false;
+int? _deletedIndex;
+
 
   @override
   void initState() {
@@ -212,13 +215,13 @@ void _addNewTab() async {
       navigateToEnd = true; 
     });
 
-    _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
-    _tabKeys.add(GlobalKey());
+    // _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
+    // _tabKeys.add(GlobalKey());
 
-    if (_tabController != null) {
-      _tabController.animateTo(_tabTitles.length - 1);
-      _currentTabIndex = _tabTitles.length - 1;
-    }
+    // if (_tabController != null) {
+    //   _tabController.animateTo(_tabTitles.length - 1);
+    //   _currentTabIndex = _tabTitles.length - 1;
+    // }
   }
 }
 
@@ -268,6 +271,10 @@ void _addNewTab() async {
 
     if (result != null && result) {
       setState(() {
+            setState(() {
+             _deletedIndex = _currentTabIndex;
+             navigateAfterDelete = true; 
+           });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -316,14 +323,27 @@ void _addNewTab() async {
           if (_scrollController.hasClients) {
             _scrollToActiveTab();
           }
-
+//Логика для перехода к созданн статусе
          if (navigateToEnd) {
-         navigateToEnd = false; 
+         navigateToEnd = false;
          if (_tabController != null) {
-           _tabController.animateTo(_tabTitles.length - 1); 
+           _tabController.animateTo(_tabTitles.length -1); 
          }
       }
 
+//Логика для перехода к после удаления статусе на лево
+           if (navigateAfterDelete) {
+          navigateAfterDelete = false;
+          if (_deletedIndex != null) {
+            if (_deletedIndex == 0 && _tabTitles.length > 1) {
+              _tabController.animateTo(1); 
+            } else if (_deletedIndex == _tabTitles.length) {
+              _tabController.animateTo(_tabTitles.length - 1); 
+            } else {
+              _tabController.animateTo(_deletedIndex! - 1); 
+            }
+          }
+        }
 
           
         }

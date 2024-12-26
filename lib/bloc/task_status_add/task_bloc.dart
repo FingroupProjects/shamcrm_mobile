@@ -23,7 +23,6 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
         final response = await apiService.CreateTaskStatusAdd(
           taskStatusNameId: event.taskStatusNameId,
           projectId: event.projectId,
-          organizationId: event.organizationId,
           needsPermission: event.needsPermission,
           roleIds: event.roleIds,
           finalStep: event.finalStep,
