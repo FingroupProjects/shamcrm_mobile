@@ -155,7 +155,6 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                             selectedManagerData = value;
                           });
                            FocusScope.of(context).unfocus();
-
                         }
                       },
                     ),
@@ -170,3 +169,18 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     );
   }
 }
+
+//  const SizedBox(height: 8),
+//     if (selectedManagerData == null) // Если данные не выбраны, отображаем ошибку
+//       Padding(
+//         padding: const EdgeInsets.only(left: 12.0),
+//         child: Text(
+//           'Поле обязательно для заполнения',
+//           style: TextStyle(
+//             color: Colors.red,
+//             fontSize: 12,
+//             fontFamily: 'Gilroy',
+//             fontWeight: FontWeight.w500,
+//           ),
+//         ),
+//       ),
