@@ -331,12 +331,17 @@ void _searchChats(String query, String endPoint) {
 
       if (index == 0) {
         endPointInTab = 'lead';
+          context.read<ChatsBloc>().add(ClearChats());  
+        
       }
       if (index == 1) {
         endPointInTab = 'task';
+          context.read<ChatsBloc>().add(ClearChats());  
+
       }
       if (index == 2) {
         endPointInTab = 'corporate';
+        context.read<ChatsBloc>().add(ClearChats());  
         context.read<GetAllClientBloc>().add(GetAnotherClientEv());
       }
 
@@ -345,6 +350,7 @@ void _searchChats(String query, String endPoint) {
       _debounce = Timer(const Duration(seconds: 1), () {
         final chatsBloc = context.read<ChatsBloc>();
         chatsBloc.add(ClearChats());
+
         chatsBloc.add(FetchChats(endPoint: endPointInTab)); 
       });
     },
