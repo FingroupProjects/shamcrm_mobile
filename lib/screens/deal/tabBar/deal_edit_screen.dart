@@ -163,14 +163,27 @@ class _DealEditScreenState extends State<DealEditScreen> {
           } else if (state is DealSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Сделка успешно обновлена'),
-                duration: const Duration(seconds: 3),
+                content: Text(
+                  'Сделка успешно обновлена!',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
               ),
             );
             Navigator.pop(context, true);
-            //  Navigator.pop(context, widget.statusId);
-            // context.read<DealBloc>().add(FetchDeals(widget.statusId));
           }
         },
         child: Form(
@@ -336,7 +349,20 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     }
                                   }
 
-                                  List<Map<String, String>> customFieldList =
+                                // Проверка, что дата начала не может быть позже даты окончания
+                                 if (parsedStartDate != null &&
+                                     parsedEndDate != null &&
+                                     parsedStartDate.isAfter(parsedEndDate)) {
+                                   ScaffoldMessenger.of(context).showSnackBar(
+                                     SnackBar(
+                                       content: const Text(
+                                           'Дата начала не может быть позже даты завершения.'),
+                                       backgroundColor: Colors.red,
+                                     ),
+                                   );
+                                   return;
+                                 }
+                                 List<Map<String, String>> customFieldList =
                                       [];
                                   for (var field in customFields) {
                                     String fieldName = field.fieldName.trim();
