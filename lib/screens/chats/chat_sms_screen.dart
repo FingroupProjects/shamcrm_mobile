@@ -12,7 +12,6 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_s
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
-import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -90,31 +89,31 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     });
     
   
-  // Добавляем слушатель скролла для обновления текущей даты
-  _scrollController.addListener(() {
-    if (_scrollController.hasClients) {
-      final state = context.read<MessagingCubit>().state;
-      if (state is MessagesLoadedState) {
-        final position = _scrollController.position.pixels;
-        final maxScroll = _scrollController.position.maxScrollExtent;
-        final messagesLength = state.messages.length;
+  // // Добавляем слушатель скролла для обновления текущей даты
+  // _scrollController.addListener(() {
+  //   if (_scrollController.hasClients) {
+  //     final state = context.read<MessagingCubit>().state;
+  //     if (state is MessagesLoadedState) {
+  //       final position = _scrollController.position.pixels;
+  //       final maxScroll = _scrollController.position.maxScrollExtent;
+  //       final messagesLength = state.messages.length;
         
-        if (messagesLength > 0) {
-          final itemHeight = maxScroll / messagesLength;
-          final currentIndex = ((maxScroll - position) / itemHeight).floor();
+  //       if (messagesLength > 0) {
+  //         final itemHeight = maxScroll / messagesLength;
+  //         final currentIndex = ((maxScroll - position) / itemHeight).floor();
           
-          if (currentIndex >= 0 && currentIndex < messagesLength) {
-            final currentMessage = state.messages[currentIndex];
-            final currentDateTime = DateTime.parse(currentMessage.createMessateTime);
+  //         if (currentIndex >= 0 && currentIndex < messagesLength) {
+  //           final currentMessage = state.messages[currentIndex];
+  //           final currentDateTime = DateTime.parse(currentMessage.createMessateTime);
             
-            setState(() {
-              _currentDate = formatDate(currentDateTime);
-            });
-          }
-        }
-      }
-    }
-  });
+  //           setState(() {
+  //             _currentDate = formatDate(currentDateTime);
+  //           });
+  //         }
+  //       }
+  //     }
+  //   }
+  // });
 }
 
   
@@ -620,136 +619,132 @@ void _scrollToMessageIndex(int index) {
   }
 
 Widget inputWidget() {
-  return InputField(
-    onSend: _onSendInButton,
-    onAttachFile: _onPickFilePressed,
-    onRecordVoice: () {
-      debugPrint('Record voice triggered');
-    },
-    messageController: _messageController,
-    sendRequestFunction: (File soundFile, String time) async {
-      context.read<ListenSenderVoiceCubit>().updateValue(true);
-      debugPrint("The current path is ${soundFile.path}");
-      String inputPath = soundFile.path; 
-      String outputPath = await getOutputPath('converted_file.ogg');
+    return InputField(
+      onSend: _onSendInButton,
+      onAttachFile: _onPickFilePressed,
+      onRecordVoice: () {
+        debugPrint('Record voice triggered');
+      },
+      messageController: _messageController,
+      sendRequestFunction: (File soundFile, String time) async {
+        context.read<ListenSenderVoiceCubit>().updateValue(true);
+        debugPrint("the current path is ${soundFile.path}");
+        String inputPath = '/path/to/recorded/file.mp4a';
+        String outputPath = await getOutputPath('converted_file.ogg');
 
-      File? convertedFile = await convertAudioFile(inputPath, outputPath);
-      if (convertedFile != null) {
-        String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
-        await uploadFile(convertedFile, uploadUrl);
-      } else {
-        debugPrint('Conversion failed');
-      }
+        File? convertedFile = await convertAudioFile(inputPath, outputPath);
+        if (convertedFile != null) {
+          String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
+          await uploadFile(convertedFile, uploadUrl);
+        } else {
+          debugPrint('Conversion failed');
+        }
 
-      try {
-        await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
-      } catch (e) {
+        try {
+          await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
+        } catch (e) {
+          context.read<ListenSenderVoiceCubit>().updateValue(false);
+        }
         context.read<ListenSenderVoiceCubit>().updateValue(false);
-        debugPrint('Audio sending failed: $e');
-      }
-
-      context.read<ListenSenderVoiceCubit>().updateValue(false);
-    },
-  );
-}
+      },
+    );
+  }
 
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();
     return '${directory.path}/$fileName';
   }
 
-  Future<void> setUpServices() async {
-    debugPrint('--------------------------- start socket:::::::');
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+  void setUpServices() async {
+  debugPrint('--------------------------- start socket:::::::');
+  final prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('token');
 
-    final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+  final baseUrlSocket = await apiService.getSocketBaseUrl();
+  final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
 
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
+  final customOptions = PusherChannelsOptions.custom(
+    uriResolver: (metadata) =>
+        Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+    metadata: PusherChannelsOptionsMetadata.byDefault(),
+  );
 
-    socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint(exception);
-        // refresh();
+  socketClient = PusherChannelsClient.websocket(
+    options: customOptions,
+    connectionErrorHandler: (exception, trace, refresh) {
+      debugPrint(exception);
+      // refresh();
+    },
+    minimumReconnectDelayDuration: const Duration(
+      seconds: 1,
+    ),
+  );
+
+  final myPresenceChannel = socketClient.presenceChannel(
+    'presence-chat.${widget.chatId}',
+    authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+      authorizationEndpoint: Uri.parse(baseUrlSocket),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'X-Tenant': '$enteredDomain-back',
       },
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
-      ),
-    );
+      onAuthFailed: (exception, trace) {
+        debugPrint(exception);
+      },
+    ),
+  );
 
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(exception);
-        },
-      ),
-    );
-
-    socketClient.onConnectionEstablished.listen((_) {
-  myPresenceChannel.subscribeIfNotUnsubscribed();
-
-  chatSubscribtion =
-      myPresenceChannel.bind('chat.message').listen((event) async {
-    MessageSocketData mm = messageSocketDataFromJson(event.data);
-    debugPrint('Received message: ${mm.message!.text}');
+  socketClient.onConnectionEstablished.listen((_) {
+    myPresenceChannel.subscribeIfNotUnsubscribed();
     
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String UUID = prefs.getString('userID') ?? '';
-    debugPrint('UserID : $UUID');
+    chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+      MessageSocketData mm = messageSocketDataFromJson(event.data);
+      print('----sender');
+      print(mm.message?.text ?? 'No text');
+      print(mm.message?.sender?.name ?? 'Unknown sender');
 
-    Message msg;
-    if (mm.message!.type == 'voice' || mm.message!.type == 'file') {
-      msg = Message(
-        id: mm.message!.id!,
-        filePath: mm.message!.filePath.toString(),
-        text: mm.message!.text ?? mm.message!.type!,
-        type: mm.message!.type!,
-        isMyMessage: (UUID == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
-        createMessateTime: mm.message!.createdAt.toString(),
-        // duration: Duration(seconds: (mm.message!.voiceDuration ?? 20).toInt),
-        senderName: mm.message!.sender!.name!,
-      );
-    } else {
-      msg = Message(
-        id: mm.message!.id!,
-        text: mm.message!.text ?? mm.message!.type!,
-        type: mm.message!.type!,
-        createMessateTime: mm.message!.createdAt.toString(),
-        isMyMessage: (UUID == mm.message!.sender!.id.toString() && mm.message!.sender!.type == 'user'),
-        senderName: mm.message!.sender!.name!,
-      );
-    }
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String UUID = prefs.getString('userID') ?? '';
+      print('userID : $UUID');
 
-    setState(() {
-      context.read<MessagingCubit>().addMessageFormSocket(msg);
-    });
-    _scrollToBottom();
-  });
-});
-
-
-    try {
-      await socketClient.connect();
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
+      Message msg;
+      if (mm.message?.type == 'voice' || mm.message?.type == 'file' || mm.message?.type == 'image' || mm.message?.type == 'document') {
+        msg = Message(
+          id: mm.message?.id ?? 0,
+          filePath: mm.message?.filePath.toString() ?? '',
+          text: mm.message?.text ?? mm.message?.type ?? '',
+          type: mm.message?.type ?? '',
+          isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
+          createMessateTime: mm.message?.createdAt?.toString() ?? '',
+          duration: Duration(seconds: (mm.message?.voiceDuration != null) ? double.parse(mm.message!.voiceDuration.toString()).round() : 20),
+          senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        );
+      } else {
+        msg = Message(
+          id: mm.message?.id ?? 0,
+          text: mm.message?.text ?? mm.message?.type ?? '',
+          type: mm.message?.type ?? '',
+          createMessateTime: mm.message?.createdAt?.toString() ?? '',
+          isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
+          senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        );
       }
+
+      setState(() {
+        context.read<MessagingCubit>().addMessageFormSocket(msg);
+      });
+      _scrollToBottom();
+    });
+  });
+
+  try {
+    await socketClient.connect();
+  } catch (e) {
+    if (kDebugMode) {
+      print(e);
     }
   }
+}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -797,10 +792,9 @@ Widget inputWidget() {
       context.read<ListenSenderFileCubit>().updateValue(false);
     }
   }
-
-  void _onScroll() {
+void _onScroll() {
     if (_scrollController.hasClients) {
-      print("Scroll position: ${_scrollController.position.pixels}");
+          print("Scroll position: ${_scrollController.position.pixels}");
 
       // Получаем видимые элементы
       final position = _scrollController.position;
@@ -809,8 +803,7 @@ Widget inputWidget() {
 
       // Проверяем позиции сообщений
       for (final entry in _messagePositions.entries) {
-        if (viewportOffset < entry.value &&
-            entry.value < viewportOffset + viewportExtent) {
+        if (viewportOffset < entry.value && entry.value < viewportOffset + viewportExtent) {
           setState(() {
             _currentDate = entry.key;
           });
@@ -819,28 +812,25 @@ Widget inputWidget() {
       }
     }
   }
-
   @override
   void dispose() {
     chatSubscribtion.cancel();
     _scrollController.dispose();
-
-    _scrollController.addListener(_onScroll);
+    
+_scrollController.addListener(_onScroll);
     _messageController.dispose();
     socketClient.dispose();
     _webSocket?.close();
-    print("ScrollController is initialized");
+ print("ScrollController is initialized");
     super.dispose();
   }
 }
 
 extension on Key? {
-  get currentContext => null;
+   get currentContext => null;
 }
-
 // Храним позиции сообщений и их даты
-final Map<String, double> _messagePositions = {};
-
+  final Map<String, double> _messagePositions = {};
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
