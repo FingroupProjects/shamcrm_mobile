@@ -20,7 +20,6 @@ List<Country> countries = [
   Country(name: "KG", flag: "🇰🇬", dialCode: "+996"),
   Country(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
   Country(name: "US", flag: "🇺🇸", dialCode: "+1"), // Added USA
-  
 ];
 
 class CustomPhoneNumberInput extends StatefulWidget {
@@ -56,47 +55,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   @override
   void initState() {
     super.initState();
-    
-    // Если есть начальное значение в контроллере
-    if (widget.controller.text.isNotEmpty) {
-      // Находим подходящую страну по началу номера телефона
-      selectedCountry = countries.firstWhere(
-        (country) => widget.controller.text.startsWith(country.dialCode),
-        orElse: () => countries.first,
-      );
+    selectedCountry = countries.firstWhere(
+      (country) => country.dialCode == widget.selectedDialCode,
+      orElse: () => countries.first,
+    );
 
-      // Убираем код страны из номера
-      if (widget.controller.text.startsWith(selectedCountry?.dialCode ?? '')) {
-        widget.controller.text = widget.controller.text.substring(selectedCountry!.dialCode.length);
-      }
-    } else {
-      // Если нет начального значения, используем выбранный код страны из параметров
-      selectedCountry = countries.firstWhere(
-        (country) => country.dialCode == widget.selectedDialCode,
-        orElse: () => countries.first,
-      );
+    if (widget.controller.text.startsWith(selectedCountry?.dialCode ?? '')) {
+      widget.controller.text = widget.controller.text.substring(selectedCountry!.dialCode.length);
     }
   }
 
-  @override
-  void didUpdateWidget(CustomPhoneNumberInput oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    
-    // Обновляем состояние при изменении входных данных
-    if (widget.controller.text.isNotEmpty && 
-        widget.controller.text != oldWidget.controller.text) {
-      selectedCountry = countries.firstWhere(
-        (country) => widget.controller.text.startsWith(country.dialCode),
-        orElse: () => selectedCountry ?? countries.first,
-      );
-
-      if (widget.controller.text.startsWith(selectedCountry?.dialCode ?? '')) {
-        widget.controller.text = widget.controller.text.substring(selectedCountry!.dialCode.length);
-      }
-    }
-  }
-
-  // Остальной код остается без изменений
   @override
   Widget build(BuildContext context) {
     return Column(
