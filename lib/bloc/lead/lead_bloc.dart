@@ -147,7 +147,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess('Лид успешно создан'));
+        emit(LeadSuccess('Лид успешно создан!'));
         // Передаем статус лида (event.leadStatusId) в событие FetchLeads
         // add(FetchLeads(event.leadStatusId));
       } else {
@@ -199,7 +199,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess('Лид успешно обновлен'));
+        emit(LeadSuccess('Лид успешно обновлен!'));
         // add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
       } else {
         emit(LeadError(result['message']));
@@ -239,9 +239,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     try {
       final response = await apiService.deleteLead(event.leadId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted('Лидуспешно удалена'));
+        emit(LeadDeleted('Лид успешно удален!'));
       } else {
-        emit(LeadError('Ошибка удаления лида'));
+        emit(LeadError('Ошибка удаления лида!'));
       }
     } catch (e) {
       emit(LeadError('Ошибка удаления лида: ${e.toString()}'));

@@ -473,7 +473,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2), // Установлено на 2 секунды
+                duration: Duration(seconds: 3), // Установлено на 2 секунды
               ),
             );
             Navigator.pop(context, true);

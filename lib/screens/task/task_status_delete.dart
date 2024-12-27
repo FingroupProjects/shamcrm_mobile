@@ -39,7 +39,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
               padding: EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 16), // Паддинг для комфортного восприятия
-              duration: Duration(seconds: 2), // Установлено на 2 секунды
+              duration: Duration(seconds: 3), // Установлено на 2 секунды
             ),
           );
         }
@@ -108,7 +108,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
             backgroundColor: Colors.red,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
         Navigator.of(context).pop(); 
@@ -133,7 +133,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
             backgroundColor: Colors.green,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
         Navigator.of(context).pop(true);

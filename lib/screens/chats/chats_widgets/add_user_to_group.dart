@@ -54,7 +54,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
               backgroundColor: Colors.red,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 2),
+              duration: Duration(seconds: 3),
             ),
           );
         } else if (state is GroupChatSuccess) {
@@ -78,7 +78,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
               backgroundColor: Colors.green,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 2),
+              duration: Duration(seconds: 3),
             ),
           );
           Future.delayed(Duration(seconds: 1), () {
