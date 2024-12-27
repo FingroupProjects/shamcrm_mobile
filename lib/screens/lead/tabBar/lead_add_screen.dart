@@ -51,6 +51,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
   List<CustomField> customFields = [];
+  bool isEndDateInvalid = false;
 
   
 

@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
@@ -11,11 +13,13 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:dio/dio.dart';
@@ -76,12 +80,14 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   String? selectedFile;
   String? fileName;
   String? fileSize;
+  bool isEndDateInvalid = false;
+
   final ApiService _apiService = ApiService();
 
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
-    2: 'Критический',
-    3: 'Сложный'
+    3: 'Критический',
+    2: 'Сложный'
   };
 
   @override
@@ -118,7 +124,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   void _loadInitialData() {
-    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
+    context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     context.read<TaskBloc>().add(FetchTaskStatuses());
   }
@@ -369,9 +375,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             child: DropdownButtonFormField<int>(
               value: selectedPriority ?? 1,
               items: priorityLevels.entries.map((entry) {
-                final priorityColor = entry.key == 2
+                final priorityColor = entry.key == 3
                     ? Colors.red
-                    : entry.key == 3
+                    : entry.key == 2
                         ? Colors.yellow
                         : Colors.green;
                 return DropdownMenuItem(
@@ -514,6 +520,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'До',
+                        hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
@@ -521,10 +528,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           return null;
                         },
                       ),
+                      
                       const SizedBox(height: 8),
-                      ProjectRadioGroupWidget(
+                      ProjectTaskGroupWidget(
                         selectedProject: selectedProject,
-                        onSelectProject: (Project selectedProjectData) {
+                        onSelectProject: (ProjectTask selectedProjectData) {
                           setState(() {
                             selectedProject = selectedProjectData.id.toString();
                           });
@@ -621,6 +629,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     if (endDateController.text.isNotEmpty) {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
+                                    }
+                                       if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                       setState(() {
+                                     isEndDateInvalid = true;
+                                   });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Дата начала не может быть позже даты завершения!',
+                                            style: TextStyle(
+                                              color: Colors.white, 
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red, 
+                                        ),
+                                      );
+                                      return;
                                     }
                                     List<Map<String, String>> customFieldList =
                                         [];

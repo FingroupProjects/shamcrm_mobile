@@ -41,6 +41,7 @@ import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
@@ -131,6 +132,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => GetAllLeadBloc()),
         BlocProvider(create: (context) => DealBloc(apiService)),
         BlocProvider(create: (context) => TaskBloc(apiService)),
+        BlocProvider(create: (context) => GetTaskProjectBloc()),
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(apiService)),

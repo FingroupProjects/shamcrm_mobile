@@ -334,7 +334,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Статистика:',
+          'Статусы:',
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 18,
