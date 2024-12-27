@@ -565,7 +565,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    // Проверка на наличие запятой в значении, чтобы определить множественное число
     if (label == 'Исполнитель:' && value.contains(',')) {
       label = 'Исполнители:';
     }
@@ -597,7 +596,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       );
     }
-// Специальная обработка для файла
+
     if (label == 'Файл:') {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,6 +624,40 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
+    if (label == 'Уровень приоритета:') {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(width: 8),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: IntrinsicWidth(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: _getPriorityBackgroundColor(value),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: _getPriorityColor(value),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -637,43 +670,82 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
- void _showFile(String fileUrl) async {
-  try {
-    print('Входящий fileUrl: $fileUrl');
-
-    // Получаем базовый домен из ApiService
-    final domain = await _apiService.getEnteredDomain();
-    print('Полученный базовый домен: $domain');
-
-    // Формируем полный URL файла
-    final fullUrl = Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
-    print('Сформированный полный URL: $fullUrl');
-
-    // Путь для сохранения файла
-    final directory = await getApplicationDocumentsDirectory();
-    final fileName = fileUrl.split('/').last;
-    final filePath = '${directory.path}/$fileName';
-
-    // Загружаем файл
-    final dio = Dio();
-    await dio.download(fullUrl.toString(), filePath);
-
-    print('Файл успешно скачан в $filePath');
-
-    // Открываем файл
-    final result = await OpenFile.open(filePath);
-    if (result.type == ResultType.error) {
-      print('Не удалось открыть файл: ${result.message}');
-      _showErrorSnackBar('Не удалось открыть файл.');
-    } else {
-      print('Файл открыт успешно.');
+  Color _getPriorityBackgroundColor(String priority) {
+    switch (priority) {
+      case 'Критический':
+        return Color(0xFFFFEBEE);
+      case 'Сложный':
+        return Color(0xFFFFF3E0);
+      case 'Обычный':
+        return Color(0xFFE8F5E9);
+      default:
+        return Color(0xfff0f0f0);
     }
-  } catch (e) {
-    print('Ошибка при скачивании или открытии файла: $e');
-    _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
   }
-}
 
+  Color _getPriorityBorderColor(String priority) {
+    switch (priority) {
+      case 'Критический':
+        return Colors.red;
+      case 'Сложный':
+        return Colors.orange;
+      case 'Обычный':
+        return Colors.green;
+      default:
+        return Color(0xff1E2E52);
+    }
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'Критический':
+        return Color(0xFFC62828);
+      case 'Сложный':
+        return Color(0xFFEF6C00);
+      case 'Обычный':
+        return Color(0xFF2E7D32);
+      default:
+        return Color(0xff1E2E52);
+    }
+  }
+
+  void _showFile(String fileUrl) async {
+    try {
+      print('Входящий fileUrl: $fileUrl');
+
+      // Получаем базовый домен из ApiService
+      final domain = await _apiService.getEnteredDomain();
+      print('Полученный базовый домен: $domain');
+
+      // Формируем полный URL файла
+      final fullUrl =
+          Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
+      print('Сформированный полный URL: $fullUrl');
+
+      // Путь для сохранения файла
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = fileUrl.split('/').last;
+      final filePath = '${directory.path}/$fileName';
+
+      // Загружаем файл
+      final dio = Dio();
+      await dio.download(fullUrl.toString(), filePath);
+
+      print('Файл успешно скачан в $filePath');
+
+      // Открываем файл
+      final result = await OpenFile.open(filePath);
+      if (result.type == ResultType.error) {
+        print('Не удалось открыть файл: ${result.message}');
+        _showErrorSnackBar('Не удалось открыть файл.');
+      } else {
+        print('Файл открыт успешно.');
+      }
+    } catch (e) {
+      print('Ошибка при скачивании или открытии файла: $e');
+      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+    }
+  }
 
 // Функция для показа ошибки
   void _showErrorSnackBar(String message) {
