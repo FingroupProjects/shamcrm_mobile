@@ -20,6 +20,7 @@ import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
@@ -2584,6 +2585,36 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
 
     return dataProject;
   }
+
+
+// Метод для получения Проекта
+  Future<ProjectTaskDataResponse> getTaskProject() async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+        '/task/get/projects${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    late ProjectTaskDataResponse dataProject;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataProject = ProjectTaskDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+    }
+
+    if (kDebugMode) {
+      print('getAll project: ${response.body}');
+    }
+
+    return dataProject;
+  }
+
 
   // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {

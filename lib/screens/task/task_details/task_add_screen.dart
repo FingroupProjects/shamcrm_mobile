@@ -1,17 +1,17 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/project/project_bloc.dart';
-import 'package:crm_task_manager/bloc/project/project_event.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
+
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
-import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
-import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,15 +52,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Карта уровней приоритета
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
-    3: 'Критический',
-    2: 'Сложный'
+    2: 'Критический',
+    3: 'Сложный'
   };
 
   @override
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
+    context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     context.read<UserTaskBloc>().add(FetchUsers());
     // Устанавливаем значения по умолчанию
     _setDefaultValues();
@@ -416,9 +416,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      ProjectRadioGroupWidget(
+                      ProjectTaskGroupWidget(
                         selectedProject: selectedProject,
-                        onSelectProject: (Project selectedProjectData) {
+                        onSelectProject: (ProjectTask selectedProjectData) {
                           setState(() {
                             selectedProject = selectedProjectData.id.toString();
                           });

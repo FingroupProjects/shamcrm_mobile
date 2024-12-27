@@ -153,7 +153,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           onPressed: () => Navigator.pop(context, null),
         ),
         title: const Text(
-          'Редактирование Лида',
+          'Редактирование лида',
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',

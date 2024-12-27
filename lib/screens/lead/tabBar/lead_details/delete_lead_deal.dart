@@ -84,9 +84,32 @@ class DeleteDealDialog extends StatelessWidget {
                     buttonText: 'Удалить',
                     onPressed: () {
                       context.read<DealBloc>().add(DeleteDeal(dealId));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(
+                     content: Text(
+                       'Сделка успешно удалена!',
+                       style: TextStyle(
+                         fontFamily: 'Gilroy',
+                         fontSize: 16, 
+                         fontWeight: FontWeight.w500, 
+                         color: Colors.white, 
+                       ),
+                     ),
+                     behavior: SnackBarBehavior.floating,
+                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(12),
+                     ),
+                     backgroundColor: Colors.green,
+                     elevation: 3,
+                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+                     duration: Duration(seconds: 2),
+                   ),
+                );
+                                      context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
+
                       Navigator.of(context).pop();
 
-                      context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
                     },
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
