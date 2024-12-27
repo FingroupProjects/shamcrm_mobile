@@ -39,6 +39,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
   String? selectedManager;
   String? selectedLead;
   List<CustomField> customFields = [];
+  bool isEndDateInvalid = false;
+
 
   @override
   void initState() {
@@ -222,6 +224,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'Дата завершения',
+                        hasError: isEndDateInvalid,
                         withTime: false,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -368,17 +371,19 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     }
                                   }
 
-                                // Проверка: если дата начала позже даты завершения
                                     if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                       setState(() {
+                                     isEndDateInvalid = true;
+                                   });
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            'Дата начала не может быть позже даты завершения.',
+                                            'Дата начала не может быть позже даты завершения!',
                                             style: TextStyle(
-                                              color: Colors.white, // Текст белого цвета
+                                              color: Colors.white, 
                                             ),
                                           ),
-                                          backgroundColor: Colors.red, // Красный фон
+                                          backgroundColor: Colors.red, 
                                         ),
                                       );
                                       return;
@@ -393,8 +398,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                         field.controller.text.trim();
                                     if (fieldName.isNotEmpty &&
                                         fieldValue.isNotEmpty) {
-                                      customFieldMap
-                                          .add({fieldName: fieldValue});
+                                      customFieldMap.add({fieldName: fieldValue});
                                     }
                                   }
 
