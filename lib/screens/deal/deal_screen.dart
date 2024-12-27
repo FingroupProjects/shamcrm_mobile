@@ -75,11 +75,8 @@ int? _deletedIndex;
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('deal.read');
-    final canCreate = await _apiService.hasPermission('deal.create');
-    final canDelete = await _apiService.hasPermission('deal.delete');
-    // final canRead = await _apiService.hasPermission('dealStatus.read');
-    // final canCreate = await _apiService.hasPermission('dealStatus.create');
-    // final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    final canCreate = await _apiService.hasPermission('dealStatus.create');
+    final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
       _canReadDealStatus = canRead;
       _canCreateDealStatus = canCreate;
@@ -374,7 +371,7 @@ void _addNewTab() async {
             //     padding: EdgeInsets.symmetric(
             //         vertical: 12,
             //         horizontal: 16), // Паддинг для комфортного восприятия
-            //     duration: Duration(seconds: 2),
+            //     duration: Duration(seconds: 3),
             //   ),
             // );
           }

@@ -114,7 +114,7 @@ class _LeadColumnState extends State<LeadColumn> {
                       elevation: 3,
                       padding:
                           EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 });

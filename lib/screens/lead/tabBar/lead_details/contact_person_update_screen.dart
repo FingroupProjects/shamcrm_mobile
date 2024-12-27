@@ -101,7 +101,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                 backgroundColor: Colors.red,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
           } else if (state is ContactPersonSuccess) {
@@ -124,7 +124,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                      backgroundColor: Colors.green,
                      elevation: 3,
                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-                     duration: Duration(seconds: 2),
+                     duration: Duration(seconds: 3),
                    ),
                 );
             Navigator.pop(context);

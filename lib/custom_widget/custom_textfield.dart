@@ -13,9 +13,9 @@ class CustomTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final int maxLines; 
   final String? Function(String?)? validator;
-    final Function(String)? onChanged; // Add onChanged parameter
-  final String? errorText; // Добавляем поддержку errorText
-
+  final Function(String)? onChanged; // Add onChanged parameter
+  final String? errorText; // Add errorText support
+  final bool hasError; // New parameter to manage error state
 
   CustomTextField({
     required this.controller,
@@ -29,9 +29,9 @@ class CustomTextField extends StatefulWidget {
     this.inputFormatters,
     this.maxLines = 1, 
     this.validator, 
-        this.onChanged, // Add to constructor
-    this.errorText, // Добавляем в конструктор
-
+    this.onChanged, // Add to constructor
+    this.errorText, // Add errorText support
+    this.hasError = false, // Initialize hasError
   });
 
   @override
@@ -43,7 +43,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    // Determine if the field has an error
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty || widget.hasError;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,6 +67,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           inputFormatters: widget.inputFormatters,
           maxLines: widget.maxLines,
           validator: widget.validator,
+          onChanged: widget.onChanged,
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: const TextStyle(

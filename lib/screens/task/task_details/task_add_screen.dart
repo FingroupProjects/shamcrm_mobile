@@ -48,6 +48,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   String? selectedProject;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
+  bool isEndDateInvalid = false;
 
   // Карта уровней приоритета
   final Map<int, String> priorityLevels = {
@@ -334,16 +335,30 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
-          // if (state is TaskError) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text(state.message),
-          //       duration: const Duration(seconds: 3),
-          //       backgroundColor: Colors.red,
-          //     ),
-          //   );
-          // } else
-          if (state is TaskSuccess) {
+          if (state is TaskError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else if (state is TaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -363,7 +378,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
             Navigator.pop(context, widget.statusId);
@@ -408,6 +423,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'До',
+                        hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
@@ -582,7 +598,25 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             return;
                           }
                         }
-
+                        if (startDate != null &&
+                            endDate != null &&
+                            startDate.isAfter(endDate)) {
+                          setState(() {
+                            isEndDateInvalid = true;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Дата начала не может быть позже даты завершения!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
                         TaskFile? fileData;
                         if (selectedFile != null) {
                           fileData = TaskFile(

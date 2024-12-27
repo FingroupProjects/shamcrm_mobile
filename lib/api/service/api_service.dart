@@ -1964,32 +1964,35 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
   //Метод для получения Задачи через его ID
-  Future<TaskById> getTaskById(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
+Future<TaskById> getTaskById(int taskId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
 
-      final response = await _getRequest(
-          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final Map<String, dynamic>? jsonTask = decodedJson['result'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonTask = decodedJson['result'];
 
-        if (jsonTask == null || jsonTask['taskStatus'] == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
-        return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
-      } else if (response.statusCode == 404) {
-        throw ('Ресурс с задачи $taskId не найден');
-      } else {
-        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+      if (jsonTask == null || jsonTask['taskStatus'] == null) {
+        throw Exception('Некорректные данные от API');
       }
-    } catch (e) {
-      throw Exception('Ошибка загрузки task ID');
+
+      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+    } else if (response.statusCode == 404) {
+      throw Exception('Ресурс с задачи $taskId не найден');
+    } else if (response.statusCode == 500) {
+      throw Exception('Ошибка сервера. Попробуйте позже');
+    } else {
+      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Ошибка загрузки task ID');
   }
+}
+
 
  
 
@@ -2996,40 +2999,44 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  // Метод для получения список чатов
-  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
-      [int page = 1, String? search]) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+    [int page = 1, String? search]) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
 
-    String url =
-        '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
+  String url =
+      '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
-    if (search != null && search.isNotEmpty) {
-      url += '&search=$search'; // Добавляем параметр поиска
-    }
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e);
-        });
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-    }
+  if (search != null && search.isNotEmpty) {
+    url += '&search=$search'; // Добавляем параметр поиска
   }
+
+  print('Request URL: $url'); // Печать URL запроса
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      print('Parsed data: ${data['result']}'); // Печать результата парсинга
+      return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+        return Chats.fromJson(e);
+      });
+    } else {
+      print('No result found in the response');
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    print('Error: ${response.statusCode}, Body: ${response.body}');
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();

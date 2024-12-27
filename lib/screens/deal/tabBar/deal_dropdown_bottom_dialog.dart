@@ -84,11 +84,29 @@ void DropdownBottomSheet(
                               isLoading = true; // Start loading
                             });
 
-                            ApiService()
-                                .updateDealStatus(
-                                  deal.id, deal.statusId, selectedStatusId!
-                                )
-                                .then((_) {
+                            ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusId!).then((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text(
+                                     'Статус успешно изменен!',
+                                     style: TextStyle(
+                                       fontFamily: 'Gilroy',
+                                       fontSize: 16,
+                                       fontWeight: FontWeight.w500,
+                                       color: Colors.white,
+                                     ),
+                                   ),
+                                   behavior: SnackBarBehavior.floating,
+                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                   shape: RoundedRectangleBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                   ),
+                                   backgroundColor: Colors.green,
+                                   elevation: 3,
+                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                   duration: Duration(seconds: 3),
+                                 ),
+                               );
                               setState(() {
                                 isLoading = false; // Stop loading
                               });

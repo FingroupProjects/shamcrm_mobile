@@ -38,6 +38,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   String? selectedManager;
   String? selectedDealStatus; // Добавляем выбор статуса
   List<CustomField> customFields = [];
+  bool isStartDateInvalid = false;
+  bool isEndDateInvalid = false;
 
   @override
   void initState() {
@@ -122,7 +124,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       elevation: 3,
                       padding:
                           EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 });
@@ -146,7 +148,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                      backgroundColor: Colors.green,
                      elevation: 3,
                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-                     duration: Duration(seconds: 2),
+                     duration: Duration(seconds: 3),
                    ),
                 );
             Navigator.pop(context, widget.leadId);
@@ -212,6 +214,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         controller: endDateController,
                         label: 'Дата завершения',
                         withTime: false,
+                        hasError: isEndDateInvalid, 
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
@@ -306,49 +309,40 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                     selectedDealStatus != null) {
                                  DateTime? startDate;
                                  DateTime? endDate;
-
-                                 if (startDateController.text.isNotEmpty) {
-                                   try {
+                                 try {
+                                   if (startDateController.text.isNotEmpty) {
                                      startDate = DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
-                                   } catch (e) {
-                                     ScaffoldMessenger.of(context).showSnackBar(
-                                       SnackBar(
-                                         content: const Text(
-                                           'Ошибка парсинга даты начала. Пожалуйста, используйте формат DD/MM/YYYY.',
-                                         ),
-                                         backgroundColor: Colors.red,
-                                       ),
-                                     );
-                                     return;
                                    }
-                                 }
-
-                                 if (endDateController.text.isNotEmpty) {
-                                   try {
+                                   if (endDateController.text.isNotEmpty) {
                                      endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
-                                   } catch (e) {
-                                     ScaffoldMessenger.of(context).showSnackBar(
-                                       SnackBar(
-                                         content: const Text(
-                                           'Ошибка парсинга даты окончания. Пожалуйста, используйте формат DD/MM/YYYY.',
-                                         ),
-                                         backgroundColor: Colors.red,
-                                       ),
-                                     );
-                                     return;
                                    }
-                                 }
-
-                                 if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                 } catch (e) {
+                                   setState(() {
+                                     isStartDateInvalid = true;
+                                     isEndDateInvalid = true;
+                                   });
                                    ScaffoldMessenger.of(context).showSnackBar(
                                      SnackBar(
-                                       content: const Text('Дата начала не может быть позже даты завершения.'),
+                                       content: const Text('Ошибка парсинга даты. Используйте формат DD/MM/YYYY.'),
                                        backgroundColor: Colors.red,
                                      ),
                                    );
                                    return;
                                  }
-
+                                   if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                   setState(() {
+                                     isStartDateInvalid = true;
+                                     isEndDateInvalid = true;
+                                   });
+                                   ScaffoldMessenger.of(context).showSnackBar(
+                                     SnackBar(
+                                       content: const Text('Дата начала не может быть позже даты завершения!'),
+                                       backgroundColor: Colors.red,
+                                     ),
+                                   );
+                                   return;
+                
+                                 }
                                   final String name = titleController.text;
                                   context.read<DealBloc>().add(CreateDeal(
                                         name: name,
@@ -389,4 +383,3 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 }
 
-                          // context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));

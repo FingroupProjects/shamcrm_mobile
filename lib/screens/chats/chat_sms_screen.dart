@@ -87,33 +87,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _fetchBaseUrl();
       _markMessagesAsRead();
     });
-    
-  
-  // // Добавляем слушатель скролла для обновления текущей даты
-  // _scrollController.addListener(() {
-  //   if (_scrollController.hasClients) {
-  //     final state = context.read<MessagingCubit>().state;
-  //     if (state is MessagesLoadedState) {
-  //       final position = _scrollController.position.pixels;
-  //       final maxScroll = _scrollController.position.maxScrollExtent;
-  //       final messagesLength = state.messages.length;
-        
-  //       if (messagesLength > 0) {
-  //         final itemHeight = maxScroll / messagesLength;
-  //         final currentIndex = ((maxScroll - position) / itemHeight).floor();
-          
-  //         if (currentIndex >= 0 && currentIndex < messagesLength) {
-  //           final currentMessage = state.messages[currentIndex];
-  //           final currentDateTime = DateTime.parse(currentMessage.createMessateTime);
-            
-  //           setState(() {
-  //             _currentDate = formatDate(currentDateTime);
-  //           });
-  //         }
-  //       }
-  //     }
-  //   }
-  // });
 }
 
   
@@ -337,7 +310,7 @@ void _scrollToMessageIndex(int index) {
                     backgroundColor: Colors.red,
                     elevation: 0,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 2),
+                    duration: Duration(seconds: 3),
                   ),
                 );
               });

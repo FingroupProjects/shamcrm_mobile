@@ -51,6 +51,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String selectedDialCode = '';
   String selectedDialCodeWhatsapp = '';
   List<CustomField> customFields = [];
+  bool isEndDateInvalid = false;
+
+  
 
   @override
   void initState() {
@@ -133,15 +136,39 @@ void _fetchAndAddCustomFields() async {
       ),
       body: BlocListener<LeadBloc, LeadState>(
         listener: (context, state) {
-          // if (state is LeadError) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text(state.message),
-          //       duration: Duration(seconds: 3),
-          //       backgroundColor: Colors.red,
-          //     ),
-          //   );
-          // } else
+          if (state is LeadError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Container(
+              decoration: BoxDecoration(
+                // color:  Colors.yellow[400], 
+                color:  Colors.red, 
+                borderRadius: BorderRadius.circular(12),
+                // border: Border.all(
+                //   color:  Colors.black, // Цвет границы
+                //   width: 1,
+                // ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              child: Text(
+                '${state.message}',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            backgroundColor: Colors.transparent, 
+            elevation: 0, 
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+          } else
           if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -162,7 +189,7 @@ void _fetchAndAddCustomFields() async {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
             Navigator.pop(context, widget.statusId);

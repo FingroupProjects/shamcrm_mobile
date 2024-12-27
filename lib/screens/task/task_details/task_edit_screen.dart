@@ -80,6 +80,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   String? selectedFile;
   String? fileName;
   String? fileSize;
+  bool isEndDateInvalid = false;
+
   final ApiService _apiService = ApiService();
 
   final Map<int, String> priorityLevels = {
@@ -477,7 +479,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2), // Установлено на 2 секунды
+                duration: Duration(seconds: 3), // Установлено на 2 секунды
               ),
             );
             Navigator.pop(context, true);
@@ -518,6 +520,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'До',
+                        hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
@@ -525,7 +528,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           return null;
                         },
                       ),
-                       const SizedBox(height: 8),
+                      
+                      const SizedBox(height: 8),
                       ProjectTaskGroupWidget(
                         selectedProject: selectedProject,
                         onSelectProject: (ProjectTask selectedProjectData) {
@@ -625,6 +629,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     if (endDateController.text.isNotEmpty) {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
+                                    }
+                                       if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                       setState(() {
+                                     isEndDateInvalid = true;
+                                   });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Дата начала не может быть позже даты завершения!',
+                                            style: TextStyle(
+                                              color: Colors.white, 
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red, 
+                                        ),
+                                      );
+                                      return;
                                     }
                                     List<Map<String, String>> customFieldList =
                                         [];

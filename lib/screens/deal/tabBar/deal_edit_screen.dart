@@ -67,6 +67,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
   String? selectedManager;
   String? selectedLead;
   List<CustomField> customFields = [];
+  bool isEndDateInvalid = false;
+
 
   @override
   void initState() {
@@ -157,7 +159,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 backgroundColor: Colors.red,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
           } else if (state is DealSuccess) {
@@ -180,7 +182,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
             Navigator.pop(context, true);
@@ -232,6 +234,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       CustomTextFieldDate(
                         controller: endDateController,
                         label: 'Дата завершения',
+                        hasError: isEndDateInvalid,
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
@@ -349,14 +352,14 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     }
                                   }
 
-                                // Проверка, что дата начала не может быть позже даты окончания
-                                 if (parsedStartDate != null &&
-                                     parsedEndDate != null &&
-                                     parsedStartDate.isAfter(parsedEndDate)) {
+                                 if (parsedStartDate != null && parsedEndDate != null &&  parsedStartDate.isAfter(parsedEndDate)) {
+                                      setState(() {
+                                        isEndDateInvalid=true;
+                                      });
                                    ScaffoldMessenger.of(context).showSnackBar(
                                      SnackBar(
                                        content: const Text(
-                                           'Дата начала не может быть позже даты завершения.'),
+                                           'Дата начала не может быть позже даты завершения!'),
                                        backgroundColor: Colors.red,
                                      ),
                                    );
@@ -370,8 +373,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         field.controller.text.trim();
                                     if (fieldName.isNotEmpty &&
                                         fieldValue.isNotEmpty) {
-                                      customFieldList
-                                          .add({fieldName: fieldValue});
+                                      customFieldList.add({fieldName: fieldValue});
                                     }
                                   }
 
