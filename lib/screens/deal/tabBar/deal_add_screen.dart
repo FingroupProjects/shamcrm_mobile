@@ -141,11 +141,26 @@ class _DealAddScreenState extends State<DealAddScreen> {
               ),
             );
           } else if (state is DealSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message),
-                duration: Duration(seconds: 3),
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 2),
               ),
             );
             Navigator.pop(context, widget.statusId);
@@ -352,6 +367,24 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                       return;
                                     }
                                   }
+
+                                // Проверка: если дата начала позже даты завершения
+                                    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Дата начала не может быть позже даты завершения.',
+                                            style: TextStyle(
+                                              color: Colors.white, // Текст белого цвета
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red, // Красный фон
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+
                                   // Создание сделки
                                   List<Map<String, String>> customFieldMap = [];
                                   for (var field in customFields) {

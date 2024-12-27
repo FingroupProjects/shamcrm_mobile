@@ -304,6 +304,51 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                 if (_formKey.currentState!.validate() &&
                                     selectedManager != null &&
                                     selectedDealStatus != null) {
+                                 DateTime? startDate;
+                                 DateTime? endDate;
+
+                                 if (startDateController.text.isNotEmpty) {
+                                   try {
+                                     startDate = DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
+                                   } catch (e) {
+                                     ScaffoldMessenger.of(context).showSnackBar(
+                                       SnackBar(
+                                         content: const Text(
+                                           'Ошибка парсинга даты начала. Пожалуйста, используйте формат DD/MM/YYYY.',
+                                         ),
+                                         backgroundColor: Colors.red,
+                                       ),
+                                     );
+                                     return;
+                                   }
+                                 }
+
+                                 if (endDateController.text.isNotEmpty) {
+                                   try {
+                                     endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
+                                   } catch (e) {
+                                     ScaffoldMessenger.of(context).showSnackBar(
+                                       SnackBar(
+                                         content: const Text(
+                                           'Ошибка парсинга даты окончания. Пожалуйста, используйте формат DD/MM/YYYY.',
+                                         ),
+                                         backgroundColor: Colors.red,
+                                       ),
+                                     );
+                                     return;
+                                   }
+                                 }
+
+                                 if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                                   ScaffoldMessenger.of(context).showSnackBar(
+                                     SnackBar(
+                                       content: const Text('Дата начала не может быть позже даты завершения.'),
+                                       backgroundColor: Colors.red,
+                                     ),
+                                   );
+                                   return;
+                                 }
+
                                   final String name = titleController.text;
                                   context.read<DealBloc>().add(CreateDeal(
                                         name: name,
