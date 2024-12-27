@@ -119,7 +119,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       );
 
       if (result['success']) {
-        emit(TaskSuccess('Задача успешно создана'));
+        emit(TaskSuccess('Задача успешно создана!'));
         // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
@@ -154,7 +154,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       );
 
       if (result['success']) {
-        emit(TaskSuccess('Задача успешно обновлена'));
+        emit(TaskSuccess('Задача успешно обновлена!'));
         // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
@@ -179,7 +179,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     try {
       final response = await apiService.deleteTask(event.taskId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted('Задача успешно удалена'));
+        emit(TaskDeleted('Задача успешно удалена!'));
       } else {
         emit(TaskError('Ошибка удаления задача'));
       }
@@ -195,7 +195,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     try {
       final response = await apiService.deleteTaskStatuses(event.taskStatusId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted('Статус задачи успешно удалена'));
+        emit(TaskDeleted('Статус задачи успешно удалена!'));
       } else {
         emit(TaskError('Ошибка удаления статуса сделки'));
       }
