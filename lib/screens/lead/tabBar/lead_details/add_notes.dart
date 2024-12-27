@@ -135,6 +135,28 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                             date: date,
                           ));
 
+                        ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(
+                           content: Text(
+                             'Заметка успешно создана!',
+                             style: TextStyle(
+                               fontFamily: 'Gilroy',
+                               fontSize: 16, 
+                               fontWeight: FontWeight.w500, 
+                               color: Colors.white, 
+                             ),
+                           ),
+                           behavior: SnackBarBehavior.floating,
+                           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(12),
+                           ),
+                           backgroundColor: Colors.green,
+                           elevation: 3,
+                           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+                           duration: Duration(seconds: 2),
+                         ),
+                      );
                       Navigator.pop(context);
                     }
                   },
