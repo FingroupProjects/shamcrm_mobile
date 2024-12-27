@@ -53,7 +53,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
             backgroundColor: Colors.red,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
       }

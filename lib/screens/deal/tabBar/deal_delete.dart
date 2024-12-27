@@ -78,7 +78,7 @@ class DeleteDealDialog extends StatelessWidget {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
 

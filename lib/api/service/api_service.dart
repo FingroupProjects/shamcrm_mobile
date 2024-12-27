@@ -2965,40 +2965,44 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  // Метод для получения список чатов
-  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
-      [int page = 1, String? search]) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+ Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+    [int page = 1, String? search]) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
 
-    String url =
-        '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
+  String url =
+      '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
-    if (search != null && search.isNotEmpty) {
-      url += '&search=$search'; // Добавляем параметр поиска
-    }
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e);
-        });
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-    }
+  if (search != null && search.isNotEmpty) {
+    url += '&search=$search'; // Добавляем параметр поиска
   }
+
+  print('Request URL: $url'); // Печать URL запроса
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      print('Parsed data: ${data['result']}'); // Печать результата парсинга
+      return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+        return Chats.fromJson(e);
+      });
+    } else {
+      print('No result found in the response');
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    print('Error: ${response.statusCode}, Body: ${response.body}');
+    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  }
+}
+
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();

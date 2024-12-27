@@ -157,7 +157,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 backgroundColor: Colors.red,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
           } else if (state is DealSuccess) {
@@ -180,7 +180,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 backgroundColor: Colors.green,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                duration: Duration(seconds: 3),
               ),
             );
             Navigator.pop(context, true);

@@ -98,7 +98,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   backgroundColor: Colors.red,
                   elevation: 3,
                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 2),
+                  duration: Duration(seconds: 3),
                 ),
               );
             });
@@ -188,7 +188,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                     ? 'Задача закрыто'
                                                     : notification.type ==
                                                             'taskOutDated'
-                                                        ? 'Напоминание о просроченном'
+                                                        ? 'Напоминание о просроченном сроке задачи '
                                                         : notification.type ==
                                                                 'lead'
                                                             ? 'Вас назначили менеджером лида'
