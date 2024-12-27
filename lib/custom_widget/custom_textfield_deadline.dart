@@ -9,6 +9,7 @@ class CustomTextFieldDate extends StatelessWidget {
   final bool useCurrentDateAsDefault;
   final bool readOnly;
   final TextInputType keyboardType;
+  final bool hasError; // Новый параметр
 
   CustomTextFieldDate({
     required this.controller,
@@ -18,6 +19,7 @@ class CustomTextFieldDate extends StatelessWidget {
     this.useCurrentDateAsDefault = false,
     this.readOnly = false,
     this.keyboardType = TextInputType.text,
+    this.hasError = false, // Инициализация
   }) {
     if (useCurrentDateAsDefault) {
       controller.text = withTime
@@ -27,6 +29,7 @@ class CustomTextFieldDate extends StatelessWidget {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    // Логика выбора даты
     String formattedDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -136,17 +139,15 @@ class CustomTextFieldDate extends StatelessWidget {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.transparent),
+                  borderSide: hasError
+                      ? const BorderSide(color: Colors.red, width: 1.5)
+                      : const BorderSide(color: Colors.transparent),
                 ),
-              errorStyle: const TextStyle(
-              fontSize: 14, 
-              fontFamily: 'Gilroy',
-              color: Colors.red,
-              fontWeight: FontWeight.w500, 
-            ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.transparent),
+                  borderSide: hasError
+                      ? const BorderSide(color: Colors.red, width: 1.5)
+                      : const BorderSide(color: Colors.transparent),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
