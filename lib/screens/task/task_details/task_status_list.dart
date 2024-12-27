@@ -1,14 +1,12 @@
-
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_state.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
-// import 'package:crm_task_manager/models/taskStatusName_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class StatusList extends StatefulWidget {
   final String? selectedTaskStatus;
-  final Function(String? value, int? id) onChanged;  // Обновленный тип
+  final Function(String? value, int? id) onChanged;
 
   StatusList({
     required this.selectedTaskStatus, 
@@ -44,7 +42,7 @@ class _TaskStatusListState extends State<StatusList> {
         } else if (state is StatusNameLoaded) {
           dropdownItems = state.statusName.map<DropdownMenuItem<String>>((StatusName status) {
             return DropdownMenuItem<String>(
-              value: status.id.toString(), // Используем id как value
+              value: status.id.toString(),
               child: Text(status.name),
             );
           }).toList();
@@ -69,6 +67,7 @@ class _TaskStatusListState extends State<StatusList> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButtonFormField<String>(
+                menuMaxHeight: 400, // Устанавливаем максимальную высоту выпадающего меню
                 value: dropdownItems
                     .any((item) => item.value == widget.selectedTaskStatus)
                     ? widget.selectedTaskStatus
@@ -84,7 +83,6 @@ class _TaskStatusListState extends State<StatusList> {
                 ),
                 items: dropdownItems,
                 onChanged: (String? value) {
-                  // Находим соответствующий статус и его id
                   if (state is StatusNameLoaded && value != null) {
                     final selectedStatus = state.statusName
                         .firstWhere((status) => status.id.toString() == value);
