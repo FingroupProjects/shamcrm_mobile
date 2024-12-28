@@ -169,126 +169,94 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     );
   }
 
-  Widget _buildFileSelection(TaskEditScreen task) {
-    if (task.file != null && task.file!.isNotEmpty) {
-      // Если файл уже существует, показываем ссылку
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Файл',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+Widget _buildFileSelection(TaskEditScreen task) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+   
+      if (task.file != null && task.file!.isNotEmpty) ...[
+        Row(
+          children: [
+            Text(
+              'Файл:',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy', // Используем шрифт Gilroy
+                color: Color(0xff99A4BA),
+              ),
             ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                _showFile(task.file!); // Показываем старый файл
+              },
+              child: Text(
+                'Ссылка',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy', // Используем шрифт Gilroy
+                  color: Color(0xff1E2E52),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
+      // Поле выбора файла
+      GestureDetector(
+        onTap: _pickFile,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F7FD),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFF4F7FD)),
           ),
-          const SizedBox(height: 4),
-          Row(
+          child: Row(
             children: [
-              _buildLabel('Файл:'),
-              SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  if (task.file != null) {
-                    _showFile(task
-                        .file!); // Обработчик для скачивания и открытия файла
-                  }
-                },
+              Expanded(
                 child: Text(
-                  'Ссылка',
+                  // Отображаем текст до выбора файла или название нового файла
+                  fileName ?? 'Выберите файл',
                   style: TextStyle(
+                    fontFamily: 'Gilroy', // Используем шрифт Gilroy
                     fontSize: 16,
-                    fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
+                    color: fileName != null
+                        ? const Color(0xff1E2E52)
+                        : const Color(0xff99A4BA),
                   ),
                 ),
               ),
+              const Icon(
+                Icons.attach_file,
+                color: Color(0xff99A4BA),
+              ),
             ],
           ),
-        ],
-      );
-    } else {
-      // Если файл не выбран, показываем обычный виджет для выбора файла
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Файл',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          const SizedBox(height: 4),
-          GestureDetector(
-            onTap: _pickFile,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF4F7FD)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      fileName ?? 'Выберите файл',
-                      style: TextStyle(
-                        color: fileName != null
-                            ? const Color(0xff1E2E52)
-                            : const Color(0xff99A4BA),
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.attach_file,
-                    color: const Color(0xff99A4BA),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (fileName != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (fileName != null)
-                  IconButton(
-                    icon: Icon(Icons.close, size: 20),
-                    onPressed: () {
-                      setState(() {
-                        fileName = null;
-                        selectedFile = null;
-                      });
-                    },
-                  ),
-              ],
-            ),
-          ],
-        ],
-      );
-    }
-  }
-
+        ),
+      ),
+    ],
+  );
+}
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+  FilePickerResult? result = await FilePicker.platform.pickFiles();
 
-    if (result != null) {
-      setState(() {
-        selectedFile = result.files.single.path;
-        fileName = result.files.single.name;
-        fileSize = '${(result.files.single.size / 1024).toStringAsFixed(2)} KB';
-      });
-    }
+  if (result != null) {
+    setState(() {
+      selectedFile = result.files.single.path;
+      fileName = result.files.single.name;
+      fileSize = '${(result.files.single.size / 1024).toStringAsFixed(2)} KB';
+    });
+
+    // Вывод в консоль
+    print('Файл выбран: $fileName, Путь: $selectedFile');
   }
-
+}
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
