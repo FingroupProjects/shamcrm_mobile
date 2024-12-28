@@ -424,6 +424,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         controller: endDateController,
                         label: 'До',
                         hasError: isEndDateInvalid,
+                        
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';

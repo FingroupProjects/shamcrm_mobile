@@ -43,6 +43,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _surnameError;
   String? _phoneError;
   String? _emailError;
+  bool _isSaving = false; // Флаг блокировки нажатий
 
   // Функция валидации email
   bool isValidEmail(String email) {
@@ -114,45 +115,47 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     context.read<OrganizationBloc>().add(FetchOrganizations());
   }
 
-Future<void> _loadUserPhone() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _loadUserPhone() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  String UUID = prefs.getString('userID') ?? 'Не найдено';
-  String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
-  String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
-
-  setState(() {
-    userController.text = UUID;
-    loginController.text = ULogin;
-    roleController.text = URoleName;
-  });
-
-  try {
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+    String UUID = prefs.getString('userID') ?? 'Не найдено';
+    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
 
     setState(() {
-      NameController.text = userProfile.name;
-      SurnameController.text = userProfile.lastname;
-      PatronymicController.text = userProfile.Pname;
-      emailController.text = userProfile.email;
-
-      String phoneNumber = userProfile.phone;
-
-      // Пробуем извлечь код страны из телефона и сопоставить с countryCodes
-      for (var code in countryCodes) {
-        if (phoneNumber.startsWith(code)) {
-          setState(() {
-            selectedDialCode = code;
-            phoneController.text = phoneNumber.substring(code.length); // Убираем код из номера
-          });
-          break; // Прерываем цикл, если нашли соответствие
-        }
-      }
+      userController.text = UUID;
+      loginController.text = ULogin;
+      roleController.text = URoleName;
     });
-  } catch (e) {
-    print('Ошибка при загрузке данных из API: $e');
+
+    try {
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
+
+      setState(() {
+        NameController.text = userProfile.name;
+        SurnameController.text = userProfile.lastname;
+        PatronymicController.text = userProfile.Pname;
+        emailController.text = userProfile.email;
+
+        String phoneNumber = userProfile.phone;
+
+        // Пробуем извлечь код страны из телефона и сопоставить с countryCodes
+        for (var code in countryCodes) {
+          if (phoneNumber.startsWith(code)) {
+            setState(() {
+              selectedDialCode = code;
+              phoneController.text =
+                  phoneNumber.substring(code.length); // Убираем код из номера
+            });
+            break; // Прерываем цикл, если нашли соответствие
+          }
+        }
+      });
+    } catch (e) {
+      print('Ошибка при загрузке данных из API: $e');
+    }
   }
-}
 
   Future<void> _loadSelectedOrganization() async {
     final savedOrganization = await ApiService().getSelectedOrganization();
@@ -185,10 +188,6 @@ Future<void> _loadUserPhone() async {
       ApiService().saveSelectedOrganization(newOrganization);
     }
   }
-
- 
-
-
 
   Future<void> _showImagePickerDialog() async {
     final XFile? pickedFile = await showModalBottomSheet<XFile?>(
@@ -464,96 +463,115 @@ Future<void> _loadUserPhone() async {
                   ),
                 ),
               const SizedBox(height: 30),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  minimumSize: Size(double.infinity, 48),
-                ),
-                onPressed: () async {
-                  // Сбрасываем состояние ошибок
-                  setState(() {
-                    _nameError = null;
-                    _surnameError = null;
-                    _phoneError = null;
-                    _emailError = null;
-                  });
-
-                  // Проверяем валидацию
-                  bool isValid = true;
-
-                  if (NameController.text.trim().isEmpty) {
-                    setState(() {
-                      _nameError = 'Поле имя обязательно для заполнения';
-                    });
-                    isValid = false;
+              BlocBuilder<ProfileBloc, ProfileState>(
+                builder: (context, state) {
+                  if (state is ProfileLoading) {
+                    // Если состояние ProfileLoading, показываем только индикатор загрузки
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: const Color(0xff1E2E52),
+                      ),
+                    );
                   }
 
-                  if (SurnameController.text.trim().isEmpty) {
-                    setState(() {
-                      _surnameError = 'Поле фамилия обязательно для заполнения';
-                    });
-                    isValid = false;
-                  }
+                  // Если состояние не ProfileLoading, показываем кнопку
+                  return ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff1E2E52),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      minimumSize: Size(double.infinity, 48),
+                    ),
+                    onPressed: () async {
+                      // Сбрасываем состояние ошибок
+                      setState(() {
+                        _nameError = null;
+                        _surnameError = null;
+                        _phoneError = null;
+                        _emailError = null;
+                      });
 
-                  if (phoneController.text.trim().isEmpty) {
-                    setState(() {
-                      _phoneError = 'Поле телефон обязательно для заполнения';
-                    });
-                    isValid = false;
-                  } else if (!isValidPhone(phoneController.text.trim())) {
-                    setState(() {
-                      _phoneError = 'Введите корректный номер телефона';
-                    });
-                    isValid = false;
-                  }
+                      // Проверяем валидацию
+                      bool isValid = true;
 
-                  if (emailController.text.trim().isNotEmpty &&
-                      !isValidEmail(emailController.text.trim())) {
-                    setState(() {
-                      _emailError = 'Введите корректный email адрес';
-                    });
-                    isValid = false;
-                  }
+                      if (NameController.text.trim().isEmpty) {
+                        setState(() {
+                          _nameError = 'Поле имя обязательно для заполнения';
+                        });
+                        isValid = false;
+                      }
 
-                  if (!isValid) return;
+                      if (SurnameController.text.trim().isEmpty) {
+                        setState(() {
+                          _surnameError =
+                              'Поле фамилия обязательно для заполнения';
+                        });
+                        isValid = false;
+                      }
 
-                  try {
-                    SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    String UUID = prefs.getString('userID') ?? '';
+                      if (phoneController.text.trim().isEmpty) {
+                        setState(() {
+                          _phoneError =
+                              'Поле телефон обязательно для заполнения';
+                        });
+                        isValid = false;
+                      } else if (!isValidPhone(phoneController.text.trim())) {
+                        setState(() {
+                          _phoneError = 'Введите корректный номер телефона';
+                        });
+                        isValid = false;
+                      }
 
-                    if (UUID.isEmpty) {
-                      _showErrorMessage('Ошибка: UUID не найден');
-                      return;
-                    }
+                      if (emailController.text.trim().isNotEmpty &&
+                          !isValidEmail(emailController.text.trim())) {
+                        setState(() {
+                          _emailError = 'Введите корректный email адрес';
+                        });
+                        isValid = false;
+                      }
 
-                    String UserNameProfile = NameController.text;
-                    await prefs.setString('userNameProfile', UserNameProfile);
+                      if (!isValid) return;
 
-                    int userId = int.parse(UUID);
-                    final image = _getImageToUpload();
-                    context.read<ProfileBloc>().add(UpdateProfile(
-                        userId: userId,
-                        name: NameController.text.trim(),
-                        sname: SurnameController.text.trim(),
-                        phone: selectedDialCode,
-                        email: emailController.text.trim(),
-                        image: image,
-                        pname: ''));
-                  } catch (e) {
-                    _showErrorMessage(
-                        'Произошла ошибка при обновлении профиля');
-                  }
+                      try {
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        String UUID = prefs.getString('userID') ?? '';
+
+                        if (UUID.isEmpty) {
+                          _showErrorMessage('Ошибка: UUID не найден');
+                          return;
+                        }
+
+                        String UserNameProfile = NameController.text;
+                        await prefs.setString(
+                            'userNameProfile', UserNameProfile);
+
+                        int userId = int.parse(UUID);
+                        final image = _getImageToUpload();
+                        context.read<ProfileBloc>().add(UpdateProfile(
+                            userId: userId,
+                            name: NameController.text.trim(),
+                            sname: SurnameController.text.trim(),
+                            phone: selectedDialCode,
+                            email: emailController.text.trim(),
+                            image: image,
+                            pname: ''));
+                      } catch (e) {
+                        _showErrorMessage(
+                            'Произошла ошибка при обновлении профиля');
+                      }
+                    },
+                    child: Text(
+                      'Сохранить',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  );
                 },
-                child: Text('Сохранить',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    )),
               ),
 
               BlocListener<ProfileBloc, ProfileState>(

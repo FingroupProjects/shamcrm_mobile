@@ -71,7 +71,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
-  final authService = AuthService();
+  final authService = AuthService();  
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
     await apiService.initialize();
