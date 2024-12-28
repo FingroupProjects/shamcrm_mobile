@@ -95,6 +95,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     super.initState();
     _initializeControllers();
     _loadInitialData();
+    selectedPriority ??=
+        1; // или другое значение по умолчанию из priorityLevels
+
     // Инициализируем информацию о файле, если он есть
     if (widget.file != null) {
       fileName = widget.file;
@@ -169,94 +172,95 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     );
   }
 
-Widget _buildFileSelection(TaskEditScreen task) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-   
-      if (task.file != null && task.file!.isNotEmpty) ...[
-        Row(
-          children: [
-            Text(
-              'Файл:',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy', // Используем шрифт Gilroy
-                color: Color(0xff99A4BA),
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                _showFile(task.file!); // Показываем старый файл
-              },
-              child: Text(
-                'Ссылка',
+  Widget _buildFileSelection(TaskEditScreen task) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (task.file != null && task.file!.isNotEmpty) ...[
+          Row(
+            children: [
+              Text(
+                'Файл:',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy', // Используем шрифт Gilroy
-                  color: Color(0xff1E2E52),
-                  decoration: TextDecoration.underline,
+                  color: Color(0xff99A4BA),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-      ],
-      // Поле выбора файла
-      GestureDetector(
-        onTap: _pickFile,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFF4F7FD)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  _showFile(task.file!); // Показываем старый файл
+                },
                 child: Text(
-                  // Отображаем текст до выбора файла или название нового файла
-                  fileName ?? 'Выберите файл',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy', // Используем шрифт Gilroy
+                  'Ссылка',
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: fileName != null
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xff99A4BA),
+                    fontFamily: 'Gilroy', // Используем шрифт Gilroy
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),
-              const Icon(
-                Icons.attach_file,
-                color: Color(0xff99A4BA),
-              ),
             ],
           ),
+          const SizedBox(height: 16),
+        ],
+        // Поле выбора файла
+        GestureDetector(
+          onTap: _pickFile,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F7FD),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFF4F7FD)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    // Отображаем текст до выбора файла или название нового файла
+                    fileName ?? 'Выберите файл',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy', // Используем шрифт Gilroy
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: fileName != null
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.attach_file,
+                  color: Color(0xff99A4BA),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-    ],
-  );
-}
-  Future<void> _pickFile() async {
-  FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-  if (result != null) {
-    setState(() {
-      selectedFile = result.files.single.path;
-      fileName = result.files.single.name;
-      fileSize = '${(result.files.single.size / 1024).toStringAsFixed(2)} KB';
-    });
-
-    // Вывод в консоль
-    print('Файл выбран: $fileName, Путь: $selectedFile');
+      ],
+    );
   }
-}
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      setState(() {
+        selectedFile = result.files.single.path;
+        fileName = result.files.single.name;
+        fileSize = '${(result.files.single.size / 1024).toStringAsFixed(2)} KB';
+      });
+
+      // Вывод в консоль
+      print('Файл выбран: $fileName, Путь: $selectedFile');
+    }
+  }
+
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
@@ -317,7 +321,7 @@ Widget _buildFileSelection(TaskEditScreen task) {
     );
   }
 
-  Widget _buildPriorityDropdown() {
+ Widget _buildPriorityDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -341,14 +345,21 @@ Widget _buildFileSelection(TaskEditScreen task) {
               canvasColor: Colors.white,
             ),
             child: DropdownButtonFormField<int>(
-              value: selectedPriority ?? 1,
+              value: selectedPriority,
               items: priorityLevels.entries.map((entry) {
-                final priorityColor = entry.key == 3
-                    ? Colors.red
-                    : entry.key == 2
-                        ? Colors.yellow
-                        : Colors.green;
-                return DropdownMenuItem(
+                Color priorityColor;
+                switch (entry.key) {
+                  case 3:
+                    priorityColor = Colors.red;
+                    break;
+                  case 2:
+                    priorityColor = Colors.yellow;
+                    break;
+                  default:
+                    priorityColor = Colors.green;
+                }
+                
+                return DropdownMenuItem<int>(
                   value: entry.key,
                   child: Row(
                     children: [
@@ -363,7 +374,7 @@ Widget _buildFileSelection(TaskEditScreen task) {
                       const SizedBox(width: 8),
                       Text(
                         entry.value,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
@@ -375,9 +386,11 @@ Widget _buildFileSelection(TaskEditScreen task) {
                 );
               }).toList(),
               onChanged: (int? newValue) {
-                setState(() {
-                  selectedPriority = newValue;
-                });
+                if (newValue != null) {
+                  setState(() {
+                    selectedPriority = newValue;
+                  });
+                }
               },
               decoration: _inputDecoration(),
               validator: (value) =>
@@ -388,6 +401,7 @@ Widget _buildFileSelection(TaskEditScreen task) {
       ],
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +510,7 @@ Widget _buildFileSelection(TaskEditScreen task) {
                           return null;
                         },
                       ),
-                      
+
                       const SizedBox(height: 8),
                       ProjectTaskGroupWidget(
                         selectedProject: selectedProject,
@@ -598,19 +612,22 @@ Widget _buildFileSelection(TaskEditScreen task) {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
                                     }
-                                       if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-                                       setState(() {
-                                     isEndDateInvalid = true;
-                                   });
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                    if (startDate != null &&
+                                        endDate != null &&
+                                        startDate.isAfter(endDate)) {
+                                      setState(() {
+                                        isEndDateInvalid = true;
+                                      });
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             'Дата начала не может быть позже даты завершения!',
                                             style: TextStyle(
-                                              color: Colors.white, 
+                                              color: Colors.white,
                                             ),
                                           ),
-                                          backgroundColor: Colors.red, 
+                                          backgroundColor: Colors.red,
                                         ),
                                       );
                                       return;
