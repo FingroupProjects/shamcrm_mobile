@@ -77,7 +77,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Лиды',
+                    'Лид',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
