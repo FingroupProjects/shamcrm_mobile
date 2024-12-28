@@ -133,39 +133,32 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
   }
 
   Column _buildItemList(List<String> items) {
-    return Column(
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: items.map((item) {
+      return _buildActionItem(item);
+    }).toList(),
+  );
+}
+
+Widget _buildActionItem(String item) {
+  final parts = item.split('\n');
+  final status = parts[0];
+  final userName = parts.length > 1 ? parts[1] : '';
+  final additionalDetails = parts.sublist(2); 
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) {
-        return _buildActionItem(item);
-      }).toList(),
-    );
-  }
-
-  Widget _buildActionItem(String item) {
-    final parts = item.split('\n');
-    final status = parts[0];
-    final userName = parts.length > 1 ? parts[1] : '';
-
-    final additionalDetails = [
-      parts.length > 2 ? parts[2] : '',
-      parts.length > 3 ? parts[3] : '',
-      parts.length > 4 ? parts[4] : '',
-      parts.length > 5 ? parts[5] : '',
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusRow(status, userName),
-          SizedBox(height: 10),
-          if (additionalDetails.any((detail) => detail.isNotEmpty))
-            _buildAdditionalDetails(additionalDetails),
-        ],
-      ),
-    );
-  }
+      children: [
+        _buildStatusRow(status, userName),
+        SizedBox(height: 10),
+        if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
+      ],
+    ),
+  );
+}
 
   Row _buildStatusRow(String status, String userName) {
     return Row(
@@ -228,27 +221,82 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
   }
 
   List<String> _buildActionHistoryItems(List<TaskHistory> history) {
-    return history.map((entry) {
-      final changes = entry.changes;
-      final formattedDate =
-          DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail =
-          '${entry.status}\n${entry.user.name} $formattedDate';
+  return history.map((entry) {
+    final changes = entry.changes;
+    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
-      if (changes != null) {
-        if (changes.positionNewValue != null &&
-            changes.positionPreviousValue != null) {
-          actionDetail +=
-              '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
-        }
-        if (changes.taskStatusNewValue != null &&
-            changes.taskStatusPreviousValue != null) {
-          actionDetail +=
-              '\nСтатус задачи: ${changes.taskStatusPreviousValue ?? "Не указано"} > ${changes.taskStatusNewValue ?? "Не указано"}';
-        }
+    // Форматирование дат
+    String formatDate(String? dateString) {
+      if (dateString == null || dateString == "Не указано") {
+        return "Не указано";
+      }
+      try {
+        DateTime date = DateTime.parse(dateString);
+        return DateFormat('dd/MM/yyyy').format(date);
+      } catch (e) {
+        return "Не указано";
+      }
+    }
+
+    if (changes != null) {
+      // Позиция
+      if (changes.positionNewValue != null || changes.positionPreviousValue != null) {
+        actionDetail +=
+            '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
       }
 
-      return actionDetail;
-    }).toList();
-  }
+      // Статус задачи
+      if (changes.taskStatusNewValue != null || changes.taskStatusPreviousValue != null) {
+        actionDetail +=
+            '\nСтатус задачи: ${changes.taskStatusPreviousValue ?? "Не указано"} > ${changes.taskStatusNewValue ?? "Не указано"}';
+      }
+
+      // Название
+      if (changes.historyNameNewValue != null || changes.historyNamePreviousValue != null) {
+        actionDetail +=
+            '\nНазвание: ${changes.historyNamePreviousValue ?? "Не указано"} > ${changes.historyNameNewValue ?? "Не указано"}';
+      }
+
+      // Завершающий этап
+      if (changes.isFinishedNewValue != null || changes.isFinishedPreviousValue != null) {
+        actionDetail +=
+            '\nЗавершающий этап: ${changes.isFinishedPreviousValue ?? "Не указано"} > ${changes.isFinishedNewValue ?? "Не указано"}';
+      }
+
+      // Дата начала
+      if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
+        actionDetail +=
+            '\nОт: ${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
+      }
+
+      // Дата окончания
+      if (changes.endDateNewValue != null || changes.endDatePreviousValue != null) {
+        actionDetail +=
+            '\nДо: ${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
+      }
+
+      // Проект
+      if (changes.projectNewValue != null || changes.projectPreviousValue != null) {
+        actionDetail +=
+            '\nПроект: ${changes.projectPreviousValue ?? "Не указано"} > ${changes.projectNewValue ?? "Не указано"}';
+      }
+
+      // Пользователи
+      if (changes.usersNewValue != null || changes.usersPreviousValue != null) {
+        actionDetail +=
+            '\nПользователи: ${changes.usersPreviousValue ?? "Не указано"} > ${changes.usersNewValue ?? "Не указано"}';
+      }
+
+      // Описание
+      if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
+        actionDetail +=
+            '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';
+      }
+    }
+
+    return actionDetail;
+  }).toList();
+}
+
 }
