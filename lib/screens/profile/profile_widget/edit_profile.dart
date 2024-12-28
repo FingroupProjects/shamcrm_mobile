@@ -48,6 +48,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   // Функция валидации email
   bool isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    // Extract country code from phone if necessary
   }
 
   // Функция валидации телефона (пример базовой валидации)
@@ -67,6 +68,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     '+998',
     '+1'
   ]; // Country codes list
+  
   // Новый метод для определения пути изображения
   String? _getImageToUpload() {
     // Если есть локально выбранное изображение
@@ -126,6 +128,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       userController.text = UUID;
       loginController.text = ULogin;
       roleController.text = URoleName;
+
     });
 
     try {
@@ -466,15 +469,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               BlocBuilder<ProfileBloc, ProfileState>(
                 builder: (context, state) {
                   if (state is ProfileLoading) {
-                    // Если состояние ProfileLoading, показываем только индикатор загрузки
                     return Center(
                       child: CircularProgressIndicator(
                         color: const Color(0xff1E2E52),
                       ),
                     );
                   }
-
-                  // Если состояние не ProfileLoading, показываем кнопку
                   return ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xff1E2E52),
