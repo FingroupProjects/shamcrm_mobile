@@ -469,15 +469,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               BlocBuilder<ProfileBloc, ProfileState>(
                 builder: (context, state) {
                   if (state is ProfileLoading) {
-                    // Если состояние ProfileLoading, показываем только индикатор загрузки
                     return Center(
                       child: CircularProgressIndicator(
                         color: const Color(0xff1E2E52),
                       ),
                     );
                   }
-
-                  // Если состояние не ProfileLoading, показываем кнопку
                   return ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xff1E2E52),
