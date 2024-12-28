@@ -95,7 +95,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
             _buildTitleRow(title),
             SizedBox(height: 8),
             AnimatedSize(
-              duration: const Duration(milliseconds: 0),
+              duration: const Duration(milliseconds: 200),
               child: isExpanded
                   ? SizedBox(
                       height: 250, // Ограничиваем высоту для прокрутки
@@ -253,7 +253,7 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
       // Статус клиента
       if (changes.leadStatusNewValue != null || changes.leadStatusPreviousValue != null) {
         actionDetail +=
-            '\nСтатус клиента: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
+            '\nСтатус: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
       }
 
       // Название
@@ -295,7 +295,7 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
       // TG Никнейм
       if (changes.tgNickNewValue != null || changes.tgNickPreviousValue != null) {
         actionDetail +=
-            '\nТелеграм: ${changes.tgNickPreviousValue ?? "Не указано"} > ${changes.tgNickNewValue ?? "Не указано"}';
+          '\nТелеграм: ${changes.tgNickPreviousValue ?? "Не указано"} > ${changes.tgNickNewValue ?? "Не указано"}';
       }
 
       // Instagram логин

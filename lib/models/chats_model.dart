@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 
 
@@ -14,8 +15,9 @@ class Chats {
   final int unredMessage;
   final bool canSendMessage;
   final String? type;
-  final List<ChatUser> chatUsers; // Список пользователей
-  final Group? group; // Ссылка на группу
+  final List<ChatUser> chatUsers;
+  final Group? group;
+  final Task? task;
 
   Chats({
     required this.id,
@@ -32,6 +34,7 @@ class Chats {
     this.type,
     required this.chatUsers,
     this.group,
+    this.task,
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
@@ -45,6 +48,11 @@ class Chats {
     Group? group;
     if (json['group'] != null) {
       group = Group.fromJson(json['group']);
+    }
+
+    Task? task;
+    if (json['task'] != null) {
+      task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
     }
 
     return Chats(
@@ -78,43 +86,45 @@ class Chats {
           json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json["can_send_message"] ?? false,
       type: json['type'],
-      chatUsers: users, // Добавляем список пользователей
-      group: group, // Добавляем группу
+      chatUsers: users, 
+      group: group,
+      task: task,
     );
   }
 
-  // Новый метод, который будет проверять и возвращать имя либо пользователя, либо группы
   String get displayName {
     if (group != null && group!.name.isNotEmpty) {
-      return group!.name; // Если группа существует, то возвращаем ее имя
+      return group!.name; 
+    } else if (task != null && task!.name.isNotEmpty) {
+      return task!.name; 
     } else {
-      return  name; // Если нет группы, то имя пользователя
+      return name; 
     }
   }
 
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
-  final isMyMessage = lastMessage['is_my_message'] ?? false; // Проверяем, отправлено ли сообщение вами
-  switch (lastMessage['type']) {
-    case 'text':
-      return lastMessage['text'] ?? 'Текстовое сообщение';
-    case 'voice':
-      return isMyMessage 
-          ? 'Отправлено голосовое сообщение' 
-          : 'Вам пришло голосовое сообщение';
-    case 'file':
-      return 'Файл: неизвестное имя';
-    case 'image':
-      return 'Изображение';
-    case 'video':
-      return 'Вам пришло видео сообщение';
-    case 'location':
-      return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
-    case 'sticker':
-      return 'Вам пришел стикер';
-    default:
-      return 'Новое сообщение';
+    final isMyMessage = lastMessage['is_my_message'] ?? false;
+    switch (lastMessage['type']) {
+      case 'text':
+        return lastMessage['text'] ?? 'Текстовое сообщение';
+      case 'voice':
+        return isMyMessage
+            ? 'Отправлено голосовое сообщение'
+            : 'Вам пришло голосовое сообщение';
+      case 'file':
+        return 'Файл: неизвестное имя';
+      case 'image':
+        return 'Изображение';
+      case 'video':
+        return 'Вам пришло видео сообщение';
+      case 'location':
+        return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
+      case 'sticker':
+        return 'Вам пришел стикер';
+      default:
+        return 'Новое сообщение';
+    }
   }
-}
 
 
   ChatItem toChatItem(String avatar) {
