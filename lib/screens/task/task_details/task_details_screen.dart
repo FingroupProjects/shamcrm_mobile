@@ -560,7 +560,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             endDate: currentTask!.endDate,
                             createdAt: createdAtString,
                             taskCustomFields: currentTask!.taskCustomFields,
-                            file: currentTask!.taskFile, // Передаем файл
+                            file: currentTask!.taskFile,
                           ),
                         ),
                       );
