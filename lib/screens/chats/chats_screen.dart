@@ -347,7 +347,7 @@ void _searchChats(String query, String endPoint) {
 
       if (_debounce?.isActive ?? false) _debounce?.cancel();
 
-      _debounce = Timer(const Duration(seconds: 1), () {
+      _debounce = Timer(const Duration(seconds: 2), () {
         final chatsBloc = context.read<ChatsBloc>();
         chatsBloc.add(ClearChats());
 

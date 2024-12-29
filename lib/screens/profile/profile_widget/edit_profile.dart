@@ -43,7 +43,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _surnameError;
   String? _phoneError;
   String? _emailError;
-  bool _isSaving = false; // Флаг блокировки нажатий
 
   // Функция валидации email
   bool isValidEmail(String email) {
@@ -68,9 +67,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     '+998',
     '+1'
   ]; // Country codes list
-  
-  // Новый метод для определения пути изображения
-  String? _getImageToUpload() {
+    String? _getImageToUpload() {
     // Если есть локально выбранное изображение
     if (_localImage != null) {
       return _localImage!.path;
@@ -260,7 +257,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Фото пользователя
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

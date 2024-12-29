@@ -129,40 +129,35 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     );
   }
 
-  Column _buildItemList(List<String> items) {
-    return Column(
+ 
+Column _buildItemList(List<String> items) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: items.map((item) {
+      return _buildActionItem(item);
+    }).toList(),
+  );
+}
+
+Widget _buildActionItem(String item) {
+  final parts = item.split('\n');
+  final status = parts[0];
+  final userName = parts.length > 1 ? parts[1] : '';
+  final additionalDetails = parts.sublist(2); 
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) {
-        return _buildActionItem(item);
-      }).toList(),
-    );
-  }
+      children: [
+        _buildStatusRow(status, userName),
+        SizedBox(height: 10),
+        if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
+      ],
+    ),
+  );
+}
 
-  Widget _buildActionItem(String item) {
-    final parts = item.split('\n');
-    final status = parts[0];
-    final userName = parts.length > 1 ? parts[1] : '';
-
-    final additionalDetails = [
-      parts.length > 2 ? parts[2] : '',
-      parts.length > 3 ? parts[3] : '',
-      parts.length > 4 ? parts[4] : '',
-      parts.length > 5 ? parts[5] : '',
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusRow(status, userName),
-          SizedBox(height: 10),
-          if (additionalDetails.any((detail) => detail.isNotEmpty))
-            _buildAdditionalDetails(additionalDetails),
-        ],
-      ),
-    );
-  }
 
   Row _buildStatusRow(String status, String userName) {
     return Row(
@@ -225,27 +220,64 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
   }
 
   List<String> _buildActionHistoryItems(List<DealHistory> history) {
-    return history.map((entry) {
-      final changes = entry.changes;
-      final formattedDate =
-          DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail =
-          '${entry.status}\n${entry.user.name} $formattedDate';
+  return history.map((entry) {
+    final changes = entry.changes;
+    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
-      if (changes != null) {
-        if (changes.positionNewValue != null &&
-            changes.positionPreviousValue != null) {
-          actionDetail +=
-              '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
-        }
-        if (changes.dealStatusNewValue != null &&
-            changes.dealStatusPreviousValue != null) {
-          actionDetail +=
-              '\nСтатус клиента: ${changes.dealStatusNewValue ?? "Не указано"} > ${changes.dealStatusPreviousValue ?? "Не указано"}';
-        }
+    String formatDate(String? dateString) {
+      if (dateString == null || dateString == "Не указано") {
+        return "Не указано";
       }
+      try {
+        DateTime date = DateTime.parse(dateString);
+        return DateFormat('dd-MM-yyyy').format(date);
+      } catch (e) {
+        return "Не указано";
+      }
+    }
 
-      return actionDetail;
-    }).toList();
-  }
+    String formatDateTime(DateTime? dateTime) {
+      if (dateTime == null) return "Не указано";
+      return DateFormat('dd-MM-yyyy').format(dateTime);
+    }
+
+    if (changes != null) {
+      if (changes.positionNewValue != null || changes.positionPreviousValue != null) {
+        actionDetail += '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
+      }
+      if (changes.dealStatusNewValue != null || changes.dealStatusPreviousValue != null) {
+        actionDetail += '\nСтатус: ${changes.dealStatusPreviousValue ?? "Не указано"} > ${changes.dealStatusNewValue ?? "Не указано"}';
+      }
+      if (changes.historyNameNewValue != null || changes.historyNamePreviousValue != null) {
+        actionDetail += '\nНазвание: ${changes.historyNamePreviousValue ?? "Не указано"} > ${changes.historyNameNewValue ?? "Не указано"}';
+      }
+      if (changes.leadNewValue != null || changes.leadPreviousValue != null) {
+        actionDetail += '\nЛид: ${changes.leadPreviousValue ?? "Не указано"} > ${changes.leadNewValue ?? "Не указано"}';
+      }
+      if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
+        actionDetail += '\nМенеджер: ${changes.managerPreviousValue?.toString() ?? "Не указано"} > ${changes.managerNewValue?.toString() ?? "Не указано"}';
+      }
+      if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
+        actionDetail += '\nДата начала: ${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
+      }
+      if (changes.endDateNewValue != null || changes.endDatePreviousValue != null) {
+        actionDetail += '\nДата завершения: ${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
+      }
+      if (changes.sumNewValue != null || changes.sumPreviousValue != null) {
+        actionDetail += '\nСумма: ${changes.sumPreviousValue?.toStringAsFixed(2) ?? "Не указано"} > ${changes.sumNewValue?.toStringAsFixed(2) ?? "Не указано"}';
+      }
+      if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
+        actionDetail += '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';
+      }
+      if (changes.statusUpdateDateNewValue != null || changes.statusUpdateDatePreviousValue != null) {
+        actionDetail += '\nДата обновления статуса: ${formatDateTime(changes.statusUpdateDatePreviousValue)} > ${formatDateTime(changes.statusUpdateDateNewValue)}';
+      }
+    }
+
+    return actionDetail;
+  }).toList();
+}
+
+
 }

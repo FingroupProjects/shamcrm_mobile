@@ -70,7 +70,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   String? selectedRegion;
   String? selectedManager;
-  String selectedDialCode = '+992'; // Default country code
+  String selectedDialCode = '+992'; 
 
   List<String> countryCodes = [
     '+992',
@@ -78,7 +78,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     '+996',
     '+998',
     '+1'
-  ]; // Country codes list
+  ]; 
+    bool _isPhoneEdited = false;
+
 
   List<CustomField> customFields = [];
 
@@ -87,19 +89,24 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     super.initState();
     titleController.text = widget.leadName;
     if (widget.phone != null) {
-      // Extract country code from the phone number if it exists
       String phoneNumber = widget.phone!;
       for (var code in countryCodes) {
         if (phoneNumber.startsWith(code)) {
           setState(() {
             selectedDialCode = code;
-            phoneController.text = phoneNumber
-                .substring(code.length); // Set phone number without code
+            phoneController.text = phoneNumber.substring(code.length); 
           });
           break;
         }
       }
+  if (phoneController.text.isEmpty) {
+    phoneController.text = phoneNumber;
+  }
+
+  _isPhoneEdited = false; 
     }
+  
+
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
     telegramController.text = widget.telegram ?? '';
@@ -164,15 +171,30 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       ),
       body: BlocListener<LeadBloc, LeadState>(
         listener: (context, state) {
-          // if (state is LeadError) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text(state.message),
-          //       duration: const Duration(seconds: 3),
-          //       backgroundColor: Colors.red,
-          //     ),
-          //   );
-          // } else
+          if (state is LeadError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else
           if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -222,6 +244,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         selectedDialCode: selectedDialCode,
                         onInputChanged: (String number) {
                           setState(() {
+                            _isPhoneEdited = true; 
                             selectedDialCode = number;
                           });
                         },
@@ -233,15 +256,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                         label: 'Телефон',
                       ),
-                      // const SizedBox(height: 8),
-                      // CustomTextField(
-                      //   controller: phoneController,
-                      //   hintText: 'Введите номер телефона',
-                      //   label: 'Телефон',
-                      //   validator: (value) => value!.isEmpty
-                      //       ? 'Поле обязательно для заполнения'
-                      //       : null,
-                      // ),
                       const SizedBox(height: 8),
                       RegionRadioGroupWidget(
                         selectedRegion: selectedRegion,
@@ -282,7 +296,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       CustomTextField(
                         controller: emailController,
                         hintText: 'Введите электронную почту',
-                        label: 'Электронная почта',
+                        label: 'Email',
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
@@ -356,6 +370,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
+                                  String phoneToSend;
+
+                                if (_isPhoneEdited) {
+                                  phoneToSend = selectedDialCode;
+                                } else {
+                                  phoneToSend = '$selectedDialCode${phoneController.text}'; 
+                                }
+
                                   DateTime? parsedBirthday;
 
                                   if (birthdayController.text.isNotEmpty) {
@@ -393,7 +415,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
-                                    phone: selectedDialCode,
+                                    phone: phoneToSend,
                                     regionId: selectedRegion != null
                                         ? int.parse(selectedRegion!)
                                         : null,
