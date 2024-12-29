@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class CountryProfile {
+class Country {
   final String name;
   final String flag;
   final String dialCode;
 
-  CountryProfile({
+  Country({
     required this.name,
     required this.flag,
     required this.dialCode,
   });
 }
 
-List<CountryProfile> countries = [
-  CountryProfile(name: "TJ", flag: "🇹🇯", dialCode: "+992"),
-  CountryProfile(name: "RU", flag: "🇷🇺", dialCode: "+7"),
-  CountryProfile(name: "UZ", flag: "🇺🇿", dialCode: "+998"),
-  CountryProfile(name: "KG", flag: "🇰🇬", dialCode: "+996"),
-  CountryProfile(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
-  CountryProfile(name: "US", flag: "🇺🇸", dialCode: "+1"), // Added USA
+List<Country> countries = [
+  Country(name: "TJ", flag: "🇹🇯", dialCode: "+992"),
+  Country(name: "RU", flag: "🇷🇺", dialCode: "+7"),
+  Country(name: "UZ", flag: "🇺🇿", dialCode: "+998"),
+  Country(name: "KG", flag: "🇰🇬", dialCode: "+996"),
+  Country(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
+  Country(name: "US", flag: "🇺🇸", dialCode: "+1"), // Added USA
 ];
 
 class CustomPhoneNumberInput extends StatefulWidget {
@@ -42,9 +42,10 @@ class CustomPhoneNumberInput extends StatefulWidget {
 }
 
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
-  CountryProfile? selectedCountry;
+  Country? selectedCountry;
 
   final Map<String, int> phoneNumberLengths = {
+  
     '+992': 9,
     '+7': 10,
     '+998': 9,
@@ -53,28 +54,27 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   };
 
   @override
-  void initState() {
-    super.initState();
-    
-  // Проверяем номер телефона на наличие кода страны
-  String phoneNumber = widget.controller.text;
-  
-  // Ищем подходящий код страны в номере телефона
-  selectedCountry = countries.firstWhere(
-    (country) => phoneNumber.startsWith(country.dialCode),
-    orElse: () => countries.firstWhere(
+void initState() {
+  super.initState();
+  // Инициализация выбранной страны на основе переданного кода
+  if (widget.selectedDialCode != null) {
+    selectedCountry = countries.firstWhere(
       (country) => country.dialCode == widget.selectedDialCode,
       orElse: () => countries.first,
-    ),
-  );
-
-  // Убираем код страны из номера телефона
-  if (phoneNumber.startsWith(selectedCountry?.dialCode ?? '')) {
-    widget.controller.text = phoneNumber.substring(selectedCountry!.dialCode.length);
+    );
   }
-
-  
+}
+@override
+void didUpdateWidget(CustomPhoneNumberInput oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  if (widget.selectedDialCode != null && 
+      widget.selectedDialCode != selectedCountry?.dialCode) {
+    selectedCountry = countries.firstWhere(
+      (country) => country.dialCode == widget.selectedDialCode,
+      orElse: () => countries.first,
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +107,11 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             fillColor: Color(0xffF4F7FD),
             contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: DropdownButtonHideUnderline(
-              child: DropdownButton<CountryProfile>(
+              child: DropdownButton<Country>(
                 value: selectedCountry,
                 dropdownColor: Colors.white,
-                items: countries.map((CountryProfile country) {
-                  return DropdownMenuItem<CountryProfile>(
+                items: countries.map((Country country) {
+                  return DropdownMenuItem<Country>(
                     value: country,
                     child: Row(
                       children: [
@@ -123,7 +123,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     ),
                   );
                 }).toList(),
-                onChanged: (CountryProfile? newValue) {
+                onChanged: (Country? newValue) {
                   setState(() {
                     selectedCountry = newValue;
                     widget.controller.text = '';

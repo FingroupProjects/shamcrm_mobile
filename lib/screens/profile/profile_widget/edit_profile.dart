@@ -27,7 +27,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final TextEditingController NameController = TextEditingController();
   final TextEditingController SurnameController = TextEditingController();
   final TextEditingController PatronymicController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
   final TextEditingController roleController = TextEditingController();
   final TextEditingController loginController = TextEditingController();
   final TextEditingController userController = TextEditingController();
@@ -43,23 +42,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _surnameError;
   String? _phoneError;
   String? _emailError;
-
-  // Функция валидации email
-  bool isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-    // Extract country code from phone if necessary
-  }
-
-  // Функция валидации телефона (пример базовой валидации)
-  bool isValidPhone(String phone) {
-    return phone.length >= 9 && phone.length <= 12;
-  }
-
-  bool isValidName(String name) {
-    return name.trim().isNotEmpty && name.length >= 2;
-  }
-
-  String selectedDialCode = '+7'; // Default country code
+  final TextEditingController phoneController = TextEditingController();
+  String selectedDialCode = ''; // Default country code
   List<String> countryCodes = [
     '+992',
     '+7',
@@ -67,7 +51,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     '+998',
     '+1'
   ]; // Country codes list
-    String? _getImageToUpload() {
+  // Функция валидации email
+  bool isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    // Extract country code from phone if necessary
+  }
+
+  bool isValidName(String name) {
+    return name.trim().isNotEmpty && name.length >= 2;
+  }
+
+  String? _getImageToUpload() {
     // Если есть локально выбранное изображение
     if (_localImage != null) {
       return _localImage!.path;
@@ -112,7 +106,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     _loadUserPhone();
     _loadSelectedOrganization();
     context.read<OrganizationBloc>().add(FetchOrganizations());
-
   }
 
   Future<void> _loadUserPhone() async {
@@ -126,32 +119,31 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       userController.text = UUID;
       loginController.text = ULogin;
       roleController.text = URoleName;
-
     });
 
     try {
       UserByIdProfile userProfile =
           await ApiService().getUserById(int.parse(UUID));
+      // Обработка телефона
+      String phoneNumber = userProfile.phone ?? '';
+      String detectedDialCode = '+7';
+      String phoneWithoutCode = phoneNumber;
 
+      // Проверяем код страны в полученном номере
+      for (var country in countries) {
+        if (phoneNumber.startsWith(country.dialCode)) {
+          detectedDialCode = country.dialCode;
+          phoneWithoutCode = phoneNumber.substring(country.dialCode.length);
+          break;
+        }
+      }
       setState(() {
         NameController.text = userProfile.name;
         SurnameController.text = userProfile.lastname;
         PatronymicController.text = userProfile.Pname;
         emailController.text = userProfile.email;
-
-        String phoneNumber = userProfile.phone;
-
-        // Пробуем извлечь код страны из телефона и сопоставить с countryCodes
-        for (var code in countryCodes) {
-          if (phoneNumber.startsWith(code)) {
-            setState(() {
-              selectedDialCode = code;
-              phoneController.text =
-                  phoneNumber.substring(code.length); // Убираем код из номера
-            });
-            break; // Прерываем цикл, если нашли соответствие
-          }
-        }
+        selectedDialCode = detectedDialCode;
+        phoneController.text = phoneWithoutCode;
       });
     } catch (e) {
       print('Ошибка при загрузке данных из API: $e');
@@ -337,7 +329,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 8),
               CustomTextField(
                 controller: NameController,
@@ -390,37 +381,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     ),
                   ),
                 ),
-
               const SizedBox(height: 8),
               CustomPhoneNumberInput(
                 controller: phoneController,
-                label: 'Телефон',
+                selectedDialCode: selectedDialCode, // Это важно
                 onInputChanged: (String number) {
-                  setState(() {
-                    selectedDialCode = number;
-                    _phoneError = null;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Поле обязательно для заполнения';
+                  for (var country in countries) {
+                    if (number.startsWith(country.dialCode)) {
+                      setState(() {
+                        selectedDialCode = country.dialCode;
+                      });
+                      break;
+                    }
                   }
-                  return null;
                 },
+                validator: (value) =>
+                    value!.isEmpty ? 'Поле обязательно для заполнения' : null,
+                label: 'Телефон',
               ),
-              if (_phoneError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, right: 75),
-                  child: Text(
-                    _phoneError!,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-
               const SizedBox(height: 8),
               CustomTextField(
                 controller: roleController,
@@ -506,19 +484,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         isValid = false;
                       }
 
-                      if (phoneController.text.trim().isEmpty) {
-                        setState(() {
-                          _phoneError =
-                              'Поле телефон обязательно для заполнения';
-                        });
-                        isValid = false;
-                      } else if (!isValidPhone(phoneController.text.trim())) {
-                        setState(() {
-                          _phoneError = 'Введите корректный номер телефона';
-                        });
-                        isValid = false;
-                      }
-
                       if (emailController.text.trim().isNotEmpty &&
                           !isValidEmail(emailController.text.trim())) {
                         setState(() {
@@ -549,7 +514,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             userId: userId,
                             name: NameController.text.trim(),
                             sname: SurnameController.text.trim(),
-                            phone: selectedDialCode,
+                            phone: selectedDialCode + phoneController.text,
                             email: emailController.text.trim(),
                             image: image,
                             pname: ''));
@@ -570,7 +535,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   );
                 },
               ),
-
               BlocListener<ProfileBloc, ProfileState>(
                 listener: (context, state) {
                   if (state is ProfileSuccess) {
