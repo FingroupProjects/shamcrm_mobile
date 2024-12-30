@@ -243,9 +243,6 @@ Widget _buildActionItem(String item) {
     }
 
     if (changes != null) {
-      if (changes.positionNewValue != null || changes.positionPreviousValue != null) {
-        actionDetail += '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
-      }
       if (changes.dealStatusNewValue != null || changes.dealStatusPreviousValue != null) {
         actionDetail += '\nСтатус: ${changes.dealStatusPreviousValue ?? "Не указано"} > ${changes.dealStatusNewValue ?? "Не указано"}';
       }
@@ -265,7 +262,7 @@ Widget _buildActionItem(String item) {
         actionDetail += '\nДата завершения: ${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
       }
       if (changes.sumNewValue != null || changes.sumPreviousValue != null) {
-        actionDetail += '\nСумма: ${changes.sumPreviousValue?.toStringAsFixed(2) ?? "Не указано"} > ${changes.sumNewValue?.toStringAsFixed(2) ?? "Не указано"}';
+        actionDetail += '\nСумма: ${changes.sumPreviousValue ?? "Не указано"} > ${changes.sumNewValue ?? "Не указано"}';
       }
       if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
         actionDetail += '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';

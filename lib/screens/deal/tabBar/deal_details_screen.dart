@@ -95,7 +95,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     details = [
       // {'label': 'ID Сделки:', 'value': deal.id.toString()},
       {'label': 'Название сделки:', 'value': deal.name},
-      {'label': 'Клиент:', 'value': deal.lead?.name ?? 'Не указано'},
+      {'label': 'Лид:', 'value': deal.lead?.name ?? 'Не указано'},
       {'label': 'Менеджер:', 'value': deal.manager?.name ?? 'Не указано'},
       {'label': 'Дата начало:', 'value': formatDate(deal.startDate)},
       {'label': 'Дата завершения:', 'value': formatDate(deal.endDate)},
