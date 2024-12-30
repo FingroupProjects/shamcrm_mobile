@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String) onSelect,
+  Function(String, int) onSelect, 
   Deal deal,
 ) {
   String selectedValue = defaultValue;
@@ -112,7 +112,7 @@ void DropdownBottomSheet(
                               });
 
                               Navigator.pop(context);
-                              onSelect(selectedValue);
+                              onSelect(selectedValue, selectedStatusId!);
                             }).catchError((error) {
                               setState(() {
                                 isLoading = false; // Stop loading
@@ -121,10 +121,25 @@ void DropdownBottomSheet(
                               if (error is DealStatusUpdateException &&
                                   error.code == 422) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                        'Вы не можете переместить задачу на этот статус'),
+                                      'Вы не можете переместить задачу на этот статус!',
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                     backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 3),
                                   ),
                                 );
                                 Navigator.pop(context);

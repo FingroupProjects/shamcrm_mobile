@@ -10,12 +10,15 @@ class LeadCard extends StatefulWidget {
   final String title;
   final int statusId;
   final VoidCallback onStatusUpdated;
+  final void Function(int newStatusId) onStatusId;
+
 
   LeadCard({
     required this.lead,
     required this.title,
     required this.statusId,
     required this.onStatusUpdated,
+    required this.onStatusId,
   });
 
   @override
@@ -24,11 +27,13 @@ class LeadCard extends StatefulWidget {
 
 class _LeadCardState extends State<LeadCard> {
   late String dropdownValue;
+  late int statusId;
 
   @override
   void initState() {
     super.initState();
     dropdownValue = widget.title;
+    statusId = widget.statusId;
   }
 
   String formatDate(String dateString) {
@@ -48,6 +53,7 @@ class _LeadCardState extends State<LeadCard> {
   Widget build(BuildContext context) {
     String iconPath =
         sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -57,7 +63,7 @@ class _LeadCardState extends State<LeadCard> {
               leadId: widget.lead.id.toString(),
               leadName: widget.lead.name ?? 'Без имени',
               leadStatus: dropdownValue,
-              statusId: widget.statusId,
+              statusId: statusId, 
               region: widget.lead.region?.name,
               regionId: widget.lead.region?.id,
               manager: widget.lead.manager?.name,
@@ -97,17 +103,23 @@ class _LeadCardState extends State<LeadCard> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    DropdownBottomSheet(context, dropdownValue,
-                        (String newValue) {
-                      setState(() {
-                        dropdownValue = newValue;
-                      });
-                      widget.onStatusUpdated();
-                    }, widget.lead);
+                    DropdownBottomSheet(
+                      context,
+                      dropdownValue,
+                      (String newValue, int newStatusId) {
+                        setState(() {
+                          dropdownValue = newValue;
+                          statusId = newStatusId; 
+                          
+                        });
+                          widget.onStatusId(newStatusId); 
+                        widget.onStatusUpdated(); 
+                      },
+                      widget.lead,
+                    );
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -122,7 +134,7 @@ class _LeadCardState extends State<LeadCard> {
                         children: [
                           Container(
                             constraints: BoxConstraints(
-                                maxWidth: 200), //Размер колонки Выбора Статуса
+                                maxWidth: 200),
                             child: Text(
                               dropdownValue,
                               style: const TextStyle(
@@ -163,15 +175,6 @@ class _LeadCardState extends State<LeadCard> {
                       ),
                     ),
                     const SizedBox(width: 18),
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: 4, vertical: 2),
-                    //   decoration: TaskCardStyles.priorityContainerDecoration,
-                    //   child: const Text(
-                    //     'Высокая',
-                    //     style: TaskCardStyles.priorityStyle,
-                    //   ),
-                    // ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -227,3 +230,9 @@ class _LeadCardState extends State<LeadCard> {
     );
   }
 }
+
+
+
+
+
+

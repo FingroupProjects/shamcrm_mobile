@@ -826,7 +826,7 @@ class ApiService {
     final response = await _postRequest(
       '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       {
-        'position': position,
+        'position': 1,
         'status_id': statusId,
       },
     );
@@ -1040,6 +1040,7 @@ class ApiService {
           'name': name,
           'lead_status_id': leadStatusId,
           'phone': phone,
+          'position': 1,
           if (regionId != null) 'region_id': regionId,
           if (managerId != null) 'manager_id': managerId,
           if (sourceId != null) 'source_id': sourceId,
@@ -1749,7 +1750,7 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
     final response = await _postRequest(
       '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       {
-        'position': position,
+        'position': 1,
         'status_id': statusId,
       },
     );
@@ -1799,6 +1800,7 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
     final requestBody = {
       'name': name,
       'deal_status_id': dealStatusId,
+      'position': 1,
       if (managerId != null) 'manager_id': managerId,
       if (startDate != null) 'start_date': startDate.toIso8601String(),
       if (endDate != null) 'end_date': endDate.toIso8601String(),
@@ -2078,7 +2080,7 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     final response = await _postRequest(
         '/task/changeStatus/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {
-          'position': position,
+          'position': 1,
           'status_id': statusId,
         });
 
@@ -2266,6 +2268,7 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     String? description,
     List<Map<String, String>>? customFields,
     String? filePath,
+    int position = 1,
   }) async {
     try {
       final token = await getToken(); // Получаем токен
@@ -2286,6 +2289,8 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
       request.fields['name'] = name;
       request.fields['status_id'] = statusId.toString();
       request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
+      
 
       if (priority != null) {
         request.fields['priority_level'] = priority.toString();

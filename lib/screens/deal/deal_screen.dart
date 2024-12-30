@@ -170,6 +170,7 @@ int? _deletedIndex;
               onStatusUpdated: () {
                 context.read<DealBloc>().add(FetchDeals(statusId));
               },
+               onStatusId: (StatusDealId) {},
             ),
           );
         },
@@ -400,7 +401,14 @@ void _addNewTab() async {
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
-                return DealColumn(statusId: statusId, title: title);
+                return DealColumn(statusId: statusId, title: title, 
+                onStatusId: (newStatusId) {
+                    print('Status ID changed: $newStatusId');
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index); 
+                    }
+                  },   );
               }),
             );
           }
