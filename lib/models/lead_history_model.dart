@@ -80,8 +80,8 @@ class Changes {
   final String? phonePreviousValue;
   final String? emailNewValue;
   final String? emailPreviousValue;
-  final int? regionNewValue;
-  final int? regionPreviousValue;
+  final String? regionNewValue;
+  final String? regionPreviousValue;
   final String? managerNewValue; 
   final String? managerPreviousValue;
   final String? tgNickNewValue;  
@@ -130,8 +130,8 @@ class Changes {
     phonePreviousValue: json['phone']?['previous_value'] as String?,
     emailNewValue: json['email']?['new_value'] as String?,
     emailPreviousValue: json['email']?['previous_value'] as String?,
-    regionNewValue: json['region']?['new_value'] as int?,
-    regionPreviousValue: json['region']?['previous_value'] as int?,
+    regionNewValue: json['region']?['new_value'] as String?,
+    regionPreviousValue: json['region']?['previous_value'] as String?,
     managerNewValue: json['manager']?['new_value'] as String?,
     managerPreviousValue: json['manager']?['previous_value'] as String?,
     tgNickNewValue: json['tg_nick']?['new_value'] as String?,
