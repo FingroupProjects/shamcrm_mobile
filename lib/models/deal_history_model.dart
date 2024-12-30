@@ -73,8 +73,8 @@ class User {
 }
 
 class Changes {
-  final int? dealStatusNewValue; // Изменено на int
-  final int? dealStatusPreviousValue; // Изменено на int
+  final String? dealStatusNewValue; 
+  final String? dealStatusPreviousValue; 
   final DateTime? statusUpdateDateNewValue;
   final DateTime? statusUpdateDatePreviousValue;
   final String? historyNameNewValue;
@@ -115,8 +115,8 @@ class Changes {
 
   factory Changes.fromJson(Map<String, dynamic> json) {
     return Changes(
-      dealStatusNewValue: json['deal_status']?['new_value'] as int?, 
-      dealStatusPreviousValue: json['deal_status']?['previous_value'] as int?, 
+      dealStatusNewValue: json['deal_status']?['new_value'] as String?, 
+      dealStatusPreviousValue: json['deal_status']?['previous_value'] as String?, 
       statusUpdateDateNewValue: _parseDateTime(json['status_update_date']?['new_value']), 
       statusUpdateDatePreviousValue: _parseDateTime(json['status_update_date']?['previous_value']), 
       historyNameNewValue: json['name']?['new_value'] as String?,

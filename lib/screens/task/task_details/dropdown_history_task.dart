@@ -240,11 +240,6 @@ Widget _buildActionItem(String item) {
     }
 
     if (changes != null) {
-      // Позиция
-      if (changes.positionNewValue != null || changes.positionPreviousValue != null) {
-        actionDetail +=
-            '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
-      }
 
       // Статус задачи
       if (changes.taskStatusNewValue != null || changes.taskStatusPreviousValue != null) {
