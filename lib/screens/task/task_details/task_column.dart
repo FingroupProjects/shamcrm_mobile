@@ -10,8 +10,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class TaskColumn extends StatefulWidget {
   final int statusId;
   final String name;
+    final Function(int) onStatusId;  // Callback to notify status change
 
-  TaskColumn({required this.statusId, required this.name});
+
+  TaskColumn({required this.statusId, required this.name,required this.onStatusId,
+});
 
   @override
   _TaskColumnState createState() => _TaskColumnState();
@@ -81,9 +84,10 @@ class _TaskColumnState extends State<TaskColumn> {
                             name: widget.name,
                             statusId: widget.statusId,
                             onStatusUpdated: () {
-                              context
-                                  .read<TaskBloc>()
-                                  .add(FetchTasks(widget.statusId));
+                              context.read<TaskBloc>().add(FetchTasks(widget.statusId));
+                            },
+                            onStatusId: (StatusTaskId) {
+                              widget.onStatusId(StatusTaskId); 
                             },
                           ),
                         );

@@ -2,17 +2,17 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/models/lead_model.dart'; 
+import 'package:crm_task_manager/models/lead_model.dart';
 
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String) onSelect,
+  Function(String, int) onSelect, 
   Lead lead,
 ) {
   String selectedValue = defaultValue;
-  int? selectedStatusId; 
-  bool isLoading = false; 
+  int? selectedStatusId;
+  bool isLoading = false;
 
   showModalBottomSheet(
     context: context,
@@ -48,6 +48,7 @@ void DropdownBottomSheet(
                       }
 
                       List<LeadStatus> statuses = snapshot.data!;
+
                       statuses = statuses.where((status) => status.lead_status_id == null).toList();
 
                       return ListView(
@@ -55,8 +56,8 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue = status.title; // Присваиваем новый статус
-                                selectedStatusId = status.id; // Присваиваем id статуса
+                                selectedValue = status.title;
+                                selectedStatusId = status.id;
                               });
                             },
                             child: buildDropDownStyles(
@@ -82,7 +83,7 @@ void DropdownBottomSheet(
                         onPressed: () {
                           if (selectedStatusId != null) {
                             setState(() {
-                              isLoading = true; // Start loading
+                              isLoading = true;
                             });
 
                             ApiService().updateLeadStatus(lead.id, lead.statusId, selectedStatusId!).then((_) {
@@ -109,19 +110,35 @@ void DropdownBottomSheet(
                                  ),
                                );
                               Navigator.pop(context);
-                              onSelect(selectedValue);
+                              
+                              // Передаем оба значения через onSelect
+                              onSelect(selectedValue, selectedStatusId!);
                             }).catchError((error) {
                               setState(() {
-                                isLoading = false; // Stop loading
+                                isLoading = false;
                               });
 
-                              if (error is LeadStatusUpdateException &&
-                                  error.code == 422) {
+                              if (error is LeadStatusUpdateException && error.code == 422) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                        'Вы не можете переместить задачу на этот статус'),
+                                      'Вы не можете переместить задачу на этот статус!',
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                     backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 3),
                                   ),
                                 );
                                 Navigator.pop(context);
@@ -151,5 +168,5 @@ class LeadStatusUpdateException implements Exception {
   LeadStatusUpdateException(this.code, this.message);
 
   @override
-  String toString() => 'DealtatusUpdateException($code, $message)';
+  String toString() => 'LeadStatusUpdateException($code, $message)';
 }

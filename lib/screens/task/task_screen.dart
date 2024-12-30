@@ -169,6 +169,7 @@ int? _deletedIndex;
               onStatusUpdated: () {
                 context.read<TaskBloc>().add(FetchTasks(statusId));
               },
+              onStatusId: (StatusTaskId) {},
             ),
           );
         },
@@ -399,7 +400,14 @@ int? _deletedIndex;
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
-                return TaskColumn(statusId: statusId, name: title);
+                return TaskColumn(statusId: statusId, name: title,  
+                onStatusId: (newStatusId) {
+                    print('Status ID changed: $newStatusId');
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index); 
+                    }
+                  },   );
               }),
             );
           }
