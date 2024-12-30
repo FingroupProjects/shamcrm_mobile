@@ -60,6 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isChartsLoaded = true;
     });
   }
+  
 
   Future<void> _loadUserRole() async {
     try {
@@ -74,8 +75,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       // Получение роли через API
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
       setState(() {
         userRoleName = (userProfile.role?.isNotEmpty ?? false)
             ? userProfile.role!.first.name

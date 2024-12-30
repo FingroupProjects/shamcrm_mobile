@@ -39,6 +39,7 @@ import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
+import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/project/project_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
@@ -142,8 +143,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DealByIdBloc(apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-        BlocProvider(
-            create: (context) => GetAllClientBloc(apiService: apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(apiService)),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
@@ -154,8 +154,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -166,19 +165,16 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => LeadToChatBloc(apiService)),
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => PermissionsBloc(ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
-        BlocProvider(
-          create: (context) => ProcessSpeedBloc(apiService),
-        ),
-        BlocProvider(
-          create: (context) => TaskCompletionBloc(apiService),
+        BlocProvider(create: (context) => ProcessSpeedBloc(apiService),),
+        BlocProvider(create: (context) => TaskCompletionBloc(apiService),
+        
         ),
       ],
       child: MaterialApp(
