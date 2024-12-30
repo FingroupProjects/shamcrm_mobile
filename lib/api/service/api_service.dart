@@ -1682,18 +1682,19 @@ class ApiService {
     }
   }
 
-Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
-  try {
-    // Получаем список лидов для указанного статуса, берем только первую страницу
-    final List<Deal> deals = await getDeals(dealStatusId, page: 1, perPage: 1);
+  Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
+    try {
+      // Получаем список лидов для указанного статуса, берем только первую страницу
+      final List<Deal> deals =
+          await getDeals(dealStatusId, page: 1, perPage: 1);
 
-    // Если список лидов не пуст, значит статус содержит элементы
-    return deals.isNotEmpty;
-  } catch (e) {
-    print('Error while checking if status has deals: $e');
-    return false;
+      // Если список лидов не пуст, значит статус содержит элементы
+      return deals.isNotEmpty;
+    } catch (e) {
+      print('Error while checking if status has deals: $e');
+      return false;
+    }
   }
-}
 
 // Метод для создания Cтатуса Сделки
   Future<Map<String, dynamic>> createDealStatus(
@@ -1964,37 +1965,34 @@ Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
   //Метод для получения Задачи через его ID
-Future<TaskById> getTaskById(int taskId) async {
-  try {
-    final organizationId = await getSelectedOrganization();
+  Future<TaskById> getTaskById(int taskId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
 
-    final response = await _getRequest(
-        '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+      final response = await _getRequest(
+          '/task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      final Map<String, dynamic>? jsonTask = decodedJson['result'];
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic>? jsonTask = decodedJson['result'];
 
-      if (jsonTask == null || jsonTask['taskStatus'] == null) {
-        throw Exception('Некорректные данные от API');
+        if (jsonTask == null || jsonTask['taskStatus'] == null) {
+          throw Exception('Некорректные данные от API');
+        }
+
+        // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
+        return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
+      } else if (response.statusCode == 404) {
+        throw Exception('Ресурс с задачи $taskId не найден');
+      } else if (response.statusCode == 500) {
+        throw Exception('Ошибка сервера. Попробуйте позже');
+      } else {
+        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
       }
-
-      // Используем правильное имя ключа 'taskStatus' для получения статуса задачи
-      return TaskById.fromJson(jsonTask, jsonTask['taskStatus']['id'] ?? 0);
-    } else if (response.statusCode == 404) {
-      throw Exception('Ресурс с задачи $taskId не найден');
-    } else if (response.statusCode == 500) {
-      throw Exception('Ошибка сервера. Попробуйте позже');
-    } else {
-      throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Ошибка загрузки task ID');
     }
-  } catch (e) {
-    throw Exception('Ошибка загрузки task ID');
   }
-}
-
-
- 
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
@@ -2057,18 +2055,19 @@ Future<TaskById> getTaskById(int taskId) async {
     }
   }
 
-Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
-  try {
-    // Получаем список лидов для указанного статуса, берем только первую страницу
-    final List<Task> tasks = await getTasks(taskStatusId, page: 1, perPage: 1);
+  Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
+    try {
+      // Получаем список лидов для указанного статуса, берем только первую страницу
+      final List<Task> tasks =
+          await getTasks(taskStatusId, page: 1, perPage: 1);
 
-    // Если список лидов не пуст, значит статус содержит элементы
-    return tasks.isNotEmpty;
-  } catch (e) {
-    print('Error while checking if status has deals: $e');
-    return false;
+      // Если список лидов не пуст, значит статус содержит элементы
+      return tasks.isNotEmpty;
+    } catch (e) {
+      print('Error while checking if status has deals: $e');
+      return false;
+    }
   }
-}
 
 //Обновление статуса карточки Задачи  в колонке
 
@@ -2589,7 +2588,6 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     return dataProject;
   }
 
-
 // Метод для получения Проекта
   Future<ProjectTaskDataResponse> getTaskProject() async {
     final organizationId = await getSelectedOrganization();
@@ -2617,7 +2615,6 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
 
     return dataProject;
   }
-
 
   // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {
@@ -2673,7 +2670,6 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
   // }}
 
   // Метод для получение Роли
-
   Future<List<Role>> getRoles() async {
     final organizationId = await getSelectedOrganization();
     final response = await _getRequest(
@@ -2999,44 +2995,43 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
- Future<PaginationDTO<Chats>> getAllChats(String endPoint,
-    [int page = 1, String? search]) async {
-  final token = await getToken();
-  final organizationId = await getSelectedOrganization();
+  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+      [int page = 1, String? search]) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
 
-  String url =
-      '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
+    String url =
+        '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
-  if (search != null && search.isNotEmpty) {
-    url += '&search=$search'; // Добавляем параметр поиска
-  }
-
-  print('Request URL: $url'); // Печать URL запроса
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      print('Parsed data: ${data['result']}'); // Печать результата парсинга
-      return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-        return Chats.fromJson(e);
-      });
-    } else {
-      print('No result found in the response');
-      throw Exception('Результат отсутствует в ответе');
+    if (search != null && search.isNotEmpty) {
+      url += '&search=$search'; // Добавляем параметр поиска
     }
-  } else {
-    print('Error: ${response.statusCode}, Body: ${response.body}');
-    throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-  }
-}
 
+    print('Request URL: $url'); // Печать URL запроса
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        print('Parsed data: ${data['result']}'); // Печать результата парсинга
+        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+          return Chats.fromJson(e);
+        });
+      } else {
+        print('No result found in the response');
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      print('Error: ${response.statusCode}, Body: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();
@@ -3530,35 +3525,79 @@ Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     required String sname,
     required String phone,
     String? email,
-    // String? login,
-    String? image,
+    String? filePath,
   }) async {
-    final response = await _postRequest(
-      '/profile/$userId',
-      {
-        'name': name,
-        'lastname': sname,
-        'phone': phone,
-        if (email != null) 'email': email,
-        // if (login != null) 'login': login,
-        if (image != null) 'image': image,
-      },
-    );
+    try {
+      final token = await getToken(); // Получаем токен
+      final organizationId = await getSelectedOrganization();
 
-    if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Профиль успешно обновлен'};
-    } else if (response.statusCode == 422) {
+      // Создаем URL для обновления профиля
+      var uri = Uri.parse(
+          '${baseUrl}/profile/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      // Создаем multipart запрос
+      var request = http.MultipartRequest('POST', uri);
+
+      // Добавляем заголовки с токеном
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      // Добавляем поля
+      request.fields['name'] = name;
+      request.fields['lastname'] = sname;
+      request.fields['phone'] = phone;
+
+      if (email != null) {
+        request.fields['email'] = email;
+      }
+
+      // Добавляем файл, если указан путь
+      if (filePath != null) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          final fileName = file.path.split('/').last;
+          final fileStream = http.ByteStream(file.openRead());
+          final length = await file.length();
+
+          final multipartFile = http.MultipartFile(
+            'image', // Название поля в API, куда передается файл
+            fileStream,
+            length,
+            filename: fileName,
+          );
+          request.files.add(multipartFile);
+        }
+      }
+
+      // Отправляем запрос
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': 'Профиль успешно обновлен'};
+      } else if (response.statusCode == 422) {
+        return {
+          'success': false,
+          'message': 'Ошибка валидации данных. Проверьте введенные данные.'
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.'
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка обновления профиля: ${response.body}'
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка валидации данных. Проверьте введенные данные.'
+        'message': 'Ошибка при обновлении профиля: $e',
       };
-    } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
-      };
-    } else {
-      return {'success': false, 'message': 'Ошибка обновления профиля:'};
     }
   }
 

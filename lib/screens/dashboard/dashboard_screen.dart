@@ -72,7 +72,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
         return;
       }
-
       // Получение роли через API
       UserByIdProfile userProfile =
           await ApiService().getUserById(int.parse(userId));

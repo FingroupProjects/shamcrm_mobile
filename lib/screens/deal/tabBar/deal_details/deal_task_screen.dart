@@ -120,11 +120,11 @@ class _TasksWidgetState extends State<TasksWidget> {
   Widget _buildTaskItem(DealTask task) {
     final formattedDateFrom = task.from != null
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.from!))
-        : 'Не указано';
+        : '';
 
     final formattedDateTo = task.to != null
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.to!))
-        : 'Не указано';
+        : '';
 
     return GestureDetector(
       onTap: () {

@@ -109,7 +109,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   // Функция для форматирования даты
   String formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return 'Не указано';
+    if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
@@ -126,19 +126,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     details = [
       // {'label': 'ID лида:', 'value': lead.id.toString()},
       {'label': 'Наименование лида :', 'value': lead.name},
-      {'label': 'Телефон:', 'value': lead.phone ?? 'Не указано'},
-      {'label': 'Регион:', 'value': lead.region?.name ?? 'Не указано'},
-      {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Не указано'},
-      {'label': 'Источник:', 'value': lead.sourceLead?.name ?? 'Не указано'},
-      {'label': 'Instagram:', 'value': lead.instagram ?? 'Не указано'},
-      {'label': 'Facebook:', 'value': lead.facebook ?? 'Не указано'},
-      {'label': 'Telegram:', 'value': lead.telegram ?? 'Не указано'},
-      {'label': 'Email:', 'value': lead.email ?? 'Не указано'},
+      {'label': 'Телефон:', 'value': lead.phone ?? ''},
+      {'label': 'Регион:', 'value': lead.region?.name ?? ''},
+      {'label': 'Менеджер:', 'value': lead.manager?.name ?? ''},
+      {'label': 'Источник:', 'value': lead.sourceLead?.name ?? ''},
+      {'label': 'Instagram:', 'value': lead.instagram ?? ''},
+      {'label': 'Facebook:', 'value': lead.facebook ?? ''},
+      {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+      {'label': 'Email:', 'value': lead.email ?? ''},
       {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
-      {'label': 'Описание:', 'value': lead.description ?? 'Не указано'},
-      {'label': 'Автор:', 'value': lead.author?.name ?? 'Не указано'},
+      {'label': 'Описание:', 'value': lead.description ?? ''},
+      {'label': 'Автор:', 'value': lead.author?.name ?? ''},
       {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
-      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? 'Не указано'},
+      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? ''},
     ];
     for (var field in lead.leadCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
@@ -299,10 +299,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             statusId: currentLead!.statusId,
                             region: currentLead!.region != null
                                 ? currentLead!.region!.id.toString()
-                                : 'Не указано',
+                                : '',
                             manager: currentLead!.manager != null
                                 ? currentLead!.manager!.id.toString()
-                                : 'Не указано',
+                                : '',
                             birthday: birthdayString,
                             createAt: createdAtString,
                             instagram: currentLead!.instagram,

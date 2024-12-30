@@ -10,7 +10,9 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
     as task_status_add;
 import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
     as task_status_add;
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
 import 'package:flutter/material.dart';
@@ -68,11 +70,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               },
             ),
             const SizedBox(height: 16),
-            ProjectRadioGroupWidget(
+            ProjectTaskGroupWidget(
               selectedProject: selectedProjectId,
-              onSelectProject: (project) {
+              onSelectProject: (ProjectTask selectedProjectData) {
                 setState(() {
-                  selectedProjectId = project.id.toString();
+                  selectedProjectId = selectedProjectData.id.toString();
                 });
               },
             ),
@@ -257,33 +259,33 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             projectId: int.tryParse(selectedProjectId!) ?? 0,
             needsPermission: needsPermission,
             roleIds: needsPermission ? selectedRoleIds : null,
-            finalStep: isFinalStage, 
+            finalStep: isFinalStage,
           ),
         );
 
- ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Статус успешно создан!',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.green,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Статус успешно создан!',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
           ),
-        );
-    Navigator.pop(context,true);
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.green,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 3),
+      ),
+    );
+    Navigator.pop(context, true);
 
     Future.delayed(Duration(milliseconds: 0), () {
       context.read<TaskBloc>().add(FetchTaskStatuses());
