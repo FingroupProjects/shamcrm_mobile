@@ -53,8 +53,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // Карта уровней приоритета
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
-    2: 'Критический',
-    3: 'Сложный'
+    2: 'Сложный',
+    3: 'Критический'
   };
 
   @override

@@ -80,7 +80,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   // Функция для форматирования даты
   String formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return 'Не указано';
+    if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
@@ -95,13 +95,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     details = [
       // {'label': 'ID Сделки:', 'value': deal.id.toString()},
       {'label': 'Название сделки:', 'value': deal.name},
-      {'label': 'Лид:', 'value': deal.lead?.name ?? 'Не указано'},
-      {'label': 'Менеджер:', 'value': deal.manager?.name ?? 'Не указано'},
+      {'label': 'Клиент:', 'value': deal.lead?.name ?? ''},
+      {'label': 'Менеджер:', 'value': deal.manager?.name ?? ''},
+
       {'label': 'Дата начало:', 'value': formatDate(deal.startDate)},
       {'label': 'Дата завершения:', 'value': formatDate(deal.endDate)},
       {'label': 'Сумма:', 'value': deal.sum.toString()},
-      {'label': 'Описание:', 'value': deal.description ?? 'Не указано'},
-      {'label': 'Автор:', 'value': deal.author?.name ?? 'Не указано'},
+      {'label': 'Описание:', 'value': deal.description ?? ''},
+      {'label': 'Автор:', 'value': deal.author?.name ?? ''},
       {'label': 'Дата создания:', 'value': formatDate(deal.createdAt)},
     ];
 
@@ -243,16 +244,16 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                             statusId: currentDeal!.statusId,
                             manager: currentDeal!.manager != null
                                 ? currentDeal!.manager!.id.toString()
-                                : 'Не указано',
+                                : '',
                             lead: currentDeal!.lead != null
                                 ? currentDeal!.lead!.id.toString()
-                                : 'Не указано',
+                                : '',
                             startDate: startDateString,
                             endDate: endDateString,
                             createdAt: createdAtDateString,
                             sum: currentDeal!.sum.toString(),
                             description:
-                                currentDeal!.description ?? 'Не указано',
+                                currentDeal!.description ?? '',
                             dealCustomFields: currentDeal!.dealCustomFields,
                           ),
                         ),

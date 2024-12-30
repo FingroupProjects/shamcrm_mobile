@@ -59,7 +59,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isChartsLoaded = true;
     });
   }
-  
+
+
+  Future<void> _loadUserRole() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+
+      if (userId.isEmpty) {
+        setState(() {
+          userRoleName = 'No user ID found';
+        });
+        return;
+      }
+      // Получение роли через API
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userRoleName = (userProfile.role?.isNotEmpty ?? false)
+            ? userProfile.role!.first.name
+            : 'No role assigned';
+      });
+
+      print('Role: $userRoleName');
+    } catch (e) {
+      print('Error loading user role: $e');
+      setState(() {
+        userRoleName = 'Error loading role';
+      });
+    }
+  }
 
   Future<void> _loadImportantBoxes() async {
     await Future.delayed(Duration(seconds: 2));

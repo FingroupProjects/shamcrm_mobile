@@ -76,7 +76,7 @@ class Task {
       endDate: json['to'],
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
-      priority: priorityLevel, // Use processed value
+      priority: priorityLevel ?? 1, // Use processed value
       taskStatus: json['taskStatus'] != null &&
               json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])

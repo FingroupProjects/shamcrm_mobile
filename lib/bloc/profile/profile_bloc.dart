@@ -19,7 +19,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             phone: event.phone,
             email: event.email,
             // login: event.login,
-            image: event.image);
+            filePath: event.image);
         if (result['success']) {
           emit(ProfileSuccess(result['message']));
         } else {

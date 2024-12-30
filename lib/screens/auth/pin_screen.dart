@@ -118,7 +118,7 @@ class _PinScreenState extends State<PinScreen>
 
         // Обновляем SharedPreferences данными с сервера
         await prefs.setString('userName', userProfile.name);
-        await prefs.setString('userNameProfile', userProfile.lastname ?? '');
+        await prefs.setString('userNameProfile', userProfile.name ?? '');
         await prefs.setString('userImage', userProfile.image ?? '');
       }
     } catch (e) {
@@ -134,12 +134,12 @@ class _PinScreenState extends State<PinScreen>
       UserByIdProfile userProfile = await ApiService().getUserById(1); 
       setState(() {
         _userName = userProfile.name;
-        _userNameProfile = userProfile.lastname ?? '';
+        _userNameProfile = userProfile.name ?? '';
         _userImage = userProfile.image ?? '';
       });
 
       await prefs.setString('userName', userProfile.name);
-      await prefs.setString('userNameProfile', userProfile.lastname ?? '');
+      await prefs.setString('userNameProfile', userProfile.name ?? '');
       await prefs.setString('userImage', userProfile.image ?? '');
     } catch (e) {
       print('Ошибка при загрузке данных с сервера: $e');
@@ -302,10 +302,13 @@ class _PinScreenState extends State<PinScreen>
     } else {
       greetingPrefix = 'Доброй ночи';
     }
-    // print('-----------------------------------------------------------------------------');
-    // print('-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
-    // print(_userNameProfile);
-    return '$greetingPrefix!';
+    print(
+        '-----------------------------------------------------------------------------');
+    print(
+        '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
+    print(_userNameProfile);
+    return '$greetingPrefix, $_userNameProfile!';
+
   }
 
   @override

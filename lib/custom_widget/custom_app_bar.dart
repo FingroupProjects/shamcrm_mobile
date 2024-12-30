@@ -34,62 +34,62 @@ class _CustomAppBarState extends State<CustomAppBar> {
   late TextEditingController _searchController;
   late FocusNode focusNode;
   String _userImage = '';
-  
+  String _lastLoadedImage = '';
+
   static String _cachedUserImage = '';
 
   @override
   void initState() {
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
-    
+
     if (_cachedUserImage.isNotEmpty) {
       _userImage = _cachedUserImage;
     } else {
-      _loadUserProfile(); 
+      _loadUserProfile();
     }
     super.initState();
   }
 
-  Future<void> _loadUserProfile() async {
-    if (_cachedUserImage.isNotEmpty) {
-      setState(() {
-        _userImage = _cachedUserImage;
-      });
-      return;
-    }
-
+Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-      String? cachedImage = prefs.getString('userProfileImage_$UUID');
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
       
-      if (cachedImage != null && cachedImage.isNotEmpty) {
-        setState(() {
-          _userImage = cachedImage;
-          _cachedUserImage = cachedImage;
-        });
-        return;
-      }
-
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
-
-      if (userProfile.image != null && userProfile.image!.isNotEmpty) {
+      // Проверяем, изменилось ли изображение
+      if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
           _userImage = userProfile.image!;
+          _lastLoadedImage = userProfile.image!; // Сохраняем для будущего сравнения
           _cachedUserImage = userProfile.image!;
         });
 
+        // Обновляем кэш только если изображение изменилось
         await prefs.setString('userProfileImage_$UUID', _userImage);
+      } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
+        // Если текущее изображение пустое, но есть кэшированное
+        setState(() {
+          _userImage = _cachedUserImage;
+        });
       }
     } catch (e) {
       print('Ошибка при загрузке изображения: $e');
-      setState(() {
-        _userImage = '';
-      });
+      // В случае ошибки используем кэшированное изображение если оно есть
+      if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
+        setState(() {
+          _userImage = _cachedUserImage;
+        });
+      }
     }
   }
+  // Добавляем метод для принудительного обновления изображения
+  Future<void> refreshUserImage() async {
+    _lastLoadedImage = ''; // Сбрасываем последнее загруженное изображение
+    await _loadUserProfile(); // Перезагружаем профиль
+  }
+
 
   void _toggleSearch() {
     setState(() {
@@ -102,9 +102,28 @@ class _CustomAppBarState extends State<CustomAppBar> {
       }
     });
   }
-
+@override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Периодически проверяем обновления
+    Future.delayed(Duration(seconds: 30), () {
+      if (mounted) {
+        _loadUserProfile();
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {
+    // Функция для извлечения URL из SVG
+    String? extractImageUrlFromSvg(String svg) {
+      if (svg.contains('href="')) {
+        final start = svg.indexOf('href="') + 6;
+        final end = svg.indexOf('"', start);
+        return svg.substring(start, end);
+      }
+      return null;
+    }
+
     return Container(
       width: double.infinity,
       height: kToolbarHeight,
@@ -121,10 +140,18 @@ class _CustomAppBarState extends State<CustomAppBar> {
               padding: EdgeInsets.zero,
               icon: _userImage.isNotEmpty
                   ? _userImage.startsWith('<svg')
-                      ? SvgPicture.string(
-                          _userImage,
+                      ? Container(
                           width: 40,
                           height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                extractImageUrlFromSvg(_userImage) ?? '',
+                              ),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         )
                       : Image.network(
                           _userImage,
@@ -166,7 +193,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
                   color: Color(0xfff1E2E52),
-
                 ),
               ),
             ),

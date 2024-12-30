@@ -144,6 +144,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         emailController.text = userProfile.email;
         selectedDialCode = detectedDialCode;
         phoneController.text = phoneWithoutCode;
+        _userImage = userProfile.image ?? '';
       });
     } catch (e) {
       print('Ошибка при загрузке данных из API: $e');
@@ -219,9 +220,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
+    // Функция для извлечения URL из SVG
+    String? extractImageUrlFromSvg(String svg) {
+      if (svg.contains('href="')) {
+        final start = svg.indexOf('href="') + 6;
+        final end = svg.indexOf('"', start);
+        return svg.substring(start, end);
+      }
+      return null;
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text('Редактирование профиля',
@@ -260,43 +269,33 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               backgroundImage: FileImage(_localImage!),
                             )
                           : _userImage != 'Не найдено' && _userImage.isNotEmpty
-                              ? _userImage.trim().startsWith('<svg')
+                              ? _userImage.contains('<svg')
                                   ? Container(
                                       width: 140,
                                       height: 140,
-                                      child: SvgPicture.string(
-                                        _userImage,
-                                        placeholderBuilder:
-                                            (BuildContext context) => Center(
-                                          child: CircularProgressIndicator(),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        image: DecorationImage(
+                                          image: NetworkImage(
+                                            extractImageUrlFromSvg(
+                                                    _userImage) ??
+                                                '',
+                                          ),
+                                          fit: BoxFit.cover,
                                         ),
                                       ),
                                     )
-                                  : _userImage.endsWith('.png') ||
-                                          _userImage.endsWith('.jpg') ||
-                                          _userImage.endsWith('.jpeg')
-                                      ? Container(
-                                          width: 140,
-                                          height: 140,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(70),
-                                            image: DecorationImage(
-                                              image: NetworkImage(_userImage),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        )
-                                      : CircleAvatar(
-                                          radius: 70,
-                                          backgroundColor: Colors.grey[300],
-                                          child: Icon(
-                                            Icons.person,
-                                            size: 100,
-                                            color: const Color.fromARGB(
-                                                255, 255, 255, 255),
-                                          ),
-                                        )
+                                  : Container(
+                                      width: 140,
+                                      height: 140,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(70),
+                                        image: DecorationImage(
+                                          image: NetworkImage(_userImage),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    )
                               : CircleAvatar(
                                   radius: 70,
                                   backgroundColor: Colors.grey[300],
@@ -307,24 +306,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                         255, 255, 255, 255),
                                   ),
                                 ),
-                      // const SizedBox(height: 10),
-                      // ElevatedButton(
-                      //   onPressed: _showImagePickerDialog,
-                      //   style: ElevatedButton.styleFrom(
-                      //     padding: const EdgeInsets.symmetric(
-                      //         horizontal: 16, vertical: 8),
-                      //     backgroundColor: const Color(0xff1E2E52),
-                      //   ),
-                      //   child: Text(
-                      //     _userImage == 'Не найдено' || _userImage.isEmpty
-                      //         ? 'Сменить фото'
-                      //         : 'Сменить фото',
-                      //     style: const TextStyle(
-                      //       color: Colors.white,
-                      //       fontSize: 16,
-                      //     ),
-                      //   ),
-                      // ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: _showImagePickerDialog,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          backgroundColor: const Color(0xff1E2E52),
+                        ),
+                        child: Text(
+                          _userImage == 'Не найдено' || _userImage.isEmpty
+                              ? 'Сменить фото'
+                              : 'Сменить фото',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -398,7 +397,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 validator: (value) =>
                     value!.isEmpty ? 'Поле обязательно для заполнения' : null,
                 label: 'Телефон',
-              ),
+              ), if (_phoneError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, right: 75),
+                  child: Text(
+                    _phoneError!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
               const SizedBox(height: 8),
               CustomTextField(
                 controller: roleController,

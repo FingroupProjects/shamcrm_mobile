@@ -126,6 +126,15 @@ class _TaskCardState extends State<TaskCard> {
 
   @override
   Widget build(BuildContext context) {
+    String? extractImageUrlFromSvg(String svg) {
+      if (svg.contains('href="')) {
+        final start = svg.indexOf('href="') + 6;
+        final end = svg.indexOf('"', start);
+        return svg.substring(start, end);
+      }
+      return null;
+    }
+
     // Получаем количество просроченных дней
     int overdueDays = _getOverdueDays(widget.task.endDate);
 
@@ -286,20 +295,32 @@ class _TaskCardState extends State<TaskCard> {
                               if (widget.task.usersImage!.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(right: 20),
-                                  child: widget.task.usersImage![0].image
-                                              .isNotEmpty &&
-                                          widget.task.usersImage![0].image
-                                              .startsWith('<svg')
-                                      ? SvgPicture.string(
-                                          widget.task.usersImage![0].image,
-                                          width: 32,
-                                          height: 32,
-                                        )
-                                      : CircleAvatar(
-                                          radius: 16,
-                                          backgroundImage: NetworkImage(
-                                              widget.task.usersImage![0].image),
-                                        ),
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      image: widget.task.usersImage![0].image
+                                                  .isNotEmpty &&
+                                              widget.task.usersImage![0].image
+                                                  .startsWith('<svg')
+                                          ? DecorationImage(
+                                              image: NetworkImage(
+                                                extractImageUrlFromSvg(widget
+                                                        .task
+                                                        .usersImage![0]
+                                                        .image) ??
+                                                    '',
+                                              ),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : DecorationImage(
+                                              image: NetworkImage(widget
+                                                  .task.usersImage![0].image),
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
+                                  ),
                                 ),
                               if (widget.task.usersImage!.length > 1)
                                 Positioned(
@@ -307,18 +328,32 @@ class _TaskCardState extends State<TaskCard> {
                                   child: Padding(
                                     padding: const EdgeInsets.only(right: 10),
                                     child: widget.task.usersImage![1].image
-                                                .isNotEmpty &&
-                                            widget.task.usersImage![1].image
+                                            .isNotEmpty
+                                        ? widget.task.usersImage![1].image
                                                 .startsWith('<svg')
-                                        ? SvgPicture.string(
-                                            widget.task.usersImage![1].image,
-                                            width: 32,
-                                            height: 32,
-                                          )
-                                        : CircleAvatar(
+                                            ? SvgPicture.string(
+                                                widget
+                                                    .task.usersImage![1].image,
+                                                width: 32,
+                                                height: 32,
+                                              )
+                                            : Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  image: DecorationImage(
+                                                    image: NetworkImage(widget
+                                                        .task
+                                                        .usersImage![1]
+                                                        .image),
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                ),
+                                              )
+                                        : const CircleAvatar(
                                             radius: 16,
-                                            backgroundImage: NetworkImage(widget
-                                                .task.usersImage![1].image),
+                                            backgroundColor: Colors.purple,
                                           ),
                                   ),
                                 ),
@@ -331,16 +366,19 @@ class _TaskCardState extends State<TaskCard> {
                         widget.task.usersImage!.length > 2)
                       Padding(
                         padding: const EdgeInsets.only(left: 2),
-                        child: Text('+${widget.task.usersImage!.length - 2}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            )),
+                        child: Text(
+                          '+${widget.task.usersImage!.length - 2}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
                       ),
                   ],
                 ),
+
                 // const SizedBox(height: 5),
                 Row(
                   children: [
@@ -414,7 +452,7 @@ class _TaskCardState extends State<TaskCard> {
                             ],
                           ),
 
-                          if (widget.task.overdue!>0)
+                          if (widget.task.overdue! > 0)
                             Padding(
                               padding: EdgeInsets.only(
                                 left: MediaQuery.of(context).size.width * 0.52,

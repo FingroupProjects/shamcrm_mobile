@@ -510,7 +510,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 8),
                       ProjectTaskGroupWidget(
                         selectedProject: selectedProject,

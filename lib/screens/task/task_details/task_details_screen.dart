@@ -33,7 +33,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final String? startDate;
   final String? endDate;
   final String? sum;
-  final int? priority;
+  final int? priority ;
   final List<TaskCustomField> taskCustomFields;
   final String? taskFile; // Добавлено поле для файла
 
@@ -88,7 +88,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   // Функция для форматирования даты
   String formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return 'Не указано';
+    if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd.MM.yyyy').format(parsedDate);
@@ -117,38 +117,38 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       {'label': 'Название задачи:', 'value': task.name},
       {
         'label': 'Уровень приоритета:',
-        'value': priorityLevels[task.priority] ?? 'Не указано',
+        'value': priorityLevels[task.priority] ?? 'Обычний',
       },
       {
         'label': 'От:',
         'value': task.startDate != null && task.startDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-            : 'Не указано'
+            : ''
       },
       {
         'label': 'До:',
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : 'Не указано'
+            : ''
       },
-      {'label': 'Проект:', 'value': task.project?.name ?? 'Не указано'},
+      {'label': 'Проект:', 'value': task.project?.name ?? ''},
       {
         'label': 'Исполнитель:',
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
-            : 'Не указано',
+            : '',
       },
       {
         'label': 'Описание:',
         'value': task.description?.isNotEmpty == true
             ? task.description!
-            : 'Не указано'
+            : ''
       },
       {
         'label': 'Статус:',
-        'value': task.taskStatus?.taskStatus.name ?? 'Не указано',
+        'value': task.taskStatus?.taskStatus.name ?? '',
       },
-      {'label': 'Автор:', 'value': task.author?.name ?? 'Не указано'},
+      {'label': 'Автор:', 'value': task.author?.name ?? ''},
       {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
       if (task.taskFile != null && task.taskFile!.isNotEmpty)
         {'label': 'Файл:', 'value': 'Ссылка'},
@@ -730,7 +730,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'Обычный':
         return Color(0xFFE8F5E9);
       default:
-        return Color(0xfff0f0f0);
+        return Color(0xFFE8F5E9);
     }
   }
 
@@ -743,7 +743,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'Обычный':
         return Colors.green;
       default:
-        return Color(0xff1E2E52);
+        return Color(0xFF2E7D32);
     }
   }
 
@@ -756,7 +756,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       case 'Обычный':
         return Color(0xFF2E7D32);
       default:
-        return Color(0xff1E2E52);
+        return Color(0xFF2E7D32);
     }
   }
 
