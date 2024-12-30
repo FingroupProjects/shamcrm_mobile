@@ -234,7 +234,7 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
 
   try {
     DateTime birthday = DateTime.parse(birthdayString);
-    return DateFormat('dd/MM/yyyy').format(birthday);
+    return DateFormat('dd-MM-yyyy').format(birthday);
   } catch (e) {
     return "Не указано"; 
   }
@@ -245,11 +245,6 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
 
     if (changes != null) {
       // Позиция
-      if (changes.positionNewValue != null || changes.positionPreviousValue != null) {
-        actionDetail +=
-            '\nПозиция: ${changes.positionPreviousValue ?? "Не указано"} > ${changes.positionNewValue ?? "Не указано"}';
-      }
-
       // Статус клиента
       if (changes.leadStatusNewValue != null || changes.leadStatusPreviousValue != null) {
         actionDetail +=
