@@ -17,6 +17,8 @@ class TaskCard extends StatefulWidget {
   final int? user; // ID ответственного пользователя (опционально)
   final int? userId; // ID пользователя, создавшего задачу (опционально)
   final List<UserTaskImage>? usersImage;
+    final void Function(int newStatusId) onStatusId;
+
   TaskCard({
     required this.task,
     required this.name,
@@ -27,6 +29,8 @@ class TaskCard extends StatefulWidget {
     this.user,
     this.usersImage,
     this.userId,
+        required this.onStatusId,
+
   });
 
   @override
@@ -34,13 +38,15 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String
-      dropdownValue; // Текущее значение выпадающего списка статусов задачи
+  late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
+    late int statusId;
+
 
   @override
   void initState() {
     super.initState();
     dropdownValue = widget.name;
+    statusId = widget.statusId;
   }
 
   /// Форматирование даты в `dd-MM-yyyy`
@@ -224,19 +230,20 @@ class _TaskCardState extends State<TaskCard> {
                       child: GestureDetector(
                         onTap: () {
                           DropdownBottomSheet(
-                            context,
-                            dropdownValue,
-                            (String newValue) {
-                              setState(() {
-                                dropdownValue =
-                                    newValue; // Обновление статуса задачи
-                              });
-                              widget
-                                  .onStatusUpdated(); // Вызов коллбека обновления статуса
-                            },
-                            widget.task,
-                          );
-                        },
+                      context,
+                      dropdownValue,
+                      (String newValue, int newStatusId) {
+                        setState(() {
+                          dropdownValue = newValue;
+                          statusId = newStatusId; 
+                          
+                        });
+                          widget.onStatusId(newStatusId); 
+                        widget.onStatusUpdated(); 
+                      },
+                      widget.task,
+                    );
+                  },
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(

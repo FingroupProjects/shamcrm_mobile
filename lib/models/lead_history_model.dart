@@ -74,34 +74,30 @@ class User {
 class Changes {
   final String? leadStatusNewValue;
   final String? leadStatusPreviousValue;
-  final int? positionNewValue;
-  final int? positionPreviousValue;
   final String? historyNameNewValue;
   final String? historyNamePreviousValue;
   final String? phoneNewValue;
   final String? phonePreviousValue;
   final String? emailNewValue;
   final String? emailPreviousValue;
-  final int? regionNewValue;
-  final int? regionPreviousValue;
-  final int? managerNewValue;  // Новый параметр для менеджера
-  final int? managerPreviousValue;
-  final String? tgNickNewValue;  // Новый параметр для tg_nick
+  final String? regionNewValue;
+  final String? regionPreviousValue;
+  final String? managerNewValue; 
+  final String? managerPreviousValue;
+  final String? tgNickNewValue;  
   final String? tgNickPreviousValue;
-  final String? birthdayNewValue;  // Новый параметр для дня рождения
+  final String? birthdayNewValue; 
   final String? birthdayPreviousValue;
-  final String? descriptionNewValue;  // Новый параметр для description
+  final String? descriptionNewValue; 
   final String? descriptionPreviousValue;
-  final String? instaLoginNewValue;  // Новый параметр для insta_login
+  final String? instaLoginNewValue;  
   final String? instaLoginPreviousValue;
-  final String? facebookLoginNewValue;  // Новый параметр для facebook_login
+  final String? facebookLoginNewValue; 
   final String? facebookLoginPreviousValue;
 
   Changes({
     this.leadStatusNewValue,
     this.leadStatusPreviousValue,
-    this.positionNewValue,
-    this.positionPreviousValue,
     this.historyNameNewValue,
     this.historyNamePreviousValue,
     this.phoneNewValue,
@@ -128,18 +124,16 @@ class Changes {
   return Changes(
     leadStatusNewValue: json['lead_status']?['new_value'] as String?,
     leadStatusPreviousValue: json['lead_status']?['previous_value'] as String?,
-    positionNewValue: json['position']?['new_value'] as int?,
-    positionPreviousValue: json['position']?['previous_value'] as int?,
     historyNameNewValue: json['name']?['new_value'] as String?,
     historyNamePreviousValue: json['name']?['previous_value'] as String?,
     phoneNewValue: json['phone']?['new_value'] as String?,
     phonePreviousValue: json['phone']?['previous_value'] as String?,
     emailNewValue: json['email']?['new_value'] as String?,
     emailPreviousValue: json['email']?['previous_value'] as String?,
-    regionNewValue: json['region']?['new_value'] as int?,
-    regionPreviousValue: json['region']?['previous_value'] as int?,
-    managerNewValue: json['manager']?['new_value'] as int?,
-    managerPreviousValue: json['manager']?['previous_value'] as int?,
+    regionNewValue: json['region']?['new_value'] as String?,
+    regionPreviousValue: json['region']?['previous_value'] as String?,
+    managerNewValue: json['manager']?['new_value'] as String?,
+    managerPreviousValue: json['manager']?['previous_value'] as String?,
     tgNickNewValue: json['tg_nick']?['new_value'] as String?,
     tgNickPreviousValue: json['tg_nick']?['previous_value'] as String?,
     birthdayNewValue: json['birthday']?['new_value'] as String?,

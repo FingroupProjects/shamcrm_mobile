@@ -106,9 +106,10 @@ class DeleteDealDialog extends StatelessWidget {
                      duration: Duration(seconds: 3),
                    ),
                 );
-                                      context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
-
-                      Navigator.of(context).pop();
+                        Future.delayed(Duration(milliseconds: 300), () {
+                        context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
+                        Navigator.of(context).pop(true); 
+                      });
 
                     },
                     buttonColor: Color(0xff1E2E52),

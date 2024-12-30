@@ -28,8 +28,10 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
   late TextEditingController phoneController;
   late TextEditingController positionController;
 
-  String selectedDialCode = '+7'; // Default country code
-  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1']; // Country codes list
+  String selectedDialCode = '+7';
+  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1']; 
+  bool _isPhoneEdited = false;
+
 
   @override
   void initState() {
@@ -38,17 +40,22 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
     phoneController = TextEditingController(text: widget.contactPerson.phone);
     positionController = TextEditingController(text: widget.contactPerson.position);
     
-    // Extract country code from phone if necessary
-    String phoneNumber = widget.contactPerson.phone;
-    for (var code in countryCodes) {
-      if (phoneNumber.startsWith(code)) {
-        setState(() {
-          selectedDialCode = code;
-          phoneController.text = phoneNumber.substring(code.length); // Remove code from phone number
-        });
-        break;
-      }
+  String phoneNumber = widget.contactPerson.phone;
+  for (var code in countryCodes) {
+    if (phoneNumber.startsWith(code)) {
+      setState(() {
+        selectedDialCode = code;
+        phoneController.text = phoneNumber.substring(code.length); 
+      });
+      break;
     }
+  }
+
+  if (phoneController.text.isEmpty) {
+    phoneController.text = phoneNumber;
+  }
+
+  _isPhoneEdited = false; 
   }
 
   @override
@@ -152,19 +159,20 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      CustomPhoneNumberInput(
-                        controller: phoneController,
-                        selectedDialCode: selectedDialCode,
-                        onInputChanged: (String number) {
-                          setState(() {
-                            selectedDialCode = number;
-                          });
-                        },
-                        validator: (value) => value!.isEmpty
-                            ? 'Поле обязательно для заполнения'
-                            : null,
-                        label: 'Телефон',
-                      ),
+                        CustomPhoneNumberInput(
+                          controller: phoneController,
+                          selectedDialCode: selectedDialCode,
+                          onInputChanged: (String number) {
+                            setState(() {
+                              _isPhoneEdited = true; 
+                              selectedDialCode = number;
+                            });
+                          },
+                          validator: (value) => value!.isEmpty
+                              ? 'Поле обязательно для заполнения'
+                              : null,
+                          label: 'Телефон',
+                        ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: positionController,
@@ -211,19 +219,26 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  context.read<ContactPersonBloc>().add(
-                                        UpdateContactPerson(
-                                          contactpersonId:
-                                              widget.contactPerson.id,
-                                          leadId: widget.leadId,
-                                          name: nameController.text,
-                                          phone: selectedDialCode,
-                                          position: positionController.text,
-                                        ),
-                                      );
+                              if (_formKey.currentState!.validate()) {
+                                String phoneToSend;
+
+                                if (_isPhoneEdited) {
+                                  phoneToSend = selectedDialCode;
+                                } else {
+                                  phoneToSend = '$selectedDialCode${phoneController.text}'; 
                                 }
-                              },
+
+                                context.read<ContactPersonBloc>().add(
+                                  UpdateContactPerson(
+                                    contactpersonId: widget.contactPerson.id,
+                                    leadId: widget.leadId,
+                                    name: nameController.text,
+                                    phone: phoneToSend,
+                                    position: positionController.text,
+                                  ),
+                                );
+                              }
+                            },
                             );
                           }
                         },

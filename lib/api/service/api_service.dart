@@ -176,8 +176,7 @@ class ApiService {
 
   Future<void> _removePermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs
-        .remove('permissions'); // Удаляем права доступа из SharedPreferences
+    await prefs.remove('permissions'); // Удаляем права доступа из SharedPreferences
   }
 
   // get all users
@@ -632,8 +631,7 @@ class ApiService {
       final loginResponse = LoginResponse.fromJson(data);
 
       await _saveToken(loginResponse.token);
-      await _savePermissions(
-          loginResponse.permissions); // Сохраняем права доступа
+      // await _savePermissions(loginResponse.permissions); // Сохраняем права доступа
 
       return loginResponse;
     } else {
@@ -641,26 +639,87 @@ class ApiService {
     }
   }
 
-// Метод для сохранения прав доступа в SharedPreferences
-  Future<void> _savePermissions(List<String> permissions) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-        'permissions', permissions); // Сохраняем список прав
-  }
+// // Метод для сохранения прав доступа в SharedPreferences
+//   Future<void> _savePermissions(List<String> permissions) async {
+//     SharedPreferences prefs = await SharedPreferences.getInstance();
+//     await prefs.setStringList('permissions', permissions); // Сохраняем список прав
+//   }
 
-// Метод для получения списка прав доступа
-  Future<List<String>> getPermissions() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList('permissions') ??
-        []; // Возвращаем список прав доступа или пустой список
-  }
+// // Метод для получения списка прав доступа
+//   Future<List<String>> getPermissions() async {
+//     SharedPreferences prefs = await SharedPreferences.getInstance();
+//     return prefs.getStringList('permissions') ?? []; // Возвращаем список прав доступа или пустой список
+//   }
 
-// Метод для проверки, есть ли у пользователя определенное право
-  Future<bool> hasPermission(String permission) async {
-    final permissions = await getPermissions();
-    return permissions.contains(permission); // Проверяем наличие права
-  }
+// // Метод для проверки, есть ли у пользователя определенное право
+//   Future<bool> hasPermission(String permission) async {
+//     final permissions = await getPermissions();
+//     return permissions.contains(permission); // Проверяем наличие права
+//   }
 
+
+Future<List<String>> fetchPermissionsByRoleId(String roleId) async {
+  try {
+    final response = await _getRequest('/get-role-permission/$roleId');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data['permissions'] != null) {
+        // Преобразование списка разрешений в List<String>
+        return (data['permissions'] as List<dynamic>).map((permission) => permission as String).toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception(
+          'Ошибка при получении прав доступа: ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
+    rethrow;
+  }
+}
+
+
+// Сохранение прав доступа в SharedPreferences
+Future<void> savePermissions(List<String> permissions) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('permissions', permissions);
+}
+
+// Получение списка прав доступа из SharedPreferences
+Future<List<String>> getPermissions() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('permissions') ?? [];
+}
+
+// Проверка наличия определенного права
+Future<bool> hasPermission(String permission) async {
+  final permissions = await getPermissions();
+  return permissions.contains(permission);
+}
+// // Сохранение прав доступа в SharedPreferences
+// Future<void> savePermissionsPinCode(List<String> permissions) async {
+//   SharedPreferences prefs = await SharedPreferences.getInstance();
+//   await prefs.setStringList('permissions', permissions);
+// }
+
+// // Получение списка прав доступа из SharedPreferences
+// Future<List<String>> getPermissionsPinCode() async {
+//   SharedPreferences prefs = await SharedPreferences.getInstance();
+//   return prefs.getStringList('permissions') ?? [];
+// }
+
+// // Проверка наличия определенного права
+// Future<bool> hasPermissionPinCode(String permission) async {
+//   final permissions = await getPermissions();
+//   return permissions.contains(permission);
+// }
+
+  //_________________________________ END___API__LOGIN____________________________________________//
+
+  
   Future<String> forgotPin(LoginModel loginModel) async {
     try {
       // Получение ID организации (если необходимо)
@@ -701,8 +760,6 @@ class ApiService {
       throw Exception('Ошибка в запросе: $e');
     }
   }
-
-  //_________________________________ END___API__LOGIN____________________________________________//
 
   //_________________________________ START_____API__SCREEN__LEAD____________________________________________//
 
@@ -826,7 +883,7 @@ class ApiService {
     final response = await _postRequest(
       '/lead/changeStatus/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       {
-        'position': position,
+        'position': 1,
         'status_id': statusId,
       },
     );
@@ -1040,6 +1097,7 @@ class ApiService {
           'name': name,
           'lead_status_id': leadStatusId,
           'phone': phone,
+          'position': 1,
           if (regionId != null) 'region_id': regionId,
           if (managerId != null) 'manager_id': managerId,
           if (sourceId != null) 'source_id': sourceId,
@@ -1750,7 +1808,7 @@ class ApiService {
     final response = await _postRequest(
       '/deal/changeStatus/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       {
-        'position': position,
+        'position': 1,
         'status_id': statusId,
       },
     );
@@ -1800,6 +1858,7 @@ class ApiService {
     final requestBody = {
       'name': name,
       'deal_status_id': dealStatusId,
+      'position': 1,
       if (managerId != null) 'manager_id': managerId,
       if (startDate != null) 'start_date': startDate.toIso8601String(),
       if (endDate != null) 'end_date': endDate.toIso8601String(),
@@ -2077,7 +2136,7 @@ class ApiService {
     final response = await _postRequest(
         '/task/changeStatus/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {
-          'position': position,
+          'position': 1,
           'status_id': statusId,
         });
 
@@ -2265,6 +2324,7 @@ class ApiService {
     String? description,
     List<Map<String, String>>? customFields,
     String? filePath,
+    int position = 1,
   }) async {
     try {
       final token = await getToken(); // Получаем токен
@@ -2285,6 +2345,8 @@ class ApiService {
       request.fields['name'] = name;
       request.fields['status_id'] = statusId.toString();
       request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
+      
 
       if (priority != null) {
         request.fields['priority_level'] = priority.toString();

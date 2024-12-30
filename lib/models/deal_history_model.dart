@@ -73,24 +73,22 @@ class User {
 }
 
 class Changes {
-  final int? dealStatusNewValue; // Изменено на int
-  final int? dealStatusPreviousValue; // Изменено на int
+  final String? dealStatusNewValue; 
+  final String? dealStatusPreviousValue; 
   final DateTime? statusUpdateDateNewValue;
   final DateTime? statusUpdateDatePreviousValue;
-  final int? positionNewValue;
-  final int? positionPreviousValue;
   final String? historyNameNewValue;
   final String? historyNamePreviousValue;
-  final int? leadNewValue;
-  final int? leadPreviousValue; 
-  final int? managerNewValue;
-  final int? managerPreviousValue;
+  final String? leadNewValue;
+  final String? leadPreviousValue; 
+  final String? managerNewValue;
+  final String? managerPreviousValue;
   final String? startDateNewValue;
   final String? startDatePreviousValue;
   final String? endDateNewValue;
   final String? endDatePreviousValue;
-  final double? sumNewValue;
-  final double? sumPreviousValue;
+  final String? sumNewValue;
+  final String? sumPreviousValue;
   final String? descriptionNewValue;
   final String? descriptionPreviousValue;
 
@@ -99,8 +97,6 @@ class Changes {
     this.dealStatusPreviousValue,
     this.statusUpdateDateNewValue,
     this.statusUpdateDatePreviousValue,
-    this.positionNewValue,
-    this.positionPreviousValue,
     this.historyNameNewValue,
     this.historyNamePreviousValue,
     this.leadNewValue,
@@ -119,35 +115,27 @@ class Changes {
 
   factory Changes.fromJson(Map<String, dynamic> json) {
     return Changes(
-      dealStatusNewValue: json['deal_status']?['new_value'] as int?, // Парсинг как int
-      dealStatusPreviousValue: json['deal_status']?['previous_value'] as int?, // Парсинг как int
-      statusUpdateDateNewValue: _parseDateTime(json['status_update_date']?['new_value']), // Преобразование в DateTime
-      statusUpdateDatePreviousValue: _parseDateTime(json['status_update_date']?['previous_value']), // Преобразование в DateTime
-      positionNewValue: json['position']?['new_value'] as int?,
-      positionPreviousValue: json['position']?['previous_value'] as int?,
+      dealStatusNewValue: json['deal_status']?['new_value'] as String?, 
+      dealStatusPreviousValue: json['deal_status']?['previous_value'] as String?, 
+      statusUpdateDateNewValue: _parseDateTime(json['status_update_date']?['new_value']), 
+      statusUpdateDatePreviousValue: _parseDateTime(json['status_update_date']?['previous_value']), 
       historyNameNewValue: json['name']?['new_value'] as String?,
       historyNamePreviousValue: json['name']?['previous_value'] as String?,
-      leadNewValue: json['lead']?['new_value'] as int?, 
-      leadPreviousValue: json['lead']?['previous_value'] as int?, 
-      managerNewValue: json['manager']?['new_value'] as int?,
-      managerPreviousValue: json['manager']?['previous_value'] as int?,
+      leadNewValue: json['lead']?['new_value'] as String?, 
+      leadPreviousValue: json['lead']?['previous_value'] as String?, 
+      managerNewValue: json['manager']?['new_value'] as String?,
+      managerPreviousValue: json['manager']?['previous_value'] as String?,
       startDateNewValue: json['start_date']?['new_value']?.toString(),
       startDatePreviousValue: json['start_date']?['previous_value']?.toString(),
       endDateNewValue: json['end_date']?['new_value']?.toString(),
       endDatePreviousValue: json['end_date']?['previous_value']?.toString(),
-      sumNewValue: _parseDouble(json['sum']?['new_value']), 
-      sumPreviousValue: _parseDouble(json['sum']?['previous_value']), 
+      sumNewValue: (json['sum']?['new_value']), 
+      sumPreviousValue: (json['sum']?['previous_value']), 
       descriptionNewValue: json['description']?['new_value'] as String?,
       descriptionPreviousValue: json['description']?['previous_value'] as String?,
     );
   }
 
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is double) return value;
-    if (value is String) return double.tryParse(value);
-    return null;
-  }
 
   static DateTime? _parseDateTime(dynamic value) {
     if (value == null) return null;

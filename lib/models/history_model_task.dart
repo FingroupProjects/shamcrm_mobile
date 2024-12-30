@@ -77,8 +77,6 @@ class Changes {
   final String? taskStatusPreviousValue;
   final String? historyNameNewValue;
   final String? historyNamePreviousValue;
-  final int? positionNewValue;  
-  final int? positionPreviousValue;  
   final String? isFinishedNewValue;  
   final String? isFinishedPreviousValue;  
   final String? startDateNewValue; 
@@ -97,8 +95,6 @@ class Changes {
     this.taskStatusPreviousValue,
     this.historyNameNewValue,
     this.historyNamePreviousValue,
-    this.positionNewValue,
-    this.positionPreviousValue,
     this.isFinishedNewValue,
     this.isFinishedPreviousValue,
     this.startDateNewValue,
@@ -117,8 +113,6 @@ class Changes {
     return Changes(
       taskStatusNewValue: json['task_status']?['new_value']?.toString(),
       taskStatusPreviousValue: json['task_status']?['previous_value']?.toString(),
-      positionNewValue: json['position']?['new_value'] as int?,
-      positionPreviousValue: json['position']?['previous_value'] as int?,
       isFinishedNewValue: json['is_finished']?['new_value']?.toString(),
       isFinishedPreviousValue: json['is_finished']?['previous_value']?.toString(),
       historyNameNewValue: json['name']?['new_value']?.toString(),

@@ -35,10 +35,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _canCreateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
   final ApiService _apiService = ApiService();
-bool navigateToEnd = false;
-bool navigateAfterDelete = false;
-int? _deletedIndex;
-
+  bool navigateToEnd = false;
+  bool navigateAfterDelete = false;
+  int? _deletedIndex;
 
   @override
   void initState() {
@@ -170,6 +169,14 @@ int? _deletedIndex;
               onStatusUpdated: () {
                 context.read<LeadBloc>().add(FetchLeads(statusId));
               },
+              onStatusId: (StatusLeadId) {
+                // setState(() {
+                //   final int newLeadStatus = StatusLeadId;
+                //   // print('-------------------------------------------------');
+                //   // print('-----------------------NEW TEST STATUS ID--------------------------');
+                //   // print(newLeadStatus);
+                // });
+              },
             ),
           );
         },
@@ -204,27 +211,26 @@ int? _deletedIndex;
     );
   }
 
-void _addNewTab() async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) => CreateStatusDialog(),
-  );
+  void _addNewTab() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => CreateStatusDialog(),
+    );
 
-  if (result == true) {
-    setState(() {
-      navigateToEnd = true; 
-    });
+    if (result == true) {
+      setState(() {
+        navigateToEnd = true;
+      });
 
-    // _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
-    // _tabKeys.add(GlobalKey());
+      // _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
+      // _tabKeys.add(GlobalKey());
 
-    // if (_tabController != null) {
-    //   _tabController.animateTo(_tabTitles.length - 1);
-    //   _currentTabIndex = _tabTitles.length - 1;
-    // }
+      // if (_tabController != null) {
+      //   _tabController.animateTo(_tabTitles.length - 1);
+      //   _currentTabIndex = _tabTitles.length - 1;
+      // }
+    }
   }
-}
-
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
@@ -271,10 +277,10 @@ void _addNewTab() async {
 
     if (result != null && result) {
       setState(() {
-            setState(() {
-             _deletedIndex = _currentTabIndex;
-             navigateAfterDelete = true; 
-           });
+        setState(() {
+          _deletedIndex = _currentTabIndex;
+          navigateAfterDelete = true;
+        });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -290,129 +296,154 @@ void _addNewTab() async {
 
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
-  listener: (context, state) async {
-    if (state is LeadLoaded) {
-      setState(() {
-        _tabTitles = state.leadStatuses
-            .where((status) => _canReadLeadStatus) 
-            .map((status) => {'id': status.id, 'title': status.title})
-            .toList();
-        _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+      listener: (context, state) async {
+        if (state is LeadLoaded) {
+          setState(() {
+            _tabTitles = state.leadStatuses
+                .where((status) => _canReadLeadStatus)
+                .map((status) => {'id': status.id, 'title': status.title})
+                .toList();
+            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
-        if (_tabTitles.isNotEmpty) {
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
-          _tabController.addListener(() {
-            setState(() {
-              _currentTabIndex = _tabController.index;
-            });
-            final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-            if (_scrollController.hasClients) {
-              _scrollToActiveTab();
-            }
-          });
-          int initialIndex = state.leadStatuses
-              .indexWhere((status) => status.id == widget.initialStatusId);
-          if (initialIndex != -1) {
-            _tabController.index = initialIndex;
-            _currentTabIndex = initialIndex;
-          } else {
-            _tabController.index = _currentTabIndex;
-          }
+            if (_tabTitles.isNotEmpty) {
+              _tabController =
+                  TabController(length: _tabTitles.length, vsync: this);
+              _tabController.addListener(() {
+                setState(() {
+                  _currentTabIndex = _tabController.index;
+                });
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                if (_scrollController.hasClients) {
+                  _scrollToActiveTab();
+                }
+              });
+              int initialIndex = state.leadStatuses
+                  .indexWhere((status) => status.id == widget.initialStatusId);
+              if (initialIndex != -1) {
+                _tabController.index = initialIndex;
+                _currentTabIndex = initialIndex;
+              } else {
+                _tabController.index = _currentTabIndex;
+              }
 
-          if (_scrollController.hasClients) {
-            _scrollToActiveTab();
-          }
+              if (_scrollController.hasClients) {
+                _scrollToActiveTab();
+              }
 //Логика для перехода к созданн статусе
-         if (navigateToEnd) {
-         navigateToEnd = false;
-         if (_tabController != null) {
-           _tabController.animateTo(_tabTitles.length -1); 
-         }
-      }
+              if (navigateToEnd) {
+                navigateToEnd = false;
+                if (_tabController != null) {
+                  _tabController.animateTo(_tabTitles.length - 1);
+                }
+              }
 
 //Логика для перехода к после удаления статусе на лево
-           if (navigateAfterDelete) {
-          navigateAfterDelete = false;
-          if (_deletedIndex != null) {
-            if (_deletedIndex == 0 && _tabTitles.length > 1) {
-              _tabController.animateTo(1); 
-            } else if (_deletedIndex == _tabTitles.length) {
-              _tabController.animateTo(_tabTitles.length - 1); 
-            } else {
-              _tabController.animateTo(_deletedIndex! - 1); 
+              if (navigateAfterDelete) {
+                navigateAfterDelete = false;
+                if (_deletedIndex != null) {
+                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                    _tabController.animateTo(1);
+                  } else if (_deletedIndex == _tabTitles.length) {
+                    _tabController.animateTo(_tabTitles.length - 1);
+                  } else {
+                    _tabController.animateTo(_deletedIndex! - 1);
+                  }
+                }
+              }
             }
+          });
+        } else if (state is LeadError) {
+          if (state.message.contains("Неавторизованный доступ!")) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            // Show error message through SnackBar
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(
+            //       '${state.message}',
+            //       style: TextStyle(
+            //         fontFamily: 'Gilroy',
+            //         fontSize: 16,
+            //         fontWeight: FontWeight.w500,
+            //         color: Colors.white,
+            //       ),
+            //     ),
+            //     behavior: SnackBarBehavior.floating,
+            //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     backgroundColor: Colors.red,
+            //     elevation: 3,
+            //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            //   ),
+            // );
           }
         }
-
-          
-        }
-      });
-    } else if (state is LeadError) {
-      if (state.message.contains("Неавторизованный доступ!")) {
-        ApiService apiService = ApiService();
-        await apiService.logout();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-          (Route<dynamic> route) => false,
-        );
-      } else {
-        // Show error message through SnackBar
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text(
-        //       '${state.message}',
-        //       style: TextStyle(
-        //         fontFamily: 'Gilroy',
-        //         fontSize: 16,
-        //         fontWeight: FontWeight.w500,
-        //         color: Colors.white,
-        //       ),
-        //     ),
-        //     behavior: SnackBarBehavior.floating,
-        //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        //     shape: RoundedRectangleBorder(
-        //       borderRadius: BorderRadius.circular(12),
-        //     ),
-        //     backgroundColor: Colors.red,
-        //     elevation: 3,
-        //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        //   ),
-        // );
-      }
+      },
+      child: BlocBuilder<LeadBloc, LeadState>(
+  builder: (context, state) {
+    print('state: ${state.runtimeType}');
+    if (state is LeadDataLoaded) {
+      final List<Lead> leads = state.leads;
+      print(leads);
+      return searchWidget(leads);
     }
+    if (state is LeadLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+    } else if (state is LeadLoaded) {
+      if (_tabTitles.isEmpty) {
+        return const Center(child: Text('Нет статусов для отображения'));
+      }
+      return TabBarView(
+        controller: _tabController,
+        children: List.generate(_tabTitles.length, (index) {
+          final statusId = _tabTitles[index]['id'];
+          final title = _tabTitles[index]['title'];
+          return LeadColumn(
+            statusId: statusId,
+            title: title,
+             onStatusId: (newStatusId) {
+                    print('Status ID changed: $newStatusId');
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index); 
+                    }
+                  },         
+          );
+        }),
+      );
+    }
+    return const SizedBox();
   },
-  child: BlocBuilder<LeadBloc, LeadState>(
-    builder: (context, state) {
-      print('state: ${state.runtimeType}');
-      if (state is LeadDataLoaded) {
-        final List<Lead> leads = state.leads;
-        print(leads);
-        return searchWidget(leads);
-      }
-      if (state is LeadLoading) {
-        return const Center(
-            child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-      } else if (state is LeadLoaded) {
-        if (_tabTitles.isEmpty) {
-          return const Center(child: Text('Нет статусов для отображения'));
-        }
-        return TabBarView(
-          controller: _tabController,
-          children: List.generate(_tabTitles.length, (index) {
-            final statusId = _tabTitles[index]['id'];
-            final title = _tabTitles[index]['title'];
-            return LeadColumn(statusId: statusId, title: title);
-          }),
-        );
-      }
-      return const SizedBox();
-    },
-  ),
-);
+)
 
+    );
   }
+
+  // LeadColumn(
+  // statusId: statusId,
+  // title: title,
+  // onStatusUpdated: (updatedStatusId) {
+  //   final index = _tabTitles.indexWhere((status) => status['id'] == updatedStatusId);
+  //   if (index != -1) {
+  //     print('------------------------------------------------------------');
+  //     print('------------------------------------------------------------');
+  //     print('------------------------------------------------------------');
+  //     print(index);
+  //     _tabController.animateTo(index); // Update the tab
+  //               //  _tabController.animateTo(3);
+
+  //   }
+  // },
+// );
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;

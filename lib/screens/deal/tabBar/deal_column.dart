@@ -10,8 +10,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
+  final Function(int) onStatusId;  // Callback to notify status change
 
-  DealColumn({required this.statusId, required this.title});
+
+  DealColumn({required this.statusId, required this.title,    required this.onStatusId,
+});
 
   @override
   _DealColumnState createState() => _DealColumnState();
@@ -83,9 +86,10 @@ class _DealColumnState extends State<DealColumn> {
                             title: widget.title,
                             statusId: widget.statusId,
                             onStatusUpdated: () {
-                              context
-                                  .read<DealBloc>()
-                                  .add(FetchDeals(widget.statusId));
+                              context.read<DealBloc>().add(FetchDeals(widget.statusId));
+                            },
+                              onStatusId: (StatusDealId) {
+                              widget.onStatusId(StatusDealId); 
                             },
                           ),
                         );
