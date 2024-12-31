@@ -2,13 +2,11 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
-import 'package:crm_task_manager/bloc/permission/permession_event.dart';
-import 'package:crm_task_manager/models/permission.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
@@ -34,17 +32,13 @@ class _PinScreenState extends State<PinScreen>
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
-  int? userRoleId ;
 
   @override
   void initState() {
     super.initState();
-  _loadUserRoleId().then((_) {
-    // После загрузки разрешений продолжаем остальные операции
     _checkSavedPin();
     _initBiometrics();
-    _loadUserPhone();
-  });
+    _loadUserPhone(); // Вызов асинхронного метода загрузки данных пользователя
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -62,35 +56,6 @@ class _PinScreenState extends State<PinScreen>
     });
   }
 
-    Future<void> _loadUserRoleId() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? '';
-    if (userId.isEmpty) {
-      setState(() {
-        userRoleId = 0;
-      });
-      return;
-    }
-
-    // Получение ИД РОЛЯ через API
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
-    setState(() {
-      userRoleId = userProfile.role!.first.id;
-    });
-    // Выводим данные в консоль
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
-
-  } catch (e) {
-    print('Error loading user role: $e');
-    setState(() {
-      userRoleId = 0;
-    });
-  }
-}
-
-
-
   // Метод для загрузки данных пользователя из SharedPreferences
  void _loadUserPhone() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -100,20 +65,24 @@ class _PinScreenState extends State<PinScreen>
   String? savedUserNameProfile = prefs.getString('userNameProfile');
   String? savedUserImage = prefs.getString('userImage');
 
+  // Если данные есть в SharedPreferences, проверяем их с данными с сервера
   if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+    // Попробуем получить данные с сервера
     try {
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(savedUserName)); 
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(savedUserName)); // Предположим, что userName это ID
       if (userProfile.name == savedUserName) {
+        // Если name из сервера совпадает с name из SharedPreferences, используем данные с сервера
         setState(() {
           _userName = userProfile.name;
-          _userNameProfile = savedUserNameProfile; 
-          _userImage = savedUserImage;
+          _userNameProfile = savedUserNameProfile; // Используем имя профиля из SharedPreferences
+          _userImage = savedUserImage; // Используем изображение из SharedPreferences
         });
       } else {
+        // Если данные не совпадают, берем данные с сервера
         setState(() {
           _userName = userProfile.name;
-          _userNameProfile = userProfile.lastname ?? ''; 
-          _userImage = userProfile.image ?? '';
+          _userNameProfile = userProfile.lastname ?? ''; // Обновляем профиль на основе данных с сервера
+          _userImage = userProfile.image ?? ''; // Используем изображение с сервера
         });
 
         // Обновляем SharedPreferences данными с сервера
@@ -123,6 +92,7 @@ class _PinScreenState extends State<PinScreen>
       }
     } catch (e) {
       print('Ошибка при загрузке данных с сервера: $e');
+      // Если произошла ошибка при запросе с сервера, выводим сохраненные данные
       setState(() {
         _userName = savedUserName;
         _userNameProfile = savedUserNameProfile;
@@ -130,19 +100,22 @@ class _PinScreenState extends State<PinScreen>
       });
     }
   } else {
+    // Если данных нет в SharedPreferences, загружаем их с сервера
     try {
-      UserByIdProfile userProfile = await ApiService().getUserById(1); 
+      UserByIdProfile userProfile = await ApiService().getUserById(1); // Предположим, что это какой-то ID
       setState(() {
         _userName = userProfile.name;
         _userNameProfile = userProfile.name ?? '';
         _userImage = userProfile.image ?? '';
       });
 
+      // Сохраняем данные в SharedPreferences
       await prefs.setString('userName', userProfile.name);
       await prefs.setString('userNameProfile', userProfile.name ?? '');
       await prefs.setString('userImage', userProfile.image ?? '');
     } catch (e) {
       print('Ошибка при загрузке данных с сервера: $e');
+      // Обрабатываем ошибку, если данные не удалось загрузить с сервера
       setState(() {
         _userName = 'Не найдено';
         _userNameProfile = 'Не найдено';
@@ -302,13 +275,12 @@ class _PinScreenState extends State<PinScreen>
     } else {
       greetingPrefix = 'Доброй ночи';
     }
-    // print(
-    //     '-----------------------------------------------------------------------------');
-    // print(
-    //     '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
-    // print(_userNameProfile);
+    print(
+        '-----------------------------------------------------------------------------');
+    print(
+        '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
+    print(_userNameProfile);
     return '$greetingPrefix, $_userNameProfile!';
-
   }
 
   @override
@@ -316,6 +288,7 @@ class _PinScreenState extends State<PinScreen>
     return Scaffold(
       body: SafeArea(
         child: Padding(
+          // В виджете используйте _userImage для отображения
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

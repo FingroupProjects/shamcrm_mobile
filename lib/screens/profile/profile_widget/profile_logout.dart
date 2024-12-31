@@ -13,9 +13,19 @@ class LogoutButtonWidget extends StatelessWidget {
         // Получаем экземпляр SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Удаляем только данные userNameProfile и userName
-        await prefs.remove('userName');  // Удаляем userName
-        await prefs.remove('userNameProfile');  // Удаляем userNameProfile
+        // Удаляем данные userName, userNameProfile и userImage
+        bool isUserNameRemoved = await prefs.remove('userName');
+        bool isUserNameProfileRemoved = await prefs.remove('userNameProfile');
+        bool isUserImageRemoved = await prefs.remove('userImage');
+
+        // Проверяем успешность удаления
+        if (isUserNameRemoved &&
+            isUserNameProfileRemoved &&
+            isUserImageRemoved) {
+          print('Данные успешно очищены.');
+        } else {
+          print('Ошибка при очистке данных.');
+        }
 
         // Логика выхода (например, вызов logout API)
         ApiService apiService = ApiService();
