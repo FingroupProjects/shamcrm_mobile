@@ -164,71 +164,72 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр задачи'),
-        backgroundColor: Colors.white,
-        body: BlocListener<TaskByIdBloc, TaskByIdState>(
-          listener: (context, state) {
-            if (state is TaskByIdLoaded) {
-              print("Задача Data: ${state.task.toString()}");
-            } else if (state is TaskByIdError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+      appBar: _buildAppBar(context, 'Просмотр задачи'),
+      backgroundColor: Colors.white,
+      body: BlocListener<TaskByIdBloc, TaskByIdState>(
+        listener: (context, state) {
+          if (state is TaskByIdLoaded) {
+            print("Задача Data: ${state.task.toString()}");
+          } else if (state is TaskByIdError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+          builder: (context, state) {
+            if (state is TaskByIdLoading) {
+              return Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
               );
-            }
-          },
-          child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-            builder: (context, state) {
-              if (state is TaskByIdLoading) {
-                return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                );
-              } else if (state is TaskByIdLoaded) {
-                if (state.task == null) {
-                  return Center(child: Text('Данные о задаче недоступны.'));
-                }
-                TaskById task = state.task!;
-                _updateDetails(task);
+            } else if (state is TaskByIdLoaded) {
+              if (state.task == null) {
+                return Center(child: Text('Данные о задаче недоступны.'));
+              }
+              TaskById task = state.task!;
+              _updateDetails(task);
 
-                return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: ListView(
-                      children: [
-                        _buildDetailsList(),
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 55,
-                              child: TaskNavigateToChat(
-                                chatId: task.chat!.id,
-                                taskName: widget.taskName,
-                                canSendMessage: task.chat!.canSendMessage,
-                              ),
+              return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: ListView(
+                    children: [
+                      _buildDetailsList(),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: task.isFinished == 1 ? 100 : 55,
+                            child: TaskNavigateToChat(
+                              chatId: task.chat!.id,
+                              taskName: widget.taskName,
+                              canSendMessage: task.chat!.canSendMessage,
                             ),
+                          ),
+                          if (task.isFinished == 0) ...[
                             SizedBox(
                               width: 8,
                               height: 60,
@@ -452,44 +453,45 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 16),
-                        ActionHistoryWidgetTask(
-                            taskId: int.parse(widget.taskId)),
-                      ],
-                    ));
-              } else if (state is TaskByIdError) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${state.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+                        ],
                       ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 16),
+                      ActionHistoryWidgetTask(
+                          taskId: int.parse(widget.taskId)),
+                    ],
+                  ));
+            } else if (state is TaskByIdError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.message}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
                     ),
-                  );
-                });
-              }
-              return Center(child: Text(''));
-            },
-          ),
-        ));
-  }
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              });
+            }
+            return Center(child: Text(''));
+          },
+        ),
+      ));
+}
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(

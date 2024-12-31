@@ -41,7 +41,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -69,12 +68,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
       },
     );
   }
- void _fetchAndAddCustomFields() async {
+
+  void _fetchAndAddCustomFields() async {
     try {
       // Здесь предполагается, что getCustomFields определён в ApiService
-      final data = await ApiService().getCustomFieldsdeal(); // Выполнить GET-запрос
+      final data =
+          await ApiService().getCustomFieldsdeal(); // Выполнить GET-запрос
       if (data['result'] != null) {
-        data['result'].forEach(( value) {
+        data['result'].forEach((value) {
           setState(() {
             customFields.add(CustomField(fieldName: value));
           });
@@ -84,6 +85,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
       print('Ошибка: $e');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,7 +145,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
               ),
             );
           } else if (state is DealSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
                   '${state.message}',
@@ -311,112 +313,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Добавить',
-                              buttonColor: Color(0xff4759FF),
-                              textColor: Colors.white,
-                              onPressed: () {
-                                if (_formKey.currentState!.validate() &&
-                                    selectedManager != null &&
-                                    selectedLead != null) {
-                                  final String name = titleController.text;
-
-                                  final String? startDateString =
-                                      startDateController.text.isEmpty
-                                          ? null
-                                          : startDateController.text;
-                                  final String? endDateString =
-                                      endDateController.text.isEmpty
-                                          ? null
-                                          : endDateController.text;
-
-                                  final String sum = sumController.text;
-
-                                  final String? description =
-                                      descriptionController.text.isEmpty
-                                          ? null
-                                          : descriptionController.text;
-
-                                  DateTime? startDate;
-                                  if (startDateString != null &&
-                                      startDateString.isNotEmpty) {
-                                    try {
-                                      startDate = DateFormat('dd/MM/yyyy')
-                                          .parse(startDateString);
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  }
-                                  DateTime? endDate;
-                                  if (endDateString != null &&
-                                      endDateString.isNotEmpty) {
-                                    try {
-                                      endDate = DateFormat('dd/MM/yyyy')
-                                          .parse(endDateString);
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  }
-
-                                    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-                                       setState(() {
-                                     isEndDateInvalid = true;
-                                   });
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Дата начала не может быть позже даты завершения!',
-                                            style: TextStyle(
-                                              color: Colors.white, 
-                                            ),
-                                          ),
-                                          backgroundColor: Colors.red, 
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-
-                                  // Создание сделки
-                                  List<Map<String, String>> customFieldMap = [];
-                                  for (var field in customFields) {
-                                    String fieldName = field.fieldName.trim();
-                                    String fieldValue =
-                                        field.controller.text.trim();
-                                    if (fieldName.isNotEmpty &&
-                                        fieldValue.isNotEmpty) {
-                                      customFieldMap.add({fieldName: fieldValue});
-                                    }
-                                  }
-
-                                  context.read<DealBloc>().add(CreateDeal(
-                                        name: name,
-                                        dealStatusId: widget.statusId,
-                                        managerId: int.parse(selectedManager!),
-                                        leadId: int.parse(selectedLead!),
-                                        dealtypeId: 1,
-                                        startDate: startDate,
-                                        endDate: endDate,
-                                        sum: sum,
-                                        description: description,
-                                        customFields: customFieldMap,
-                                      ));
-                                }
-                              },
-                            );
+                                buttonText: 'Добавить',
+                                buttonColor: Color(0xff4759FF),
+                                textColor: Colors.white,
+                                onPressed: _submitForm);
                           }
                         },
                       ),
@@ -429,6 +329,117 @@ class _DealAddScreenState extends State<DealAddScreen> {
         ),
       ),
     );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate() &&
+        selectedManager != null &&
+        selectedLead != null) {
+      _createDeal();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Пожалуйста, заполните все обязательные поля!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _createDeal() {
+    final String name = titleController.text;
+
+    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
+
+    final String sum = sumController.text;
+    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+
+    DateTime? startDate;
+    if (startDateString != null && startDateString.isNotEmpty) {
+      try {
+        startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
+          ),
+        );
+        return;
+      }
+    }
+    DateTime? endDate;
+    if (endDateString != null && endDateString.isNotEmpty) {
+      try {
+        endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Введите корректную дату и время в формате ДД/ММ/ГГГГ'),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      setState(() {
+        isEndDateInvalid = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Дата начала не может быть позже даты завершения!',
+            style: TextStyle(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Создание сделки
+    List<Map<String, String>> customFieldMap = [];
+    for (var field in customFields) {
+      String fieldName = field.fieldName.trim();
+      String fieldValue = field.controller.text.trim();
+      if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+        customFieldMap.add({fieldName: fieldValue});
+      }
+    }
+
+    context.read<DealBloc>().add(CreateDeal(
+          name: name,
+          dealStatusId: widget.statusId,
+          managerId: int.parse(selectedManager!),
+          leadId: int.parse(selectedLead!),
+          dealtypeId: 1,
+          startDate: startDate,
+          endDate: endDate,
+          sum: sum,
+          description: description,
+          customFields: customFieldMap,
+        ));
   }
 }
 

@@ -424,7 +424,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         controller: endDateController,
                         label: 'До',
                         hasError: isEndDateInvalid,
-                        
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
@@ -551,112 +550,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     buttonText: 'Добавить',
                     buttonColor: const Color(0xff4759FF),
                     textColor: Colors.white,
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        final String name = nameController.text;
-                        final String? startDateString =
-                            startDateController.text.isEmpty
-                                ? null
-                                : startDateController.text;
-                        final String? endDateString =
-                            endDateController.text.isEmpty
-                                ? null
-                                : endDateController.text;
-                        final String? description =
-                            descriptionController.text.isEmpty
-                                ? null
-                                : descriptionController.text;
-
-                        DateTime? startDate;
-                        if (startDateString != null &&
-                            startDateString.isNotEmpty) {
-                          try {
-                            startDate =
-                                DateFormat('dd/MM/yyyy').parse(startDateString);
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Введите корректную дату в формате ДД/ММ/ГГГГ'),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-
-                        DateTime? endDate;
-                        if (endDateString != null && endDateString.isNotEmpty) {
-                          try {
-                            endDate =
-                                DateFormat('dd/MM/yyyy').parse(endDateString);
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Введите корректную дату в формате ДД/ММ/ГГГГ'),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-                        if (startDate != null &&
-                            endDate != null &&
-                            startDate.isAfter(endDate)) {
-                          setState(() {
-                            isEndDateInvalid = true;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Дата начала не может быть позже даты завершения!',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
-                        }
-                        TaskFile? fileData;
-                        if (selectedFile != null) {
-                          fileData = TaskFile(
-                            name: fileName ?? "unknown",
-                            size: fileSize ?? "0KB",
-                          );
-                        }
-                        // Создание задачи
-                        List<Map<String, String>> customFieldMap = [];
-                        for (var field in customFields) {
-                          String fieldName = field.fieldName.trim();
-                          String fieldValue = field.controller.text.trim();
-                          if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-                            customFieldMap.add({fieldName: fieldValue});
-                          }
-                        }
-                        print("fileData: $fileData");
-
-                        context.read<TaskBloc>().add(CreateTask(
-                              name: name,
-                              statusId: widget.statusId,
-                              taskStatusId: widget.statusId,
-                              startDate: startDate,
-                              endDate: endDate,
-                              projectId: selectedProject != null
-                                  ? int.parse(selectedProject!)
-                                  : null,
-                              userId: selectedUsers != null
-                                  ? selectedUsers!
-                                      .map((id) => int.parse(id))
-                                      .toList()
-                                  : null,
-                              priority: selectedPriority,
-                              description: description,
-                              customFields: customFieldMap,
-                              filePath: selectedFile, // Передаем путь к файлу
-                            ));
-                      }
-                    },
+                    onPressed: _submitForm,
                   );
                 }
               },
@@ -665,6 +559,121 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         ],
       ),
     );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      _createTask();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Пожалуйста, заполните все обязательные поля!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _createTask() {
+    final String name = nameController.text;
+    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
+    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+
+    DateTime? startDate;
+    if (startDateString != null && startDateString.isNotEmpty) {
+      try {
+        startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Введите корректную дату в формате ДД/ММ/ГГГГ'),
+          ),
+        );
+        return;
+      }
+    }
+
+    DateTime? endDate;
+    if (endDateString != null && endDateString.isNotEmpty) {
+      try {
+        endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Введите корректную дату в формате ДД/ММ/ГГГГ'),
+          ),
+        );
+        return;
+      }
+    }
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      setState(() {
+        isEndDateInvalid = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Дата начала не может быть позже даты завершения!',
+            style: TextStyle(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    TaskFile? fileData;
+    if (selectedFile != null) {
+      fileData = TaskFile(
+        name: fileName ?? "unknown",
+        size: fileSize ?? "0KB",
+      );
+    }
+    // Создание задачи
+    List<Map<String, String>> customFieldMap = [];
+    for (var field in customFields) {
+      String fieldName = field.fieldName.trim();
+      String fieldValue = field.controller.text.trim();
+      if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+        customFieldMap.add({fieldName: fieldValue});
+      }
+    }
+    print("fileData: $fileData");
+
+    context.read<TaskBloc>().add(CreateTask(
+          name: name,
+          statusId: widget.statusId,
+          taskStatusId: widget.statusId,
+          startDate: startDate,
+          endDate: endDate,
+          projectId:
+              selectedProject != null ? int.parse(selectedProject!) : null,
+          userId: selectedUsers != null
+              ? selectedUsers!.map((id) => int.parse(id)).toList()
+              : null,
+          priority: selectedPriority,
+          description: description,
+          customFields: customFieldMap,
+          filePath: selectedFile, // Передаем путь к файлу
+        ));
   }
 }
 

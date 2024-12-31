@@ -42,6 +42,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _surnameError;
   String? _phoneError;
   String? _emailError;
+  bool _isLoading = true; // Add loading state
+
   final TextEditingController phoneController = TextEditingController();
   String selectedDialCode = ''; // Default country code
   List<String> countryCodes = [
@@ -66,7 +68,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     if (_localImage != null) {
       return _localImage!.path;
     }
-
     // Если существующее изображение имеет расширения png, jpeg, jpg, img
     if (_userImage.endsWith('.png') ||
         _userImage.endsWith('.jpg') ||
@@ -78,7 +79,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     // Для SVG или других форматов возвращаем null
     return null;
   }
-
   // Функция для выбора изображения с улучшенной обработкой
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -88,14 +88,45 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         maxWidth: 1080,
         maxHeight: 1080,
       );
+
       if (pickedFile != null) {
+        final file = File(pickedFile.path);
+
+        // Проверяем размер файла асинхронно
+        final int fileSize = await file.length();
+
+        if (fileSize > 2 * 1024 * 1024) {
+          // Если размер больше 2 MB
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Выбранный файл слишком большой.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return; // Прекращаем выполнение, если файл слишком большой
+        }
+
+        // Если файл подходит по размеру
         setState(() {
-          _profileImage = File(pickedFile.path);
+          _profileImage = file;
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Изображение успешно выбрано!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при выборе изображения: $e')),
+        SnackBar(
+          content: Text('Ошибка при выборе изображения: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -104,8 +135,29 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   void initState() {
     super.initState();
     _loadUserPhone();
+    _loadInitialData();
+
     _loadSelectedOrganization();
     context.read<OrganizationBloc>().add(FetchOrganizations());
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await Future.wait([
+        _loadUserPhone(),
+        _loadSelectedOrganization(),
+      ]);
+    } catch (e) {
+      print('Error loading initial data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadUserPhone() async {
@@ -164,6 +216,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     }
   }
+
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
     if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
@@ -182,43 +235,230 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-  Future<void> _showImagePickerDialog() async {
-    final XFile? pickedFile = await showModalBottomSheet<XFile?>(
-      context: context,
-      builder: (BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Галерея'),
-              onTap: () async {
-                final file =
-                    await _picker.pickImage(source: ImageSource.gallery);
-                Navigator.of(context).pop(file);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Камера'),
-              onTap: () async {
-                final file =
-                    await _picker.pickImage(source: ImageSource.camera);
-                Navigator.of(context).pop(file);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+ Future<void> _showImagePickerDialog() async {
+  await showModalBottomSheet<void>(
+    context: context,
+    builder: (BuildContext context) => Container(
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Галерея'),
+            onTap: () async {
+              // Показываем диалог загрузки
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return Dialog(
+                    backgroundColor: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Color(0xff1E2E52),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Проверка изображения...',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
 
-    if (pickedFile != null) {
-      setState(() {
-        _localImage = File(pickedFile.path);
-        _userImage = '';
-      });
-    }
-  }
+              final XFile? pickedFile = await _picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 80,
+                maxWidth: 1080,
+                maxHeight: 1080,
+              );
+              
+              if (pickedFile != null) {
+                try {
+                  final file = File(pickedFile.path);
+                  final int fileSize = await file.length();
+                  
+                  // Закрываем диалог загрузки
+                  Navigator.of(context).pop();
+                  
+                  if (fileSize > 2 * 1024 * 1024) {
+                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Файл слишком большой. Максимальный размер — 2 MB.'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        duration: Duration(seconds: 3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  setState(() {
+                    _localImage = file;
+                    _userImage = '';
+                  });
+
+                  Navigator.pop(context); // Закрываем модальное окно выбора
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Изображение успешно выбрано!'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      duration: Duration(seconds: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                    ),
+                  );
+                } catch (e) {
+                  // Закрываем диалог загрузки, если он еще открыт
+                  Navigator.of(context).pop();
+                  Navigator.pop(context); // Закрываем модальное окно выбора
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Ошибка при выборе изображения: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                    ),
+                  );
+                }
+              } else {
+                // Если пользователь отменил выбор, закрываем диалог загрузки
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Камера'),
+            onTap: () async {
+              // Показываем диалог загрузки
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return Dialog(
+                    backgroundColor: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Color(0xff1E2E52),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Проверка изображения...',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+
+              final XFile? pickedFile = await _picker.pickImage(
+                source: ImageSource.camera,
+                imageQuality: 80,
+                maxWidth: 1080,
+                maxHeight: 1080,
+              );
+              
+              if (pickedFile != null) {
+                try {
+                  final file = File(pickedFile.path);
+                  final int fileSize = await file.length();
+                  
+                  // Закрываем диалог загрузки
+                  Navigator.of(context).pop();
+                  
+                  if (fileSize > 2 * 1024 * 1024) {
+                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Файл слишком большой. Максимальный размер — 2 MB.'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        duration: Duration(seconds: 3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  setState(() {
+                    _localImage = file;
+                    _userImage = '';
+                  });
+
+                  Navigator.pop(context); // Закрываем модальное окно выбора
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Изображение успешно выбрано!'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      duration: Duration(seconds: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                    ),
+                  );
+                } catch (e) {
+                  // Закрываем диалог загрузки, если он еще открыт
+                  Navigator.of(context).pop();
+                  Navigator.pop(context); // Закрываем модальное окно выбора
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Ошибка при выборе изображения: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                    ),
+                  );
+                }
+              } else {
+                // Если пользователь отменил выбор, закрываем диалог загрузки
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     // Функция для извлечения URL из SVG
@@ -230,396 +470,434 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
       return null;
     }
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Редактирование профиля',
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            )),
-        centerTitle: false,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+        appBar: AppBar(
+          title: Text('Редактирование профиля',
+              style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              )),
+          centerTitle: false,
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          backgroundColor: Color.fromARGB(255, 255, 255, 255),
         ),
-        backgroundColor: Color.fromARGB(255, 255, 255, 255),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        body: _isLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: const Color(0xff1E2E52),
+                ),
+              )
+            : Column(
                 children: [
-                  Column(
-                    children: [
-                      _localImage != null
-                          ? CircleAvatar(
-                              radius: 70,
-                              backgroundImage: FileImage(_localImage!),
-                            )
-                          : _userImage != 'Не найдено' && _userImage.isNotEmpty
-                              ? _userImage.contains('<svg')
-                                  ? Container(
-                                      width: 140,
-                                      height: 140,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        image: DecorationImage(
-                                          image: NetworkImage(
-                                            extractImageUrlFromSvg(
-                                                    _userImage) ??
-                                                '',
-                                          ),
-                                          fit: BoxFit.cover,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 16.0,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Column(
+                                  children: [
+                                    _localImage != null
+                                        ? CircleAvatar(
+                                            radius: 70,
+                                            backgroundImage:
+                                                FileImage(_localImage!),
+                                          )
+                                        : _userImage != 'Не найдено' &&
+                                                _userImage.isNotEmpty
+                                            ? _userImage.contains('<svg')
+                                                ? Container(
+                                                    width: 140,
+                                                    height: 140,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      image: DecorationImage(
+                                                        image: NetworkImage(
+                                                          extractImageUrlFromSvg(
+                                                                  _userImage) ??
+                                                              '',
+                                                        ),
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    width: 140,
+                                                    height: 140,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              70),
+                                                      image: DecorationImage(
+                                                        image: NetworkImage(
+                                                            _userImage),
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                    ),
+                                                  )
+                                            : CircleAvatar(
+                                                radius: 70,
+                                                backgroundColor:
+                                                    Colors.grey[300],
+                                                child: Icon(
+                                                  Icons.person,
+                                                  size: 100,
+                                                  color: const Color.fromARGB(
+                                                      255, 255, 255, 255),
+                                                ),
+                                              ),
+                                    const SizedBox(height: 10),
+                                    ElevatedButton(
+                                      onPressed: _showImagePickerDialog,
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
+                                        backgroundColor:
+                                            const Color(0xff1E2E52),
+                                      ),
+                                      child: Text(
+                                        _userImage == 'Не найдено' ||
+                                                _userImage.isEmpty
+                                            ? 'Сменить фото'
+                                            : 'Сменить фото',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
                                         ),
                                       ),
-                                    )
-                                  : Container(
-                                      width: 140,
-                                      height: 140,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(70),
-                                        image: DecorationImage(
-                                          image: NetworkImage(_userImage),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    )
-                              : CircleAvatar(
-                                  radius: 70,
-                                  backgroundColor: Colors.grey[300],
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 100,
-                                    color: const Color.fromARGB(
-                                        255, 255, 255, 255),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: NameController,
+                              hintText: 'Введите Имя',
+                              label: 'Имя',
+                              onChanged: (value) {
+                                setState(() {
+                                  _nameError = null;
+                                });
+                              },
+                            ),
+                            if (_nameError != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 4, left: 12),
+                                  child: Text(
+                                    _nameError!,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                    ),
                                   ),
                                 ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _showImagePickerDialog,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          backgroundColor: const Color(0xff1E2E52),
-                        ),
-                        child: Text(
-                          _userImage == 'Не найдено' || _userImage.isEmpty
-                              ? 'Сменить фото'
-                              : 'Сменить фото',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
+                              ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: SurnameController,
+                              hintText: 'Введите Фамилию',
+                              label: 'Фамилия',
+                              onChanged: (value) {
+                                setState(() {
+                                  _surnameError = null;
+                                });
+                              },
+                            ),
+                            if (_surnameError != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 4, left: 12),
+                                  child: Text(
+                                    _surnameError!,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                            CustomPhoneNumberInput(
+                              controller: phoneController,
+                              selectedDialCode: selectedDialCode,
+                              onInputChanged: (String number) {
+                                for (var country in countries) {
+                                  if (number.startsWith(country.dialCode)) {
+                                    setState(() {
+                                      selectedDialCode = country.dialCode;
+                                    });
+                                    break;
+                                  }
+                                }
+                              },
+                              validator: (value) => value!.isEmpty
+                                  ? 'Поле обязательно для заполнения'
+                                  : null,
+                              label: 'Телефон',
+                            ),
+                            if (_phoneError != null)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 4, right: 75),
+                                child: Text(
+                                  _phoneError!,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: roleController,
+                              hintText: 'Введите роль',
+                              label: 'Роль',
+                              readOnly: true,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: loginController,
+                              hintText: 'Введите логин',
+                              label: 'Логин',
+                              readOnly: true,
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: emailController,
+                              hintText: 'Введите электронную почту',
+                              label: 'Электронная почта',
+                              keyboardType: TextInputType.emailAddress,
+                              onChanged: (value) {
+                                setState(() {
+                                  _emailError = null;
+                                });
+                              },
+                            ),
+                            if (_emailError != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 4, left: 12),
+                                  child: Text(
+                                    _emailError!,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            BlocListener<ProfileBloc, ProfileState>(
+                              listener: (context, state) {
+                                if (state is ProfileSuccess) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Профиль успешно обновлен!',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                  Navigator.pop(context);
+                                } else if (state is ProfileError) {
+                                  String message;
+
+                                  if (state.message.contains('500')) {
+                                    message =
+                                        'Ошибка на сервере. Попробуйте позже.';
+                                  } else if (state.message.contains('422')) {
+                                    message = 'Проверьте введенные данные';
+                                  } else if (state.message.contains('404')) {
+                                    message = 'Ресурс не найден';
+                                  } else {
+                                    message =
+                                        'Произошла ошибка при обновлении профиля';
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        message,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          spreadRadius: 0,
+                          blurRadius: 10,
+                          offset: Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16.0),
+                    child: BlocBuilder<ProfileBloc, ProfileState>(
+                      builder: (context, state) {
+                        return ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff1E2E52),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            minimumSize: Size(double.infinity, 48),
+                          ),
+                          onPressed: () async {
+                            // Сбрасываем состояние ошибок
+                            setState(() {
+                              _nameError = null;
+                              _surnameError = null;
+                              _phoneError = null;
+                              _emailError = null;
+                            });
+
+                            // Проверяем валидацию
+                            bool isValid = true;
+
+                            if (NameController.text.trim().isEmpty) {
+                              setState(() {
+                                _nameError =
+                                    'Поле имя обязательно для заполнения';
+                              });
+                              isValid = false;
+                            }
+
+                            if (SurnameController.text.trim().isEmpty) {
+                              setState(() {
+                                _surnameError =
+                                    'Поле фамилия обязательно для заполнения';
+                              });
+                              isValid = false;
+                            }
+
+                            if (emailController.text.trim().isNotEmpty &&
+                                !isValidEmail(emailController.text.trim())) {
+                              setState(() {
+                                _emailError = 'Введите корректный email адрес';
+                              });
+                              isValid = false;
+                            }
+
+                            if (!isValid) return;
+
+                            try {
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              String UUID = prefs.getString('userID') ?? '';
+
+                              if (UUID.isEmpty) {
+                                _showErrorMessage('Ошибка: UUID не найден');
+                                return;
+                              }
+
+                              String UserNameProfile = NameController.text;
+                              await prefs.setString(
+                                  'userNameProfile', UserNameProfile);
+
+                              int userId = int.parse(UUID);
+                              final image = _getImageToUpload();
+                              context.read<ProfileBloc>().add(UpdateProfile(
+                                  userId: userId,
+                                  name: NameController.text.trim(),
+                                  sname: SurnameController.text.trim(),
+                                  phone:
+                                      selectedDialCode + phoneController.text,
+                                  email: emailController.text.trim(),
+                                  image: image,
+                                  pname: ''));
+                            } catch (e) {
+                              _showErrorMessage(
+                                  'Произошла ошибка при обновлении профиля');
+                            }
+                          },
+                          child: Text(
+                            'Сохранить',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: NameController,
-                hintText: 'Введите Имя',
-                label: 'Имя',
-                onChanged: (value) {
-                  setState(() {
-                    _nameError = null;
-                  });
-                },
-              ),
-              if (_nameError != null)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 12),
-                    child: Text(
-                      _nameError!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: SurnameController,
-                hintText: 'Введите Фамилию',
-                label: 'Фамилия',
-                onChanged: (value) {
-                  setState(() {
-                    _surnameError = null;
-                  });
-                },
-              ),
-              if (_surnameError != null)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 12),
-                    child: Text(
-                      _surnameError!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 8),
-              CustomPhoneNumberInput(
-                controller: phoneController,
-                selectedDialCode: selectedDialCode, // Это важно
-                onInputChanged: (String number) {
-                  for (var country in countries) {
-                    if (number.startsWith(country.dialCode)) {
-                      setState(() {
-                        selectedDialCode = country.dialCode;
-                      });
-                      break;
-                    }
-                  }
-                },
-                validator: (value) =>
-                    value!.isEmpty ? 'Поле обязательно для заполнения' : null,
-                label: 'Телефон',
-              ), if (_phoneError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, right: 75),
-                  child: Text(
-                    _phoneError!,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: roleController,
-                hintText: 'Введите роль',
-                label: 'Роль',
-                readOnly: true,
-              ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: loginController,
-                hintText: 'Введите логин',
-                label: 'Логин',
-                readOnly: true,
-              ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: emailController,
-                hintText: 'Введите электронную почту',
-                label: 'Электронная почта',
-                keyboardType: TextInputType.emailAddress,
-                onChanged: (value) {
-                  setState(() {
-                    _emailError = null;
-                  });
-                },
-              ),
-              if (_emailError != null)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 12),
-                    child: Text(
-                      _emailError!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 30),
-              BlocBuilder<ProfileBloc, ProfileState>(
-                builder: (context, state) {
-                  if (state is ProfileLoading) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        color: const Color(0xff1E2E52),
-                      ),
-                    );
-                  }
-                  return ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff1E2E52),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      minimumSize: Size(double.infinity, 48),
-                    ),
-                    onPressed: () async {
-                      // Сбрасываем состояние ошибок
-                      setState(() {
-                        _nameError = null;
-                        _surnameError = null;
-                        _phoneError = null;
-                        _emailError = null;
-                      });
-
-                      // Проверяем валидацию
-                      bool isValid = true;
-
-                      if (NameController.text.trim().isEmpty) {
-                        setState(() {
-                          _nameError = 'Поле имя обязательно для заполнения';
-                        });
-                        isValid = false;
-                      }
-
-                      if (SurnameController.text.trim().isEmpty) {
-                        setState(() {
-                          _surnameError =
-                              'Поле фамилия обязательно для заполнения';
-                        });
-                        isValid = false;
-                      }
-
-                      if (emailController.text.trim().isNotEmpty &&
-                          !isValidEmail(emailController.text.trim())) {
-                        setState(() {
-                          _emailError = 'Введите корректный email адрес';
-                        });
-                        isValid = false;
-                      }
-
-                      if (!isValid) return;
-
-                      try {
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
-                        String UUID = prefs.getString('userID') ?? '';
-
-                        if (UUID.isEmpty) {
-                          _showErrorMessage('Ошибка: UUID не найден');
-                          return;
-                        }
-
-                        String UserNameProfile = NameController.text;
-                        await prefs.setString(
-                            'userNameProfile', UserNameProfile);
-
-                        int userId = int.parse(UUID);
-                        final image = _getImageToUpload();
-                        context.read<ProfileBloc>().add(UpdateProfile(
-                            userId: userId,
-                            name: NameController.text.trim(),
-                            sname: SurnameController.text.trim(),
-                            phone: selectedDialCode + phoneController.text,
-                            email: emailController.text.trim(),
-                            image: image,
-                            pname: ''));
-                      } catch (e) {
-                        _showErrorMessage(
-                            'Произошла ошибка при обновлении профиля');
-                      }
-                    },
-                    child: Text(
-                      'Сохранить',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              BlocListener<ProfileBloc, ProfileState>(
-                listener: (context, state) {
-                  if (state is ProfileSuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Профиль успешно обновлен!',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.green,
-                        elevation: 3,
-                        padding:
-                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
-                    Navigator.pop(context);
-                  } else if (state is ProfileError) {
-                    String message;
-
-                    if (state.message.contains('500')) {
-                      message = 'Ошибка на сервере. Попробуйте позже.';
-                    } else if (state.message.contains('422')) {
-                      message = 'Проверьте введенные данные';
-                    } else if (state.message.contains('404')) {
-                      message = 'Ресурс не найден';
-                    } else {
-                      message = 'Произошла ошибка при обновлении профиля';
-                    }
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          message,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.red,
-                        elevation: 3,
-                        padding:
-                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                },
-                child: Container(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+              ));
   }
-
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
