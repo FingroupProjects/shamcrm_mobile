@@ -361,29 +361,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else {
-            // Show error message through SnackBar
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(
-            //     content: Text(
-            //       '${state.message}',
-            //       style: TextStyle(
-            //         fontFamily: 'Gilroy',
-            //         fontSize: 16,
-            //         fontWeight: FontWeight.w500,
-            //         color: Colors.white,
-            //       ),
-            //     ),
-            //     behavior: SnackBarBehavior.floating,
-            //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            //     shape: RoundedRectangleBorder(
-            //       borderRadius: BorderRadius.circular(12),
-            //     ),
-            //     backgroundColor: Colors.red,
-            //     elevation: 3,
-            //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            //   ),
-            // );
+          } else if (state.message.contains("Нет подключения к интернету")) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
         }
       },
@@ -427,23 +427,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     );
   }
-
-  // LeadColumn(
-  // statusId: statusId,
-  // title: title,
-  // onStatusUpdated: (updatedStatusId) {
-  //   final index = _tabTitles.indexWhere((status) => status['id'] == updatedStatusId);
-  //   if (index != -1) {
-  //     print('------------------------------------------------------------');
-  //     print('------------------------------------------------------------');
-  //     print('------------------------------------------------------------');
-  //     print(index);
-  //     _tabController.animateTo(index); // Update the tab
-  //               //  _tabController.animateTo(3);
-
-  //   }
-  // },
-// );
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
