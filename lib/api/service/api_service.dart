@@ -2822,7 +2822,7 @@ Future<bool> hasPermission(String permission) async {
     } else if (response.statusCode == 422) {
       return {
         'success': false,
-        'message': 'Это проект не имеет завершающий этап!'
+        'message': 'Этот проект не имеет завершающий этап!'
       };
     } else {
       return {

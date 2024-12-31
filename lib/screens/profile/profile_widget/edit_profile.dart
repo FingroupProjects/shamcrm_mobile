@@ -164,7 +164,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     }
   }
-
   Future<String?> _getFirstOrganization() async {
     final state = context.read<OrganizationBloc>().state;
     if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
