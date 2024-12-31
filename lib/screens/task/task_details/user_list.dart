@@ -65,11 +65,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
-                    ),
                     child: CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
                       initialItems: selectedUsersData,
@@ -157,7 +152,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               )),
                       listValidator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Поле обязательно для заполнения';
+                          return '   Поле обязательно для заполнения';
                         }
                         return null;
                       },

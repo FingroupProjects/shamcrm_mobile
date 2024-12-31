@@ -122,10 +122,10 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
               ),
               const SizedBox(height: 4),
               Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFFF4F7FD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                // decoration: BoxDecoration(
+                //   color: Color(0xFFF4F7FD),
+                //   borderRadius: BorderRadius.circular(12),
+                // ),
                 child: DropdownButtonFormField<String>(
                   value: dropdownItems.any((item) => item.value == widget.selectedSourceLead)
                       ? widget.selectedSourceLead
@@ -143,6 +143,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     ),
                   ),
                   items: dropdownItems,
+                  
                   onChanged: (value) {
                     widget.onChanged(value);
 
@@ -151,16 +152,18 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                   },
                   validator: (value) {
                     if (value == null) {
-                      return 'Поле обязательно для заполнения';
+                      return ' Поле обязательно для заполнения';
                     }
                     return null;
                   },
-                  decoration: InputDecoration(
-                    labelStyle: TextStyle(color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    decoration: InputDecoration(
+                      filled: true, 
+                      fillColor: Color(0xFFF4F7FD), 
+                      labelStyle: TextStyle(color: Colors.grey),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFF4F7FD)),
                       borderRadius: BorderRadius.circular(12),

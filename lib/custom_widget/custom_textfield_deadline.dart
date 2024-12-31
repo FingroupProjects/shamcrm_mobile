@@ -143,6 +143,12 @@ class CustomTextFieldDate extends StatelessWidget {
                       ? const BorderSide(color: Colors.red, width: 1.5)
                       : const BorderSide(color: Colors.transparent),
                 ),
+                 errorStyle: const TextStyle(
+                   fontSize: 14, 
+                   fontFamily: 'Gilroy',
+                   color: Colors.red,
+                   fontWeight: FontWeight.w500, 
+                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
