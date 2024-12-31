@@ -46,6 +46,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+        _loadUserRole();
+
     // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
     _startChartsLoading(); // Добавляем загрузку графиков
     _loadUserRole();

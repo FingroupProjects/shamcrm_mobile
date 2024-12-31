@@ -17,6 +17,7 @@ class TaskById {
   final AuthorTask? author;
   final List<TaskCustomFieldsById> taskCustomFields;
   final String? taskFile;
+  final int isFinished; // Новое поле
 
   TaskById({
     required this.id,
@@ -35,6 +36,7 @@ class TaskById {
     this.author, // Инициализация нового поля
     required this.taskCustomFields,
     this.taskFile,
+    required this.isFinished, // Инициализация нового поля
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -83,6 +85,9 @@ class TaskById {
               ?.map((field) => TaskCustomFieldsById.fromJson(field))
               .toList() ??
           [],
+      isFinished: json['is_finished'] is int
+          ? json['is_finished']
+          : 0, // Парсинг нового поля
     );
   }
 }
