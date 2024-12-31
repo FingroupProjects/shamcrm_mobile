@@ -85,10 +85,6 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
             ),
             const SizedBox(height: 4),
             Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: DropdownButtonFormField<String>(
                 value: dropdownItems.any((item) => item.value == widget.selectedDealStatus)
                     ? widget.selectedDealStatus
@@ -111,6 +107,8 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                   return null;
                 },
                 decoration: InputDecoration(
+                  filled: true, 
+                  fillColor: Color(0xFFF4F7FD), 
                   labelStyle: TextStyle(
                     color: Colors.grey, 
                     fontFamily: 'Gilroy', 

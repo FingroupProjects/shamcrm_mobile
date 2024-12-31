@@ -94,11 +94,11 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
-                    ),
+                    // decoration: BoxDecoration(
+                    //   color: Color(0xFFF4F7FD),
+                    //   borderRadius: BorderRadius.circular(12),
+                    //   border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                    // ),
                     child: CustomDropdown<ProjectTask>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: projectsList,
@@ -151,7 +151,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                       initialItem: selectedProjectData,
                       validator: (value) {
                         if (value == null) {
-                          return 'Поле обязательно для заполнения';
+                          return '   Поле обязательно для заполнения';
                         }
                         return null;
                       },

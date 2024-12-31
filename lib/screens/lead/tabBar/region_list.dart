@@ -88,11 +88,6 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
-                    ),
                     child: CustomDropdown<RegionData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: regionsList,
@@ -139,7 +134,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                       initialItem: selectedRegionData,
                       validator: (value) {
                         if (value == null) {
-                          return 'Поле обязательно для заполнения';
+                          return '   Поле обязательно для заполнения';
                         }
                         return null;
                       },

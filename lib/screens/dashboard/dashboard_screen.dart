@@ -50,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
     _startChartsLoading(); // Добавляем загрузку графиков
-
+    _loadUserRole();
     _loadImportantBoxes();
   }
 
