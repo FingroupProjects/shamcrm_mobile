@@ -174,10 +174,19 @@ class ApiService {
     await _removeOrganizationId(); // Удаляем права доступа
   }
 
-  Future<void> _removePermissions() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('permissions'); // Удаляем права доступа из SharedPreferences
-  }
+ Future<void> _removePermissions() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  // Выводим в консоль текущие права доступа до удаления
+  print('Перед удалением: ${prefs.getStringList('permissions')}');
+  
+  // Удаляем права доступа
+  await prefs.remove('permissions'); 
+  
+  // Проверяем, что ключ действительно удалён
+  print('После удаления: ${prefs.getStringList('permissions')}');
+}
+
 
   // get all users
   Future<UsersDataResponse> getAllUser() async {
@@ -686,13 +695,18 @@ Future<List<String>> fetchPermissionsByRoleId(String roleId) async {
 Future<void> savePermissions(List<String> permissions) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.setStringList('permissions', permissions);
+  print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
 }
+
 
 // Получение списка прав доступа из SharedPreferences
 Future<List<String>> getPermissions() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('permissions') ?? [];
+  final permissions = prefs.getStringList('permissions') ?? [];
+  print('Извлечённые права доступа: $permissions');
+  return permissions;
 }
+
 
 // Проверка наличия определенного права
 Future<bool> hasPermission(String permission) async {

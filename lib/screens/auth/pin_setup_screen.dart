@@ -1,5 +1,10 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
+import 'package:crm_task_manager/bloc/permission/permession_event.dart';
+import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PinSetupScreen extends StatefulWidget {
@@ -17,10 +22,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   bool _pinsDoNotMatch = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
+    int? userRoleId ;
+
 
   @override
   void initState() {
     super.initState();
+    _loadUserRoleId();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -70,6 +78,33 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       }
     });
   }
+
+    Future<void> _loadUserRoleId() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userId = prefs.getString('userID') ?? '';
+    if (userId.isEmpty) {
+      setState(() {
+        userRoleId = 0;
+      });
+      return;
+    }
+
+    // Получение ИД РОЛЯ через API
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+    setState(() {
+      userRoleId = userProfile.role!.first.id;
+    });
+    // Выводим данные в консоль
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
+
+  } catch (e) {
+    print('Error loading user role: $e');
+    setState(() {
+      userRoleId = 0;
+    });
+  }
+}
 
   Future<void> _validatePins() async {
     if (_pin == _confirmPin) {

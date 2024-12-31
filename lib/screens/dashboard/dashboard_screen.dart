@@ -59,8 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isChartsLoaded = true;
     });
   }
-
-
+  
   Future<void> _loadUserRole() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -89,6 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
   }
+
 
   Future<void> _loadImportantBoxes() async {
     await Future.delayed(Duration(seconds: 2));

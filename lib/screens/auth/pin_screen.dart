@@ -39,10 +39,12 @@ class _PinScreenState extends State<PinScreen>
   @override
   void initState() {
     super.initState();
+  _loadUserRoleId().then((_) {
+    // После загрузки разрешений продолжаем остальные операции
     _checkSavedPin();
     _initBiometrics();
-    _loadUserPhone(); // Вызов асинхронного метода загрузки данных пользователя
-    _loadUserRoleId();
+    _loadUserPhone();
+  });
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -64,7 +66,6 @@ class _PinScreenState extends State<PinScreen>
   try {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String userId = prefs.getString('userID') ?? '';
-
     if (userId.isEmpty) {
       setState(() {
         userRoleId = 0;
@@ -78,7 +79,6 @@ class _PinScreenState extends State<PinScreen>
       userRoleId = userProfile.role!.first.id;
     });
     // Выводим данные в консоль
-    print('User role ID: $userRoleId');
     context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
 
   } catch (e) {
@@ -302,11 +302,11 @@ class _PinScreenState extends State<PinScreen>
     } else {
       greetingPrefix = 'Доброй ночи';
     }
-    print(
-        '-----------------------------------------------------------------------------');
-    print(
-        '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
-    print(_userNameProfile);
+    // print(
+    //     '-----------------------------------------------------------------------------');
+    // print(
+    //     '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
+    // print(_userNameProfile);
     return '$greetingPrefix, $_userNameProfile!';
 
   }
