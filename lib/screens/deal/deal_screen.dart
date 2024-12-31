@@ -74,7 +74,7 @@ int? _deletedIndex;
 
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('dealStatus.read');
+    final canRead = await _apiService.hasPermission('deal.read');
     // final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
     final canDelete = await _apiService.hasPermission('dealStatus.delete');
