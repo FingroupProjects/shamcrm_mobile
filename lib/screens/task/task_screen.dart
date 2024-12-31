@@ -349,33 +349,29 @@ int? _deletedIndex;
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else {
-            // Показываем сообщение об ошибке через SnackBar
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   SnackBar(
-            //     content: Text(
-            //       '${state.message}',
-            //       style: TextStyle(
-            //         fontFamily: 'Gilroy',
-            //         fontSize: 16, // Размер шрифта совпадает с CustomTextField
-            //         fontWeight: FontWeight.w500, // Жирность текста
-            //         color: Colors.white, // Цвет текста для читаемости
-            //       ),
-            //     ),
-            //     behavior: SnackBarBehavior.floating,
-            //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            //     shape: RoundedRectangleBorder(
-            //       borderRadius: BorderRadius.circular(
-            //           12), // Радиус, как у текстового поля
-            //     ),
-            //     backgroundColor: Colors.red, // Цвет фона, как у текстового поля
-            //     elevation: 3,
-            //     padding: EdgeInsets.symmetric(
-            //         vertical: 12,
-            //         horizontal: 16), // Паддинг для комфортного восприятия
-            //     duration: Duration(seconds: 3), // Установлено на 2 секунды
-            //   ),
-            // );
+          }  else if (state.message.contains("Нет подключения к интернету")) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
         }
       },

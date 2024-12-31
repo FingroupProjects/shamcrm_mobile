@@ -695,7 +695,7 @@ Future<List<String>> fetchPermissionsByRoleId(String roleId) async {
 Future<void> savePermissions(List<String> permissions) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.setStringList('permissions', permissions);
-  print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
+  // print('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
 }
 
 
@@ -703,7 +703,7 @@ Future<void> savePermissions(List<String> permissions) async {
 Future<List<String>> getPermissions() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final permissions = prefs.getStringList('permissions') ?? [];
-  print('Извлечённые права доступа: $permissions');
+  // print('Извлечённые права доступа: $permissions');
   return permissions;
 }
 

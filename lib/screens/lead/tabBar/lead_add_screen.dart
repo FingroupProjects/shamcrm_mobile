@@ -53,8 +53,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
 
-  
-
   @override
   void initState() {
     super.initState();
@@ -64,13 +62,12 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     _fetchAndAddCustomFields();
   }
-void _fetchAndAddCustomFields() async {
+
+  void _fetchAndAddCustomFields() async {
     try {
-      // Здесь предполагается, что getCustomFields определён в ApiService
-      final data =
-          await ApiService().getCustomFieldslead(); // Выполнить GET-запрос
+      final data = await ApiService().getCustomFieldslead();
       if (data['result'] != null) {
-        data['result'].forEach(( value) {
+        data['result'].forEach((value) {
           setState(() {
             customFields.add(CustomField(fieldName: value));
           });
@@ -87,7 +84,6 @@ void _fetchAndAddCustomFields() async {
     });
   }
 
-  
   void _showAddFieldDialog() {
     showDialog(
       context: context,
@@ -137,39 +133,25 @@ void _fetchAndAddCustomFields() async {
       body: BlocListener<LeadBloc, LeadState>(
         listener: (context, state) {
           if (state is LeadError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Container(
-              decoration: BoxDecoration(
-                // color:  Colors.yellow[400], 
-                color:  Colors.red, 
-                borderRadius: BorderRadius.circular(12),
-                // border: Border.all(
-                //   color:  Colors.black, // Цвет границы
-                //   width: 1,
-                // ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              child: Text(
-                '${state.message}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                backgroundColor: Colors.red,
+                elevation: 0,
+                duration: Duration(seconds: 3),
               ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            backgroundColor: Colors.transparent, 
-            elevation: 0, 
-            duration: Duration(seconds: 3),
-          ),
-        );
-
-          } else
-          if (state is LeadSuccess) {
+            );
+          } else if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -367,93 +349,7 @@ void _fetchAndAddCustomFields() async {
                               buttonText: 'Добавить',
                               buttonColor: Color(0xff4759FF),
                               textColor: Colors.white,
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  final String name = titleController.text;
-                                  final String phone = selectedDialCode;
-                                  final String? instaLogin =
-                                      instaLoginController.text.isEmpty
-                                          ? null
-                                          : instaLoginController.text;
-                                  final String? facebookLogin =
-                                      facebookLoginController.text.isEmpty
-                                          ? null
-                                          : facebookLoginController.text;
-                                  final String? tgNick =
-                                      tgNickController.text.isEmpty
-                                          ? null
-                                          : tgNickController.text;
-                                  final String? whatsapp =
-                                      whatsappController.text.isEmpty ||
-                                              selectedDialCodeWhatsapp.isEmpty
-                                          ? null
-                                          : selectedDialCodeWhatsapp;
-                                  final String? birthdayString =
-                                      birthdayController.text.isEmpty
-                                          ? null
-                                          : birthdayController.text;
-                                  final String? email =
-                                      emailController.text.isEmpty
-                                          ? null
-                                          : emailController.text;
-                                  final String? description =
-                                      descriptionController.text.isEmpty
-                                          ? null
-                                          : descriptionController.text;
-
-                                  DateTime? birthday;
-                                  if (birthdayString != null &&
-                                      birthdayString.isNotEmpty) {
-                                    try {
-                                      birthday = DateFormat('dd/MM/yyyy')
-                                          .parse(birthdayString);
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Введите корректную дату рождения в формате ДД/ММ/ГГГГ'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  }
-                                  // Создание сделки
-                                  List<Map<String, String>> customFieldMap = [];
-                                  for (var field in customFields) {
-                                    String fieldName = field.fieldName.trim();
-                                    String fieldValue =
-                                        field.controller.text.trim();
-                                    if (fieldName.isNotEmpty &&
-                                        fieldValue.isNotEmpty) {
-                                      customFieldMap
-                                          .add({fieldName: fieldValue});
-                                    }
-                                  }
-                                  context.read<LeadBloc>().add(CreateLead(
-                                        name: name,
-                                        leadStatusId: widget.statusId,
-                                        phone: phone,
-                                        regionId: selectedRegion != null
-                                            ? int.parse(selectedRegion!)
-                                            : null,
-                                        managerId: selectedManager != null
-                                            ? int.parse(selectedManager!)
-                                            : null,
-                                        sourceId: selectedSourceLead != null
-                                            ? int.parse(selectedSourceLead!)
-                                            : null,
-                                        instaLogin: instaLogin,
-                                        facebookLogin: facebookLogin,
-                                        tgNick: tgNick,
-                                        waPhone: whatsapp,
-                                        birthday: birthday,
-                                        email: email,
-                                        description: description,
-                                        customFields: customFieldMap,
-                                      ));
-                                }
-                              },
+                              onPressed: _submitForm,
                             );
                           }
                         },
@@ -467,6 +363,101 @@ void _fetchAndAddCustomFields() async {
         ),
       ),
     );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      _createLead();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Пожалуйста, заполните все обязательные поля!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _createLead() {
+    final String name = titleController.text;
+    final String phone = selectedDialCode;
+    final String? instaLogin =
+        instaLoginController.text.isEmpty ? null : instaLoginController.text;
+    final String? facebookLogin = facebookLoginController.text.isEmpty
+        ? null
+        : facebookLoginController.text;
+    final String? tgNick =
+        tgNickController.text.isEmpty ? null : tgNickController.text;
+    final String? whatsapp =
+        whatsappController.text.isEmpty || selectedDialCodeWhatsapp.isEmpty
+            ? null
+            : selectedDialCodeWhatsapp;
+    final String? birthdayString =
+        birthdayController.text.isEmpty ? null : birthdayController.text;
+    final String? email =
+        emailController.text.isEmpty ? null : emailController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
+
+    DateTime? birthday;
+    if (birthdayString != null && birthdayString.isNotEmpty) {
+      try {
+        birthday = DateFormat('dd/MM/yyyy').parse(birthdayString);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Введите корректную дату рождения в формате ДД/ММ/ГГГГ'),
+          ),
+        );
+        return;
+      }
+    }
+
+    List<Map<String, String>> customFieldMap = [];
+    for (var field in customFields) {
+      String fieldName = field.fieldName.trim();
+      String fieldValue = field.controller.text.trim();
+      if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+        customFieldMap.add({fieldName: fieldValue});
+      }
+    }
+
+    context.read<LeadBloc>().add(CreateLead(
+          name: name,
+          leadStatusId: widget.statusId,
+          phone: phone,
+          regionId: selectedRegion != null ? int.parse(selectedRegion!) : null,
+          managerId:
+              selectedManager != null ? int.parse(selectedManager!) : null,
+          sourceId: selectedSourceLead != null
+              ? int.parse(selectedSourceLead!)
+              : null,
+          instaLogin: instaLogin,
+          facebookLogin: facebookLogin,
+          tgNick: tgNick,
+          waPhone: whatsapp,
+          birthday: birthday,
+          email: email,
+          description: description,
+          customFields: customFieldMap,
+        ));
   }
 }
 
