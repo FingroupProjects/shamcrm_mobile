@@ -431,6 +431,29 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     leadStatusId: widget.statusId,
                                     customFields: customFieldList,
                                   ));
+                                  } else {
+                                   ScaffoldMessenger.of(context).showSnackBar(
+                                     SnackBar(
+                                       content: Text(
+                                         'Пожалуйста, заполните все обязательные поля!',
+                                         style: TextStyle(
+                                           fontFamily: 'Gilroy',
+                                           fontSize: 16,
+                                           fontWeight: FontWeight.w500,
+                                           color: Colors.white,
+                                         ),
+                                       ),
+                                       behavior: SnackBarBehavior.floating,
+                                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                       shape: RoundedRectangleBorder(
+                                         borderRadius: BorderRadius.circular(12),
+                                       ),
+                                       backgroundColor: Colors.red,
+                                       elevation: 3,
+                                       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                       duration: Duration(seconds: 3),
+                                     ),
+                                   );
                                 }
                               },
                             );
