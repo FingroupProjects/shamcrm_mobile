@@ -230,9 +230,3 @@ class _LeadCardState extends State<LeadCard> {
     );
   }
 }
-
-
-
-
-
-

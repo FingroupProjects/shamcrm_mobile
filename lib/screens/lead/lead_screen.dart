@@ -169,14 +169,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               onStatusUpdated: () {
                 context.read<LeadBloc>().add(FetchLeads(statusId));
               },
-              onStatusId: (StatusLeadId) {
-                // setState(() {
-                //   final int newLeadStatus = StatusLeadId;
-                //   // print('-------------------------------------------------');
-                //   // print('-----------------------NEW TEST STATUS ID--------------------------');
-                //   // print(newLeadStatus);
-                // });
-              },
+              onStatusId: (StatusLeadId) {},
             ),
           );
         },
@@ -221,14 +214,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       setState(() {
         navigateToEnd = true;
       });
-
-      // _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
-      // _tabKeys.add(GlobalKey());
-
-      // if (_tabController != null) {
-      //   _tabController.animateTo(_tabTitles.length - 1);
-      //   _currentTabIndex = _tabTitles.length - 1;
-      // }
     }
   }
 
@@ -455,10 +440,3 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 }
 
-// void _scrollToActiveTab() {
-//   final key = _tabKeys[_currentTabIndex];
-//   if (key.currentContext != null) {
-//     Scrollable.ensureVisible(key.currentContext!,
-//         duration: const Duration(milliseconds: 800));
-//   }
-// }
