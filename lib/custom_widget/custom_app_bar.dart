@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
+import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,8 +39,12 @@ class _CustomAppBarState extends State<CustomAppBar> {
   late FocusNode focusNode;
   String _userImage = '';
   String _lastLoadedImage = '';
-
   static String _cachedUserImage = '';
+
+  bool _hasNewNotification = false;
+
+  late PusherChannelsClient socketClient;
+  late StreamSubscription<ChannelReadEvent> notificationSubscription;
 
   @override
   void initState() {
@@ -48,7 +56,69 @@ class _CustomAppBarState extends State<CustomAppBar> {
     } else {
       _loadUserProfile();
     }
+    _setUpSocketForNotifications();
+
     super.initState();
+  }
+
+  Future<void> _setUpSocketForNotifications() async {
+    debugPrint(
+        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    final baseUrlSocket = await ApiService().getSocketBaseUrl();
+    final enteredDomain = await ApiService().getEnteredDomain();
+
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
+
+    socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {},
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
+
+    String userId = prefs.getString('userID') ?? '';
+
+    final myPresenceChannel = socketClient.presenceChannel(
+      'presence-user.$userId',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back'
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint(exception);
+        },
+      ),
+    );
+
+    socketClient.onConnectionEstablished.listen((_) {
+      myPresenceChannel.subscribeIfNotUnsubscribed();
+
+      notificationSubscription =
+          myPresenceChannel.bind('notification.created').listen((event) {
+        debugPrint('Received notification: ${event.data}');
+        setState(() {
+          _hasNewNotification = true;
+        });
+      });
+    });
+
+    try {
+      await socketClient.connect();
+      print('Socket connection SUCCESSS');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Socket connection error: $e');
+      }
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -56,6 +126,13 @@ class _CustomAppBarState extends State<CustomAppBar> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+
+      // Проверяем, изменилось ли изображение
+      if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
+        setState(() {
+          _userImage = userProfile.image!;
+          _lastLoadedImage = userProfile.image!; // Сохраняем для будущего сравнения
       UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
       
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
@@ -80,6 +157,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
       }
     }
   }
+
+  // Добавляем метод для принудительного обновления изображения
 
   Future<void> refreshUserImage() async {
     _lastLoadedImage = '';
@@ -108,6 +187,16 @@ class _CustomAppBarState extends State<CustomAppBar> {
     });
   }
 
+  @override
+  void dispose() {
+    notificationSubscription.cancel();
+    socketClient.disconnect();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Функция для извлечения URL из SVG
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
@@ -226,20 +315,44 @@ class _CustomAppBarState extends State<CustomAppBar> {
             ),
           Row(
             children: [
-              IconButton(
-                icon: Image.asset(
-                  'assets/icons/AppBar/notification.png',
-                  width: 24,
-                  height: 24,
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsScreen(),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Stack(
+                      children: [
+                        Image.asset(
+                          'assets/icons/AppBar/notification.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                        if (_hasNewNotification)
+                          Positioned(
+                            right: 0,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  );
-                },
+
+                    onPressed: () {
+                      setState(() {
+                        _hasNewNotification = false; // Сбрасываем уведомления
+                      });
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
               if (widget.showSearchIcon)
                 IconButton(
