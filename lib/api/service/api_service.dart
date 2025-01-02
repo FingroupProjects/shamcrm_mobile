@@ -2325,7 +2325,142 @@ Future<bool> hasPermission(String permission) async {
       };
     }
   }
+// api_service.dart
+Future<Map<String, dynamic>> createTaskFromDeal({
+  required int dealId,
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  int? priority,
+  DateTime? startDate,
+  DateTime? endDate,
+  int? projectId,
+  List<int>? userId,
+  String? description,
+  List<Map<String, String>>? customFields,
+  String? filePath,
+  int position = 1,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/task/createFromDeal/$dealId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    });
+
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['position'] = position.toString();
+
+    if (priority != null) {
+      request.fields['priority_level'] = priority.toString();
+    }
+    if (startDate != null) {
+      request.fields['from'] = startDate.toIso8601String();
+    }
+    if (endDate != null) {
+      request.fields['to'] = endDate.toIso8601String();
+    }
+    if (projectId != null) {
+      request.fields['project_id'] = projectId.toString();
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      for (int i = 0; i < userId.length; i++) {
+        request.fields['users[$i][user_id]'] = userId[i].toString();
+      }
+    }
+
+    if (customFields != null && customFields.isNotEmpty) {
+      for (int i = 0; i < customFields.length; i++) {
+        var field = customFields[i];
+        request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+        request.fields['task_custom_fields[$i][value]'] = field.values.first;
+      }
+    }
+
+    if (filePath != null) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        final fileName = file.path.split('/').last;
+        final fileStream = http.ByteStream(file.openRead());
+        final length = await file.length();
+
+        final multipartFile = http.MultipartFile(
+          'file',
+          fileStream,
+          length,
+          filename: fileName,
+        );
+        request.files.add(multipartFile);
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {
+        'success': true,
+        'message': 'Задача успешно создана из сделки.',
+      };
+    } else if (response.statusCode == 422) {
+      if (response.body.contains('name')) {
+        return {
+          'success': false,
+          'message': 'Название задачи должно быть не менее 3 символов.',
+        };
+      }
+        if (response.statusCode == 500) {
+      return {
+        'success': false,
+        'message': 'Ошибка сервера. Пожалуйста, попробуйте позже'
+      };
+    }
+      if (response.body.contains('from')) {
+        return {
+          'success': false,
+          'message': 'Дата начала задачи указана некорректно.',
+        };
+      }
+      if (response.body.contains('to')) {
+        return {
+          'success': false,
+          'message': 'Дата завершения задачи указана некорректно.',
+        };
+      }
+      if (response.body.contains('priority_level')) {
+        return {
+          'success': false,
+          'message': 'Указан некорректный уровень приоритета.',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Неизвестная ошибка!',
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка создания задачи!',
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при создании задачи!',
+    };
+  }
+}
   Future<Map<String, dynamic>> createTask({
     required String name,
     required int? statusId,

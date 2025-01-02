@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/deal_task/deal_task_event.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/task_add.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -198,17 +199,44 @@ class _TasksWidgetState extends State<TasksWidget> {
     });
   }
 
-  Row _buildTitleRow(String title) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
+Row _buildTitleRow(String title) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        title,
+        style: TaskCardStyles.titleStyle.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      TextButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
+            ),
+          );
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          backgroundColor: Color(0xff1E2E52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
-      ],
-    );
-  }
+        child: Text(
+          'Добавить',
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ],
+  );
+}
 }
