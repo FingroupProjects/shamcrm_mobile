@@ -5,10 +5,12 @@ import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
+import 'package:crm_task_manager/screens/task/task_details/status_list.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
@@ -46,6 +48,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   String? fileSize;
   int? selectedPriority;
   String? selectedProject;
+    String? selectedStatus;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;

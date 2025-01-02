@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_state.dart';
-import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -73,10 +72,7 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
         if (state is ProcessSpeedLoaded) {
           return _buildGauge(state);
         } else if (state is ProcessSpeedLoading) {
-          return const ChartSkeletonLoading(
-            height: 300, // You can adjust this value
-            width: double.infinity,
-          );
+         
         }
         return const SizedBox.shrink();
       },

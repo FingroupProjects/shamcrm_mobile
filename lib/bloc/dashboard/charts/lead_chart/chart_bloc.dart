@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_event.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_state.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 

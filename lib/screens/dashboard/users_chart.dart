@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
@@ -43,13 +42,13 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
       margin: const EdgeInsets.all(16),
       child: BlocBuilder<TaskCompletionBloc, TaskCompletionState>(
         builder: (context, state) {
-          if (state is TaskCompletionLoading) {
-            // Replace CircularProgressIndicator with ChartSkeletonLoading
-            return const ChartSkeletonLoading(
-              height: 300, // You can adjust this value
-              width: double.infinity,
-            );
-          }
+          // if (state is TaskCompletionLoading) {
+          //   // Replace CircularProgressIndicator with ChartSkeletonLoading
+          //   return const ChartSkeletonLoading(
+          //     height: 300, // You can adjust this value
+          //     width: double.infinity,
+          //   );
+          // }
 
           if (state is TaskCompletionLoaded) {
             return _buildTaskList(state);

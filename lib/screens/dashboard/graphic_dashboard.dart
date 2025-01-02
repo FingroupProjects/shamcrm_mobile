@@ -1,7 +1,6 @@
-import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_state.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
-import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,8 +15,9 @@ class GraphicsDashboard extends StatefulWidget {
 class _GraphicsDashboardState extends State<GraphicsDashboard> {
   int currentPage = 0;
   final int itemsPerPage = 5;
-  int? selectedIndex; // Индекс выбранной точки
-  int? selectedLineIndex; // Индекс выбранной линии
+  int? selectedIndex;
+  int? selectedLineIndex;
+  final Map<String, bool> _lineVisibility = {};
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
       builder: (context, state) {
         if (state is DashboardChartLoading) {
           // return const ChartSkeletonLoading(
-          //   height: 300, // You can adjust this value
+          //   height: 300,
           //   width: double.infinity,
           // );
         }
@@ -58,6 +58,10 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
         }
 
         if (state is DashboardChartLoaded && state.chartData.isNotEmpty) {
+          for (var data in state.chartData) {
+            _lineVisibility.putIfAbsent(data.label, () => true);
+          }
+
           List<List<ChartData>> paginatedData = _paginateData(state.chartData);
 
           return Padding(
@@ -81,7 +85,6 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                     _buildChartData(state.chartData),
                   ),
                 ),
-                // const SizedBox(height: 8),
                 _buildStatsList(paginatedData[currentPage]),
                 _buildPagination(paginatedData),
               ],
@@ -115,6 +118,15 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
     List<LineChartBarData> lineBars = chartData.asMap().entries.map((entry) {
       int lineIndex = entry.key;
       ChartData data = entry.value;
+
+      // Проверяем видимость линии
+      if (!(_lineVisibility[data.label] ?? true)) {
+        return LineChartBarData(
+          spots: [],
+          show: false,
+          dotData: FlDotData(show: false),
+        );
+      }
 
       List<FlSpot> spots = data.data.asMap().entries.map((entry) {
         double x = entry.key.toDouble();
@@ -158,10 +170,9 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
         .reduce((a, b) => a > b ? a : b)
         .toDouble();
 
-    // Обеспечиваем, чтобы horizontalInterval не был равен нулю
     double horizontalInterval = maxY / 5;
     if (horizontalInterval == 0) {
-      horizontalInterval = 1; // Устанавливаем минимальное значение интервала
+      horizontalInterval = 1;
     }
 
     return LineChartData(
@@ -270,26 +281,29 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
       lineTouchData: LineTouchData(
         touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
           if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
-            // Проверяем, что список не пуст
             final firstSpot = touchResponse!.lineBarSpots!.first;
             setState(() {
               selectedLineIndex = chartData.indexWhere(
                 (data) => data.data.contains(firstSpot.y.toInt()),
               );
-              selectedIndex =
-                  firstSpot.spotIndex; // Убедитесь, что 'spotIndex' существует.
+              selectedIndex = firstSpot.spotIndex;
             });
           }
         },
         touchTooltipData: LineTouchTooltipData(
+          fitInsideHorizontally: true,
+          fitInsideVertically: true,
           getTooltipItems: (List<LineBarSpot> spots) {
             return spots.map((spot) {
-              // Найти соответствующий ChartData для линии и точки
-              final lineData = chartData[spots.indexOf(spot)];
-              final label = lineData.label; // Название статуса
+              final lineData = chartData[spot.barIndex];
+              // Проверяем видимость линии перед созданием тултипа
+              if (!(_lineVisibility[lineData.label] ?? true)) {
+                return null;
+              }
+              final label = lineData.label;
               return LineTooltipItem(
                 '$label: ${spot.y.toInt()}',
-                const TextStyle(
+                TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -306,26 +320,40 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
   Widget _buildStatsList(List<ChartData> chartData) {
     List<Widget> stats = chartData.map((data) {
       Color color = Color(int.parse(data.color.replaceFirst('#', '0xff')));
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: Row(
-          children: [
-            Icon(
-              Icons.circle,
-              color: color,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${data.label}',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
+      bool isVisible = _lineVisibility[data.label] ?? true;
+
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _lineVisibility[data.label] = !isVisible;
+            // Сбрасываем выбранную точку при скрытии линии
+            if (!(!isVisible)) {
+              selectedIndex = null;
+              selectedLineIndex = null;
+            }
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Row(
+            children: [
+              Icon(
+                Icons.circle,
+                color: color.withOpacity(isVisible ? 1.0 : 0.5),
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                '${data.label}',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black.withOpacity(isVisible ? 1.0 : 0.5),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }).toList();
@@ -342,7 +370,6 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
             color: Colors.black,
           ),
         ),
-        // const SizedBox(height: 8),
         ...stats,
       ],
     );
