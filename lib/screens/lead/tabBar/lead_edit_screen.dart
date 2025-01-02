@@ -296,7 +296,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       CustomTextField(
                         controller: emailController,
                         hintText: 'Введите электронную почту',
-                        label: 'Email',
+                        label: 'Электронная почта',
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
