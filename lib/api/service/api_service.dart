@@ -230,7 +230,7 @@ class ApiService {
 
     final response = await http.get(
       Uri.parse(
-          '$baseUrl/user/getAnotherUsers${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+          '$baseUrl/user/getAnotherUsers/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

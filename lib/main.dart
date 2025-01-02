@@ -180,8 +180,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
         BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
-        BlocProvider(
-            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,
