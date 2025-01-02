@@ -1,4 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
+import 'package:crm_task_manager/bloc/deal_task/deal_task_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
@@ -363,6 +365,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 filePath: selectedFile,
               ),
             );
+
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

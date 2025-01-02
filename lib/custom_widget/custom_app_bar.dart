@@ -51,32 +51,28 @@ class _CustomAppBarState extends State<CustomAppBar> {
     super.initState();
   }
 
-Future<void> _loadUserProfile() async {
+  Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
       UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
       
-      // Проверяем, изменилось ли изображение
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
           _userImage = userProfile.image!;
-          _lastLoadedImage = userProfile.image!; // Сохраняем для будущего сравнения
+          _lastLoadedImage = userProfile.image!;
           _cachedUserImage = userProfile.image!;
         });
 
-        // Обновляем кэш только если изображение изменилось
         await prefs.setString('userProfileImage_$UUID', _userImage);
       } else if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
-        // Если текущее изображение пустое, но есть кэшированное
         setState(() {
           _userImage = _cachedUserImage;
         });
       }
     } catch (e) {
       print('Ошибка при загрузке изображения: $e');
-      // В случае ошибки используем кэшированное изображение если оно есть
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;
@@ -84,12 +80,11 @@ Future<void> _loadUserProfile() async {
       }
     }
   }
-  // Добавляем метод для принудительного обновления изображения
-  Future<void> refreshUserImage() async {
-    _lastLoadedImage = ''; // Сбрасываем последнее загруженное изображение
-    await _loadUserProfile(); // Перезагружаем профиль
-  }
 
+  Future<void> refreshUserImage() async {
+    _lastLoadedImage = '';
+    await _loadUserProfile();
+  }
 
   void _toggleSearch() {
     setState(() {
@@ -102,28 +97,83 @@ Future<void> _loadUserProfile() async {
       }
     });
   }
-@override
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Периодически проверяем обновления
     Future.delayed(Duration(seconds: 30), () {
       if (mounted) {
         _loadUserProfile();
       }
     });
   }
-  @override
-  Widget build(BuildContext context) {
-    // Функция для извлечения URL из SVG
-    String? extractImageUrlFromSvg(String svg) {
-      if (svg.contains('href="')) {
-        final start = svg.indexOf('href="') + 6;
-        final end = svg.indexOf('"', start);
-        return svg.substring(start, end);
-      }
-      return null;
+
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
+    }
+    return null;
+  }
+
+  Widget _buildAvatarImage(String imageSource) {
+    if (imageSource.isEmpty) {
+      return Image.asset(
+        'assets/icons/playstore.png',
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+      );
     }
 
+    if (imageSource.startsWith('<svg')) {
+      final imageUrl = extractImageUrlFromSvg(imageSource);
+      
+      if (imageUrl != null) {
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } else {
+        return SvgPicture.string(
+          imageSource,
+          width: 40,
+          height: 40,
+          fit: BoxFit.contain,
+        );
+      }
+    }
+
+    return Image.network(
+      imageSource,
+      width: 40,
+      height: 40,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center();
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          'assets/icons/playstore.png',
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       height: kToolbarHeight,
@@ -138,48 +188,7 @@ Future<void> _loadUserProfile() async {
             height: 40,
             child: IconButton(
               padding: EdgeInsets.zero,
-              icon: _userImage.isNotEmpty
-                  ? _userImage.startsWith('<svg')
-                      ? Container(
-                          width: 40,
-                          height: 40,
-                          // decoration: BoxDecoration(
-                          //   shape: BoxShape.circle,
-                          //   image: DecorationImage(
-                          //     image: NetworkImage(
-                          //       extractImageUrlFromSvg(_userImage) ?? '',
-                          //     ),
-                          //     fit: BoxFit.cover,
-                          //   ),
-                          // ),
-                        )
-                      : Image.network(
-                          _userImage,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) {
-                              return child;
-                            } else {
-                              return Center();
-                            }
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/icons/playstore.png',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                  : Image.asset(
-                      'assets/icons/playstore.png',
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                    ),
+              icon: _buildAvatarImage(_userImage),
               onPressed: widget.onClickProfileAvatar,
             ),
           ),
@@ -227,7 +236,8 @@ Future<void> _loadUserProfile() async {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => NotificationsScreen()),
+                      builder: (context) => NotificationsScreen(),
+                    ),
                   );
                 },
               ),

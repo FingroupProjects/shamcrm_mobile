@@ -3776,7 +3776,14 @@ Future<Map<String, dynamic>> createTaskFromDeal({
           'success': false,
           'message': 'Ошибка валидации данных. Проверьте введенные данные.'
         };
-      } else if (response.statusCode == 500) {
+      } 
+       if (response.body.contains('validation.phone')) {
+        return {
+          'success': false,
+          'message':
+              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+        };
+      }else if (response.statusCode == 500) {
         return {
           'success': false,
           'message': 'Ошибка на сервере. Попробуйте позже.'

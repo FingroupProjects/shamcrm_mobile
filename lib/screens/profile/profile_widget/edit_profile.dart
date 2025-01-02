@@ -43,7 +43,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _phoneError;
   String? _emailError;
   bool _isLoading = true; // Add loading state
-bool _isButtonLoading = false; // Добавляем состояние загрузки кнопки
+  bool _isButtonLoading = false; // Добавляем состояние загрузки кнопки
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController phoneController = TextEditingController();
   String selectedDialCode = ''; // Default country code
@@ -472,16 +473,53 @@ bool _isButtonLoading = false; // Добавляем состояние загр
   @override
   Widget build(BuildContext context) {
     // Функция для извлечения URL из SVG
-    String? extractImageUrlFromSvg(String svg) {
-      if (svg.contains('href="')) {
+    Widget buildSvgAvatar(String svg) {
+      if (svg.contains('image href=')) {
+        // Извлекаем URL изображения
         final start = svg.indexOf('href="') + 6;
         final end = svg.indexOf('"', start);
-        return svg.substring(start, end);
+        final imageUrl = svg.substring(start, end);
+
+        return Container(
+          width: 140,
+          height: 140,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } else {
+        // Для SVG с текстом используем стилизованный контейнер
+        return Container(
+          width: 140,
+          height: 140,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFF2C2C2C),
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
       }
-      return null;
     }
 
     return Scaffold(
+        key: _formKey,
         appBar: AppBar(
           title: Text('Редактирование профиля',
               style: const TextStyle(
@@ -534,21 +572,7 @@ bool _isButtonLoading = false; // Добавляем состояние загр
                                         : _userImage != 'Не найдено' &&
                                                 _userImage.isNotEmpty
                                             ? _userImage.contains('<svg')
-                                                ? Container(
-                                                    width: 140,
-                                                    height: 140,
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      image: DecorationImage(
-                                                        image: NetworkImage(
-                                                          extractImageUrlFromSvg(
-                                                                  _userImage) ??
-                                                              '',
-                                                        ),
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                    ),
-                                                  )
+                                                ? buildSvgAvatar(_userImage)
                                                 : Container(
                                                     width: 140,
                                                     height: 140,
@@ -645,37 +669,47 @@ bool _isButtonLoading = false; // Добавляем состояние загр
                                   }
                                 }
                               },
-                              validator: (value) => value!.isEmpty
-                                  ? 'Поле обязательно для заполнения'
-                                  : null,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Поле обязательно для заполнения';
+                                }
+
+                                final maxLength = {
+                                      '+992': 9,
+                                      '+7': 10,
+                                      '+998': 9,
+                                      '+996': 9,
+                                      '+1': 10,
+                                    }[selectedDialCode] ??
+                                    0;
+
+                                if (value.length != maxLength) {
+                                  return 'Некорректная длина номера для $selectedDialCode';
+                                }
+
+                                return null;
+                              },
                               label: 'Телефон',
                             ),
-                            if (_phoneError != null)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 4, right: 75),
-                                child: Text(
-                                  _phoneError!,
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                ),
-                              ),
                             const SizedBox(height: 8),
-                            CustomTextField(
-                              controller: roleController,
-                              hintText: 'Введите роль',
-                              label: 'Роль',
-                              readOnly: true,
+                            Opacity(
+                              opacity: 0.6, // Прозрачность для всего виджета
+                              child: CustomTextField(
+                                controller: roleController,
+                                hintText: 'Введите роль',
+                                label: 'Роль',
+                                readOnly: true,
+                              ),
                             ),
                             const SizedBox(height: 8),
-                            CustomTextField(
-                              controller: loginController,
-                              hintText: 'Введите логин',
-                              label: 'Логин',
-                              readOnly: true,
+                            Opacity(
+                              opacity: 0.6, // Прозрачность для всего виджета
+                              child: CustomTextField(
+                                controller: loginController,
+                                hintText: 'Введите логин',
+                                label: 'Логин',
+                                readOnly: true,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             CustomTextField(
@@ -745,7 +779,7 @@ bool _isButtonLoading = false; // Добавляем состояние загр
                                     message = 'Ресурс не найден';
                                   } else {
                                     message =
-                                        'Произошла ошибка при обновлении профиля';
+                                        'Неправильный номер телефона. Проверьте формат и количество цифр.';
                                   }
 
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -890,32 +924,19 @@ bool _isButtonLoading = false; // Добавляем состояние загр
                                   } catch (e) {
                                     _showErrorMessage(
                                         'Произошла ошибка при обновлении профиля');
-                                    setState(() {
-                                      _isButtonLoading =
-                                          false; // Снимаем состояние загрузки
-                                    });
+                                    setState(() {});
                                   }
                                 },
-                          child: _isButtonLoading
-                              ? SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    color:const Color(0xff1E2E52),
-
-                                    strokeWidth: 3,
-                                  ),
-                                )
-                              : Text(
-                                  'Сохранить',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-
+                          child: Text(
+                            'Сохранить',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                       
                         );
                       },
                     ),
