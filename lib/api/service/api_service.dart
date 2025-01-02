@@ -833,7 +833,39 @@ Future<bool> hasPermission(String permission) async {
       throw Exception('Ошибка загрузки лидов: ${response.body}');
     }
   }
+// Future<List<Lead>> getLeads(int? leadStatusId,
+//     {int page = 1, int perPage = 20, String? search}) async {
+//   final organizationId = await getSelectedOrganization();
+//   String path = '/lead?page=$page&per_page=$perPage';
 
+//   // Add organization_id parameter
+//   path += '&organization_id=$organizationId';
+
+//   // Check for search first, if present ignore leadStatusId
+//   if (search != null && search.isNotEmpty) {
+//     path += '&search=$search';
+//   } else if (leadStatusId != null) {
+//     // If search is not provided, use leadStatusId
+//     path += '&lead_status_id=$leadStatusId';
+//   }
+
+//   // Log the final request path
+//   print('Sending request to API with path: $path');
+//   final response = await _getRequest(path);
+
+//   if (response.statusCode == 200) {
+//     final data = json.decode(response.body);
+//     if (data['result']['data'] != null) {
+//       return (data['result']['data'] as List)
+//           .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+//           .toList();
+//     } else {
+//       throw Exception('No lead data found in the response');
+//     }
+//   } else {
+//     throw Exception('Error loading leads: ${response.body}');
+//   }
+// }
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
     final organizationId = await getSelectedOrganization();
