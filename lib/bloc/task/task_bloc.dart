@@ -38,7 +38,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
       emit(TaskLoaded(response));
     } catch (e) {
-      emit(TaskError('Не удалось загрузить данные: ${e.toString()}'));
+      emit(TaskError('Не удалось загрузить данные!'));
     }
   }
 
@@ -64,7 +64,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (e is ApiException && e.statusCode == 401) {
         emit(TaskError('Неавторизованный доступ!'));
       } else {
-        emit(TaskError('Не удалось загрузить данные: ${e.toString()}'));
+        emit(TaskError('Не удалось загрузить данные!'));
       }
     }
   }
@@ -91,7 +91,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
     } catch (e) {
       emit(TaskError(
-          'Не удалось загрузить дополнительные задачи: ${e.toString()}'));
+          'Не удалось загрузить дополнительные задачи!'));
     }
   }
 
@@ -125,7 +125,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskError(result['message']));
       }
     } catch (e) {
-      emit(TaskError('Ошибка создания задачи: ${e.toString()}'));
+      emit(TaskError('Ошибка создания задачи!'));
     }
   }
 
@@ -160,7 +160,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskError(result['message']));
       }
     } catch (e) {
-      emit(TaskError('Ошибка обновления задачи: ${e.toString()}'));
+      emit(TaskError('Ошибка обновления задачи!'));
     }
   }
 
@@ -184,7 +184,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskError('Ошибка удаления задача'));
       }
     } catch (e) {
-      emit(TaskError('Ошибка удаления задача: ${e.toString()}'));
+      emit(TaskError('Ошибка удаления задача!'));
     }
   }
 
@@ -200,7 +200,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskError('Ошибка удаления статуса сделки'));
       }
     } catch (e) {
-      emit(TaskError('Ошибка удаления статуса сделки: ${e.toString()}'));
+      emit(TaskError('Ошибка удаления статуса сделки!'));
     }
   }
 }

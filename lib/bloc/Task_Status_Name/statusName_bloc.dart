@@ -20,7 +20,7 @@ class TaskStatusNameBloc extends Bloc<StatusNameEvent, StatusNameState> {
           emit(StatusNameLoaded(statuses));
         } catch (e) {
           print('Ошибка при загрузке статусов: $e'); // For debugging
-          emit(StatusNameError('Ошибка при загрузке имен статусов: ${e.toString()}'));
+          emit(StatusNameError('Ошибка при загрузке имен статусов!'));
         }
       } else {
         emit(StatusNameError('Нет подключения к интернету'));

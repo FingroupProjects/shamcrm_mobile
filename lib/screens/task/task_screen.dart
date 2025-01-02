@@ -158,17 +158,14 @@ int? _deletedIndex;
         controller: _scrollController,
         itemCount: tasks.length,
         itemBuilder: (context, index) {
-          final statusId = _tabTitles[_currentTabIndex]['id'];
-          final title = _tabTitles[_currentTabIndex]['title'];
+          final task = tasks[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TaskCard(
-              task: tasks[index],
-              name: title,
-              statusId: statusId,
-              onStatusUpdated: () {
-                context.read<TaskBloc>().add(FetchTasks(statusId));
-              },
+              task: task,
+              name: task.taskStatus?.taskStatus.name ?? "",
+              statusId: task.statusId,
+              onStatusUpdated: () {},
               onStatusId: (StatusTaskId) {},
             ),
           );
@@ -213,12 +210,6 @@ int? _deletedIndex;
     setState(() {
       navigateToEnd = true; 
     });
-
-    // if (result != null && result.isNotEmpty) {
-    //   setState(() {
-    //     _tabTitles.add({'id': _tabTitles.length + 1, 'title': result});
-    //     _tabKeys.add(GlobalKey());
-    //   });
     }
   }
 
@@ -230,7 +221,6 @@ int? _deletedIndex;
         _tabController.animateTo(index);
       },
       onLongPress: () {
-        // Показываем диалог удаления только если есть разрешение
         if (_canDeleteTaskStatus) {
           _showDeleteDialog(index);
         }
@@ -317,7 +307,7 @@ int? _deletedIndex;
                 _scrollToActiveTab();
               }
 
-              //Логика для перехода к созданн статусе
+          //Логика для перехода к созданн статусе
          if (navigateToEnd) {
          navigateToEnd = false;
          if (_tabController != null) {
@@ -325,7 +315,7 @@ int? _deletedIndex;
          }
       }
 
-//Логика для перехода к после удаления статусе на лево
+          //Логика для перехода к после удаления статусе на лево
            if (navigateAfterDelete) {
           navigateAfterDelete = false;
           if (_deletedIndex != null) {

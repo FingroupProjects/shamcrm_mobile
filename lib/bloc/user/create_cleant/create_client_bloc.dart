@@ -24,7 +24,7 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
       emit(CreateClientSuccess(chatId: chatId)); // Передаем chatId в состояние
     } catch (e) {
       print('Ошибка при создании клиента: $e');
-      emit(CreateClientError(message: 'Ошибка при создании клиента: ${e.toString()}'));
+      emit(CreateClientError(message: 'Ошибка при создании клиента!'));
     }
   } else {
     emit(CreateClientError(message: 'Нет подключения к интернету'));

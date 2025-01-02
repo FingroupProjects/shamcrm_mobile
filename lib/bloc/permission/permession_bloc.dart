@@ -25,7 +25,7 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       await apiService.savePermissions(permissions);
       emit(PermissionsLoaded(permissionModels));
     } catch (e) {
-      emit(PermissionsError('Ошибка при загрузке прав доступа: ${e.toString()}'));
+      emit(PermissionsError('Ошибка при загрузке прав доступа!'));
     }
   }
 }

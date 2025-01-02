@@ -17,7 +17,7 @@ class DealHistoryBloc extends Bloc<DealHistoryEvent, DealHistoryState> {
           final dealHistory = await apiService.getDealHistory(event.dealId);
           emit(DealHistoryLoaded(dealHistory));
         } catch (e) {
-          emit(DealHistoryError('Ошибка при загрузке истории сделки: ${e.toString()}'));
+          emit(DealHistoryError('Ошибка при загрузке истории сделки!'));
         }
       } else {
         emit(DealHistoryError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

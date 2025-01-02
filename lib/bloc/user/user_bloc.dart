@@ -19,7 +19,7 @@ class UserTaskBloc extends Bloc<UserTaskEvent, UserTaskState> {
           emit(UserTaskLoaded(user.cast<UserTask>()));  
         } catch (e) {
           print('Ошибка при загрузке клиентов: $e'); // For debugging
-          emit(UserTaskError('Ошибка при загрузке клиентов: ${e.toString()}'));
+          emit(UserTaskError('Ошибка при загрузке клиентов!'));
         }
       } else {
         emit(UserTaskError('Нет подключения к интернету'));

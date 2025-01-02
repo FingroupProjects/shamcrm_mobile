@@ -20,7 +20,7 @@ class LeadByIdBloc extends Bloc<LeadByIdEvent, LeadByIdState> {
         final lead = await apiService.getLeadById(event.leadId);
         emit(LeadByIdLoaded(lead));
       } catch (e) {
-        emit(LeadByIdError('Не удалось загрузить данные лида: ${e.toString()}'));
+        emit(LeadByIdError('Не удалось загрузить данные лида!'));
       }
     } else {
       emit(LeadByIdError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
