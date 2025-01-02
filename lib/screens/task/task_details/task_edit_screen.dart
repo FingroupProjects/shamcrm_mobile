@@ -672,7 +672,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                            'Ошибка в формате даты: ${e.toString()}'),
+                                            'Ошибка в формате даты!'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );

@@ -20,7 +20,7 @@ class ChatByIdBloc extends Bloc<ChatByIdEvent, ChatByIdState> {
         final chat = await apiService.getChatById(event.chatId);
         emit(ChatByIdLoaded(chat));
       } catch (e) {
-        emit(ChatByIdError('Не удалось загрузить данные чата: ${e.toString()}'));
+        emit(ChatByIdError('Не удалось загрузить данные чата!'));
       }
     } else {
       emit(ChatByIdError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

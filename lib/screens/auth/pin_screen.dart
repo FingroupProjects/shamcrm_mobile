@@ -49,6 +49,7 @@
         _initializeData();
       });
 
+
       _animationController = AnimationController(
         duration: const Duration(milliseconds: 500),
         vsync: this,
@@ -65,16 +66,20 @@
       });
     }
 
-    Future<void> _initializeData() async {
-      await _loadUserRoleId();
-      await _checkSavedPin();
-      await _initBiometrics();
-      
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+  
+    });
+  }
+
+
+  Future<void> _initializeData() async {
+    await _loadUserRoleId();
+    await _checkSavedPin();
+    await _initBiometrics();
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
     Future<void> _loadUserRoleId() async {
       try {

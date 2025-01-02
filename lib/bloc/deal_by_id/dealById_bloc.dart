@@ -30,7 +30,7 @@ class DealByIdBloc extends Bloc<DealByIdEvent, DealByIdState> {
         final deal = await apiService.getDealById(event.dealId);
         emit(DealByIdLoaded(deal));
       } catch (e) {
-        emit(DealByIdError('Не удалось загрузить данные сделки: ${e.toString()}'));
+        emit(DealByIdError('Не удалось загрузить данные сделки!'));
       }
     } else {
       emit(DealByIdError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

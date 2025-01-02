@@ -318,8 +318,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
                       if (shouldUpdate == true) {
                         // Перезагружаем данные лида
-                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
-                            leadId: int.parse(widget.leadId)));
+                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
                       }
                     }

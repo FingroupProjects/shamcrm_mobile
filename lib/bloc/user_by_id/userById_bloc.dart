@@ -18,7 +18,7 @@ class UserByIdBloc extends Bloc<UserByIdEvent, UserByIdState> {
       final user = await apiService.getUserById(event.userId);
       emit(UserByIdLoaded(user));
     } catch (e) {
-      emit(UserByIdError('Не удалось загрузить данные пользователя: ${e.toString()}'));
+      emit(UserByIdError('Не удалось загрузить данные пользователя!'));
     }
   }
 }

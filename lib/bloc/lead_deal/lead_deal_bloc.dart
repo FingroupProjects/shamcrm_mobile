@@ -23,7 +23,7 @@ class LeadDealsBloc extends Bloc<LeadDealsEvent, LeadDealsState> {
         allLeadDealsFetched = deals.isEmpty;
         emit(LeadDealsLoaded(deals, currentPage: 1));
       } catch (e) {
-        emit(LeadDealsError('Не удалось загрузить лида сделки: ${e.toString()}'));
+        emit(LeadDealsError('Не удалось загрузить лида сделки!'));
       }
     } else {
       emit(LeadDealsError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
@@ -45,7 +45,7 @@ class LeadDealsBloc extends Bloc<LeadDealsEvent, LeadDealsState> {
           emit(currentState.merge(newDeals)); // Объединение с новыми сделками
         }
       } catch (e) {
-        emit(LeadDealsError('Не удалось загрузить дополнительные сделки: ${e.toString()}'));
+        emit(LeadDealsError('Не удалось загрузить дополнительные сделки!'));
       }
     } else {
       emit(LeadDealsError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
