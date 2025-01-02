@@ -19,7 +19,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
           emit(RoleLoaded(roles));
         } catch (e) {
           print('Ошибка при загрузке ролей: $e'); // Для отладки
-          emit(RoleError('Ошибка при загрузке ролей: ${e.toString()}'));
+          emit(RoleError('Ошибка при загрузке ролей!'));
         }
       } else {
         emit(RoleError('Нет подключения к интернету'));

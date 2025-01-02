@@ -17,7 +17,7 @@ class HistoryBloc extends Bloc<HistoryEvent, HistoryState> {
           final leadHistory = await apiService.getLeadHistory(event.leadId);
           emit(HistoryLoaded(leadHistory));
         } catch (e) {
-          emit(HistoryError('Ошибка при загрузке истории лида: ${e.toString()}'));
+          emit(HistoryError('Ошибка при загрузке истории лида!'));
         }
       } else {
         emit(HistoryError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

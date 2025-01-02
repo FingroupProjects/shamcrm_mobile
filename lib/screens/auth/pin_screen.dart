@@ -35,9 +35,9 @@ class _PinScreenState extends State<PinScreen>
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
+
   int? userRoleId;
-  bool _isLoading =
-      true; // добавляем новую переменную для отслеживания загрузки
+  bool _isLoading = true; // добавляем новую переменную для отслеживания загрузки
 
   @override
   void initState() {
@@ -65,6 +65,7 @@ class _PinScreenState extends State<PinScreen>
       }
     });
   }
+
 
   Future<void> _initializeData() async {
     await _loadUserRoleId();

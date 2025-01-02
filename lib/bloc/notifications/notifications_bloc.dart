@@ -37,7 +37,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         allNotificationsFetched = notifications.isEmpty;
         emit(NotificationDataLoaded(notifications, currentPage: 1));
       } catch (e) {
-        emit(NotificationError('Не удалось загрузить уведомления: ${e.toString()}'));
+        emit(NotificationError('Не удалось загрузить уведомления!'));
       }
     } else {
       emit(NotificationError('Нет подключения к интернету'));
@@ -61,7 +61,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           emit(NotificationDataLoaded(updatedNotifications, currentPage: event.currentPage + 1));
         }
       } catch (e) {
-        emit(NotificationError('Не удалось загрузить уведомления: ${e.toString()}'));
+        emit(NotificationError('Не удалось загрузить уведомления!'));
       }
     } else {
       emit(NotificationError('Нет подключения к интернету'));
@@ -73,7 +73,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       try {
         await apiService.DeleteNotifications(notificationId: event.notificationId);
       } catch (e) {
-        emit(NotificationError('Ошибка удаления уведомления: ${e.toString()}'));
+        emit(NotificationError('Ошибка удаления уведомления!'));
       }
     } else {
       emit(NotificationError('Нет подключения к интернету'));

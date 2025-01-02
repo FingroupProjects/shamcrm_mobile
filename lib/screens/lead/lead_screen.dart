@@ -139,43 +139,41 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget searchWidget(List<Lead> leads) {
-    if (_isSearching && leads.isEmpty) {
-      return Center(
-        child: Text(
-          'По запросу ничего не найдено',
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
+  if (_isSearching && leads.isEmpty) {
+    return Center(
+      child: Text(
+        'По запросу ничего не найдено',
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
         ),
-      );
-    }
-
-    return Flexible(
-      child: ListView.builder(
-        controller: _scrollController,
-        itemCount: leads.length,
-        itemBuilder: (context, index) {
-          final statusId = _tabTitles[_currentTabIndex]['id'];
-          final title = _tabTitles[_currentTabIndex]['title'];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: LeadCard(
-              lead: leads[index],
-              title: title,
-              statusId: statusId,
-              onStatusUpdated: () {
-                context.read<LeadBloc>().add(FetchLeads(statusId));
-              },
-              onStatusId: (StatusLeadId) {},
-            ),
-          );
-        },
       ),
     );
   }
+
+  return Flexible(
+    child: ListView.builder(
+      controller: _scrollController,
+      itemCount: leads.length,
+      itemBuilder: (context, index) {
+        final lead = leads[index]; 
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: LeadCard(
+            lead: lead,
+            title: lead.leadStatus?.title ?? '', 
+            statusId: lead.statusId, 
+            onStatusUpdated: () {},
+            onStatusId: (newStatusId) {},
+          ),
+        );
+      },
+    ),
+  );
+}
+
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
@@ -192,7 +190,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               child: _buildTabButton(index),
             );
           }),
-          // Показываем кнопку добавления только если есть разрешение
           if (_canCreateLeadStatus)
             IconButton(
               icon: Image.asset('assets/icons/tabBar/add_black.png',

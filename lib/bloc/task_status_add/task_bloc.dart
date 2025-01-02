@@ -35,7 +35,7 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
         }
       } catch (e) {
         print('Ошибка при создании статуса: $e'); // For debugging
-        emit(TaskStatusError('Ошибка при создании статуса: ${e.toString()}'));
+        emit(TaskStatusError('Ошибка при создании статуса!'));
       }
     } else {
       emit(TaskStatusError('Нет подключения к интернету'));

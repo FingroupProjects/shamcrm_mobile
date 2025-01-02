@@ -44,7 +44,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       if (e is ApiException && e.statusCode == 401) {
         emit(LeadError('Неавторизованный доступ!'));
       } else {
-        emit(LeadError('Не удалось загрузить данные: ${e.toString()}'));
+        emit(LeadError('Не удалось загрузить данные!'));
       }
     }
   }
@@ -68,7 +68,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
       emit(LeadLoaded(response));
     } catch (e) {
-      emit(LeadError('Не удалось загрузить данные: ${e.toString()}'));
+      emit(LeadError('Не удалось загрузить данные!'));
     }
   }
 
@@ -86,7 +86,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       allLeadsFetched = leads.isEmpty;
       emit(LeadDataLoaded(leads, currentPage: 1));
     } catch (e) {
-      emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
+      emit(LeadError('Не удалось загрузить лиды!'));
     }
   }
 
@@ -113,7 +113,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     } catch (e) {
       emit(LeadError(
-          'Не удалось загрузить дополнительные лиды: ${e.toString()}'));
+          'Не удалось загрузить дополнительные лиды!'));
     }
   }
 
@@ -156,7 +156,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     } catch (e) {
       // Логирование ошибки
-      emit(LeadError('Ошибка создания лида: ${e.toString()}'));
+      emit(LeadError('Ошибка создания лида!'));
     }
   }
 
@@ -205,7 +205,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError('Ошибка обновления лида: ${e.toString()}'));
+      emit(LeadError('Ошибка обновления лида!'));
     }
   }
 
@@ -229,7 +229,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError('Ошибка создания статуса лида: ${e.toString()}'));
+      emit(LeadError('Ошибка создания статуса лида!'));
     }
   }
 
@@ -244,7 +244,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError('Ошибка удаления лида!'));
       }
     } catch (e) {
-      emit(LeadError('Ошибка удаления лида: ${e.toString()}'));
+      emit(LeadError('Ошибка удаления лида!'));
     }
   }
 
@@ -260,7 +260,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError('Ошибка удаления статуса лида'));
       }
     } catch (e) {
-      emit(LeadError('Ошибка удаления статуса лида: ${e.toString()}'));
+      emit(LeadError('Ошибка удаления статуса лида!'));
     }
   }
 }

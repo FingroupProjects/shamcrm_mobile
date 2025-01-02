@@ -11,6 +11,7 @@ class Deal {
   final int statusId;
   final ManagerData? manager;
   final Lead? lead;
+  final DealStatus? dealStatus;
   final List<DealCustomField> dealCustomFields;
 
   Deal({
@@ -23,6 +24,7 @@ class Deal {
     required this.statusId,
     this.manager,
     this.lead,
+    this.dealStatus,
     required this.dealCustomFields,
   });
 
@@ -35,6 +37,9 @@ class Deal {
       description: json['description'] ?? '',
       sum: json['sum'] ?? '0.00',
       statusId: dealStatusId,
+      dealStatus: json['deal_status'] != null
+        ? DealStatus.fromJson(json['deal_status'])
+        : null, 
       manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
       lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)

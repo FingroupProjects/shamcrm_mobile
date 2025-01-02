@@ -159,17 +159,14 @@ int? _deletedIndex;
         controller: _scrollController,
         itemCount: deals.length,
         itemBuilder: (context, index) {
-          final statusId = _tabTitles[_currentTabIndex]['id'];
-          final title = _tabTitles[_currentTabIndex]['title'];
+          final deal=deals[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: DealCard(
-              deal: deals[index],
-              title: title,
-              statusId: statusId,
-              onStatusUpdated: () {
-                context.read<DealBloc>().add(FetchDeals(statusId));
-              },
+              deal: deal,
+              title: deal.dealStatus?.title ?? "",
+              statusId: deal.statusId,
+              onStatusUpdated: () {},
                onStatusId: (StatusDealId) {},
             ),
           );
@@ -214,14 +211,6 @@ void _addNewTab() async {
     setState(() {
       navigateToEnd = true; 
     });
-
-    // _tabTitles.add({'id': _tabTitles.length + 1, 'title': 'Новый статус'});
-    // _tabKeys.add(GlobalKey());
-
-    // if (_tabController != null) {
-    //   _tabController.animateTo(_tabTitles.length - 1);
-    //   _currentTabIndex = _tabTitles.length - 1;
-    // }
   }
 }
 
@@ -233,7 +222,6 @@ void _addNewTab() async {
         _tabController.animateTo(index);
       },
       onLongPress: () {
-        // Показываем диалог удаления только если есть разрешение
         if (_canDeleteDealStatus) {
           _showDeleteDialog(index);
         }
@@ -316,7 +304,7 @@ void _addNewTab() async {
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
-                      //Логика для перехода к созданн статусе
+                 //Логика для перехода к созданн статусе
          if (navigateToEnd) {
          navigateToEnd = false;
          if (_tabController != null) {
@@ -324,7 +312,7 @@ void _addNewTab() async {
          }
       }
 
-//Логика для перехода к после удаления статусе на лево
+                //Логика для перехода к после удаления статусе на лево
            if (navigateAfterDelete) {
             navigateAfterDelete = false;
             if (_deletedIndex != null) {

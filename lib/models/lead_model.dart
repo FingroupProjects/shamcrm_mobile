@@ -85,7 +85,10 @@ class Lead {
               json['organization'] is Map<String, dynamic>
           ? Organization.fromJson(json['organization'])
           : null,
-          leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
+      leadStatus: json['leadStatus'] != null
+        ? LeadStatus.fromJson(json['leadStatus'])
+        : null, 
+      leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
               ?.map((field) => LeadCustomField.fromJson(field))
               .toList() ?? [],
     );

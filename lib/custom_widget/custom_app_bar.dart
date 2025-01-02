@@ -143,15 +143,15 @@ Future<void> _loadUserProfile() async {
                       ? Container(
                           width: 40,
                           height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: DecorationImage(
-                              image: NetworkImage(
-                                extractImageUrlFromSvg(_userImage) ?? '',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                          // decoration: BoxDecoration(
+                          //   shape: BoxShape.circle,
+                          //   image: DecorationImage(
+                          //     image: NetworkImage(
+                          //       extractImageUrlFromSvg(_userImage) ?? '',
+                          //     ),
+                          //     fit: BoxFit.cover,
+                          //   ),
+                          // ),
                         )
                       : Image.network(
                           _userImage,

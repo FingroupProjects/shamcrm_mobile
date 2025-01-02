@@ -40,7 +40,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       }
       emit(DealLoaded(response));
     } catch (e) {
-      emit(DealError('Не удалось загрузить данные: ${e.toString()}'));
+      emit(DealError('Не удалось загрузить данные!'));
     }
   }
 
@@ -66,7 +66,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
   if (e is ApiException && e.statusCode == 401) {
     emit(DealError('Неавторизованный доступ!'));
   } else {
-    emit(DealError('Не удалось загрузить данные: ${e.toString()}'));
+    emit(DealError('Не удалось загрузить данные!'));
   }
 }
 }
@@ -93,7 +93,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       }
     } catch (e) {
       emit(DealError(
-          'Не удалось загрузить дополнительные сделки: ${e.toString()}'));
+          'Не удалось загрузить дополнительные сделки!'));
     }
   }
 
@@ -117,7 +117,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания статуса Сделки: ${e.toString()}'));
+      emit(DealError('Ошибка создания статуса Сделки!'));
     }
   }
 
@@ -147,7 +147,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания сделки: ${e.toString()}'));
+      emit(DealError('Ошибка создания сделки!'));
     }
   }
 
@@ -181,7 +181,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка обновления сделки: ${e.toString()}'));
+      emit(DealError('Ошибка обновления сделки!'));
     }
   }
 
@@ -205,7 +205,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         emit(DealError('Ошибка удаления сделки'));
       }
     } catch (e) {
-      emit(DealError('Ошибка удаления сделки: ${e.toString()}'));
+      emit(DealError('Ошибка удаления сделки!'));
     }
   }
 
@@ -225,7 +225,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       emit(DealError('Ошибка удаления статуса сделки'));
     }
   } catch (e) {
-    emit(DealError('Ошибка удаления статуса сделки: ${e.toString()}'));
+    emit(DealError('Ошибка удаления статуса сделки!'));
   }
 }
 

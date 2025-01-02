@@ -104,6 +104,7 @@ class ApiService {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
       return 'https://$domain-back.shamcrm.com/api';
+      // return 'https://$domain-back.shamcrm.com/api';
 //       return 'https://8e00-95-142-94-22.ngrok-free.app/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
@@ -790,82 +791,46 @@ Future<bool> hasPermission(String permission) async {
         final Map<String, dynamic> jsonLead = decodedJson['result'];
         return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
       } else {
-        print('Failed to load lead ID: ${response.statusCode}');
-        throw Exception('Ошибка загрузки лида ID: ${response.statusCode}');
+        print('Failed to load lead ID!');
+        throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
       print('Error occurred: $e');
-      throw Exception('Ошибка загрузки лида ID: $e');
+      throw Exception('Ошибка загрузки лида ID!');
     }
   }
 
 //Метод для получения список Лидов с пагинацией
-  Future<List<Lead>> getLeads(int? leadStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/lead?page=$page&per_page=$perPage';
+Future<List<Lead>> getLeads(int? leadStatusId,
+    {int page = 1, int perPage = 20, String? search}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/lead?page=$page&per_page=$perPage';
 
-    // Добавляем параметр organization_id
-    path += '&organization_id=$organizationId';
+  path += '&organization_id=$organizationId';
 
-    if (leadStatusId != null) {
-      path += '&lead_status_id=$leadStatusId';
-    }
-
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о лидах в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки лидов: ${response.body}');
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (leadStatusId != null) {
+    path += '&lead_status_id=$leadStatusId';
   }
-// Future<List<Lead>> getLeads(int? leadStatusId,
-//     {int page = 1, int perPage = 20, String? search}) async {
-//   final organizationId = await getSelectedOrganization();
-//   String path = '/lead?page=$page&per_page=$perPage';
 
-//   // Add organization_id parameter
-//   path += '&organization_id=$organizationId';
+  // Log the final request path
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
 
-//   // Check for search first, if present ignore leadStatusId
-//   if (search != null && search.isNotEmpty) {
-//     path += '&search=$search';
-//   } else if (leadStatusId != null) {
-//     // If search is not provided, use leadStatusId
-//     path += '&lead_status_id=$leadStatusId';
-//   }
-
-//   // Log the final request path
-//   print('Sending request to API with path: $path');
-//   final response = await _getRequest(path);
-
-//   if (response.statusCode == 200) {
-//     final data = json.decode(response.body);
-//     if (data['result']['data'] != null) {
-//       return (data['result']['data'] as List)
-//           .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-//           .toList();
-//     } else {
-//       throw Exception('No lead data found in the response');
-//     }
-//   } else {
-//     throw Exception('Error loading leads: ${response.body}');
-//   }
-// }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('No lead data found in the response');
+    }
+  } else {
+    throw Exception('Error loading leads: ${response.body}');
+  }
+}
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
     final organizationId = await getSelectedOrganization();
@@ -882,15 +847,14 @@ Future<bool> hasPermission(String permission) async {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка загрузки статуса лида!');
     }
   }
 
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Lead> leads =
-          await getLeads(leadStatusId, page: 1, perPage: 1);
+      final List<Lead> leads = await getLeads(leadStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
@@ -1728,22 +1692,16 @@ Future<bool> hasPermission(String permission) async {
 
   Future<List<Deal>> getDeals(int? dealStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
+    final organizationId = await getSelectedOrganization(); 
     String path = '/deal?page=$page&per_page=$perPage';
 
-    // Добавляем параметр organization_id
     path += '&organization_id=$organizationId';
 
-    // Добавляем параметр deal_status_id, если он передан
-    if (dealStatusId != null) {
-      path += '&deal_status_id=$dealStatusId';
-    }
-
-    // Добавляем параметр поиска, если он передан
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (dealStatusId != null) {
+    path += '&deal_status_id=$dealStatusId';
+  }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
@@ -2101,22 +2059,16 @@ Future<bool> hasPermission(String permission) async {
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
+    final organizationId = await getSelectedOrganization(); 
     String path = '/task?page=$page&per_page=$perPage';
 
-    // Добавляем параметр organization_id
     path += '&organization_id=$organizationId';
 
-    // Добавление параметра task_status_id, если он передан
-    if (taskStatusId != null) {
-      path += '&task_status_id=$taskStatusId';
-    }
-
-    // Добавление параметра поиска, если он передан
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+      if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (taskStatusId != null) {
+    path += '&task_status_id=$taskStatusId';
+  }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
@@ -2163,8 +2115,7 @@ Future<bool> hasPermission(String permission) async {
   Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Task> tasks =
-          await getTasks(taskStatusId, page: 1, perPage: 1);
+      final List<Task> tasks = await getTasks(taskStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;

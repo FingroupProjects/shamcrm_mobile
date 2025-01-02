@@ -599,59 +599,38 @@ bool _isButtonLoading = false; // Добавляем состояние загр
                               ],
                             ),
                             const SizedBox(height: 8),
-                            CustomTextField(
-                              controller: NameController,
-                              hintText: 'Введите Имя',
-                              label: 'Имя',
-                              onChanged: (value) {
-                                setState(() {
-                                  _nameError = null;
-                                });
-                              },
-                            ),
-                            if (_nameError != null)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.only(top: 4, left: 12),
-                                  child: Text(
-                                    _nameError!,
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 12,
-                                      fontFamily: 'Gilroy',
-                                    ),
-                                  ),
-                                ),
+                           CustomTextField(
+                            controller: NameController,
+                            hintText: 'Введите Имя',
+                            label: 'Имя',
+                            hasError: _nameError != null, 
+                            errorText: _nameError, 
+                            // onChanged: (value) {
+                            //   setState(() {
+                            //     if (value.isEmpty) {
+                            //       _nameError = 'Имя не может быть пустым';
+                            //     } else if (value.length < 2) {
+                            //       _nameError = 'Имя слишком короткое';
+                            //     } else {
+                            //       _nameError = null; // Clear error
+                            //     }
+                            //   });
+                            // },
                               ),
+
                             const SizedBox(height: 8),
                             CustomTextField(
                               controller: SurnameController,
                               hintText: 'Введите Фамилию',
                               label: 'Фамилия',
-                              onChanged: (value) {
-                                setState(() {
-                                  _surnameError = null;
-                                });
-                              },
+                               hasError: _surnameError != null, 
+                               errorText: _surnameError, 
+                              // onChanged: (value) {
+                              //   setState(() {
+                              //     _surnameError = null;
+                              //   });
+                              // },
                             ),
-                            if (_surnameError != null)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.only(top: 4, left: 12),
-                                  child: Text(
-                                    _surnameError!,
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 12,
-                                      fontFamily: 'Gilroy',
-                                    ),
-                                  ),
-                                ),
-                              ),
                             const SizedBox(height: 8),
                             CustomPhoneNumberInput(
                               controller: phoneController,
@@ -936,6 +915,7 @@ bool _isButtonLoading = false; // Добавляем состояние загр
                                     fontSize: 16,
                                   ),
                                 ),
+
                         );
                       },
                     ),

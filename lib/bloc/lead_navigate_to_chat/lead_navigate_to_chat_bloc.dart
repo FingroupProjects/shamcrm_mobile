@@ -21,7 +21,7 @@ class LeadToChatBloc extends Bloc<LeadToChatEvent, LeadToChatState> {
         allLeadToChatFetched = leadtochat.isEmpty;
         emit(LeadToChatLoaded(leadtochat)); 
       } catch (e) {
-        emit(LeadToChatError('Не удалось загрузить чаты лида: ${e.toString()}'));
+        emit(LeadToChatError('Не удалось загрузить чаты лида!'));
       }
     } else {
       emit(LeadToChatError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
