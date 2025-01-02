@@ -31,7 +31,7 @@ class CustomTextField extends StatefulWidget {
     this.validator, 
     this.onChanged, // Add to constructor
     this.errorText, // Add errorText support
-    this.hasError = false, // Initialize hasError
+    this.hasError = false,
   });
 
   @override

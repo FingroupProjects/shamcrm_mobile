@@ -182,7 +182,6 @@ class _TasksWidgetState extends State<TasksWidget> {
       ),
     );
   }
-
   void _navigateToTaskDetails(DealTask task) {
     Navigator.push(
       context,
@@ -191,7 +190,8 @@ class _TasksWidgetState extends State<TasksWidget> {
           taskId: task.id.toString(),
           taskName: task.name ?? '',
           taskStatus: '',
-          statusId: 1, taskCustomFields: [],
+          statusId: 1,
+          taskCustomFields: [],
         ),
       ),
     ).then((_) {
@@ -199,44 +199,46 @@ class _TasksWidgetState extends State<TasksWidget> {
     });
   }
 
-Row _buildTitleRow(String title) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(
-        title,
-        style: TaskCardStyles.titleStyle.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      TextButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
-            ),
-          );
-        },
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          backgroundColor: Color(0xff1E2E52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Text(
-          'Добавить',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
+  Row _buildTitleRow(String title) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TaskCardStyles.titleStyle.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.white,
           ),
         ),
-      ),
-    ],
-  );
-}
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
+              ),
+            ).then((_) {
+              context.read<DealTasksBloc>().add(FetchDealTasks(widget.dealId));
+            });
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            backgroundColor: Color(0xff1E2E52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Добавить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -133,7 +133,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
-      {'label': 'Email:', 'value': lead.email ?? ''},
+      {'label': 'Электронная почта:', 'value': lead.email ?? ''},
       {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
       {'label': 'Описание:', 'value': lead.description ?? ''},
       {'label': 'Автор:', 'value': lead.author?.name ?? ''},
