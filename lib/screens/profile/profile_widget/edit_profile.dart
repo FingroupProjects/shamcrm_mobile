@@ -43,6 +43,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _phoneError;
   String? _emailError;
   bool _isLoading = true; // Add loading state
+bool _isButtonLoading = false; // Добавляем состояние загрузки кнопки
 
   final TextEditingController phoneController = TextEditingController();
   String selectedDialCode = ''; // Default country code
@@ -79,6 +80,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     // Для SVG или других форматов возвращаем null
     return null;
   }
+
   // Функция для выбора изображения с улучшенной обработкой
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -99,8 +101,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           // Если размер больше 2 MB
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content:
-                  Text('Выбранный файл слишком большой.'),
+              content: Text('Выбранный файл слишком большой.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -235,230 +236,239 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
- Future<void> _showImagePickerDialog() async {
-  await showModalBottomSheet<void>(
-    context: context,
-    builder: (BuildContext context) => Container(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.photo_library),
-            title: const Text('Галерея'),
-            onTap: () async {
-              // Показываем диалог загрузки
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return Dialog(
-                    backgroundColor: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Проверка изображения...',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
+  Future<void> _showImagePickerDialog() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Галерея'),
+              onTap: () async {
+                // Показываем диалог загрузки
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                      backgroundColor: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              color: Color(0xff1E2E52),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Проверка изображения...',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
+                    );
+                  },
+                );
 
-              final XFile? pickedFile = await _picker.pickImage(
-                source: ImageSource.gallery,
-                imageQuality: 80,
-                maxWidth: 1080,
-                maxHeight: 1080,
-              );
-              
-              if (pickedFile != null) {
-                try {
-                  final file = File(pickedFile.path);
-                  final int fileSize = await file.length();
-                  
-                  // Закрываем диалог загрузки
-                  Navigator.of(context).pop();
-                  
-                  if (fileSize > 2 * 1024 * 1024) {
+                final XFile? pickedFile = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 80,
+                  maxWidth: 1080,
+                  maxHeight: 1080,
+                );
+
+                if (pickedFile != null) {
+                  try {
+                    final file = File(pickedFile.path);
+                    final int fileSize = await file.length();
+
+                    // Закрываем диалог загрузки
+                    Navigator.of(context).pop();
+
+                    if (fileSize > 2 * 1024 * 1024) {
+                      Navigator.pop(context); // Закрываем модальное окно выбора
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Файл слишком большой. Максимальный размер — 2 MB.'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          duration: Duration(seconds: 3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    setState(() {
+                      _localImage = file;
+                      _userImage = '';
+                    });
+
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Файл слишком большой. Максимальный размер — 2 MB.'),
-                        backgroundColor: Colors.red,
+                        content: Text('Изображение успешно выбрано!'),
+                        backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        duration: Duration(seconds: 3),
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        duration: Duration(seconds: 2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                     );
-                    return;
+                  } catch (e) {
+                    // Закрываем диалог загрузки, если он еще открыт
+                    Navigator.of(context).pop();
+                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Ошибка при выборе изображения: $e'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                      ),
+                    );
                   }
-
-                  setState(() {
-                    _localImage = file;
-                    _userImage = '';
-                  });
-
-                  Navigator.pop(context); // Закрываем модальное окно выбора
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Изображение успешно выбрано!'),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      duration: Duration(seconds: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                      ),
-                    ),
-                  );
-                } catch (e) {
-                  // Закрываем диалог загрузки, если он еще открыт
+                } else {
+                  // Если пользователь отменил выбор, закрываем диалог загрузки
                   Navigator.of(context).pop();
-                  Navigator.pop(context); // Закрываем модальное окно выбора
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Ошибка при выборе изображения: $e'),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                      ),
-                    ),
-                  );
                 }
-              } else {
-                // Если пользователь отменил выбор, закрываем диалог загрузки
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Камера'),
-            onTap: () async {
-              // Показываем диалог загрузки
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return Dialog(
-                    backgroundColor: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Проверка изображения...',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Камера'),
+              onTap: () async {
+                // Показываем диалог загрузки
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                      backgroundColor: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              color: Color(0xff1E2E52),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Проверка изображения...',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
+                    );
+                  },
+                );
 
-              final XFile? pickedFile = await _picker.pickImage(
-                source: ImageSource.camera,
-                imageQuality: 80,
-                maxWidth: 1080,
-                maxHeight: 1080,
-              );
-              
-              if (pickedFile != null) {
-                try {
-                  final file = File(pickedFile.path);
-                  final int fileSize = await file.length();
-                  
-                  // Закрываем диалог загрузки
-                  Navigator.of(context).pop();
-                  
-                  if (fileSize > 2 * 1024 * 1024) {
+                final XFile? pickedFile = await _picker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 80,
+                  maxWidth: 1080,
+                  maxHeight: 1080,
+                );
+
+                if (pickedFile != null) {
+                  try {
+                    final file = File(pickedFile.path);
+                    final int fileSize = await file.length();
+
+                    // Закрываем диалог загрузки
+                    Navigator.of(context).pop();
+
+                    if (fileSize > 2 * 1024 * 1024) {
+                      Navigator.pop(context); // Закрываем модальное окно выбора
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Файл слишком большой. Максимальный размер — 2 MB.'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          duration: Duration(seconds: 3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    setState(() {
+                      _localImage = file;
+                      _userImage = '';
+                    });
+
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Файл слишком большой. Максимальный размер — 2 MB.'),
-                        backgroundColor: Colors.red,
+                        content: Text('Изображение успешно выбрано!'),
+                        backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        duration: Duration(seconds: 3),
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        duration: Duration(seconds: 2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                     );
-                    return;
+                  } catch (e) {
+                    // Закрываем диалог загрузки, если он еще открыт
+                    Navigator.of(context).pop();
+                    Navigator.pop(context); // Закрываем модальное окно выбора
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Ошибка при выборе изображения: $e'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                      ),
+                    );
                   }
-
-                  setState(() {
-                    _localImage = file;
-                    _userImage = '';
-                  });
-
-                  Navigator.pop(context); // Закрываем модальное окно выбора
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Изображение успешно выбрано!'),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      duration: Duration(seconds: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                      ),
-                    ),
-                  );
-                } catch (e) {
-                  // Закрываем диалог загрузки, если он еще открыт
+                } else {
+                  // Если пользователь отменил выбор, закрываем диалог загрузки
                   Navigator.of(context).pop();
-                  Navigator.pop(context); // Закрываем модальное окно выбора
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Ошибка при выборе изображения: $e'),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                      ),
-                    ),
-                  );
                 }
-              } else {
-                // Если пользователь отменил выбор, закрываем диалог загрузки
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-        ],
+              },
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Функция для извлечения URL из SVG
@@ -793,83 +803,119 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 horizontal: 16, vertical: 8),
                             minimumSize: Size(double.infinity, 48),
                           ),
-                          onPressed: () async {
-                            // Сбрасываем состояние ошибок
-                            setState(() {
-                              _nameError = null;
-                              _surnameError = null;
-                              _phoneError = null;
-                              _emailError = null;
-                            });
+                          onPressed: _isButtonLoading
+                              ? null
+                              : () async {
+                                  // Сбрасываем состояние ошибок
+                                  setState(() {
+                                    _isButtonLoading =
+                                        true; // Устанавливаем состояние загрузки
+                                    _nameError = null;
+                                    _surnameError = null;
+                                    _phoneError = null;
+                                    _emailError = null;
+                                  });
 
-                            // Проверяем валидацию
-                            bool isValid = true;
+                                  // Проверяем валидацию
+                                  bool isValid = true;
 
-                            if (NameController.text.trim().isEmpty) {
-                              setState(() {
-                                _nameError =
-                                    'Поле обязательно для заполнения!';
-                              });
-                              isValid = false;
-                            }
+                                  if (NameController.text.trim().isEmpty) {
+                                    setState(() {
+                                      _nameError =
+                                          'Поле имя обязательно для заполнения';
+                                    });
+                                    isValid = false;
+                                  }
 
-                            if (SurnameController.text.trim().isEmpty) {
-                              setState(() {
-                                _surnameError =
-                                    'Поле обязательно для заполнения!';
-                              });
-                              isValid = false;
-                            }
+                                  if (SurnameController.text.trim().isEmpty) {
+                                    setState(() {
+                                      _surnameError =
+                                          'Поле фамилия обязательно для заполнения';
+                                    });
+                                    isValid = false;
+                                  }
 
-                            if (emailController.text.trim().isNotEmpty &&
-                                !isValidEmail(emailController.text.trim())) {
-                              setState(() {
-                                _emailError = 'Введите корректный email адрес';
-                              });
-                              isValid = false;
-                            }
+                                  if (emailController.text.trim().isNotEmpty &&
+                                      !isValidEmail(
+                                          emailController.text.trim())) {
+                                    setState(() {
+                                      _emailError =
+                                          'Введите корректный email адрес';
+                                    });
+                                    isValid = false;
+                                  }
 
-                            if (!isValid) return;
+                                  if (!isValid) {
+                                    setState(() {
+                                      _isButtonLoading =
+                                          false; // Снимаем состояние загрузки
+                                    });
+                                    return;
+                                  }
 
-                            try {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-                              String UUID = prefs.getString('userID') ?? '';
+                                  try {
+                                    SharedPreferences prefs =
+                                        await SharedPreferences.getInstance();
+                                    String UUID =
+                                        prefs.getString('userID') ?? '';
 
-                              if (UUID.isEmpty) {
-                                _showErrorMessage('Ошибка: UUID не найден');
-                                return;
-                              }
+                                    if (UUID.isEmpty) {
+                                      _showErrorMessage(
+                                          'Ошибка: UUID не найден');
+                                      setState(() {
+                                        _isButtonLoading =
+                                            false; // Снимаем состояние загрузки
+                                      });
+                                      return;
+                                    }
 
-                              String UserNameProfile = NameController.text;
-                              await prefs.setString(
-                                  'userNameProfile', UserNameProfile);
+                                    String UserNameProfile =
+                                        NameController.text;
+                                    await prefs.setString(
+                                        'userNameProfile', UserNameProfile);
 
-                              int userId = int.parse(UUID);
-                              final image = _getImageToUpload();
-                              context.read<ProfileBloc>().add(UpdateProfile(
-                                  userId: userId,
-                                  name: NameController.text.trim(),
-                                  sname: SurnameController.text.trim(),
-                                  phone:
-                                      selectedDialCode + phoneController.text,
-                                  email: emailController.text.trim(),
-                                  image: image,
-                                  pname: ''));
-                            } catch (e) {
-                              _showErrorMessage(
-                                  'Произошла ошибка при обновлении профиля');
-                            }
-                          },
-                          child: Text(
-                            'Сохранить',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
+                                    int userId = int.parse(UUID);
+                                    final image = _getImageToUpload();
+                                    context.read<ProfileBloc>().add(
+                                        UpdateProfile(
+                                            userId: userId,
+                                            name: NameController.text.trim(),
+                                            sname:
+                                                SurnameController.text.trim(),
+                                            phone: selectedDialCode +
+                                                phoneController.text,
+                                            email: emailController.text.trim(),
+                                            image: image,
+                                            pname: ''));
+                                  } catch (e) {
+                                    _showErrorMessage(
+                                        'Произошла ошибка при обновлении профиля');
+                                    setState(() {
+                                      _isButtonLoading =
+                                          false; // Снимаем состояние загрузки
+                                    });
+                                  }
+                                },
+                          child: _isButtonLoading
+                              ? SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color:const Color(0xff1E2E52),
+
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : Text(
+                                  'Сохранить',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+
                         );
                       },
                     ),
@@ -877,6 +923,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 ],
               ));
   }
+
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -29,7 +29,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TaskError('Нет подключения к интернету'));
       return;
     }
-
     try {
       final response = await apiService.getTaskStatuses();
       if (response.isEmpty) {
@@ -197,7 +196,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (response['result'] == 'Success') {
         emit(TaskDeleted('Статус задачи успешно удалена!'));
       } else {
-        emit(TaskError('Ошибка удаления статуса сделки'));
+        emit(TaskError('Ошибка удаления статуса задачи'));
       }
     } catch (e) {
       emit(TaskError('Ошибка удаления статуса сделки!'));

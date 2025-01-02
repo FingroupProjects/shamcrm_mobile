@@ -22,7 +22,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/lead%20chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_bloc.dart';
@@ -47,6 +47,7 @@ import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
@@ -72,7 +73,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
-  final authService = AuthService();  
+  final authService = AuthService();
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
     await apiService.initialize();
@@ -144,7 +145,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DealByIdBloc(apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-        BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
+        BlocProvider(
+            create: (context) => GetAllClientBloc(apiService: apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(apiService)),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
@@ -155,7 +157,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -167,16 +170,18 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
-        BlocProvider(create: (context) => ProcessSpeedBloc(apiService),),
-        BlocProvider(create: (context) => TaskCompletionBloc(apiService),
-        
-        ),
+        BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
+        BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
+        BlocProvider(
+            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,
