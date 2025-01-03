@@ -97,7 +97,7 @@ class ChatListItem extends StatelessWidget {
       DateTime parsedTime = DateTime.parse(time);
       return DateFormat('dd/MM/yyyy').format(parsedTime); 
     } catch (e) {
-      print("Ошибка парсинга даты: $e");
+      print("Ошибка парсинга даты!");
       return ''; 
     }
   }

@@ -33,7 +33,7 @@ class CustomAppBar extends StatefulWidget {
   State<CustomAppBar> createState() => _CustomAppBarState();
 }
 
-class _CustomAppBarState extends State<CustomAppBar> {
+class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderStateMixin {
   bool _isSearching = false;
   late TextEditingController _searchController;
   late FocusNode focusNode;
@@ -42,12 +42,16 @@ class _CustomAppBarState extends State<CustomAppBar> {
   static String _cachedUserImage = '';
 
   bool _hasNewNotification = false;
-
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;
 
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
+
   @override
   void initState() {
+    super.initState();
+
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
 
@@ -56,83 +60,102 @@ class _CustomAppBarState extends State<CustomAppBar> {
     } else {
       _loadUserProfile();
     }
+
+    _loadNotificationState();
     _setUpSocketForNotifications();
 
-    super.initState();
+    _blinkController = AnimationController(
+      vsync: this, 
+      duration: Duration(milliseconds: 700),
+      lowerBound: 0.0,
+      upperBound: 1.0,
+    )..repeat(reverse: true);
+
+    _blinkAnimation = CurvedAnimation(
+      parent: _blinkController,
+      curve: Curves.easeInOut,
+    );
   }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
+
+Future<void> _loadNotificationState() async {
+  final prefs = await SharedPreferences.getInstance();
+  bool hasNewNotification = prefs.getBool('hasNewNotification') ?? false;
+  setState(() {
+    _hasNewNotification = hasNewNotification;
+  });
+}
+
 
   Future<void> _setUpSocketForNotifications() async {
-    debugPrint(
-        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
-    final baseUrlSocket = await ApiService().getSocketBaseUrl();
-    final enteredDomain = await ApiService().getEnteredDomain();
+  debugPrint('--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+  final prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('token');
+  final baseUrlSocket = await ApiService().getSocketBaseUrl();
+  final enteredDomain = await ApiService().getEnteredDomain();
 
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
+  final customOptions = PusherChannelsOptions.custom(
+    uriResolver: (metadata) => Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+    metadata: PusherChannelsOptionsMetadata.byDefault(),
+  );
 
-    socketClient = PusherChannelsClient.websocket(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {},
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
-    );
+  socketClient = PusherChannelsClient.websocket(
+    options: customOptions,
+    connectionErrorHandler: (exception, trace, refresh) {},
+    minimumReconnectDelayDuration: const Duration(seconds: 1),
+  );
 
-    String userId = prefs.getString('userID') ?? '';
+  String userId = prefs.getString('userID') ?? '';
 
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(exception);
-        },
-      ),
-    );
+  final myPresenceChannel = socketClient.presenceChannel(
+    'presence-user.$userId',
+    authorizationDelegate:
+        EndpointAuthorizableChannelTokenAuthorizationDelegate
+            .forPresenceChannel(
+      authorizationEndpoint: Uri.parse(baseUrlSocket),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'X-Tenant': '$enteredDomain-back'
+      },
+      onAuthFailed: (exception, trace) {
+        debugPrint(exception);
+      },
+    ),
+  );
 
-    socketClient.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-
-      notificationSubscription =
-          myPresenceChannel.bind('notification.created').listen((event) {
-        debugPrint('Received notification: ${event.data}');
-        setState(() {
-          _hasNewNotification = true;
-        });
+  socketClient.onConnectionEstablished.listen((_) {
+    myPresenceChannel.subscribeIfNotUnsubscribed();
+    notificationSubscription =
+        myPresenceChannel.bind('notification.created').listen((event) {
+      debugPrint('Received notification: ${event.data}');
+      setState(() {
+        _hasNewNotification = true;
       });
+      prefs.setBool('hasNewNotification', true);  
     });
+  });
 
-    try {
-      await socketClient.connect();
-      print('Socket connection SUCCESSS');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Socket connection error: $e');
-      }
+  try {
+    await socketClient.connect();
+    print('Socket connection SUCCESSS');
+  } catch (e) {
+    if (kDebugMode) {
+      print('Socket connection error!');
     }
   }
+}
+
 
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
-
-      // Проверяем, изменилось ли изображение
-      if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
-        setState(() {
-          _userImage = userProfile.image!;
-          _lastLoadedImage = userProfile.image!; // Сохраняем для будущего сравнения
       UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
       
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
@@ -149,7 +172,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         });
       }
     } catch (e) {
-      print('Ошибка при загрузке изображения: $e');
+      print('Ошибка при загрузке изображения!');
       if (_userImage.isEmpty && _cachedUserImage.isNotEmpty) {
         setState(() {
           _userImage = _cachedUserImage;
@@ -157,8 +180,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
       }
     }
   }
-
-  // Добавляем метод для принудительного обновления изображения
 
   Future<void> refreshUserImage() async {
     _lastLoadedImage = '';
@@ -187,16 +208,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
     });
   }
 
-  @override
-  void dispose() {
-    notificationSubscription.cancel();
-    socketClient.disconnect();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Функция для извлечения URL из SVG
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
@@ -328,21 +339,26 @@ class _CustomAppBarState extends State<CustomAppBar> {
                         if (_hasNewNotification)
                           Positioned(
                             right: 0,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
+                            child: FadeTransition(
+                              opacity: _blinkAnimation, 
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                             ),
                           ),
                       ],
                     ),
-
                     onPressed: () {
                       setState(() {
-                        _hasNewNotification = false; // Сбрасываем уведомления
+                        _hasNewNotification = false; 
+                      });
+                      SharedPreferences.getInstance().then((prefs) {
+                        prefs.setBool('hasNewNotification', false);
                       });
                       Navigator.push(
                         context,
@@ -351,7 +367,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                         ),
                       );
                     },
-                  ),
+                  )
                 ],
               ),
               if (widget.showSearchIcon)

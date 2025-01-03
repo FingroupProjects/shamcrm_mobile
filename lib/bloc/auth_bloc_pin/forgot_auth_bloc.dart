@@ -33,7 +33,7 @@ class ForgotPinBloc extends Bloc<ForgotPinEvent, ForgotPinState> {
       emit(ForgotPinSuccess(int.parse(pin)));
     } catch (error) {
       // Логируем ошибку и передаем её в состояние ошибки
-      print('Ошибка при запросе временного PIN: $error');
+      print('Ошибка при запросе временного PIN!rror');
       emit(ForgotPinFailure(error.toString()));
     }
   }

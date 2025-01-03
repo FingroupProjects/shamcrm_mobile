@@ -294,7 +294,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         print('Файл открыт успешно.');
       }
     } catch (e) {
-      print('Ошибка при скачивании или открытии файла: $e');
+      print('Ошибка при скачивании или открытии файла!');
       _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
     }
   }

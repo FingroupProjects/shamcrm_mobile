@@ -74,8 +74,12 @@ void main() async {
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
   final authService = AuthService();
+
+
+
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
+    
     await apiService.initialize();
   }
 
@@ -145,8 +149,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DealByIdBloc(apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-        BlocProvider(
-            create: (context) => GetAllClientBloc(apiService: apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(apiService)),
         BlocProvider(create: (context) => ListenSenderTextCubit()),
@@ -157,8 +160,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -170,10 +172,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),

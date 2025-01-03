@@ -163,7 +163,7 @@ class ApiService {
 //   } catch (e) {
 //     return {
 //       'success': false,
-//       'message': 'Ошибка при запросе: $e',
+//       'message': 'Ошибка при запросе!',
 //     };
 //   }
 // }
@@ -334,7 +334,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании гр. чата: $e',
+        'message': 'Ошибка при создании гр. чата!',
       };
     }
   }
@@ -376,7 +376,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при добавление участника : $e',
+        'message': 'Ошибка при добавление участника !',
       };
     }
   }
@@ -418,7 +418,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при добавление участника : $e',
+        'message': 'Ошибка при добавление участника !',
       };
     }
   }
@@ -686,7 +686,7 @@ Future<List<String>> fetchPermissionsByRoleId(String roleId) async {
           'Ошибка при получении прав доступа: ${response.statusCode}: ${response.body}');
     }
   } catch (e) {
-    print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
+    print('Ошибка при выполнении запроса fetchPermissionsByRoleId!');
     rethrow;
   }
 }
@@ -771,8 +771,8 @@ Future<bool> hasPermission(String permission) async {
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка в forgotPin: $e');
-      throw Exception('Ошибка в запросе: $e');
+      print('Ошибка в forgotPin!');
+      throw Exception('Ошибка в запросе!');
     }
   }
 
@@ -795,7 +795,7 @@ Future<bool> hasPermission(String permission) async {
         throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
-      print('Error occurred: $e');
+      print('Error occurred!');
       throw Exception('Ошибка загрузки лида ID!');
     }
   }
@@ -859,7 +859,7 @@ Future<List<Lead>> getLeads(int? leadStatusId,
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has leads: $e');
+      print('Error while checking if status has leads!');
       return false;
     }
   }
@@ -928,8 +928,8 @@ Future<List<Lead>> getLeads(int? leadStatusId,
         throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории лида: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории лида!');
     }
   }
 
@@ -1586,8 +1586,8 @@ Future<List<Lead>> getLeads(int? leadStatusId,
         throw Exception('Ошибка отправки в 1С: ${response.statusCode}');
       }
     } catch (e) {
-      print('Произошла ошибка: $e');
-      throw Exception('Ошибка отправки в 1С: $e');
+      print('Произошла ошибка!');
+      throw Exception('Ошибка отправки в 1С!');
     }
   }
   // Future postLeadToC(int leadId) async {
@@ -1613,8 +1613,8 @@ Future<List<Lead>> getLeads(int? leadStatusId,
   //       throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
   //     }
   //   } catch (e) {
-  //     print('Произошла ошибка: $e');
-  //     throw Exception('Ошибка отправки 1С Лид: $e');
+  //     print('Произошла ошибка!');
+  //     throw Exception('Ошибка отправки 1С Лид!');
   //   }
   // }
 
@@ -1686,7 +1686,7 @@ Future<List<Lead>> getLeads(int? leadStatusId,
         throw Exception('Ошибка загрузки deal ID: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки deal ID: $e');
+      throw Exception('Ошибка загрузки deal ID!');
     }
   }
 
@@ -1753,7 +1753,7 @@ Future<List<Lead>> getLeads(int? leadStatusId,
       // Если список лидов не пуст, значит статус содержит элементы
       return deals.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals: $e');
+      print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -1800,8 +1800,8 @@ Future<List<Lead>> getLeads(int? leadStatusId,
             'Ошибка загрузки истории сделки: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории сделки: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории сделки!');
     }
   }
 
@@ -2120,7 +2120,7 @@ Future<List<Lead>> getLeads(int? leadStatusId,
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals: $e');
+      print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -2303,7 +2303,7 @@ Future<List<Lead>> getLeads(int? leadStatusId,
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при выполнении запроса: $e',
+        'message': 'Ошибка при выполнении запроса!',
         'error': e.toString(),
       };
     }
@@ -2583,7 +2583,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи: $e',
+        'message': 'Ошибка при создании задачи!',
       };
     }
   }
@@ -2725,7 +2725,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении задачи: $e',
+        'message': 'Ошибка при обновлении задачи!',
       };
     }
   }
@@ -2749,8 +2749,8 @@ Future<Map<String, dynamic>> createTaskFromDeal({
             'Ошибка загрузки истории задач: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории задач: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории задач!');
     }
   }
 
@@ -2841,7 +2841,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка при получении пользователей: $e');
+      print('Ошибка при получении пользователей!');
       rethrow;
     }
   }
@@ -3011,7 +3011,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
         throw ('Ошибка загрузки статистики: ${response.body}');
       }
     } catch (e) {
-      throw ('Ошибка при получении статистики: $e');
+      throw ('Ошибка при получении статистики!');
     }
   }
 
@@ -3352,12 +3352,12 @@ Future<Map<String, dynamic>> createTaskFromDeal({
       }
     } on DioException catch (e) {
       if (kDebugMode) {
-        print('Exception caught: $e');
+        print('Exception caught!');
       }
       if (kDebugMode) {
         print(e.response?.data);
       }
-      throw Exception('Failed to send audio message due to an exception: $e');
+      throw Exception('Failed to send audio message due to an exception!');
     }
   }
 
@@ -3399,9 +3399,9 @@ Future<Map<String, dynamic>> createTaskFromDeal({
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Exception caught: $e');
+        print('Exception caught!');
       }
-      throw Exception('Failed to send audio message due to an exception: $e');
+      throw Exception('Failed to send audio message due to an exception!');
     }
   }
 
@@ -3466,7 +3466,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
         print('Error marking messages as read: ${response.body}');
       }
     } catch (e) {
-      print('Exception when marking messages as read: $e');
+      print('Exception when marking messages as read!');
     }
   }
 
@@ -3504,7 +3504,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
       }
     } catch (e) {
       // Обработка ошибок сети или других непредвиденных исключений
-      throw Exception('Не удалось выполнить запрос: $e');
+      throw Exception('Не удалось выполнить запрос!');
     }
   }
 
@@ -3631,7 +3631,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
         throw Exception('${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка в getChatProfile: $e');
+      print('Ошибка в getChatProfile!');
       throw ('$e');
     }
   }
@@ -3678,9 +3678,9 @@ Future<Map<String, dynamic>> createTaskFromDeal({
         throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
       }
     } catch (e) {
-      print('Полная ошибка в getTaskProfile: $e');
+      print('Полная ошибка в getTaskProfile!');
       print('Трассировка стека: ${StackTrace.current}');
-      throw Exception('Ошибка загрузки задачи: $e');
+      throw Exception('Ошибка загрузки задачи!');
     }
   }
 
@@ -3708,7 +3708,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
         throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки User ID: $e');
+      throw Exception('Ошибка загрузки User ID!');
     }
   }
 
@@ -3797,7 +3797,7 @@ Future<Map<String, dynamic>> createTaskFromDeal({
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении профиля: $e',
+        'message': 'Ошибка при обновлении профиля!',
       };
     }
   }

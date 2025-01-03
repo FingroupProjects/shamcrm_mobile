@@ -20,7 +20,7 @@ class TaskByIdBloc extends Bloc<TaskByIdEvent, TaskByIdState> {
         final task = await apiService.getTaskById(event.taskId);
         emit(TaskByIdLoaded(task));
       } catch (e) {
-        print('Ошибка при загрузке задачи: $e'); // For debugging
+        print('Ошибка при загрузке задачи!'); // For debugging
         emit(TaskByIdError('Не удалось загрузить данные задачи!'));
       }
     } else {

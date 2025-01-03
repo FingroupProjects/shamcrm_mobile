@@ -77,7 +77,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         });
       }
     } catch (e) {
-      print("Ошибка загрузки данных Корп чата: $e");
+      print("Ошибка загрузки данных Корп чата!");
       setState(() {
         isLoading = false;
       });

@@ -84,7 +84,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка: $e');
+      print('Ошибка!');
     }
   }
 
@@ -131,7 +131,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла: $e');
+      print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ошибка при выборе файла'),

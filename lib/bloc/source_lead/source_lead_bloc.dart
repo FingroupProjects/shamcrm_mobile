@@ -22,7 +22,7 @@ class SourceLeadBloc extends Bloc<SourceLeadEvent, SourceLeadState> {
         allSourceLeadFetched = sourceLead.isEmpty;
         emit(SourceLeadLoaded(sourceLead)); 
       } catch (e) {
-        print('Ошибка при загрузке источников: $e'); // For debugging
+        print('Ошибка при загрузке источников!'); // For debugging
         emit(SourceLeadError('Не удалось загрузить список Источников!'));
       }
     } else {

@@ -143,7 +143,7 @@ void DropdownBottomSheet(
                                 );
                                 Navigator.pop(context);
                               } else {
-                                print('Ошибка обновления статуса задачи: $error');
+                                print('Ошибка обновления статуса задачи!rror');
                               }
                             });
                           } else {

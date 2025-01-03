@@ -745,7 +745,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         await widget.apiService.sendMessage(widget.chatId, messageText);
         context.read<ListenSenderTextCubit>().updateValue(false);
       } catch (e) {
-        debugPrint('9.4. Ошибка отправки сообщения через API: $e');
+        debugPrint('9.4. Ошибка отправки сообщения через API!');
       }
     } else {
       debugPrint('9.5. Сообщение пустое, отправка не выполнена');
@@ -842,7 +842,7 @@ class MessageItemWidget extends StatelessWidget {
                 await apiServiceDownload.downloadAndOpenFile(message.filePath!);
               } catch (e) {
                 if (kDebugMode) {
-                  print('Error opening file: $e');
+                  print('Error opening file!');
                 }
               }
             } else {

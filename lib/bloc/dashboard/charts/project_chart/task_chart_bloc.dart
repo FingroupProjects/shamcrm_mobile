@@ -41,7 +41,7 @@ class ProjectChartBloc extends Bloc<ProjectChartEvent, ProjectChartState> {
         print('ProjectChartBloc: Состояние изменено на Error (нет интернета)');
       }
     } catch (e) {
-      print('ProjectChartBloc: Произошла ошибка: $e');
+      print('ProjectChartBloc: Произошла ошибка!');
       emit(ProjectChartError(message: e.toString()));
       print('ProjectChartBloc: Состояние изменено на Error');
     }

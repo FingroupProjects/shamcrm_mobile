@@ -34,7 +34,7 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
           emit(TaskStatusError(response['message']));
         }
       } catch (e) {
-        print('Ошибка при создании статуса: $e'); // For debugging
+        print('Ошибка при создании статуса!'); // For debugging
         emit(TaskStatusError('Ошибка при создании статуса!'));
       }
     } else {
@@ -48,7 +48,7 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      print('Нет интернета: $e'); // For debugging
+      print('Нет интернета!'); // For debugging
       return false;
     }
   }

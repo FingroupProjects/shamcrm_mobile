@@ -81,7 +81,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         });
       }
     } catch (e) {
-      print('Ошибка: $e');
+      print('Ошибка!');
     }
   }
 
@@ -123,7 +123,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         });
       }
     } catch (e) {
-      print('Ошибка при выборе файла: $e');
+      print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ошибка при выборе файла'),
@@ -369,7 +369,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при создании задачи: $e'),
+            content: Text('Ошибка при создании задачи!'),
             backgroundColor: Colors.red,
           ),
         );
@@ -733,7 +733,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при создании задачи: $e'),
+            content: Text('Ошибка при создании задачи!'),
             backgroundColor: Colors.red,
           ),
         );
