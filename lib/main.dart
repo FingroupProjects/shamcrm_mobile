@@ -82,7 +82,6 @@ void main() async {
     
     await apiService.initialize();
   }
-
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
   await Firebase.initializeApp(

@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
-import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -78,7 +77,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       },
       builder: (context, state) {
         if (state is DashboardConversionLoading) {
-          return const ChartSkeletonLoading();
+          return const SizedBox.shrink();
         } else if (state is DashboardConversionError) {
           return const Center(
             child: Text(

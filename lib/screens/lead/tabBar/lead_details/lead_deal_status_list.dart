@@ -68,9 +68,13 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 ),
               );
             }).toList();
+            if (state.dealStatuses.length == 1) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                widget.onChanged(state.dealStatuses.first.id.toString());
+              });
+            }
           }
         }
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
