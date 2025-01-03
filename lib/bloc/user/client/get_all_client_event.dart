@@ -6,3 +6,8 @@ sealed class GetAllClientEvent {}
 class GetAllClientEv extends GetAllClientEvent {}
 class GetAnotherClientEv extends GetAllClientEvent {}
 
+class GetUsersNotInChatEv extends GetAllClientEvent {
+  final String chatId;
+
+  GetUsersNotInChatEv(this.chatId);
+}
