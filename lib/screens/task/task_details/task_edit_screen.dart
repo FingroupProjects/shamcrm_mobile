@@ -294,7 +294,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         print('Файл открыт успешно.');
       }
     } catch (e) {
-      print('Ошибка при скачивании или открытии файла: $e');
+      print('Ошибка при скачивании или открытии файла!');
       _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
     }
   }
@@ -672,7 +672,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                            'Ошибка в формате даты: ${e.toString()}'),
+                                            'Ошибка в формате даты!'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );

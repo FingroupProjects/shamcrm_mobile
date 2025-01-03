@@ -17,7 +17,7 @@ class HistoryBlocTask extends Bloc<HistoryEvent, HistoryStateTask> {
           final taskHistory = await apiService.getTaskHistory(event.taskId);
           emit(HistoryLoadedTask(taskHistory));
         } catch (e) {
-          emit(HistoryErrorTask('Ошибка при загрузке истории задачи: ${e.toString()}'));
+          emit(HistoryErrorTask('Ошибка при загрузке истории задачи!'));
         }
       } else {
         emit(HistoryErrorTask('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

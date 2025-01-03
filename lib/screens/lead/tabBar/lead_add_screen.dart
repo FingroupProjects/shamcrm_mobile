@@ -74,7 +74,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка: $e');
+      print('Ошибка!');
     }
   }
 

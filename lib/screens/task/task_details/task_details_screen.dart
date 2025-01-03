@@ -114,7 +114,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     currentTask = task;
     details = [
-      {'label': 'Название задачи:', 'value': task.name},
+      {'label': 'Название задачи:', 'value': task?.name ?? ""},
       {
         'label': 'Уровень приоритета:',
         'value': priorityLevels[task.priority] ?? 'Обычний',
@@ -505,8 +505,8 @@ Widget build(BuildContext context) {
           height: 24,
         ),
         onPressed: () {
-          Navigator.pop(context);
-          context.read<TaskBloc>().add(FetchTaskStatuses());
+          Navigator.pop(context,widget.statusId);
+          // context.read<TaskBloc>().add(FetchTaskStatuses());
         },
       ),
       title: Text(
@@ -568,9 +568,7 @@ Widget build(BuildContext context) {
                       );
 
                       if (shouldUpdate == true) {
-                        context
-                            .read<TaskByIdBloc>()
-                            .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                        context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
                         context.read<TaskBloc>().add(FetchTaskStatuses());
                       }
                     }
@@ -795,7 +793,7 @@ Widget build(BuildContext context) {
         print('Файл открыт успешно.');
       }
     } catch (e) {
-      print('Ошибка при скачивании или открытии файла: $e');
+      print('Ошибка при скачивании или открытии файла!');
       _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
     }
   }

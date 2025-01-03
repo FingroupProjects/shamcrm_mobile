@@ -35,7 +35,7 @@ class ApiServiceDownload {
       // Открываем файл
       await OpenFile.open(file.path);
     } catch (e) {
-      print('Ошибка загрузки файла: $e');
+      print('Ошибка загрузки файла!');
     }
   }
 

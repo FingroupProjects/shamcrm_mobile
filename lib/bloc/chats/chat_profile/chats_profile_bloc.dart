@@ -18,7 +18,7 @@ class ChatProfileBloc extends Bloc<ChatProfileEvent, ChatProfileState> {
         if (e.toString() == "Такого Лида не существует") {
           emit(ChatProfileError("Такого Лида не существует"));
         } else {
-          emit(ChatProfileError("Ошибка: ${e.toString()}"));
+          emit(ChatProfileError("Ошибка!"));
         }
       }
     });

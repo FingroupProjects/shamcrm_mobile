@@ -19,8 +19,8 @@ class TaskStatusNameBloc extends Bloc<StatusNameEvent, StatusNameState> {
 
           emit(StatusNameLoaded(statuses));
         } catch (e) {
-          print('Ошибка при загрузке статусов: $e'); // For debugging
-          emit(StatusNameError('Ошибка при загрузке имен статусов: ${e.toString()}'));
+          print('Ошибка при загрузке статусов!'); // For debugging
+          emit(StatusNameError('Ошибка при загрузке имен статусов!'));
         }
       } else {
         emit(StatusNameError('Нет подключения к интернету'));
@@ -34,7 +34,7 @@ class TaskStatusNameBloc extends Bloc<StatusNameEvent, StatusNameState> {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      print('Нет интернета: $e'); // For debugging
+      print('Нет интернета!'); // For debugging
       return false;
     }
   }

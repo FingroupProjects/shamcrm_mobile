@@ -34,7 +34,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
         allContactPersonFetched = contactPerson.isEmpty;
         emit(ContactPersonLoaded(contactPerson));
       } catch (e) {
-        emit(ContactPersonError('Не удалось загрузить Контакное Лицо: ${e.toString()}'));
+        emit(ContactPersonError('Не удалось загрузить Контакное Лицо!'));
       }
     } else {
       // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
@@ -60,7 +60,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
           emit(ContactPersonError(result['message']));
         }
       } catch (e) {
-        emit(ContactPersonError('Ошибка создания Контакт Лицо: ${e.toString()}'));
+        emit(ContactPersonError('Ошибка создания Контакт Лицо!'));
       }
     } else {
       // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
@@ -87,7 +87,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
           emit(ContactPersonError(result['message']));
         }
       } catch (e) {
-        emit(ContactPersonError('Ошибка обновленя Контактного Лица: ${e.toString()}'));
+        emit(ContactPersonError('Ошибка обновленя Контактного Лица!'));
       }
     } else {
       // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
@@ -107,7 +107,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
           emit(ContactPersonError('Ошибка удаления Контакное лицо'));
         }
       } catch (e) {
-        emit(ContactPersonError('Ошибка удаления Контакное лицо: ${e.toString()}'));
+        emit(ContactPersonError('Ошибка удаления Контакное лицо!'));
       }
     } else {
       // emit(ContactPersonError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

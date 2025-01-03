@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/one_user_list_.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/user_list_group.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -108,14 +108,14 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ClientRadioGroupWidget(
+                UserListGroup(
                   onSelectUser: (data) {
                     SchedulerBinding.instance.addPostFrameCallback((_) {
                       setState(() {
                         selectedUserData = data;
                       });
                     });
-                  },
+                  }, chatId: widget.chatId.toString(),
                 ),
                 if (selectedUsersError != null)
                   Padding(

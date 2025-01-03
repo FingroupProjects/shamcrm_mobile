@@ -20,8 +20,8 @@ class TaskByIdBloc extends Bloc<TaskByIdEvent, TaskByIdState> {
         final task = await apiService.getTaskById(event.taskId);
         emit(TaskByIdLoaded(task));
       } catch (e) {
-        print('Ошибка при загрузке задачи: $e'); // For debugging
-        emit(TaskByIdError('Не удалось загрузить данные задачи: ${e.toString()}'));
+        print('Ошибка при загрузке задачи!'); // For debugging
+        emit(TaskByIdError('Не удалось загрузить данные задачи!'));
       }
     } else {
       emit(TaskByIdError('Нет подключения к интернету'));

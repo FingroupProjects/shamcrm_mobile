@@ -31,7 +31,7 @@ class DealTasksBloc extends Bloc<DealTasksEvent, DealTasksState> {
         allDealTasksFetched = tasks.isEmpty;
         emit(DealTasksLoaded(tasks));
       } catch (e) {
-        emit(DealTasksError('Не удалось загрузить сделки задачи: ${e.toString()}'));
+        emit(DealTasksError('Не удалось загрузить сделки задачи!'));
       }
     } else {
       emit(DealTasksError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

@@ -26,7 +26,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           emit(ProfileError(result['message']));
         }
       } catch (e) {
-        emit(ProfileError('Ошибка при обновлении профиля: ${e.toString()}'));
+        emit(ProfileError('Ошибка при обновлении профиля!'));
       }
     });
   }

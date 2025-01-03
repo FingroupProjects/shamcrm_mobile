@@ -14,6 +14,8 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
   GetAllClientBloc({required this.apiService}) : super(GetAllClientInitial()) {
     on<GetAllClientEv>(_getUsers);
     on<GetAnotherClientEv>(_getAnotherUsers);
+    on<GetUsersNotInChatEv>(_getUsersNotInChat);  
+
   }
 
   Future<void> _getUsers(
@@ -37,5 +39,16 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
       emit(GetAllClientError(message: e.toString()));
     }
   }
+  Future<void> _getUsersNotInChat(
+      GetUsersNotInChatEv event, Emitter<GetAllClientState> emit) async {
+    try {
+      emit(GetAllClientLoading());
+      var res = await apiService.getUsersNotInChat(event.chatId);
+      emit(GetAllClientSuccess(dataUser: res));
+    } catch (e) {
+      emit(GetAllClientError(message: e.toString()));
+    }
+  }
+
 }
 

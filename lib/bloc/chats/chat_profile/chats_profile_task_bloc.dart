@@ -17,7 +17,7 @@ class TaskProfileBloc extends Bloc<TaskProfileEvent, TaskProfileState> {
         if (e.toString() == 'Exception: Данные задачи не найдены') {
           emit(TaskProfileError('Данные задачи не найдены'));
         } else {
-          emit(TaskProfileError('Ошибка загрузки задачи: $e'));
+          emit(TaskProfileError('Ошибка загрузки задачи!'));
         }
       }
     });

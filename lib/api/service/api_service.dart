@@ -104,6 +104,7 @@ class ApiService {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
       return 'https://$domain-back.shamcrm.com/api';
+      // return 'https://$domain-back.shamcrm.com/api';
 //       return 'https://8e00-95-142-94-22.ngrok-free.app/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
@@ -162,7 +163,7 @@ class ApiService {
 //   } catch (e) {
 //     return {
 //       'success': false,
-//       'message': 'Ошибка при запросе: $e',
+//       'message': 'Ошибка при запросе!',
 //     };
 //   }
 // }
@@ -228,7 +229,7 @@ class ApiService {
 
     final response = await http.get(
       Uri.parse(
-          '$baseUrl/user/getAnotherUsers${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+          '$baseUrl/user/getAnotherUsers/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -255,6 +256,42 @@ class ApiService {
 
     return dataUser;
   }
+
+  // addUserToGroup
+Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
+
+  final response = await http.get(
+    Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' + (organizationId != null ? '?organization_id=$organizationId' : '')),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+
+  late UsersDataResponse dataUser;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataUser = UsersDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  }
+
+  if (kDebugMode) {
+    print('Статус ответа: ${response.statusCode}');
+  }
+  if (kDebugMode) {
+    print('getUsersNotInChat: ${response.body}');
+  }
+
+  return dataUser;
+}
+
 
   // create new client
   Future<Map<String, dynamic>> createNewClient(String userID) async {
@@ -332,7 +369,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании гр. чата: $e',
+        'message': 'Ошибка при создании гр. чата!',
       };
     }
   }
@@ -374,7 +411,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при добавление участника : $e',
+        'message': 'Ошибка при добавление участника !',
       };
     }
   }
@@ -416,7 +453,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при добавление участника : $e',
+        'message': 'Ошибка при добавление участника !',
       };
     }
   }
@@ -766,8 +803,8 @@ class ApiService {
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка в forgotPin: $e');
-      throw Exception('Ошибка в запросе: $e');
+      print('Ошибка в forgotPin!');
+      throw Exception('Ошибка в запросе!');
     }
   }
 
@@ -786,82 +823,46 @@ class ApiService {
         final Map<String, dynamic> jsonLead = decodedJson['result'];
         return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
       } else {
-        print('Failed to load lead ID: ${response.statusCode}');
-        throw Exception('Ошибка загрузки лида ID: ${response.statusCode}');
+        print('Failed to load lead ID!');
+        throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки лида ID: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки лида ID!');
     }
   }
 
 //Метод для получения список Лидов с пагинацией
-  Future<List<Lead>> getLeads(int? leadStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/lead?page=$page&per_page=$perPage';
+Future<List<Lead>> getLeads(int? leadStatusId,
+    {int page = 1, int perPage = 20, String? search}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/lead?page=$page&per_page=$perPage';
 
-    // Добавляем параметр organization_id
-    path += '&organization_id=$organizationId';
+  path += '&organization_id=$organizationId';
 
-    if (leadStatusId != null) {
-      path += '&lead_status_id=$leadStatusId';
-    }
-
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
-
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о лидах в ответе');
-      }
-    } else {
-      throw Exception('Ошибка загрузки лидов: ${response.body}');
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (leadStatusId != null) {
+    path += '&lead_status_id=$leadStatusId';
   }
-// Future<List<Lead>> getLeads(int? leadStatusId,
-//     {int page = 1, int perPage = 20, String? search}) async {
-//   final organizationId = await getSelectedOrganization();
-//   String path = '/lead?page=$page&per_page=$perPage';
 
-//   // Add organization_id parameter
-//   path += '&organization_id=$organizationId';
+  // Log the final request path
+  print('Sending request to API with path: $path');
+  final response = await _getRequest(path);
 
-//   // Check for search first, if present ignore leadStatusId
-//   if (search != null && search.isNotEmpty) {
-//     path += '&search=$search';
-//   } else if (leadStatusId != null) {
-//     // If search is not provided, use leadStatusId
-//     path += '&lead_status_id=$leadStatusId';
-//   }
-
-//   // Log the final request path
-//   print('Sending request to API with path: $path');
-//   final response = await _getRequest(path);
-
-//   if (response.statusCode == 200) {
-//     final data = json.decode(response.body);
-//     if (data['result']['data'] != null) {
-//       return (data['result']['data'] as List)
-//           .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-//           .toList();
-//     } else {
-//       throw Exception('No lead data found in the response');
-//     }
-//   } else {
-//     throw Exception('Error loading leads: ${response.body}');
-//   }
-// }
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('No lead data found in the response');
+    }
+  } else {
+    throw Exception('Error loading leads: ${response.body}');
+  }
+}
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
     final organizationId = await getSelectedOrganization();
@@ -878,20 +879,19 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка загрузки статуса лида!');
     }
   }
 
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Lead> leads =
-          await getLeads(leadStatusId, page: 1, perPage: 1);
+      final List<Lead> leads = await getLeads(leadStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has leads: $e');
+      print('Error while checking if status has leads!');
       return false;
     }
   }
@@ -960,8 +960,8 @@ class ApiService {
         throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории лида: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории лида!');
     }
   }
 
@@ -1620,8 +1620,8 @@ class ApiService {
         throw Exception('Ошибка отправки в 1С: ${response.statusCode}');
       }
     } catch (e) {
-      print('Произошла ошибка: $e');
-      throw Exception('Ошибка отправки в 1С: $e');
+      print('Произошла ошибка!');
+      throw Exception('Ошибка отправки в 1С!');
     }
   }
   // Future postLeadToC(int leadId) async {
@@ -1647,8 +1647,8 @@ class ApiService {
   //       throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
   //     }
   //   } catch (e) {
-  //     print('Произошла ошибка: $e');
-  //     throw Exception('Ошибка отправки 1С Лид: $e');
+  //     print('Произошла ошибка!');
+  //     throw Exception('Ошибка отправки 1С Лид!');
   //   }
   // }
 
@@ -1720,28 +1720,22 @@ class ApiService {
         throw Exception('Ошибка загрузки deal ID: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки deal ID: $e');
+      throw Exception('Ошибка загрузки deal ID!');
     }
   }
 
   Future<List<Deal>> getDeals(int? dealStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
+    final organizationId = await getSelectedOrganization(); 
     String path = '/deal?page=$page&per_page=$perPage';
 
-    // Добавляем параметр organization_id
     path += '&organization_id=$organizationId';
 
-    // Добавляем параметр deal_status_id, если он передан
-    if (dealStatusId != null) {
-      path += '&deal_status_id=$dealStatusId';
-    }
-
-    // Добавляем параметр поиска, если он передан
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (dealStatusId != null) {
+    path += '&deal_status_id=$dealStatusId';
+  }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
@@ -1793,7 +1787,7 @@ class ApiService {
       // Если список лидов не пуст, значит статус содержит элементы
       return deals.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals: $e');
+      print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -1840,8 +1834,8 @@ class ApiService {
             'Ошибка загрузки истории сделки: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории сделки: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории сделки!');
     }
   }
 
@@ -2099,22 +2093,16 @@ class ApiService {
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
+    final organizationId = await getSelectedOrganization(); 
     String path = '/task?page=$page&per_page=$perPage';
 
-    // Добавляем параметр organization_id
     path += '&organization_id=$organizationId';
 
-    // Добавление параметра task_status_id, если он передан
-    if (taskStatusId != null) {
-      path += '&task_status_id=$taskStatusId';
-    }
-
-    // Добавление параметра поиска, если он передан
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+      if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  } else if (taskStatusId != null) {
+    path += '&task_status_id=$taskStatusId';
+  }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
@@ -2161,13 +2149,12 @@ class ApiService {
   Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Task> tasks =
-          await getTasks(taskStatusId, page: 1, perPage: 1);
+      final List<Task> tasks = await getTasks(taskStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
     } catch (e) {
-      print('Error while checking if status has deals: $e');
+      print('Error while checking if status has deals!');
       return false;
     }
   }
@@ -2350,7 +2337,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при выполнении запроса: $e',
+        'message': 'Ошибка при выполнении запроса!',
         'error': e.toString(),
       };
     }
@@ -2632,7 +2619,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи: $e',
+        'message': 'Ошибка при создании задачи!',
       };
     }
   }
@@ -2775,7 +2762,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении задачи: $e',
+        'message': 'Ошибка при обновлении задачи!',
       };
     }
   }
@@ -2799,8 +2786,8 @@ class ApiService {
             'Ошибка загрузки истории задач: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error occurred: $e');
-      throw Exception('Ошибка загрузки истории задач: $e');
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории задач!');
     }
   }
 
@@ -2891,7 +2878,7 @@ class ApiService {
         throw Exception('Ошибка сервера: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка при получении пользователей: $e');
+      print('Ошибка при получении пользователей!');
       rethrow;
     }
   }
@@ -3061,7 +3048,7 @@ class ApiService {
         throw ('Ошибка загрузки статистики: ${response.body}');
       }
     } catch (e) {
-      throw ('Ошибка при получении статистики: $e');
+      throw ('Ошибка при получении статистики!');
     }
   }
 
@@ -3402,12 +3389,12 @@ class ApiService {
       }
     } on DioException catch (e) {
       if (kDebugMode) {
-        print('Exception caught: $e');
+        print('Exception caught!');
       }
       if (kDebugMode) {
         print(e.response?.data);
       }
-      throw Exception('Failed to send audio message due to an exception: $e');
+      throw Exception('Failed to send audio message due to an exception!');
     }
   }
 
@@ -3449,9 +3436,9 @@ class ApiService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Exception caught: $e');
+        print('Exception caught!');
       }
-      throw Exception('Failed to send audio message due to an exception: $e');
+      throw Exception('Failed to send audio message due to an exception!');
     }
   }
 
@@ -3516,7 +3503,7 @@ class ApiService {
         print('Error marking messages as read: ${response.body}');
       }
     } catch (e) {
-      print('Exception when marking messages as read: $e');
+      print('Exception when marking messages as read!');
     }
   }
 
@@ -3554,7 +3541,7 @@ class ApiService {
       }
     } catch (e) {
       // Обработка ошибок сети или других непредвиденных исключений
-      throw Exception('Не удалось выполнить запрос: $e');
+      throw Exception('Не удалось выполнить запрос!');
     }
   }
 
@@ -3681,7 +3668,7 @@ class ApiService {
         throw Exception('${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка в getChatProfile: $e');
+      print('Ошибка в getChatProfile!');
       throw ('$e');
     }
   }
@@ -3728,9 +3715,9 @@ class ApiService {
         throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
       }
     } catch (e) {
-      print('Полная ошибка в getTaskProfile: $e');
+      print('Полная ошибка в getTaskProfile!');
       print('Трассировка стека: ${StackTrace.current}');
-      throw Exception('Ошибка загрузки задачи: $e');
+      throw Exception('Ошибка загрузки задачи!');
     }
   }
 
@@ -3758,7 +3745,7 @@ class ApiService {
         throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки User ID: $e');
+      throw Exception('Ошибка загрузки User ID!');
     }
   }
 
@@ -3847,7 +3834,7 @@ class ApiService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении профиля: $e',
+        'message': 'Ошибка при обновлении профиля!',
       };
     }
   }

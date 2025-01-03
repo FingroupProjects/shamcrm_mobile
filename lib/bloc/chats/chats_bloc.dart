@@ -119,7 +119,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           emit(ChatsError('Вы не можете удалить эту группу!'));
         }
       } catch (e) {
-        emit(ChatsError('Ошибка удаления чата: ${e.toString()}'));
+        emit(ChatsError('Ошибка удаления чата!'));
       }
     } else {
       emit(ChatsError('Нет подключения к интернету'));

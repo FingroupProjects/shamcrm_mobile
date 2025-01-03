@@ -26,7 +26,7 @@ class TaskHistory {
       changes: _parseChanges(json['changes']),
     );
   } catch (e) {
-    print('Ошибка при парсинге TaskHistory: $e');
+    print('Ошибка при парсинге TaskHistory!');
     return TaskHistory(
       id: 0,
       user: User(id: 0, name: 'Система', email: 'Не указано', phone: 'Не указано'),

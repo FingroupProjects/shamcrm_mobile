@@ -21,7 +21,7 @@ class OrganizationBloc extends Bloc<OrganizationEvent, OrganizationState> {
             emit(OrganizationError('Неавторизованный доступ!'));
           } else {
             emit(OrganizationError(
-                'Не удалось загрузить данные: ${e.toString()}'));
+                'Не удалось загрузить данные!'));
           }
         }
       } else {

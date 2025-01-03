@@ -82,7 +82,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
         });
       }
     } catch (e) {
-      print('Ошибка: $e');
+      print('Ошибка!');
     }
   }
 

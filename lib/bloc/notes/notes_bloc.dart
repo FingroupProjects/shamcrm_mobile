@@ -34,7 +34,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
         allNotesFetched = notes.isEmpty;
         emit(NotesLoaded(notes, currentPage: 1));
       } catch (e) {
-        emit(NotesError('Не удалось загрузить заметки: ${e.toString()}'));
+        emit(NotesError('Не удалось загрузить заметки!'));
       }
     } else {
       emit(NotesError('Нет подключения к интернету'));
@@ -56,7 +56,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           emit(currentState.merge(notes));
         }
       } catch (e) {
-        emit(NotesError('Не удалось загрузить дополнительные заметки: ${e.toString()}'));
+        emit(NotesError('Не удалось загрузить дополнительные заметки!'));
       }
     } else {
       emit(NotesError('Нет подключения к интернету'));
@@ -82,7 +82,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           emit(NotesError(result['message']));
         }
       } catch (e) {
-        emit(NotesError('Ошибка создания заметки: ${e.toString()}'));
+        emit(NotesError('Ошибка создания заметки!'));
       }
     } else {
       emit(NotesError('Нет подключения к интернету'));
@@ -109,7 +109,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           emit(NotesError(result['message']));
         }
       } catch (e) {
-        emit(NotesError('Ошибка обновления заметки: ${e.toString()}'));
+        emit(NotesError('Ошибка обновления заметки!'));
       }
     } else {
       emit(NotesError('Нет подключения к интернету'));
@@ -129,7 +129,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           emit(NotesError('Ошибка удаления заметки'));
         }
       } catch (e) {
-        emit(NotesError('Ошибка удаления заметки: ${e.toString()}'));
+        emit(NotesError('Ошибка удаления заметки!'));
       }
     } else {
       emit(NotesError('Нет подключения к интернету'));

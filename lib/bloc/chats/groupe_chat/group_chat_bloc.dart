@@ -34,7 +34,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
         emit(GroupChatError(result['message']));
       }
     } catch (e) {
-      emit(GroupChatError('Ошибка создания гр. чата: ${e.toString()}'));
+      emit(GroupChatError('Ошибка создания гр. чата!'));
     }
   }
 
@@ -59,7 +59,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
 }
  catch (e) {
       emit(AddUserToGroupError(
-          'Ошибка добавления пользователя: ${e.toString()}'));
+          'Ошибка добавления пользователя!'));
     }
   }
 
@@ -84,7 +84,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
         emit(GroupChatError(result['Нельзя удалить участника']));
       }
     } catch (e) {
-      emit(GroupChatError('Ошибка удаления пользователя: ${e.toString()}'));
+      emit(GroupChatError('Ошибка удаления пользователя!'));
     }
   }
 
