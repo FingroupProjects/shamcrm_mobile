@@ -3614,6 +3614,20 @@ Future<Map<String, dynamic>> createTaskFromDeal({
       throw Exception('Ошибка загрузки уведомлений: ${response.body}');
     }
   }
+  // Метод для прочтения всех  Уведомлении
+Future<void> DeleteAllNotifications() async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/notification/readAll?organization_id=$organizationId';
+
+  print('Sending POST request to API with path: $path');
+
+  final response = await _postRequest(path, {});
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений: ${response.body}');
+  }
+}
+
 
 // Метод для удаления Уведомлений
   Future<void> DeleteNotifications({int? notificationId}) async {

@@ -14,6 +14,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<FetchNotifications>(_fetchNotifications);
     on<FetchMoreNotifications>(_fetchMoreNotifications);
     on<DeleteNotification>(_deleteNotification);
+    on<DeleteAllNotification>(_deleteAllNotification); // Обрабатываем событие
   }
 
   Future<bool> _checkInternetConnection() async {
@@ -63,6 +64,15 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       } catch (e) {
         emit(NotificationError('Не удалось загрузить уведомления!'));
       }
+    } else {
+      emit(NotificationError('Нет подключения к интернету'));
+    }
+  }
+
+  Future<void> _deleteAllNotification(DeleteAllNotification event, Emitter<NotificationState> emit) async {
+    if (await _checkInternetConnection()) {
+        await apiService.DeleteAllNotifications(); // Исправленный вызов метода
+        emit(NotificationDeleted("Успешно удален")); // Вы можете создать это состояние
     } else {
       emit(NotificationError('Нет подключения к интернету'));
     }

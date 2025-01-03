@@ -13,3 +13,5 @@ class DeleteNotification extends NotificationEvent {
 
   DeleteNotification(this.notificationId);
 }
+
+class DeleteAllNotification extends NotificationEvent {}
