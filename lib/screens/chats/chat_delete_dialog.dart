@@ -26,20 +26,25 @@ class _DeleteChatDialogState extends State<DeleteChatDialog> {
     _fetchChatData();
   }
 
-  Future<void> _fetchChatData() async {
-    final chatData = await ApiService().getChatById(widget.chatId);
-    setState(() {
-      if (chatData.chatUsers.length == 2 && chatData.group == null) {
-        isGroupChat = false;
-        dialogTitle = 'Удалить чат';
-        dialogContent = 'Вы уверены, что хотите удалить этот чат?';
-      } else {
-        isGroupChat = true;
-        dialogTitle = 'Удалить группу';
-        dialogContent = 'Вы уверены, что хотите удалить эту группу?';
-      }
-    });
-  }
+Future<void> _fetchChatData() async {
+  final chatData = await ApiService().getChatById(widget.chatId);
+  setState(() {
+    if (chatData.chatUsers.length == 2 && chatData.group == null) {
+      isGroupChat = false;
+      dialogTitle = 'Удалить чат';
+      dialogContent = 'Вы уверены, что хотите удалить этот чат?';
+    } else if (chatData.group != null) {
+      isGroupChat = true;
+      dialogTitle = 'Удалить группу';
+      dialogContent = 'Вы уверены, что хотите удалить эту группу?';
+    } else {
+      isGroupChat = false;
+      dialogTitle = 'Удалить чат';
+      dialogContent = 'Вы уверены, что хотите удалить этот чат?';
+    }
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {

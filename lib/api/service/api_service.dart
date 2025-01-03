@@ -258,6 +258,42 @@ class ApiService {
     return dataUser;
   }
 
+  // addUserToGroup
+Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
+
+  final response = await http.get(
+    Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' + (organizationId != null ? '?organization_id=$organizationId' : '')),
+    headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
+
+  late UsersDataResponse dataUser;
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      dataUser = UsersDataResponse.fromJson(data);
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  }
+
+  if (kDebugMode) {
+    print('Статус ответа: ${response.statusCode}');
+  }
+  if (kDebugMode) {
+    print('getUsersNotInChat: ${response.body}');
+  }
+
+  return dataUser;
+}
+
+
   // create new client
   Future<Map<String, dynamic>> createNewClient(String userID) async {
     final token = await getToken();
