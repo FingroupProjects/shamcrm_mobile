@@ -34,13 +34,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (_scrollController.position.pixels ==
           _scrollController.position.maxScrollExtent) {
         if (!notificationBloc.allNotificationsFetched) {
-          notificationBloc.add(FetchMoreNotifications(notificationBloc.state
-                  is NotificationDataLoaded
-              ? (notificationBloc.state as NotificationDataLoaded).currentPage
-              : 1));
+          notificationBloc.add(FetchMoreNotifications(notificationBloc.state is NotificationDataLoaded ? 
+          (notificationBloc.state as NotificationDataLoaded).currentPage : 1));
         }
       }
     });
+  }
+
+  void _clearAllNotifications() async {
+    await ApiService().DeleteAllNotifications();
+    notificationBloc.add(DeleteAllNotification());
+    setState(() {
+      if (notificationBloc.state is NotificationDataLoaded) {
+        (notificationBloc.state as NotificationDataLoaded).notifications.clear();
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Все уведомления успешно удалены!',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.green,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -71,6 +101,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Navigator.of(context).pop();
           },
         ),
+       actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8), 
+          child: IconButton(
+            icon: const Icon(
+              Icons.delete,
+              color: Color(0xff1E2E52),
+            ),
+            onPressed: _clearAllNotifications,
+          ),
+        ),
+      ],
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
@@ -111,7 +153,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     controller: _scrollController,
                     itemCount: notifications.length +
                         (notificationBloc.allNotificationsFetched ? 0 : 1),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     itemBuilder: (context, index) {
                       if (index == notifications.length) {
                         return const Padding(
@@ -197,10 +240,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xff1E2E52)),
-                                // overflow: TextOverflow.ellipsis,
-                                // softWrap: false,
                               ),
-                              
                               subtitle: Row(
                                 children: [
                                   Expanded(
@@ -217,7 +257,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   SizedBox(width: 6),
                                   Text(
                                     DateFormat('dd.MM.yyyy HH:mm')
-                                        .format(notification.createdAt),
+                                        .format(notification.createdAt.add(Duration(hours: 5))),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -225,6 +265,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       color: Color(0xff1E2E52),
                                     ),
                                   ),
+
                                 ],
                               ),
                               onTap: () {

@@ -72,167 +72,7 @@ class _PinScreenState extends State<PinScreen>
     });
   }
 
-    Future<void> _loadUserRoleId() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? '';
-    if (userId.isEmpty) {
-      setState(() {
-        userRoleId = 0;
-      });
-      return;
-    }
 
-    // Получение ИД РОЛЯ через API
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
-    setState(() {
-      userRoleId = userProfile.role!.first.id;
-    });
-    // Выводим данные в консоль
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
-
-  } catch (e) {
-    print('Error loading user role!');
-    setState(() {
-      userRoleId = 0;
-    });
-  }
-}
-
-  // Метод для загрузки данных пользователя из SharedPreferences
- void _loadUserPhone() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-
-  // Получаем данные из SharedPreferences
-  String? savedUserName = prefs.getString('userName');
-  String? savedUserNameProfile = prefs.getString('userNameProfile');
-  String? savedUserImage = prefs.getString('userImage');
-
-  // Если данные есть в SharedPreferences, проверяем их с данными с сервера
-  if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
-    // Попробуем получить данные с сервера
-    try {
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(savedUserName)); // Предположим, что userName это ID
-      if (userProfile.name == savedUserName) {
-        // Если name из сервера совпадает с name из SharedPreferences, используем данные с сервера
-        setState(() {
-          _userName = userProfile.name;
-          _userNameProfile = savedUserNameProfile; // Используем имя профиля из SharedPreferences
-          _userImage = savedUserImage; // Используем изображение из SharedPreferences
-        });
-      } else {
-        // Если данные не совпадают, берем данные с сервера
-        setState(() {
-          _userName = userProfile.name;
-          _userNameProfile = userProfile.lastname ?? ''; // Обновляем профиль на основе данных с сервера
-          _userImage = userProfile.image ?? ''; // Используем изображение с сервера
-        });
-
-        // Обновляем SharedPreferences данными с сервера
-        await prefs.setString('userName', userProfile.name);
-        await prefs.setString('userNameProfile', userProfile.name ?? '');
-        await prefs.setString('userImage', userProfile.image ?? '');
-      }
-    } catch (e) {
-      print('Ошибка при загрузке данных с сервера!');
-      // Если произошла ошибка при запросе с сервера, выводим сохраненные данные
-      setState(() {
-        _userName = savedUserName;
-        _userNameProfile = savedUserNameProfile;
-        _userImage = savedUserImage;
-      });
-    }
-  } else {
-    // Если данных нет в SharedPreferences, загружаем их с сервера
-    try {
-      UserByIdProfile userProfile = await ApiService().getUserById(1); // Предположим, что это какой-то ID
-      setState(() {
-        _userName = userProfile.name;
-        _userNameProfile = userProfile.name ?? '';
-        _userImage = userProfile.image ?? '';
-      });
-
-      // Сохраняем данные в SharedPreferences
-      await prefs.setString('userName', userProfile.name);
-      await prefs.setString('userNameProfile', userProfile.name ?? '');
-      await prefs.setString('userImage', userProfile.image ?? '');
-    } catch (e) {
-      print('Ошибка при загрузке данных с сервера!');
-      // Обрабатываем ошибку, если данные не удалось загрузить с сервера
-      setState(() {
-        _userName = 'Не найдено';
-        _userNameProfile = 'Не найдено';
-        _userImage = '';
-      });
-    }
-  }
-}
-
-
-  Future<void> _initBiometrics() async {
-    try {
-      _canCheckBiometrics = await _auth.canCheckBiometrics;
-
-      if (_canCheckBiometrics) {
-        _availableBiometrics = await _auth.getAvailableBiometrics();
-        if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS &&
-              _availableBiometrics.contains(BiometricType.face)) {
-            _authenticate();
-          } else if (Platform.isAndroid &&
-              _availableBiometrics.contains(BiometricType.strong)) {
-            _authenticate();
-          }
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Биометрическая аутентификация недоступна'),
-            ),
-          );
-        }
-      }
-    } on PlatformException catch (e) {
-      debugPrint('Ошибка инициализации биометрии!');
-    }
-  }
-
-  Future<void> _authenticate() async {
-    try {
-      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Биометрическая аутентификация недоступна'),
-            ),
-          );
-        }
-        return;
-      }
-
-      final bool didAuthenticate = await _auth.authenticate(
-        localizedReason: 'Подтвердите личность',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          useErrorDialogs: true,
-          stickyAuth: true,
-        ),
-      );
-
-      if (didAuthenticate && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      }
-    } on PlatformException catch (e) {
-      if (mounted) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text('Ошибка биометрической аутентификации: ${e.message}'),
-        //   ),
-        // );
-      }
-    }
-  }
 
   Future<void> _checkSavedPin() async {
     final prefs = await SharedPreferences.getInstance();
@@ -478,5 +318,166 @@ class _PinScreenState extends State<PinScreen>
         ),
       ),
     );
+  }
+      Future<void> _loadUserRoleId() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userId = prefs.getString('userID') ?? '';
+    if (userId.isEmpty) {
+      setState(() {
+        userRoleId = 0;
+      });
+      return;
+    }
+
+    // Получение ИД РОЛЯ через API
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+    setState(() {
+      userRoleId = userProfile.role!.first.id;
+    });
+    // Выводим данные в консоль
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
+
+  } catch (e) {
+    print('Error loading user role!');
+    setState(() {
+      userRoleId = 0;
+    });
+  }
+}
+
+  // Метод для загрузки данных пользователя из SharedPreferences
+ void _loadUserPhone() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Получаем данные из SharedPreferences
+  String? savedUserName = prefs.getString('userName');
+  String? savedUserNameProfile = prefs.getString('userNameProfile');
+  String? savedUserImage = prefs.getString('userImage');
+
+  // Если данные есть в SharedPreferences, проверяем их с данными с сервера
+  if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+    // Попробуем получить данные с сервера
+    try {
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(savedUserName)); // Предположим, что userName это ID
+      if (userProfile.name == savedUserName) {
+        // Если name из сервера совпадает с name из SharedPreferences, используем данные с сервера
+        setState(() {
+          _userName = userProfile.name;
+          _userNameProfile = savedUserNameProfile; // Используем имя профиля из SharedPreferences
+          _userImage = savedUserImage; // Используем изображение из SharedPreferences
+        });
+      } else {
+        // Если данные не совпадают, берем данные с сервера
+        setState(() {
+          _userName = userProfile.name;
+          _userNameProfile = userProfile.lastname ?? ''; // Обновляем профиль на основе данных с сервера
+          _userImage = userProfile.image ?? ''; // Используем изображение с сервера
+        });
+
+        // Обновляем SharedPreferences данными с сервера
+        await prefs.setString('userName', userProfile.name);
+        await prefs.setString('userNameProfile', userProfile.name ?? '');
+        await prefs.setString('userImage', userProfile.image ?? '');
+      }
+    } catch (e) {
+      print('Ошибка при загрузке данных с сервера!');
+      // Если произошла ошибка при запросе с сервера, выводим сохраненные данные
+      setState(() {
+        _userName = savedUserName;
+        _userNameProfile = savedUserNameProfile;
+        _userImage = savedUserImage;
+      });
+    }
+  } else {
+    // Если данных нет в SharedPreferences, загружаем их с сервера
+    try {
+      UserByIdProfile userProfile = await ApiService().getUserById(1); // Предположим, что это какой-то ID
+      setState(() {
+        _userName = userProfile.name;
+        _userNameProfile = userProfile.name ?? '';
+        _userImage = userProfile.image ?? '';
+      });
+
+      // Сохраняем данные в SharedPreferences
+      await prefs.setString('userName', userProfile.name);
+      await prefs.setString('userNameProfile', userProfile.name ?? '');
+      await prefs.setString('userImage', userProfile.image ?? '');
+    } catch (e) {
+      print('Ошибка при загрузке данных с сервера!');
+      // Обрабатываем ошибку, если данные не удалось загрузить с сервера
+      setState(() {
+        _userName = 'Не найдено';
+        _userNameProfile = 'Не найдено';
+        _userImage = '';
+      });
+    }
+  }
+}
+
+
+  Future<void> _initBiometrics() async {
+    try {
+      _canCheckBiometrics = await _auth.canCheckBiometrics;
+
+      if (_canCheckBiometrics) {
+        _availableBiometrics = await _auth.getAvailableBiometrics();
+        if (_availableBiometrics.isNotEmpty) {
+          if (Platform.isIOS &&
+              _availableBiometrics.contains(BiometricType.face)) {
+            _authenticate();
+          } else if (Platform.isAndroid &&
+              _availableBiometrics.contains(BiometricType.strong)) {
+            _authenticate();
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Биометрическая аутентификация недоступна'),
+            ),
+          );
+        }
+      }
+    } on PlatformException catch (e) {
+      debugPrint('Ошибка инициализации биометрии!');
+    }
+  }
+
+  Future<void> _authenticate() async {
+    try {
+      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Биометрическая аутентификация недоступна'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final bool didAuthenticate = await _auth.authenticate(
+        localizedReason: 'Подтвердите личность',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
+      );
+
+      if (didAuthenticate && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } on PlatformException catch (e) {
+      if (mounted) {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('Ошибка биометрической аутентификации: ${e.message}'),
+        //   ),
+        // );
+      }
+    }
   }
 }
