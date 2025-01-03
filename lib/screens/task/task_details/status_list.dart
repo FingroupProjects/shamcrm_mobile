@@ -42,7 +42,6 @@ class _TaskStatusRadioGroupWidgetState
             if (state is TaskLoading) {
               // return Center(child: CircularProgressIndicator());
             }
-
             if (state is TaskError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -73,7 +72,16 @@ class _TaskStatusRadioGroupWidgetState
 
             if (state is TaskLoaded) {
               statusList = state.taskStatuses;
-              if (widget.selectedStatus != null && statusList.isNotEmpty) {
+              
+              if (statusList.length == 1 && selectedStatusData == null) {
+                // Если есть только один статус и еще не выбран, автоматически выбираем его
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  widget.onSelectStatus(statusList[0]);
+                  setState(() {
+                    selectedStatusData = statusList[0];
+                  });
+                });
+              } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
                 try {
                   selectedStatusData = statusList.firstWhere(
                     (status) => status.id.toString() == widget.selectedStatus,

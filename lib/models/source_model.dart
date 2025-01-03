@@ -14,7 +14,7 @@ class SourceLead {
  factory SourceLead.fromJson(Map<String, dynamic> json) {
   return SourceLead(
     id: json['id'] ?? 0,
-    name: json['name'] ?? 'Без имени',  
+    name: json['name'] ?? '',  
     createdAt: json['created_at'] is String ? json['created_at'] : null,
     updatedAt: json['update_at'] is String ? json['update_at'] : null,
   );

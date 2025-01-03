@@ -13,21 +13,44 @@ class LeadConversionChart extends StatefulWidget {
   State<LeadConversionChart> createState() => _LeadConversionChartState();
 }
 
-class _LeadConversionChartState extends State<LeadConversionChart> {
+class _LeadConversionChartState extends State<LeadConversionChart>
+    with SingleTickerProviderStateMixin {
   int touchedIndex = -1;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
+
+    // Инициализация анимации
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOutCubic,
+    );
+
     // Загрузка данных
     context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<DashboardConversionBloc, DashboardConversionState>(
       listener: (context, state) {
-        if (state is DashboardConversionError) {
+        if (state is DashboardConversionLoaded) {
+          _animationController.forward(from: 0.0);
+        } else if (state is DashboardConversionError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -54,17 +77,7 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
       },
       builder: (context, state) {
         if (state is DashboardConversionLoading) {
-          // return const Center(
-          //   child: Text(
-          //     'Загрузка данных...',
-          //     style: TextStyle(
-          //       fontSize: 16,
-          //       fontFamily: "Gilroy",
-          //       fontWeight: FontWeight.w500,
-          //       color: Colors.black,
-          //     ),
-          //   ),
-          // );
+          return const SizedBox.shrink();
         } else if (state is DashboardConversionError) {
           return const Center(
             child: Text(
@@ -113,80 +126,80 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
     );
   }
 
- Widget _buildChart(DashboardConversionState state) {
-  if (state is DashboardConversionLoaded) {
-    final data = state.leadConversionData;
+  Widget _buildChart(DashboardConversionState state) {
+    if (state is DashboardConversionLoaded) {
+      final data = state.leadConversionData;
 
-    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
-      return const Center(
-        child: Text(
-          'Нет данных для отображения',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: "Gilroy",
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
+      if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
+        return const Center(
+          child: Text(
+            'Нет данных для отображения',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: "Gilroy",
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
           ),
-        ),
+        );
+      }
+
+      return AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return PieChart(
+            PieChartData(
+              startDegreeOffset: -90,
+              pieTouchData: PieTouchData(
+                touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        pieTouchResponse == null ||
+                        pieTouchResponse.touchedSection == null) {
+                      touchedIndex = -1;
+                      return;
+                    }
+                    touchedIndex =
+                        pieTouchResponse.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+              sectionsSpace: 4,
+              centerSpaceRadius: 40,
+              sections: _showingSections(data, _animation.value),
+            ),
+          );
+        },
       );
     }
-
-    return PieChart(
-      PieChartData(
-        startDegreeOffset: -90,
-        sectionsSpace: 4,
-        centerSpaceRadius: 40,
-        sections: _showingSections(data),
-        // Добавление анимации
-        borderData: FlBorderData(show: false),
-        pieTouchData: PieTouchData(
-          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-            setState(() {
-              if (!event.isInterestedForInteractions ||
-                  pieTouchResponse == null ||
-                  pieTouchResponse.touchedSection == null) {
-                touchedIndex = -1;
-                return;
-              }
-              touchedIndex =
-                  pieTouchResponse.touchedSection!.touchedSectionIndex;
-            });
-          },
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
-  return const SizedBox.shrink();
-}
 
-List<PieChartSectionData> _showingSections(LeadConversion data) {
-  return [
-    PieChartSectionData(
-      color: const Color(0xFF3935E7),
-      value: data.newLeads,
-      title: '${data.newLeads.toInt()}',
-      radius: 40,
-      titleStyle: const TextStyle(
-        fontSize: 14,
-        fontFamily: "Gilroy",
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-      ),
-    ),
-    PieChartSectionData(
-      color: const Color(0xFF27A945),
-      value: data.repeatedLeads,
-      title: '${data.repeatedLeads.toInt()}',
-      radius: 40,
-      titleStyle: const TextStyle(
-        fontSize: 14,
-        fontFamily: "Gilroy",
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-      ),
-    ),
-  ];
-}
+  List<PieChartSectionData> _showingSections(
+      LeadConversion data, double animationValue) {
+    return List.generate(2, (i) {
+      final isTouched = i == touchedIndex;
+      final fontSize = isTouched ? 20.0 : 0.0;
+      final radius = isTouched ? 45.0 : 40.0;
+      final value = data.data[i] * animationValue;
+
+      return PieChartSectionData(
+        color: i == 0
+            ? const Color(0xFF3935E7).withOpacity(isTouched ? 0.8 : 1)
+            : const Color(0xFF27A945)
+                .withOpacity(isTouched ? 0.8 : 1),
+        value: value,
+        title: isTouched ? '${value.toInt()}' : '',
+        radius: radius,
+        titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontFamily: "Gilroy",
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      );
+    });
+  }
 
   Widget _buildLegend(LeadConversion data) {
     return Row(

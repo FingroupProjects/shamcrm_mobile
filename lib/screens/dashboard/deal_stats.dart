@@ -24,26 +24,11 @@ class DealStatsChart extends StatelessWidget {
     'Декабрь'
   ];
 
-  final List<Color> monthColors = const [
-    Colors.lightBlue,
-    Colors.purple,
-    Colors.green,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
-    Colors.cyan,
-    Colors.red,
-    Colors.amber,
-    Colors.blue,
-    Colors.deepPurple,
-    Colors.indigo,
-  ];
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
-      if (state is DealStatsError) {
+        if (state is DealStatsError) {
           if (state.message.contains("Неавторизованный доступ!")) {
             _handleLogout(context);
             return const SizedBox();
@@ -51,7 +36,7 @@ class DealStatsChart extends StatelessWidget {
             return Center(
               child: Text(
                 '${state.message}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -97,7 +82,8 @@ class DealStatsChart extends StatelessWidget {
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
                         tooltipRoundedRadius: 6,
-                        tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        tooltipPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         tooltipMargin: 4,
                         fitInsideVertically: true,
                         fitInsideHorizontally: true,
@@ -114,10 +100,10 @@ class DealStatsChart extends StatelessWidget {
                               TextSpan(
                                 text: rod.toY.toInt().toString(),
                                 style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
@@ -141,7 +127,7 @@ class DealStatsChart extends StatelessWidget {
                                 child: Text(
                                   months[value.toInt()],
                                   textAlign: TextAlign.left,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
@@ -163,7 +149,7 @@ class DealStatsChart extends StatelessWidget {
                               child: Text(
                                 value.toInt().toString(),
                                 textAlign: TextAlign.right,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -210,12 +196,29 @@ class DealStatsChart extends StatelessWidget {
                     ),
                     barGroups: List.generate(months.length, (index) {
                       final value = (monthData[index] ?? 0).toDouble();
+
+                      // Логика определения цвета
+                      Color barColor;
+                      if (maxCount > 0) {
+                        double percentage = value / maxCount;
+                        if (percentage >= 0.75) {
+                          barColor = Colors.green;
+                        } else if (percentage >= 0.4) {
+                          barColor = Colors.blue;
+                        } else {
+                          barColor = Colors.red;
+                        }
+                      } else {
+                        barColor =
+                            Colors.grey; // Цвет по умолчанию, если maxCount = 0
+                      }
+
                       return BarChartGroupData(
                         x: index,
                         barRods: [
                           BarChartRodData(
                             toY: value > 0 ? value : 0.1,
-                            color: monthColors[index],
+                            color: barColor,
                             width: 20,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(6),
