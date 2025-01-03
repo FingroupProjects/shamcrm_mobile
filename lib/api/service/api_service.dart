@@ -258,40 +258,40 @@ class ApiService {
   }
 
   // addUserToGroup
-Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
-  final token = await getToken();
-  final organizationId = await getSelectedOrganization();
+  Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
 
-  final response = await http.get(
-    Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' + (organizationId != null ? '?organization_id=$organizationId' : '')),
-    headers: {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    },
-  );
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' +
+          (organizationId != null ? '?organization_id=$organizationId' : '')),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
 
-  late UsersDataResponse dataUser;
+    late UsersDataResponse dataUser;
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
 
-    if (data['result'] != null) {
-      dataUser = UsersDataResponse.fromJson(data);
-    } else {
-      throw Exception('Результат отсутствует в ответе');
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     }
-  }
 
-  if (kDebugMode) {
-    print('Статус ответа: ${response.statusCode}');
-  }
-  if (kDebugMode) {
-    print('getUsersNotInChat: ${response.body}');
-  }
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getUsersNotInChat: ${response.body}');
+    }
 
-  return dataUser;
-}
-
+    return dataUser;
+  }
 
   // create new client
   Future<Map<String, dynamic>> createNewClient(String userID) async {
@@ -833,36 +833,37 @@ Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
   }
 
 //Метод для получения список Лидов с пагинацией
-Future<List<Lead>> getLeads(int? leadStatusId,
-    {int page = 1, int perPage = 20, String? search}) async {
-  final organizationId = await getSelectedOrganization();
-  String path = '/lead?page=$page&per_page=$perPage';
+  Future<List<Lead>> getLeads(int? leadStatusId,
+      {int page = 1, int perPage = 20, String? search}) async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/lead?page=$page&per_page=$perPage';
 
-  path += '&organization_id=$organizationId';
+    path += '&organization_id=$organizationId';
 
-  if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
-  } else if (leadStatusId != null) {
-    path += '&lead_status_id=$leadStatusId';
-  }
-
-  // Log the final request path
-  print('Sending request to API with path: $path');
-  final response = await _getRequest(path);
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result']['data'] != null) {
-      return (data['result']['data'] as List)
-          .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
-          .toList();
-    } else {
-      throw Exception('No lead data found in the response');
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    } else if (leadStatusId != null) {
+      path += '&lead_status_id=$leadStatusId';
     }
-  } else {
-    throw Exception('Error loading leads: ${response.body}');
+
+    // Log the final request path
+    print('Sending request to API with path: $path');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
+            .toList();
+      } else {
+        throw Exception('No lead data found in the response');
+      }
+    } else {
+      throw Exception('Error loading leads: ${response.body}');
+    }
   }
-}
+
   // Метод для получения статусов лидов
   Future<List<LeadStatus>> getLeadStatuses() async {
     final organizationId = await getSelectedOrganization();
@@ -886,7 +887,8 @@ Future<List<Lead>> getLeads(int? leadStatusId,
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Lead> leads = await getLeads(leadStatusId, page: 1, perPage: 1);
+      final List<Lead> leads =
+          await getLeads(leadStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return leads.isNotEmpty;
@@ -1726,16 +1728,16 @@ Future<List<Lead>> getLeads(int? leadStatusId,
 
   Future<List<Deal>> getDeals(int? dealStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId = await getSelectedOrganization(); 
+    final organizationId = await getSelectedOrganization();
     String path = '/deal?page=$page&per_page=$perPage';
 
     path += '&organization_id=$organizationId';
 
-  if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
-  } else if (dealStatusId != null) {
-    path += '&deal_status_id=$dealStatusId';
-  }
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    } else if (dealStatusId != null) {
+      path += '&deal_status_id=$dealStatusId';
+    }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
@@ -2093,16 +2095,16 @@ Future<List<Lead>> getLeads(int? leadStatusId,
 
   Future<List<Task>> getTasks(int? taskStatusId,
       {int page = 1, int perPage = 20, String? search}) async {
-    final organizationId = await getSelectedOrganization(); 
+    final organizationId = await getSelectedOrganization();
     String path = '/task?page=$page&per_page=$perPage';
 
     path += '&organization_id=$organizationId';
 
-      if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
-  } else if (taskStatusId != null) {
-    path += '&task_status_id=$taskStatusId';
-  }
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    } else if (taskStatusId != null) {
+      path += '&task_status_id=$taskStatusId';
+    }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
@@ -2149,7 +2151,8 @@ Future<List<Lead>> getLeads(int? leadStatusId,
   Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     try {
       // Получаем список лидов для указанного статуса, берем только первую страницу
-      final List<Task> tasks = await getTasks(taskStatusId, page: 1, perPage: 1);
+      final List<Task> tasks =
+          await getTasks(taskStatusId, page: 1, perPage: 1);
 
       // Если список лидов не пуст, значит статус содержит элементы
       return tasks.isNotEmpty;
@@ -3105,18 +3108,17 @@ Future<List<Lead>> getLeads(int? leadStatusId,
         '/dashboard/dealStats${organizationId != null ? '?organization_id=$organizationId' : ''}';
     try {
       final response = await _getRequest(path);
-
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
+        final jsonData = json.decode(response.body);
         return DealStatsResponse.fromJson(jsonData);
       } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера!');
+        throw Exception('Ошибка сервера!');
       } else {
-        throw ('Ошибка загрузки данных!');
+        throw Exception('Ошибка загрузки данных: ${response.statusCode}');
       }
     } catch (e) {
-      print('Ошибка запроса!');
-      throw ('');
+      print('Ошибка запроса: $e');
+      throw Exception('Ошибка сети или парсинга данных');
     }
   }
 

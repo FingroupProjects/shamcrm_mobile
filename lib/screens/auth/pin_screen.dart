@@ -36,10 +36,19 @@ class _PinScreenState extends State<PinScreen>
   String _userNameProfile = '';
   String _userImage = '';
   int? userRoleId ;
+  bool _isLoading = true; // Флаг для отображения загрузки
 
   @override
   void initState() {
     super.initState();
+     // Запускаем таймер на 1 секунду
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Отключаем загрузку
+        });
+      }
+    });
   _loadUserRoleId().then((_) {
     // После загрузки разрешений продолжаем остальные операции
     _checkSavedPin();
@@ -315,6 +324,33 @@ class _PinScreenState extends State<PinScreen>
         '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
     print(_userNameProfile);
     return '$greetingPrefix, $_userNameProfile!';
+  }
+
+  @override
+  Widget _build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: _isLoading
+            ? const CircularProgressIndicator() // Анимация загрузки
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Введите PIN-код",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Добавьте логику кнопки здесь
+                    },
+                    child: const Text("Продолжить"),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 
   @override

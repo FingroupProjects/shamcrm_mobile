@@ -71,9 +71,7 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
       builder: (context, state) {
         if (state is ProcessSpeedLoaded) {
           return _buildGauge(state);
-        } else if (state is ProcessSpeedLoading) {
-         
-        }
+        } else if (state is ProcessSpeedLoading) {}
         return const SizedBox.shrink();
       },
     );
@@ -262,14 +260,16 @@ class GaugePainter extends CustomPainter {
 
     // Draw animated needle with initial sweep
     final needleLength = radius - 10;
-final normalizedSpeed = math.min(math.max(speed, 0), 6) / 6;
 
-    // Calculate the initial sweep angle (from left to target position)
-   final targetAngle = startAngle - (totalAngle * normalizedSpeed);
-    final sweepStartAngle = startAngle;
-final currentAngle = sweepStartAngle +
-    (targetAngle - sweepStartAngle) * initialAnimation.value;
+    // Нормализация скорости (предполагаем диапазон от 0 до 6)
+    final normalizedSpeed = math.min(math.max(speed, 0), 6) / 6;
 
+// Расчет угла стрелки
+    final targetAngle = startAngle + (totalAngle * normalizedSpeed);
+    final currentAngle =
+        startAngle + (targetAngle - startAngle) * animation.value;
+
+// Рисуем стрелку
     final needlePaint = Paint()
       ..color = Colors.grey
       ..style = PaintingStyle.stroke
@@ -284,7 +284,7 @@ final currentAngle = sweepStartAngle +
       needlePaint,
     );
 
-    // Draw center circle
+// Рисуем центральную точку
     final centerPaint = Paint()
       ..color = Colors.grey
       ..style = PaintingStyle.fill;
