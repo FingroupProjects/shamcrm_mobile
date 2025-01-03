@@ -68,6 +68,8 @@ class UpdateLead extends LeadEvent {
   final int leadStatusId;
   final String phone;
   final int? regionId;
+  final int? sourseId;
+
   final int? managerId;
   final String? instaLogin;
   final String? facebookLogin;
@@ -84,6 +86,7 @@ class UpdateLead extends LeadEvent {
     required this.leadStatusId,
     required this.phone,
     this.regionId,
+    this.sourseId,
     this.managerId,
     this.instaLogin,
     this.facebookLogin,

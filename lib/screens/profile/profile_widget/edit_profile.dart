@@ -5,12 +5,11 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_event.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -473,6 +472,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   @override
   Widget build(BuildContext context) {
     // Функция для извлечения URL из SVG
+    Color? extractBackgroundColorFromSvg(String svg) {
+      final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+      if (fillMatch != null) {
+        final colorHex = fillMatch.group(1);
+        if (colorHex != null) {
+          final hex = colorHex.replaceAll('#', '');
+          return Color(int.parse('FF$hex', radix: 16));
+        }
+      }
+      return null;
+    }
+
     Widget buildSvgAvatar(String svg) {
       if (svg.contains('image href=')) {
         // Извлекаем URL изображения
@@ -492,25 +503,38 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           ),
         );
       } else {
-        // Для SVG с текстом используем стилизованный контейнер
+        // Извлекаем текст из SVG и цвет фона
+        final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
+        final backgroundColor =
+            extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+
         return Container(
           width: 140,
           height: 140,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFF2C2C2C),
+            color: backgroundColor, // Теперь используем извлеченный цвет
             border: Border.all(
               color: Colors.white,
               width: 1,
             ),
           ),
           child: Center(
-            child: Text(
-              RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 120,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ),
@@ -669,26 +693,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                   }
                                 }
                               },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Поле обязательно для заполнения';
-                                }
-
-                                final maxLength = {
-                                      '+992': 9,
-                                      '+7': 10,
-                                      '+998': 9,
-                                      '+996': 9,
-                                      '+1': 10,
-                                    }[selectedDialCode] ??
-                                    0;
-
-                                if (value.length != maxLength) {
-                                  return 'Некорректная длина номера для $selectedDialCode';
-                                }
-
-                                return null;
-                              },
+                               validator: (value) => value!.isEmpty
+                              ? 'Поле обязательно для заполнения'
+                              : null,
                               label: 'Телефон',
                             ),
                             const SizedBox(height: 8),
@@ -837,96 +844,73 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 horizontal: 16, vertical: 8),
                             minimumSize: Size(double.infinity, 48),
                           ),
-                          onPressed: _isButtonLoading
-                              ? null
-                              : () async {
-                                  // Сбрасываем состояние ошибок
-                                  setState(() {
-                                    _isButtonLoading =
-                                        true; // Устанавливаем состояние загрузки
-                                    _nameError = null;
-                                    _surnameError = null;
-                                    _phoneError = null;
-                                    _emailError = null;
-                                  });
+                          onPressed: () async {
+                            // Сбрасываем состояние ошибок
+                            setState(() {
+                              _nameError = null;
+                              _surnameError = null;
+                              _phoneError = null;
+                              _emailError = null;
+                            });
+                            // Проверяем валидацию
+                            bool isValid = true;
 
-                                  // Проверяем валидацию
-                                  bool isValid = true;
+                            if (NameController.text.trim().isEmpty) {
+                              setState(() {
+                                _nameError =
+                                    'Поле имя обязательно для заполнения';
+                              });
+                              isValid = false;
+                            }
 
-                                  if (NameController.text.trim().isEmpty) {
-                                    setState(() {
-                                      _nameError =
-                                          'Поле имя обязательно для заполнения';
-                                    });
-                                    isValid = false;
-                                  }
+                            if (SurnameController.text.trim().isEmpty) {
+                              setState(() {
+                                _surnameError =
+                                    'Поле фамилия обязательно для заполнения';
+                              });
+                              isValid = false;
+                            }
 
-                                  if (SurnameController.text.trim().isEmpty) {
-                                    setState(() {
-                                      _surnameError =
-                                          'Поле фамилия обязательно для заполнения';
-                                    });
-                                    isValid = false;
-                                  }
+                            if (emailController.text.trim().isNotEmpty &&
+                                !isValidEmail(emailController.text.trim())) {
+                              setState(() {
+                                _emailError = 'Введите корректный email адрес';
+                              });
+                              isValid = false;
+                            }
 
-                                  if (emailController.text.trim().isNotEmpty &&
-                                      !isValidEmail(
-                                          emailController.text.trim())) {
-                                    setState(() {
-                                      _emailError =
-                                          'Введите корректный email адрес';
-                                    });
-                                    isValid = false;
-                                  }
+                            if (!isValid) return;
 
-                                  if (!isValid) {
-                                    setState(() {
-                                      _isButtonLoading =
-                                          false; // Снимаем состояние загрузки
-                                    });
-                                    return;
-                                  }
+                            try {
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              String UUID = prefs.getString('userID') ?? '';
 
-                                  try {
-                                    SharedPreferences prefs =
-                                        await SharedPreferences.getInstance();
-                                    String UUID =
-                                        prefs.getString('userID') ?? '';
+                              if (UUID.isEmpty) {
+                                _showErrorMessage('Ошибка: UUID не найден');
+                                return;
+                              }
 
-                                    if (UUID.isEmpty) {
-                                      _showErrorMessage(
-                                          'Ошибка: UUID не найден');
-                                      setState(() {
-                                        _isButtonLoading =
-                                            false; // Снимаем состояние загрузки
-                                      });
-                                      return;
-                                    }
+                              String UserNameProfile = NameController.text;
+                              await prefs.setString(
+                                  'userNameProfile', UserNameProfile);
 
-                                    String UserNameProfile =
-                                        NameController.text;
-                                    await prefs.setString(
-                                        'userNameProfile', UserNameProfile);
-
-                                    int userId = int.parse(UUID);
-                                    final image = _getImageToUpload();
-                                    context.read<ProfileBloc>().add(
-                                        UpdateProfile(
-                                            userId: userId,
-                                            name: NameController.text.trim(),
-                                            sname:
-                                                SurnameController.text.trim(),
-                                            phone: selectedDialCode +
-                                                phoneController.text,
-                                            email: emailController.text.trim(),
-                                            image: image,
-                                            pname: ''));
-                                  } catch (e) {
-                                    _showErrorMessage(
-                                        'Произошла ошибка при обновлении профиля');
-                                    setState(() {});
-                                  }
-                                },
+                              int userId = int.parse(UUID);
+                              final image = _getImageToUpload();
+                              context.read<ProfileBloc>().add(UpdateProfile(
+                                  userId: userId,
+                                  name: NameController.text.trim(),
+                                  sname: SurnameController.text.trim(),
+                                  phone:
+                                      selectedDialCode + phoneController.text,
+                                  email: emailController.text.trim(),
+                                  image: image,
+                                  pname: ''));
+                            } catch (e) {
+                              _showErrorMessage(
+                                  'Произошла ошибка при обновлении профиля');
+                            }
+                          },
                           child: Text(
                             'Сохранить',
                             style: TextStyle(

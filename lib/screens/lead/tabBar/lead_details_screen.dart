@@ -28,6 +28,8 @@ class LeadDetailsScreen extends StatefulWidget {
   final int statusId;
   final String? region;
   final int? regionId;
+  final String? sourse;
+  final int? sourseId;
   final String? manager;
   final int? managerId;
   final String? birthday;
@@ -45,6 +47,8 @@ class LeadDetailsScreen extends StatefulWidget {
     required this.statusId,
     this.region,
     this.regionId,
+    this.sourse,
+    this.sourseId,
     this.manager,
     this.managerId,
     this.birthday,
@@ -121,7 +125,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   // Обновление данных лида
   void _updateDetails(LeadById lead) {
     print('Lead author: ${lead.author?.name}'); // Добавьте вывод для отладки
-
+    print(
+        '-------------------llll-ll-l-ll-l--l-l-l-l-l--------${lead.sourceLead?.name}');
     currentLead = lead; // Сохраняем актуального лида
     details = [
       // {'label': 'ID лида:', 'value': lead.id.toString()},
@@ -129,10 +134,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Телефон:', 'value': lead.phone ?? ''},
       {'label': 'Регион:', 'value': lead.region?.name ?? ''},
       {'label': 'Менеджер:', 'value': lead.manager?.name ?? ''},
-      {'label': 'Источник:', 'value': lead.sourceLead?.name ?? ''},
+      {'label': 'Источник:', 'value': lead.source?.name ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
+      {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
       {'label': 'Электронная почта:', 'value': lead.email ?? ''},
       {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
       {'label': 'Описание:', 'value': lead.description ?? ''},
@@ -190,7 +196,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 LeadById lead = state.lead;
                 _updateDetails(lead);
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListView(
                     children: [
                       _buildDetailsList(),
@@ -297,6 +304,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             leadId: currentLead!.id,
                             leadName: currentLead!.name,
                             statusId: currentLead!.statusId,
+                            sourceId: currentLead!.source != null
+                                ? currentLead!.source!.id.toString()
+                                : '',
                             region: currentLead!.region != null
                                 ? currentLead!.region!.id.toString()
                                 : '',
@@ -309,6 +319,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             facebook: currentLead!.facebook,
                             telegram: currentLead!.telegram,
                             phone: currentLead!.phone,
+                            whatsApp: currentLead!.whatsApp,
                             email: currentLead!.email,
                             description: currentLead!.description,
                             leadCustomFields: currentLead!.leadCustomFields,

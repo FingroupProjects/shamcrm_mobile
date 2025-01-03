@@ -32,7 +32,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     try {
       final response = await apiService.getTaskStatuses();
       if (response.isEmpty) {
-        emit(TaskError('Нет статусов'));
+        emit(TaskError('Нет статусов задачи!'));
         return;
       }
       emit(TaskLoaded(response));

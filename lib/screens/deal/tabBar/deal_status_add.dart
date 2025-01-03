@@ -64,7 +64,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               ),
               filled: true,
               fillColor: Color(0xffF4F7FD),
-              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
           ),
           if (_errorMessage != null)
@@ -98,14 +99,15 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       fontWeight: FontWeight.w600,
                       color: Color(0xfff1E2E52),
                     ),
-                    overflow: _isTextExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-                    maxLines: _isTextExpanded ? null : 1, 
+                    overflow: _isTextExpanded
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
+                    maxLines: _isTextExpanded ? null : 1,
                   ),
                 ),
               ),
             ],
           ),
-
           TextFormField(
             controller: _dayController,
             keyboardType: TextInputType.number,
@@ -123,7 +125,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               ),
               filled: true,
               fillColor: Color(0xffF4F7FD),
-              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
@@ -165,45 +168,59 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   final dayString = _dayController.text;
                   final color = '#000';
 
-                  if (title.isNotEmpty && dayString.isNotEmpty) {
+                  if (title.isNotEmpty) {
                     setState(() {
                       _errorMessage = null;
                       _dayErrorMessage = null;
                     });
-                    final day = int.tryParse(dayString);
-                    if (day != null) {
-                      context.read<DealBloc>().add(CreateDealStatus(title: title, color: color, day: day));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Статус успешно создан!',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                      Navigator.of(context).pop(true);
+
+                    final day =
+                        dayString.isNotEmpty ? int.tryParse(dayString) : null;
+
+                    if (dayString.isNotEmpty && day == null) {
+                      setState(() {
+                        _dayErrorMessage = 'Введите корректное число дней';
+                      });
+                      return;
                     }
+
+                    context.read<DealBloc>().add(
+                          CreateDealStatus(
+                            title: title,
+                            color: color,
+                            day: day, // Может быть null
+                          ),
+                        );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Статус успешно создан!',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.green,
+                        elevation: 3,
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                    Navigator.of(context).pop(true);
                   } else {
                     setState(() {
                       if (title.isEmpty) {
                         _errorMessage = 'Заполните название';
-                      }
-                      if (dayString.isEmpty) {
-                        _dayErrorMessage = 'Заполните число дней';
                       }
                     });
                   }

@@ -26,7 +26,15 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
   late List<Map<String, String>> memberDetails;
   bool isLoading = true;
   bool isGroupChat = false;
-
+ // Добавьте эту функцию здесь
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
+    }
+    return null;
+  }
   @override
   void initState() {
     super.initState();
@@ -102,7 +110,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           ),
           backgroundColor: Colors.white,
           leading: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+            icon: Image.asset('assets/icons/arrow-left.png',
+                width: 24, height: 24),
             onPressed: () {
               Navigator.pop(context);
             },
@@ -133,7 +142,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         ),
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+          icon:
+              Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -166,9 +176,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600),
             ),
-            Text("$memberCount ${(memberCount >= 2 && memberCount <= 4) ? 'участника' : 'участников'}",
-                style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
-              ),
+            Text(
+              "$memberCount ${(memberCount >= 2 && memberCount <= 4) ? 'участника' : 'участников'}",
+              style: TextStyle(
+                  fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
+            ),
             SizedBox(height: 10),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -186,7 +198,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             fontWeight: FontWeight.w600),
                       ),
                       // Только владельцу разрешено добавлять участников
-                      if (userIdCheck == ownerId) 
+                      if (userIdCheck == ownerId)
                         ElevatedButton(
                           onPressed: () {
                             showDialog(
@@ -195,7 +207,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 value: context.read<GroupChatBloc>(),
                                 child: AddUserToGroupDialog(
                                   chatId: widget.chatId,
-                                  onUserAdded: _fetchChatData,  
+                                  onUserAdded: _fetchChatData,
                                 ),
                               ),
                             );
@@ -223,9 +235,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     physics: NeverScrollableScrollPhysics(),
                     itemCount: members.length,
                     itemBuilder: (context, index) {
-                      bool isDeletedAccount = memberDetails[index]['name'] == 'Удаленный аккаунт';
+                      bool isDeletedAccount =
+                          memberDetails[index]['name'] == 'Удаленный аккаунт';
                       bool isOwner = index == 0;
-                      bool isCurrentUser = memberDetails[index]['id'] == userIdCheck;
+                      bool isCurrentUser =
+                          memberDetails[index]['id'] == userIdCheck;
 
                       return InkWell(
                         onTap: isDeletedAccount || isCurrentUser
@@ -234,34 +248,39 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => ParticipantProfileScreen(
+                                    builder: (context) =>
+                                        ParticipantProfileScreen(
                                       userId: memberDetails[index]['id']!,
                                       image: memberDetails[index]['image']!,
                                       name: memberDetails[index]['name']!,
                                       email: memberDetails[index]['email']!,
                                       phone: memberDetails[index]['phone']!,
                                       login: memberDetails[index]['login']!,
-                                      lastSeen: memberDetails[index]['last_seen']!,
+                                      lastSeen: memberDetails[index]
+                                          ['last_seen']!,
                                       buttonChat: true,
                                     ),
                                   ),
                                 );
                               },
                         onLongPress: () {
-                          if (!isDeletedAccount && !isCurrentUser && userIdCheck == ownerId) {
+                          if (!isDeletedAccount &&
+                              !isCurrentUser &&
+                              userIdCheck == ownerId) {
                             showDialog(
                               context: context,
                               builder: (context) => DeleteChatDialog(
                                 chatId: widget.chatId,
                                 userId: int.parse(memberDetails[index]['id']!),
-                                onUserAdded: _fetchChatData,  
+                                onUserAdded: _fetchChatData,
                               ),
                             );
                           }
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 5),
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 18),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -275,21 +294,66 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           ),
                           child: Row(
                             children: [
+                              // И изменим часть с отображением аватара в методе build:
                               CircleAvatar(
                                 backgroundColor: Colors.white,
                                 child: isDeletedAccount
-                                    ? Image.asset('assets/images/delete_user.png', height: 36, width: 36, fit: BoxFit.cover)
+                                    ? Image.asset(
+                                        'assets/images/delete_user.png',
+                                        height: 36,
+                                        width: 36,
+                                        fit: BoxFit.cover)
                                     : memberDetails[index]['image']!.isEmpty
                                         ? Container(
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              border: Border.all(color: Colors.black, width: 4),
+                                              border: Border.all(
+                                                  color: Colors.black,
+                                                  width: 4),
                                             ),
-                                            child: Image.asset('assets/images/AvatarChat.png', height: 30, width: 30, fit: BoxFit.cover),
+                                            child: Image.asset(
+                                                'assets/images/AvatarChat.png',
+                                                height: 30,
+                                                width: 30,
+                                                fit: BoxFit.cover),
                                           )
-                                        : memberDetails[index]['image']!.startsWith('<svg')
-                                            ? SvgPicture.string(memberDetails[index]['image']!, height: 40, width: 40)
-                                            : Image.network(memberDetails[index]['image']!, height: 40, width: 40, fit: BoxFit.cover),
+                                        : memberDetails[index]['image']!
+                                                .startsWith('<svg')
+                                            ? Builder(
+                                                builder: (context) {
+                                                  final svg =
+                                                      memberDetails[index]
+                                                          ['image']!;
+                                                  final imageUrl =
+                                                      extractImageUrlFromSvg(
+                                                          svg);
+
+                                                  if (imageUrl != null) {
+                                                    return Container(
+                                                      height: 40,
+                                                      width: 40,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        image: DecorationImage(
+                                                          image: NetworkImage(
+                                                              imageUrl),
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    return SvgPicture.string(
+                                                        svg,
+                                                        height: 40,
+                                                        width: 40);
+                                                  }
+                                                },
+                                              )
+                                            : Image.network(
+                                                memberDetails[index]['image']!,
+                                                height: 40,
+                                                width: 40,
+                                                fit: BoxFit.cover),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -326,7 +390,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               else if (!isDeletedAccount)
                                 Transform.rotate(
                                   angle: 3.14159,
-                                  child: Image.asset('assets/icons/arrow-left.png', width: 16, height: 16),
+                                  child: Image.asset(
+                                      'assets/icons/arrow-left.png',
+                                      width: 16,
+                                      height: 16),
                                 ),
                             ],
                           ),
