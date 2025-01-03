@@ -186,6 +186,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         leadStatusId: event.leadStatusId,
         phone: event.phone,
         regionId: event.regionId,
+        sourceId: event.sourseId,
         managerId: event.managerId,
         instaLogin: event.instaLogin,
         facebookLogin: event.facebookLogin,

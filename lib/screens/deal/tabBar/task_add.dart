@@ -733,7 +733,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при создании задачи: $e'),
+            content: Text('Ошибка при создании задачи!'),
             backgroundColor: Colors.red,
           ),
         );

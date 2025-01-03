@@ -17,7 +17,7 @@ class TaskCard extends StatefulWidget {
   final int? user; // ID ответственного пользователя (опционально)
   final int? userId; // ID пользователя, создавшего задачу (опционально)
   final List<UserTaskImage>? usersImage;
-    final void Function(int newStatusId) onStatusId;
+  final void Function(int newStatusId) onStatusId;
 
   TaskCard({
     required this.task,
@@ -29,8 +29,7 @@ class TaskCard extends StatefulWidget {
     this.user,
     this.usersImage,
     this.userId,
-        required this.onStatusId,
-
+    required this.onStatusId,
   });
 
   @override
@@ -38,9 +37,9 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  late String dropdownValue; // Текущее значение выпадающего списка статусов задачи
-    late int statusId;
-
+  late String
+      dropdownValue; // Текущее значение выпадающего списка статусов задачи
+  late int statusId;
 
   @override
   void initState() {
@@ -124,16 +123,78 @@ class _TaskCardState extends State<TaskCard> {
     return '';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    String? extractImageUrlFromSvg(String svg) {
-      if (svg.contains('href="')) {
-        final start = svg.indexOf('href="') + 6;
-        final end = svg.indexOf('"', start);
-        return svg.substring(start, end);
-      }
-      return null;
+ @override
+Widget build(BuildContext context) {
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
     }
+    return null;
+  }
+
+  Color? extractBackgroundColorFromSvg(String svg) {
+    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+    if (fillMatch != null) {
+      final colorHex = fillMatch.group(1);
+      if (colorHex != null) {
+        final hex = colorHex.replaceAll('#', '');
+        return Color(int.parse('FF$hex', radix: 16));
+      }
+    }
+    return null;
+  }
+
+  Widget buildSvgAvatar(String svg, {double size = 32}) {
+    if (svg.contains('image href=')) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(extractImageUrlFromSvg(svg) ?? ''),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      final backgroundColor = extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+      
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: backgroundColor,
+          border: Border.all(
+            color: Colors.white,
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Padding(
+              padding: EdgeInsets.all(size * 0.3),
+              child: Text(
+                RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: size * 0.4,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                  letterSpacing: 0,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+  }
 
     // Получаем количество просроченных дней
     int overdueDays = _getOverdueDays(widget.task.endDate);
@@ -230,20 +291,19 @@ class _TaskCardState extends State<TaskCard> {
                       child: GestureDetector(
                         onTap: () {
                           DropdownBottomSheet(
-                      context,
-                      dropdownValue,
-                      (String newValue, int newStatusId) {
-                        setState(() {
-                          dropdownValue = newValue;
-                          statusId = newStatusId; 
-                          
-                        });
-                          widget.onStatusId(newStatusId); 
-                        widget.onStatusUpdated(); 
-                      },
-                      widget.task,
-                    );
-                  },
+                            context,
+                            dropdownValue,
+                            (String newValue, int newStatusId) {
+                              setState(() {
+                                dropdownValue = newValue;
+                                statusId = newStatusId;
+                              });
+                              widget.onStatusId(newStatusId);
+                              widget.onStatusUpdated();
+                            },
+                            widget.task,
+                          );
+                        },
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(
@@ -285,7 +345,6 @@ class _TaskCardState extends State<TaskCard> {
                   ],
                 ),
                 const SizedBox(height: 5),
-
                 Row(
                   children: [
                     widget.task.usersImage != null &&
@@ -295,32 +354,22 @@ class _TaskCardState extends State<TaskCard> {
                               if (widget.task.usersImage!.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(right: 20),
-                                  child: Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      image: widget.task.usersImage![0].image
-                                                  .isNotEmpty &&
-                                              widget.task.usersImage![0].image
-                                                  .startsWith('<svg')
-                                          ? DecorationImage(
-                                              image: NetworkImage(
-                                                extractImageUrlFromSvg(widget
-                                                        .task
-                                                        .usersImage![0]
-                                                        .image) ??
-                                                    '',
-                                              ),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : DecorationImage(
+                                  child: widget.task.usersImage![0].image
+                                          .startsWith('<svg')
+                                      ? buildSvgAvatar(
+                                          widget.task.usersImage![0].image)
+                                      : Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            image: DecorationImage(
                                               image: NetworkImage(widget
                                                   .task.usersImage![0].image),
                                               fit: BoxFit.cover,
                                             ),
-                                    ),
-                                  ),
+                                          ),
+                                        ),
                                 ),
                               if (widget.task.usersImage!.length > 1)
                                 Positioned(
@@ -331,12 +380,8 @@ class _TaskCardState extends State<TaskCard> {
                                             .isNotEmpty
                                         ? widget.task.usersImage![1].image
                                                 .startsWith('<svg')
-                                            ? SvgPicture.string(
-                                                widget
-                                                    .task.usersImage![1].image,
-                                                width: 32,
-                                                height: 32,
-                                              )
+                                            ? buildSvgAvatar(widget
+                                                .task.usersImage![1].image)
                                             : Container(
                                                 width: 32,
                                                 height: 32,
@@ -378,7 +423,6 @@ class _TaskCardState extends State<TaskCard> {
                       ),
                   ],
                 ),
-
                 // const SizedBox(height: 5),
                 Row(
                   children: [

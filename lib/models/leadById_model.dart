@@ -16,6 +16,7 @@ class LeadById {
   final String? instagram;
   final String? facebook;
   final String? telegram;
+  final String? whatsApp;
   final String? phone;
   final String? email;
   final Author? author;
@@ -37,6 +38,7 @@ class LeadById {
     this.instagram,
     this.facebook,
     this.telegram,
+    this.whatsApp,
     this.phone,
     this.email,
     this.author,
@@ -70,6 +72,7 @@ class LeadById {
       instagram: json['insta_login'] is String ? json['insta_login'] : '',
       facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
+      whatsApp: json['wa_phone'] is String ? json['wa_phone'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
       email: json['email'] is String ? json['email'] : '',
       author: json['author'] != null && json['author'] is Map<String, dynamic>
@@ -80,7 +83,7 @@ class LeadById {
               json['leadStatus'] is Map<String, dynamic>
           ? LeadStatusById.fromJson(json['leadStatus'])
           : null,
-           leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
+      leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
               ?.map((field) => LeadCustomFieldsById.fromJson(field))
               .toList() ??
           [],
@@ -107,15 +110,18 @@ class Author {
 
 class Source {
   final String name;
+  final int id;
 
-  Source({required this.name});
+  Source({required this.name, required this.id});
 
   factory Source.fromJson(Map<String, dynamic> json) {
     return Source(
       name: json['name'],
+      id: json['id'],
     );
   }
 }
+
 class LeadCustomFieldsById {
   final int id;
   final String key;
@@ -135,6 +141,7 @@ class LeadCustomFieldsById {
     );
   }
 }
+
 class LeadStatusById {
   final int id;
   final String title;

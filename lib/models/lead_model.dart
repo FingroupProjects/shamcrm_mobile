@@ -18,14 +18,13 @@ class Lead {
   final String? facebook;
   final String? telegram;
   final String? phone;
+  final String? whatsApp;
   final String? email;
   final Author? author;
   final String? description;
   final LeadStatus? leadStatus;
   final Organization? organization;
   final List<LeadCustomField> leadCustomFields;
-
-
 
   Lead({
     required this.id,
@@ -42,6 +41,7 @@ class Lead {
     this.facebook,
     this.telegram,
     this.phone,
+    this.whatsApp,
     this.email,
     this.author,
     this.description,
@@ -76,6 +76,7 @@ class Lead {
       facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
       telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
       phone: json['phone'] is String ? json['phone'] : '',
+      whatsApp: json['wa_phone'] is String ? json['wa_phone'] : '',
       email: json['email'] is String ? json['email'] : '',
       author: json['author'] != null && json['author'] is Map<String, dynamic>
           ? Author.fromJson(json['author'])
@@ -85,9 +86,10 @@ class Lead {
               json['organization'] is Map<String, dynamic>
           ? Organization.fromJson(json['organization'])
           : null,
-          leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
+      leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
               ?.map((field) => LeadCustomField.fromJson(field))
-              .toList() ?? [],
+              .toList() ??
+          [],
     );
   }
 }
@@ -143,6 +145,7 @@ class LeadStatus {
     );
   }
 }
+
 class LeadCustomField {
   final int id;
   final String key;

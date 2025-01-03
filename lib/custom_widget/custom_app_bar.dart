@@ -56,8 +56,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
-      
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
+
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
           _userImage = userProfile.image!;
@@ -108,68 +109,109 @@ class _CustomAppBarState extends State<CustomAppBar> {
     });
   }
 
-  String? extractImageUrlFromSvg(String svg) {
-    if (svg.contains('href="')) {
-      final start = svg.indexOf('href="') + 6;
-      final end = svg.indexOf('"', start);
-      return svg.substring(start, end);
+ String? extractImageUrlFromSvg(String svg) {
+  if (svg.contains('href="')) {
+    final start = svg.indexOf('href="') + 6;
+    final end = svg.indexOf('"', start);
+    return svg.substring(start, end);
+  }
+  return null;
+}
+
+Color? extractBackgroundColorFromSvg(String svg) {
+  final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+  if (fillMatch != null) {
+    final colorHex = fillMatch.group(1);
+    if (colorHex != null) {
+      // Конвертируем hex в Color
+      final hex = colorHex.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
     }
-    return null;
+  }
+  return null;
+}
+
+Widget _buildAvatarImage(String imageSource) {
+  if (imageSource.isEmpty) {
+    return Image.asset(
+      'assets/icons/playstore.png',
+      width: 40,
+      height: 40,
+      fit: BoxFit.cover,
+    );
   }
 
-  Widget _buildAvatarImage(String imageSource) {
-    if (imageSource.isEmpty) {
+  if (imageSource.startsWith('<svg')) {
+    final imageUrl = extractImageUrlFromSvg(imageSource);
+
+    if (imageUrl != null) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(imageUrl),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      final text = RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
+      final backgroundColor = extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
+
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: backgroundColor,
+          border: Border.all(
+            color: Colors.white,
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                  letterSpacing: 0,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  return Image.network(
+    imageSource,
+    width: 40,
+    height: 40,
+    fit: BoxFit.cover,
+    loadingBuilder: (context, child, loadingProgress) {
+      if (loadingProgress == null) return child;
+      return Center();
+    },
+    errorBuilder: (context, error, stackTrace) {
       return Image.asset(
         'assets/icons/playstore.png',
         width: 40,
         height: 40,
         fit: BoxFit.cover,
       );
-    }
-
-    if (imageSource.startsWith('<svg')) {
-      final imageUrl = extractImageUrlFromSvg(imageSource);
-      
-      if (imageUrl != null) {
-        return Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      } else {
-        return SvgPicture.string(
-          imageSource,
-          width: 40,
-          height: 40,
-          fit: BoxFit.contain,
-        );
-      }
-    }
-
-    return Image.network(
-      imageSource,
-      width: 40,
-      height: 40,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center();
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return Image.asset(
-          'assets/icons/playstore.png',
-          width: 40,
-          height: 40,
-          fit: BoxFit.cover,
-        );
-      },
-    );
+    },
+  );
   }
 
   @override

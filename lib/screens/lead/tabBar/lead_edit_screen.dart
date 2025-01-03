@@ -11,6 +11,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart'
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -24,12 +25,14 @@ class LeadEditScreen extends StatefulWidget {
   final String leadName;
   final String? region;
   final String? manager;
+  final String? sourceId;
   final String? birthday;
   final String? createAt;
   final String? instagram;
   final String? facebook;
   final String? telegram;
   final String? phone;
+  final String? whatsApp;
   final String? email;
   final String? description;
   final int statusId;
@@ -41,12 +44,14 @@ class LeadEditScreen extends StatefulWidget {
       required this.statusId,
       this.region,
       this.manager,
+      this.sourceId,
       this.birthday,
       this.createAt,
       this.instagram,
       this.facebook,
       this.telegram,
       this.phone,
+      this.whatsApp,
       this.email,
       this.description,
       required this.leadCustomFields});
@@ -59,6 +64,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController titleController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  final TextEditingController whatsAppController = TextEditingController();
   final TextEditingController instaLoginController = TextEditingController();
   final TextEditingController facebookLoginController = TextEditingController();
   final TextEditingController telegramController = TextEditingController();
@@ -69,18 +75,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   String? selectedRegion;
+  String? selectedSource;
+
   String? selectedManager;
-  String selectedDialCode = '+992'; 
+  String selectedDialCode = '+992';
 
-  List<String> countryCodes = [
-    '+992',
-    '+7',
-    '+996',
-    '+998',
-    '+1'
-  ]; 
-    bool _isPhoneEdited = false;
-
+  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1'];
+  bool _isPhoneEdited = false;
 
   List<CustomField> customFields = [];
 
@@ -94,18 +95,36 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         if (phoneNumber.startsWith(code)) {
           setState(() {
             selectedDialCode = code;
-            phoneController.text = phoneNumber.substring(code.length); 
+            phoneController.text = phoneNumber.substring(code.length);
           });
           break;
         }
       }
-  if (phoneController.text.isEmpty) {
-    phoneController.text = phoneNumber;
-  }
+      if (phoneController.text.isEmpty) {
+        phoneController.text = phoneNumber;
+      }
 
-  _isPhoneEdited = false; 
+      _isPhoneEdited = false;
     }
-  
+    if (widget.whatsApp != null) {
+      String phoneNumber = widget.whatsApp!;
+      for (var code in countryCodes) {
+        if (phoneNumber.startsWith(code)) {
+          setState(() {
+            selectedDialCode = code;
+            whatsAppController.text = phoneNumber.substring(code.length);
+          });
+          break;
+        }
+      }
+      if (whatsAppController.text.isEmpty) {
+        whatsAppController.text = phoneNumber;
+      }
+
+      _isPhoneEdited = false;
+    }
+    print(widget.sourceId);
+    print('jkdbfjkwehfkjbwejnffvknfklewnr------------------------');
 
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
@@ -114,6 +133,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     emailController.text = widget.email ?? '';
     descriptionController.text = widget.description ?? '';
     selectedRegion = widget.region;
+    selectedSource = widget.sourceId;
     selectedManager = widget.manager;
     for (var customField in widget.leadCustomFields) {
       customFields.add(CustomField(fieldName: customField.key)
@@ -194,8 +214,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 duration: Duration(seconds: 3),
               ),
             );
-          } else
-          if (state is LeadSuccess) {
+          } else if (state is LeadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -244,7 +263,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         selectedDialCode: selectedDialCode,
                         onInputChanged: (String number) {
                           setState(() {
-                            _isPhoneEdited = true; 
+                            _isPhoneEdited = true;
                             selectedDialCode = number;
                           });
                         },
@@ -275,6 +294,15 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
+                      SourceLeadWidget(
+                        selectedSourceLead: selectedSource,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedSource = newValue;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,
                         hintText: 'Введите логин Instagram',
@@ -291,6 +319,24 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         controller: telegramController,
                         hintText: 'Введите логин Telegram',
                         label: 'Telegram',
+                      ),
+                      const SizedBox(height: 8),
+                      CustomPhoneNumberInput(
+                        controller: whatsAppController,
+                        selectedDialCode: selectedDialCode,
+                        onInputChanged: (String number) {
+                          setState(() {
+                            _isPhoneEdited = true;
+                            selectedDialCode = number;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Поле обязательно для заполнения';
+                          }
+                          return null;
+                        },
+                        label: 'WhatsApp',
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -372,11 +418,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 if (_formKey.currentState!.validate()) {
                                   String phoneToSend;
 
-                                if (_isPhoneEdited) {
-                                  phoneToSend = selectedDialCode;
-                                } else {
-                                  phoneToSend = '$selectedDialCode${phoneController.text}'; 
-                                }
+                                  if (_isPhoneEdited) {
+                                    phoneToSend = selectedDialCode;
+                                  } else {
+                                    phoneToSend =
+                                        '$selectedDialCode${phoneController.text}';
+                                  }
 
                                   DateTime? parsedBirthday;
 
@@ -416,11 +463,15 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     leadId: widget.leadId,
                                     name: titleController.text,
                                     phone: phoneToSend,
+                                    waPhone: phoneToSend,
                                     regionId: selectedRegion != null
                                         ? int.parse(selectedRegion!)
                                         : null,
                                     managerId: selectedManager != null
                                         ? int.parse(selectedManager!)
+                                        : null,
+                                    sourseId: selectedSource != null
+                                        ? int.parse(selectedSource!)
                                         : null,
                                     instaLogin: instaLoginController.text,
                                     facebookLogin: facebookLoginController.text,
@@ -431,29 +482,31 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     leadStatusId: widget.statusId,
                                     customFields: customFieldList,
                                   ));
-                                  } else {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                       content: Text(
-                                         'Пожалуйста, заполните все обязательные поля!',
-                                         style: TextStyle(
-                                           fontFamily: 'Gilroy',
-                                           fontSize: 16,
-                                           fontWeight: FontWeight.w500,
-                                           color: Colors.white,
-                                         ),
-                                       ),
-                                       behavior: SnackBarBehavior.floating,
-                                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                       shape: RoundedRectangleBorder(
-                                         borderRadius: BorderRadius.circular(12),
-                                       ),
-                                       backgroundColor: Colors.red,
-                                       elevation: 3,
-                                       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                       duration: Duration(seconds: 3),
-                                     ),
-                                   );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Пожалуйста, заполните все обязательные поля!',
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
                                 }
                               },
                             );
