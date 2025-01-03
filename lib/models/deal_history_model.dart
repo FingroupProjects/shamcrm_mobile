@@ -26,7 +26,7 @@ class DealHistory {
       changes: _parseChanges(json['changes']),
     );
   } catch (e) {
-    print('Ошибка при парсинге DealHistory: $e');
+    print('Ошибка при парсинге DealHistory!');
     return DealHistory(
       id: 0,
       user: User(id: 0, name: 'Система', email: 'Не указано', phone: 'Не указано'),

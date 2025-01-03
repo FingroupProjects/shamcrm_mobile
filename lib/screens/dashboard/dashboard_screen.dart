@@ -83,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-      print('Error loading user role: $e');
+      print('Error loading user role!');
       if (mounted) {
         setState(() {
           userRoleName = 'Error loading role';

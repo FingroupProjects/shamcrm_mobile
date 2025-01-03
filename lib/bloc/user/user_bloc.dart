@@ -18,7 +18,7 @@ class UserTaskBloc extends Bloc<UserTaskEvent, UserTaskState> {
           final user = await apiService.getUserTask();
           emit(UserTaskLoaded(user.cast<UserTask>()));  
         } catch (e) {
-          print('Ошибка при загрузке клиентов: $e'); // For debugging
+          print('Ошибка при загрузке клиентов!'); // For debugging
           emit(UserTaskError('Ошибка при загрузке клиентов!'));
         }
       } else {
@@ -33,7 +33,7 @@ class UserTaskBloc extends Bloc<UserTaskEvent, UserTaskState> {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      print('Нет интернета: $e'); // For debugging
+      print('Нет интернета!'); // For debugging
       return false;
     }
   }
@@ -57,8 +57,8 @@ class UserTaskBloc extends Bloc<UserTaskEvent, UserTaskState> {
 //         print('Получено пользователей: ${users.length}'); // Для отладки
 //         emit(UserLoaded(users));
 //       } catch (e) {
-//         print('Ошибка при загрузке пользователей: $e'); // Для отладки
-//         emit(UserError('Ошибка при загрузке пользователей: $e'));
+//         print('Ошибка при загрузке пользователей!'); // Для отладки
+//         emit(UserError('Ошибка при загрузке пользователей!'));
 //       }
 //     });
 //   }

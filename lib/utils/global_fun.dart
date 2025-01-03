@@ -30,7 +30,7 @@ Future<void> uploadFile(File file, String uploadUrl) async {
     Response response = await dio.post(uploadUrl, data: formData);
     print('Fayl yuklandi: ${response.statusCode}');
   } catch (e) {
-    print('Fayl yuklashda xatolik: $e');
+    print('Fayl yuklashda xatolik!');
   }
 }
 

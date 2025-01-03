@@ -99,7 +99,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
 
   } catch (e) {
-    print('Error loading user role: $e');
+    print('Error loading user role!');
     setState(() {
       userRoleId = 0;
     });

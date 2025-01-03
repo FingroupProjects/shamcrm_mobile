@@ -18,7 +18,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
           print('Получены роли: ${roles.length}'); // Для отладки
           emit(RoleLoaded(roles));
         } catch (e) {
-          print('Ошибка при загрузке ролей: $e'); // Для отладки
+          print('Ошибка при загрузке ролей!'); // Для отладки
           emit(RoleError('Ошибка при загрузке ролей!'));
         }
       } else {
@@ -32,7 +32,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      print('Нет интернета: $e'); // Для отладки
+      print('Нет интернета!'); // Для отладки
       return false;
     }
   }

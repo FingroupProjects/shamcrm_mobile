@@ -362,7 +362,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         } else {
-          print("Ошибка загрузки данных: $e");
+          print("Ошибка загрузки данных!");
         }
       }
     } else if (type == 'task' ||
@@ -396,7 +396,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
       } catch (e) {
         Navigator.of(context).pop();
-        print("Ошибка загрузки данных: $e");
+        print("Ошибка загрузки данных!");
       }
     } else if (type == 'notice') {
       // Переход на экран лида

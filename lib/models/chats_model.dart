@@ -192,7 +192,7 @@ class ChatUser {
 
   @override
   String toString() {
-    return 'ChatUser{id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image, lastSeen: $lastSeen}';
+    return 'ChatUser{id: $id, name: $name, login: $login, email!mail, phone: $phone, image: $image, lastSeen: $lastSeen}';
   }
 }
 

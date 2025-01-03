@@ -126,7 +126,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка при выборе изображения: $e'),
+          content: Text('Ошибка при выборе изображения!'),
           backgroundColor: Colors.red,
         ),
       );
@@ -154,7 +154,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _loadSelectedOrganization(),
       ]);
     } catch (e) {
-      print('Error loading initial data: $e');
+      print('Error loading initial data!');
     } finally {
       setState(() {
         _isLoading = false;
@@ -201,7 +201,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _userImage = userProfile.image ?? '';
       });
     } catch (e) {
-      print('Ошибка при загрузке данных из API: $e');
+      print('Ошибка при загрузке данных из API!');
     }
   }
 
@@ -337,7 +337,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка при выборе изображения: $e'),
+                        content: Text('Ошибка при выборе изображения!'),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -447,7 +447,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка при выборе изображения: $e'),
+                        content: Text('Ошибка при выборе изображения!'),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(

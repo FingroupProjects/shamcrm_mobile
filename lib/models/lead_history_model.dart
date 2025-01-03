@@ -26,7 +26,7 @@ class LeadHistory {
       changes: _parseChanges(json['changes']),
     );
   } catch (e) {
-    print('Ошибка при парсинге LeadHistory: $e');
+    print('Ошибка при парсинге LeadHistory!');
     return LeadHistory(
       id: 0,
       user: User(id: 0, name: 'Система', email: 'Не указано', phone: 'Не указано'),

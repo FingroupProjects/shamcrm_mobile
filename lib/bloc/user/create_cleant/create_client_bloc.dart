@@ -23,7 +23,7 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
 
       emit(CreateClientSuccess(chatId: chatId)); // Передаем chatId в состояние
     } catch (e) {
-      print('Ошибка при создании клиента: $e');
+      print('Ошибка при создании клиента!');
       emit(CreateClientError(message: 'Ошибка при создании клиента!'));
     }
   } else {
@@ -38,7 +38,7 @@ class CreateClientBloc extends Bloc<CreateClientEvent, CreateClientState> {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } on SocketException catch (e) {
-      print('Нет интернета: $e'); // For debugging
+      print('Нет интернета!'); // For debugging
       return false;
     }
   }
