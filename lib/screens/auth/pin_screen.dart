@@ -35,44 +35,163 @@ class _PinScreenState extends State<PinScreen>
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
-  int? userRoleId ;
+  int? userRoleId;
   bool _isLoading = true; // Флаг для отображения загрузки
 
-  @override
-  void initState() {
-    super.initState();
-     // Запускаем таймер на 1 секунду
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false; // Отключаем загрузку
-        });
-      }
-    });
-  _loadUserRoleId().then((_) {
-    // После загрузки разрешений продолжаем остальные операции
-    _checkSavedPin();
-    _initBiometrics();
-    _loadUserPhone();
+ @override
+void initState() {
+  super.initState();
+  
+  _loadUserPhone().then((_) {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   });
 
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
+  _loadUserRoleId().then((_) {
+    _checkSavedPin();
+    _initBiometrics();
+  });
 
-    _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
-    );
+  _animationController = AnimationController(
+    duration: const Duration(milliseconds: 500),
+    vsync: this,
+  );
 
-    _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _animationController.reset();
+  _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+    CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
+  );
+
+  _animationController.addStatusListener((status) {
+    if (status == AnimationStatus.completed) {
+      _animationController.reset();
+    }
+  });
+}
+ Future<void> _loadUserRoleId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        setState(() {
+          userRoleId = 0;
+        });
+        return;
       }
-    });
+
+      // Получение ИД РОЛЯ через API
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userRoleId = userProfile.role!.first.id;
+      });
+      // Выводим данные в консоль
+      context
+          .read<PermissionsBloc>()
+          .add(FetchPermissionsEvent(userRoleId.toString()));
+    } catch (e) {
+      print('Error loading user role!');
+      setState(() {
+        userRoleId = 0;
+      });
+    }
+  }
+Future<void> _loadUserPhone() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  String? savedUserName = prefs.getString('userName');
+  String? savedUserNameProfile = prefs.getString('userNameProfile');
+  String? savedUserImage = prefs.getString('userImage');
+
+  if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+    if (mounted) {
+      setState(() {
+        _userName = savedUserName;
+        _userNameProfile = savedUserNameProfile;
+        _userImage = savedUserImage;
+      });
+    }
+    return;
   }
 
+  try {
+    UserByIdProfile userProfile = await ApiService().getUserById(1);
+    
+    await prefs.setString('userName', userProfile.name);
+    await prefs.setString('userNameProfile', userProfile.name ?? '');
+    await prefs.setString('userImage', userProfile.image ?? '');
 
+    if (mounted) {
+      setState(() {
+        _userName = userProfile.name;
+        _userNameProfile = userProfile.name ?? '';
+        _userImage = userProfile.image ?? '';
+      });
+    }
+  } catch (e) {
+    print('Ошибка при загрузке данных с сервера!');
+    if (mounted) {
+      setState(() {
+        _userName = 'Не найдено';
+        _userNameProfile = 'Не найдено';
+        _userImage = '';
+      });
+    }
+  }
+}
+}
+  Future<void> _initBiometrics() async {
+    try {
+      _canCheckBiometrics = await _auth.canCheckBiometrics;
+
+      if (_canCheckBiometrics) {
+        _availableBiometrics = await _auth.getAvailableBiometrics();
+        if (_availableBiometrics.isNotEmpty) {
+          if (Platform.isIOS &&
+              _availableBiometrics.contains(BiometricType.face)) {
+            _authenticate();
+          } else if (Platform.isAndroid &&
+              _availableBiometrics.contains(BiometricType.strong)) {
+            _authenticate();
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Биометрическая аутентификация недоступна'),
+            ),
+          );
+        }
+      }
+    } on PlatformException catch (e) {
+      debugPrint('Ошибка инициализации биометрии!');
+    }
+  }
+
+  Future<void> _authenticate() async {
+    try {
+      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Биометрическая аутентификация недоступна'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final bool didAuthenticate = await _auth.authenticate(
+        localizedReason: 'Подтвердите личность',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
+      );
 
   Future<void> _checkSavedPin() async {
     final prefs = await SharedPreferences.getInstance();
@@ -204,7 +323,7 @@ class _PinScreenState extends State<PinScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height * 0.2,
+                height: MediaQuery.of(context).size.height * 0.12,
               ),
               Image.asset(
                 'assets/icons/playstore.png',

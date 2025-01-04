@@ -14,7 +14,6 @@ import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
-import 'package:crm_task_manager/screens/dashboard/Skeleton_Loading_Animation_Components.dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard/users_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/process_speed.dart';
@@ -35,7 +34,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
   String userRoleName = 'No role assigned';
   bool isLoading = true;
-  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -44,21 +42,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _initializeData() async {
-    if (_isInitialized) return;
-    _isInitialized = true;
-
-    await _loadUserRole();
-    
-    // Имитация загрузки данных
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Добавляем дополнительную задержку в 2 секунды после загрузки данных
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (mounted) {
+    try {
       setState(() {
-        isLoading = false;
+        isLoading = true;
       });
+
+      // Запускаем оба процесса параллельно
+      await Future.wait([
+        _loadUserRole(),
+        Future.delayed(const Duration(seconds: 3)), // Задержка загрузки
+      ]);
+
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error in initialization: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -74,7 +80,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return;
       }
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
           userRoleName = (userProfile.role?.isNotEmpty ?? false)
@@ -152,18 +159,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         body: isClickAvatarIcon
             ? ProfileScreen()
-            : SingleChildScrollView(
-                padding: EdgeInsets.all(16),
-                child: isLoading
-                    ? Column(
-                        children: List.generate(
-                          3,
-                          (index) => ChartSkeletonLoading(),
-                        ),
-                      )
-                    : Column(
-                        children: _buildDashboardContent(),
-                      ),
+            : Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      children: _buildDashboardContent(),
+                    ),
+                  ),
+                  if (isLoading)
+                    Container(
+                      color: Colors.white,
+                      child: const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xff1E2E52))),
+                    ),
+                ],
               ),
       ),
     );
@@ -180,9 +191,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Divider(thickness: 1, color: Colors.grey[300]),
         GraphicsDashboard(),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChart(),
-        Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(),
+        Divider(thickness: 1, color: Colors.grey[300]),
+        DealStatsChart(),
       ];
     } else if (userRoleName == 'manager') {
       return [
@@ -192,9 +203,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidget(),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChart(),
-        Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(),
+        Divider(thickness: 1, color: Colors.grey[300]),
+        DealStatsChart(),
       ];
     } else {
       return [
@@ -204,9 +215,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidget(),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChart(),
-        Divider(thickness: 1, color: Colors.grey[300]),
         ProcessSpeedGauge(),
+        Divider(thickness: 1, color: Colors.grey[300]),
+        DealStatsChart(),
       ];
     }
   }

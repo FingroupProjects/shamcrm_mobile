@@ -141,31 +141,53 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
   }
 
   List<PieChartSectionData> _showingSections(TaskChart taskChart) {
-    final List<Color> colors = [
-      const Color(0xFF3935E7), // Активный - голубой
-      const Color(0xFFC30202), // Просрочен - фиолетовый
-      const Color(0xFF27A945), // Завершён - зеленый
-    ];
-    return List.generate(3, (i) {
-      final isTouched = i == touchedIndex;
-      final opacity = isTouched ? 0.8 : 1.0;
-      final radius = isTouched ? 50.0 : 40.0;
+  final List<Color> colors = [
+    const Color(0xFF3935E7), // Активный - голубой
+    const Color(0xFFC30202), // Просрочен - фиолетовый
+    const Color(0xFF27A945), // Завершён - зеленый
+  ];
 
-      return PieChartSectionData(
-        color: colors[i].withOpacity(opacity),
-        value: taskChart.data[i],
-        title: isTouched ? '${taskChart.data[i].toStringAsFixed(0)}' : '',
-        radius: radius,
+  // Проверяем, все ли значения равны 0
+  bool allZeros = taskChart.data.every((value) => value == 0);
+
+  // Если все значения 0, возвращаем один полный синий круг
+  if (allZeros) {
+    return [
+      PieChartSectionData(
+        color: colors[0], // Цвет "Активный"
+        value: 100, // Полный круг
+        title: '',
+        radius: 40.0,
         titleStyle: const TextStyle(
           fontSize: 16,
           fontFamily: "Gilroy",
           fontWeight: FontWeight.w500,
           color: Color.fromARGB(255, 255, 255, 255),
         ),
-      );
-    });
+      ),
+    ];
   }
 
+  // Стандартная логика для ненулевых значений
+  return List.generate(3, (i) {
+    final isTouched = i == touchedIndex;
+    final opacity = isTouched ? 0.8 : 1.0;
+    final radius = isTouched ? 50.0 : 40.0;
+
+    return PieChartSectionData(
+      color: colors[i].withOpacity(opacity),
+      value: taskChart.data[i],
+      title: isTouched ? '${taskChart.data[i].toStringAsFixed(0)}' : '',
+      radius: radius,
+      titleStyle: const TextStyle(
+        fontSize: 16,
+        fontFamily: "Gilroy",
+        fontWeight: FontWeight.w500,
+        color: Color.fromARGB(255, 255, 255, 255),
+      ),
+    );
+  });
+}
   Widget _buildLegend(TaskChart taskChart) {
     return Column(
       children: [

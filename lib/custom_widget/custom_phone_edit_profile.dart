@@ -19,6 +19,7 @@ List<Country> countries = [
   Country(name: "UZ", flag: "🇺🇿", dialCode: "+998"),
   Country(name: "KG", flag: "🇰🇬", dialCode: "+996"),
   Country(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
+  Country(name: "US", flag: "🇺🇸", dialCode: "+1"),
 ];
 
 class CustomPhoneNumberInput extends StatefulWidget {
@@ -32,6 +33,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
     required this.label,
     this.onInputChanged,
     this.selectedDialCode,
+    required Map<String, int> phoneNumberLengths,
   });
 
   @override
@@ -41,7 +43,6 @@ class CustomPhoneNumberInput extends StatefulWidget {
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
   String? _errorText;
-  bool _showError = false;
 
   final Map<String, int> phoneNumberLengths = {
     '+992': 9,
@@ -63,27 +64,18 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     }
   }
 
-  void validatePhoneNumber() {
+  void _validatePhoneNumber(String value) {
     setState(() {
-      _showError = true;
-      if (widget.controller.text.isEmpty) {
-        _errorText = 'Поле обязательно для заполнения!';
+      if (value.isEmpty) {
+        _errorText = 'Поле обязательно для ввода!';
       } else {
         final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-        if (widget.controller.text.length != maxLength) {
+        if (value.length != maxLength) {
           _errorText = 'Неправильный номер телефона!';
         } else {
-          _errorText = null;
-          _showError = false;
+          _errorText = null; // Нет ошибок
         }
       }
-    });
-  }
-
-  void clearErrors() {
-    setState(() {
-      _showError = false;
-      _errorText = null;
     });
   }
 
@@ -98,7 +90,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
@@ -110,26 +101,36 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               fontFamily: 'Gilroy',
               color: Color(0xff99A4BA),
             ),
-            errorText: _showError ? _errorText : null,
+            errorText: _errorText,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: _showError ? Colors.red : Colors.transparent,
-                width: 1.0,
-              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _showError ? Colors.red : Colors.transparent,
-                width: 1.0,
+                color: Colors.transparent, // Прозрачная граница
+                width: 0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _showError ? Colors.red : Colors.blue,
-                width: 1.0,
+                color: Colors.transparent, // Прозрачная граница при фокусе
+                width: 0,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.red, // Красная граница для ошибок
+                width: 1.5,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color.fromARGB(255, 245, 90, 79), // Красная граница при фокусе с ошибкой
+                width: 1.5,
               ),
             ),
             filled: true,
@@ -156,7 +157,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                   setState(() {
                     selectedCountry = newValue;
                     widget.controller.text = '';
-                    clearErrors();
                     if (newValue != null && widget.onInputChanged != null) {
                       widget.onInputChanged!('');
                     }
@@ -168,15 +168,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (value) {
-            if (_showError) clearErrors();
-            
-            final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+            final maxLength =
+                phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
             if (value.length > maxLength) {
               widget.controller.text = value.substring(0, maxLength);
               widget.controller.selection = TextSelection.fromPosition(
                 TextPosition(offset: maxLength),
               );
             }
+            _validatePhoneNumber(value);
 
             if (widget.onInputChanged != null) {
               widget.onInputChanged!(

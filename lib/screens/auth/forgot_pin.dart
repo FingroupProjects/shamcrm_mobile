@@ -37,7 +37,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Забыли пароль?',
+              'Забыли PIN - код?',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
