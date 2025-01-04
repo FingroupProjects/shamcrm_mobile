@@ -11,6 +11,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_details_screen.d
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseApi {
   final _firebaseMessaging = FirebaseMessaging.instance;
@@ -111,8 +112,11 @@ class FirebaseApi {
         print('handleMessage: Неизвестный тип: $type');
     }
   }
+  
 
   Future<void> navigateToScreen(int screenIndex, String id, String type, RemoteMessage message) async {
+       SharedPreferences.getInstance().then((prefs) {
+        prefs.setBool('hasNewNotification', false);});
     navigatorKey.currentState?.pushReplacementNamed(
       '/home',
       arguments: {'id': id, 'screenIndex': screenIndex},
@@ -141,6 +145,7 @@ class FirebaseApi {
   }
 
   Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
+
   final chatId = int.tryParse(id) ?? 0;
   if (chatId != 0) {
     try {
