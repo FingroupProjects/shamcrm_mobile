@@ -12,7 +12,7 @@ class ForgotPassword extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: const Text(
-        'Забыли PIN - код?',
+        '',
         style: TextStyle(
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,

@@ -126,54 +126,82 @@ class _LeadConversionChartState extends State<LeadConversionChart>
     );
   }
 
-  Widget _buildChart(DashboardConversionState state) {
-    if (state is DashboardConversionLoaded) {
-      final data = state.leadConversionData;
+ Widget _buildChart(DashboardConversionState state) {
+  if (state is DashboardConversionLoaded) {
+    final data = state.leadConversionData;
 
-      if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
-        return const Center(
-          child: Text(
-            'Нет данных для отображения',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: "Gilroy",
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        );
-      }
-
-      return AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return PieChart(
+    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
+      // График с текстом в центре, если данных нет
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
             PieChartData(
               startDegreeOffset: -90,
               pieTouchData: PieTouchData(
                 touchCallback: (FlTouchEvent event, pieTouchResponse) {
                   setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        pieTouchResponse == null ||
-                        pieTouchResponse.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
-                    }
-                    touchedIndex =
-                        pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    touchedIndex = -1; // Отключаем выделение сектора
                   });
                 },
               ),
               sectionsSpace: 4,
               centerSpaceRadius: 40,
-              sections: _showingSections(data, _animation.value),
+              sections: [
+                PieChartSectionData(
+                  color: const Color.fromARGB(255, 210, 210, 210).withOpacity(1),
+                  value: 1, // Минимальное значение
+                  title: '', // Без текста
+                  radius: 40,
+                ),
+              ],
             ),
-          );
-        },
+          ),
+          const Text(
+            'Нет данных для отображения',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: "Gilroy",
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+          ),
+        ],
       );
     }
-    return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return PieChart(
+          PieChartData(
+            startDegreeOffset: -90,
+            pieTouchData: PieTouchData(
+              touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                setState(() {
+                  if (!event.isInterestedForInteractions ||
+                      pieTouchResponse == null ||
+                      pieTouchResponse.touchedSection == null) {
+                    touchedIndex = -1;
+                    return;
+                  }
+                  touchedIndex =
+                      pieTouchResponse.touchedSection!.touchedSectionIndex;
+                });
+              },
+            ),
+            sectionsSpace: 4,
+            centerSpaceRadius: 40,
+            sections: _showingSections(data, _animation.value),
+          ),
+        );
+      },
+    );
   }
+  return const SizedBox.shrink();
+}
+
+
 
   List<PieChartSectionData> _showingSections(
       LeadConversion data, double animationValue) {
@@ -217,7 +245,6 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       ],
     );
   }
-
   Widget _buildLegendItem(String title, Color color) {
     return Row(
       children: [

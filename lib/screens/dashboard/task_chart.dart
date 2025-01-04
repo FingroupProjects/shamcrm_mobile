@@ -154,7 +154,7 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
   if (allZeros) {
     return [
       PieChartSectionData(
-        color: colors[0], // Цвет "Активный"
+        color: colors[1], // Цвет "Активный"
         value: 100, // Полный круг
         title: '',
         radius: 40.0,

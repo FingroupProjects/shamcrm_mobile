@@ -75,8 +75,6 @@ void main() async {
   final apiService = ApiService();
   final authService = AuthService();
 
-
-
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
     
