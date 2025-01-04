@@ -35,130 +35,104 @@ class _PinScreenState extends State<PinScreen>
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
-  int? userRoleId ;
+  int? userRoleId;
   bool _isLoading = true; // Флаг для отображения загрузки
 
-  @override
-  void initState() {
-    super.initState();
-     // Запускаем таймер на 1 секунду
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false; // Отключаем загрузку
-        });
-      }
-    });
-  _loadUserRoleId().then((_) {
-    // После загрузки разрешений продолжаем остальные операции
-    _checkSavedPin();
-    _initBiometrics();
-    _loadUserPhone();
+ @override
+void initState() {
+  super.initState();
+  
+  _loadUserPhone().then((_) {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   });
 
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
+  _loadUserRoleId().then((_) {
+    _checkSavedPin();
+    _initBiometrics();
+  });
 
-    _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
-    );
+  _animationController = AnimationController(
+    duration: const Duration(milliseconds: 500),
+    vsync: this,
+  );
 
-    _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _animationController.reset();
+  _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+    CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
+  );
+
+  _animationController.addStatusListener((status) {
+    if (status == AnimationStatus.completed) {
+      _animationController.reset();
+    }
+  });
+}
+ Future<void> _loadUserRoleId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        setState(() {
+          userRoleId = 0;
+        });
+        return;
       }
-    });
-  }
 
-    Future<void> _loadUserRoleId() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? '';
-    if (userId.isEmpty) {
+      // Получение ИД РОЛЯ через API
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userRoleId = userProfile.role!.first.id;
+      });
+      // Выводим данные в консоль
+      context
+          .read<PermissionsBloc>()
+          .add(FetchPermissionsEvent(userRoleId.toString()));
+    } catch (e) {
+      print('Error loading user role!');
       setState(() {
         userRoleId = 0;
       });
-      return;
     }
-
-    // Получение ИД РОЛЯ через API
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
-    setState(() {
-      userRoleId = userProfile.role!.first.id;
-    });
-    // Выводим данные в консоль
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
-
-  } catch (e) {
-    print('Error loading user role!');
-    setState(() {
-      userRoleId = 0;
-    });
   }
-}
-
-  // Метод для загрузки данных пользователя из SharedPreferences
- void _loadUserPhone() async {
+Future<void> _loadUserPhone() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Получаем данные из SharedPreferences
   String? savedUserName = prefs.getString('userName');
   String? savedUserNameProfile = prefs.getString('userNameProfile');
   String? savedUserImage = prefs.getString('userImage');
 
-  // Если данные есть в SharedPreferences, проверяем их с данными с сервера
   if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
-    // Попробуем получить данные с сервера
-    try {
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(savedUserName)); // Предположим, что userName это ID
-      if (userProfile.name == savedUserName) {
-        // Если name из сервера совпадает с name из SharedPreferences, используем данные с сервера
-        setState(() {
-          _userName = userProfile.name;
-          _userNameProfile = savedUserNameProfile; // Используем имя профиля из SharedPreferences
-          _userImage = savedUserImage; // Используем изображение из SharedPreferences
-        });
-      } else {
-        // Если данные не совпадают, берем данные с сервера
-        setState(() {
-          _userName = userProfile.name;
-          _userNameProfile = userProfile.lastname ?? ''; // Обновляем профиль на основе данных с сервера
-          _userImage = userProfile.image ?? ''; // Используем изображение с сервера
-        });
-
-        // Обновляем SharedPreferences данными с сервера
-        await prefs.setString('userName', userProfile.name);
-        await prefs.setString('userNameProfile', userProfile.name ?? '');
-        await prefs.setString('userImage', userProfile.image ?? '');
-      }
-    } catch (e) {
-      print('Ошибка при загрузке данных с сервера!');
-      // Если произошла ошибка при запросе с сервера, выводим сохраненные данные
+    if (mounted) {
       setState(() {
         _userName = savedUserName;
         _userNameProfile = savedUserNameProfile;
         _userImage = savedUserImage;
       });
     }
-  } else {
-    // Если данных нет в SharedPreferences, загружаем их с сервера
-    try {
-      UserByIdProfile userProfile = await ApiService().getUserById(1); // Предположим, что это какой-то ID
+    return;
+  }
+
+  try {
+    UserByIdProfile userProfile = await ApiService().getUserById(1);
+    
+    await prefs.setString('userName', userProfile.name);
+    await prefs.setString('userNameProfile', userProfile.name ?? '');
+    await prefs.setString('userImage', userProfile.image ?? '');
+
+    if (mounted) {
       setState(() {
         _userName = userProfile.name;
         _userNameProfile = userProfile.name ?? '';
         _userImage = userProfile.image ?? '';
       });
-
-      // Сохраняем данные в SharedPreferences
-      await prefs.setString('userName', userProfile.name);
-      await prefs.setString('userNameProfile', userProfile.name ?? '');
-      await prefs.setString('userImage', userProfile.image ?? '');
-    } catch (e) {
-      print('Ошибка при загрузке данных с сервера!');
-      // Обрабатываем ошибку, если данные не удалось загрузить с сервера
+    }
+  } catch (e) {
+    print('Ошибка при загрузке данных с сервера!');
+    if (mounted) {
       setState(() {
         _userName = 'Не найдено';
         _userNameProfile = 'Не найдено';
@@ -167,8 +141,6 @@ class _PinScreenState extends State<PinScreen>
     }
   }
 }
-
-
   Future<void> _initBiometrics() async {
     try {
       _canCheckBiometrics = await _auth.canCheckBiometrics;
@@ -364,7 +336,7 @@ class _PinScreenState extends State<PinScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height * 0.2,
+                height: MediaQuery.of(context).size.height * 0.12,
               ),
               Image.asset(
                 'assets/icons/playstore.png',

@@ -5,7 +5,7 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_event.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:flutter/material.dart';
@@ -54,6 +54,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     '+998',
     '+1'
   ]; // Country codes list
+  final Map<String, int> phoneNumberLengths = {
+    '+992': 9,
+    '+7': 10,
+    '+998': 9,
+    '+996': 9,
+  };
+
   // Функция валидации email
   bool isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
@@ -125,7 +132,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка при выборе изображения!'),
+          content: Text('Ошибка при выборе изображения: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -153,7 +160,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _loadSelectedOrganization(),
       ]);
     } catch (e) {
-      print('Error loading initial data!');
+      print('Error loading initial data: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -200,7 +207,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _userImage = userProfile.image ?? '';
       });
     } catch (e) {
-      print('Ошибка при загрузке данных из API!');
+      print('Ошибка при загрузке данных из API: $e');
     }
   }
 
@@ -336,7 +343,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка при выборе изображения!'),
+                        content: Text('Ошибка при выборе изображения: $e'),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -446,7 +453,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка при выборе изображения!'),
+                        content: Text('Ошибка при выборе изображения: $e'),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -647,42 +654,65 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                           CustomTextField(
-                            controller: NameController,
-                            hintText: 'Введите Имя',
-                            label: 'Имя',
-                            hasError: _nameError != null, 
-                            errorText: _nameError, 
-                            // onChanged: (value) {
-                            //   setState(() {
-                            //     if (value.isEmpty) {
-                            //       _nameError = 'Имя не может быть пустым';
-                            //     } else if (value.length < 2) {
-                            //       _nameError = 'Имя слишком короткое';
-                            //     } else {
-                            //       _nameError = null; // Clear error
-                            //     }
-                            //   });
-                            // },
+                            CustomTextField(
+                              controller: NameController,
+                              hintText: 'Введите Имя',
+                              label: 'Имя',
+                              onChanged: (value) {
+                                setState(() {
+                                  _nameError = null;
+                                });
+                              },
+                            ),
+                            if (_nameError != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 4, left: 12),
+                                  child: Text(
+                                    _nameError!,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                ),
                               ),
-
                             const SizedBox(height: 8),
                             CustomTextField(
                               controller: SurnameController,
                               hintText: 'Введите Фамилию',
                               label: 'Фамилия',
-                               hasError: _surnameError != null, 
-                               errorText: _surnameError, 
-                              // onChanged: (value) {
-                              //   setState(() {
-                              //     _surnameError = null;
-                              //   });
-                              // },
+                              onChanged: (value) {
+                                setState(() {
+                                  _surnameError = null;
+                                });
+                              },
                             ),
+                            if (_surnameError != null)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 4, left: 12),
+                                  child: Text(
+                                    _surnameError!,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 12,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                ),
+                              ),
                             const SizedBox(height: 8),
                             CustomPhoneNumberInput(
                               controller: phoneController,
                               selectedDialCode: selectedDialCode,
+                              phoneNumberLengths:
+                                  phoneNumberLengths, // Передача длины номеров
                               onInputChanged: (String number) {
                                 for (var country in countries) {
                                   if (number.startsWith(country.dialCode)) {
@@ -693,9 +723,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                   }
                                 }
                               },
-                               validator: (value) => value!.isEmpty
-                              ? 'Поле обязательно для заполнения'
-                              : null,
                               label: 'Телефон',
                             ),
                             const SizedBox(height: 8),
@@ -845,14 +872,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             minimumSize: Size(double.infinity, 48),
                           ),
                           onPressed: () async {
-                            // Сбрасываем состояние ошибок
                             setState(() {
                               _nameError = null;
                               _surnameError = null;
                               _phoneError = null;
                               _emailError = null;
                             });
-                            // Проверяем валидацию
+
                             bool isValid = true;
 
                             if (NameController.text.trim().isEmpty) {
@@ -871,16 +897,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               isValid = false;
                             }
 
-                            if (emailController.text.trim().isNotEmpty &&
-                                !isValidEmail(emailController.text.trim())) {
+                            final phoneLength =
+                                phoneNumberLengths[selectedDialCode] ?? 0;
+                            if (phoneController.text.trim().isEmpty) {
                               setState(() {
-                                _emailError = 'Введите корректный email адрес';
+                                _phoneError = 'Поле обязательно для ввода!';
+                              });
+                              isValid = false;
+                            } else if (phoneController.text.length !=
+                                phoneLength) {
+                              setState(() {
+                                _phoneError = 'Неправильный номер телефона!';
                               });
                               isValid = false;
                             }
 
                             if (!isValid) return;
 
+                            // Сохраняем данные профиля
                             try {
                               SharedPreferences prefs =
                                   await SharedPreferences.getInstance();
@@ -920,14 +954,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               fontSize: 16,
                             ),
                           ),
-                       
                         );
                       },
                     ),
                   ),
                 ],
               ));
-  }
+             }
 
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
