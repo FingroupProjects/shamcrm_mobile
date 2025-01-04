@@ -27,6 +27,13 @@ class _TaskStatusRadioGroupWidgetState
   List<TaskStatus> statusList = [];
   TaskStatus? selectedStatusData;
 
+  final TextStyle statusTextStyle = const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    fontFamily: 'Gilroy',
+    color: Color(0xff1E2E52),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -36,11 +43,12 @@ class _TaskStatusRadioGroupWidgetState
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BlocBuilder<TaskBloc, TaskState>(
           builder: (context, state) {
             if (state is TaskLoading) {
-              // return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
             if (state is TaskError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -48,23 +56,19 @@ class _TaskStatusRadioGroupWidgetState
                   SnackBar(
                     content: Text(
                       state.message,
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+                      style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               });
@@ -72,16 +76,16 @@ class _TaskStatusRadioGroupWidgetState
 
             if (state is TaskLoaded) {
               statusList = state.taskStatuses;
-              
+
               if (statusList.length == 1 && selectedStatusData == null) {
-                // Если есть только один статус и еще не выбран, автоматически выбираем его
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   widget.onSelectStatus(statusList[0]);
                   setState(() {
                     selectedStatusData = statusList[0];
                   });
                 });
-              } else if (widget.selectedStatus != null && statusList.isNotEmpty) {
+              } else if (widget.selectedStatus != null &&
+                  statusList.isNotEmpty) {
                 try {
                   selectedStatusData = statusList.firstWhere(
                     (status) => status.id.toString() == widget.selectedStatus,
@@ -94,21 +98,19 @@ class _TaskStatusRadioGroupWidgetState
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Статусы задачи',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
+                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
+                      color: const Color(0xFFF4F7FD),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                      border: Border.all(
+                        width: 1,
+                        color: const Color(0xFFF4F7FD),
+                      ),
                     ),
                     child: CustomDropdown<TaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
@@ -116,48 +118,36 @@ class _TaskStatusRadioGroupWidgetState
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: Color(0xffF4F7FD),
+                        closedFillColor: const Color(0xffF4F7FD),
                         expandedFillColor: Colors.white,
                         closedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
+                          color: const Color(0xffF4F7FD),
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
+                          color: const Color(0xffF4F7FD),
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
-                        return Text(item.taskStatus.name,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ));
+                        return Text(
+                          item.taskStatus.name,
+                          style: statusTextStyle,
+                        );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
                           selectedItem?.taskStatus.name ?? 'Выберите статус',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
+                          style: statusTextStyle,
                         );
                       },
-                      hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите статус',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              )),
+                      hintBuilder: (context, hint, enabled) => Text(
+                        'Выберите статус',
+                        style: statusTextStyle.copyWith(fontSize: 14),
+                      ),
                       excludeSelected: false,
                       initialItem: selectedStatusData,
                       validator: (value) {
@@ -180,7 +170,7 @@ class _TaskStatusRadioGroupWidgetState
                 ],
               );
             }
-            return SizedBox();
+            return const SizedBox();
           },
         ),
       ],
