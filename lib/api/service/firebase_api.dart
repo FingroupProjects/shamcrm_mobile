@@ -38,8 +38,7 @@ class FirebaseApi {
 
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       print('Пользователь нажал на уведомление: ${message.messageId}');
-      handleMessage(message);
-      _printCustomData(message);
+      _navigateToPinScreenAndHandleNotification(message);
     });
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -47,6 +46,18 @@ class FirebaseApi {
       _printCustomData(message);
     });
   }
+
+  // Функция для перехода на экран PIN и потом на основной экран
+  Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) async {
+    // Переход на экран PIN
+    navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
+      // После того как пользователь введет PIN, обработаем уведомление
+      if (message != null) {
+        await handleMessage(message);
+      }
+    });
+  }
+
 
   void _printCustomData(RemoteMessage? message) {
     if (message != null && message.data.isNotEmpty) {

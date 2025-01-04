@@ -204,7 +204,7 @@ class _PinScreenState extends State<PinScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height * 0.2,
+                height: MediaQuery.of(context).size.height * 0.12,
               ),
               Image.asset(
                 'assets/icons/playstore.png',

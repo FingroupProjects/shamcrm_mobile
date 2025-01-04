@@ -87,6 +87,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _scrollToBottom();
       _fetchBaseUrl();
       _markMessagesAsRead();
+      // _PinCodePush();
     });
   }
 
@@ -102,6 +103,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
 
+// Future<void> _PinCodePush() async {
+//   // Добавляем задержку на 1 секунду
+//   await Future.delayed(Duration(microseconds: 1));
+
+//   // Сбрасываем флаг, чтобы показывался экран PIN
+//   SharedPreferences prefs = await SharedPreferences.getInstance();
+//   prefs.setBool('openedFromPush', false);  
+// }
+
+     
   // Обновляем показ календаря
   void _showDatePicker(BuildContext context, List<Message> messages) {
     showDialog(
