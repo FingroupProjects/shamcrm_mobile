@@ -43,6 +43,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
   String? _errorText;
+  bool _hasReachedMaxLength = false;
 
   final Map<String, int> phoneNumberLengths = {
     '+992': 9,
@@ -65,16 +66,18 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   }
 
   void _validatePhoneNumber(String value) {
+    final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+    
     setState(() {
       if (value.isEmpty) {
         _errorText = 'Поле обязательно для ввода!';
+        _hasReachedMaxLength = false;
+      } else if (value.length == maxLength) {
+        _errorText = null;
+        _hasReachedMaxLength = true;
       } else {
-        final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-        if (value.length != maxLength) {
-          _errorText = 'Неправильный номер телефона!';
-        } else {
-          _errorText = null; // Нет ошибок
-        }
+        _errorText = 'Неправильный номер телефона!';
+        _hasReachedMaxLength = false;
       }
     });
   }
@@ -108,28 +111,28 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.transparent, // Прозрачная граница
+                color: Colors.transparent,
                 width: 0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.transparent, // Прозрачная граница при фокусе
+                color: Colors.transparent,
                 width: 0,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: Colors.red, // Красная граница для ошибок
+                color: Colors.red,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: const Color.fromARGB(255, 245, 90, 79), // Красная граница при фокусе с ошибкой
+                color: const Color.fromARGB(255, 245, 90, 79),
                 width: 1.5,
               ),
             ),
@@ -157,6 +160,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                   setState(() {
                     selectedCountry = newValue;
                     widget.controller.text = '';
+                    _hasReachedMaxLength = false;
                     if (newValue != null && widget.onInputChanged != null) {
                       widget.onInputChanged!('');
                     }
@@ -168,14 +172,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (value) {
-            final maxLength =
-                phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+            final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
             if (value.length > maxLength) {
               widget.controller.text = value.substring(0, maxLength);
               widget.controller.selection = TextSelection.fromPosition(
                 TextPosition(offset: maxLength),
               );
+              value = widget.controller.text;
             }
+            
             _validatePhoneNumber(value);
 
             if (widget.onInputChanged != null) {

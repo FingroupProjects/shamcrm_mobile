@@ -3048,7 +3048,7 @@ class ApiService {
           throw ('Нет данных о статистике в ответе');
         }
       } else {
-        throw ('Ошибка загрузки статистики: ${response.body}');
+        throw ('Ошибка загрузки статистики!');
       }
     } catch (e) {
       throw ('Ошибка при получении статистики!');
@@ -3072,7 +3072,7 @@ class ApiService {
         throw ('Нет данных графика в ответе "Клиенты"');
       }
     } else {
-      throw ('Ошибка загрузки данных графика: ${response.body}');
+        throw ('Ошибка загрузки данных график клиента!');
     }
   }
 
@@ -3096,7 +3096,7 @@ class ApiService {
     } else if (response.statusCode == 500) {
       throw ('Ошибка сервера: 500');
     } else {
-      throw ('Ошибка загрузки данных графика: ${response.body}');
+      throw ('Ошибка загрузки данных графика Конверсия лидов!');
     }
   }
 
@@ -3114,10 +3114,10 @@ class ApiService {
       } else if (response.statusCode == 500) {
         throw Exception('Ошибка сервера!');
       } else {
-        throw Exception('Ошибка загрузки данных: ${response.statusCode}');
+        throw Exception('Ошибка загрузки данных!');
       }
     } catch (e) {
-      print('Ошибка запроса: $e');
+      print('Ошибка запроса!');
       throw Exception('Ошибка сети или парсинга данных');
     }
   }
@@ -3195,7 +3195,7 @@ class ApiService {
     } else if (response.statusCode == 500) {
       throw ('Ошибка сервера: 500');
     } else {
-      throw ('Ошибка загрузки данных графика: ${response.body}');
+      throw ('Ошибка загрузки данных графика Скорость обработки');
     }
   }
 
@@ -3220,7 +3220,7 @@ class ApiService {
     } else if (response.statusCode == 500) {
       throw ('Ошибка сервера: 500');
     } else {
-      throw ('Ошибка загрузки данных графика: ${response.body}');
+      throw ('Ошибка загрузки данных графика Выролнение целей!');
     }
   }
 
