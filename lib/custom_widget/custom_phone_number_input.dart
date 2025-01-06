@@ -19,6 +19,7 @@ List<Country> countries = [
   Country(name: "UZ", flag: "🇺🇿", dialCode: "+998"),
   Country(name: "KG", flag: "🇰🇬", dialCode: "+996"),
   Country(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
+  
 ];
 
 class CustomPhoneNumberInput extends StatefulWidget {
@@ -61,7 +62,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       children: [
         Text(
           widget.label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -73,7 +74,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           controller: widget.controller,
           decoration: InputDecoration(
             hintText: 'Введите номер телефона',
-            hintStyle: TextStyle(
+            hintStyle: const TextStyle(
               fontFamily: 'Gilroy',
               color: Color(0xff99A4BA),
             ),
@@ -82,8 +83,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: Color(0xffF4F7FD),
-            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            fillColor: const Color(0xffF4F7FD),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: DropdownButtonHideUnderline(
               child: DropdownButton<Country>(
                 value: selectedCountry,
@@ -106,18 +108,40 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     selectedCountry = newValue;
                     widget.controller.text = ''; // Очистка поля ввода
                     if (newValue != null && widget.onInputChanged != null) {
-                      widget.onInputChanged!(
-                          newValue.dialCode); // Передаем код страны
+                      widget.onInputChanged!(newValue.dialCode);
                     }
                   });
                 },
               ),
             ),
+              errorStyle: const TextStyle(
+              fontSize: 14, 
+              fontFamily: 'Gilroy',
+              color: Colors.red,
+              fontWeight: FontWeight.w500, 
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.transparent),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.5,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.5,
+              ),
+            ),
           ),
           keyboardType: TextInputType.phone,
           inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter
-                .digitsOnly, // Restrict input to digits only
+            FilteringTextInputFormatter.digitsOnly,
           ],
           onChanged: (value) {
             final maxLength =
@@ -129,12 +153,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                   TextSelection.fromPosition(TextPosition(offset: maxLength));
             }
 
-            // Форматирование номера телефона с кодом страны
             final formattedNumber =
                 (selectedCountry?.dialCode ?? '') + widget.controller.text;
             if (widget.onInputChanged != null) {
-              widget.onInputChanged!(
-                  formattedNumber); // Передача номера с кодом страны
+              widget.onInputChanged!(formattedNumber);
             }
           },
           validator: widget.validator,

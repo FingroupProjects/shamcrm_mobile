@@ -53,7 +53,7 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
               ),
             ];
           } else {
-             dropdownItems = state.dealStatuses.map<DropdownMenuItem<String>>((DealStatus status) {
+            dropdownItems = state.dealStatuses.map<DropdownMenuItem<String>>((DealStatus status) {
               return DropdownMenuItem<String>(
                 value: status.id.toString(),
                 child: Text(
@@ -68,9 +68,13 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 ),
               );
             }).toList();
+            if (state.dealStatuses.length == 1) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                widget.onChanged(state.dealStatuses.first.id.toString());
+              });
+            }
           }
         }
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -85,10 +89,6 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
             ),
             const SizedBox(height: 4),
             Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(8),
-              ),
               child: DropdownButtonFormField<String>(
                 value: dropdownItems.any((item) => item.value == widget.selectedDealStatus)
                     ? widget.selectedDealStatus
@@ -111,18 +111,39 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                   return null;
                 },
                 decoration: InputDecoration(
-                  labelStyle: TextStyle(color: Colors.grey),
+                  filled: true, 
+                  fillColor: Color(0xFFF4F7FD), 
+                  labelStyle: TextStyle(
+                    color: Colors.grey, 
+                    fontFamily: 'Gilroy', 
+                    fontSize: 14, 
+                    fontWeight: FontWeight.w500
+                  ),
                   border: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 1.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red, width: 1.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  errorStyle: TextStyle(
+                    fontSize: 14, 
+                    color: Colors.red, 
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy'
                   ),
                 ),
                 dropdownColor: Colors.white,
@@ -139,4 +160,3 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
     );
   }
 }
-

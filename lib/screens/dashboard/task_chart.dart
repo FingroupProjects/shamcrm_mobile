@@ -20,7 +20,10 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
   @override
   void initState() {
     super.initState();
-    context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+    final state = context.read<DashboardTaskChartBloc>().state;
+    if (state is! DashboardTaskChartLoaded) {
+      context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+    }
   }
 
   @override
@@ -28,54 +31,86 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
     return BlocConsumer<DashboardTaskChartBloc, DashboardTaskChartState>(
       listener: (context, state) {},
       builder: (context, state) {
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [const SizedBox(height: 12), // Отступ
-              const Text(
-                'Задачи',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A202C),
+        if (state is DashboardTaskChartLoaded) {
+          final totalTasks = state.taskChartData.data.reduce((a, b) => a + b);
+          return Container(
+            height: 330,
+            padding: const EdgeInsets.only(left: 12, top: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Задачи',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontFamily: "Gilroy",
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A202C),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _buildChart(state),
-              ),
-              const SizedBox(height: 16),
-              if (state is DashboardTaskChartLoaded)
+                const SizedBox(height: 16),
                 _buildLegend(state.taskChartData),
-            ],
-          ),
-        );
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _buildChart(state),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Общее количество задач: ${totalTasks.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Gilroy",
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1A202C),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else if (state is DashboardTaskChartError) {
+          return Center(
+            child: Text(
+              'Ошибка загрузки данных',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontFamily: "Gilroy",
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          );
+        }
+        // Убираем анимацию загрузки, возвращаем пустое место
+        return const SizedBox.shrink();
       },
     );
   }
 
   Widget _buildChart(DashboardTaskChartState state) {
-    if (state is DashboardTaskChartLoading) {
-      // return const Center(child: CircularProgressIndicator());
-    } else if (state is DashboardTaskChartError) {
-      return Center(
-        child: Text(
-          'Ошибка загрузки данных: ${state.message}',
-          textAlign: TextAlign.center,
+    if (state is DashboardTaskChartError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${state.message}',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
         ),
       );
     } else if (state is DashboardTaskChartLoaded) {
@@ -106,53 +141,76 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
   }
 
   List<PieChartSectionData> _showingSections(TaskChart taskChart) {
-    final List<Color> colors = [
-      const Color.fromARGB(255, 29, 93, 197), // Активный - голубой
-      const Color.fromARGB(255, 255, 0, 0), // Просрочен - фиолетовый
-      const Color(0xFF34D399), // Завершён - зеленый
-    ];
+  final List<Color> colors = [
+    const Color(0xFF3935E7), // Активный - голубой
+    const Color(0xFFC30202), // Просрочен - фиолетовый
+    const Color(0xFF27A945), // Завершён - зеленый
+  ];
 
-    return List.generate(3, (i) {
-      final isTouched = i == touchedIndex;
-      final opacity = isTouched ? 1.0 : 0.8;
-      final radius = isTouched ? 50.0 : 40.0;
+  // Проверяем, все ли значения равны 0
+  bool allZeros = taskChart.data.every((value) => value == 0);
 
-      return PieChartSectionData(
-        color: colors[i].withOpacity(opacity),
-        value: taskChart.data[i],
-        title: isTouched ? '${taskChart.data[i].toStringAsFixed(1)}' : '',
-        radius: radius,
+  // Если все значения 0, возвращаем один полный синий круг
+  if (allZeros) {
+    return [
+      PieChartSectionData(
+        color: colors[1], // Цвет "Активный"
+        value: 100, // Полный круг
+        title: '',
+        radius: 40.0,
         titleStyle: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+          fontFamily: "Gilroy",
+          fontWeight: FontWeight.w500,
+          color: Color.fromARGB(255, 255, 255, 255),
         ),
-      );
-    });
+      ),
+    ];
   }
 
+  // Стандартная логика для ненулевых значений
+  return List.generate(3, (i) {
+    final isTouched = i == touchedIndex;
+    final opacity = isTouched ? 0.8 : 1.0;
+    final radius = isTouched ? 50.0 : 40.0;
+
+    return PieChartSectionData(
+      color: colors[i].withOpacity(opacity),
+      value: taskChart.data[i],
+      title: isTouched ? '${taskChart.data[i].toStringAsFixed(0)}' : '',
+      radius: radius,
+      titleStyle: const TextStyle(
+        fontSize: 16,
+        fontFamily: "Gilroy",
+        fontWeight: FontWeight.w500,
+        color: Color.fromARGB(255, 255, 255, 255),
+      ),
+    );
+  });
+}
   Widget _buildLegend(TaskChart taskChart) {
     return Column(
       children: [
-        const SizedBox(height: 30),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildLegendItem(
-              'Активный ',
-              const Color.fromARGB(255, 29, 93, 197),
+              'Активные ',
+              const Color(0xFF3935E7),
             ),
-            const SizedBox(width: 24),
+            const SizedBox(
+              width: 24,
+              height: 12,
+            ),
             _buildLegendItem(
-              'Просрочен',
-              const Color.fromARGB(255, 245, 0, 0),
+              'Просроченные',
+              const Color(0xFFC30202),
             ),
           ],
         ),
-        const SizedBox(height: 8),
         _buildLegendItem(
-          'Завершён ',
-          const Color(0xFF34D399),
+          'Завершённые ',
+          const Color(0xFF27A945),
         ),
       ],
     );
@@ -174,8 +232,10 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF718096),
             fontSize: 14,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1A202C),
           ),
         ),
       ],

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/task_model.dart';
+
 abstract class TaskEvent {}
 
 class FetchTaskStatuses extends TaskEvent {}
@@ -16,7 +18,6 @@ class FetchMoreTasks extends TaskEvent {
   FetchMoreTasks(this.statusId, this.currentPage);
 }
 
-
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -25,10 +26,12 @@ class CreateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>?
+      userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
-  // final TaskFile? file;
-  
+  final String? filePath;
+  final List<Map<String, String>>? customFields;
+
   CreateTask({
     required this.name,
     required this.statusId,
@@ -39,10 +42,10 @@ class CreateTask extends TaskEvent {
     this.projectId,
     this.userId, // Передаём новый параметр в конструктор
     this.description,
-    // this.file,
+    this.customFields,
+    this.filePath,
   });
 }
-
 
 class UpdateTask extends TaskEvent {
   final int taskId;
@@ -52,10 +55,13 @@ class UpdateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>?
+      userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   final int taskStatusId;
-  // final TaskFile? file;
+  final List<Map<String, String>>? customFields;
+
+  final String? filePath;
 
   UpdateTask({
     required this.taskId,
@@ -68,8 +74,8 @@ class UpdateTask extends TaskEvent {
     this.userId,
     this.description,
     required this.taskStatusId,
-
-    // this.file,
+    this.customFields,
+    this.filePath,
   });
 }
 

@@ -18,22 +18,38 @@ class TaskByIdScreen extends StatelessWidget {
       create: (context) =>
           TaskProfileBloc(ApiService())..add(FetchTaskProfile(chatId)),
       child: Scaffold(
+        backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
           title: Text(
             "Информация о задаче",
-            style: TextStyle(color: Colors.black),
+            style: TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
           ),
           backgroundColor: Colors.white,
-          iconTheme: IconThemeData(color: Colors.black),
+          forceMaterialTransparency: true,
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          centerTitle: false,
         ),
         body: BlocBuilder<TaskProfileBloc, TaskProfileState>(
           builder: (context, state) {
             if (state is TaskProfileLoading) {
-              return Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
             } else if (state is TaskProfileLoaded) {
               final task = state.profile;
 
-              // Преобразование и форматирование даты
               final DateTime fromDate = DateTime.parse(task.from);
               final DateTime toDate = DateTime.parse(task.to);
 
@@ -42,13 +58,8 @@ class TaskByIdScreen extends StatelessWidget {
               final String formattedToDate =
                   DateFormat('dd-MM-yyyy').format(toDate);
 
-              // Разделяем строку пользователей на список и обрезаем его, если больше 3 пользователей
               List<String> userNamesList = task.usersNames.split(',');
-              String displayUserNames = userNamesList.length > 1
-                  ? '${userNamesList.sublist(0, 1).join(', ')}...'
-                  : userNamesList.join(', ');
 
-              // Преобразование уровня приоритета
               String priorityLevelText;
               switch (task.priority_level) {
                 case '1':
@@ -64,100 +75,53 @@ class TaskByIdScreen extends StatelessWidget {
                   priorityLevelText = 'Не указано';
               }
 
-              return ListView(
+              return SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.assignment),
-                    title: Text("Название задачи: ${task.name}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.format_list_numbered),
-                    title: Text("Номер задачи: ${task.taskNumber}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.low_priority),
-                    title: Text("Уровень приоритета: $priorityLevelText"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.assignment),
-                    title: Text("Статус: ${task.taskStatus.taskStatus.name}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text("Автор: ${task.authorName}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.group),
-                    title: GestureDetector(
-                      onTap: () {
-                        // Показать всплывающее окно со списком всех пользователей
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              backgroundColor: Colors.white,
-                              title: Text(
-                                "Список исполнителей",
-                                style: TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                              content: Container(
-                                height: 400,
-                                child: SingleChildScrollView(
-                                  child: ListBody(
-                                    children: userNamesList
-                                        .asMap()
-                                        .entries
-                                        .map((entry) {
-                                      int index =
-                                          entry.key + 1; // Нумерация с 1
-                                      String name = entry.value;
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 4.0),
-                                        child: Text(
-                                          '$index. $name',
-                                          style: TextStyle(fontSize: 18),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      child: Column(
+                        children: [
+                          buildInfoRow("Название задачи", task.name, Icons.assignment, null),
+                          buildDivider(),
+                          buildInfoRow("Номер задачи", task.taskNumber.toString(), Icons.format_list_numbered, null),
+                          buildDivider(),
+                          buildInfoRow("Уровень приоритета", priorityLevelText, Icons.low_priority, null),
+                          buildDivider(),
+                          buildInfoRow("Статус", task.taskStatus.taskStatus.name, Icons.assignment, null),
+                          buildDivider(),
+                          buildInfoRow("Автор", task.authorName, Icons.person, null),
+                          buildDivider(),
+                          GestureDetector(
+                                onTap: () {
+                                  _showUsersDialog(context, userNamesList);
+                                },
+                                child: buildInfoRow(
+                                  userNamesList.length == 1 ? 'Исполнитель' : 'Исполнители', 
+                                  userNamesList.take(3).join(', ') +
+                                    (userNamesList.length > 3
+                                        ? ' и еще ${userNamesList.length - 3}...'
+                                        : ''),
+                                  Icons.group, 
+                                  null,
                                 ),
                               ),
-                              actions: [
-                                Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: CustomButton(
-                                    buttonText: 'Закрыть',
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    buttonColor: Color(0xff1E2E52),
-                                    textColor: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      child: Text(
-                        "Исполнители: $displayUserNames",
-                        style: TextStyle(color: Colors.black, fontSize: 16),
+                          buildDivider(),
+                          buildInfoRow("От", formattedFromDate, Icons.calendar_month_outlined, null),
+                          buildDivider(),
+                          buildInfoRow("До", formattedToDate, Icons.calendar_month, null),
+                        ],
                       ),
                     ),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.calendar_today),
-                    title: Text("От: ${formattedFromDate}"),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.calendar_today),
-                    title: Text("До: ${formattedToDate}"),
-                  ),
-                ],
+                  ],
+                ),
               );
+
             } else if (state is TaskProfileError) {
               return Center(child: Text(state.error));
             }
@@ -165,6 +129,117 @@ class TaskByIdScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  void _showUsersDialog(BuildContext context, List<String> users) {
+  List<String> userNamesList = users.map((user) => user.trim()).toList();
+
+  // Проверка количества исполнителей
+  String dialogTitle = userNamesList.length == 1 ? 'Исполнитель' : 'Исполнители';
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        backgroundColor: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                dialogTitle,  // Используем динамическое название
+                style: TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 400,
+              child: ListView.builder(
+                itemExtent: 40, 
+                itemCount: userNamesList.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 2), 
+                    title: Text(
+                      '${index + 1}. ${userNamesList[index]}',
+                      style: TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 16,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: CustomButton(
+                buttonText: 'Закрыть',
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                buttonColor: Color(0xff1E2E52),
+                textColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+
+
+  Widget buildInfoRow(String title, String value, IconData? icon, String? customIconPath) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        customIconPath != null
+            ? Image.asset(customIconPath, width: 32, height: 32)
+            : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff6E7C97),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildDivider() {
+    return const Divider(
+      color: Color(0xffE1E6F0),
+      thickness: 1,
+      height: 24,
     );
   }
 }

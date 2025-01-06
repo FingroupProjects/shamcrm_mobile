@@ -9,8 +9,9 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/widgets/forgot_password.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class   LoginScreen extends StatelessWidget {
+class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextEditingController loginController = TextEditingController();
@@ -24,19 +25,38 @@ class   LoginScreen extends StatelessWidget {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) async {
             if (state is LoginLoaded) {
+               // Логирование успешного получения userId
+          print('Received userId: ${state.user.id}');
               // Сохраняем userID после успешного входа
               userID.value = state.user.id.toString();
+
+              // Сохранение имени пользователя в SharedPreferences
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.setString('userName', state.user.name.toString());
+              await prefs.setString('userID', state.user.id.toString());
+
+              // await prefs.setString('userPhone', state.user.phone.toString());
+              await prefs.setString('userLogin', state.user.login.toString());
+              // await prefs.setString('userImage', state.user.image.toString());
+              // await prefs.setString('userEmail', state.user.email.toString());
+              if (state.user.role != null && state.user.role!.isNotEmpty) {
+                await prefs.setString('userRoleName', state.user.role![0].name);
+              } else {
+                // Обработка ситуации, когда role пусто или null
+                await prefs.setString('userRoleName', 'No role assigned');
+              }
+
               // Получаем токен устройства и отправляем его на сервер
               String? fcmToken = await FirebaseMessaging.instance.getToken();
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
+            // print("UUID1 $prefs");
 
               // Проверяем сохранённую организацию
               final savedOrganization =
                   await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
-                // Если организация не выбрана, загружаем список и выбираем первую
                 final organizations = await apiService.getOrganization();
                 if (organizations.isNotEmpty) {
                   final firstOrganization = organizations.first;
@@ -44,24 +64,32 @@ class   LoginScreen extends StatelessWidget {
                       firstOrganization.id.toString());
                 }
               }
-              // Проверка на наличие токена
-              Future<void> checkAutoLogin() async {
-                final token = await apiService.getToken();
-                if (token != null) {
-                  // Автоматически переходим на главный экран, если токен есть
-                  Navigator.pushReplacementNamed(context, '/pin_setup');
-                }
-              }
-
-              // Вызов метода при запуске
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                checkAutoLogin();
-              });
+              await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
-              // Показываем сообщение об ошибке
+              WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
               );
+            });
             }
           },
           child: BlocBuilder<LoginBloc, LoginState>(
@@ -137,5 +165,19 @@ class   LoginScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _checkPinSetupStatus(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
+
+    if (!isPinSetupComplete) {
+      // Первый раз: переходим на страницу /pin_setup
+      prefs.setBool('isPinSetupComplete', true);
+      Navigator.pushReplacementNamed(context, '/pin_setup');
+    } else {
+      // Последующие разы: переходим на страницу /pin_screen
+      Navigator.pushReplacementNamed(context, '/pin_screen');
+    }
   }
 }

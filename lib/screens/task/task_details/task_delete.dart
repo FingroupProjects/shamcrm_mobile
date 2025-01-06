@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
+import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,12 +10,38 @@ class DeleteTaskDialog extends StatelessWidget {
 
   DeleteTaskDialog({required this.taskId});
 
-  @override
+ @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Center(
-        child: Text(
+    return BlocListener<TaskBloc, TaskState>(
+      listener: (context, state) {
+        if (state is TaskError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text(
+                 '${state.message}',
+                 style: TextStyle(
+                   fontFamily: 'Gilroy',
+                   fontSize: 16, 
+                   fontWeight: FontWeight.w500, 
+                   color: Colors.white, 
+                 ),
+               ),
+               behavior: SnackBarBehavior.floating,
+               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               shape: RoundedRectangleBorder(
+                 borderRadius: BorderRadius.circular(12),
+               ),
+               backgroundColor: Colors.red,
+               elevation: 3,
+               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+             ),
+          );
+        }
+      },
+      child: AlertDialog(
+        backgroundColor: Colors.white,
+        title: Center(
+          child: Text(
           'Удалить задачу',
           style: TextStyle(
             fontSize: 20,
@@ -54,6 +81,28 @@ class DeleteTaskDialog extends StatelessWidget {
                 onPressed: () {
                   context.read<TaskBloc>().add(DeleteTask(taskId)); 
                   context.read<TaskBloc>().add(FetchTaskStatuses()); 
+                  ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Задача успешно удалена!',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
                   Navigator.of(context).pop();
                   Navigator.pop(context, true); 
                 },
@@ -64,6 +113,7 @@ class DeleteTaskDialog extends StatelessWidget {
           ],
         ),
       ],
+      )
     );
   }
 }

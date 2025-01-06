@@ -30,11 +30,35 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
         if (state is HistoryLoading) {
-          // return Center(child:  CircularProgressIndicator(color: Color(0xff1E2E52)));
+          // return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         } else if (state is HistoryLoaded) {
           actionHistory = state.leadHistory;
         } else if (state is HistoryError) {
-          return Center(child: Text(state.message));
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${state.message}',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                });
         }
 
         return _buildExpandableActionContainer(
@@ -63,7 +87,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         padding: EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
           color: Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,41 +133,36 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     );
   }
 
-  Column _buildItemList(List<String> items) {
-    return Column(
+Column _buildItemList(List<String> items) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: items.map((item) {
+      return _buildActionItem(item);
+    }).toList(),
+  );
+}
+
+Widget _buildActionItem(String item) {
+  final parts = item.split('\n');
+  final status = parts[0];
+  final userName = parts.length > 1 ? parts[1] : '';
+  final additionalDetails = parts.sublist(2); 
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) {
-        return _buildActionItem(item);
-      }).toList(),
-    );
-  }
+      children: [
+        _buildStatusRow(status, userName),
+        SizedBox(height: 10),
+        if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
+      ],
+    ),
+  );
+}
 
-  Widget _buildActionItem(String item) {
-    final parts = item.split('\n');
-    final status = parts[0];
-    final userName = parts.length > 1 ? parts[1] : '';
 
-    final additionalDetails = [
-      parts.length > 2 ? parts[2] : '',
-      parts.length > 3 ? parts[3] : '',
-      parts.length > 4 ? parts[4] : '',
-      parts.length > 5 ? parts[5] : '',
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusRow(status, userName),
-          SizedBox(height: 10),
-          if (additionalDetails.any((detail) => detail.isNotEmpty))
-            _buildAdditionalDetails(additionalDetails),
-        ],
-      ),
-    );
-  }
- Row _buildStatusRow(String status, String userName) {
+  Row _buildStatusRow(String status, String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -155,72 +174,146 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xfff1E2E52),
+              overflow: TextOverflow.ellipsis,
             ),
+            maxLines: 3,
           ),
         ),
         SizedBox(width: 8),
-        Text(
-          userName,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xfff1E2E52),
+        Expanded(
+          child: Text(
+            userName,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xfff1E2E52),
+              overflow: TextOverflow.ellipsis,
+            ),
+            maxLines: 3,
           ),
         ),
       ],
     );
   }
 
-
-Column _buildAdditionalDetails(List<String> details) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: details.where((detail) => detail.isNotEmpty).map((detail) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Expanded( 
-            child: Text(
-              detail,
-              style: TextStyle(
-                fontSize: 14, 
-                fontFamily: 'Gilroy', 
-                fontWeight: FontWeight.w400,
-                color: Color(0xff1E2E52), 
+  Column _buildAdditionalDetails(List<String> details) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: details.where((detail) => detail.isNotEmpty).map((detail) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                detail,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xff1E2E52),
+                  overflow: TextOverflow.ellipsis, // Ensures long text is truncated
+                ),
+                maxLines: 2,
               ),
-              // maxLines: 2, 
-              // overflow: TextOverflow.ellipsis, 
             ),
-          ),
-        ],
-      );
-    }).toList(),
-  );
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+List<String> _buildActionHistoryItems(List<LeadHistory> history) {
+  return history.map((entry) {
+    final changes = entry.changes;
+
+    String formatBirthday(String? birthdayString) {
+  if (birthdayString == null || birthdayString == "Не указано") {
+    return "Не указано";
+  }
+
+  try {
+    DateTime birthday = DateTime.parse(birthdayString);
+    return DateFormat('dd-MM-yyyy').format(birthday);
+  } catch (e) {
+    return "Не указано"; 
+  }
 }
 
+    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
-  List<String> _buildActionHistoryItems(List<LeadHistory> history) {
-    return history.map((entry) {
-      final changes = entry.changes;
-      final formattedDate =
-          DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-      String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
-
-      if (changes != null) {
-        if (changes.positionNewValue != null &&
-            changes.positionPreviousValue != null) {
-          actionDetail +=
-              '\nПозиция: ${changes.positionPreviousValue?.toString() ?? "Не указано"} > ${changes.positionNewValue?.toString() ?? "Не указано"}';
-        }
-        if (changes.leadStatusNewValue != null &&
-            changes.leadStatusPreviousValue != null) {
-          actionDetail +=
-              '\nСтатус клиента: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
-        }
+    if (changes != null) {
+      // Позиция
+      // Статус клиента
+      if (changes.leadStatusNewValue != null || changes.leadStatusPreviousValue != null) {
+        actionDetail +=
+            '\nСтатус: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
       }
 
-      return actionDetail;
-    }).toList();
-  }
+      // Название
+      if (changes.historyNamePreviousValue != null || changes.historyNameNewValue != null) {
+        actionDetail +=
+            '\nНазвание: ${changes.historyNamePreviousValue ?? "Не указано"} > ${changes.historyNameNewValue ?? "Не указано"}';
+      }
+      
+      // Email
+      if (changes.emailPreviousValue != null || changes.emailNewValue != null) {
+        actionDetail +=
+            '\nEmail: ${changes.emailPreviousValue ?? "Не указано"} > ${changes.emailNewValue ?? "Не указано"}';
+      }
+
+      // Телефон
+      if (changes.phonePreviousValue != null || changes.phoneNewValue != null) {
+        actionDetail +=
+            '\nТелефон: ${changes.phonePreviousValue ?? "Не указано"} > ${changes.phoneNewValue ?? "Не указано"}';
+      }
+
+      // Регион
+      if (changes.regionPreviousValue != null || changes.regionNewValue != null) {
+        actionDetail +=
+            '\nРегион: ${changes.regionPreviousValue ?? "Не указано"} > ${changes.regionNewValue ?? "Не указано"}';
+      }
+
+      // Менеджер
+      if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
+        actionDetail +=
+            '\nМенеджер: ${changes.managerPreviousValue ?? "Не указано"} > ${changes.managerNewValue ?? "Не указано"}';
+      }
+      
+      // Дата рождения
+        if (changes.birthdayNewValue != null || changes.birthdayPreviousValue != null) {
+          actionDetail +=
+              '\nДата рождения: ${formatBirthday(changes.birthdayPreviousValue)} > ${formatBirthday(changes.birthdayNewValue)}';
+        }
+
+      // TG Никнейм
+      if (changes.tgNickNewValue != null || changes.tgNickPreviousValue != null) {
+        actionDetail +=
+          '\nТелеграм: ${changes.tgNickPreviousValue ?? "Не указано"} > ${changes.tgNickNewValue ?? "Не указано"}';
+      }
+
+      // Instagram логин
+      if (changes.instaLoginNewValue != null || changes.instaLoginPreviousValue != null) {
+        actionDetail +=
+            '\nInstagram: ${changes.instaLoginPreviousValue ?? "Не указано"} > ${changes.instaLoginNewValue ?? "Не указано"}';
+      }
+
+      // Facebook логин
+      if (changes.facebookLoginNewValue != null || changes.facebookLoginPreviousValue != null) {
+        actionDetail +=
+            '\nFacebook: ${changes.facebookLoginPreviousValue ?? "Не указано"} > ${changes.facebookLoginNewValue ?? "Не указано"}';
+      }
+      
+      // Описание
+      if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
+        actionDetail +=
+            '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';
+      }
+    }
+
+    return actionDetail;
+  }).toList();
+}
+
 }

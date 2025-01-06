@@ -10,6 +10,8 @@ class DealCard extends StatefulWidget {
   final String title;
   final int statusId;
   final VoidCallback onStatusUpdated;
+    final void Function(int newStatusId) onStatusId;
+
   
 
   DealCard({
@@ -17,6 +19,8 @@ class DealCard extends StatefulWidget {
     required this.title,
     required this.statusId,
     required this.onStatusUpdated,
+    required this.onStatusId,
+
   });
 
   @override
@@ -25,11 +29,14 @@ class DealCard extends StatefulWidget {
 
 class _DealCardState extends State<DealCard> {
   late String dropdownValue;
+    late int statusId;
+
 
   @override
   void initState() {
     super.initState();
     dropdownValue = widget.title;
+    statusId = widget.statusId;
   }
 
 
@@ -94,14 +101,22 @@ class _DealCardState extends State<DealCard> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    DropdownBottomSheet(context, dropdownValue,
-                        (String newValue) {
-                      setState(() {
-                        dropdownValue = newValue;
-                      });
-                      widget.onStatusUpdated();
-                    }, widget.deal);
+                    DropdownBottomSheet(
+                      context,
+                      dropdownValue,
+                      (String newValue, int newStatusId) {
+                        setState(() {
+                          dropdownValue = newValue;
+                          statusId = newStatusId; 
+                          
+                        });
+                          widget.onStatusId(newStatusId); 
+                        widget.onStatusUpdated(); 
+                      },
+                      widget.deal,
+                    );
                   },
+                 
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

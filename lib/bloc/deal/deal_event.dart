@@ -18,12 +18,12 @@ class FetchMoreDeals extends DealEvent {
 
 class CreateDealStatus extends DealEvent {
   final String title;
-  final int day;
+  final int? day;
   final String color;
 
   CreateDealStatus({
     required this.title,
-    required this.day,
+   this.day,
     required this.color,
   });
 }

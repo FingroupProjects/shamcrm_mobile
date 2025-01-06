@@ -1,4 +1,3 @@
-
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 
 abstract class DashboardTaskChartState {}
@@ -17,4 +16,10 @@ class DashboardTaskChartError extends DashboardTaskChartState {
   final String message;
 
   DashboardTaskChartError({required this.message});
+}
+
+class DashboardTaskChartAlreadyLoaded extends DashboardTaskChartState {
+  final TaskChart taskChartData;
+
+  DashboardTaskChartAlreadyLoaded({required this.taskChartData});
 }

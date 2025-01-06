@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
 
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
-  bool allLeadsFetched =false; // Переменная для отслеживания статуса завершения загрузки лидов
+  bool allLeadsFetched =
+      false; // Переменная для отслеживания статуса завершения загрузки лидов
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -18,40 +20,40 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<FetchAllLeads>(_fetchAllLeads);
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
-   
-
   }
-
 
 // // Метод для поиска лидов
-Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
-  emit(LeadLoading());
-  if (!await _checkInternetConnection()) {
-    emit(LeadError('Нет подключения к интернету'));
-    return;
-  }
+  Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+    if (!await _checkInternetConnection()) {
+      emit(LeadError('Нет подключения к интернету'));
+      return;
+    }
 
-  try {
-    // Передаем правильный leadStatusId из события FetchLeads
-    final leads = await apiService.getLeads(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-    );
-    allLeadsFetched = leads.isEmpty;
-    emit(LeadDataLoaded(leads, currentPage: 1));
-  } catch (e) {
-    emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
+    try {
+      // Передаем правильный leadStatusId из события FetchLeads
+      final leads = await apiService.getLeads(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+      );
+      allLeadsFetched = leads.isEmpty;
+      emit(LeadDataLoaded(leads, currentPage: 1));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 401) {
+        emit(LeadError('Неавторизованный доступ!'));
+      } else {
+        emit(LeadError('Не удалось загрузить данные!'));
+      }
+    }
   }
-}
-
 
   Future<void> _fetchLeadStatuses(
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
-    await Future.delayed(Duration(milliseconds: 800)); // Небольшая задержка
+    await Future.delayed(Duration(milliseconds: 500)); // Небольшая задержка
 
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
@@ -61,12 +63,12 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     try {
       final response = await apiService.getLeadStatuses();
       if (response.isEmpty) {
-        emit(LeadError('Ответ пустой'));
+        emit(LeadError('Нет статусов'));
         return;
       }
       emit(LeadLoaded(response));
     } catch (e) {
-      emit(LeadError('Не удалось загрузить данные: ${e.toString()}'));
+      emit(LeadError('Не удалось загрузить данные!'));
     }
   }
 
@@ -80,16 +82,13 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     }
 
     try {
-      final leads = await apiService
-          .getLeads(null); 
+      final leads = await apiService.getLeads(null);
       allLeadsFetched = leads.isEmpty;
       emit(LeadDataLoaded(leads, currentPage: 1));
     } catch (e) {
-      emit(LeadError('Не удалось загрузить лиды: ${e.toString()}'));
+      emit(LeadError('Не удалось загрузить лиды!'));
     }
   }
-
-
 
   Future<void> _fetchMoreLeads(
       FetchMoreLeads event, Emitter<LeadState> emit) async {
@@ -114,7 +113,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       }
     } catch (e) {
       emit(LeadError(
-          'Не удалось загрузить дополнительные лиды: ${e.toString()}'));
+          'Не удалось загрузить дополнительные лиды!'));
     }
   }
 
@@ -135,6 +134,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         phone: event.phone,
         regionId: event.regionId,
         managerId: event.managerId,
+        sourceId: event.sourceId,
         instaLogin: event.instaLogin,
         facebookLogin: event.facebookLogin,
         tgNick: event.tgNick,
@@ -142,11 +142,12 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         email: event.email,
         description: event.description,
         waPhone: event.waPhone,
+        customFields: event.customFields,
       );
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess('Лид создан успешно'));
+        emit(LeadSuccess('Лид успешно создан!'));
         // Передаем статус лида (event.leadStatusId) в событие FetchLeads
         // add(FetchLeads(event.leadStatusId));
       } else {
@@ -155,7 +156,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
       }
     } catch (e) {
       // Логирование ошибки
-      emit(LeadError('Ошибка создания лида: ${e.toString()}'));
+      emit(LeadError('Ошибка создания лида!'));
     }
   }
 
@@ -185,6 +186,7 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         leadStatusId: event.leadStatusId,
         phone: event.phone,
         regionId: event.regionId,
+        sourceId: event.sourseId,
         managerId: event.managerId,
         instaLogin: event.instaLogin,
         facebookLogin: event.facebookLogin,
@@ -193,17 +195,18 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         email: event.email,
         description: event.description,
         waPhone: event.waPhone,
+        customFields: event.customFields,
       );
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess('Лид обновлен успешно'));
+        emit(LeadSuccess('Лид успешно обновлен!'));
         // add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
       } else {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError('Ошибка обновления лида: ${e.toString()}'));
+      emit(LeadError('Ошибка обновления лида!'));
     }
   }
 
@@ -227,38 +230,38 @@ Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError('Ошибка создания статуса лида: ${e.toString()}'));
+      emit(LeadError('Ошибка создания статуса лида!'));
     }
   }
 
-
-   Future<void> _deleteLead(DeleteLead event, Emitter<LeadState> emit) async {
+  Future<void> _deleteLead(DeleteLead event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
     try {
       final response = await apiService.deleteLead(event.leadId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted('Лид удалена успешно'));
+        emit(LeadDeleted('Лид успешно удален!'));
       } else {
-        emit(LeadError('Ошибка удаления лида'));
+        emit(LeadError('Ошибка удаления лида!'));
       }
     } catch (e) {
-      emit(LeadError('Ошибка удаления лида: ${e.toString()}'));
+      emit(LeadError('Ошибка удаления лида!'));
     }
   }
-  
-   Future<void> _deleteLeadStatuses(DeleteLeadStatuses event, Emitter<LeadState> emit) async {
+
+  Future<void> _deleteLeadStatuses(
+      DeleteLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
     try {
       final response = await apiService.deleteLeadStatuses(event.leadStatusId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted('Статус Лида удалена успешно'));
+        emit(LeadDeleted('Статус Лида успешно удалена'));
       } else {
         emit(LeadError('Ошибка удаления статуса лида'));
       }
     } catch (e) {
-      emit(LeadError('Ошибка удаления статуса лида: ${e.toString()}'));
+      emit(LeadError('Ошибка удаления статуса лида!'));
     }
   }
 }

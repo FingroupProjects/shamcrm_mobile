@@ -2,7 +2,6 @@ import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
-import 'package:crm_task_manager/models/dashboard_charts_models/stats_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -35,7 +34,7 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       curve: Curves.easeInOutCubic,
     );
 
-    // Загрузка данных при инициализации
+    // Загрузка данных
     context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
   }
 
@@ -51,95 +50,158 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       listener: (context, state) {
         if (state is DashboardConversionLoaded) {
           _animationController.forward(from: 0.0);
+        } else if (state is DashboardConversionError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${state.message}',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
       },
       builder: (context, state) {
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+        if (state is DashboardConversionLoading) {
+          return const SizedBox.shrink();
+        } else if (state is DashboardConversionError) {
+          return const Center(
+            child: Text(
+              'Ошибка загрузки данных',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: "Gilroy",
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Конверсия лидов',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A202C),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                // Убрана стилизация "в коробке", чтобы график соответствовал минималистичному стилю
-                child: _buildChart(state),
-              ),
-              const SizedBox(height: 16),
-              if (state is DashboardConversionLoaded)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildLegend(state.leadConversionData),
-                )
-            ],
-          ),
-        );
+            ),
+          );
+        } else if (state is DashboardConversionLoaded) {
+          return _buildLoadedStateWidget(state);
+        }
+        return const SizedBox.shrink();
       },
     );
   }
 
-  Widget _buildChart(DashboardConversionState state) {
-    if (state is DashboardConversionLoading) {
-      // return const Center(child: CircularProgressIndicator());
-    } else if (state is DashboardConversionError) {
-      return Center(
-        child: Text(
-          'Ошибка загрузки данных: ${state.message}',
-          textAlign: TextAlign.center,
-        ),
-      );
-    } else if (state is DashboardConversionLoaded) {
-      return AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return PieChart(
+  Widget _buildLoadedStateWidget(DashboardConversionLoaded state) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.only(left: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Конверсия лидов',
+            style: TextStyle(
+              fontSize: 24,
+              fontFamily: "Gilroy",
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          Expanded(
+            child: _buildChart(state),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: _buildLegend(state.leadConversionData),
+          ),
+        ],
+      ),
+    );
+  }
+
+ Widget _buildChart(DashboardConversionState state) {
+  if (state is DashboardConversionLoaded) {
+    final data = state.leadConversionData;
+
+    if (data.newLeads == 0.0 && data.repeatedLeads == 0.0) {
+      // График с текстом в центре, если данных нет
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
             PieChartData(
               startDegreeOffset: -90,
               pieTouchData: PieTouchData(
                 touchCallback: (FlTouchEvent event, pieTouchResponse) {
                   setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        pieTouchResponse == null ||
-                        pieTouchResponse.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
-                    }
-                    touchedIndex =
-                        pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    touchedIndex = -1; // Отключаем выделение сектора
                   });
                 },
               ),
               sectionsSpace: 4,
               centerSpaceRadius: 40,
-              sections:
-                  _showingSections(state.leadConversionData, _animation.value),
+              sections: [
+                PieChartSectionData(
+                  color: const Color.fromARGB(255, 210, 210, 210).withOpacity(1),
+                  value: 1, // Минимальное значение
+                  title: '', // Без текста
+                  radius: 40,
+                ),
+              ],
             ),
-          );
-        },
+          ),
+          const Text(
+            'Нет данных для отображения',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: "Gilroy",
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+          ),
+        ],
       );
     }
-    return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return PieChart(
+          PieChartData(
+            startDegreeOffset: -90,
+            pieTouchData: PieTouchData(
+              touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                setState(() {
+                  if (!event.isInterestedForInteractions ||
+                      pieTouchResponse == null ||
+                      pieTouchResponse.touchedSection == null) {
+                    touchedIndex = -1;
+                    return;
+                  }
+                  touchedIndex =
+                      pieTouchResponse.touchedSection!.touchedSectionIndex;
+                });
+              },
+            ),
+            sectionsSpace: 4,
+            centerSpaceRadius: 40,
+            sections: _showingSections(data, _animation.value),
+          ),
+        );
+      },
+    );
   }
+  return const SizedBox.shrink();
+}
+
+
 
   List<PieChartSectionData> _showingSections(
       LeadConversion data, double animationValue) {
@@ -151,15 +213,16 @@ class _LeadConversionChartState extends State<LeadConversionChart>
 
       return PieChartSectionData(
         color: i == 0
-            ? const Color(0xFF60A5FA).withOpacity(isTouched ? 1 : 0.6)
-            : const Color.fromARGB(255, 33, 41, 188)
-                .withOpacity(isTouched ? 1 : 0.6),
+            ? const Color(0xFF3935E7).withOpacity(isTouched ? 0.8 : 1)
+            : const Color(0xFF27A945)
+                .withOpacity(isTouched ? 0.8 : 1),
         value: value,
-        title: isTouched ? '${value.toStringAsFixed(1)}%' : '',
+        title: isTouched ? '${value.toInt()}' : '',
         radius: radius,
         titleStyle: TextStyle(
           fontSize: fontSize,
-          fontWeight: FontWeight.bold,
+          fontFamily: "Gilroy",
+          fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
       );
@@ -171,18 +234,17 @@ class _LeadConversionChartState extends State<LeadConversionChart>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildLegendItem(
-          'Новые (${data.newLeads.toStringAsFixed(1)}%)',
-          const Color(0xFF60A5FA),
+          'Новые: ${data.newLeads.toInt()}',
+          const Color(0xFF3935E7),
         ),
         const SizedBox(width: 24),
         _buildLegendItem(
-          'Повторные (${data.repeatedLeads.toStringAsFixed(1)}%)',
-          const Color.fromARGB(255, 33, 41, 188),
+          'Повторные: ${data.repeatedLeads.toInt()}',
+          const Color(0xFF27A945),
         ),
       ],
     );
   }
-
   Widget _buildLegendItem(String title, Color color) {
     return Row(
       children: [
@@ -198,8 +260,10 @@ class _LeadConversionChartState extends State<LeadConversionChart>
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF718096),
             fontSize: 14,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
           ),
         ),
       ],

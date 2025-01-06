@@ -6,9 +6,13 @@ import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart' as task_status_add;
-import 'package:crm_task_manager/bloc/task_status_add/task_event.dart' as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
+    as task_status_add;
+import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
+    as task_status_add;
+import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +27,7 @@ class CreateStatusDialog extends StatefulWidget {
 
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   int? selectedStatusNameId;
-  String? selectedProjectId; 
+  String? selectedProjectId;
   List<int> selectedRoleIds = [];
   bool needsPermission = false;
   bool isFinalStage = false;
@@ -57,19 +61,20 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           children: [
             const SizedBox(height: 16),
             StatusList(
-              selectedTaskStatus: selectedStatusNameId?.toString(),
+              selectedTaskStatus:
+                  selectedStatusNameId?.toString(), // Передаем строку
               onChanged: (String? statusName, int? statusId) {
                 setState(() {
-                  selectedStatusNameId = statusId;
+                  selectedStatusNameId = statusId; // Обновляем статус
                 });
               },
             ),
             const SizedBox(height: 16),
-            ProjectRadioGroupWidget( 
+            ProjectTaskGroupWidget(
               selectedProject: selectedProjectId,
-              onSelectProject: (project) {
+              onSelectProject: (ProjectTask selectedProjectData) {
                 setState(() {
-                  selectedProjectId = project.id.toString();
+                  selectedProjectId = selectedProjectData.id.toString();
                 });
               },
             ),
@@ -102,9 +107,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
                           activeTrackColor:
-                              const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                              const Color.fromARGB(255, 51, 65, 98)
+                                  .withOpacity(0.5),
                           inactiveThumbColor:
                               const Color.fromARGB(255, 255, 255, 255),
                         ),
@@ -133,9 +140,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           },
                           activeColor: const Color.fromARGB(255, 255, 255, 255),
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+                              const Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
                           activeTrackColor:
-                              const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                              const Color.fromARGB(255, 51, 65, 98)
+                                  .withOpacity(0.5),
                           inactiveThumbColor:
                               const Color.fromARGB(255, 255, 255, 255),
                         ),
@@ -247,14 +256,36 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     context.read<task_status_add.TaskStatusBloc>().add(
           task_status_add.CreateTaskStatusAdd(
             taskStatusNameId: selectedStatusNameId!,
-            projectId: int.tryParse(selectedProjectId!) ?? 0, 
-            organizationId: 1,
+            projectId: int.tryParse(selectedProjectId!) ?? 0,
             needsPermission: needsPermission,
             roleIds: needsPermission ? selectedRoleIds : null,
+            finalStep: isFinalStage,
           ),
         );
 
-    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Статус успешно создан!',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.green,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 3),
+      ),
+    );
+    Navigator.pop(context, true);
 
     Future.delayed(Duration(milliseconds: 0), () {
       context.read<TaskBloc>().add(FetchTaskStatuses());

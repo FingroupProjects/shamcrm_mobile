@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
+import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
@@ -13,9 +14,36 @@ class DeleteNoteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Center(
+    return BlocListener<NotesBloc, NotesState>(
+      listener: (context, state) {
+        if (state is NotesError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text(
+                 '${state.message}',
+                 style: TextStyle(
+                   fontFamily: 'Gilroy',
+                   fontSize: 16, 
+                   fontWeight: FontWeight.w500, 
+                   color: Colors.white, 
+                 ),
+               ),
+               behavior: SnackBarBehavior.floating,
+               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               shape: RoundedRectangleBorder(
+                 borderRadius: BorderRadius.circular(12),
+               ),
+               backgroundColor: Colors.red,
+               elevation: 3,
+               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+               duration: Duration(seconds: 3),
+             ),
+          );
+        }
+      },
+      child: AlertDialog(
+        backgroundColor: Colors.white,
+        title: Center(
           child: Text(
         'Удалить заметку',
         style: TextStyle(
@@ -54,6 +82,28 @@ class DeleteNoteDialog extends StatelessWidget {
                 buttonText: 'Удалить',
                 onPressed: () {
                   context.read<NotesBloc>().add(DeleteNote(note.id, leadId));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(
+                     content: Text(
+                       'Заметка успешно удалена!',
+                       style: TextStyle(
+                         fontFamily: 'Gilroy',
+                         fontSize: 16, 
+                         fontWeight: FontWeight.w500, 
+                         color: Colors.white, 
+                       ),
+                     ),
+                     behavior: SnackBarBehavior.floating,
+                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(12),
+                     ),
+                     backgroundColor: Colors.green,
+                     elevation: 3,
+                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
+                     duration: Duration(seconds: 3),
+                   ),
+                );
                   Navigator.of(context).pop();
                 },
                 buttonColor: Color(0xff1E2E52),
@@ -63,6 +113,7 @@ class DeleteNoteDialog extends StatelessWidget {
           ],
         ),
       ],
+      )
     );
   }
 }

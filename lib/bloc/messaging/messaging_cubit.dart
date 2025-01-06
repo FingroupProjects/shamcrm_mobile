@@ -7,12 +7,20 @@ part 'messaging_state.dart';
 
 class MessagingCubit extends Cubit<MessagingState> {
   final ApiService apiService;
+  
   MessagingCubit(this.apiService) : super(MessagingInitial());
 
   Future<void> getMessages(final int chatId) async {
     try {
       emit(MessagesLoadingState());
       final messages = await apiService.getMessages(chatId);
+      
+      // Извлекаем ID сообщений
+      final messageIds = messages.map((msg) => msg.id).toList();
+      
+      // Отправляем ID прочитанных сообщений на сервер
+      await apiService.readChatMessages(chatId, messageIds);
+      
       emit(MessagesLoadedState(messages: messages));
     } catch (e) {
       emit(MessagesErrorState(error: e.toString()));

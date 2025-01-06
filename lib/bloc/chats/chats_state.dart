@@ -27,3 +27,17 @@ class ChatsError extends ChatsState {
   @override
   List<Object> get props => [message];
 }
+
+class ChatsDeleted extends ChatsState {
+  final String message;
+
+  ChatsDeleted(this.message);
+}
+
+class ChatsSearched extends ChatsState {
+  final PaginationDTO<Chats> chatsPagination;
+  const ChatsSearched(this.chatsPagination);
+
+  @override
+  List<Object> get props => [chatsPagination];
+}

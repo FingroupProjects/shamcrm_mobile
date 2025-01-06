@@ -34,6 +34,7 @@ class CreateLead extends LeadEvent {
   final String phone;
   final int? regionId;
   final int? managerId;
+  final int? sourceId;
   final String? instaLogin;
   final String? facebookLogin;
   final String? tgNick;
@@ -41,6 +42,7 @@ class CreateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
+  final List<Map<String, String>>? customFields;
 
   CreateLead({
     required this.name,
@@ -48,6 +50,7 @@ class CreateLead extends LeadEvent {
     required this.phone,
     this.regionId,
     this.managerId,
+    this.sourceId,
     this.instaLogin,
     this.facebookLogin,
     this.tgNick,
@@ -55,14 +58,18 @@ class CreateLead extends LeadEvent {
     this.email,
     this.description,
     this.waPhone,
+    this.customFields,
   });
 }
+
 class UpdateLead extends LeadEvent {
   final int leadId;
   final String name;
   final int leadStatusId;
   final String phone;
   final int? regionId;
+  final int? sourseId;
+
   final int? managerId;
   final String? instaLogin;
   final String? facebookLogin;
@@ -71,6 +78,7 @@ class UpdateLead extends LeadEvent {
   final String? email;
   final String? description;
   final String? waPhone;
+  final List<Map<String, String>>? customFields;
 
   UpdateLead({
     required this.leadId,
@@ -78,6 +86,7 @@ class UpdateLead extends LeadEvent {
     required this.leadStatusId,
     required this.phone,
     this.regionId,
+    this.sourseId,
     this.managerId,
     this.instaLogin,
     this.facebookLogin,
@@ -86,6 +95,7 @@ class UpdateLead extends LeadEvent {
     this.email,
     this.description,
     this.waPhone,
+    this.customFields,
   });
 }
 
@@ -94,6 +104,7 @@ class DeleteLead extends LeadEvent {
 
   DeleteLead(this.leadId);
 }
+
 class DeleteLeadStatuses extends LeadEvent {
   final int leadStatusId;
 

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
@@ -23,10 +24,26 @@ class DealsWidget extends StatefulWidget {
 class _DealsWidgetState extends State<DealsWidget> {
   List<LeadDeal> deals = [];
   late ScrollController _scrollController;
+  bool _canCreateDeal = false;
+  // bool _canUpdateDeal = false;
+  bool _canDeleteDeal = false;
+  final ApiService _apiService = ApiService();
+
+  Future<void> _checkPermissions() async {
+    final canCreate = await _apiService.hasPermission('deal.create');
+    // final canUpdate = await _apiService.hasPermission('deal.update');
+    final canDelete = await _apiService.hasPermission('deal.delete');
+    setState(() {
+      _canCreateDeal = canCreate;
+      // _canUpdateDeal = canUpdate;
+      _canDeleteDeal = canDelete;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+      _checkPermissions(); // Проверяем права пользователя
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
@@ -49,8 +66,8 @@ class _DealsWidgetState extends State<DealsWidget> {
             _scrollController.position.maxScrollExtent &&
         !context.read<LeadDealsBloc>().allLeadDealsFetched) {
       context.read<LeadDealsBloc>().add(
-        FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()),
-      );
+            FetchMoreLeadDeals(widget.leadId, (deals.length / 20).ceil()),
+          );
     }
   }
 
@@ -63,7 +80,31 @@ class _DealsWidgetState extends State<DealsWidget> {
         } else if (state is LeadDealsLoaded) {
           deals = state.deals;
         } else if (state is LeadDealsError) {
-          return Center(child: Text(state.message));
+           WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${state.message}',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                });
         }
 
         return _buildDealsList(deals);
@@ -116,13 +157,19 @@ class _DealsWidgetState extends State<DealsWidget> {
 
   Widget _buildDealItem(LeadDeal deal) {
     final formattedDate = deal.startDate != null
-        ? DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse(deal.startDate!))
+        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.startDate!))
         : 'Не указано';
 
     return GestureDetector(
       onTap: () {
-        _navigateToDealDetails(deal);
-      },
+              _navigateToDealDetails(deal);
+            }
+          ,
+      // onTap: _canUpdateDeal
+      //     ? () {
+      //         _navigateToDealDetails(deal);
+      //       }
+      //     : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
@@ -156,6 +203,7 @@ class _DealsWidgetState extends State<DealsWidget> {
                     ],
                   ),
                 ),
+              if (_canDeleteDeal)
                 IconButton(
                   icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
                   onPressed: () {
@@ -209,35 +257,39 @@ class _DealsWidgetState extends State<DealsWidget> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LeadDealAddScreen(leadId: widget.leadId),
+        if (_canCreateDeal)
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      LeadDealAddScreen(leadId: widget.leadId),
+                ),
+              ).then((_) {
+                context
+                    .read<LeadDealsBloc>()
+                    .add(FetchLeadDeals(widget.leadId));
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              backgroundColor: Color(0xff1E2E52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            ).then((_) {
-              context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
-            });
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: Color(0xff1E2E52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Добавить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
             ),
           ),
-          child: Text(
-            'Добавить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
       ],
     );
   }

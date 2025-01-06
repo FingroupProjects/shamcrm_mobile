@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'deal_event.dart';
 import 'deal_state.dart';
@@ -24,7 +25,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    await Future.delayed(Duration(milliseconds: 300));
+    await Future.delayed(Duration(milliseconds: 600));
 
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
@@ -39,7 +40,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       }
       emit(DealLoaded(response));
     } catch (e) {
-      emit(DealError('Не удалось загрузить данные: ${e.toString()}'));
+      emit(DealError('Не удалось загрузить данные!'));
     }
   }
 
@@ -62,8 +63,12 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     allDealsFetched = leads.isEmpty;
     emit(DealDataLoaded(leads, currentPage: 1));
   } catch (e) {
-    emit(DealError('Не удалось загрузить сделки: ${e.toString()}'));
+  if (e is ApiException && e.statusCode == 401) {
+    emit(DealError('Неавторизованный доступ!'));
+  } else {
+    emit(DealError('Не удалось загрузить данные!'));
   }
+}
 }
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {
@@ -88,7 +93,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       }
     } catch (e) {
       emit(DealError(
-          'Не удалось загрузить дополнительные сделки: ${e.toString()}'));
+          'Не удалось загрузить дополнительные сделки!'));
     }
   }
 
@@ -112,7 +117,7 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания статуса Сделки: ${e.toString()}'));
+      emit(DealError('Ошибка создания статуса Сделки!'));
     }
   }
 
@@ -136,13 +141,13 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
         customFields: event.customFields,
       );
       if (result['success']) {
-        emit(DealSuccess('Сделка создана успешно'));
+        emit(DealSuccess('Сделка успешно создана'));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания сделки: ${e.toString()}'));
+      emit(DealError('Ошибка создания сделки!'));
     }
   }
 
@@ -170,13 +175,13 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
       );
 
       if (result['success']) {
-        emit(DealSuccess('Сделка обновлена успешно'));
+        emit(DealSuccess('Сделка успешно обновлена'));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка обновления сделки: ${e.toString()}'));
+      emit(DealError('Ошибка обновления сделки!'));
     }
   }
 
@@ -195,27 +200,33 @@ Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     try {
       final response = await apiService.deleteDeal(event.dealId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Сделка удалена успешно'));
+        emit(DealDeleted('Сделка успешно удалена'));
       } else {
         emit(DealError('Ошибка удаления сделки'));
       }
     } catch (e) {
-      emit(DealError('Ошибка удаления сделки: ${e.toString()}'));
+      emit(DealError('Ошибка удаления сделки!'));
     }
   }
 
   Future<void> _deleteDealStatuses(DeleteDealStatuses event, Emitter<DealState> emit) async {
-    emit(DealLoading());
+  emit(DealLoading());
 
-    try {
-      final response = await apiService.deleteDealStatuses(event.dealStatusId);
-      if (response['result'] == 'Success') {
-        emit(DealDeleted('Статус Лида удалена успешно'));
-      } else {
-        emit(DealError('Ошибка удаления статуса сделки'));
-      }
-    } catch (e) {
-      emit(DealError('Ошибка удаления статуса сделки: ${e.toString()}'));
+  try {
+    if (event.dealStatusId == 0) {
+      emit(DealError('Некорректный статус для удаления'));
+      return;
     }
+
+    final response = await apiService.deleteDealStatuses(event.dealStatusId);
+    if (response['result'] == 'Success') {
+      emit(DealDeleted('Статус сделки успешно удален'));
+    } else {
+      emit(DealError('Ошибка удаления статуса сделки'));
+    }
+  } catch (e) {
+    emit(DealError('Ошибка удаления статуса сделки!'));
   }
+}
+
 }

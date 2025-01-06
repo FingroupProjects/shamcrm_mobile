@@ -7,11 +7,12 @@ import 'package:flutter/material.dart';
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String) onSelect,
+  Function(String, int) onSelect, 
   Deal deal,
 ) {
   String selectedValue = defaultValue;
   int? selectedStatusId;
+  bool isLoading = false; // Variable to manage the loading state
 
   showModalBottomSheet(
     context: context,
@@ -53,10 +54,8 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue =
-                                    status.title; 
-                                selectedStatusId =
-                                    status.id; 
+                                selectedValue = status.title; // Set the selected status
+                                selectedStatusId = status.id; // Set the status ID
                               });
                             },
                             child: buildDropDownStyles(
@@ -69,27 +68,91 @@ void DropdownBottomSheet(
                     },
                   ),
                 ),
-                CustomButton(
-                  buttonText: 'Сохранить',
-                  buttonColor: Color(0xfff4F40EC),
-                  textColor: Colors.white,
-                  onPressed: () {
-                    if (selectedStatusId != null) {
-                      ApiService()
-                          .updateDealStatus(
-                              deal.id, deal.statusId, selectedStatusId!)
-                          .then((_) {
-                        Navigator.pop(context);
-                        onSelect(selectedValue);
-                      }).catchError((error) {
-                        print('Ошибка обновления статуса сделки: $error');
-                      });
-                    } else {
-                      print('Статус не выбран');
-                    }
-                  },
-                ),
-                SizedBox(height: 16)
+                isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xff1E2E52),
+                        ),
+                      )
+                    : CustomButton(
+                        buttonText: 'Сохранить',
+                        buttonColor: Color(0xfff4F40EC),
+                        textColor: Colors.white,
+                        onPressed: () {
+                          if (selectedStatusId != null) {
+                            setState(() {
+                              isLoading = true; // Start loading
+                            });
+
+                            ApiService().updateDealStatus(deal.id, deal.statusId, selectedStatusId!).then((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text(
+                                     'Статус успешно изменен!',
+                                     style: TextStyle(
+                                       fontFamily: 'Gilroy',
+                                       fontSize: 16,
+                                       fontWeight: FontWeight.w500,
+                                       color: Colors.white,
+                                     ),
+                                   ),
+                                   behavior: SnackBarBehavior.floating,
+                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                   shape: RoundedRectangleBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                   ),
+                                   backgroundColor: Colors.green,
+                                   elevation: 3,
+                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                   duration: Duration(seconds: 3),
+                                 ),
+                               );
+                              setState(() {
+                                isLoading = false; // Stop loading
+                              });
+
+                              Navigator.pop(context);
+                              onSelect(selectedValue, selectedStatusId!);
+                            }).catchError((error) {
+                              setState(() {
+                                isLoading = false; // Stop loading
+                              });
+
+                              if (error is DealStatusUpdateException &&
+                                  error.code == 422) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Вы не можете переместить задачу на этот статус!',
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 3),
+                                  ),
+                                );
+                                Navigator.pop(context);
+                              } else {
+                                print('Ошибка обновления статуса задачи!rror');
+                              }
+                            });
+                          } else {
+                            print('Статус не выбран');
+                          }
+                        },
+                      ),
+                SizedBox(height: 16),
               ],
             ),
           );
@@ -97,4 +160,14 @@ void DropdownBottomSheet(
       );
     },
   );
+}
+
+class DealStatusUpdateException implements Exception {
+  final int code;
+  final String message;
+
+  DealStatusUpdateException(this.code, this.message);
+
+  @override
+  String toString() => 'DealtatusUpdateException($code, $message)';
 }

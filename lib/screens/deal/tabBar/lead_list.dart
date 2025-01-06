@@ -38,7 +38,28 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             }
 
             if (state is GetAllLeadError) {
-              return Text(state.message);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
             }
             if (state is GetAllLeadSuccess) {
               leadsList = state.dataLead.result ?? [];
@@ -55,9 +76,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // SizedBox(height: 8),
                   const Text(
-                    'Лиды',
+                    'Лид',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -67,16 +87,25 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
-                    ),
                     child: CustomDropdown<LeadData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: leadsList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(item.name!);
@@ -93,12 +122,18 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите лид'),
+                          Text('Выберите лид',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       excludeSelected: false,
                       initialItem: selectedLeadData,
                       validator: (value) {
                         if (value == null) {
-                          return 'Поле обязательно для заполнения';
+                          return '   Поле обязательно для заполнения';
                         }
                         return null;
                       },
@@ -108,6 +143,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                           setState(() {
                             selectedLeadData = value;
                           });
+                          FocusScope.of(context).unfocus();
                         }
                       },
                     ),

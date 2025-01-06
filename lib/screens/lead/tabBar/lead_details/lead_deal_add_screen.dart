@@ -18,7 +18,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-
 class LeadDealAddScreen extends StatefulWidget {
   final int leadId;
 
@@ -27,7 +26,6 @@ class LeadDealAddScreen extends StatefulWidget {
   @override
   _LeadDealAddScreenState createState() => _LeadDealAddScreenState();
 }
-
 
 class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -40,6 +38,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   String? selectedManager;
   String? selectedDealStatus; // Добавляем выбор статуса
   List<CustomField> customFields = [];
+  bool isStartDateInvalid = false;
+  bool isEndDateInvalid = false;
 
   @override
   void initState() {
@@ -103,25 +103,57 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       body: BlocListener<DealBloc, DealState>(
         listener: (context, state) {
           if (state is DealError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                duration: Duration(seconds: 3),
-                backgroundColor: Colors.red,
-              ),
-            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            });
           } else if (state is DealSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message),
-                duration: Duration(seconds: 3),
+                content: Text(
+                  'Сделка успешно создана!',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
               ),
             );
             Navigator.pop(context, widget.leadId);
 
-  // Добавьте это:
-  context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+            // Добавьте это:
+            context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
           }
         },
         child: Form(
@@ -155,9 +187,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           });
                         },
                       ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       ManagerRadioGroupWidget(
-                        selectedManager: selectedManager, 
+                        selectedManager: selectedManager,
                         onSelectManager: (ManagerData selectedManagerData) {
                           setState(() {
                             selectedManager = selectedManagerData.id.toString();
@@ -179,8 +211,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'Дата окончание',
+                        label: 'Дата завершения',
                         withTime: false,
+                        hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Поле обязательно для заполнения';
@@ -193,8 +226,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         controller: sumController,
                         hintText: 'Введите сумму',
                         label: 'Сумма',
-                        keyboardType: TextInputType.number, 
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, 
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -255,34 +289,21 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: CustomButton(
-                        buttonText: 'Добавить',
-                        buttonColor: Color(0xff4759FF),
-                        textColor: Colors.white,
-                        onPressed: () {
-                          if (_formKey.currentState!.validate() &&
-                              selectedManager != null &&
-                              selectedDealStatus != null) {
-                            final String name = titleController.text;
-
-                            // Остальная логика остается такой же
-                            context.read<DealBloc>().add(CreateDeal(
-                                  name: name,
-                                  dealStatusId: int.parse(selectedDealStatus!),
-                                  managerId: int.parse(selectedManager!),
-                                  leadId: widget.leadId,
-                                  dealtypeId: 1,
-                                  startDate: startDateController.text.isNotEmpty
-                                      ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
-                                      : null,
-                                  endDate: endDateController.text.isNotEmpty
-                                      ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
-                                      : null,
-                                  sum: sumController.text,
-                                  description: descriptionController.text,
-                                  customFields: [],
-                                ));
-
+                      child: BlocBuilder<DealBloc, DealState>(
+                        builder: (context, state) {
+                          if (state is DealLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          } else {
+                            return CustomButton(
+                              buttonText: 'Добавить',
+                              buttonColor: Color(0xff4759FF),
+                              textColor: Colors.white,
+                              onPressed: _submitForm,
+                            );
                           }
                         },
                       ),
@@ -296,6 +317,93 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       ),
     );
   }
-}
 
-                          // context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+  void _submitForm() {
+    if (_formKey.currentState!.validate() &&
+        selectedManager != null &&
+        selectedDealStatus != null) {
+      _createLeadDeal();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Пожалуйста, заполните все обязательные поля!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _createLeadDeal() {
+    DateTime? startDate;
+    DateTime? endDate;
+    try {
+      if (startDateController.text.isNotEmpty) {
+        startDate =
+            DateFormat('dd/MM/yyyy').parseStrict(startDateController.text);
+      }
+      if (endDateController.text.isNotEmpty) {
+        endDate = DateFormat('dd/MM/yyyy').parseStrict(endDateController.text);
+      }
+    } catch (e) {
+      setState(() {
+        isStartDateInvalid = true;
+        isEndDateInvalid = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              'Ошибка парсинга даты. Используйте формат DD/MM/YYYY.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      setState(() {
+        isStartDateInvalid = true;
+        isEndDateInvalid = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              const Text('Дата начала не может быть позже даты завершения!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final String name = titleController.text;
+    context.read<DealBloc>().add(CreateDeal(
+          name: name,
+          dealStatusId: int.parse(selectedDealStatus!),
+          managerId: int.parse(selectedManager!),
+          leadId: widget.leadId,
+          dealtypeId: 1,
+          startDate: startDateController.text.isNotEmpty
+              ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
+              : null,
+          endDate: endDateController.text.isNotEmpty
+              ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
+              : null,
+          sum: sumController.text,
+          description: descriptionController.text,
+          customFields: [],
+        ));
+  }
+}

@@ -25,7 +25,7 @@ class UsersDataResponse {
 }
 
 class UserData {
-  int? id;
+  int id;
   String? name;
   String? login;
   String? email;
@@ -33,7 +33,7 @@ class UserData {
   String? image;
 
   UserData({
-    this.id,
+    required this.id,
     this.name,
     this.login,
     this.email,
@@ -61,7 +61,7 @@ class UserData {
 
   @override
   String toString() {
-    // return 'UserData{id: $id, name: $name, login: $login, email: $email, phone: $phone, image: $image}';
+    // return 'UserData{id: $id, name: $name, login: $login, email!mail, phone: $phone, image: $image}';
     return '$name';
   }
 }

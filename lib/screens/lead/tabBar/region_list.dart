@@ -12,8 +12,7 @@ class RegionRadioGroupWidget extends StatefulWidget {
       {super.key, required this.onSelectRegion, this.selectedRegion});
 
   @override
-  State<RegionRadioGroupWidget> createState() =>
-      _RegionRadioGroupWidgetState();
+  State<RegionRadioGroupWidget> createState() => _RegionRadioGroupWidgetState();
 }
 
 class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
@@ -37,7 +36,30 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
             }
 
             if (state is GetAllRegionError) {
-              return Text(state.message);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16, 
+                      fontWeight: FontWeight.w500, 
+                      color: Colors.white, 
+                    ),
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12), 
+                  ),
+                  backgroundColor: Colors.red, 
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16), 
+                      duration: Duration(seconds: 3),
+                ),
+              );
             }
             if (state is GetAllRegionSuccess) {
               regionsList = state.dataRegion.result ?? [];
@@ -66,16 +88,25 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
-                    ),
                     child: CustomDropdown<RegionData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: regionsList,
                       searchHintText: 'Поиск',
                       overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: Color(0xffF4F7FD),
+                        expandedFillColor: Colors.white,
+                        closedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: Color(0xffF4F7FD),
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                      ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(item.name!);
@@ -92,12 +123,18 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите регион'),
+                          Text('Выберите регион',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xff1E2E52),
+                              )),
                       excludeSelected: false,
                       initialItem: selectedRegionData,
                       validator: (value) {
                         if (value == null) {
-                          return 'Поле обязательно для заполнения';
+                          return '   Поле обязательно для заполнения';
                         }
                         return null;
                       },
@@ -107,6 +144,8 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                           setState(() {
                             selectedRegionData = value;
                           });
+                           FocusScope.of(context).unfocus();
+
                         }
                       },
                     ),

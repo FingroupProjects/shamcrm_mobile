@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'task_event.dart';
 import 'task_state.dart';
@@ -16,54 +17,57 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<UpdateTask>(_updateTask);
     on<DeleteTask>(_deleteTask);
     on<DeleteTaskStatuses>(_deleteTaskStatuses);
-
   }
 
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 600));
 
+    if (!await _checkInternetConnection()) {
+      emit(TaskError('Нет подключения к интернету'));
+      return;
+    }
+    try {
+      final response = await apiService.getTaskStatuses();
+      if (response.isEmpty) {
+        emit(TaskError('Нет статусов задачи!'));
+        return;
+      }
+      emit(TaskLoaded(response));
+    } catch (e) {
+      emit(TaskError('Не удалось загрузить данные!'));
+    }
+  }
+
+// // Метод для поиска лидов
+  Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
       return;
     }
 
     try {
-      final response = await apiService.getTaskStatuses();
-      if (response.isEmpty) {
-        emit(TaskError('Ответ пустой'));
-        return;
-      }
-      emit(TaskLoaded(response));
+      // Передаем правильный leadStatusId из события FetchLeads
+      final tasks = await apiService.getTasks(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+      );
+      allTasksFetched = tasks.isEmpty;
+      emit(TaskDataLoaded(tasks, currentPage: 1));
     } catch (e) {
-      emit(TaskError('Не удалось загрузить данные: ${e.toString()}'));
+      if (e is ApiException && e.statusCode == 401) {
+        emit(TaskError('Неавторизованный доступ!'));
+      } else {
+        emit(TaskError('Не удалось загрузить данные!'));
+      }
     }
   }
 
-// // Метод для поиска лидов
-Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
-  emit(TaskLoading());
-  if (!await _checkInternetConnection()) {
-    emit(TaskError('Нет подключения к интернету'));
-    return;
-  }
-
-  try {
-    // Передаем правильный leadStatusId из события FetchLeads
-    final tasks = await apiService.getTasks(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-    );
-    allTasksFetched = tasks.isEmpty;
-    emit(TaskDataLoaded(tasks, currentPage: 1));
-  } catch (e) {
-    emit(TaskError('Не удалось загрузить задачи: ${e.toString()}'));
-  }
-}
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {
     if (allTasksFetched) return;
@@ -86,7 +90,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       }
     } catch (e) {
       emit(TaskError(
-          'Не удалось загрузить дополнительные задачи: ${e.toString()}'));
+          'Не удалось загрузить дополнительные задачи!'));
     }
   }
 
@@ -109,17 +113,18 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         projectId: event.projectId,
         userId: event.userId,
         description: event.description,
-        // file: event.file // C
+        customFields: event.customFields,
+        filePath: event.filePath,
       );
 
       if (result['success']) {
-        emit(TaskSuccess('Задача создана успешно'));
+        emit(TaskSuccess('Задача успешно создана!'));
         // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
       }
     } catch (e) {
-      emit(TaskError('Ошибка создания задачи: ${e.toString()}'));
+      emit(TaskError('Ошибка создания задачи!'));
     }
   }
 
@@ -143,19 +148,21 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
         userId: event.userId,
         description: event.description,
         taskStatusId: event.taskStatusId,
-        // file: event.file 
+        customFields: event.customFields,
+        filePath: event.filePath,
       );
 
       if (result['success']) {
-        emit(TaskSuccess('Задача обновлена успешно'));
+        emit(TaskSuccess('Задача успешно обновлена!'));
         // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
       }
     } catch (e) {
-      emit(TaskError('Ошибка обновления задачи: ${e.toString()}'));
+      emit(TaskError('Ошибка обновления задачи!'));
     }
   }
+
   Future<bool> _checkInternetConnection() async {
     try {
       final result = await InternetAddress.lookup('example.com');
@@ -165,34 +172,34 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     }
   }
 
-
-   Future<void> _deleteTask(DeleteTask event, Emitter<TaskState> emit) async {
+  Future<void> _deleteTask(DeleteTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     try {
       final response = await apiService.deleteTask(event.taskId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted('Задача удалена успешно'));
+        emit(TaskDeleted('Задача успешно удалена!'));
       } else {
         emit(TaskError('Ошибка удаления задача'));
       }
     } catch (e) {
-      emit(TaskError('Ошибка удаления задача: ${e.toString()}'));
+      emit(TaskError('Ошибка удаления задача!'));
     }
   }
-  
-   Future<void> _deleteTaskStatuses(DeleteTaskStatuses event, Emitter<TaskState> emit) async {
+
+  Future<void> _deleteTaskStatuses(
+      DeleteTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     try {
       final response = await apiService.deleteTaskStatuses(event.taskStatusId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted('Статус задачи удалена успешно'));
+        emit(TaskDeleted('Статус задачи успешно удалена!'));
       } else {
-        emit(TaskError('Ошибка удаления статуса сделки'));
+        emit(TaskError('Ошибка удаления статуса задачи'));
       }
     } catch (e) {
-      emit(TaskError('Ошибка удаления статуса сделки: ${e.toString()}'));
+      emit(TaskError('Ошибка удаления статуса сделки!'));
     }
   }
 }

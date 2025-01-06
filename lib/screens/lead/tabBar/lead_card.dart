@@ -10,12 +10,15 @@ class LeadCard extends StatefulWidget {
   final String title;
   final int statusId;
   final VoidCallback onStatusUpdated;
+  final void Function(int newStatusId) onStatusId;
+
 
   LeadCard({
     required this.lead,
     required this.title,
     required this.statusId,
     required this.onStatusUpdated,
+    required this.onStatusId,
   });
 
   @override
@@ -24,13 +27,14 @@ class LeadCard extends StatefulWidget {
 
 class _LeadCardState extends State<LeadCard> {
   late String dropdownValue;
+  late int statusId;
 
   @override
   void initState() {
     super.initState();
     dropdownValue = widget.title;
+    statusId = widget.statusId;
   }
-  
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -38,17 +42,18 @@ class _LeadCardState extends State<LeadCard> {
   }
 
   final Map<String, String> sourceIcons = {
-    'telegram_account': 'assets/icons/leads/telegram.png',
-    'telegram_bot': 'assets/icons/leads/telegram.png',
-    'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/facebook.png',
-    'instagram': 'assets/icons/leads/instagram.png',
+    'Телеграм Аккаунт': 'assets/icons/leads/telegram.png',
+    'Телеграм Бот': 'assets/icons/leads/telegram.png',
+    'WhatsApp': 'assets/icons/leads/whatsapp.png',
+    'Facebook': 'assets/icons/leads/facebook.png',
+    'Инстаграм': 'assets/icons/leads/instagram.png',
   };
 
   @override
   Widget build(BuildContext context) {
     String iconPath =
-        sourceIcons[widget.lead.source?.name] ?? 'assets/images/avatar.png';
+        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -58,7 +63,7 @@ class _LeadCardState extends State<LeadCard> {
               leadId: widget.lead.id.toString(),
               leadName: widget.lead.name ?? 'Без имени',
               leadStatus: dropdownValue,
-              statusId: widget.statusId,
+              statusId: statusId, 
               region: widget.lead.region?.name,
               regionId: widget.lead.region?.id,
               manager: widget.lead.manager?.name,
@@ -69,6 +74,7 @@ class _LeadCardState extends State<LeadCard> {
               telegram: widget.lead.telegram,
               phone: widget.lead.phone,
               description: widget.lead.description,
+              leadCustomFields: widget.lead.leadCustomFields,
             ),
           ),
         );
@@ -97,17 +103,23 @@ class _LeadCardState extends State<LeadCard> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    DropdownBottomSheet(context, dropdownValue,
-                        (String newValue) {
-                      setState(() {
-                        dropdownValue = newValue;
-                      });
-                      widget.onStatusUpdated();
-                    }, widget.lead);
+                    DropdownBottomSheet(
+                      context,
+                      dropdownValue,
+                      (String newValue, int newStatusId) {
+                        setState(() {
+                          dropdownValue = newValue;
+                          statusId = newStatusId; 
+                          
+                        });
+                          widget.onStatusId(newStatusId); 
+                        widget.onStatusUpdated(); 
+                      },
+                      widget.lead,
+                    );
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -122,7 +134,7 @@ class _LeadCardState extends State<LeadCard> {
                         children: [
                           Container(
                             constraints: BoxConstraints(
-                                maxWidth: 200), //Размер колонки Выбора Статуса
+                                maxWidth: 200),
                             child: Text(
                               dropdownValue,
                               style: const TextStyle(
@@ -131,8 +143,7 @@ class _LeadCardState extends State<LeadCard> {
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
                               ),
-                              overflow:
-                                  TextOverflow.ellipsis, 
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -154,21 +165,16 @@ class _LeadCardState extends State<LeadCard> {
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      iconPath,
-                      width: 28,
-                      height: 28,
+                    ClipOval(
+                      child: Image.asset(
+                        iconPath,
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit
+                            .cover, // Ensures the image covers the circular shape
+                      ),
                     ),
                     const SizedBox(width: 18),
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: 4, vertical: 2),
-                    //   decoration: TaskCardStyles.priorityContainerDecoration,
-                    //   child: const Text(
-                    //     'Высокая',
-                    //     style: TaskCardStyles.priorityStyle,
-                    //   ),
-                    // ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -178,10 +184,10 @@ class _LeadCardState extends State<LeadCard> {
                       children: [
                         Image.asset(
                           'assets/icons/tabBar/sms.png',
-                          width: 17,
-                          height: 17,
+                          width: 18,
+                          height: 18,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 0),
                         Text(
                           ' ${widget.lead.messageAmount ?? 0}',
                           style: const TextStyle(
@@ -193,15 +199,15 @@ class _LeadCardState extends State<LeadCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     Row(
                       children: [
                         Image.asset(
                           'assets/icons/tabBar/date.png',
-                          width: 17,
-                          height: 17,
+                          width: 18,
+                          height: 18,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 0),
                         Text(
                           ' ${formatDate(widget.lead.createdAt ?? 'Неизвестно')}',
                           style: const TextStyle(

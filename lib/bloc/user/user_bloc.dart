@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/user_model.dart';
@@ -10,15 +12,33 @@ class UserTaskBloc extends Bloc<UserTaskEvent, UserTaskState> {
   UserTaskBloc(this.apiService) : super(UserTaskInitial()) {
     on<FetchUsers>((event, emit) async {
       emit(UserTaskLoading());
-      try {
-        final user = await apiService.getUserTask();
-        emit(UserTaskLoaded(user.cast<UserTask>()));  
-      } catch (e) {
-        emit(UserTaskError('Ошибка при загрузке Менеджеров'));
+
+      if (await _checkInternetConnection()) {
+        try {
+          final user = await apiService.getUserTask();
+          emit(UserTaskLoaded(user.cast<UserTask>()));  
+        } catch (e) {
+          print('Ошибка при загрузке клиентов!'); // For debugging
+          emit(UserTaskError('Ошибка при загрузке клиентов!'));
+        }
+      } else {
+        emit(UserTaskError('Нет подключения к интернету'));
       }
     });
   }
+
+  // Method to check internet connection
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException catch (e) {
+      print('Нет интернета!'); // For debugging
+      return false;
+    }
+  }
 }
+
 
 // // bloc/user/user_bloc.dart
 // import 'package:crm_task_manager/api/service/api_service.dart';
@@ -37,8 +57,8 @@ class UserTaskBloc extends Bloc<UserTaskEvent, UserTaskState> {
 //         print('Получено пользователей: ${users.length}'); // Для отладки
 //         emit(UserLoaded(users));
 //       } catch (e) {
-//         print('Ошибка при загрузке пользователей: $e'); // Для отладки
-//         emit(UserError('Ошибка при загрузке пользователей: $e'));
+//         print('Ошибка при загрузке пользователей!'); // Для отладки
+//         emit(UserError('Ошибка при загрузке пользователей!'));
 //       }
 //     });
 //   }

@@ -2,16 +2,17 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/models/lead_model.dart'; // Import your LeadStatus model
+import 'package:crm_task_manager/models/lead_model.dart';
 
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String) onSelect,
+  Function(String, int) onSelect, 
   Lead lead,
 ) {
   String selectedValue = defaultValue;
-  int? selectedStatusId; // Для хранения идентификатора статуса
+  int? selectedStatusId;
+  bool isLoading = false;
 
   showModalBottomSheet(
     context: context,
@@ -48,15 +49,15 @@ void DropdownBottomSheet(
 
                       List<LeadStatus> statuses = snapshot.data!;
 
+                      statuses = statuses.where((status) => status.lead_status_id == null).toList();
+
                       return ListView(
                         children: statuses.map((LeadStatus status) {
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue =
-                                    status.title; // Присваиваем новый статус
-                                selectedStatusId =
-                                    status.id; // Присваиваем id статуса
+                                selectedValue = status.title;
+                                selectedStatusId = status.id;
                               });
                             },
                             child: buildDropDownStyles(
@@ -69,29 +70,88 @@ void DropdownBottomSheet(
                     },
                   ),
                 ),
-                CustomButton(
-                  buttonText: 'Сохранить',
-                  buttonColor: Color(0xfff4F40EC),
-                  textColor: Colors.white,
-                  onPressed: () {
-                    if (selectedStatusId != null) {
-                      // Передаем id статуса в метод обновления
-                      ApiService()
-                          .updateLeadStatus(
-                              lead.id, lead.statusId, selectedStatusId!)
-                          .then((_) {
-                        // Закрываем диалог и обновляем данные
-                        Navigator.pop(context);
-                        onSelect(selectedValue);
-                      }).catchError((error) {
-                        print('Ошибка обновления статуса лида: $error');
-                      });
-                    } else {
-                      print('Статус не выбран');
-                    }
-                  },
-                ),
-                SizedBox(height: 16)
+                isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xff1E2E52),
+                        ),
+                      )
+                    : CustomButton(
+                        buttonText: 'Сохранить',
+                        buttonColor: Color(0xfff4F40EC),
+                        textColor: Colors.white,
+                        onPressed: () {
+                          if (selectedStatusId != null) {
+                            setState(() {
+                              isLoading = true;
+                            });
+
+                            ApiService().updateLeadStatus(lead.id, lead.statusId, selectedStatusId!).then((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text(
+                                     'Статус успешно изменен!',
+                                     style: TextStyle(
+                                       fontFamily: 'Gilroy',
+                                       fontSize: 16,
+                                       fontWeight: FontWeight.w500,
+                                       color: Colors.white,
+                                     ),
+                                   ),
+                                   behavior: SnackBarBehavior.floating,
+                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                   shape: RoundedRectangleBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                   ),
+                                   backgroundColor: Colors.green,
+                                   elevation: 3,
+                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                   duration: Duration(seconds: 3),
+                                 ),
+                               );
+                              Navigator.pop(context);
+                              
+                              // Передаем оба значения через onSelect
+                              onSelect(selectedValue, selectedStatusId!);
+                            }).catchError((error) {
+                              setState(() {
+                                isLoading = false;
+                              });
+
+                              if (error is LeadStatusUpdateException && error.code == 422) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Вы не можете переместить задачу на этот статус!',
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 3),
+                                  ),
+                                );
+                                Navigator.pop(context);
+                              } else {
+                                print('Ошибка обновления статуса задачи!rror');
+                              }
+                            });
+                          } else {
+                            print('Статус не выбран');
+                          }
+                        },
+                      ),
+                SizedBox(height: 16),
               ],
             ),
           );
@@ -99,4 +159,14 @@ void DropdownBottomSheet(
       );
     },
   );
+}
+
+class LeadStatusUpdateException implements Exception {
+  final int code;
+  final String message;
+
+  LeadStatusUpdateException(this.code, this.message);
+
+  @override
+  String toString() => 'LeadStatusUpdateException($code, $message)';
 }

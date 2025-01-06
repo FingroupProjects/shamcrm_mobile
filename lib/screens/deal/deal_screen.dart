@@ -1,14 +1,15 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/screens/deal/deal_status_delete.dart'; 
-import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart'; 
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart'; 
+import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/deal/deal_bloc.dart'; 
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
@@ -34,6 +35,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _canCreateDealStatus = false;
   bool _canDeleteDealStatus = false;
   final ApiService _apiService = ApiService();
+  bool navigateToEnd = false;
+bool navigateAfterDelete = false;
+int? _deletedIndex;
 
   @override
   void initState() {
@@ -43,7 +47,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     dealBloc.add(FetchDealStatuses());
     print("Инициализация: отправлен запрос на получение статусов сделок");
     _checkPermissions();
-
   }
 
   @override
@@ -72,6 +75,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('dealStatus.read');
+    // final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
     final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
@@ -93,7 +97,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: 'Сделки',
+          title: isClickAvatarIcon ? 'Настройки' : 'Сделки',
           onClickProfileAvatar: () {
             setState(() {
               final dealBloc = BlocProvider.of<DealBloc>(context);
@@ -155,17 +159,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         controller: _scrollController,
         itemCount: deals.length,
         itemBuilder: (context, index) {
-          final statusId = _tabTitles[_currentTabIndex]['id'];
-          final title = _tabTitles[_currentTabIndex]['title'];
+          final deal=deals[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: DealCard(
-              deal: deals[index],
-              title: title,
-              statusId: statusId,
-              onStatusUpdated: () {
-                context.read<DealBloc>().add(FetchDeals(statusId));
-              },
+              deal: deal,
+              title: deal.dealStatus?.title ?? "",
+              statusId: deal.statusId,
+              onStatusUpdated: () {},
+               onStatusId: (StatusDealId) {},
             ),
           );
         },
@@ -189,29 +191,28 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             );
           }),
           if (_canCreateDealStatus)
-          IconButton(
-            icon: Image.asset('assets/icons/tabBar/add_black.png',
-                width: 24, height: 24),
-            onPressed: _addNewTab,
-          ),
+            IconButton(
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
+              onPressed: _addNewTab,
+            ),
         ],
       ),
     );
   }
 
-  void _addNewTab() async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => CreateStatusDialog(),
-    );
+void _addNewTab() async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) => CreateStatusDialog(),
+  );
 
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        _tabTitles.add({'id': _tabTitles.length + 1, 'title': result});
-        _tabKeys.add(GlobalKey());
-      });
-    }
+  if (result == true) {
+    setState(() {
+      navigateToEnd = true; 
+    });
   }
+}
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
@@ -221,10 +222,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _tabController.animateTo(index);
       },
       onLongPress: () {
-           // Показываем диалог удаления только если есть разрешение
-      if (_canDeleteDealStatus) {
-        _showDeleteDialog(index);
-      }
+        if (_canDeleteDealStatus) {
+          _showDeleteDialog(index);
+        }
       },
       child: Container(
         decoration: TaskStyles.tabButtonDecoration(isActive),
@@ -242,7 +242,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showDeleteDialog(int index) async {
+   void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];
     final result = await showDialog(
       context: context,
@@ -253,6 +253,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     if (result != null && result) {
       setState(() {
+            setState(() {
+             _deletedIndex = _currentTabIndex;
+             navigateAfterDelete = true; 
+           });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -268,18 +272,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Widget _buildTabBarView() {
     return BlocListener<DealBloc, DealState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is DealLoaded) {
           setState(() {
             _tabTitles = state.dealStatuses
-                .where((status) => _canReadDealStatus) 
+                .where((status) => _canReadDealStatus)
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
-              _tabController =
-                  TabController(length: _tabTitles.length, vsync: this);
+              _tabController = TabController(length: _tabTitles.length, vsync: this);
               _tabController.addListener(() {
                 setState(() {
                   _currentTabIndex = _tabController.index;
@@ -301,8 +304,63 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
+                 //Логика для перехода к созданн статусе
+         if (navigateToEnd) {
+         navigateToEnd = false;
+         if (_tabController != null) {
+           _tabController.animateTo(_tabTitles.length -1); 
+         }
+      }
+
+                //Логика для перехода к после удаления статусе на лево
+           if (navigateAfterDelete) {
+            navigateAfterDelete = false;
+            if (_deletedIndex != null) {
+              if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                _tabController.animateTo(1); 
+              } else if (_deletedIndex == _tabTitles.length) {
+                _tabController.animateTo(_tabTitles.length - 1); 
+              } else {
+                _tabController.animateTo(_deletedIndex! - 1); 
+              }
+            }
+          }
+
             }
           });
+        } else if (state is DealError) {
+          if (state.message.contains("Неавторизованный доступ!")) {
+            ApiService apiService = ApiService();
+            await apiService.logout();
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (Route<dynamic> route) => false,
+            );
+          }  else if (state.message.contains("Нет подключения к интернету")) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         }
       },
       child: BlocBuilder<DealBloc, DealState>(
@@ -318,7 +376,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is DealLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет статусов для отображения'));
+              return const Center(child: Text(' для отображения'));
             }
             return TabBarView(
               controller: _tabController,
@@ -326,7 +384,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
-                return DealColumn(statusId: statusId, title: title);
+                return DealColumn(statusId: statusId, title: title, 
+                onStatusId: (newStatusId) {
+                    print('Status ID changed: $newStatusId');
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    if (index != -1) {
+                      _tabController.animateTo(index); 
+                    }
+                  },   );
               }),
             );
           }
@@ -336,15 +401,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     );
   }
 
- void _scrollToActiveTab() {
+  void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(

@@ -1,7 +1,7 @@
 name: crm_task_manager
 description: "A new Flutter project."
 
-version: 1.0.9+15
+version: 1.0.0+0
 
 environment:
   sdk: ^3.5.3
@@ -18,7 +18,7 @@ dependencies:
   flutter_bloc: ^8.1.6
   http: ^1.2.2
   equatable: ^2.0.5
-  shared_preferences: 2.3.2 
+  shared_preferences: 2.3.4 
   intl: ^0.19.0
   open_file: ^3.5.9
   path_provider: ^2.1.5
@@ -45,13 +45,19 @@ dependencies:
   modal_bottom_sheet: ^3.0.0
   radio_group_v2: ^3.2.1
   animated_custom_dropdown: ^3.1.1
-  flutter_svg: ^2.0.14
+  flutter_svg: ^2.0.16
   image_gallery_saver_plus: ^3.0.5
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.3
   local_auth: ^2.3.0
   vibration: ^2.0.1
   device_info_plus: ^11.1.1
+  image_picker: ^1.1.2
+  image_cropper: ^8.0.2
+  app_tracking_transparency: ^2.0.6
+  url_launcher: ^6.3.1
+  flutter_localization: ^0.3.0
+  qr_code_scanner: ^1.0.1
 
   # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:
@@ -69,10 +75,10 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 flutter_native_splash:
  android: true
- ios: true
- image: assets/icons/playstore.png
- color: "#000000"
- fullscreen: true
+#  ios: true
+ image: assets/icons/playstore.png  # Убедитесь, что путь правильный
+#  color: "#000000"
+#  fullscreen: true
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -93,8 +99,10 @@ flutter:
     - assets/icons/tabBar/
     - assets/icons/leads/
     - assets/icons/chats/
+    - assets/icons/1c/
     - assets/icons/
     - assets/images/
+    - assets/images/avatar2.png
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg

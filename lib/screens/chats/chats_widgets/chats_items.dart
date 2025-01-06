@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ChatItem {
   final String name;
@@ -7,10 +8,9 @@ class ChatItem {
   final String time;
   final int unredMessageCount;
   final String avatar;
-  final String icon; // Добавлено поле для иконки
+  final String icon;
 
-  ChatItem(this.name, this.message, this.time, this.avatar, this.icon,
-      this.unredMessageCount);
+  ChatItem(this.name, this.message, this.time, this.avatar, this.icon, this.unredMessageCount);
 
   get id => null;
 }
@@ -23,13 +23,22 @@ class ChatListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.white, // Укажите желаемый цвет фона
-            backgroundImage: AssetImage(chatItem.avatar),
-            radius: 24,
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.black,
+                width: 2,
+              ),
+            ),
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: AssetImage(chatItem.avatar),
+              radius: 24,
+            ),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -38,13 +47,12 @@ class ChatListItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // Здесь добавлено использование иконки
                     Image.asset(
-                      chatItem.icon, // Используем поле иконки
+                      chatItem.icon,
                       width: 20,
                       height: 20,
                     ),
-                    SizedBox(width: 4), // Отступ между иконкой и текстом
+                    SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty ? chatItem.name : 'Без имени',
@@ -69,7 +77,7 @@ class ChatListItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                date(chatItem.time),
+                formatChatTime(chatItem.time),
                 style: AppStyles.chatTimeStyle,
               ),
               getUnredMessageWidget(chatItem.unredMessageCount)
@@ -78,6 +86,20 @@ class ChatListItem extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String formatChatTime(String time) {
+    if (time.isEmpty) {
+      return ''; 
+    }
+    
+    try {
+      DateTime parsedTime = DateTime.parse(time);
+      return DateFormat('dd/MM/yyyy').format(parsedTime); 
+    } catch (e) {
+      print("Ошибка парсинга даты!");
+      return ''; 
+    }
   }
 
   Widget getUnredMessageWidget(int unreadMessageCount) {

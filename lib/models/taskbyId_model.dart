@@ -5,30 +5,38 @@ class TaskById {
   final String name;
   final String? startDate;
   final String? endDate;
+  final String? createdAt;
   final String? description;
   final int statusId;
   final TaskStatusById? taskStatus;
   final String? color;
   final Project? project;
-  final List<UserById>? user;  
-  final TaskFileById? file;
+  final List<UserById>? user;
   final int priority;
-  final ChatById? chat; 
+  final ChatById? chat;
+  final AuthorTask? author;
+  final List<TaskCustomFieldsById> taskCustomFields;
+  final String? taskFile;
+  final int isFinished; // Новое поле
 
   TaskById({
     required this.id,
     required this.name,
     required this.startDate,
     required this.endDate,
+    this.createdAt,
     this.description,
     required this.statusId,
     this.taskStatus,
     this.color,
     this.project,
     this.user,
-    this.file,
     required this.priority,
     this.chat, // Инициализация нового поля
+    this.author, // Инициализация нового поля
+    required this.taskCustomFields,
+    this.taskFile,
+    required this.isFinished, // Инициализация нового поля
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -48,25 +56,75 @@ class TaskById {
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
+      createdAt: json['created_at'] is String ? json['created_at'] : null,
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
       priority: priorityLevel,
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusById.fromJson(json['taskStatus'])
           : null,
-      project: json['project'] != null && json['project'] is Map<String, dynamic>
-          ? Project.fromJson(json['project'])
-          : null,
+      project:
+          json['project'] != null && json['project'] is Map<String, dynamic>
+              ? Project.fromJson(json['project'])
+              : null,
       user: json['users'] != null && json['users'] is List
-          ? (json['users'] as List).map((userJson) => UserById.fromJson(userJson)).toList()
+          ? (json['users'] as List)
+              .map((userJson) => UserById.fromJson(userJson))
+              .toList()
           : null,
       color: json['color'] is String ? json['color'] : null,
-      file: json['file'] != null && json['file'] is Map<String, dynamic>
-          ? TaskFileById.fromJson(json['file'])
-          : null,
+      taskFile: json['file'],
       chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
           ? ChatById.fromJson(json['chat']) // Преобразуем JSON для чата
           : null,
+      author: json['author'] != null && json['author'] is Map<String, dynamic>
+          ? AuthorTask.fromJson(json['author'])
+          : null,
+      taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
+              ?.map((field) => TaskCustomFieldsById.fromJson(field))
+              .toList() ??
+          [],
+      isFinished: json['is_finished'] is int
+          ? json['is_finished']
+          : 0, // Парсинг нового поля
+    );
+  }
+}
+
+class AuthorTask {
+  final int id;
+  final String name;
+
+  AuthorTask({
+    required this.id,
+    required this.name,
+  });
+
+  factory AuthorTask.fromJson(Map<String, dynamic> json) {
+    return AuthorTask(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указан',
+    );
+  }
+}
+
+class TaskCustomFieldsById {
+  final int id;
+  final String key;
+  final String value;
+
+  TaskCustomFieldsById({
+    required this.id,
+    required this.key,
+    required this.value,
+  });
+
+  factory TaskCustomFieldsById.fromJson(Map<String, dynamic> json) {
+    return TaskCustomFieldsById(
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
     );
   }
 }
@@ -76,12 +134,14 @@ class ChatById {
   final String? lead;
   final String type;
   final String? user;
+  final bool canSendMessage;
 
   ChatById({
     required this.id,
     this.lead,
     required this.type,
     this.user,
+    required this.canSendMessage,
   });
 
   factory ChatById.fromJson(Map<String, dynamic> json) {
@@ -90,6 +150,7 @@ class ChatById {
       lead: json['lead'] as String?,
       type: json['type'] as String? ?? 'unknown',
       user: json['user'] as String?,
+      canSendMessage: json["can_send_message"] ?? false,
     );
   }
 
@@ -99,10 +160,10 @@ class ChatById {
       'lead': lead,
       'type': type,
       'user': user,
+      'can_send_message': canSendMessage,
     };
   }
 }
-
 
 class UserById {
   final int id;
@@ -120,9 +181,9 @@ class UserById {
   factory UserById.fromJson(Map<String, dynamic> json) {
     return UserById(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано', 
-      email: json['email'] ?? 'Не указано', 
-      phone: json['phone'] ?? 'Не указано', 
+      name: json['name'] ?? 'Не указано',
+      email: json['email'] ?? 'Не указано',
+      phone: json['phone'] ?? 'Не указано',
     );
   }
 }
@@ -207,3 +268,8 @@ class TaskStatusNameById {
     };
   }
 }
+
+
+/*
+
+*/

@@ -42,30 +42,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
     bool hasAvailableScreens = false;
 
-    if (await _apiService.hasPermission('dashboard.read')) {
+    // if (await _apiService.hasPermission('dashboard.read')) {
       widgets.add(DashboardScreen());
       titles.add('Дашборд');
       navBarTitles.add('Дашборд');
       activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
       inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
       hasAvailableScreens = true;
-    } else {
-      widgets.add(PlaceholderScreen(message: 'Экран Дашборд недоступен вам.'));
-      titles.add('Дашборд');
-      navBarTitles.add('Дашборд');
-      activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
-      inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    }
+    // } else {
+    //   widgets.add(PlaceholderScreen(message: 'Экран Дашборд недоступен вам.'));
+    //   titles.add('Дашборд');
+    //   navBarTitles.add('Дашборд');
+    //   activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
+    //   inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
+    // }
 
     // if ( await _apiService.hasPermission('task.read')) {
-    if (!hasAvailableScreens || await _apiService.hasPermission('task.read')) {
+    // if (!hasAvailableScreens || await _apiService.hasPermission('task.read')) {
       widgets.add(TaskScreen());
       titles.add('Задачи');
       navBarTitles.add('Задачи');
       activeIcons.add('assets/icons/MyNavBar/tasks_ON.png');
       inactiveIcons.add('assets/icons/MyNavBar/tasks_OFF.png');
       hasAvailableScreens = true;
-    }
+    // }
 
     if (await _apiService.hasPermission('lead.read')) {
       widgets.add(LeadScreen());
@@ -75,14 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
       hasAvailableScreens = true;
     }
-    if (await _apiService.hasPermission('chat.read')) {
+    // if (await _apiService.hasPermission('chat.read')) {
       widgets.add(ChatsScreen());
       titles.add('Чаты');
       navBarTitles.add('Чаты');
       activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
       inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
       hasAvailableScreens = true;
-    }
+    // }
     if (await _apiService.hasPermission('deal.read')) {
       widgets.add(DealScreen());
       titles.add('Сделки');
@@ -111,10 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
           } else if (_widgetOptions.isNotEmpty) {
             _selectedIndex = 0;
           }
-          // if (args['id'] != null) {
-          //   var chatId = args['id'];
-          //   print("Received ID----------------------: $chatId"); // Example: Output the id
-          // }
         } else if (_widgetOptions.isNotEmpty) {
           _selectedIndex = 0;
         }

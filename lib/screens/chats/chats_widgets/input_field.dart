@@ -40,7 +40,7 @@ class InputField extends StatelessWidget {
                 (context.watch<ListenSenderFileCubit>().state)
                     ? Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
                     )
                     : Container(
                         height: 50,
@@ -73,7 +73,7 @@ class InputField extends StatelessWidget {
                   right: 0,
                   child: IconButton(
                     icon: Image.asset('assets/icons/chats/file.png',
-                        width: 20, height: 20),
+                        width: 24, height: 24),
                     onPressed: onAttachFile,
                   ),
                 ),
@@ -88,7 +88,7 @@ class InputField extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
                     ),
                   ],
                 )
@@ -104,6 +104,12 @@ class InputField extends StatelessWidget {
                       // function called when stop recording, return the recording time
                     },
                     sendRequestFunction: sendRequestFunction,
+                    cancelText: 'Отменить',
+                    cancelTextStyle: TextStyle(fontSize: 16,fontFamily: 'Gilroy',fontWeight: FontWeight.w500),
+                    slideToCancelText: ' Отменить >',
+                    slideToCancelTextStyle: TextStyle(fontSize: 16,fontFamily: 'Gilroy',fontWeight: FontWeight.w500),
+                    recordIconBackGroundColor: Color(0xfff4F40EC),
+                    counterTextStyle: TextStyle(fontSize: 14,fontFamily: 'Gilroy',fontWeight: FontWeight.w500),
                     encode: AudioEncoderType.AAC,
                     radius: BorderRadius.circular(12),
                   ),
@@ -116,7 +122,7 @@ class InputField extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
                     ),
                   ],
                 )
@@ -136,7 +142,7 @@ class InputField extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    onSend();
+                    if(messageController.text.isNotEmpty) onSend();
                   },
                 ),
         ],

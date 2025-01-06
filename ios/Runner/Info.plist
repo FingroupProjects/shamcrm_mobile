@@ -1,113 +1,119 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
+<dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.shamcrm.bgSyncTask</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>SHAMCRM</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIcons</key>
 	<dict>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
-		<key>CFBundleDevelopmentRegion</key>
-		<string>$(DEVELOPMENT_LANGUAGE)</string>
-		<key>CFBundleDisplayName</key>
-		<string>SHAMCRM</string>
-		<key>CFBundleExecutable</key>
-		<string>$(EXECUTABLE_NAME)</string>
-		<key>CFBundleIdentifier</key>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-		<key>CFBundleInfoDictionaryVersion</key>
-		<string>6.0</string>
-		<key>CFBundleName</key>
-		<string>crm_task_manager</string>
-		<key>CFBundlePackageType</key>
-		<string>APPL</string>
-		<key>CFBundleShortVersionString</key>
-		<string>$(FLUTTER_BUILD_NAME)</string>
-		<key>CFBundleSignature</key>
-		<string>????</string>
-		<key>CFBundleVersion</key>
-		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>CFBundleIcons</key>
+		<key>CFBundlePrimaryIcon</key>
 		<dict>
-			<key>CFBundlePrimaryIcon</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+			<key>UIPrerenderedIcon</key>
+			<false/>
 		</dict>
-		<key>FirebaseAppDelegateProxyEnabled</key>
+	</dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>crm_task_manager</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>Bitcode</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSAllowsArbitraryLoadsInWebContent</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
 		<true/>
-		<key>LSApplicationCategoryType</key>
-		<string>Bitcode</string>
-		<key>LSRequiresIPhoneOS</key>
-		<true/>
-		<key>LSSupportsOpeningDocumentsInPlace</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
-		<key>NSAppTransportSecurity</key>
-		<dict>
-			<key>NSAllowsArbitraryLoads</key>
-			<true/>
-			<key>NSAllowsArbitraryLoadsForMedia</key>
-			<true/>
-		</dict>
-		<key>NSAppleMusicUsageDescription</key>
-		<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для улучшения управления задачами.</string>
-		<key>NSCameraUsageDescription</key>
-		<string>Access camera</string>
-		<key>NSDocumentsUsageDescription</key>
-		<string>Это приложение требует доступ к документам для управления файлами.</string>
-		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Это приложение требует доступ к вашему местоположению для улучшения пользовательского опыта.</string>
-		<key>NSMicrophoneUsageDescription</key>
-		<string>Это приложение не требует доступа к микрофону.</string>
-		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>The app saves the image to your photo gallery.</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Это приложение требует доступ к фотобиблиотеке.</string>
-		<key>NSUserTrackingUsageDescription</key>
-		<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений и рекламы.</string>
-		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
-		<key>UIBackgroundModes</key>
-		<array>
-			<string>fetch</string>
-			<string>processing</string>
-			<string>remote-notification</string>
-		</array>
-		<key>BGTaskSchedulerPermittedIdentifiers</key>
-		<array>
-			<string>com.shamcrm.bgSyncTask</string>
-			<!-- добавьте другие идентификаторы задач, если необходимо -->
-		</array>
-		<key>UILaunchStoryboardName</key>
-		<string>LaunchScreen</string>
-		<key>UIMainStoryboardFile</key>
-		<string>Main</string>
-		<key>UISupportedInterfaceOrientations</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportsDocumentBrowser</key>
-		<true/>
-		<key>com.apple.security.device.audio-input</key>
-		<true/>
-		<key>com.apple.security.device.microphone</key>
-		<true/>
-		<key>UIStatusBarHidden</key>
-		<true/>
-		<key>UIViewControllerBasedStatusBarAppearance</key>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
 		<true/>
 	</dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Это приложение использует доступ к музыке для интеграции с медиа-функциями для
+			улучшения управления задачами.</string>
+	<key>NSBiometricUsageDescription</key>
+	<string>Нам нужно ваше разрешение на использование биометрии для безопасного входа в систему.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Access camera</string>
+	<key>NSDocumentsUsageDescription</key>
+	<string>Это приложение требует доступ к документам для управления файлами.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Это приложение требует использование Face ID для аутентификации</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Это приложение требует доступ к вашему местоположению для улучшения пользовательского опыта.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Это приложение не требует доступа к микрофону.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>The app saves the image to your photo gallery.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Это приложение требует доступ к фотобиблиотеке.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений и рекламы.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>Launch Screen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiresFullScreen</key>
+	<true/>
+	<key>UIStatusBarHidden</key>
+	<true/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+	<key>com.apple.security.device.microphone</key>
+	<true/>
+</dict>
 </plist>

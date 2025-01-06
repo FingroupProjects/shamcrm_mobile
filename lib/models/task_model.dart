@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
 class Task {
@@ -11,9 +10,12 @@ class Task {
   final TaskStatus? taskStatus;
   final String? color;
   final Project? project;
-  final User? user;
+  final UserTaskImage? user;
+  final List<UserTaskImage>? usersImage;
   final TaskFile? file;
   final int priority;
+  final List<TaskCustomField> taskCustomFields;
+  final int? overdue; // Добавлено новое поле
 
   Task({
     required this.id,
@@ -25,17 +27,30 @@ class Task {
     this.taskStatus,
     this.color,
     this.project,
+    this.usersImage,
     this.user,
     this.file,
     required this.priority,
+    required this.taskCustomFields,
+    this.overdue, // Добавлено в конструктор
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
-    // Извлекаем и проверяем priority_level
-    final rawPriority = json['priority_level'];
-    // print('Raw priority from JSON: $rawPriority'); // Debug print
+    print('JSON received: $json'); // Log the entire JSON object
 
-    // Преобразуем priority_level в int
+    // Extract and validate overdue
+    final overdueValue = json['overdue'];
+    final int? parsedOverdue;
+    if (overdueValue is int) {
+      parsedOverdue = overdueValue;
+    } else if (overdueValue is String) {
+      parsedOverdue = int.tryParse(overdueValue);
+    } else {
+      parsedOverdue = null;
+    }
+
+    // Extract and validate priority_level
+    final rawPriority = json['priority_level'];
     final int priorityLevel;
     if (rawPriority is int) {
       priorityLevel = rawPriority;
@@ -45,16 +60,23 @@ class Task {
       priorityLevel = 0;
     }
 
-    print('Converted priority level: $priorityLevel'); // Debug print
+    // Parse the users list
+    final usersList = json['users'] != null && json['users'] is List
+        ? (json['users'] as List)
+            .map((userJson) => UserTaskImage.fromJson(userJson))
+            .toList()
+        : null;
+    print('File field in JSON: ${json['file']}'); // Log the file field
 
     return Task(
       id: json['id'] is int ? json['id'] : 0,
+      overdue: json['overdue'] is int ? json['overdue'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
       description: json['description'] is String ? json['description'] : '',
       statusId: taskStatusId,
-      priority: priorityLevel, // Используем обработанное значение
+      priority: priorityLevel ?? 1, // Use processed value
       taskStatus: json['taskStatus'] != null &&
               json['taskStatus'] is Map<String, dynamic>
           ? TaskStatus.fromJson(json['taskStatus'])
@@ -63,13 +85,69 @@ class Task {
           json['project'] != null && json['project'] is Map<String, dynamic>
               ? Project.fromJson(json['project'])
               : null,
-      user: json['user'] != null && json['user'] is Map<String, dynamic>
-          ? User.fromJson(json['user'])
+      usersImage: usersList,
+      user: json['users'] != null && json['users'] is Map<String, dynamic>
+          ? UserTaskImage.fromJson(json['users'])
           : null,
       color: json['color'] is String ? json['color'] : null,
-      file: json['file'] != null && json['file'] is Map<String, dynamic>
-          ? TaskFile.fromJson(json['file'])
+      file: json['file'] != null
+          ? (json['file'] is Map<String, dynamic>
+              ? TaskFile.fromJson(json['file'])
+              : TaskFile(
+                  name: json['file'].toString(),
+                  size: 'Неизвестно',
+                ))
           : null,
+      taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
+              ?.map((field) => TaskCustomField.fromJson(field))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class TaskCustomField {
+  final int id;
+  final String key;
+  final String value;
+
+  TaskCustomField({
+    required this.id,
+    required this.key,
+    required this.value,
+  });
+
+  factory TaskCustomField.fromJson(Map<String, dynamic> json) {
+    return TaskCustomField(
+      id: json['id'] ?? 0,
+      key: json['key'] ?? '',
+      value: json['value'] ?? '',
+    );
+  }
+}
+
+class UserTaskImage {
+  final int id;
+  final String name;
+  final String email;
+  final String phone;
+  final String image;
+
+  UserTaskImage({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.image,
+  });
+
+  factory UserTaskImage.fromJson(Map<String, dynamic> json) {
+    return UserTaskImage(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Не указано',
+      email: json['email'] ?? 'Не указано',
+      phone: json['phone'] ?? 'Не указано',
+      image: json['image'] ?? '', // Handle SVG data properly here.
     );
   }
 }
@@ -86,11 +164,22 @@ class TaskFile {
         "name": name,
         "size": size,
       };
+  factory TaskFile.fromJson(Map<String, dynamic> json) {
+    print(
+        'TaskFileById JSON received: $json'); // Лог входящего JSON для TaskFileById
 
-  factory TaskFile.fromJson(Map<String, dynamic> json) => TaskFile(
+    if (json['name'] is String && json['size'] is String) {
+      print('Parsed TaskFileById: name=${json['name']}, size=${json['size']}');
+
+      return TaskFile(
         name: json["name"] as String,
         size: json["size"] as String,
       );
+    }
+    print('TaskFileById JSON format is invalid');
+
+    throw Exception('Unexpected file format');
+  }
 }
 
 class TaskStatus {
@@ -106,18 +195,16 @@ class TaskStatus {
 
   // Метод для создания объекта из JSON
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
-  print('TaskStatus JSON: $json'); // For debugging purposes
-  return TaskStatus(
-    id: json['id'],
-    taskStatus: json['taskStatus'] is Map<String, dynamic>
-        ? TaskStatusName.fromJson(json['taskStatus'])
-        : TaskStatusName(
-            id: 0, 
-            name: json['taskStatus'] ?? 'Неизвестный статус'
-          ),
-    color: json['color'],
-  );
-}
+    print('TaskStatus JSON: $json'); // For debugging purposes
+    return TaskStatus(
+      id: json['id'],
+      taskStatus: json['taskStatus'] is Map<String, dynamic>
+          ? TaskStatusName.fromJson(json['taskStatus'])
+          : TaskStatusName(
+              id: 0, name: json['taskStatus'] ?? 'Неизвестный статус'),
+      color: json['color'],
+    );
+  }
 
   // Метод для преобразования объекта в JSON
   Map<String, dynamic> toJson() {

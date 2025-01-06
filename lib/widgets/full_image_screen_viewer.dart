@@ -53,7 +53,7 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка загрузки изображения: $e'),
+          content: Text('Ошибка загрузки изображения!'),
           backgroundColor: Colors.red,
         ),
       );

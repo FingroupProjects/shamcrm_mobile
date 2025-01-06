@@ -7,20 +7,12 @@ import 'package:flutter/material.dart';
 void DropdownBottomSheet(
   BuildContext context,
   String defaultValue,
-  Function(String) onSelect,
+  Function(String, int) onSelect, 
   Task task,
 ) {
   String selectedValue = defaultValue;
   int? selectedStatusId;
-
-  void showErrorMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Вы не можете переместить задачу на этот статус'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
+  bool isLoading = false; // Variable to manage the loading state
 
   showModalBottomSheet(
     context: context,
@@ -75,31 +67,90 @@ void DropdownBottomSheet(
                     },
                   ),
                 ),
-                CustomButton(
-                  buttonText: 'Сохранить',
-                  buttonColor: Color(0xfff4F40EC),
-                  textColor: Colors.white,
-                  onPressed: () {
-                    if (selectedStatusId != null) {
-                      ApiService()
-                          .updateTaskStatus(
-                              task.id, task.statusId, selectedStatusId!)
-                          .then((_) {
-                        Navigator.pop(context);
-                        onSelect(selectedValue);
-                      }).catchError((error) {
-                        if (error is TaskStatusUpdateException && error.statusCode == 422) {
-                          showErrorMessage(context);
-                          Navigator.pop(context);
-                        } else {
-                          print('Ошибка обновления статуса задачи: $error');
-                        }
-                      });
-                    } else {
-                      print('Статус не выбран');
-                    }
-                  },
-                ),
+                isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xff1E2E52),
+                        ),
+                      )
+                    : CustomButton(
+                        buttonText: 'Сохранить',
+                        buttonColor: Color(0xfff4F40EC),
+                        textColor: Colors.white,
+                        onPressed: () {
+                          if (selectedStatusId != null) {
+                            setState(() {
+                              isLoading = true; 
+                            });
+
+                            ApiService().updateTaskStatus(task.id, task.statusId, selectedStatusId!).then((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text(
+                                     'Статус успешно изменен!',
+                                     style: TextStyle(
+                                       fontFamily: 'Gilroy',
+                                       fontSize: 16,
+                                       fontWeight: FontWeight.w500,
+                                       color: Colors.white,
+                                     ),
+                                   ),
+                                   behavior: SnackBarBehavior.floating,
+                                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                   shape: RoundedRectangleBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                   ),
+                                   backgroundColor: Colors.green,
+                                   elevation: 3,
+                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                   duration: Duration(seconds: 3),
+                                 ),
+                               );
+                              setState(() {
+                                isLoading = false; 
+                              });
+
+                              Navigator.pop(context);
+                              onSelect(selectedValue, selectedStatusId!);
+                            }).catchError((error) {
+                              setState(() {
+                                isLoading = false; 
+                              });
+
+                              if (error is TaskStatusUpdateException &&
+                                  error.statusCode == 422) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Вы не можете переместить задачу на этот статус!',
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    elevation: 3,
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    duration: Duration(seconds: 3),
+                                  ),
+                                );
+                                Navigator.pop(context);
+                              } else {
+                                print('Ошибка обновления статуса задачи!rror');
+                              }
+                            });
+                          } else {
+                            print('Статус не выбран');
+                          }
+                        },
+                      ),
                 SizedBox(height: 16),
               ],
             ),
@@ -116,4 +167,3 @@ class TaskStatusUpdateException implements Exception {
 
   TaskStatusUpdateException(this.statusCode, this.message);
 }
-
