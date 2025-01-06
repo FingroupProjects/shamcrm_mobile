@@ -869,10 +869,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           minimumSize: Size(double.infinity, 48),
                         ),
                         onPressed: isButtonDisabled
-                            ? null // Блокируем кнопку, если она отключена
+                            ? null
                             : () async {
                                 setState(() {
-                                  isButtonDisabled = true; // Отключаем кнопку
+                                  isButtonDisabled = true;
                                   _nameError = null;
                                   _surnameError = null;
                                   _phoneError = null;
@@ -881,6 +881,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                                 bool isValid = true;
 
+                                // Проверяем обязательные поля
                                 if (NameController.text.trim().isEmpty) {
                                   setState(() {
                                     _nameError =
@@ -897,18 +898,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                   isValid = false;
                                 }
 
-                                final phoneLength =
-                                    phoneNumberLengths[selectedDialCode] ?? 0;
                                 if (phoneController.text.trim().isEmpty) {
                                   setState(() {
-                                    _phoneError = 'Поле обязательно для ввода!';
-                                  });
-                                  isValid = false;
-                                } else if (phoneController.text.length !=
-                                    phoneLength) {
-                                  setState(() {
                                     _phoneError =
-                                        'Неправильный номер телефона!';
+                                        'Поле телефон обязательно для заполнения';
                                   });
                                   isValid = false;
                                 }
@@ -921,7 +914,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                   return;
                                 }
 
-                                // Сохраняем данные профиля
                                 try {
                                   SharedPreferences prefs =
                                       await SharedPreferences.getInstance();
@@ -936,21 +928,19 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                     return;
                                   }
 
-                                  String UserNameProfile = NameController.text;
-                                  await prefs.setString(
-                                      'userNameProfile', UserNameProfile);
-
+                                  // Добавляем все измененные данные
                                   int userId = int.parse(UUID);
                                   final image = _getImageToUpload();
                                   context.read<ProfileBloc>().add(UpdateProfile(
-                                      userId: userId,
-                                      name: NameController.text.trim(),
-                                      sname: SurnameController.text.trim(),
-                                      phone: selectedDialCode +
-                                          phoneController.text,
-                                      email: emailController.text.trim(),
-                                      image: image,
-                                      pname: ''));
+                                        userId: userId,
+                                        name: NameController.text.trim(),
+                                        sname: SurnameController.text.trim(),
+                                        phone: selectedDialCode +
+                                            phoneController.text,
+                                        email: emailController.text.trim(),
+                                        image: image,
+                                        pname: PatronymicController.text.trim(),
+                                      ));
                                 } catch (e) {
                                   _showErrorMessage(
                                       'Произошла ошибка при обновлении профиля');

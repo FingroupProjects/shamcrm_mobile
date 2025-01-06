@@ -13,16 +13,25 @@ class LogoutButtonWidget extends StatelessWidget {
         // Получаем экземпляр SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Удаляем данные userName, userNameProfile и userImage
-        bool isUserNameRemoved = await prefs.remove('userName');
-        bool isUserNameProfileRemoved = await prefs.remove('userNameProfile');
-        bool isUserImageRemoved = await prefs.remove('userImage');
+        // Сохраняем текущие значения domainChecked и enteredDomain
+        bool? domainChecked = prefs.getBool('domainChecked');
+        String? enteredDomain = prefs.getString('enteredDomain');
 
-        // Проверяем успешность удаления
-        if (isUserNameRemoved &&
-            isUserNameProfileRemoved &&
-            isUserImageRemoved) {
-          print('Данные успешно очищены.');
+        // Очищаем все данные
+        bool isCleared = await prefs.clear();
+
+        // Восстанавливаем значения domainChecked и enteredDomain
+        if (domainChecked != null) {
+          await prefs.setBool('domainChecked', domainChecked);
+        }
+        if (enteredDomain != null) {
+          await prefs.setString('enteredDomain', enteredDomain);
+        }
+
+        // Проверяем успешность очистки
+        if (isCleared) {
+          print(
+              'Все данные успешно очищены, кроме domainChecked и enteredDomain.');
         } else {
           print('Ошибка при очистке данных.');
         }
