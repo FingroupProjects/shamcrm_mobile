@@ -29,34 +29,61 @@ class FirebaseApi {
     initPushNotification();
   }
 
-  void initPushNotification() {
+void initPushNotification() async {
+        final prefs = await SharedPreferences.getInstance();
+        final savedPin = prefs.getString('user_pin');
+        print('------------------------');
+        print('-----------------SAVEPINCODE-------');
+        print(savedPin);
+
+ if (savedPin == null) {
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       print('Получено уведомление при запуске приложения: ${message?.messageId}');
       handleMessage(message);
       _printCustomData(message);
     });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      print('Пользователь нажал на уведомление: ${message.messageId}');
-      _navigateToPinScreenAndHandleNotification(message);
+} else {
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      print('Получено уведомление при запуске приложения: ${message?.messageId}');
+      _navigateToMainScreen(message); 
     });
+}
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Уведомление при активном приложении: ${message.notification?.title}');
-      _printCustomData(message);
-    });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    print('Пользователь нажал на уведомление: ${message.messageId}');
+    _navigateToMainScreen(message);
+  });
+  
+    // FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    //   print('Пользователь нажал на уведомление: ${message.messageId}');
+    //   handleMessage(message);
+    //   _printCustomData(message);
+    // });
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Уведомление при активном приложении: ${message.notification?.title}');
+    _printCustomData(message);
+  });
+}
+
+Future<void> _navigateToMainScreen(RemoteMessage? message) async {
+  if (message != null) {
+    await _navigateToPinScreenAndHandleNotification(message);
   }
+}
+
 
   // Функция для перехода на экран PIN и потом на основной экран
-  Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) async {
-    // Переход на экран PIN
-    navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
-      // После того как пользователь введет PIN, обработаем уведомление
-      if (message != null) {
-        await handleMessage(message);
-      }
-    });
-  }
+Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) async {
+  // First, navigate to the PIN screen before handling the notification
+  navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
+    // After PIN is entered, handle the notification
+    if (message != null) {
+      await handleMessage(message);
+    }
+  });
+}
 
 
   void _printCustomData(RemoteMessage? message) {
