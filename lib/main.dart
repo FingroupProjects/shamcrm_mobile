@@ -82,11 +82,13 @@ void main() async {
   }
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseMessaging.instance.requestPermission();
   await getFCMTokens(apiService);
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

@@ -5,10 +5,12 @@ import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' as math;
 
 class DealStatsChart extends StatelessWidget {
   const DealStatsChart({Key? key}) : super(key: key);
 
+  // Список месяцев
   final List<String> months = const [
     'Январь',
     'Февраль',
@@ -46,12 +48,78 @@ class DealStatsChart extends StatelessWidget {
             );
           }
         } else if (state is DealStatsLoaded) {
-          List<int> monthData =
-              state.dealStatsData.monthlyStats ?? List.filled(12, 0);
+          final data = state.dealStatsData.data;
 
-          int maxCount =
-              monthData.fold(0, (max, value) => value > max ? value : max);
+          // Проверка наличия данных
+          bool hasData = data.any((item) => item.totalSum > 0 || item.successfulSum > 0);
+
+          // Расчет максимального значения для оси Y
+          double maxCount = hasData
+              ? data.fold(0, (max, item) => math.max(max, math.max(item.totalSum.toDouble(), item.successfulSum.toDouble())))
+              : 10.0;
           double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 10.0;
+
+          // Если данных нет, показываем сообщение
+          if (!hasData) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  height: 300,
+                  padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: 10,
+                      minY: 0,
+                      groupsSpace: 12,
+                      backgroundColor: Colors.white,
+                      barGroups: List.generate(
+                        months.length,
+                        (index) => BarChartGroupData(
+                          x: index,
+                          groupVertically: false,
+                          barsSpace: 8,
+                          barRods: [
+                            BarChartRodData(
+                              toY: 0.1,
+                              color: Colors.blue,
+                              width: 8,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                topRight: Radius.circular(6),
+                              ),
+                            ),
+                            BarChartRodData(
+                              toY: 0.1,
+                              color: Colors.green,
+                              width: 8,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                topRight: Radius.circular(6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      titlesData: FlTitlesData(show: false),
+                      borderData: FlBorderData(show: false),
+                      gridData: FlGridData(show: false),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Нет данных для отображения',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            );
+          }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,14 +150,15 @@ class DealStatsChart extends StatelessWidget {
                       enabled: true,
                       touchTooltipData: BarTouchTooltipData(
                         tooltipRoundedRadius: 6,
-                        tooltipPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                        tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         tooltipMargin: 4,
                         fitInsideVertically: true,
                         fitInsideHorizontally: true,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          String label = rodIndex == 0 ? 'Общая сумма' : 'Успешные';
+                          double value = rod.toY;
                           return BarTooltipItem(
-                            '${months[groupIndex]}\n',
+                            '${months[groupIndex]}\n$label\n',
                             const TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 12,
@@ -98,7 +167,7 @@ class DealStatsChart extends StatelessWidget {
                             ),
                             children: [
                               TextSpan(
-                                text: rod.toY.toInt().toString(),
+                                text: value.toInt().toString(),
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 14,
@@ -195,31 +264,27 @@ class DealStatsChart extends StatelessWidget {
                       ),
                     ),
                     barGroups: List.generate(months.length, (index) {
-                      final value = (monthData[index] ?? 0).toDouble();
-
-                      // Логика определения цвета
-                      Color barColor;
-                      if (maxCount > 0) {
-                        double percentage = value / maxCount;
-                        if (percentage >= 0.75) {
-                          barColor = Colors.green;
-                        } else if (percentage >= 0.4) {
-                          barColor = Colors.blue;
-                        } else {
-                          barColor = Colors.red;
-                        }
-                      } else {
-                        barColor =
-                            Colors.grey; // Цвет по умолчанию, если maxCount = 0
-                      }
+                      final totalSum = index < data.length ? data[index].totalSum.toDouble() : 0.0;
+                      final successfulSum = index < data.length ? data[index].successfulSum.toDouble() : 0.0;
 
                       return BarChartGroupData(
                         x: index,
+                        groupVertically: false, // Линии рядом друг с другом
+                        barsSpace: 4,
                         barRods: [
                           BarChartRodData(
-                            toY: value > 0 ? value : 0.1,
-                            color: barColor,
-                            width: 20,
+                            toY: totalSum > 0 ? totalSum : 0.1,
+                            color: Colors.blue, // Синий цвет для общей суммы
+                            width: 8,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(6),
+                              topRight: Radius.circular(6),
+                            ),
+                          ),
+                          BarChartRodData(
+                            toY: successfulSum > 0 ? successfulSum : 0.1,
+                            color: Colors.green, // Зеленый цвет для успешных
+                            width: 8,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(6),
                               topRight: Radius.circular(6),
@@ -250,7 +315,6 @@ class DealStatsChart extends StatelessWidget {
     );
   }
 
-  // Метод выхода из системы
   Future<void> _handleLogout(BuildContext context) async {
     ApiService apiService = ApiService();
     await apiService.logout();

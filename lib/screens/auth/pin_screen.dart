@@ -116,30 +116,42 @@ Future<void> _loadUserPhone() async {
     return;
   }
 
-  try {
-    UserByIdProfile userProfile = await ApiService().getUserById(1);
-    
-    await prefs.setString('userName', userProfile.name);
-    await prefs.setString('userNameProfile', userProfile.name ?? '');
-    await prefs.setString('userImage', userProfile.image ?? '');
+try {
+  // Инициализация SharedPreferences
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    if (mounted) {
-      setState(() {
-        _userName = userProfile.name;
-        _userNameProfile = userProfile.name ?? '';
-        _userImage = userProfile.image ?? '';
-      });
-    }
-  } catch (e) {
-    print('Ошибка при загрузке данных с сервера!');
-    if (mounted) {
-      setState(() {
-        _userName = 'Не найдено';
-        _userNameProfile = 'Не найдено';
-        _userImage = '';
-      });
-    }
+  // Получение userID из SharedPreferences
+  String UUID = prefs.getString('userID') ?? '';
+  print('userID : $UUID');
+
+  // Преобразование UUID в число и вызов метода getUserById
+  UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+
+  // Сохранение данных пользователя в SharedPreferences
+  await prefs.setString('userName', userProfile.name);
+  await prefs.setString('userNameProfile', userProfile.name ?? '');
+  await prefs.setString('userImage', userProfile.image ?? '');
+
+  // Обновление состояния
+  if (mounted) {
+    setState(() {
+      _userName = userProfile.name;
+      _userNameProfile = userProfile.name ?? '';
+      _userImage = userProfile.image ?? '';
+    });
   }
+} catch (e) {
+  // Обработка ошибок
+  print('Ошибка при загрузке данных с сервера: $e');
+
+  if (mounted) {
+    setState(() {
+      _userName = 'Не найдено';
+      _userNameProfile = 'Не найдено';
+      _userImage = '';
+    });
+  }
+}
 }
   Future<void> _initBiometrics() async {
     try {
