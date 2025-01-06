@@ -169,24 +169,50 @@ class ApiService {
 // }
 
   // Метод для логаута — очистка токена
-  Future<void> logout() async {
-    await _removeToken();
-    await _removePermissions(); // Удаляем права доступа
-    await _removeOrganizationId(); // Удаляем права доступа
+ Future<void> logout() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Сохраняем текущие значения domainChecked и enteredDomain
+  bool? domainChecked = prefs.getBool('domainChecked');
+  String? enteredDomain = prefs.getString('enteredDomain');
+
+  // Удаляем токен, права доступа и организацию
+  await _removeToken();
+  await _removePermissions();
+  await _removeOrganizationId();
+
+  // Очищаем все данные, кроме domainChecked и enteredDomain
+  bool isCleared = await prefs.clear();
+
+  // Восстанавливаем значения domainChecked и enteredDomain
+  if (domainChecked != null) {
+    await prefs.setBool('domainChecked', domainChecked);
+  }
+  if (enteredDomain != null) {
+    await prefs.setString('enteredDomain', enteredDomain);
   }
 
-  Future<void> _removePermissions() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Выводим в консоль текущие права доступа до удаления
-    print('Перед удалением: ${prefs.getStringList('permissions')}');
-
-    // Удаляем права доступа
-    await prefs.remove('permissions');
-
-    // Проверяем, что ключ действительно удалён
-    print('После удаления: ${prefs.getStringList('permissions')}');
+  // Проверяем успешность очистки
+  if (isCleared) {
+    print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
+  } else {
+    print('Ошибка при очистке данных.');
   }
+}
+
+Future<void> _removePermissions() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Выводим в консоль текущие права доступа до удаления
+  print('Перед удалением: ${prefs.getStringList('permissions')}');
+
+  // Удаляем права доступа
+  await prefs.remove('permissions');
+
+  // Проверяем, что ключ действительно удалён
+  print('После удаления: ${prefs.getStringList('permissions')}');
+}
+
 
   // get all users
   Future<UsersDataResponse> getAllUser() async {

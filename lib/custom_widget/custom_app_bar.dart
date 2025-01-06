@@ -202,7 +202,7 @@ Future<void> _loadNotificationState() async {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    Future.delayed(Duration(seconds: 30), () {
+    Future.delayed(Duration(milliseconds: 1), () {
       if (mounted) {
         _loadUserProfile();
       }
