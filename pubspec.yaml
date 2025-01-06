@@ -57,6 +57,7 @@ dependencies:
   app_tracking_transparency: ^2.0.6
   url_launcher: ^6.3.1
   flutter_localization: ^0.3.0
+  qr_code_scanner: ^1.0.1
 
   # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
+import 'qr_scanner_screen.dart';  // Import the QR scanner screen
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -19,18 +20,41 @@ class AuthScreen extends StatelessWidget {
       future: context.read<ApiService>().isDomainChecked(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
         }
 
         if (snapshot.data == true) {
-          // Если домен уже проверен, переходим на экран логина
+          // If the domain is already checked, navgitigate to the login screen
           Future.microtask(() => Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => LoginScreen())));
         }
 
         return Scaffold(
           backgroundColor: Colors.white,
+          // appBar: AppBar(
+          //   backgroundColor: Color.fromARGB(255, 255, 255, 255),
+          //   elevation: 0,
+          //   iconTheme: IconThemeData(color: Color(0xff1E2E52)),
+          //   actions: [
+          //    Padding(
+          //    padding: const EdgeInsets.only(right: 8), 
+          //    child: IconButton(
+          //      icon: Icon(Icons.qr_code_scanner),
+          //      iconSize: 40, 
+          //      onPressed: () async {
+          //        final scanResult = await Navigator.push(
+          //          context,
+          //          MaterialPageRoute(builder: (context) => QrScannerScreen()),
+          //        );
+          //        if (scanResult != null) {
+          //          print('Scanned QR Code: $scanResult');
+          //        }
+          //      },
+          //    ),
+          //   )
+
+          //   ],
+          // ),
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -38,16 +62,13 @@ class AuthScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Ваш UI для ввода поддомена
                   Padding(
-                    padding: const EdgeInsets.only(
-                        right: 0), // Отступ в 5 пикселей от левого края
+                    padding: const EdgeInsets.only(right: 0),
                     child: Image.asset(
                       'assets/icons/11.png',
                       height: 80,
                     ),
                   ),
-
                   SizedBox(height: 30),
                   const Text(
                     'Введите ваш поддомен',
@@ -73,13 +94,8 @@ class AuthScreen extends StatelessWidget {
                         );
                       } else if (state is DomainLoaded) {
                         if (state.domainCheck.result) {
-                          // Сохранение домена
-                          await context
-                              .read<ApiService>()
-                              .saveDomainChecked(true);
-                          await context
-                              .read<ApiService>()
-                              .initialize(); // Инициализация
+                          await context.read<ApiService>().saveDomainChecked(true);
+                          await context.read<ApiService>().initialize(); // Initialize
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (_) => LoginScreen()),
@@ -97,15 +113,13 @@ class AuthScreen extends StatelessWidget {
                                 ),
                               ),
                               behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
+                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               backgroundColor: Colors.red,
                               elevation: 3,
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 16),
+                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                               duration: Duration(seconds: 3),
                             ),
                           );
@@ -115,8 +129,7 @@ class AuthScreen extends StatelessWidget {
                     builder: (context, state) {
                       if (state is DomainLoading) {
                         return CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Color(0xfff1E2E52)),
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xfff1E2E52)),
                         );
                       }
                       return CustomButton(
@@ -126,16 +139,9 @@ class AuthScreen extends StatelessWidget {
                         onPressed: () async {
                           final subdomain = subdomainController.text.trim();
                           if (subdomain.isNotEmpty) {
-                            await context
-                                .read<ApiService>()
-                                .saveDomain(subdomain);
-                            context
-                                .read<DomainBloc>()
-                                .add(CheckDomain(subdomain));
-                            // Временно выводим сохранённый домен для отладки
-                            String? savedDomain = await context
-                                .read<ApiService>()
-                                .getEnteredDomain();
+                            await context.read<ApiService>().saveDomain(subdomain);
+                            context.read<DomainBloc>().add(CheckDomain(subdomain));
+                            String? savedDomain = await context.read<ApiService>().getEnteredDomain();
                             print('Сохранённый домен: $savedDomain');
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
