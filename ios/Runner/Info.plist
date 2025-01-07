@@ -115,5 +115,10 @@
 	<true/>
 	<key>com.apple.security.device.microphone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Для сканирования QR-кодов</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Для загрузки изображения с QR-кодом</string>
+
 </dict>
 </plist>

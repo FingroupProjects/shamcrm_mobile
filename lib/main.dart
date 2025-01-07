@@ -77,7 +77,6 @@ void main() async {
 
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
-    
     await apiService.initialize();
   }
   final String? token = await apiService.getToken();
