@@ -330,12 +330,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             selectedDialCode = number;
                           });
                         },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
-                          }
-                          return null;
-                        },
+                        // Убираем validator, так как поле не обязательное
                         label: 'WhatsApp',
                       ),
                       const SizedBox(height: 8),
