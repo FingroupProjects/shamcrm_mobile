@@ -52,6 +52,57 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
           );
         } else if (state is DashboardConversionLoaded) {
           List<double> monthlyData = state.leadConversionData.monthlyData;
+
+          if (monthlyData.every((value) => value == 0)) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  height: 300,
+                  padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
+                  color: Colors.grey[200],
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: 10,
+                      minY: 0,
+                      backgroundColor: Colors.grey[200],
+                      barGroups: List.generate(
+                        months.length,
+                        (index) => BarChartGroupData(
+                          x: index,
+                          barRods: [
+                            BarChartRodData(
+                              toY: 0,
+                              color: Colors.grey[400],
+                              width: 20,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                topRight: Radius.circular(6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      titlesData: FlTitlesData(show: false),
+                      gridData: FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Нет данных для отображения',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: "Gilroy",
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            );
+          }
+
           double maxValue =
               monthlyData.reduce((max, value) => value > max ? value : max);
           double maxY = maxValue >= 100 ? 100 : (maxValue * 1.1).clamp(0, 100);
