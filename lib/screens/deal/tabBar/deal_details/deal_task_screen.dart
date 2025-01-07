@@ -54,6 +54,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Colors.white,
+                    
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -96,6 +97,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
+                      
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -153,6 +155,8 @@ class _TasksWidgetState extends State<TasksWidget> {
                       Text(
                         task.name,
                         style: TaskCardStyles.titleStyle,
+                        overflow: TextOverflow
+                            .ellipsis, // Ограничение текста в одну строку
                       ),
                       SizedBox(height: 4),
                       Row(
@@ -182,6 +186,7 @@ class _TasksWidgetState extends State<TasksWidget> {
       ),
     );
   }
+
   void _navigateToTaskDetails(DealTask task) {
     Navigator.push(
       context,

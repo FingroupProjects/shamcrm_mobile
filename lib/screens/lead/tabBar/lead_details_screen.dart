@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:ui' as ui;
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -89,6 +90,69 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(
+            // Центрирование заголовка
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              content,
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ),
+          backgroundColor: Colors.white,
+          actions: [
+            Center(
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E2E52), // Цвет фона кнопки
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: 100), // Внутренние отступы
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8), // Закругление углов
+                  ),
+                  minimumSize:
+                      const Size(150, 40), // Минимальные размеры кнопки
+                ),
+                child: const Text(
+                  'Закрыть',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white, // Цвет текста
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _loadSelectedOrganization() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -149,6 +213,41 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     for (var field in lead.leadCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
     }
+  }
+
+  bool _isTextOverflow(String text, TextStyle style, double maxWidth) {
+    final TextPainter textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: ui.TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+
+    return textPainter.didExceedMaxLines;
+  }
+
+  Widget _buildExpandableText(String label, String value, double maxWidth) {
+    final TextStyle style = TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white);
+
+    if (!_isTextOverflow(value, style, maxWidth)) {
+      return _buildValue(value);
+    }
+
+    return GestureDetector(
+      onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+      child: Text(
+        value,
+        style: style.copyWith(
+          decoration: TextDecoration.underline,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 
   @override
@@ -329,7 +428,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
                       if (shouldUpdate == true) {
                         // Перезагружаем данные лида
-                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
+                            leadId: int.parse(widget.leadId)));
                         context.read<LeadBloc>().add(FetchLeadStatuses());
                       }
                     }
@@ -378,15 +478,22 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   // Построение одной строки с деталями лида
   Widget _buildDetailItem(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        SizedBox(width: 8),
-        Expanded(
-          child: _buildValue(value),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: (label.contains('Наименование лида') ||
+                      label.contains('Описание'))
+                  ? _buildExpandableText(label, value, constraints.maxWidth)
+                  : _buildValue(value),
+            ),
+          ],
+        );
+      },
     );
   }
 

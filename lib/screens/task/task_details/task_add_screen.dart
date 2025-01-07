@@ -2,7 +2,6 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
-
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';

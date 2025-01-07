@@ -10,7 +10,6 @@ import 'dart:math' as math;
 class DealStatsChart extends StatelessWidget {
   const DealStatsChart({Key? key}) : super(key: key);
 
-  // Список месяцев
   final List<String> months = const [
     'Январь',
     'Февраль',
@@ -50,11 +49,9 @@ class DealStatsChart extends StatelessWidget {
         } else if (state is DealStatsLoaded) {
           final data = state.dealStatsData.data;
 
-          // Проверка наличия данных
           bool hasData =
               data.any((item) => item.totalSum > 0 || item.successfulSum > 0);
 
-          // Расчет максимального значения для оси Y
           double maxCount = hasData
               ? data.fold(
                   0,
@@ -62,11 +59,11 @@ class DealStatsChart extends StatelessWidget {
                       max,
                       math.max(item.totalSum.toDouble(),
                           item.successfulSum.toDouble())))
-              : 10.0;
-          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 10.0;
+              : 100.0;
+          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 100.0;
 
-          // Если данных нет, показываем сообщение
           if (!hasData) {
+            final random = math.Random();
             return Stack(
               alignment: Alignment.center,
               children: [
@@ -76,7 +73,7 @@ class DealStatsChart extends StatelessWidget {
                   child: BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
-                      maxY: 10,
+                      maxY: 100,
                       minY: 0,
                       groupsSpace: 12,
                       backgroundColor: Colors.white,
@@ -85,11 +82,11 @@ class DealStatsChart extends StatelessWidget {
                         (index) => BarChartGroupData(
                           x: index,
                           groupVertically: false,
-                          barsSpace: 8,
+                          barsSpace: 4,
                           barRods: [
                             BarChartRodData(
-                              toY: 0.1,
-                              color: const Color(0xFF3935E7),
+                              toY: 20 + random.nextDouble() * 80,
+                              color: Colors.grey.withOpacity(0.3),
                               width: 8,
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(6),
@@ -97,8 +94,8 @@ class DealStatsChart extends StatelessWidget {
                               ),
                             ),
                             BarChartRodData(
-                              toY: 0.1,
-                              color: Colors.green,
+                              toY: 20 + random.nextDouble() * 80,
+                              color: Colors.grey.withOpacity(0.3),
                               width: 8,
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(6),
@@ -108,21 +105,102 @@ class DealStatsChart extends StatelessWidget {
                           ],
                         ),
                       ),
-                      titlesData: FlTitlesData(show: false),
-                      borderData: FlBorderData(show: false),
-                      gridData: FlGridData(show: false),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              if (value < 0 || value >= months.length) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Transform.rotate(
+                                  angle: -1.55,
+                                  child: Text(
+                                    months[value.toInt()],
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            reservedSize: 40,
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              return SizedBox(
+                                width: 60,
+                                child: Text(
+                                  value.toInt().toString(),
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.withOpacity(0.5),
+                                  ),
+                                ),
+                              );
+                            },
+                            reservedSize: 60,
+                          ),
+                        ),
+                        rightTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                      ),
+                      gridData: FlGridData(
+                        show: true,
+                        drawHorizontalLine: true,
+                        drawVerticalLine: true,
+                        horizontalInterval: 20,
+                        verticalInterval: 1,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.withOpacity(0.1),
+                            strokeWidth: 1,
+                          );
+                        },
+                        getDrawingVerticalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.withOpacity(0.1),
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border(
+                          bottom:
+                              BorderSide(color: Colors.grey.withOpacity(0.2)),
+                          left: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 const Text(
                   'Нет данных для отображения',
                   style: TextStyle(
-                    fontFamily: 'Gilroy',
                     fontSize: 16,
+                    fontFamily: "Gilroy",
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    color: Colors.black54,
                   ),
-                ),
+                )
               ],
             );
           }
@@ -148,9 +226,6 @@ class DealStatsChart extends StatelessWidget {
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
-                    maxY: maxY,
-                    minY: 0,
-                    groupsSpace: 12,
                     backgroundColor: Colors.white,
                     barTouchData: BarTouchData(
                       enabled: true,
@@ -281,13 +356,12 @@ class DealStatsChart extends StatelessWidget {
 
                       return BarChartGroupData(
                         x: index,
-                        groupVertically: false, // Линии рядом друг с другом
+                        groupVertically: false,
                         barsSpace: 4,
                         barRods: [
                           BarChartRodData(
                             toY: totalSum > 0 ? totalSum : 0.1,
                             color: const Color(0xFF3935E7),
-                            // Синий цвет для общей суммы
                             width: 8,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(6),
@@ -296,7 +370,7 @@ class DealStatsChart extends StatelessWidget {
                           ),
                           BarChartRodData(
                             toY: successfulSum > 0 ? successfulSum : 0.1,
-                            color: Colors.green, // Зеленый цвет для успешных
+                            color: Colors.green,
                             width: 8,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(6),

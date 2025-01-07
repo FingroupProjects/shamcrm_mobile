@@ -19,6 +19,11 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
   int? selectedLineIndex;
   final Map<String, bool> _lineVisibility = {};
 
+  bool _isAllZeros(List<ChartData> data) {
+    return data
+        .every((chartData) => chartData.data.every((value) => value == 0));
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardChartBloc, DashboardChartState>(
@@ -81,9 +86,35 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 300,
-                  child: LineChart(
-                    _buildChartData(state.chartData),
-                  ),
+                  child: _isAllZeros(state.chartData)
+                      ? Stack(
+                          children: [
+                            LineChart(
+                              _buildEmptyChartData(),
+                            ),
+                            Center(
+                              child: Container(
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'Нет данных для отображения',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: "Gilroy",
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : LineChart(
+                          _buildChartData(state.chartData),
+                        ),
                 ),
                 _buildStatsList(paginatedData[currentPage]),
                 _buildPagination(paginatedData),
@@ -99,6 +130,67 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
           ),
         );
       },
+    );
+  }
+
+  LineChartData _buildEmptyChartData() {
+    return LineChartData(
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: true,
+        horizontalInterval: 1,
+        verticalInterval: 1,
+        getDrawingHorizontalLine: (value) {
+          return FlLine(
+            color: Colors.grey.withOpacity(0.3),
+            strokeWidth: 1,
+          );
+        },
+        getDrawingVerticalLine: (value) {
+          return FlLine(
+            color: Colors.grey.withOpacity(0.3),
+            strokeWidth: 1,
+          );
+        },
+      ),
+      titlesData: FlTitlesData(
+        topTitles: AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        rightTitles: AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+      ),
+      borderData: FlBorderData(
+        show: true,
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+      ),
+      minX: 0,
+      maxX: 11,
+      minY: 0,
+      maxY: 5,
+      lineBarsData: [
+        LineChartBarData(
+          spots: [
+            FlSpot(0, 0),
+            FlSpot(11, 0),
+          ],
+          color: Colors.red.withOpacity(0.3),
+          barWidth: 3,
+          isCurved: false,
+          dotData: FlDotData(show: false),
+          belowBarData: BarAreaData(
+            show: true,
+            color: Colors.grey.withOpacity(0.1),
+          ),
+        ),
+      ],
     );
   }
 

@@ -1,19 +1,14 @@
 class LeadConversion {
-  final double newLeads;
-  final double repeatedLeads;
+  final List<double> monthlyData;
 
   LeadConversion({
-    required this.newLeads,
-    required this.repeatedLeads,
+    required this.monthlyData,
   });
 
   factory LeadConversion.fromJson(Map<String, dynamic> json) {
-    final result = json['result'] as Map<String, dynamic>? ?? {};
+    final result = json['result'] as List<dynamic>;
     return LeadConversion(
-      newLeads: (result['new'] as num?)?.toDouble() ?? 0.0,
-      repeatedLeads: (result['repeated'] as num?)?.toDouble() ?? 0.0,
+      monthlyData: result.map((value) => (value as num).toDouble()).toList(),
     );
   }
-
-  List<double> get data => [newLeads, repeatedLeads];
 }

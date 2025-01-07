@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:flutter/material.dart';

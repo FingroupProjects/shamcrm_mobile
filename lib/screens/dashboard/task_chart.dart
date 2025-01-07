@@ -52,7 +52,23 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
                 _buildLegend(state.taskChartData),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: _buildChart(state),
+                  child: Stack(
+                    children: [
+                      _buildChart(state),
+                      if (state.taskChartData.data.every((value) => value == 0))
+                        Center(
+                          child: const Text(
+                            'Нет данных для отображения',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: "Gilroy",
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Center(
@@ -83,7 +99,6 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
             ),
           );
         }
-        // Убираем анимацию загрузки, возвращаем пустое место
         return const SizedBox.shrink();
       },
     );
@@ -141,53 +156,54 @@ class _TaskChartWidgetState extends State<TaskChartWidget>
   }
 
   List<PieChartSectionData> _showingSections(TaskChart taskChart) {
-  final List<Color> colors = [
-    const Color(0xFF3935E7), // Активный - голубой
-    const Color(0xFFC30202), // Просрочен - фиолетовый
-    const Color(0xFF27A945), // Завершён - зеленый
-  ];
+    final List<Color> colors = [
+      const Color(0xFF3935E7), // Активный - голубой
+      const Color(0xFFC30202), // Просрочен - красный
+      const Color(0xFF27A945), // Завершён - зеленый
+    ];
 
-  // Проверяем, все ли значения равны 0
-  bool allZeros = taskChart.data.every((value) => value == 0);
+    // Проверяем, все ли значения равны 0
+    bool allZeros = taskChart.data.every((value) => value == 0);
 
-  // Если все значения 0, возвращаем один полный синий круг
-  if (allZeros) {
-    return [
-      PieChartSectionData(
-        color: colors[1], // Цвет "Активный"
-        value: 100, // Полный круг
-        title: '',
-        radius: 40.0,
+    // Если все значения 0, возвращаем полностью красный круг
+    if (allZeros) {
+      return [
+        PieChartSectionData(
+          color: const Color.fromARGB(255, 210, 210, 210), // Кроваво-красный
+          value: 100, // 100% круга
+          title: '',
+          radius: 40.0,
+          titleStyle: const TextStyle(
+            fontSize: 16,
+            fontFamily: "Gilroy",
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ];
+    }
+
+    // Стандартная логика для ненулевых значений
+    return List.generate(3, (i) {
+      final isTouched = i == touchedIndex;
+      final opacity = isTouched ? 0.8 : 1.0;
+      final radius = isTouched ? 50.0 : 40.0;
+
+      return PieChartSectionData(
+        color: colors[i].withOpacity(opacity),
+        value: taskChart.data[i],
+        title: isTouched ? '${taskChart.data[i].toStringAsFixed(0)}' : '',
+        radius: radius,
         titleStyle: const TextStyle(
           fontSize: 16,
           fontFamily: "Gilroy",
           fontWeight: FontWeight.w500,
-          color: Color.fromARGB(255, 255, 255, 255),
+          color: Colors.white,
         ),
-      ),
-    ];
+      );
+    });
   }
 
-  // Стандартная логика для ненулевых значений
-  return List.generate(3, (i) {
-    final isTouched = i == touchedIndex;
-    final opacity = isTouched ? 0.8 : 1.0;
-    final radius = isTouched ? 50.0 : 40.0;
-
-    return PieChartSectionData(
-      color: colors[i].withOpacity(opacity),
-      value: taskChart.data[i],
-      title: isTouched ? '${taskChart.data[i].toStringAsFixed(0)}' : '',
-      radius: radius,
-      titleStyle: const TextStyle(
-        fontSize: 16,
-        fontFamily: "Gilroy",
-        fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 255, 255, 255),
-      ),
-    );
-  });
-}
   Widget _buildLegend(TaskChart taskChart) {
     return Column(
       children: [
