@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui' as ui;
 
 class DealDetailsScreen extends StatefulWidget {
   final String dealId;
@@ -60,15 +61,75 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    // context.read<DealBloc>().add(FetchDeals(widget.statusId));
-
     context
         .read<DealByIdBloc>()
         .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
   }
 
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(
+            // Центрирование заголовка
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              content,
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ),
+          backgroundColor: Colors.white,
+          actions: [
+            Center(
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E2E52), // Цвет фона кнопки
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: 100), // Внутренние отступы
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8), // Закругление углов
+                  ),
+                  minimumSize:
+                      const Size(150, 40), // Минимальные размеры кнопки
+                ),
+                child: const Text(
+                  'Закрыть',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white, // Цвет текста
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _checkPermissions() async {
-    // Проверка прав на редактирование
     final canEdit = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
 
@@ -78,7 +139,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     });
   }
 
-  // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -89,11 +149,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
   }
 
-  // Обновление данных сделки
   void _updateDetails(DealById deal) {
-    currentDeal = deal; // Сохраняем актуальную сделку
+    currentDeal = deal;
     details = [
-      // {'label': 'ID Сделки:', 'value': deal.id.toString()},
       {'label': 'Название сделки:', 'value': deal.name},
       {'label': 'Лид:', 'value': deal.lead?.name ?? ''},
       {'label': 'Менеджер:', 'value': deal.manager?.name ?? ''},
@@ -110,71 +168,106 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
   }
 
+  bool _isTextOverflow(String text, TextStyle style, double maxWidth) {
+    final TextPainter textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: ui.TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+
+    return textPainter.didExceedMaxLines;
+  }
+
+  Widget _buildExpandableText(String label, String value, double maxWidth) {
+    final TextStyle style = TextStyle(
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xff1E2E52),
+        backgroundColor: Colors.white);
+
+    if (!_isTextOverflow(value, style, maxWidth)) {
+      return _buildValue(value);
+    }
+
+    return GestureDetector(
+      onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+      child: Text(
+        value,
+        style: style.copyWith(
+          decoration: TextDecoration.underline,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр сделки'),
-        backgroundColor: Colors.white,
-        body: BlocListener<DealByIdBloc, DealByIdState>(
-          listener: (context, state) {
-            if (state is DealByIdLoaded) {
-              print("Deal Data: ${state.deal.toString()}");
-            } else if (state is DealByIdError) {
-               WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${state.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
+      appBar: _buildAppBar(context, 'Просмотр сделки'),
+      backgroundColor: Colors.white,
+      body: BlocListener<DealByIdBloc, DealByIdState>(
+        listener: (context, state) {
+          if (state is DealByIdLoaded) {
+            print("Deal Data: ${state.deal.toString()}");
+          } else if (state is DealByIdError) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
-                  );
-                });
-            }
-          },
-          child: BlocBuilder<DealByIdBloc, DealByIdState>(
-            builder: (context, state) {
-              if (state is DealByIdLoading) {
-                return Center(
-                    child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-              } else if (state is DealByIdLoaded) {
-                DealById deal = state.deal;
-                _updateDetails(deal);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: ListView(
-                    children: [
-                      _buildDetailsList(),
-                      const SizedBox(height: 8),
-                      ActionHistoryWidget(dealId: int.parse(widget.dealId)),
-                      const SizedBox(height: 16),
-                      TasksWidget(dealId: int.parse(widget.dealId)),
-                    ],
                   ),
-                );
-              } else if (state is DealByIdError) {
-                return Center(child: Text('Ошибка: ${state.message}'));
-              }
-              return Center(child: Text(''));
-            },
-          ),
-        ));
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            });
+          }
+        },
+        child: BlocBuilder<DealByIdBloc, DealByIdState>(
+          builder: (context, state) {
+            if (state is DealByIdLoading) {
+              return Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            } else if (state is DealByIdLoaded) {
+              DealById deal = state.deal;
+              _updateDetails(deal);
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: ListView(
+                  children: [
+                    _buildDetailsList(),
+                    const SizedBox(height: 8),
+                    ActionHistoryWidget(dealId: int.parse(widget.dealId)),
+                    const SizedBox(height: 16),
+                    TasksWidget(dealId: int.parse(widget.dealId)),
+                  ],
+                ),
+              );
+            } else if (state is DealByIdError) {
+              return Center(child: Text('Ошибка: ${state.message}'));
+            }
+            return Center(child: Text(''));
+          },
+        ),
+      ),
+    );
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
@@ -251,8 +344,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                             endDate: endDateString,
                             createdAt: createdAtDateString,
                             sum: currentDeal!.sum.toString(),
-                            description:
-                                currentDeal!.description ?? '',
+                            description: currentDeal!.description ?? '',
                             dealCustomFields: currentDeal!.dealCustomFields,
                           ),
                         ),
@@ -292,7 +384,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
-  // Построение списка деталей сделки
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -310,21 +401,27 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     );
   }
 
-  // Построение одной строки с деталями сделки
   Widget _buildDetailItem(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        SizedBox(width: 8),
-        Expanded(
-          child: _buildValue(value),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: (label.contains('Название') ||
+                      label.contains('Описание') ||
+                      label.contains('Лид'))
+                  ? _buildExpandableText(label, value, constraints.maxWidth)
+                  : _buildValue(value),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  // Построение метки
   Widget _buildLabel(String label) {
     return Text(
       label,
@@ -332,12 +429,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xfff99A4BA),
+        color: Color(0xff99A4BA),
       ),
     );
   }
 
-  // Построение значения
   Widget _buildValue(String value) {
     return Text(
       value,
@@ -345,9 +441,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xfff1E2E52),
+        color: Color(0xff1E2E52),
       ),
-      overflow: TextOverflow.visible,
     );
   }
 }

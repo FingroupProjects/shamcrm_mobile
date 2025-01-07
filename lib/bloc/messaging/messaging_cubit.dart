@@ -19,7 +19,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       final messageIds = messages.map((msg) => msg.id).toList();
       
       // Отправляем ID прочитанных сообщений на сервер
-      await apiService.readChatMessages(chatId, messageIds);
+      // await apiService.readChatMessages(chatId, messageIds);
       
       emit(MessagesLoadedState(messages: messages));
     } catch (e) {

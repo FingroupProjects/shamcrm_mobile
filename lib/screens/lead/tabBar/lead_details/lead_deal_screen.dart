@@ -43,7 +43,7 @@ class _DealsWidgetState extends State<DealsWidget> {
   @override
   void initState() {
     super.initState();
-      _checkPermissions(); // Проверяем права пользователя
+    _checkPermissions(); // Проверяем права пользователя
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
@@ -80,31 +80,30 @@ class _DealsWidgetState extends State<DealsWidget> {
         } else if (state is LeadDealsLoaded) {
           deals = state.deals;
         } else if (state is LeadDealsError) {
-           WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${state.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          });
         }
 
         return _buildDealsList(deals);
@@ -162,9 +161,8 @@ class _DealsWidgetState extends State<DealsWidget> {
 
     return GestureDetector(
       onTap: () {
-              _navigateToDealDetails(deal);
-            }
-          ,
+        _navigateToDealDetails(deal);
+      },
       // onTap: _canUpdateDeal
       //     ? () {
       //         _navigateToDealDetails(deal);
@@ -192,6 +190,8 @@ class _DealsWidgetState extends State<DealsWidget> {
                       Text(
                         deal.name,
                         style: TaskCardStyles.titleStyle,
+                        overflow: TextOverflow
+                            .ellipsis, // Ограничение текста в одну строку
                       ),
                       SizedBox(height: 4),
                       Text(
@@ -203,19 +203,19 @@ class _DealsWidgetState extends State<DealsWidget> {
                     ],
                   ),
                 ),
-              if (_canDeleteDeal)
-                IconButton(
-                  icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => DeleteDealDialog(
-                        dealId: deal.id,
-                        leadId: widget.leadId,
-                      ),
-                    );
-                  },
-                ),
+                if (_canDeleteDeal)
+                  IconButton(
+                    icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => DeleteDealDialog(
+                          dealId: deal.id,
+                          leadId: widget.leadId,
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),

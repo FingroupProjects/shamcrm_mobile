@@ -12,7 +12,6 @@ class LeadCard extends StatefulWidget {
   final VoidCallback onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
 
-
   LeadCard({
     required this.lead,
     required this.title,
@@ -63,7 +62,7 @@ class _LeadCardState extends State<LeadCard> {
               leadId: widget.lead.id.toString(),
               leadName: widget.lead.name ?? 'Без имени',
               leadStatus: dropdownValue,
-              statusId: statusId, 
+              statusId: statusId,
               region: widget.lead.region?.name,
               regionId: widget.lead.region?.id,
               manager: widget.lead.manager?.name,
@@ -88,6 +87,8 @@ class _LeadCardState extends State<LeadCard> {
             Text(
               widget.lead.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
+              overflow:
+                  TextOverflow.ellipsis, // Ограничение текста в одну строку
             ),
             const SizedBox(height: 5),
             Row(
@@ -109,17 +110,17 @@ class _LeadCardState extends State<LeadCard> {
                       (String newValue, int newStatusId) {
                         setState(() {
                           dropdownValue = newValue;
-                          statusId = newStatusId; 
-                          
+                          statusId = newStatusId;
                         });
-                          widget.onStatusId(newStatusId); 
-                        widget.onStatusUpdated(); 
+                        widget.onStatusId(newStatusId);
+                        widget.onStatusUpdated();
                       },
                       widget.lead,
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -133,8 +134,7 @@ class _LeadCardState extends State<LeadCard> {
                       child: Row(
                         children: [
                           Container(
-                            constraints: BoxConstraints(
-                                maxWidth: 200),
+                            constraints: BoxConstraints(maxWidth: 200),
                             child: Text(
                               dropdownValue,
                               style: const TextStyle(
