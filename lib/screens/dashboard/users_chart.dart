@@ -157,13 +157,16 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
     );
   }
 
-  Color _getProgressBarColor(double percent) {
-    if (percent <= 30) {
-      return const Color(0xFFC30202); // Red
-    } else if (percent < 100) {
-      return const Color(0xFF3935E7); // Blue
-    } else {
-      return const Color(0xFF27A945); // Green
-    }
+ Color _getProgressBarColor(double percent) {
+  if (percent == 0) {
+    return const Color.fromARGB(255, 173, 172, 172); // Red (для 0%)
+  } else if (percent > 0 && percent <= 30) {
+    return const Color(0xFFC30202); // Red (для 1-30%)
+  } else if (percent < 100) {
+    return const Color(0xFF3935E7); // Blue (для 31-99%)
+  } else {
+    return const Color(0xFF27A945); // Green (для 100%)
   }
+}
+
 }
