@@ -81,6 +81,13 @@ class ApiService {
     baseUrlSocket = await getSocketBaseUrl();
   }
 
+    // Инициализация API с доменом из QR-кода
+  Future<void> initializeWithDomain(String domain) async {
+    baseUrl = 'https://$domain-back.shamcrm.com/api';
+    baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
+    print('API инициализировано с доменом: $domain');
+  }
+
   // Общая обработка ответа от сервера 401
   Future<http.Response> _handleResponse(http.Response response) async {
     if (response.statusCode == 401) {
@@ -104,8 +111,6 @@ class ApiService {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
       return 'https://$domain-back.shamcrm.com/api';
-      // return 'https://$domain-back.shamcrm.com/api';
-//       return 'https://8e00-95-142-94-22.ngrok-free.app/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -137,36 +142,6 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('token'); // Удаляем токен
   }
-// Future<Map<String, dynamic>> getTaskFile(String fileUrl) async {
-//   try {
-//     final token = await getToken(); // Получение токена
-//     final domain = await getEnteredDomain();
-//     final url = Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
-
-//     final response = await http.get(url, headers: {
-//       'Authorization': 'Bearer $token',
-//       'Content-Type': 'application/json',
-//       'Accept': 'application/json',
-//     });
-
-//     if (response.statusCode == 200) {
-//       return {
-//         'success': true,
-//         'content': response.body, // Данные файла
-//       };
-//     } else {
-//       return {
-//         'success': false,
-//         'message': 'Ошибка сервера: ${response.statusCode}',
-//       };
-//     }
-//   } catch (e) {
-//     return {
-//       'success': false,
-//       'message': 'Ошибка при запросе!',
-//     };
-//   }
-// }
 
   // Метод для логаута — очистка токена
  Future<void> logout() async {
@@ -212,277 +187,6 @@ Future<void> _removePermissions() async {
   // Проверяем, что ключ действительно удалён
   print('После удаления: ${prefs.getStringList('permissions')}');
 }
-
-
-  // get all users
-  Future<UsersDataResponse> getAllUser() async {
-    final token = await getToken(); // Получаем токен перед запросом
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-    late UsersDataResponse dataUser;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    }
-
-    if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-    }
-    if (kDebugMode) {
-      print('getAll user: ${response.body}');
-    }
-
-    return dataUser;
-  }
-
-  Future<UsersDataResponse> getAnotherUsers() async {
-    final token = await getToken(); // Получаем токен перед запросом
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse(
-          '$baseUrl/user/getAnotherUsers/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-    late UsersDataResponse dataUser;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    }
-
-    if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-    }
-    if (kDebugMode) {
-      print('getAll user: ${response.body}');
-    }
-
-    return dataUser;
-  }
-
-  // addUserToGroup
-  Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' +
-          (organizationId != null ? '?organization_id=$organizationId' : '')),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-
-    late UsersDataResponse dataUser;
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-
-      if (data['result'] != null) {
-        dataUser = UsersDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    }
-
-    if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-    }
-    if (kDebugMode) {
-      print('getUsersNotInChat: ${response.body}');
-    }
-
-    return dataUser;
-  }
-
-  // create new client
-  Future<Map<String, dynamic>> createNewClient(String userID) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
-
-    final response = await http.post(
-      Uri.parse(
-          '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-      print('data: ${response.body}');
-    }
-
-    if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body);
-      var chatId = jsonResponse['result']['id']; // Извлекаем chatId
-      return {'chatId': chatId}; // Возвращаем chatId
-    } else {
-      throw Exception('Failed to create chat');
-    }
-  }
-
-  // Метод для создания Групповго чата
-  Future<Map<String, dynamic>> createGroupChat({
-    required String name,
-    List<int>? userId,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'name': name,
-        'users': userId?.map((id) => {'id': id}).toList() ?? [],
-      };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-        '/chat/createGroup${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Групповой чат успешно создан.',
-        };
-      } else if (response.statusCode == 422) {
-        if (response.body.contains('name')) {
-          return {
-            'success': false,
-            'message': 'Название группы должно быть не менее 3 символов.',
-          };
-        }
-        return {
-          'success': false,
-          'message': 'Ошибки валидации: ${response.body}',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Ошибка создания гр. чата: ${response.body}',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка при создании гр. чата!',
-      };
-    }
-  }
-
-// Метод для создания Групповго чата
-  Future<Map<String, dynamic>> addUserToGroup({
-    required int chatId,
-    int? userId,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'chatId': chatId,
-        'userId': userId,
-      };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-        '/chat/addUserToGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Участник успешно добавлен.',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Ошибка добавления участника: ${response.body}',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка при добавление участника !',
-      };
-    }
-  }
-
-// Метод для создания Групповго чата
-  Future<Map<String, dynamic>> deleteUserFromGroup({
-    required int chatId,
-    int? userId,
-  }) async {
-    try {
-      final Map<String, dynamic> requestBody = {
-        'chatId': chatId,
-        'userId': userId,
-      };
-
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _postRequest(
-        '/chat/removeUserFromGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        requestBody,
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'message': 'Участник успешно добавлен.',
-        };
-      } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Ошибка добавления участника: ${response.body}',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Ошибка при добавление участника !',
-      };
-    }
-  }
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
@@ -642,6 +346,50 @@ Future<void> _removePermissions() async {
 
   //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
+ // Метод для сохранения данных из QR-кода
+  Future<void> saveQrData(String domain, String login, String token,String userId, String organizationId ) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Сохраняем данные из QR-кода
+    await prefs.setString('domain', domain?? '');
+    print(prefs.getString('domain'));
+    await prefs.setString('userLogin', login?? '');
+     print(prefs.getString('userLogin'));
+    await prefs.setString('token', token?? '');
+     print(prefs.getString('token'));
+await prefs.setString('userID', userId ?? ''); // Чтобы избежать null
+     print(prefs.getString('userID'));
+    await prefs.setString('selectedOrganization', organizationId?? '');
+     print(prefs.getString('selectedOrganization'));
+    // await prefs.setString('selectedOrganization', userRoleId?? '');
+    //  print(prefs.getString('selectedOrganization'));
+
+
+    // После сохранения обновляем информацию
+    await saveDomainChecked(true);
+    await saveDomain(domain);
+
+                print('--------------------------------------ПОЛУЧЕННЫЕ ДАННЫЕ ИЗ КР КОДА saveQrData------------------ ----------');
+                print('--------------------------------------ПОЛУЧЕННЫЕ ДАННЫЕ ИЗ КР КОДА saveQrDataasdasdasd------------------ ----------');
+    
+    print('SharedPreferences instance: $prefs');
+print('Checking domain in prefs: ${prefs.containsKey('domain')}');
+
+  }
+
+  // Метод для получения данных из QR-кода
+  Future<Map<String, String?>> getQrData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? domain = prefs.getString('domain')?? '';
+    String? login = prefs.getString('userLogin')?? '';
+    String? token = prefs.getString('token')?? '';
+      String userId = prefs.getString('userID') ?? '';
+    String? organizationId = prefs.getString('selectedOrganization')?? '';
+    return {'domain': domain, 'login': login, 'token': token,'userID': userId, 'selectedOrganization': organizationId};
+  }
+
+
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
   // Метод для проверки домена
@@ -676,6 +424,9 @@ Future<void> _removePermissions() async {
   Future<void> saveDomain(String domain) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('enteredDomain', domain);
+  print('Ввведеный домен:----------------------');
+  print('Ввведеный домен---=----:----------------------');
+  print('ДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
@@ -3573,8 +3324,398 @@ Future<void> _removePermissions() async {
     }
   }
 
+
+  
+  // get all users
+  Future<UsersDataResponse> getAllUser() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+    late UsersDataResponse dataUser;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getAll user: ${response.body}');
+    }
+
+    return dataUser;
+  }
+
+  Future<UsersDataResponse> getAnotherUsers() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/user/getAnotherUsers/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+    late UsersDataResponse dataUser;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getAll user: ${response.body}');
+    }
+
+    return dataUser;
+  }
+
+  // addUserToGroup
+  Future<UsersDataResponse> getUsersNotInChat(String chatId) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/users-not-in-chat/$chatId' +
+          (organizationId != null ? '?organization_id=$organizationId' : '')),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    late UsersDataResponse dataUser;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getUsersNotInChat: ${response.body}');
+    }
+
+    return dataUser;
+  }
+//Список юзеров Корпорт чата  для созд с польз
+  Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/chat/users/without-corporate-chat/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+      print('----------------------------------------------------------------------');
+      print('-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
+      print(response);
+
+    late UsersDataResponse dataUser;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataUser = UsersDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('getAll user: ${response.body}');
+    }
+
+    return dataUser;
+  }
+  
+
+  // create new client
+  Future<Map<String, dynamic>> createNewClient(String userID) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.post(
+      Uri.parse(
+          '$baseUrl/chat/createChat/$userID${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (kDebugMode) {
+      print('Статус ответа: ${response.statusCode}');
+      print('data: ${response.body}');
+    }
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
+      var chatId = jsonResponse['result']['id']; // Извлекаем chatId
+      return {'chatId': chatId}; // Возвращаем chatId
+    } else {
+      throw Exception('Failed to create chat');
+    }
+  }
+
+  // Метод для создания Групповго чата
+  Future<Map<String, dynamic>> createGroupChat({
+    required String name,
+    List<int>? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'users': userId?.map((id) => {'id': id}).toList() ?? [],
+      };
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/createGroup${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Групповой чат успешно создан.',
+        };
+      } else if (response.statusCode == 422) {
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'Название группы должно быть не менее 3 символов.',
+          };
+        }
+        return {
+          'success': false,
+          'message': 'Ошибки валидации: ${response.body}',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка создания гр. чата: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при создании гр. чата!',
+      };
+    }
+  }
+
+// Метод для создания Групповго чата
+  Future<Map<String, dynamic>> addUserToGroup({
+    required int chatId,
+    int? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'chatId': chatId,
+        'userId': userId,
+      };
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/addUserToGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Участник успешно добавлен.',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка добавления участника: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при добавление участника !',
+      };
+    }
+  }
+
+// Метод для создания Групповго чата
+  Future<Map<String, dynamic>> deleteUserFromGroup({
+    required int chatId,
+    int? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> requestBody = {
+        'chatId': chatId,
+        'userId': userId,
+      };
+
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _postRequest(
+        '/chat/removeUserFromGroup/$chatId/$userId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        requestBody,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Участник успешно добавлен.',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка добавления участника: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при добавление участника !',
+      };
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
+  //_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
+
+  Future<ChatProfile> getChatProfile(int chatId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        if (decodedJson['result'] != null) {
+          return ChatProfile.fromJson(decodedJson['result']);
+        } else {
+          throw Exception('Данные профиля не найдены');
+        }
+      } else if (response.statusCode == 404) {
+        throw ('Такого Лида не существует');
+      } else {
+        print('Ошибка загрузки профиля чата: ${response.statusCode}');
+        throw Exception('${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка в getChatProfile!');
+      throw ('$e');
+    }
+  }
+
+  Future<TaskProfile> getTaskProfile(int chatId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      print('Organization ID: $organizationId'); // Добавим логирование
+
+      final response = await _getRequest(
+        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      print(
+          'Response status code: ${response.statusCode}'); // Логируем статус ответа
+      print('Response body: ${response.body}'); // Логируем тело ответа
+
+      if (response.statusCode == 200) {
+        try {
+          final dynamic decodedJson = json.decode(response.body);
+          print(
+              'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
+          print('Decoded JSON: $decodedJson'); // Отладочный вывод
+
+          if (decodedJson is Map<String, dynamic>) {
+            if (decodedJson['result'] != null) {
+              print(
+                  'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
+              return TaskProfile.fromJson(decodedJson['result']);
+            } else {
+              print('Result is null');
+              throw Exception('Данные задачи не найдены');
+            }
+          } else {
+            print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
+            throw Exception('Неверный формат ответа');
+          }
+        } catch (parseError) {
+          print('Ошибка парсинга JSON: $parseError');
+          throw Exception('Ошибка парсинга ответа: $parseError');
+        }
+      } else {
+        print('Ошибка загрузки задачи: ${response.statusCode}');
+        throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Полная ошибка в getTaskProfile!');
+      print('Трассировка стека: ${StackTrace.current}');
+      throw Exception('Ошибка загрузки задачи!');
+    }
+  }
+
+  //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
+
+  
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
 
   // Метод для получения Организации
@@ -3685,85 +3826,6 @@ Future<void> DeleteAllNotifications() async {
   }
 
   //_________________________________ END_____API_SCREEN__NOTIFICATIONS____________________________________________//
-
-  //_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
-
-  Future<ChatProfile> getChatProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-        '/lead/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-        if (decodedJson['result'] != null) {
-          return ChatProfile.fromJson(decodedJson['result']);
-        } else {
-          throw Exception('Данные профиля не найдены');
-        }
-      } else if (response.statusCode == 404) {
-        throw ('Такого Лида не существует');
-      } else {
-        print('Ошибка загрузки профиля чата: ${response.statusCode}');
-        throw Exception('${response.statusCode}');
-      }
-    } catch (e) {
-      print('Ошибка в getChatProfile!');
-      throw ('$e');
-    }
-  }
-
-  Future<TaskProfile> getTaskProfile(int chatId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-      print('Organization ID: $organizationId'); // Добавим логирование
-
-      final response = await _getRequest(
-        '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      print(
-          'Response status code: ${response.statusCode}'); // Логируем статус ответа
-      print('Response body: ${response.body}'); // Логируем тело ответа
-
-      if (response.statusCode == 200) {
-        try {
-          final dynamic decodedJson = json.decode(response.body);
-          print(
-              'Decoded JSON type: ${decodedJson.runtimeType}'); // Логируем тип декодированного JSON
-          print('Decoded JSON: $decodedJson'); // Отладочный вывод
-
-          if (decodedJson is Map<String, dynamic>) {
-            if (decodedJson['result'] != null) {
-              print(
-                  'Result type: ${decodedJson['result'].runtimeType}'); // Логируем тип результата
-              return TaskProfile.fromJson(decodedJson['result']);
-            } else {
-              print('Result is null');
-              throw Exception('Данные задачи не найдены');
-            }
-          } else {
-            print('Decoded JSON is not a Map: ${decodedJson.runtimeType}');
-            throw Exception('Неверный формат ответа');
-          }
-        } catch (parseError) {
-          print('Ошибка парсинга JSON: $parseError');
-          throw Exception('Ошибка парсинга ответа: $parseError');
-        }
-      } else {
-        print('Ошибка загрузки задачи: ${response.statusCode}');
-        throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Полная ошибка в getTaskProfile!');
-      print('Трассировка стека: ${StackTrace.current}');
-      throw Exception('Ошибка загрузки задачи!');
-    }
-  }
-
-  //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
 
   //_________________________________ START_____API_PROFILE_SCREEN____________________________________________//
 //Метод для получения Пользователя через его ID

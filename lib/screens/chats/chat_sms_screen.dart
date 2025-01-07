@@ -60,17 +60,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   late VoiceController audioController;
   final ApiService apiService = ApiService();
-  String? _visibleDate; // Для отображения даты на экране
+  String? _visibleDate; 
   late String baseUrl;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
 
-  Future<void> _checkPermissions() async {
+Future<void> _checkPermissions() async {
+  if (widget.endPointInTab == 'lead') {
     final canCreate = await apiService.hasPermission('chat.create');
     setState(() {
       _canCreateChat = canCreate;
     });
+  } else {
+    setState(() {
+      _canCreateChat = true; 
+    });
   }
+}
+
 
   @override
   void initState() {
@@ -87,7 +94,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _scrollToBottom();
       _fetchBaseUrl();
       // _markMessagesAsRead();
-      // _PinCodePush();
+
     });
   }
 
@@ -102,16 +109,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
-
-// Future<void> _PinCodePush() async {
-//   // Добавляем задержку на 1 секунду
-//   await Future.delayed(Duration(microseconds: 1));
-
-//   // Сбрасываем флаг, чтобы показывался экран PIN
-//   SharedPreferences prefs = await SharedPreferences.getInstance();
-//   prefs.setBool('openedFromPush', false);  
-// }
-
      
   // Обновляем показ календаря
   void _showDatePicker(BuildContext context, List<Message> messages) {

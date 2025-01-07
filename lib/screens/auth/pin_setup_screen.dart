@@ -25,6 +25,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     int? userRoleId ;
 
 
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +38,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
+
 
   @override
   void dispose() {
@@ -79,7 +81,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     });
   }
 
-    Future<void> _loadUserRoleId() async {
+   Future<void> _loadUserRoleId() async {
   try {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String userId = prefs.getString('userID') ?? '';
@@ -95,6 +97,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     setState(() {
       userRoleId = userProfile.role!.first.id;
     });
+
+    await prefs.setInt('userRoleId', userRoleId!);
+    await prefs.setString('userRoleName', userProfile.role![0].name);
+
     // Выводим данные в консоль
     context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
 
@@ -105,6 +111,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     });
   }
 }
+
 
   Future<void> _validatePins() async {
     if (_pin == _confirmPin) {
@@ -237,3 +244,4 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     );
   }
 }
+

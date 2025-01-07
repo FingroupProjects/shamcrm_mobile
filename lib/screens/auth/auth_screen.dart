@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
-// import 'qr_scanner_screen.dart';  // Import the QR scanner screen
+import 'qr_scanner_screen.dart'; 
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -15,6 +15,7 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextEditingController subdomainController = TextEditingController();
+    double screenHeight = MediaQuery.of(context).size.height;
 
     return FutureBuilder(
       future: context.read<ApiService>().isDomainChecked(),
@@ -24,44 +25,40 @@ class AuthScreen extends StatelessWidget {
         }
 
         if (snapshot.data == true) {
-          // If the domain is already checked, navgitigate to the login screen
           Future.microtask(() => Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => LoginScreen())));
         }
 
         return Scaffold(
           backgroundColor: Colors.white,
-          // appBar: AppBar(
-          //   backgroundColor: Color.fromARGB(255, 255, 255, 255),
-          //   elevation: 0,
-          //   iconTheme: IconThemeData(color: Color(0xff1E2E52)),
-          //   actions: [
-          //    Padding(
-          //    padding: const EdgeInsets.only(right: 8), 
-          //    child: IconButton(
-          //      icon: Icon(Icons.qr_code_scanner),
-          //      iconSize: 40, 
-          //      onPressed: () async {
-          //        final scanResult = await Navigator.push(
-          //          context,
-          //          MaterialPageRoute(builder: (context) => QrScannerScreen()),
-          //        );
-          //        if (scanResult != null) {
-          //          print('Scanned QR Code: $scanResult');
-          //        }
-          //      },
-          //    ),
-          //   )
-
-          //   ],
-          // ),
+          appBar: AppBar(
+            backgroundColor: Color.fromARGB(255, 255, 255, 255),
+            elevation: 0,
+            iconTheme: IconThemeData(color: Color(0xff1E2E52)),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: Icon(Icons.qr_code_scanner),
+                  iconSize: 40,
+                  onPressed: () async {
+                    final scanResult = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => QrScannerScreen()),
+                    );
+                  },
+                ),
+              )
+            ],
+          ),
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start, 
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                    SizedBox(height: screenHeight * 0.15), 
                   Padding(
                     padding: const EdgeInsets.only(right: 0),
                     child: Image.asset(
@@ -86,7 +83,7 @@ class AuthScreen extends StatelessWidget {
                     label: 'Поддомен',
                   ),
                   SizedBox(height: 24),
-                  BlocConsumer<DomainBloc, DomainState>(
+                  BlocConsumer<DomainBloc, DomainState>( 
                     listener: (context, state) async {
                       if (state is DomainError) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +92,7 @@ class AuthScreen extends StatelessWidget {
                       } else if (state is DomainLoaded) {
                         if (state.domainCheck.result) {
                           await context.read<ApiService>().saveDomainChecked(true);
-                          await context.read<ApiService>().initialize(); // Initialize
+                          await context.read<ApiService>().initialize(); 
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (_) => LoginScreen()),

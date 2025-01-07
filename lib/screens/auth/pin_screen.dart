@@ -206,6 +206,7 @@ try {
 
       if (didAuthenticate && mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
+           
       }
     } on PlatformException catch (e) {
       if (mounted) {

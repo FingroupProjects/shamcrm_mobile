@@ -26,6 +26,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   void initState() {
     super.initState();
     // context.read<GetAllClientBloc>().add(GetAllClientEv());
+    context.read<GetAllClientBloc>().add(GetAnotherClientEv());
   }
 
   @override
