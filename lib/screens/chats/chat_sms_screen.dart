@@ -86,18 +86,18 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
       _fetchBaseUrl();
-      _markMessagesAsRead();
+      // _markMessagesAsRead();
       // _PinCodePush();
     });
   }
 
-  void _markMessagesAsRead() {
-    final state = context.read<MessagingCubit>().state;
-    if (state is MessagesLoadedState && state.messages.isNotEmpty) {
-      final messageIds = state.messages.map((msg) => msg.id).toList();
-      widget.apiService.readChatMessages(widget.chatId, messageIds);
-    }
-  }
+  // void _markMessagesAsRead() {
+  //   final state = context.read<MessagingCubit>().state;
+  //   if (state is MessagesLoadedState && state.messages.isNotEmpty) {
+  //     final messageIds = state.messages.map((msg) => msg.id).toList();
+  //     widget.apiService.readChatMessages(widget.chatId, messageIds);
+  //   }
+  // }
 
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();

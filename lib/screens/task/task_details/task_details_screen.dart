@@ -33,7 +33,7 @@ class TaskDetailsScreen extends StatefulWidget {
   final String? startDate;
   final String? endDate;
   final String? sum;
-  final int? priority ;
+  final int? priority;
   final List<TaskCustomField> taskCustomFields;
   final String? taskFile; // Добавлено поле для файла
 
@@ -96,7 +96,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   //     return 'Неверный формат';
   //   }
   // }
-    // Функция для форматирования даты
+  // Функция для форматирования даты
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -105,6 +105,62 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     } catch (e) {
       return 'Неверный формат';
     }
+  }
+
+  // Функция для показа диалогового окна с полным текстом
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: 'Закрыть',
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // Обновление данных задачи
@@ -150,9 +206,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
       {
         'label': 'Описание:',
-        'value': task.description?.isNotEmpty == true
-            ? task.description!
-            : ''
+        'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
       {
         'label': 'Статус:',
@@ -174,334 +228,347 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-      appBar: _buildAppBar(context, 'Просмотр задачи'),
-      backgroundColor: Colors.white,
-      body: BlocListener<TaskByIdBloc, TaskByIdState>(
-        listener: (context, state) {
-          if (state is TaskByIdLoaded) {
-            print("Задача Data: ${state.task.toString()}");
-          } else if (state is TaskByIdError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${state.message}',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: _buildAppBar(context, 'Просмотр задачи'),
+        backgroundColor: Colors.white,
+        body: BlocListener<TaskByIdBloc, TaskByIdState>(
+          listener: (context, state) {
+            if (state is TaskByIdLoaded) {
+              print("Задача Data: ${state.task.toString()}");
+            } else if (state is TaskByIdError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${state.message}',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 3,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: Duration(seconds: 3),
                 ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        },
-        child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-          builder: (context, state) {
-            if (state is TaskByIdLoading) {
-              return Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
               );
-            } else if (state is TaskByIdLoaded) {
-              if (state.task == null) {
-                return Center(child: Text('Данные о задаче недоступны.'));
-              }
-              TaskById task = state.task!;
-              _updateDetails(task);
+            }
+          },
+          child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+            builder: (context, state) {
+              if (state is TaskByIdLoading) {
+                return Center(
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                );
+              } else if (state is TaskByIdLoaded) {
+                if (state.task == null) {
+                  return Center(child: Text('Данные о задаче недоступны.'));
+                }
+                TaskById task = state.task!;
+                _updateDetails(task);
 
-              return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: ListView(
-                    children: [
-                      _buildDetailsList(),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: task.isFinished == 1 ? 100 : 55,
-                            child: TaskNavigateToChat(
-                              chatId: task.chat!.id,
-                              taskName: widget.taskName,
-                              canSendMessage: task.chat!.canSendMessage,
-                            ),
-                          ),
-                          if (task.isFinished == 0) ...[
-                            SizedBox(
-                              width: 8,
-                              height: 60,
-                            ),
+                return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: ListView(
+                      children: [
+                        _buildDetailsList(),
+                        Row(
+                          children: [
                             Expanded(
-                              flex: 45,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) =>
-                                        AlertDialog(
-                                      title: Text(
-                                        'Хотите завершить задачу?',
-                                        style: TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: Text(
-                                            'Отмена',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: 'Gilroy',
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          style: TextButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                            minimumSize: Size(120, 48),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
+                              flex: task.isFinished == 1 ? 100 : 55,
+                              child: TaskNavigateToChat(
+                                chatId: task.chat!.id,
+                                taskName: widget.taskName,
+                                canSendMessage: task.chat!.canSendMessage,
+                              ),
+                            ),
+                            if (task.isFinished == 0) ...[
+                              SizedBox(
+                                width: 8,
+                                height: 60,
+                              ),
+                              Expanded(
+                                flex: 45,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) =>
+                                          AlertDialog(
+                                        title: Text(
+                                          'Хотите завершить задачу?',
+                                          style: TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                        StatefulBuilder(
-                                          builder: (BuildContext context,
-                                              StateSetter setState) {
-                                            return TextButton(
-                                              onPressed: _isLoading
-                                                  ? null
-                                                  : () async {
-                                                      setState(() {
-                                                        _isLoading = true;
-                                                      });
-
-                                                      final taskId = int.parse(
-                                                          widget.taskId);
-                                                      final result =
-                                                          await context
-                                                              .read<
-                                                                  ApiService>()
-                                                              .finishTask(
-                                                                  taskId);
-
-                                                      if (result['success']) {
-                                                        Navigator.pop(context);
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(
-                                                          SnackBar(
-                                                            content: Text(
-                                                              result['message'],
-                                                              style: TextStyle(
-                                                                fontFamily:
-                                                                    'Gilroy',
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                            ),
-                                                            behavior:
-                                                                SnackBarBehavior
-                                                                    .floating,
-                                                            margin: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 16,
-                                                              vertical: 8,
-                                                            ),
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            backgroundColor:
-                                                                Colors.green,
-                                                            elevation: 3,
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              vertical: 12,
-                                                              horizontal: 16,
-                                                            ),
-                                                            duration: Duration(
-                                                                seconds: 2),
-                                                          ),
-                                                        );
-                                                        Navigator.pop(context);
-                                                        context
-                                                            .read<TaskBloc>()
-                                                            .add(
-                                                                FetchTaskStatuses());
-                                                      } else {
-                                                        Navigator.pop(context);
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(
-                                                          SnackBar(
-                                                            content: Text(
-                                                              result['message'],
-                                                              style: TextStyle(
-                                                                fontFamily:
-                                                                    'Gilroy',
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                            ),
-                                                            behavior:
-                                                                SnackBarBehavior
-                                                                    .floating,
-                                                            margin: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 16,
-                                                              vertical: 8,
-                                                            ),
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            backgroundColor:
-                                                                Colors.red,
-                                                            elevation: 3,
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              vertical: 12,
-                                                              horizontal: 16,
-                                                            ),
-                                                            duration: Duration(
-                                                                seconds: 2),
-                                                          ),
-                                                        );
-                                                      }
-
-                                                      setState(() {
-                                                        _isLoading = false;
-                                                      });
-                                                    },
-                                              child: _isLoading
-                                                  ? SizedBox(
-                                                      width: 20,
-                                                      height: 20,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                        color: Colors.white,
-                                                        strokeWidth: 2,
-                                                      ),
-                                                    )
-                                                  : Text(
-                                                      'Подтвердить',
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontFamily: 'Gilroy',
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                    ),
-                                              style: TextButton.styleFrom(
-                                                backgroundColor:
-                                                    Color(0xff1E2E52),
-                                                minimumSize: Size(120, 48),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: Text(
+                                              'Отмена',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                      backgroundColor:
-                                          Color.fromARGB(255, 255, 255, 255),
+                                            ),
+                                            style: TextButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              minimumSize: Size(120, 48),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                          ),
+                                          StatefulBuilder(
+                                            builder: (BuildContext context,
+                                                StateSetter setState) {
+                                              return TextButton(
+                                                onPressed: _isLoading
+                                                    ? null
+                                                    : () async {
+                                                        setState(() {
+                                                          _isLoading = true;
+                                                        });
+
+                                                        final taskId =
+                                                            int.parse(
+                                                                widget.taskId);
+                                                        final result =
+                                                            await context
+                                                                .read<
+                                                                    ApiService>()
+                                                                .finishTask(
+                                                                    taskId);
+
+                                                        if (result['success']) {
+                                                          Navigator.pop(
+                                                              context);
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            SnackBar(
+                                                              content: Text(
+                                                                result[
+                                                                    'message'],
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontFamily:
+                                                                      'Gilroy',
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                  color: Colors
+                                                                      .white,
+                                                                ),
+                                                              ),
+                                                              behavior:
+                                                                  SnackBarBehavior
+                                                                      .floating,
+                                                              margin: EdgeInsets
+                                                                  .symmetric(
+                                                                horizontal: 16,
+                                                                vertical: 8,
+                                                              ),
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                              backgroundColor:
+                                                                  Colors.green,
+                                                              elevation: 3,
+                                                              padding: EdgeInsets
+                                                                  .symmetric(
+                                                                vertical: 12,
+                                                                horizontal: 16,
+                                                              ),
+                                                              duration:
+                                                                  Duration(
+                                                                      seconds:
+                                                                          2),
+                                                            ),
+                                                          );
+                                                          Navigator.pop(
+                                                              context);
+                                                          context
+                                                              .read<TaskBloc>()
+                                                              .add(
+                                                                  FetchTaskStatuses());
+                                                        } else {
+                                                          Navigator.pop(
+                                                              context);
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            SnackBar(
+                                                              content: Text(
+                                                                result[
+                                                                    'message'],
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontFamily:
+                                                                      'Gilroy',
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                  color: Colors
+                                                                      .white,
+                                                                ),
+                                                              ),
+                                                              behavior:
+                                                                  SnackBarBehavior
+                                                                      .floating,
+                                                              margin: EdgeInsets
+                                                                  .symmetric(
+                                                                horizontal: 16,
+                                                                vertical: 8,
+                                                              ),
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12),
+                                                              ),
+                                                              backgroundColor:
+                                                                  Colors.red,
+                                                              elevation: 3,
+                                                              padding: EdgeInsets
+                                                                  .symmetric(
+                                                                vertical: 12,
+                                                                horizontal: 16,
+                                                              ),
+                                                              duration:
+                                                                  Duration(
+                                                                      seconds:
+                                                                          2),
+                                                            ),
+                                                          );
+                                                        }
+
+                                                        setState(() {
+                                                          _isLoading = false;
+                                                        });
+                                                      },
+                                                child: _isLoading
+                                                    ? SizedBox(
+                                                        width: 20,
+                                                        height: 20,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          color: Colors.white,
+                                                          strokeWidth: 2,
+                                                        ),
+                                                      )
+                                                    : Text(
+                                                        'Подтвердить',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontFamily: 'Gilroy',
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor:
+                                                      Color(0xff1E2E52),
+                                                  minimumSize: Size(120, 48),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                        backgroundColor:
+                                            Color.fromARGB(255, 255, 255, 255),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    backgroundColor: Color(0xFF1E2E52),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                  backgroundColor: Color(0xFF1E2E52),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                ),
-                                child: Text(
-                                  'Готов',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'Gilroy',
+                                  child: Text(
+                                    'Готов',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Gilroy',
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
+                        const SizedBox(height: 16),
+                        ActionHistoryWidgetTask(
+                            taskId: int.parse(widget.taskId)),
+                      ],
+                    ));
+              } else if (state is TaskByIdError) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${state.message}',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      ActionHistoryWidgetTask(
-                          taskId: int.parse(widget.taskId)),
-                    ],
-                  ));
-            } else if (state is TaskByIdError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              });
-            }
-            return Center(child: Text(''));
-          },
-        ),
-      ));
-}
+                  );
+                });
+              }
+              return Center(child: Text(''));
+            },
+          ),
+        ));
+  }
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
@@ -515,7 +582,7 @@ Widget build(BuildContext context) {
           height: 24,
         ),
         onPressed: () {
-          Navigator.pop(context,widget.statusId);
+          Navigator.pop(context, widget.statusId);
           // context.read<TaskBloc>().add(FetchTaskStatuses());
         },
       ),
@@ -578,7 +645,9 @@ Widget build(BuildContext context) {
                       );
 
                       if (shouldUpdate == true) {
-                        context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                        context
+                            .read<TaskByIdBloc>()
+                            .add(FetchTaskByIdEvent(taskId: currentTask!.id));
                         context.read<TaskBloc>().add(FetchTaskStatuses());
                       }
                     }
@@ -624,8 +693,42 @@ Widget build(BuildContext context) {
       },
     );
   }
+ Widget _buildDetailItem(String label, String value) {
+    // Специальная обработка для названия и описания
+    if (label == 'Название задачи:' || label == 'Описание:') {
+      return GestureDetector(
+        onTap: () {
+          if (value.isNotEmpty) {
+            _showFullTextDialog(
+              label.replaceAll(':', ''),
+              value,
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+            );
+    }
 
-  Widget _buildDetailItem(String label, String value) {
     if (label == 'Исполнитель:' && value.contains(',')) {
       label = 'Исполнители:';
     }

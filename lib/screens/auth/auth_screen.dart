@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
-import 'qr_scanner_screen.dart';  // Import the QR scanner screen
+// import 'qr_scanner_screen.dart';  // Import the QR scanner screen
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});

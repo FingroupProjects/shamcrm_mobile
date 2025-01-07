@@ -3504,36 +3504,36 @@ Future<void> _removePermissions() async {
     }
   }
 
-//Метод для передачи всех iD-сообщениях чата в сервер
-  Future<void> readChatMessages(int chatId, List<int> messageIds) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+// //Метод для передачи всех iD-сообщениях чата в сервер
+//   Future<void> readChatMessages(int chatId, List<int> messageIds) async {
+//     final token = await getToken();
+//     final organizationId = await getSelectedOrganization();
 
-    final url = Uri.parse('$baseUrl/chat/read');
+//     final url = Uri.parse('$baseUrl/chat/read');
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'chat_id': chatId,
-          'organization_id': organizationId,
-          'messages': messageIds,
-        }),
-      );
+//     try {
+//       final response = await http.post(
+//         url,
+//         headers: {
+//           'Authorization': 'Bearer $token',
+//           'Content-Type': 'application/json',
+//         },
+//         body: json.encode({
+//           'chat_id': chatId,
+//           'organization_id': organizationId,
+//           'messages': messageIds,
+//         }),
+//       );
 
-      if (response.statusCode == 200) {
-        print('Messages marked as read');
-      } else {
-        print('Error marking messages as read: ${response.body}');
-      }
-    } catch (e) {
-      print('Exception when marking messages as read!');
-    }
-  }
+//       if (response.statusCode == 200) {
+//         print('Messages marked as read');
+//       } else {
+//         print('Error marking messages as read: ${response.body}');
+//       }
+//     } catch (e) {
+//       print('Exception when marking messages as read!');
+//     }
+//   }
 
   Future<Map<String, dynamic>> deleteChat(int chatId) async {
     final organizationId = await getSelectedOrganization();

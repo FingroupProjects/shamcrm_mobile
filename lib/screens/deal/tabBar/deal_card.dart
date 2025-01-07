@@ -10,9 +10,7 @@ class DealCard extends StatefulWidget {
   final String title;
   final int statusId;
   final VoidCallback onStatusUpdated;
-    final void Function(int newStatusId) onStatusId;
-
-  
+  final void Function(int newStatusId) onStatusId;
 
   DealCard({
     required this.deal,
@@ -20,7 +18,6 @@ class DealCard extends StatefulWidget {
     required this.statusId,
     required this.onStatusUpdated,
     required this.onStatusId,
-
   });
 
   @override
@@ -29,8 +26,7 @@ class DealCard extends StatefulWidget {
 
 class _DealCardState extends State<DealCard> {
   late String dropdownValue;
-    late int statusId;
-
+  late int statusId;
 
   @override
   void initState() {
@@ -38,7 +34,6 @@ class _DealCardState extends State<DealCard> {
     dropdownValue = widget.title;
     statusId = widget.statusId;
   }
-
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
@@ -72,7 +67,7 @@ class _DealCardState extends State<DealCard> {
               lead: widget.deal.lead?.name,
               leadId: widget.deal.lead?.id,
               description: widget.deal.description,
-              dealCustomFields: widget.deal.dealCustomFields, 
+              dealCustomFields: widget.deal.dealCustomFields,
             ),
           ),
         );
@@ -86,6 +81,8 @@ class _DealCardState extends State<DealCard> {
             Text(
               widget.deal.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis, // Ограничение текста в одну строку
             ),
             const SizedBox(height: 5),
             Row(
@@ -107,16 +104,14 @@ class _DealCardState extends State<DealCard> {
                       (String newValue, int newStatusId) {
                         setState(() {
                           dropdownValue = newValue;
-                          statusId = newStatusId; 
-                          
+                          statusId = newStatusId;
                         });
-                          widget.onStatusId(newStatusId); 
-                        widget.onStatusUpdated(); 
+                        widget.onStatusId(newStatusId);
+                        widget.onStatusUpdated();
                       },
                       widget.deal,
                     );
                   },
-                 
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -133,8 +128,7 @@ class _DealCardState extends State<DealCard> {
                       child: Row(
                         children: [
                           Container(
-                            constraints: BoxConstraints(
-                                maxWidth: 200), //Размер колонки Выбора Статуса
+                            constraints: BoxConstraints(maxWidth: 200),
                             child: Text(
                               dropdownValue,
                               style: const TextStyle(
@@ -143,8 +137,7 @@ class _DealCardState extends State<DealCard> {
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff1E2E52),
                               ),
-                              overflow:
-                                  TextOverflow.ellipsis, 
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -197,4 +190,3 @@ class _DealCardState extends State<DealCard> {
     );
   }
 }
-
