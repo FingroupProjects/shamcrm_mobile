@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-// import 'package:qr_code_tools/qr_code_tools.dart';
 import 'package:scan/scan.dart';
 
 class QrScannerScreen extends StatefulWidget {
