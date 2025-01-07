@@ -342,7 +342,8 @@ void _searchChats(String query, String endPoint) {
       if (index == 2) {
         endPointInTab = 'corporate';
         context.read<ChatsBloc>().add(ClearChats());  
-        context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+        // context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+
       }
 
       if (_debounce?.isActive ?? false) _debounce?.cancel();

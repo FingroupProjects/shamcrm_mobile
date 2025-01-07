@@ -23,6 +23,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
   @override
   void initState() {
     // context.read<GetAllClientBloc>().add(GetAllClientEv());
+    context.read<GetAllClientBloc>().add(GetUsersWithoutCorporateChatEv());
     super.initState();
   }
 
