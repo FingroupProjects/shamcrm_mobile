@@ -364,16 +364,9 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
     // await prefs.setString('selectedOrganization', userRoleId?? '');
     //  print(prefs.getString('selectedOrganization'));
 
-
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
     await saveDomain(domain);
-
-                print('--------------------------------------ПОЛУЧЕННЫЕ ДАННЫЕ ИЗ КР КОДА saveQrData------------------ ----------');
-                print('--------------------------------------ПОЛУЧЕННЫЕ ДАННЫЕ ИЗ КР КОДА saveQrDataasdasdasd------------------ ----------');
-    
-    print('SharedPreferences instance: $prefs');
-print('Checking domain in prefs: ${prefs.containsKey('domain')}');
 
   }
 
@@ -3633,6 +3626,34 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       };
     }
   }
+
+
+// Метод для удаления сообщение
+Future<void> DeleteMessage({int? messageId}) async {
+  if (messageId == null) {
+    throw Exception('MessageId не может быть null');
+  }
+
+  final organizationId = await getSelectedOrganization();
+
+  String path = '/chat/delete-message/$messageId'; // Путь для DELETE-запроса
+
+  print('Sending DELETE request to API with path: $path');
+
+  // Используем _deleteRequest для отправки DELETE-запроса
+  final response = await _deleteRequest(path);
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка удаления уведомлений: ${response.body}');
+  }
+
+  final data = json.decode(response.body);
+  if (data['result'] == 'Success') {
+    return;
+  } else {
+    throw Exception('Ошибка удаления уведомления');
+  }
+}
 
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
