@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_event.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_state.dart';
@@ -21,13 +22,25 @@ class TasksWidget extends StatefulWidget {
 class _TasksWidgetState extends State<TasksWidget> {
   List<DealTask> tasks = [];
   late ScrollController _scrollController;
+  bool _canCreateTask = false;
+  final ApiService _apiService = ApiService();
+
+  Future<void> _checkPermissions() async {
+    final canCreate = await _apiService.hasPermission('task.create');
+    setState(() {
+      _canCreateTask = canCreate;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     _scrollController = ScrollController();
     context.read<DealTasksBloc>().add(FetchDealTasks(widget.dealId));
   }
+
+ 
 
   @override
   void dispose() {
@@ -214,6 +227,7 @@ class _TasksWidgetState extends State<TasksWidget> {
             fontWeight: FontWeight.w500,
           ),
         ),
+                if (_canCreateTask)
         TextButton(
           onPressed: () {
             Navigator.push(
