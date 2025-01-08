@@ -1,4 +1,3 @@
-// delete_dialog.dart
 import 'package:flutter/material.dart';
 
 void showDeleteDialog(BuildContext context, Function onDelete) {

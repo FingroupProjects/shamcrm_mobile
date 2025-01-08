@@ -3636,7 +3636,7 @@ Future<void> DeleteMessage({int? messageId}) async {
 
   final organizationId = await getSelectedOrganization();
 
-  String path = '/chat/delete-message/$messageId'; // Путь для DELETE-запроса
+  String path = '/chat/delete-message/$messageId?organization_id=$organizationId';
 
   print('Sending DELETE request to API with path: $path');
 
@@ -3648,7 +3648,7 @@ Future<void> DeleteMessage({int? messageId}) async {
   }
 
   final data = json.decode(response.body);
-  if (data['result'] == 'Success') {
+  if (data['result'] == 'deleted') {
     return;
   } else {
     throw Exception('Ошибка удаления уведомления');
