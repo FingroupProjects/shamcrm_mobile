@@ -22,14 +22,16 @@ class DeleteMessageBloc extends Bloc<DeleteMessageEvent, DeleteMessageState> {
   }
 
   Future<void> _deleteMessage(DeleteMessage event, Emitter<DeleteMessageState> emit) async {
-    if (await _checkInternetConnection()) {
-      try {
-        await apiService.DeleteMessage(messageId: event.messageId);
-      } catch (e) {
-        emit(DeleteMessageError('Ошибка удаления уведомления!'));
-      }
-    } else {
-      emit(DeleteMessageError('Нет подключения к интернету'));
+  if (await _checkInternetConnection()) {
+    try {
+      await apiService.DeleteMessage(messageId: event.messageId);
+      emit(DeleteMessageSuccess()); 
+    } catch (e) {
+      emit(DeleteMessageError('Ошибка удаления уведомления!'));
     }
+  } else {
+    emit(DeleteMessageError('Нет подключения к интернету'));
   }
+}
+
 }

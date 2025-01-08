@@ -75,147 +75,151 @@ class DealStatsChart extends StatelessWidget {
 
           if (!hasData) {
             final random = math.Random();
-            return Stack(
-              alignment: Alignment.center,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  height: 300,
-                  padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: 100,
-                      minY: 0,
-                      groupsSpace: 12,
-                      backgroundColor: Colors.white,
-                      barGroups: List.generate(
-                        months.length,
-                        (index) => BarChartGroupData(
-                          x: index,
-                          groupVertically: false,
-                          barsSpace: 4,
-                          barRods: [
-                            BarChartRodData(
-                              toY: 20 + random.nextDouble() * 80,
-                              color: Colors.grey.withOpacity(0.3),
-                              width: 8,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                                topRight: Radius.circular(6),
-                              ),
-                            ),
-                            BarChartRodData(
-                              toY: 20 + random.nextDouble() * 80,
-                              color: Colors.grey.withOpacity(0.3),
-                              width: 8,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                                topRight: Radius.circular(6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              if (value < 0 || value >= months.length) {
-                                return const SizedBox.shrink();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 16),
-                                child: Transform.rotate(
-                                  angle: -1.55,
-                                  child: Text(
-                                    months[value.toInt()],
-                                    textAlign: TextAlign.left,
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey.withOpacity(0.5),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            reservedSize: 40,
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              return SizedBox(
-                                width: 60,
-                                child: Text(
-                                  formatNumber(value.toDouble()),
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              );
-                            },
-                            reservedSize: 42,
-                          ),
-                        ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                      ),
-                      gridData: FlGridData(
-                        show: true,
-                        drawHorizontalLine: true,
-                        drawVerticalLine: true,
-                        horizontalInterval: 20,
-                        verticalInterval: 1,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Colors.grey.withOpacity(0.1),
-                            strokeWidth: 1,
-                          );
-                        },
-                        getDrawingVerticalLine: (value) {
-                          return FlLine(
-                            color: Colors.grey.withOpacity(0.1),
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
-                      borderData: FlBorderData(
-                        show: true,
-                        border: Border(
-                          bottom:
-                              BorderSide(color: Colors.grey.withOpacity(0.2)),
-                          left: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                        ),
-                      ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                  child: Text(
+                    'Статистика сделок',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
                     ),
                   ),
                 ),
-                const Text(
-                  'Нет данных для отображения',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: "Gilroy",
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
-                  ),
-                )
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      height: 300,
+                      padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: 100,
+                          minY: 0,
+                          groupsSpace: 12,
+                          backgroundColor: Colors.white,
+                          barTouchData: BarTouchData(
+                            enabled: false, // Отключаем интерактивность
+                          ),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  if (value < 0 || value >= months.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 16),
+                                    child: Transform.rotate(
+                                      angle: -1.55,
+                                      child: Text(
+                                        months[value.toInt()],
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 40,
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: false, // Скрываем значения слева
+                              ),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                          ),
+                          gridData: FlGridData(
+                            show: true,
+                            drawHorizontalLine: true,
+                            drawVerticalLine: true,
+                            horizontalInterval: 20,
+                            verticalInterval: 1,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: Colors.grey.withOpacity(0.1),
+                                strokeWidth: 1,
+                              );
+                            },
+                            getDrawingVerticalLine: (value) {
+                              return FlLine(
+                                color: Colors.grey.withOpacity(0.1),
+                                strokeWidth: 1,
+                              );
+                            },
+                          ),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border(
+                              bottom: BorderSide(
+                                  color: Colors.grey.withOpacity(0.2)),
+                              left: BorderSide(
+                                  color: Colors.grey.withOpacity(0.2)),
+                            ),
+                          ),
+                          barGroups: List.generate(
+                            months.length,
+                            (index) => BarChartGroupData(
+                              x: index,
+                              groupVertically: false,
+                              barsSpace: 4,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: 20 + random.nextDouble() * 60,
+                                  color: Colors.grey.withOpacity(0.3),
+                                  width: 8,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(6),
+                                    topRight: Radius.circular(6),
+                                  ),
+                                ),
+                                BarChartRodData(
+                                  toY: 20 + random.nextDouble() * 60,
+                                  color: Colors.grey.withOpacity(0.3),
+                                  width: 8,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(6),
+                                    topRight: Radius.circular(6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      'Нет данных для отображения',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: "Gilroy",
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             );
           }
-
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

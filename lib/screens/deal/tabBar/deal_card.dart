@@ -35,9 +35,16 @@ class _DealCardState extends State<DealCard> {
     statusId = widget.statusId;
   }
 
-  String formatDate(String dateString) {
-    DateTime dateTime = DateTime.parse(dateString);
-    return DateFormat('dd-MM-yyyy').format(dateTime);
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return 'Неизвестно';
+    }
+    try {
+      DateTime dateTime = DateTime.parse(dateString);
+      return DateFormat('dd-MM-yyyy').format(dateTime);
+    } catch (e) {
+      return 'Неизвестно'; // Fallback for invalid dates
+    }
   }
 
   final Map<String, String> sourceIcons = {
@@ -82,7 +89,8 @@ class _DealCardState extends State<DealCard> {
               widget.deal.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis, // Ограничение текста в одну строку
+              overflow:
+                  TextOverflow.ellipsis, // Ограничение текста в одну строку
             ),
             const SizedBox(height: 5),
             Row(

@@ -215,12 +215,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         controller: startDateController,
                         label: 'Дата начало',
                         withTime: false,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
-                          }
-                          return null;
-                        },
+                       
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
@@ -228,12 +223,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         label: 'Дата завершения',
                         hasError: isEndDateInvalid,
                         withTime: false,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
-                          }
-                          return null;
-                        },
+                        
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
