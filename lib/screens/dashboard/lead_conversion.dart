@@ -60,13 +60,13 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                 Container(
                   height: 300,
                   padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
-                  color: Colors.grey[200],
+                  color: const Color.fromARGB(255, 255, 255, 255),
                   child: BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
                       maxY: 10,
                       minY: 0,
-                      backgroundColor: Colors.grey[200],
+                      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
                       barGroups: List.generate(
                         months.length,
                         (index) => BarChartGroupData(
