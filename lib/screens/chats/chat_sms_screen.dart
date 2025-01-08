@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
+import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_event.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
@@ -10,6 +12,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_scree
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
+import 'package:crm_task_manager/screens/chats/delete_message.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -821,7 +824,7 @@ final Map<String, double> _messagePositions = {};
 class MessageItemWidget extends StatelessWidget {
   final Message message;
   final ApiServiceDownload apiServiceDownload;
-  final String baseUrl; // Новый параметр
+  final String baseUrl;
 
   const MessageItemWidget({
     super.key,
@@ -830,8 +833,51 @@ class MessageItemWidget extends StatelessWidget {
     required this.baseUrl,
   });
 
-  @override
+@override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),  
+      child: _buildMessageContent(context),
+    );
+  }
+
+   // Логика для удаления сообщения
+void _deleteMessage(BuildContext context) {
+  int messageId = message.id; 
+  print('---------------------------------------------------------');
+  print('-------------------------------DELETEMESSAGE ID MESSAGE--------------------------------------');
+  print(messageId);
+
+
+  // Отправляем событие для удаления сообщения в BLoC
+  context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
+
+ ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Сообщение успешно удалено!',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.green,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+}
+
+
+  Widget _buildMessageContent(BuildContext context) {
     switch (message.type) {
       case 'text':
         return textState();
@@ -865,21 +911,20 @@ class MessageItemWidget extends StatelessWidget {
         return voiceState();
       default:
         return SizedBox();
-      // return undefinedFileState();
     }
   }
 
-  // this fun worked messages type == 'text'
+ 
+
   Widget textState() {
     return MessageBubble(
       message: message.text,
-      time: time(message.createMessateTime), // Динамическое время
+      time: time(message.createMessateTime),
       isSender: message.isMyMessage,
       senderName: message.senderName.toString(),
     );
   }
 
-  // this fun worked messages type == 'image'
   Widget imageState() {
     return ImageMessageBubble(
       time: time(message.createMessateTime),
@@ -891,21 +936,6 @@ class MessageItemWidget extends StatelessWidget {
     );
   }
 
-  // this fun worked messages type - undefined type
-  Widget undefinedFileState() {
-    return FileMessageBubble(
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      filePath: message.filePath ?? 'Unknown file format',
-      fileName: message.text,
-      onTap: (path) async {
-        await apiServiceDownload.downloadAndOpenFile(message.filePath!);
-      },
-      senderName: message.senderName,
-    );
-  }
-
-  // this fun worked messages type == 'voice
   Widget voiceState() {
     String audioUrl = '${baseUrl.replaceAll(
       '/api',
@@ -924,7 +954,7 @@ class MessageItemWidget extends StatelessWidget {
         /// do something on playing
       },
       onError: (err) {
-        /// do somethin on error
+        /// do something on error
       },
       maxDuration: Duration(minutes: 5),
       isFile: false,
