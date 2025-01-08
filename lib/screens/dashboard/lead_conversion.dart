@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -52,57 +54,152 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
           );
         } else if (state is DashboardConversionLoaded) {
           List<double> monthlyData = state.leadConversionData.monthlyData;
-
           if (monthlyData.every((value) => value == 0)) {
-            return Stack(
-              alignment: Alignment.center,
+            final List<double> mockData = [
+              45,
+              30,
+              65,
+              25,
+              55,
+              35,
+              60,
+              40,
+              50,
+              45,
+              35,
+              55
+            ];
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  height: 300,
-                  padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
-                  color: Colors.grey[200],
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: 10,
-                      minY: 0,
-                      backgroundColor: Colors.grey[200],
-                      barGroups: List.generate(
-                        months.length,
-                        (index) => BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: 0,
-                              color: Colors.grey[400],
-                              width: 20,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                                topRight: Radius.circular(6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      titlesData: FlTitlesData(show: false),
-                      gridData: FlGridData(show: false),
-                      borderData: FlBorderData(show: false),
+                const Padding(
+                  padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
+                  child: Text(
+                    'Конверсия лидов',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
                     ),
                   ),
                 ),
-                const Text(
-                  'Нет данных для отображения',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: "Gilroy",
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black54,
-                  ),
-                ),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      height: 300,
+                      padding: const EdgeInsets.fromLTRB(4, 16, 16, 16),
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: 100,
+                          minY: 0,
+                          groupsSpace: 12,
+                          backgroundColor: Colors.white,
+                          barTouchData: BarTouchData(enabled: false),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  if (value < 0 || value >= months.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 16),
+                                    child: Transform.rotate(
+                                      angle: -1.55,
+                                      child: Text(
+                                        months[value.toInt()],
+                                        textAlign: TextAlign.left,
+                                        style: const TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 40,
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                          ),
+                          gridData: FlGridData(
+                            show: true,
+                            drawHorizontalLine: true,
+                            drawVerticalLine: true,
+                            horizontalInterval: 20,
+                            verticalInterval: 1,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: Colors.grey.withOpacity(0.2),
+                                strokeWidth: 1,
+                              );
+                            },
+                            getDrawingVerticalLine: (value) {
+                              return FlLine(
+                                color: Colors.grey.withOpacity(0.1),
+                                strokeWidth: 1,
+                              );
+                            },
+                          ),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border(
+                              bottom: BorderSide(
+                                  color: Colors.grey.withOpacity(0.2)),
+                              left: BorderSide(
+                                  color: Colors.grey.withOpacity(0.2)),
+                            ),
+                          ),
+                          barGroups: List.generate(
+                            months.length,
+                            (index) => BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: mockData[index],
+                                  color: Colors.grey[300],
+                                  width: 20,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(6),
+                                    topRight: Radius.circular(6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      'Нет данных для отображения',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: "Gilroy",
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                )
               ],
             );
           }
-
           double maxValue =
               monthlyData.reduce((max, value) => value > max ? value : max);
           double maxY = maxValue >= 100 ? 100 : (maxValue * 1.1).clamp(0, 100);

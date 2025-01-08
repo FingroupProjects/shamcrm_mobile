@@ -138,6 +138,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
+                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
@@ -693,7 +695,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
     );
   }
- Widget _buildDetailItem(String label, String value) {
+
+  Widget _buildDetailItem(String label, String value) {
     // Специальная обработка для названия и описания
     if (label == 'Название задачи:' || label == 'Описание:') {
       return GestureDetector(
@@ -718,7 +721,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52),
-                  decoration: value.isNotEmpty ? TextDecoration.underline : null,
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -726,7 +730,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             ),
           ],
         ),
-            );
+      );
     }
 
     if (label == 'Исполнитель:' && value.contains(',')) {

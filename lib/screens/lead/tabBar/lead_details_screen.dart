@@ -121,6 +121,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
+                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,

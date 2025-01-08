@@ -71,7 +71,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-         return Dialog(
+        return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -97,6 +97,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
+                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
