@@ -793,7 +793,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -842,7 +842,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -987,7 +987,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else if (response.statusCode == 500) {
@@ -1076,7 +1076,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       // Другие проверки на ошибки...
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Неизвестная ошибка!'
       };
     } else if (response.statusCode == 500) {
       return {
@@ -1262,7 +1262,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -1315,7 +1315,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -1701,7 +1701,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       // Другие проверки на ошибки...
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Неизвестная ошибка!'
       };
     } else if (response.statusCode == 500) {
       return {
@@ -1766,7 +1766,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Неизвестная ошибка!'
       };
     } else if (response.statusCode == 500) {
       return {
@@ -2376,7 +2376,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}',
+          'message': 'Неизвестная ошибка!',
         };
       } else if (response.statusCode == 500) {
         return {
@@ -2519,7 +2519,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}',
+          'message': 'Неизвестная ошибка!',
         };
       } else if (response.statusCode == 500) {
         return {
@@ -3309,7 +3309,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
         throw Exception('Ошибка сервера: Попробуйте позже');
       } else {
         // Обработка других ошибок
-        throw Exception('Неизвестная ошибка: ${response.body}');
+        throw Exception('Неизвестная ошибка!');
       }
     } catch (e) {
       // Обработка ошибок сети или других непредвиденных исключений

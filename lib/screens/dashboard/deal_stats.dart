@@ -24,6 +24,17 @@ class DealStatsChart extends StatelessWidget {
     'Ноябрь',
     'Декабрь'
   ];
+  String formatNumber(double value) {
+    if (value >= 1e9) {
+      return '${(value / 1e9).toStringAsFixed(1)}млрд';
+    } else if (value >= 1e6) {
+      return '${(value / 1e6).toStringAsFixed(1)}м';
+    } else if (value >= 1e3) {
+      return '${(value / 1e3).toStringAsFixed(1)}т';
+    } else {
+      return value.toStringAsFixed(0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,18 +152,18 @@ class DealStatsChart extends StatelessWidget {
                               return SizedBox(
                                 width: 60,
                                 child: Text(
-                                  value.toInt().toString(),
+                                  formatNumber(value.toDouble()),
                                   textAlign: TextAlign.right,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.grey.withOpacity(0.5),
+                                    color: Colors.black,
                                   ),
                                 ),
                               );
                             },
-                            reservedSize: 60,
+                            reservedSize: 42,
                           ),
                         ),
                         rightTitles: AxisTitles(
@@ -299,7 +310,7 @@ class DealStatsChart extends StatelessWidget {
                             return SizedBox(
                               width: 60,
                               child: Text(
-                                value.toInt().toString(),
+                                formatNumber(value.toDouble()),
                                 textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
@@ -310,7 +321,7 @@ class DealStatsChart extends StatelessWidget {
                               ),
                             );
                           },
-                          reservedSize: 60,
+                          reservedSize: 42,
                         ),
                       ),
                       rightTitles: AxisTitles(
