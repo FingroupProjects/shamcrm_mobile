@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_event.dart';
+import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_state.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
@@ -225,8 +227,20 @@ Future<void> _checkPermissions() async {
   }
 
  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+Widget build(BuildContext context) {
+  return BlocListener<DeleteMessageBloc, DeleteMessageState>(
+    listener: (context, state) {
+      if (state is DeleteMessageSuccess) {
+        context.read<MessagingCubit>().getMessages(widget.chatId);
+
+        if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
+        final chatsBloc = context.read<ChatsBloc>();
+        chatsBloc.add(ClearChats());
+        chatsBloc.add(FetchChats(endPoint: widget.endPointInTab)); 
+          }
+      }
+    },
+    child: Scaffold(
       appBar: AppBar(
         backgroundColor: ChatSmsStyles.appBarBackgroundColor,
         leading: IconButton(
@@ -321,19 +335,20 @@ Future<void> _checkPermissions() async {
               }
             } finally {
               setState(() {
-                _isRequestInProgress = false; // Сброс флага после выполнения
+                _isRequestInProgress = false; 
               });
             }
           },
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundImage: AssetImage(widget.chatItem.avatar),
-                radius: ChatSmsStyles.avatarRadius,
-                backgroundColor: Colors.white,
-              ),
-              const SizedBox(width: 10),
-              Text(
+         child: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: AssetImage(widget.chatItem.avatar),
+              radius: ChatSmsStyles.avatarRadius,
+              backgroundColor: Colors.white,
+            ),
+            const SizedBox(width: 10),
+            Expanded( 
+              child: Text(
                 widget.chatItem.name.isEmpty
                     ? 'Без имени'
                     : widget.chatItem.name,
@@ -343,9 +358,13 @@ Future<void> _checkPermissions() async {
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
                 ),
+                overflow: TextOverflow.ellipsis, 
+                maxLines: 1, 
               ),
-            ],
-          ),
+            ),
+          ],
+        )
+
         ),
       ),
       backgroundColor: const Color(0xffF4F7FD),
@@ -374,8 +393,10 @@ Future<void> _checkPermissions() async {
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget messageListUi() {
     return BlocBuilder<MessagingCubit, MessagingState>(
@@ -432,13 +453,16 @@ Future<void> _checkPermissions() async {
               currentDate = messageDate;
             }
 
-            currentGroup.add(
-              MessageItemWidget(
-                message: message,
-                apiServiceDownload: widget.apiServiceDownload,
-                baseUrl: baseUrl,
-              ),
-            );
+           currentGroup.add(
+            MessageItemWidget(
+              message: message,
+              chatId: widget.chatId,
+              endPointInTab: widget.endPointInTab,
+              apiServiceDownload: widget.apiServiceDownload,
+              baseUrl: baseUrl,
+            ),
+          );
+
           }
 
           if (currentGroup.isNotEmpty) {
@@ -564,12 +588,15 @@ Future<void> _checkPermissions() async {
             }
 
             currentGroup.add(
-              MessageItemWidget(
-                message: message,
-                apiServiceDownload: widget.apiServiceDownload,
-                baseUrl: baseUrl,
-              ),
-            );
+            MessageItemWidget(
+              message: message,
+              chatId: widget.chatId,
+              endPointInTab: widget.endPointInTab, 
+              apiServiceDownload: widget.apiServiceDownload,
+              baseUrl: baseUrl,
+            ),
+          );
+
           }
 
           if (currentGroup.isNotEmpty) {
@@ -823,36 +850,42 @@ final Map<String, double> _messagePositions = {};
 
 class MessageItemWidget extends StatelessWidget {
   final Message message;
+  final int chatId; 
+  final String endPointInTab; 
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
 
   const MessageItemWidget({
     super.key,
     required this.message,
+    required this.endPointInTab,
+    required this.chatId,
+
     required this.apiServiceDownload,
     required this.baseUrl,
   });
 
-@override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),  
-      child: _buildMessageContent(context),
-    );
+Widget build(BuildContext context) {
+  if (endPointInTab == 'lead') {
+    return _buildMessageContent(context);  
   }
+
+  return GestureDetector(
+    onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),
+    child: _buildMessageContent(context),
+  );
+}
+
 
    // Логика для удаления сообщения
 void _deleteMessage(BuildContext context) {
+
+
   int messageId = message.id; 
-  print('---------------------------------------------------------');
-  print('-------------------------------DELETEMESSAGE ID MESSAGE--------------------------------------');
-  print(messageId);
 
-
-  // Отправляем событие для удаления сообщения в BLoC
   context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
 
- ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 'Сообщение успешно удалено!',
@@ -875,6 +908,7 @@ void _deleteMessage(BuildContext context) {
             ),
           );
 }
+
 
 
   Widget _buildMessageContent(BuildContext context) {
