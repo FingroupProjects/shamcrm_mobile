@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_state.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
@@ -94,59 +95,51 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Center(
-            // Центрирование заголовка
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: Text(
-              content,
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
+        return Dialog(
           backgroundColor: Colors.white,
-          actions: [
-            Center(
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E2E52), // Цвет фона кнопки
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 10, horizontal: 100), // Внутренние отступы
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8), // Закругление углов
-                  ),
-                  minimumSize:
-                      const Size(150, 40), // Минимальные размеры кнопки
-                ),
-                child: const Text(
-                  'Закрыть',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white, // Цвет текста
-                  ),
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: 'Закрыть',
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
           ),
         );
       },

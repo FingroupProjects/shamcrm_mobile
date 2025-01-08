@@ -800,7 +800,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -849,7 +849,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -994,7 +994,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else if (response.statusCode == 500) {
@@ -1083,7 +1083,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       // Другие проверки на ошибки...
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Неизвестная ошибка!'
       };
     } else if (response.statusCode == 500) {
       return {
@@ -1269,7 +1269,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -1322,7 +1322,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       } else {
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}'
+          'message': 'Неизвестная ошибка!'
         };
       }
     } else {
@@ -1708,7 +1708,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       // Другие проверки на ошибки...
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Неизвестная ошибка!'
       };
     } else if (response.statusCode == 500) {
       return {
@@ -1773,7 +1773,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
       return {
         'success': false,
-        'message': 'Неизвестная ошибка: ${response.body}'
+        'message': 'Неизвестная ошибка!'
       };
     } else if (response.statusCode == 500) {
       return {
@@ -2383,7 +2383,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}',
+          'message': 'Неизвестная ошибка!',
         };
       } else if (response.statusCode == 500) {
         return {
@@ -2526,7 +2526,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка: ${response.body}',
+          'message': 'Неизвестная ошибка!',
         };
       } else if (response.statusCode == 500) {
         return {
@@ -3316,7 +3316,7 @@ print('Checking domain in prefs: ${prefs.containsKey('domain')}');
         throw Exception('Ошибка сервера: Попробуйте позже');
       } else {
         // Обработка других ошибок
-        throw Exception('Неизвестная ошибка: ${response.body}');
+        throw Exception('Неизвестная ошибка!');
       }
     } catch (e) {
       // Обработка ошибок сети или других непредвиденных исключений

@@ -34,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
   String userRoleName = 'No role assigned';
   bool isLoading = true;
+  bool isRefreshing = false;
 
   @override
   void initState() {
@@ -47,10 +48,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isLoading = true;
       });
 
-      // Запускаем оба процесса параллельно
       await Future.wait([
         _loadUserRole(),
-        Future.delayed(const Duration(seconds: 3)), // Задержка загрузки
+        Future.delayed(const Duration(seconds: 3)),
       ]);
 
       if (mounted) {
@@ -94,6 +94,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           userRoleName = 'Error loading role';
+        });
+      }
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    if (isRefreshing) return;
+
+    try {
+      setState(() {
+        isRefreshing = true;
+      });
+
+      await Future.wait([
+        Future.wait([
+          _loadUserRole(),
+        ]),
+        Future.delayed(const Duration(seconds: 3)),
+      ]);
+    } finally {
+      if (mounted) {
+        setState(() {
+          isRefreshing = false;
         });
       }
     }
@@ -161,13 +184,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? ProfileScreen()
             : Stack(
                 children: [
-                  SingleChildScrollView(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: _buildDashboardContent(),
+                  RefreshIndicator(
+                    color: Color(0xff1E2E52),
+                    backgroundColor: Colors.white,
+                    onRefresh: _onRefresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: _buildDashboardContent(),
+                      ),
                     ),
                   ),
-                  if (isLoading)
+                  if (isLoading || isRefreshing)
                     Container(
                       color: Colors.white,
                       child: const Center(

@@ -31,14 +31,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     notificationBloc.add(FetchNotifications());
 
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels ==
-          _scrollController.position.maxScrollExtent) {
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
         if (!notificationBloc.allNotificationsFetched) {
-          notificationBloc.add(FetchMoreNotifications(notificationBloc.state is NotificationDataLoaded ? 
-          (notificationBloc.state as NotificationDataLoaded).currentPage : 1));
+          notificationBloc.add(FetchMoreNotifications(
+              notificationBloc.state is NotificationDataLoaded
+                  ? (notificationBloc.state as NotificationDataLoaded).currentPage
+                  : 1));
         }
       }
     });
+  }
+
+  Future<void> _onRefresh() async {
+    notificationBloc.add(FetchNotifications());
+    return Future.delayed(Duration(milliseconds: 1500));
   }
 
   void _clearAllNotifications() async {
@@ -101,18 +107,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Navigator.of(context).pop();
           },
         ),
-       actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8), 
-          child: IconButton(
-            icon: const Icon(
-              Icons.delete,
-              color: Color(0xff1E2E52),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: const Icon(
+                Icons.delete,
+                color: Color(0xff1E2E52),
+              ),
+              onPressed: _clearAllNotifications,
             ),
-            onPressed: _clearAllNotifications,
           ),
-        ),
-      ],
+        ],
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
@@ -146,25 +152,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             });
           } else if (state is NotificationDataLoaded) {
             final notifications = state.notifications;
+            return RefreshIndicator(
+              color: Color(0xff1E2E52),
+              backgroundColor: Colors.white,
+              onRefresh: _onRefresh,
+              child: notifications.isEmpty
+                  ? ListView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4),
+                        Center(child: Text('У вас пока нет уведомлений.')),
+                      ],
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      physics: AlwaysScrollableScrollPhysics(),
+                      itemCount: notifications.length +
+                          (notificationBloc.allNotificationsFetched ? 0 : 1),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 16),
+                      itemBuilder: (context, index) {
+                        if (index == notifications.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                          );
+                        }
 
-            return notifications.isEmpty
-                ? Center(child: const Text('У вас пока нет уведомлений.'))
-                : ListView.builder(
-                    controller: _scrollController,
-                    itemCount: notifications.length +
-                        (notificationBloc.allNotificationsFetched ? 0 : 1),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    itemBuilder: (context, index) {
-                      if (index == notifications.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                        );
-                      }
+                        final notification = notifications[index];
 
-                      final notification = notifications[index];
-
-                      return Dismissible(
+                        return Dismissible(
                           key: Key(notification.id.toString()),
                           direction: DismissDirection.endToStart,
                           background: Container(
@@ -256,8 +273,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   ),
                                   SizedBox(width: 6),
                                   Text(
-                                    DateFormat('dd.MM.yyyy HH:mm')
-                                        .format(notification.createdAt.add(Duration(hours: 5))),
+                                    DateFormat('dd.MM.yyyy HH:mm').format(
+                                        notification.createdAt
+                                            .add(Duration(hours: 5))),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -265,7 +283,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       color: Color(0xff1E2E52),
                                     ),
                                   ),
-
                                 ],
                               ),
                               onTap: () {
@@ -273,9 +290,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     notification.id, notification.modelId);
                               },
                             ),
-                          ));
-                    },
-                  );
+                          ),
+                        );
+                      },
+                    ),
+            );
           }
           return Container();
         },
