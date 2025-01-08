@@ -96,7 +96,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                               child: Container(
                                 padding: EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.withOpacity(0.8),
+                                  color: const Color.fromARGB(0, 0, 0, 0).withOpacity(0),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Text(
@@ -181,7 +181,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
             FlSpot(0, 0),
             FlSpot(11, 0),
           ],
-          color: Colors.red.withOpacity(0.3),
+          color: const Color.fromARGB(0, 0, 0, 0).withOpacity(0),
           barWidth: 3,
           isCurved: false,
           dotData: FlDotData(show: false),
