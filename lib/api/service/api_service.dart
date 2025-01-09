@@ -200,6 +200,7 @@ Future<void> _removePermissions() async {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       },
     );
 
@@ -219,8 +220,8 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        if (token != null) 'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device' : 'mobile'
       },
       body: json.encode(body),
     );
@@ -241,8 +242,8 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        if (token != null)'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device' : 'mobile'
       },
       body: json.encode(body),
     );
@@ -263,6 +264,7 @@ Future<void> _removePermissions() async {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       },
     );
 
@@ -282,9 +284,8 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        if (token != null) 'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device' : 'mobile'
       },
       body: json.encode(body),
     );
@@ -315,6 +316,7 @@ Future<void> _removePermissions() async {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'Device' : 'mobile'
       },
       body: json.encode({
         'type': 'mobile', // Указываем тип устройства
@@ -2143,6 +2145,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       request.fields['name'] = name;
@@ -2281,6 +2284,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       // Добавляем все поля в формате form-data
@@ -2425,6 +2429,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       // Добавляем все поля в формате form-data
@@ -3189,6 +3194,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
             headers: {
               "Authorization": "Bearer $token",
               "Accept": "application/json",
+              'Device' : 'mobile'
             },
             contentType: 'multipart/form-data',
           ));
@@ -3898,6 +3904,7 @@ Future<void> DeleteAllNotifications() async {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       // Добавляем поля
