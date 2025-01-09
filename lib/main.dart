@@ -75,7 +75,6 @@ void main() async {
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
   final authService = AuthService();
-
   final bool isDomainChecked = await apiService.isDomainChecked();
   if (isDomainChecked) {
     await apiService.initialize();

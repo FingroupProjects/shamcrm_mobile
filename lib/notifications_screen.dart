@@ -31,12 +31,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     notificationBloc.add(FetchNotifications());
 
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
         if (!notificationBloc.allNotificationsFetched) {
-          notificationBloc.add(FetchMoreNotifications(
-              notificationBloc.state is NotificationDataLoaded
-                  ? (notificationBloc.state as NotificationDataLoaded).currentPage
-                  : 1));
+          notificationBloc.add(FetchMoreNotifications(notificationBloc.state
+                  is NotificationDataLoaded
+              ? (notificationBloc.state as NotificationDataLoaded).currentPage
+              : 1));
         }
       }
     });
@@ -52,7 +53,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     notificationBloc.add(DeleteAllNotification());
     setState(() {
       if (notificationBloc.state is NotificationDataLoaded) {
-        (notificationBloc.state as NotificationDataLoaded).notifications.clear();
+        (notificationBloc.state as NotificationDataLoaded)
+            .notifications
+            .clear();
       }
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -338,6 +341,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   chatItem: Chats(
                     id: chatId,
                     name: getChatById.name,
+                    image: '',
                     channel: "",
                     lastMessage: "",
                     messageType: "",
@@ -363,6 +367,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   chatItem: Chats(
                     id: chatId,
                     name: chatProfileTask.name,
+                    image: '',
                     channel: "",
                     lastMessage: "",
                     messageType: "",
@@ -394,6 +399,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: ChatSmsScreen(
                   chatItem: Chats(
                     id: chatId,
+                    image: '',
                     name: chatName.toString(),
                     channel: "",
                     lastMessage: "",

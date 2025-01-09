@@ -5,6 +5,8 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 class Chats {
   final int id;
   final String name;
+  final String image;
+
   final String? taskFrom;
   final String? taskTo;
   final String? description;
@@ -22,6 +24,7 @@ class Chats {
   Chats({
     required this.id,
     required this.name,
+    required this.image,
     this.taskFrom,
     this.taskTo,
     this.description,
@@ -64,6 +67,7 @@ class Chats {
               : json['lead'] != null
                   ? json['lead']['name'] ?? 'Без имени'
                   : '',
+      image: json['image'] ?? '',
       createDate: json['task'] != null
           ? json['task']['created_at'] ?? ''
           : json['lead'] != null
@@ -86,11 +90,12 @@ class Chats {
           json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
       canSendMessage: json["can_send_message"] ?? false,
       type: json['type'],
-      chatUsers: users, 
+      chatUsers: users,
       group: group,
       task: task,
     );
   }
+
 
   String get displayName {
     if (group != null && group!.name.isNotEmpty) {

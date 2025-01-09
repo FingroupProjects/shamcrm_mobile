@@ -225,6 +225,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
           id: chatId,
           name: chatName ?? 'Без имени',  
           canSendMessage: getChatById.canSendMessage,
+          image: '',
           channel: '',
           lastMessage: '',
           createDate: '',

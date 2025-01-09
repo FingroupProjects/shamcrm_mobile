@@ -9,14 +9,17 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class TaskNavigateToChat extends StatefulWidget {
   final int chatId;
-  final String taskName; 
-  final bool canSendMessage; 
+  final String taskName;
+  final bool canSendMessage;
 
-
-  TaskNavigateToChat({required this.chatId, required this.taskName,  required this.canSendMessage});
+  TaskNavigateToChat(
+      {required this.chatId,
+      required this.taskName,
+      required this.canSendMessage});
 
   @override
-  _TaskNavigateToChatDialogState createState() => _TaskNavigateToChatDialogState();
+  _TaskNavigateToChatDialogState createState() =>
+      _TaskNavigateToChatDialogState();
 }
 
 class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
@@ -32,9 +35,10 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
               CustomButton(
                 buttonText: '',
                 onPressed: () {
-                  print("------------------------------------------------------------------------");
+                  print(
+                      "------------------------------------------------------------------------");
                   print("CANSENDSSSSSMESAGE");
-                                    print('canSendMessage: ${widget.canSendMessage}');
+                  print('canSendMessage: ${widget.canSendMessage}');
 
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
@@ -44,6 +48,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                           chatItem: Chats(
                             id: widget.chatId,
                             name: widget.taskName,
+                            image: '',
                             taskFrom: "",
                             taskTo: "",
                             description: "",
@@ -51,9 +56,14 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                             lastMessage: "",
                             messageType: "",
                             createDate: "",
-                            unredMessage: 0, canSendMessage: widget.canSendMessage, type: '', chatUsers: [],
+                            unredMessage: 0,
+                            canSendMessage: widget.canSendMessage,
+                            type: '',
+                            chatUsers: [],
                           ).toChatItem("assets/images/AvatarChat.png"),
-                          chatId: widget.chatId, endPointInTab: 'task', canSendMessage: widget.canSendMessage,
+                          chatId: widget.chatId,
+                          endPointInTab: 'task',
+                          canSendMessage: widget.canSendMessage,
                         ),
                       ),
                     ),
@@ -68,7 +78,6 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                       'Перейти в чат',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
-                   
                   ],
                 ),
               ),
@@ -78,5 +87,4 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
       ),
     );
   }
-
 }

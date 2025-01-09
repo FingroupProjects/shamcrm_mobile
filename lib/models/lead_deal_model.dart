@@ -1,16 +1,19 @@
 class LeadDeal {
   final int id;
   final String startDate;
+  final String lastseen;
+
   final String name;
   final String? description;
   final String sum;
   final String endDate;
-  final dynamic contract; 
+  final dynamic contract;
   final OrganizationLeadDeals organization;
 
   LeadDeal({
     required this.id,
     required this.startDate,
+    required this.lastseen,
     required this.name,
     this.description,
     required this.sum,
@@ -23,6 +26,7 @@ class LeadDeal {
     return LeadDeal(
       id: json['id'] ?? 0,
       startDate: json['start_date'] ?? '',
+      lastseen: json['created_at'] ?? '',
       name: json['name'] ?? 'Без имени',
       description: json['description'],
       sum: json['sum'] ?? '0.00',

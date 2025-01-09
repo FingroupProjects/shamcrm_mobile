@@ -108,6 +108,21 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Текстовое поле "Организация"
+            const Padding(
+              padding: EdgeInsets.only(bottom: 0),
+              child: Text(
+                'Организация',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+
+            // Выпадающий список организаций
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(8),
