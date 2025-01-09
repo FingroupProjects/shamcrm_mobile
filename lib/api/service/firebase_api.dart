@@ -97,6 +97,8 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
   }
 
   Future<void> handleMessage(RemoteMessage? message) async {
+      final ApiService _apiService = ApiService();
+
     if (message == null || message.data.isEmpty) {
       print('handleMessage: сообщение пустое или данные отсутствуют');
       return;
@@ -116,8 +118,13 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
     switch (type) {
       case 'message':
         print('Переход на экран чата с ID: $id');
+         if (await _apiService.hasPermission('deal.read') && await _apiService.hasPermission('lead.read')) {
         screenIndex = 3;
         await navigateToScreen(screenIndex, id, 'message', message);
+        } else {
+          screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'message', message);
+          }
         break;
 
       case 'task':

@@ -30,18 +30,18 @@ class ParticipantProfileScreen extends StatelessWidget {
     this.buttonChat,
   });
 
-  String formatDate(String? date) {
-    if (date == null || date.isEmpty) {
-      return "Неизвестно";
-    }
-
-    try {
-      DateTime parsedDate = DateTime.parse(date);
-      return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
-    } catch (e) {
-      return "Неизвестно";
-    }
+String formatDate(String? date) {
+  if (date == null || date.isEmpty) {
+    return "Неизвестно";
   }
+
+  try {
+    DateTime parsedDate = DateTime.parse(date).add(Duration(hours: 5));
+    return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
+  } catch (e) {
+    return "Неизвестно";
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +110,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                     buildDivider(),
                     buildInfoRow("Email", email, Icons.email),
                     buildDivider(),
-                    buildInfoRow("Номер телефона", "+$phone", Icons.phone),
+                    buildInfoRow("Номер телефона", "$phone", Icons.phone),
                     buildDivider(),
                     buildInfoRow("Логин", login, Icons.account_circle),
                     buildDivider(),
