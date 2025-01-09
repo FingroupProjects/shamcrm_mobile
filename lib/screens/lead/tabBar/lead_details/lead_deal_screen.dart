@@ -154,75 +154,75 @@ class _DealsWidgetState extends State<DealsWidget> {
     );
   }
 
-  Widget _buildDealItem(LeadDeal deal) {
-    final formattedDate = deal.startDate != null
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.startDate!))
-        : 'Не указано';
+ Widget _buildDealItem(LeadDeal deal) {
+  String formattedDate;
 
-    return GestureDetector(
-      onTap: () {
-        _navigateToDealDetails(deal);
-      },
-      // onTap: _canUpdateDeal
-      //     ? () {
-      //         _navigateToDealDetails(deal);
-      //       }
-      //     : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/icons/MyNavBar/deal_ON.png',
-                  width: 24,
-                  height: 24,
-                  color: Color(0xff1E2E52),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        deal.name,
-                        style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow
-                            .ellipsis, // Ограничение текста в одну строку
+  try {
+    formattedDate = (deal.lastseen != null && deal.lastseen!.isNotEmpty)
+        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.lastseen!))
+        : 'Не указано';
+  } catch (e) {
+    formattedDate = 'Не указано'; // Обработка ошибки
+  }
+
+  return GestureDetector(
+    onTap: () {
+      _navigateToDealDetails(deal);
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: TaskCardStyles.taskCardDecoration,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Image.asset(
+                'assets/icons/MyNavBar/deal_ON.png',
+                width: 24,
+                height: 24,
+                color: Color(0xff1E2E52),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      deal.name,
+                      style: TaskCardStyles.titleStyle,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      formattedDate,
+                      style: TaskCardStyles.priorityStyle.copyWith(
+                        color: Color(0xff1E2E52),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        formattedDate,
-                        style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                if (_canDeleteDeal)
-                  IconButton(
-                    icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => DeleteDealDialog(
-                          dealId: deal.id,
-                          leadId: widget.leadId,
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
+              ),
+              if (_canDeleteDeal)
+                IconButton(
+                  icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => DeleteDealDialog(
+                        dealId: deal.id,
+                        leadId: widget.leadId,
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _navigateToDealDetails(LeadDeal deal) {
     List<DealCustomField> defaultCustomFields = [

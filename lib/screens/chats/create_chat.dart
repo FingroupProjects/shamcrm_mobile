@@ -169,83 +169,88 @@ class _AddClientDialogState extends State<AddClientDialog> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: isGroupChat
-                  ? BlocConsumer<GroupChatBloc, GroupChatState>(
-                      listener: (context, state) {
-                        if (state is GroupChatSuccess) {
-                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Групповой чат успешно создан!',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
+                child: isGroupChat
+                    ? BlocConsumer<GroupChatBloc, GroupChatState>(
+                        listener: (context, state) {
+                          if (state is GroupChatSuccess) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Групповой чат успешно создан!',
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                        builder: (context, state) {
+                          if (state is GroupChatLoading) {
+                            return Center(
+                                child: CircularProgressIndicator(
+                                    color: Color(0xff1E2E52)));
+                          }
+                          return _buildCreateButton(context);
+                        },
+                      )
+                    : BlocConsumer<CreateClientBloc, CreateClientState>(
+                        listener: (context, state) {
+                          if (state is CreateClientSuccess) {
+                            navigatorKey.currentState?.pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => BlocProvider(
+                                  create: (context) =>
+                                      MessagingCubit(ApiService()),
+                                  child: ChatSmsScreen(
+                                    chatItem: Chats(
+                                      id: state.chatId,
+                                      image: '',
+                                      name: selectedUserData?.name ?? '',
+                                      channel: "",
+                                      lastMessage: "",
+                                      messageType: "",
+                                      createDate: "",
+                                      unredMessage: 0,
+                                      canSendMessage: true,
+                                      chatUsers: [],
+                                    ).toChatItem(
+                                        "assets/images/AvatarChat.png"),
+                                    chatId: state.chatId,
+                                    endPointInTab: 'corporate',
+                                    canSendMessage: true,
+                                  ),
                                 ),
                               ),
-                              behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.green,
-                              elevation: 3,
-                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                        });
-                          Navigator.pop(context);
-                        }
-                      },
-                      builder: (context, state) {
-                        if (state is GroupChatLoading) {
-                          return Center(
-                            child: CircularProgressIndicator(color: Color(0xff1E2E52))
                             );
-                        }
-                        return _buildCreateButton(context);
-                      },
-                    )
-                  : BlocConsumer<CreateClientBloc, CreateClientState>(
-                  listener: (context, state) {
-                    if (state is CreateClientSuccess) {
-                      navigatorKey.currentState?.pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => BlocProvider(
-                            create: (context) => MessagingCubit(ApiService()),
-                            child: ChatSmsScreen(
-                              chatItem: Chats(
-                                id: state.chatId, 
-                                name: selectedUserData?.name ?? '',
-                                channel: "",
-                                lastMessage: "",
-                                messageType: "",
-                                createDate: "",
-                                unredMessage: 0,
-                                canSendMessage: true,
-                                chatUsers: [],
-                              ).toChatItem("assets/images/AvatarChat.png"),
-                              chatId: state.chatId,
-                              endPointInTab: 'corporate',
-                              canSendMessage: true,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state is CreateClientLoading) {
-                      return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-                    }
-                    return _buildCreateButton(context);
-                  },
-                )
-
-            ),
+                          }
+                        },
+                        builder: (context, state) {
+                          if (state is CreateClientLoading) {
+                            return Center(
+                                child: CircularProgressIndicator(
+                                    color: Color(0xff1E2E52)));
+                          }
+                          return _buildCreateButton(context);
+                        },
+                      )),
           ],
         ),
       ],
@@ -276,11 +281,11 @@ class _AddClientDialogState extends State<AddClientDialog> {
 
             if (!hasError) {
               context.read<GroupChatBloc>().add(
-                CreateGroupChat(
-                  name: groupNameController.text,
-                  userId: selectedUsers.map((user) => user.id!).toList(),
-                ),
-              );
+                    CreateGroupChat(
+                      name: groupNameController.text,
+                      userId: selectedUsers.map((user) => user.id!).toList(),
+                    ),
+                  );
             }
           } else {
             // Validate for Single Client Chat
@@ -293,8 +298,8 @@ class _AddClientDialogState extends State<AddClientDialog> {
 
             if (!hasError) {
               context.read<CreateClientBloc>().add(
-                CreateClientEv(userId: selectedUserData!.id.toString()),
-              );
+                    CreateClientEv(userId: selectedUserData!.id.toString()),
+                  );
             }
           }
         });
