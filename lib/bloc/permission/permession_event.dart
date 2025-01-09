@@ -1,9 +1,7 @@
 abstract class PermissionsEvent {}
 
 class FetchPermissionsEvent extends PermissionsEvent {
-  final String roleId;
 
-  FetchPermissionsEvent(this.roleId);
 }
 
 class SavePermissionsEvent extends PermissionsEvent {

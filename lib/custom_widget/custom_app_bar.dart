@@ -156,8 +156,7 @@ Future<void> _loadNotificationState() async {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {

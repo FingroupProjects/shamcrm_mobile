@@ -474,9 +474,11 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
 //     return permissions.contains(permission); // Проверяем наличие права
 //   }
 
-  Future<List<String>> fetchPermissionsByRoleId(String roleId) async {
+Future<List<String>> fetchPermissionsByRoleId() async {
+      final organizationId = await getSelectedOrganization();
+
     try {
-      final response = await _getRequest('/get-role-permission/$roleId');
+      final response = await _getRequest('/get-all-permissions?organization_id=$organizationId');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
