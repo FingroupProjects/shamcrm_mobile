@@ -376,7 +376,7 @@ void _addNewTab() async {
                 child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is DealLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text(' для отображения'));
+              return const Center(child: Text('Нет данных для отображения'));
             }
             return TabBarView(
               controller: _tabController,

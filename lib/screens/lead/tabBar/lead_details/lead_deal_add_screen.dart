@@ -201,12 +201,12 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         controller: startDateController,
                         label: 'Дата начало',
                         withTime: false,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return 'Поле обязательно для заполнения';
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
@@ -214,12 +214,12 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         label: 'Дата завершения',
                         withTime: false,
                         hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return 'Поле обязательно для заполнения';
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

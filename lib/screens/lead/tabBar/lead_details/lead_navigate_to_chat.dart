@@ -176,7 +176,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 ),
                               ),
                               onTap: () {
-                                navigateToScreen(LeadNavigateToChat.id, LeadNavigateToChat.canSendMessage);
+                                navigateToScreen(LeadNavigateToChat.id,
+                                    LeadNavigateToChat.canSendMessage);
                               },
                             );
                           },
@@ -220,6 +221,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
           child: ChatSmsScreen(
             chatItem: Chats(
               id: id,
+              image: '',
               name: widget.leadName,
               taskFrom: "",
               taskTo: "",
@@ -229,7 +231,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               messageType: "",
               createDate: "",
               unredMessage: 0,
-              canSendMessage: canSendMessage, chatUsers: [],
+              canSendMessage: canSendMessage,
+              chatUsers: [],
             ).toChatItem("assets/images/AvatarChat.png"),
             chatId: id,
             endPointInTab: 'lead',

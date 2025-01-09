@@ -39,7 +39,6 @@ class ChatSmsScreen extends StatefulWidget {
   final int chatId;
   final String endPointInTab;
   final bool canSendMessage;
-
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
 

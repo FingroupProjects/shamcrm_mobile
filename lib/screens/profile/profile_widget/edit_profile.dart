@@ -46,7 +46,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   bool isButtonDisabled = false;
 
   final TextEditingController phoneController = TextEditingController();
-  String selectedDialCode = ''; // Default country code
+  String selectedDialCode = '+992'; // Default country code
   List<String> countryCodes = [
     '+992',
     '+7',

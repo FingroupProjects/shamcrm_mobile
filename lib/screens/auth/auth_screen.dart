@@ -81,7 +81,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: screenHeight * 0.15),
-                  Image.asset('assets/icons/11.png', height: 80),
+                  Image.asset('assets/icons/11.jpg', height: 80),
                   SizedBox(height: 30),
                   const Text(
                     'Введите ваш поддомен',

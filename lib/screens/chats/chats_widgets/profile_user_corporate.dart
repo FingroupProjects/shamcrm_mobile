@@ -30,18 +30,88 @@ class ParticipantProfileScreen extends StatelessWidget {
     this.buttonChat,
   });
 
-String formatDate(String? date) {
+  String formatDate(String? date) {
   if (date == null || date.isEmpty) {
     return "Неизвестно";
   }
 
   try {
-    DateTime parsedDate = DateTime.parse(date).add(Duration(hours: 5));
+    DateTime parsedDate = DateTime.parse(date).toUtc().add(Duration(hours: 5));
     return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
   } catch (e) {
     return "Неизвестно";
   }
 }
+
+
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
+    }
+    return null;
+  }
+
+  Widget buildProfileImage() {
+    if (image.isEmpty || image == 'assets/images/AvatarChat.png') {
+      return Image.asset(
+        'assets/images/AvatarChat.png',
+        height: 140,
+        width: 140,
+        fit: BoxFit.cover,
+      );
+    }
+
+    if (image.contains('<svg')) {
+      final imageUrl = extractImageUrlFromSvg(image);
+      if (imageUrl != null) {
+        return Image.network(
+          imageUrl,
+          height: 140,
+          width: 140,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'assets/images/AvatarChat.png',
+              height: 140,
+              width: 140,
+              fit: BoxFit.cover,
+            );
+          },
+        );
+      } else {
+        // If we can't extract URL, try to display SVG directly
+        return SvgPicture.string(
+          image,
+          height: 140,
+          width: 140,
+          placeholderBuilder: (context) => Image.asset(
+            'assets/images/AvatarChat.png',
+            height: 140,
+            width: 140,
+            fit: BoxFit.cover,
+          ),
+        );
+      }
+    }
+
+    // For direct image URLs
+    return Image.network(
+      image,
+      height: 140,
+      width: 140,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          'assets/images/AvatarChat.png',
+          height: 140,
+          width: 140,
+          fit: BoxFit.cover,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,26 +144,7 @@ String formatDate(String? date) {
               Center(
                 child: Container(
                   child: ClipOval(
-                    child:
-                        image.isEmpty || image == 'assets/images/AvatarChat.png'
-                            ? Image.asset(
-                                'assets/images/AvatarChat.png',
-                                height: 140,
-                                width: 140,
-                                fit: BoxFit.cover,
-                              )
-                            : image.startsWith('<svg')
-                                ? SvgPicture.string(
-                                    image,
-                                    height: 140,
-                                    width: 140,
-                                  )
-                                : Image.network(
-                                    image,
-                                    height: 140,
-                                    width: 140,
-                                    fit: BoxFit.cover,
-                                  ),
+                    child: buildProfileImage(),
                   ),
                 ),
               ),
@@ -103,7 +154,8 @@ String formatDate(String? date) {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 child: Column(
                   children: [
                     buildInfoRow("Имя пользователя", name, Icons.person),
@@ -114,7 +166,8 @@ String formatDate(String? date) {
                     buildDivider(),
                     buildInfoRow("Логин", login, Icons.account_circle),
                     buildDivider(),
-                    buildInfoRow("Последний вход", formatDate(lastSeen), Icons.access_time),
+                    buildInfoRow("Последний вход", formatDate(lastSeen),
+                        Icons.access_time),
                   ],
                 ),
               ),
@@ -129,6 +182,7 @@ String formatDate(String? date) {
                           child: ChatSmsScreen(
                             chatItem: Chats(
                               id: state.chatId,
+                              image: '',
                               name: name,
                               channel: "",
                               lastMessage: "",
@@ -159,12 +213,15 @@ String formatDate(String? date) {
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           backgroundColor: Colors.red,
                           elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          padding: EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
                           duration: Duration(seconds: 3),
                         ),
                       );
@@ -172,38 +229,41 @@ String formatDate(String? date) {
                   }
                 },
                 child: BlocBuilder<CreateClientBloc, CreateClientState>(
-                builder: (context, state) {
-                  if (state is CreateClientLoading) {
-                    return Center(
-                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                    );
-                  }
-                  return buttonChat == true
-                      ? ElevatedButton(
-                          onPressed: () {
-                            context.read<CreateClientBloc>().add(CreateClientEv(userId: userId));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff1E2E52),
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 30),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                  builder: (context, state) {
+                    if (state is CreateClientLoading) {
+                      return Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xff1E2E52)),
+                      );
+                    }
+                    return buttonChat == true
+                        ? ElevatedButton(
+                            onPressed: () {
+                              context
+                                  .read<CreateClientBloc>()
+                                  .add(CreateClientEv(userId: userId));
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff1E2E52),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14, horizontal: 30),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                          ),
-                          child: const Text(
-                            "Перейти в чат",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Gilroy',
-                              color: Colors.white,
+                            child: const Text(
+                              "Перейти в чат",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Gilroy',
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        )
-                      : SizedBox.shrink(); 
-                },
-              ),
-
+                          )
+                        : SizedBox.shrink();
+                  },
+                ),
               )
             ],
           ),
@@ -212,7 +272,6 @@ String formatDate(String? date) {
     );
   }
 
-  // Строка информации с иконкой
   Widget buildInfoRow(String title, String value, IconData icon) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -248,7 +307,6 @@ String formatDate(String? date) {
     );
   }
 
-  // Разделитель
   Widget buildDivider() {
     return const Divider(
       color: Color(0xffE1E6F0),
