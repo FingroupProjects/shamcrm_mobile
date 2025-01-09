@@ -212,7 +212,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
          chatName = getChatById.group != null 
              ? getChatById.group!.name 
              : getChatById.chatUsers.length > 1
-                 ? '${getChatById.chatUsers[1].participant.name}'
+                 ? '${getChatById.chatUsers[0].participant.name}'
                  : getChatById.chatUsers[0].participant.name;
          break;
         default:
