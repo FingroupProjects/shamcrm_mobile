@@ -90,7 +90,7 @@ void initState() {
       // Выводим данные в консоль
       context
           .read<PermissionsBloc>()
-          .add(FetchPermissionsEvent(userRoleId.toString()));
+          .add(FetchPermissionsEvent());
     } catch (e) {
       print('Error loading user role!');
       setState(() {
