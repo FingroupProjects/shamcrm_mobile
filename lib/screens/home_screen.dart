@@ -33,11 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
     initializeScreensWithPermissions();
   }
 
-int? getNavBarIndexByTitle(String title) {
-  return _navBarTitles.indexOf(title);
-}
-
-
   Future<void> initializeScreensWithPermissions() async {
     List<Widget> widgets = [];
     List<String> titles = [];
