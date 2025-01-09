@@ -16,7 +16,7 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       FetchPermissionsEvent event, Emitter<PermissionsState> emit) async {
     emit(PermissionsLoading());
     try {
-      final permissions = await apiService.fetchPermissionsByRoleId(event.roleId);
+      final permissions = await apiService.fetchPermissionsByRoleId();
 
       List<PermissionsModel> permissionModels = permissions
           .map((permission) => PermissionsModel(permissions: [permission]))
