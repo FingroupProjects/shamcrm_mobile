@@ -183,7 +183,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   void _updateDetails(LeadById lead) {
     print('Lead author: ${lead.author?.name}'); // Добавьте вывод для отладки
     print(
-        '-------------------llll-ll-l-ll-l--l-l-l-l-l--------${lead.sourceLead?.name}');
+        '-------------------llll-ll-l-ll-l--l-l-l-l-l--------...........................${lead.sourceLead?.name}');
     currentLead = lead; // Сохраняем актуального лида
     details = [
       // {'label': 'ID лида:', 'value': lead.id.toString()},
@@ -450,7 +450,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
     );
   }
-
   // Построение списка деталей лида
   Widget _buildDetailsList() {
     return ListView.builder(
@@ -468,7 +467,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       },
     );
   }
-
   // Построение одной строки с деталями лида
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
@@ -499,6 +497,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
         color: Color(0xfff99A4BA),
+
       ),
     );
   }

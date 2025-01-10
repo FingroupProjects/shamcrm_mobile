@@ -231,7 +231,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
           createDate: '',
           unredMessage: 1,
           chatUsers: [],
-        ).toChatItem("assets/images/AvatarChat.png"),
+        ).toChatItem(),
         chatId: chatId,
         endPointInTab: getChatById.type.toString(),
         canSendMessage: getChatById.canSendMessage,
