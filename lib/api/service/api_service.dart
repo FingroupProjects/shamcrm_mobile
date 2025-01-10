@@ -54,10 +54,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+// final String baseUrl = 'https://fingroup-back.sham360.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
-// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
+// final String baseUrlSocket ='https://fingroup-back.sham360.com/broadcasting/auth';
 
 class ApiService {
   late final String baseUrl;
@@ -83,8 +83,8 @@ class ApiService {
 
     // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'https://$domain-back.shamcrm.com/api';
-    baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
+    baseUrl = 'https://$domain-back.sham360.com/api';
+    baseUrlSocket = 'https://$domain-back.sham360.com/broadcasting/auth';
     print('API инициализировано с доменом: $domain');
   }
 
@@ -110,7 +110,7 @@ class ApiService {
   Future<String> getDynamicBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/api';
+      return 'https://$domain-back.sham360.com/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -119,7 +119,7 @@ class ApiService {
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/broadcasting/auth';
+      return 'https://$domain-back.sham360.com/broadcasting/auth';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -275,7 +275,7 @@ Future<void> _removePermissions() async {
   // Метод для выполнения POST-запросов
   Future<http.Response> _postRequestDomain(
       String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://shamcrm.com/api';
+    final String DomainUrl = 'https://sham360.com/api';
     final token = await getToken(); // Получаем токен перед запросом
     final response = await http.post(
       Uri.parse('$DomainUrl$path'),
