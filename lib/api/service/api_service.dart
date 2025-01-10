@@ -639,22 +639,43 @@ Future<List<String>> fetchPermissionsByRoleId() async {
   }
 
   // Метод для получения статусов лидов
-  Future<List<LeadStatus>> getLeadStatuses() async {
+
+  // Метод для получения статусов лидов
+ Future<List<LeadStatus>> getLeadStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
+
+    // Проверяем кэшированные данные
+    final cachedStatuses = prefs.getString('cachedLeadStatuses_$organizationId');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => LeadStatus.fromJson(status))
+          .toList();
+      print('Используем кэшированные статусы');
+      return cachedList;
+    }
+
+    // Если кэша нет — отправляем запрос на сервер
     final response = await _getRequest(
         '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
-        return (data['result'] as List)
+        final statuses = (data['result'] as List)
             .map((status) => LeadStatus.fromJson(status))
             .toList();
+
+        // Сохраняем полученные данные в SharedPreferences
+        await prefs.setString('cachedLeadStatuses_$organizationId', json.encode(data['result']));
+        print('Статусы лидов сохранены в кэш');
+        return statuses;
       } else {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка загрузки статуса лида!');
+      throw Exception('Ошибка загрузки статусов лидов!');
     }
   }
 

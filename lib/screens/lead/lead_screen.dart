@@ -1,7 +1,9 @@
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
@@ -38,16 +40,51 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
+@override
+void initState() {
+  super.initState();
+  _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses());
-    print("Инициализация: отправлен запрос на получение статусов лидов");
-    _checkPermissions();
-  }
+  // Попытка получить данные из кеша
+  LeadCache.getLeadStatuses().then((cachedStatuses) {
+    if (cachedStatuses.isNotEmpty) {
+      setState(() {
+        _tabTitles = cachedStatuses;
+        // Инициализация TabController только один раз
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
+        int initialIndex = cachedStatuses
+            .indexWhere((status) => status['id'] == widget.initialStatusId);
+        if (initialIndex != -1) {
+          _currentTabIndex = initialIndex;
+        }
+        _tabController.index = _currentTabIndex;
+      });
+
+      // Добавляем слушатель для _tabController после его инициализации
+      _tabController.addListener(() {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        if (_scrollController.hasClients) {
+          _scrollToActiveTab();
+        }
+      });
+
+      if (_scrollController.hasClients) {
+        _scrollToActiveTab();
+      }
+    } else {
+      // Если нет данных в кеше, запрашиваем их через API
+      final leadBloc = BlocProvider.of<LeadBloc>(context);
+      leadBloc.add(FetchLeadStatuses());
+      print("Инициализация: отправлен запрос на получение статусов лидов");
+    }
+  });
+
+  // Проверка разрешений
+  _checkPermissions();
+}
 
   @override
   void dispose() {
@@ -266,6 +303,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
+        
         _currentTabIndex = 0;
 
         _isSearching = false;
@@ -277,138 +315,120 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTabBarView() {
-    return BlocListener<LeadBloc, LeadState>(
-      listener: (context, state) async {
-        if (state is LeadLoaded) {
-          setState(() {
-            _tabTitles = state.leadStatuses
-                .where((status) => _canReadLeadStatus)
-                .map((status) => {'id': status.id, 'title': status.title})
-                .toList();
-            _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+  return BlocListener<LeadBloc, LeadState>(
+    listener: (context, state) async {
+      if (state is LeadLoaded) {
+        setState(() {
+          _tabTitles = state.leadStatuses
+              .where((status) => _canReadLeadStatus)
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList();
 
-            if (_tabTitles.isNotEmpty) {
-              _tabController =
-                  TabController(length: _tabTitles.length, vsync: this);
-              _tabController.addListener(() {
-                setState(() {
-                  _currentTabIndex = _tabController.index;
-                });
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                if (_scrollController.hasClients) {
-                  _scrollToActiveTab();
-                }
+          _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+
+          if (_tabTitles.isNotEmpty) {
+            _tabController = TabController(length: _tabTitles.length, vsync: this);
+            _tabController.addListener(() {
+              setState(() {
+                _currentTabIndex = _tabController.index;
               });
-              int initialIndex = state.leadStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
-              if (initialIndex != -1) {
-                _tabController.index = initialIndex;
-                _currentTabIndex = initialIndex;
-              } else {
-                _tabController.index = _currentTabIndex;
-              }
-
+              final currentStatusId = _tabTitles[_currentTabIndex]['id'];
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
-//Логика для перехода к созданн статусе
-              if (navigateToEnd) {
-                navigateToEnd = false;
-                if (_tabController != null) {
-                  _tabController.animateTo(_tabTitles.length - 1);
-                }
-              }
-
-//Логика для перехода к после удаления статусе на лево
-              if (navigateAfterDelete) {
-                navigateAfterDelete = false;
-                if (_deletedIndex != null) {
-                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                    _tabController.animateTo(1);
-                  } else if (_deletedIndex == _tabTitles.length) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                  } else {
-                    _tabController.animateTo(_deletedIndex! - 1);
-                  }
-                }
-              }
+            });
+            int initialIndex = state.leadStatuses
+                .indexWhere((status) => status.id == widget.initialStatusId);
+            if (initialIndex != -1) {
+              _tabController.index = initialIndex;
+              _currentTabIndex = initialIndex;
+            } else {
+              _tabController.index = _currentTabIndex;
             }
-          });
-        } else if (state is LeadError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
-            ApiService apiService = ApiService();
-            await apiService.logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
-            );
-          } else if (state.message.contains("Нет подключения к интернету")) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        }
-      },
-      child: BlocBuilder<LeadBloc, LeadState>(
-  builder: (context, state) {
-    print('state: ${state.runtimeType}');
-    if (state is LeadDataLoaded) {
-      final List<Lead> leads = state.leads;
-      print(leads);
-      return searchWidget(leads);
-    }
-    if (state is LeadLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xff1E2E52)));
-    } else if (state is LeadLoaded) {
-      if (_tabTitles.isEmpty) {
-        return const Center(child: Text('Нет статусов для отображения'));
-      }
-      return TabBarView(
-        controller: _tabController,
-        children: List.generate(_tabTitles.length, (index) {
-          final statusId = _tabTitles[index]['id'];
-          final title = _tabTitles[index]['title'];
-          return LeadColumn(
-            statusId: statusId,
-            title: title,
-             onStatusId: (newStatusId) {
-                    print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
-                    if (index != -1) {
-                      _tabController.animateTo(index); 
-                    }
-                  },         
-          );
-        }),
-      );
-    }
-    return const SizedBox();
-  },
-)
 
-    );
-  }
+            if (_scrollController.hasClients) {
+              _scrollToActiveTab();
+            }
+
+            // Сохраняем данные в кеш
+            LeadCache.cacheLeadStatuses(_tabTitles);
+          }
+        });
+      } else if (state is LeadError) {
+        if (state.message.contains("Неавторизованный доступ!")) {
+          ApiService apiService = ApiService();
+          await apiService.logout();
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false,
+          );
+        } else if (state.message.contains("Нет подключения к интернету")) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.message,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    },
+    child: BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        print('state: ${state.runtimeType}');
+        if (state is LeadDataLoaded) {
+          final List<Lead> leads = state.leads;
+          print(leads);
+          return searchWidget(leads);
+        }
+        if (state is LeadLoading) {
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+        } else if (state is LeadLoaded) {
+          if (_tabTitles.isEmpty) {
+            return const Center(child: Text('Нет статусов для отображения'));
+          }
+          return TabBarView(
+            controller: _tabController,
+            children: List.generate(_tabTitles.length, (index) {
+              final statusId = _tabTitles[index]['id'];
+              final title = _tabTitles[index]['title'];
+              return LeadColumn(
+                statusId: statusId,
+                title: title,
+                onStatusId: (newStatusId) {
+                  print('Status ID changed: $newStatusId');
+                  final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                  if (index != -1) {
+                    _tabController.animateTo(index); 
+                  }
+                },         
+              );
+            }),
+          );
+        }
+        return const SizedBox();
+      },
+    ),
+  );
+}
+
 
   void _scrollToActiveTab() {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
@@ -436,4 +456,5 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 }
+
 
