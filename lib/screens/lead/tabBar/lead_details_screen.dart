@@ -40,7 +40,6 @@ class LeadDetailsScreen extends StatefulWidget {
   final String? telegram;
   final String? phone;
   final String? description;
-  final List<LeadCustomField> leadCustomFields;
 
   LeadDetailsScreen({
     required this.leadId,
@@ -59,7 +58,6 @@ class LeadDetailsScreen extends StatefulWidget {
     this.telegram,
     this.phone,
     this.description,
-    required this.leadCustomFields,
   });
 
   @override

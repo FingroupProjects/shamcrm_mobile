@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
-import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 
 class Lead {
@@ -10,21 +9,10 @@ class Lead {
   final int messageAmount;
   final String? createdAt;
   final int statusId;
-  final RegionData? region;
   final ManagerData? manager;
   final SourceLead? sourceLead;
-  final String? birthday;
-  final String? instagram;
-  final String? facebook;
-  final String? telegram;
-  final String? phone;
-  final String? whatsApp;
-  final String? email;
-  final Author? author;
-  final String? description;
   final LeadStatus? leadStatus;
   final Organization? organization;
-  final List<LeadCustomField> leadCustomFields;
 
   Lead({
     required this.id,
@@ -33,21 +21,10 @@ class Lead {
     required this.messageAmount,
     this.createdAt,
     required this.statusId,
-    this.region,
     this.manager,
     this.sourceLead,
-    this.birthday,
-    this.instagram,
-    this.facebook,
-    this.telegram,
-    this.phone,
-    this.whatsApp,
-    this.email,
-    this.author,
-    this.description,
     this.leadStatus,
     this.organization,
-    required this.leadCustomFields,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -60,9 +37,6 @@ class Lead {
       messageAmount: json['message_amount'] is int ? json['message_amount'] : 0,
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       statusId: leadStatusId,
-      region: json['region'] != null && json['region'] is Map<String, dynamic>
-          ? RegionData.fromJson(json['region'])
-          : null,
       manager:
           json['manager'] != null && json['manager'] is Map<String, dynamic>
               ? ManagerData.fromJson(json['manager'])
@@ -71,17 +45,6 @@ class Lead {
           json['source'] != null && json['source'] is Map<String, dynamic>
               ? SourceLead.fromJson(json['source'])
               : null,
-      birthday: json['birthday'] is String ? json['birthday'] : '',
-      instagram: json['insta_login'] is String ? json['insta_login'] : '',
-      facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
-      telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
-      phone: json['phone'] is String ? json['phone'] : '',
-      whatsApp: json['wa_phone'] is String ? json['wa_phone'] : '',
-      email: json['email'] is String ? json['email'] : '',
-      author: json['author'] != null && json['author'] is Map<String, dynamic>
-          ? Author.fromJson(json['author'])
-          : null,
-      description: json['description'] is String ? json['description'] : '',
       organization: json['organization'] != null &&
               json['organization'] is Map<String, dynamic>
           ? Organization.fromJson(json['organization'])
@@ -89,13 +52,26 @@ class Lead {
       leadStatus: json['leadStatus'] != null
         ? LeadStatus.fromJson(json['leadStatus'])
         : null, 
-      leadCustomFields: (json['lead_custom_fields'] as List<dynamic>?)
-              ?.map((field) => LeadCustomField.fromJson(field))
-              .toList() ??
-          [],
     );
   }
+
+  // Method to convert Lead object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'source': source?.toJson(),
+      'message_amount': messageAmount,
+      'created_at': createdAt,
+      'status_id': statusId,
+      'manager': manager?.toJson(),
+      'sourceLead': sourceLead?.toJson(),
+      'organization': organization?.toJson(),
+      'leadStatus': leadStatus?.toJson(),
+    };
+  }
 }
+
 
 class Author {
   final int id;
@@ -112,6 +88,13 @@ class Author {
       name: json['name'] ?? 'Не указано',
     );
   }
+
+ Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
 }
 
 class Source {
@@ -123,6 +106,12 @@ class Source {
     return Source(
       name: json['name'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+    };
   }
 }
 
@@ -147,7 +136,17 @@ class LeadStatus {
       lead_status_id: json['lead_status_id'] ?? null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'color': color,
+      'lead_status_id': lead_status_id,
+    };
+  }
 }
+
 
 class LeadCustomField {
   final int id;
@@ -166,5 +165,12 @@ class LeadCustomField {
       key: json['key'] ?? '',
       value: json['value'] ?? '',
     );
+  }
+   Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'key': key,
+      'value': value,
+    };
   }
 }

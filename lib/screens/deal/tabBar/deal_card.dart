@@ -90,8 +90,26 @@ class _DealCardState extends State<DealCard> {
               style: TaskCardStyles.titleStyle,
               maxLines: 1,
               overflow:
-                  TextOverflow.ellipsis, // Ограничение текста в одну строку
+                  TextOverflow.ellipsis, 
             ),
+            Text(
+            'Менеджер: ${widget.deal.manager!.name}', 
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xfff99A4BA),
+            ),
+          ),
+            Text(
+            'Лид: ${widget.deal.lead!.name}', 
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xfff99A4BA),
+            ),
+          ),
             const SizedBox(height: 5),
             Row(
               children: [
