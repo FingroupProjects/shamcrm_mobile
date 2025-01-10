@@ -54,10 +54,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-// final String baseUrl = 'https://fingroup-back.sham360.com/api';
+// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
-// final String baseUrlSocket ='https://fingroup-back.sham360.com/broadcasting/auth';
+// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
   late final String baseUrl;
@@ -83,8 +83,8 @@ class ApiService {
 
     // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'https://$domain-back.sham360.com/api';
-    baseUrlSocket = 'https://$domain-back.sham360.com/broadcasting/auth';
+    baseUrl = 'https://$domain-back.shamcrm.com/api';
+    baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
     print('API инициализировано с доменом: $domain');
   }
 
@@ -110,7 +110,7 @@ class ApiService {
   Future<String> getDynamicBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.sham360.com/api';
+      return 'https://$domain-back.shamcrm.com/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -119,7 +119,7 @@ class ApiService {
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.sham360.com/broadcasting/auth';
+      return 'https://$domain-back.shamcrm.com/broadcasting/auth';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -200,6 +200,7 @@ Future<void> _removePermissions() async {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       },
     );
 
@@ -219,8 +220,8 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        if (token != null) 'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device' : 'mobile'
       },
       body: json.encode(body),
     );
@@ -241,8 +242,8 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        if (token != null)'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device' : 'mobile'
       },
       body: json.encode(body),
     );
@@ -263,6 +264,7 @@ Future<void> _removePermissions() async {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       },
     );
 
@@ -275,16 +277,15 @@ Future<void> _removePermissions() async {
   // Метод для выполнения POST-запросов
   Future<http.Response> _postRequestDomain(
       String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://sham360.com/api';
+    final String DomainUrl = 'https://shamcrm.com/api';
     final token = await getToken(); // Получаем токен перед запросом
     final response = await http.post(
       Uri.parse('$DomainUrl$path'),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        if (token != null) 'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device' : 'mobile'
       },
       body: json.encode(body),
     );
@@ -315,6 +316,7 @@ Future<void> _removePermissions() async {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        'Device' : 'mobile'
       },
       body: json.encode({
         'type': 'mobile', // Указываем тип устройства
@@ -472,9 +474,11 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
 //     return permissions.contains(permission); // Проверяем наличие права
 //   }
 
-  Future<List<String>> fetchPermissionsByRoleId(String roleId) async {
+Future<List<String>> fetchPermissionsByRoleId() async {
+      final organizationId = await getSelectedOrganization();
+
     try {
-      final response = await _getRequest('/get-role-permission/$roleId');
+      final response = await _getRequest('/get-all-permissions?organization_id=$organizationId');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -2143,6 +2147,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       request.fields['name'] = name;
@@ -2281,6 +2286,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       // Добавляем все поля в формате form-data
@@ -2425,6 +2431,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       // Добавляем все поля в формате form-data
@@ -3189,6 +3196,7 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
             headers: {
               "Authorization": "Bearer $token",
               "Accept": "application/json",
+              'Device' : 'mobile'
             },
             contentType: 'multipart/form-data',
           ));
@@ -3898,6 +3906,7 @@ Future<void> DeleteAllNotifications() async {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Device' : 'mobile'
       });
 
       // Добавляем поля

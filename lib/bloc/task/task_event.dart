@@ -7,6 +7,7 @@ class FetchTaskStatuses extends TaskEvent {}
 class FetchTasks extends TaskEvent {
   final int statusId;
   final String? query; // Добавьте параметр для поиска
+  
 
   FetchTasks(this.statusId, {this.query});
 }

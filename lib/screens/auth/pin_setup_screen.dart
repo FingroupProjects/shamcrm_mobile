@@ -22,7 +22,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   bool _pinsDoNotMatch = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
-    int? userRoleId ;
+  int? userRoleId ;
 
 
 
@@ -102,7 +102,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     await prefs.setString('userRoleName', userProfile.role![0].name);
 
     // Выводим данные в консоль
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent(userRoleId.toString()));
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
 
   } catch (e) {
     print('Error loading user role!');
@@ -173,8 +173,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 animation: _shakeAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,
-                        0), // Эффект "шатания".
+                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,0), // Эффект "шатания".
                     child: Column(
                       children: [
                         _buildPinRow(_pin),

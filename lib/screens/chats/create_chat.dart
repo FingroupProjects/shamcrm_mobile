@@ -18,7 +18,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/scheduler.dart';
 
 class AddClientDialog extends StatefulWidget {
-  const AddClientDialog({super.key});
+  const AddClientDialog({super.key}); 
 
   @override
   State<AddClientDialog> createState() => _AddClientDialogState();
@@ -231,8 +231,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                                       unredMessage: 0,
                                       canSendMessage: true,
                                       chatUsers: [],
-                                    ).toChatItem(
-                                        "assets/images/AvatarChat.png"),
+                                    ).toChatItem(),
                                     chatId: state.chatId,
                                     endPointInTab: 'corporate',
                                     canSendMessage: true,

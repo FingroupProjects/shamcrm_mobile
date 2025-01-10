@@ -60,7 +60,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                             canSendMessage: widget.canSendMessage,
                             type: '',
                             chatUsers: [],
-                          ).toChatItem("assets/images/AvatarChat.png"),
+                          ).toChatItem(),
                           chatId: widget.chatId,
                           endPointInTab: 'task',
                           canSendMessage: widget.canSendMessage,

@@ -97,6 +97,8 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
   }
 
   Future<void> handleMessage(RemoteMessage? message) async {
+      final ApiService _apiService = ApiService();
+
     if (message == null || message.data.isEmpty) {
       print('handleMessage: сообщение пустое или данные отсутствуют');
       return;
@@ -116,8 +118,13 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
     switch (type) {
       case 'message':
         print('Переход на экран чата с ID: $id');
+         if (await _apiService.hasPermission('deal.read') && await _apiService.hasPermission('lead.read')) {
         screenIndex = 3;
         await navigateToScreen(screenIndex, id, 'message', message);
+        } else {
+          screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'message', message);
+          }
         break;
 
       case 'task':
@@ -205,7 +212,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
          chatName = getChatById.group != null 
              ? getChatById.group!.name 
              : getChatById.chatUsers.length > 1
-                 ? '${getChatById.chatUsers[1].participant.name}'
+                 ? '${getChatById.chatUsers[0].participant.name}'
                  : getChatById.chatUsers[0].participant.name;
          break;
         default:
@@ -224,7 +231,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
           createDate: '',
           unredMessage: 1,
           chatUsers: [],
-        ).toChatItem("assets/images/AvatarChat.png"),
+        ).toChatItem(),
         chatId: chatId,
         endPointInTab: getChatById.type.toString(),
         canSendMessage: getChatById.canSendMessage,

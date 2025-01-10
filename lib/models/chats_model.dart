@@ -1,7 +1,6 @@
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 
-
 class Chats {
   final int id;
   final String name;
@@ -96,14 +95,13 @@ class Chats {
     );
   }
 
-
   String get displayName {
     if (group != null && group!.name.isNotEmpty) {
-      return group!.name; 
+      return group!.name;
     } else if (task != null && task!.name.isNotEmpty) {
-      return task!.name; 
+      return task!.name;
     } else {
-      return name; 
+      return name;
     }
   }
 
@@ -131,25 +129,25 @@ class Chats {
     }
   }
 
-
-  ChatItem toChatItem(String avatar) {
-    String avatar = group != null
-      ? "assets/images/GroupChat.png" 
-      : "assets/images/AvatarChat.png";
-    return ChatItem(
-      displayName,
-      lastMessage,
-      createDate,
-      avatar,
-      _mapChannelToIcon(channel),
-      unredMessage,
-    );
+ChatItem toChatItem() {
+  String avatar;
+  if (group != null) {
+    avatar = "assets/images/GroupChat.png";
+  } else if (chatUsers != null && chatUsers.isNotEmpty && chatUsers[1].image.isNotEmpty) {
+    avatar = chatUsers[1].image;
+  } else {
+    avatar = "assets/images/AvatarChat.png";
   }
 
-  @override
-  String toString() {
-    return 'Chats{id: $id, name: $name, taskFrom: $taskFrom, taskTo: $taskTo, description: $description, channel: $channel, lastMessage: $lastMessage, messageType: $messageType, createDate: $createDate, unredMessage: $unredMessage, type: $type}';
-  }
+  return ChatItem(
+    displayName,
+    lastMessage,
+    createDate,
+    avatar,
+    _mapChannelToIcon(channel),
+    unredMessage,
+  );
+}
 
   String _mapChannelToIcon(String channel) {
     const channelIconMap = {
@@ -186,12 +184,18 @@ class ChatUser {
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(
       id: json['participant'] != null ? json['participant']['id'] ?? 0 : 0,
-      name: json['participant'] != null ? json['participant']['name'] ?? '' : '',
-      login: json['participant'] != null ? json['participant']['login'] ?? '' : '',
-      email: json['participant'] != null ? json['participant']['email'] ?? '' : '',
-      phone: json['participant'] != null ? json['participant']['phone'] ?? '' : '',
-      image: json['participant'] != null ? json['participant']['image'] ?? '' : '',
-      lastSeen: json['participant'] != null ? json['participant']['last_seen'] : null,
+      name:
+          json['participant'] != null ? json['participant']['name'] ?? '' : '',
+      login:
+          json['participant'] != null ? json['participant']['login'] ?? '' : '',
+      email:
+          json['participant'] != null ? json['participant']['email'] ?? '' : '',
+      phone:
+          json['participant'] != null ? json['participant']['phone'] ?? '' : '',
+      image:
+          json['participant'] != null ? json['participant']['image'] ?? '' : '',
+      lastSeen:
+          json['participant'] != null ? json['participant']['last_seen'] : null,
     );
   }
 
@@ -237,7 +241,6 @@ class Group {
     return 'Group{id: $id, name: $name, imgUrl: $imgUrl, authorId: $authorId, createdAt: $createdAt, updatedAt: $updatedAt, organizationId: $organizationId}';
   }
 }
-
 
 class Message {
   final int id;

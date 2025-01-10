@@ -36,8 +36,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _canDeleteTaskStatus = false;
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
-bool navigateAfterDelete = false;
-int? _deletedIndex;
+  bool navigateAfterDelete = false;
+  int? _deletedIndex;
 
   @override
   void initState() {
@@ -206,40 +206,61 @@ int? _deletedIndex;
       builder: (BuildContext context) => CreateStatusDialog(),
     );
 
-     if (result == true) {
-    setState(() {
-      navigateToEnd = true; 
-    });
+    if (result == true) {
+      setState(() {
+        navigateToEnd = true;
+      });
     }
   }
 
   Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
-    return GestureDetector(
-      key: _tabKeys[index],
-      onTap: () {
-        _tabController.animateTo(index);
-      },
-      onLongPress: () {
-        if (_canDeleteTaskStatus) {
-          _showDeleteDialog(index);
-        }
-      },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
+  bool isActive = _tabController.index == index;
+  final statusId = _tabTitles[index]['id'];
+  
+  return GestureDetector(
+    key: _tabKeys[index],
+    onTap: () {
+      _tabController.animateTo(index);
+    },
+    onLongPress: () {
+      if (_canDeleteTaskStatus) {
+        _showDeleteDialog(index);
+      }
+    },
+    child: Container(
+      decoration: TaskStyles.tabButtonDecoration(isActive),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
             _tabTitles[index]['title'],
             style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
             ),
           ),
-        ),
+          BlocBuilder<TaskBloc, TaskState>(
+            builder: (context, state) {
+              if (state is TaskLoaded && state.taskCounts.containsKey(statusId)) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    '${state.taskCounts[statusId]}',
+                    style: TaskStyles.tabTextStyle.copyWith(
+                      color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox();
+            },
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showDeleteDialog(int index) async {
     final taskStatusId = _tabTitles[index]['id'];
@@ -252,10 +273,10 @@ int? _deletedIndex;
 
     if (result != null && result) {
       setState(() {
-            setState(() {
-             _deletedIndex = _currentTabIndex;
-             navigateAfterDelete = true; 
-           });
+        setState(() {
+          _deletedIndex = _currentTabIndex;
+          navigateAfterDelete = true;
+        });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -268,7 +289,6 @@ int? _deletedIndex;
       });
     }
   }
-
 
   Widget _buildTabBarView() {
     return BlocListener<TaskBloc, TaskState>(
@@ -307,27 +327,27 @@ int? _deletedIndex;
                 _scrollToActiveTab();
               }
 
-          //Логика для перехода к созданн статусе
-         if (navigateToEnd) {
-         navigateToEnd = false;
-         if (_tabController != null) {
-           _tabController.animateTo(_tabTitles.length -1); 
-         }
-      }
+              //Логика для перехода к созданн статусе
+              if (navigateToEnd) {
+                navigateToEnd = false;
+                if (_tabController != null) {
+                  _tabController.animateTo(_tabTitles.length - 1);
+                }
+              }
 
-          //Логика для перехода к после удаления статусе на лево
-           if (navigateAfterDelete) {
-          navigateAfterDelete = false;
-          if (_deletedIndex != null) {
-            if (_deletedIndex == 0 && _tabTitles.length > 1) {
-              _tabController.animateTo(1); 
-            } else if (_deletedIndex == _tabTitles.length) {
-              _tabController.animateTo(_tabTitles.length - 1); 
-            } else {
-              _tabController.animateTo(_deletedIndex! - 1); 
-            }
-          }
-        }
+              //Логика для перехода к после удаления статусе на лево
+              if (navigateAfterDelete) {
+                navigateAfterDelete = false;
+                if (_deletedIndex != null) {
+                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                    _tabController.animateTo(1);
+                  } else if (_deletedIndex == _tabTitles.length) {
+                    _tabController.animateTo(_tabTitles.length - 1);
+                  } else {
+                    _tabController.animateTo(_deletedIndex! - 1);
+                  }
+                }
+              }
             }
           });
         } else if (state is TaskError) {
@@ -339,7 +359,7 @@ int? _deletedIndex;
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          }  else if (state.message.contains("Нет подключения к интернету")) {
+          } else if (state.message.contains("Нет подключения к интернету")) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -386,14 +406,18 @@ int? _deletedIndex;
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
-                return TaskColumn(statusId: statusId, name: title,  
-                onStatusId: (newStatusId) {
+                return TaskColumn(
+                  statusId: statusId,
+                  name: title,
+                  onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
                     if (index != -1) {
-                      _tabController.animateTo(index); 
+                      _tabController.animateTo(index);
                     }
-                  },   );
+                  },
+                );
               }),
             );
           }

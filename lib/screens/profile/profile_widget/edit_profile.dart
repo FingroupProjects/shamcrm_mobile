@@ -550,303 +550,299 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
 
     return Scaffold(
-        key: _formKey,
-        appBar: AppBar(
-          title: Text('Редактирование профиля',
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              )),
-          centerTitle: false,
-          leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+      key: _formKey,
+      appBar: AppBar(
+        title: Text('Редактирование профиля',
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            )),
+        centerTitle: false,
+        leading: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
           ),
-          backgroundColor: Color.fromARGB(255, 255, 255, 255),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
-        body: _isLoading
-            ? Center(
-                child: CircularProgressIndicator(
-                  color: const Color(0xff1E2E52),
-                ),
-              )
-            : Column(children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 16.0,
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Column(
-                                children: [
-                                  _localImage != null
-                                      ? CircleAvatar(
-                                          radius: 70,
-                                          backgroundImage:
-                                              FileImage(_localImage!),
-                                        )
-                                      : _userImage != 'Не найдено' &&
-                                              _userImage.isNotEmpty
-                                          ? _userImage.contains('<svg')
-                                              ? buildSvgAvatar(_userImage)
-                                              : Container(
-                                                  width: 140,
-                                                  height: 140,
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            70),
-                                                    image: DecorationImage(
-                                                      image: NetworkImage(
-                                                          _userImage),
-                                                      fit: BoxFit.cover,
-                                                    ),
+        backgroundColor: Color.fromARGB(255, 255, 255, 255),
+      ),
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: const Color(0xff1E2E52),
+              ),
+            )
+          : Column(children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 16.0,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Column(
+                              children: [
+                                _localImage != null
+                                    ? CircleAvatar(
+                                        radius: 70,
+                                        backgroundImage:
+                                            FileImage(_localImage!),
+                                      )
+                                    : _userImage != 'Не найдено' &&
+                                            _userImage.isNotEmpty
+                                        ? _userImage.contains('<svg')
+                                            ? buildSvgAvatar(_userImage)
+                                            : Container(
+                                                width: 140,
+                                                height: 140,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(70),
+                                                  image: DecorationImage(
+                                                    image: NetworkImage(
+                                                        _userImage),
+                                                    fit: BoxFit.cover,
                                                   ),
-                                                )
-                                          : CircleAvatar(
-                                              radius: 70,
-                                              backgroundColor: Colors.grey[300],
-                                              child: Icon(
-                                                Icons.person,
-                                                size: 100,
-                                                color: const Color.fromARGB(
-                                                    255, 255, 255, 255),
-                                              ),
+                                                ),
+                                              )
+                                        : CircleAvatar(
+                                            radius: 70,
+                                            backgroundColor: Colors.grey[300],
+                                            child: Icon(
+                                              Icons.person,
+                                              size: 100,
+                                              color: const Color.fromARGB(
+                                                  255, 255, 255, 255),
                                             ),
-                                  const SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: _showImagePickerDialog,
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      backgroundColor: const Color(0xff1E2E52),
-                                    ),
-                                    child: Text(
-                                      _userImage == 'Не найдено' ||
-                                              _userImage.isEmpty
-                                          ? 'Сменить фото'
-                                          : 'Сменить фото',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: NameController,
-                            hintText: 'Введите Имя',
-                            label: 'Имя',
-                            onChanged: (value) {
-                              setState(() {
-                                _nameError = null;
-                              });
-                            },
-                          ),
-                          if (_nameError != null)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 4, left: 12),
-                                child: Text(
-                                  _nameError!,
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: SurnameController,
-                            hintText: 'Введите Фамилию',
-                            label: 'Фамилия',
-                            onChanged: (value) {
-                              setState(() {
-                                _surnameError = null;
-                              });
-                            },
-                          ),
-                          if (_surnameError != null)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 4, left: 12),
-                                child: Text(
-                                  _surnameError!,
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 8),
-                          CustomPhoneNumberInput(
-                            controller: phoneController,
-                            selectedDialCode: selectedDialCode,
-                            phoneNumberLengths:
-                                phoneNumberLengths, // Передача длины номеров
-                            onInputChanged: (String number) {
-                              for (var country in countries) {
-                                if (number.startsWith(country.dialCode)) {
-                                  setState(() {
-                                    selectedDialCode = country.dialCode;
-                                  });
-                                  break;
-                                }
-                              }
-                            },
-                            label: 'Телефон',
-                          ),
-                          const SizedBox(height: 8),
-                          Opacity(
-                            opacity: 0.6, // Прозрачность для всего виджета
-                            child: CustomTextField(
-                              controller: roleController,
-                              hintText: 'Введите роль',
-                              label: 'Роль',
-                              readOnly: true,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Opacity(
-                            opacity: 0.6, // Прозрачность для всего виджета
-                            child: CustomTextField(
-                              controller: loginController,
-                              hintText: 'Введите логин',
-                              label: 'Логин',
-                              readOnly: true,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: emailController,
-                            hintText: 'Введите электронную почту',
-                            label: 'Электронная почта',
-                            keyboardType: TextInputType.emailAddress,
-                            onChanged: (value) {
-                              setState(() {
-                                _emailError = null;
-                              });
-                            },
-                          ),
-                          if (_emailError != null)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 4, left: 12),
-                                child: Text(
-                                  _emailError!,
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          BlocListener<ProfileBloc, ProfileState>(
-                            listener: (context, state) {
-                              if (state is ProfileSuccess) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Профиль успешно обновлен!',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(
+                                          ),
+                                const SizedBox(height: 10),
+                                ElevatedButton(
+                                  onPressed: _showImagePickerDialog,
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    elevation: 3,
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 16),
-                                    duration: Duration(seconds: 3),
+                                    backgroundColor: const Color(0xff1E2E52),
                                   ),
-                                );
-                                Navigator.pop(context);
-                              } else if (state is ProfileError) {
-                                String message;
-
-                                if (state.message.contains('500')) {
-                                  message =
-                                      'Ошибка на сервере. Попробуйте позже.';
-                                } else if (state.message.contains('422')) {
-                                  message = 'Проверьте введенные данные';
-                                } else if (state.message.contains('404')) {
-                                  message = 'Ресурс не найден';
-                                } else {
-                                  message =
-                                      'Неправильный номер телефона. Проверьте формат и количество цифр.';
-                                }
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      message,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                      ),
+                                  child: Text(
+                                    _userImage == 'Не найдено' ||
+                                            _userImage.isEmpty
+                                        ? 'Сменить фото'
+                                        : 'Сменить фото',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
                                     ),
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    elevation: 3,
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 16),
-                                    duration: Duration(seconds: 3),
                                   ),
-                                );
-                              }
-                            },
-                            child: Container(),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: NameController,
+                          hintText: 'Введите Имя',
+                          label: 'Имя',
+                          onChanged: (value) {
+                            setState(() {
+                              _nameError = null;
+                            });
+                          },
+                        ),
+                        if (_nameError != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 12),
+                              child: Text(
+                                _nameError!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                ),
+                              ),
+                            ),
                           ),
-                        ],
-                      ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: SurnameController,
+                          hintText: 'Введите Фамилию',
+                          label: 'Фамилия',
+                          onChanged: (value) {
+                            setState(() {
+                              _surnameError = null;
+                            });
+                          },
+                        ),
+                        if (_surnameError != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 12),
+                              child: Text(
+                                _surnameError!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        CustomPhoneNumberInput(
+                          controller: phoneController,
+                          selectedDialCode: selectedDialCode,
+                          phoneNumberLengths:
+                              phoneNumberLengths, // Передача длины номеров
+                          onInputChanged: (String number) {
+                            for (var country in countries) {
+                              if (number.startsWith(country.dialCode)) {
+                                setState(() {
+                                  selectedDialCode = country.dialCode;
+                                });
+                                break;
+                              }
+                            }
+                          },
+                          label: 'Телефон',
+                        ),
+                        const SizedBox(height: 8),
+                        Opacity(
+                          opacity: 0.6, // Прозрачность для всего виджета
+                          child: CustomTextField(
+                            controller: roleController,
+                            hintText: 'Введите роль',
+                            label: 'Роль',
+                            readOnly: true,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Opacity(
+                          opacity: 0.6, // Прозрачность для всего виджета
+                          child: CustomTextField(
+                            controller: loginController,
+                            hintText: 'Введите логин',
+                            label: 'Логин',
+                            readOnly: true,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: emailController,
+                          hintText: 'Введите электронную почту',
+                          label: 'Электронная почта',
+                          keyboardType: TextInputType.emailAddress,
+                          onChanged: (value) {
+                            setState(() {
+                              _emailError = null;
+                            });
+                          },
+                        ),
+                        if (_emailError != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 12),
+                              child: Text(
+                                _emailError!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                ),
+                              ),
+                            ),
+                          ),
+                        BlocListener<ProfileBloc, ProfileState>(
+                          listener: (context, state) {
+                            if (state is ProfileSuccess) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Профиль успешно обновлен!',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                              Navigator.pop(context);
+                            } else if (state is ProfileError) {
+                              String message;
+
+                              if (state.message.contains('500')) {
+                                message =
+                                    'Ошибка на сервере. Попробуйте позже.';
+                              } else if (state.message.contains('422')) {
+                                message = 'Проверьте введенные данные';
+                              } else if (state.message.contains('404')) {
+                                message = 'Ресурс не найден';
+                              } else {
+                                message =
+                                    'Неправильный номер телефона. Проверьте формат и количество цифр.';
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    message,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                Container(
+              ),
+              Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
@@ -868,89 +864,73 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               horizontal: 16, vertical: 8),
                           minimumSize: Size(double.infinity, 48),
                         ),
-                        onPressed: isButtonDisabled
-                            ? null
-                            : () async {
-                                setState(() {
-                                  isButtonDisabled = true;
-                                  _nameError = null;
-                                  _surnameError = null;
-                                  _phoneError = null;
-                                  _emailError = null;
-                                });
+                        onPressed: () async {
+                          // Сбрасываем состояние ошибок
+                          setState(() {
+                            _nameError = null;
+                            _surnameError = null;
+                            _phoneError = null;
+                            _emailError = null;
+                          });
 
-                                bool isValid = true;
+                          // Проверяем валидацию
+                          bool isValid = true;
 
-                                // Проверяем обязательные поля
-                                if (NameController.text.trim().isEmpty) {
-                                  setState(() {
-                                    _nameError =
-                                        'Поле имя обязательно для заполнения';
-                                  });
-                                  isValid = false;
-                                }
+                          if (NameController.text.trim().isEmpty) {
+                            setState(() {
+                              _nameError =
+                                  'Поле имя обязательно для заполнения';
+                            });
+                            isValid = false;
+                          }
 
-                                if (SurnameController.text.trim().isEmpty) {
-                                  setState(() {
-                                    _surnameError =
-                                        'Поле фамилия обязательно для заполнения';
-                                  });
-                                  isValid = false;
-                                }
+                          if (SurnameController.text.trim().isEmpty) {
+                            setState(() {
+                              _surnameError =
+                                  'Поле фамилия обязательно для заполнения';
+                            });
+                            isValid = false;
+                          }
 
-                                if (phoneController.text.trim().isEmpty) {
-                                  setState(() {
-                                    _phoneError =
-                                        'Поле телефон обязательно для заполнения';
-                                  });
-                                  isValid = false;
-                                }
+                          if (emailController.text.trim().isNotEmpty &&
+                              !isValidEmail(emailController.text.trim())) {
+                            setState(() {
+                              _emailError = 'Введите корректный email адрес';
+                            });
+                            isValid = false;
+                          }
 
-                                if (!isValid) {
-                                  setState(() {
-                                    isButtonDisabled =
-                                        false; // Разблокируем кнопку
-                                  });
-                                  return;
-                                }
+                          if (!isValid) return;
 
-                                try {
-                                  SharedPreferences prefs =
-                                      await SharedPreferences.getInstance();
-                                  String UUID = prefs.getString('userID') ?? '';
+                          try {
+                            SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
+                            String UUID = prefs.getString('userID') ?? '';
 
-                                  if (UUID.isEmpty) {
-                                    _showErrorMessage('Ошибка: UUID не найден');
-                                    setState(() {
-                                      isButtonDisabled =
-                                          false; // Разблокируем кнопку
-                                    });
-                                    return;
-                                  }
+                            if (UUID.isEmpty) {
+                              _showErrorMessage('Ошибка: UUID не найден');
+                              return;
+                            }
 
-                                  // Добавляем все измененные данные
-                                  int userId = int.parse(UUID);
-                                  final image = _getImageToUpload();
-                                  context.read<ProfileBloc>().add(UpdateProfile(
-                                        userId: userId,
-                                        name: NameController.text.trim(),
-                                        sname: SurnameController.text.trim(),
-                                        phone: selectedDialCode +
-                                            phoneController.text,
-                                        email: emailController.text.trim(),
-                                        image: image,
-                                        pname: PatronymicController.text.trim(),
-                                      ));
-                                } catch (e) {
-                                  _showErrorMessage(
-                                      'Произошла ошибка при обновлении профиля');
-                                } finally {
-                                  setState(() {
-                                    isButtonDisabled =
-                                        false; // Разблокируем кнопку
-                                  });
-                                }
-                              },
+                            String UserNameProfile = NameController.text;
+                            await prefs.setString(
+                                'userNameProfile', UserNameProfile);
+
+                            int userId = int.parse(UUID);
+                            final image = _getImageToUpload();
+                            context.read<ProfileBloc>().add(UpdateProfile(
+                                userId: userId,
+                                name: NameController.text.trim(),
+                                sname: SurnameController.text.trim(),
+                                phone: selectedDialCode + phoneController.text,
+                                email: emailController.text.trim(),
+                                image: image,
+                                pname: ''));
+                          } catch (e) {
+                            _showErrorMessage(
+                                'Произошла ошибка при обновлении профиля');
+                          }
+                        },
                         child: Text(
                           'Сохранить',
                           style: TextStyle(
@@ -962,9 +942,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         ),
                       );
                     },
-                  ),
-                )
-              ]));
+                  ))
+            ]),
+    );
   }
 
   void _showErrorMessage(String message) {
