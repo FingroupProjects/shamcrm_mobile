@@ -432,7 +432,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         builder: (context) => BlocProvider(
           create: (context) => MessagingCubit(ApiService()),
           child: ChatSmsScreen(
-            chatItem: chat.toChatItem("assets/images/AvatarChat.png"),
+            chatItem: chat.toChatItem(),
             chatId: chat.id,
             endPointInTab: widget.endPointInTab,
             canSendMessage: chat.canSendMessage,
@@ -543,7 +543,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               splashColor: Colors.grey,
               focusColor: Colors.black87,
               child: ChatListItem(
-                chatItem: item.toChatItem("assets/images/AvatarChat.png"),
+                chatItem: item.toChatItem(),
               ),
             );
           },

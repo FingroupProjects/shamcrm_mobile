@@ -31,24 +31,42 @@ class ParticipantProfileScreen extends StatelessWidget {
   });
 
   String formatDate(String? date) {
-  if (date == null || date.isEmpty) {
-    return "Неизвестно";
-  }
+    if (date == null || date.isEmpty) {
+      return "Неизвестно";
+    }
 
-  try {
-    DateTime parsedDate = DateTime.parse(date).toUtc().add(Duration(hours: 5));
-    return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
-  } catch (e) {
-    return "Неизвестно";
+    try {
+      DateTime parsedDate =
+          DateTime.parse(date).toUtc().add(Duration(hours: 5));
+      return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
+    } catch (e) {
+      return "Неизвестно";
+    }
   }
-}
-
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
       final end = svg.indexOf('"', start);
       return svg.substring(start, end);
+    }
+    return null;
+  }
+
+  String? extractTextFromSvg(String svg) {
+    final textMatch = RegExp(r'<text[^>]*>(.*?)</text>').firstMatch(svg);
+    return textMatch?.group(1);
+  }
+
+  Color? extractBackgroundColorFromSvg(String svg) {
+    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+    if (fillMatch != null) {
+      final colorHex = fillMatch.group(1);
+      if (colorHex != null) {
+        // Конвертируем hex в Color
+        final hex = colorHex.replaceAll('#', '');
+        return Color(int.parse('FF$hex', radix: 16));
+      }
     }
     return null;
   }
@@ -81,7 +99,37 @@ class ParticipantProfileScreen extends StatelessWidget {
           },
         );
       } else {
-        // If we can't extract URL, try to display SVG directly
+        // Check for text-based SVG
+        final text = extractTextFromSvg(image);
+        final backgroundColor = extractBackgroundColorFromSvg(image);
+
+        if (text != null && backgroundColor != null) {
+          return Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 1,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 60,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+
+        // If no text/color found, try to display SVG directly
         return SvgPicture.string(
           image,
           height: 140,
@@ -191,7 +239,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                               unredMessage: 0,
                               canSendMessage: true,
                               chatUsers: [],
-                            ).toChatItem("assets/images/AvatarChat.png"),
+                            ).toChatItem(),
                             chatId: state.chatId,
                             endPointInTab: 'corporate',
                             canSendMessage: true,

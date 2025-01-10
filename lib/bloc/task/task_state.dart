@@ -9,8 +9,9 @@ class TaskLoading extends TaskState {}
 class TaskLoaded extends TaskState {
   final List<TaskStatus> taskStatuses;
 
-  TaskLoaded(this.taskStatuses);
-}
+final Map<int, int> taskCounts; // Добавляем map для хранения количества задач
+
+  TaskLoaded(this.taskStatuses, {this.taskCounts = const {}});}
 
 class TaskDataLoaded extends TaskState {
   final List<Task> tasks;

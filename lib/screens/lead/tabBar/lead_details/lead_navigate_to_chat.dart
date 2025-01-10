@@ -233,7 +233,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               unredMessage: 0,
               canSendMessage: canSendMessage,
               chatUsers: [],
-            ).toChatItem("assets/images/AvatarChat.png"),
+            ).toChatItem(),
             chatId: id,
             endPointInTab: 'lead',
             canSendMessage: canSendMessage,
