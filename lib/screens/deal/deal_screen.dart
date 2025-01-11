@@ -245,7 +245,7 @@ void _addNewTab() async {
   }
 }
 
-Widget _buildTabButton(int index) {
+  Widget _buildTabButton(int index) {
   bool isActive = _tabController.index == index;
 
   return BlocBuilder<DealBloc, DealState>(
@@ -311,8 +311,6 @@ Widget _buildTabButton(int index) {
     },
   );
 }
-
-
    void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];
     final result = await showDialog(

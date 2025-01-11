@@ -45,7 +45,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           final deals = await apiService.getDeals(
             status.id,
             page: 1,
-            perPage: 100,
+            perPage: 20,
           );
           _dealCounts[status.id] = deals.length;
         } catch (e) {
@@ -72,7 +72,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       final allDeals = await apiService.getDeals(
         event.statusId,
         page: 1,
-        perPage: 100,
+        perPage: 20,
         search: event.query,
       );
 

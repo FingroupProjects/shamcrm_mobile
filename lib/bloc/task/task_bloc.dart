@@ -45,7 +45,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           final tasks = await apiService.getTasks(
             status.id,
             page: 1,
-            perPage: 100, // Увеличиваем количество для получения всех задач
+            perPage: 20, // Увеличиваем количество для получения всех задач
           );
           _taskCounts[status.id] = tasks.length;
         } catch (e) {
@@ -73,7 +73,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final allTasks = await apiService.getTasks(
         event.statusId,
         page: 1,
-        perPage: 100, // Увеличиваем для получения всех задач
+        perPage: 20, // Увеличиваем для получения всех задач
         search: event.query,
       );
       
