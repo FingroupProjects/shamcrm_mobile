@@ -19,4 +19,13 @@ class Organization {
       is1cIntegration: json['integration_1c'] ?? false,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'last_1c_update': last1cUpdate,
+      'integration_1c': is1cIntegration,
+    };
+  }
 }
