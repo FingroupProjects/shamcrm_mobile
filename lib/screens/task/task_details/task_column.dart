@@ -31,7 +31,7 @@ class _TaskColumnState extends State<TaskColumn> {
   @override
   void initState() {
     super.initState();
-    _taskBloc = TaskBloc(_apiService);
+    _taskBloc = TaskBloc(_apiService)..add(FetchTasks(widget.statusId));
     _checkPermission();
     _fetchTasks();
 
@@ -61,22 +61,20 @@ class _TaskColumnState extends State<TaskColumn> {
     super.dispose();
   }
 
-  void _fetchTasks() {
-    _taskBloc.add(FetchTasks(widget.statusId));
-  }
-
   Future<void> _checkPermission() async {
     bool hasPermission = await _apiService.hasPermission('task.create');
-    if (mounted) {
-      setState(() {
-        _hasPermissionToAddTask = hasPermission;
-      });
-    }
+    setState(() {
+      _hasPermissionToAddTask = hasPermission;
+    });
   }
 
   Future<void> _onRefresh() async {
-    _fetchTasks();
-    return Future.delayed(Duration(milliseconds: 1500));
+
+      final leadBloc = BlocProvider.of<TaskBloc>(context);
+      leadBloc.add(FetchTaskStatuses());
+      
+    _taskBloc.add(FetchTasks(widget.statusId));
+    return Future.delayed(Duration(milliseconds: 1));
   }
 
   @override
@@ -89,63 +87,100 @@ class _TaskColumnState extends State<TaskColumn> {
           builder: (context, state) {
             if (state is TaskLoading) {
               return const Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+              );
+
             } else if (state is TaskDataLoaded) {
               final tasks = state.tasks
                   .where((task) => task.statusId == widget.statusId)
                   .toList();
 
+              if (tasks.isEmpty) {
+                return RefreshIndicator(
+                  backgroundColor: Colors.white,
+                  color: Color(0xff1E2E52),
+                  onRefresh: _onRefresh,
+                  child: ListView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                      Center(child: Text('Нет задач для выбранного статуса')),
+                    ],
+                  ),
+                );
+              }
+
+              final ScrollController _scrollController = ScrollController();
+              _scrollController.addListener(() {
+                if (_scrollController.position.pixels ==
+                        _scrollController.position.maxScrollExtent &&
+                    !_taskBloc.allTasksFetched) {
+                  _taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
+                }
+              });
+
               return RefreshIndicator(
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: tasks.isEmpty
-                    ? ListView(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.4),
-                          Center(
-                              child: Text('Нет задач для выбранного статуса')),
-                        ],
-                      )
-                    : ListView.builder(
-                        controller: _scrollController, // Подключаем контроллер
+// <<<<<<< FJFJ
+//                 child: Column(
+//                   children: [
+//                     SizedBox(height: 15),
+//                     Expanded(
+//                       child: ListView.builder(
+//                         controller: _scrollController,
+// =======
+//                 child: tasks.isEmpty
+//                     ? ListView(
+//                         physics: AlwaysScrollableScrollPhysics(),
+//                         children: [
+//                           SizedBox(
+//                               height: MediaQuery.of(context).size.height * 0.4),
+//                           Center(
+//                               child: Text('Нет задач для выбранного статуса')),
+//                         ],
+//                       )
+//                     : ListView.builder(
+//                         controller: _scrollController, // Подключаем контроллер
+// >>>>>>> main
                         physics: AlwaysScrollableScrollPhysics(),
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: TaskCard(
                               task: tasks[index],
                               name: widget.name,
                               statusId: widget.statusId,
-                              onStatusUpdated: _fetchTasks,
-                              onStatusId: widget.onStatusId,
+                              onStatusUpdated: () {
+                                _taskBloc.add(FetchTasks(widget.statusId));
+                              },
+                              onStatusId: (StatusTaskId) {
+                                widget.onStatusId(StatusTaskId);
+                              },
                             ),
                           );
                         },
                       ),
+                    ),
+                  ],
+                ),
               );
             } else if (state is TaskError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
+                    content: Text('${state.message}',
+                        style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white)),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.red,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -153,16 +188,6 @@ class _TaskColumnState extends State<TaskColumn> {
                   ),
                 );
               });
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                child: ListView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(child: Text(state.message)),
-                  ],
-                ),
-              );
             }
             return Container();
           },
@@ -176,11 +201,10 @@ class _TaskColumnState extends State<TaskColumn> {
                       builder: (context) =>
                           TaskAddScreen(statusId: widget.statusId),
                     ),
-                  ).then((_) => _fetchTasks());
+                  ).then((_) => _taskBloc.add(FetchTasks(widget.statusId)));
                 },
                 backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png',
-                    width: 24, height: 24),
+                child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
               )
             : null,
       ),

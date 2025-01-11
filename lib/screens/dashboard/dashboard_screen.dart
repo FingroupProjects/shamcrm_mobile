@@ -12,8 +12,6 @@ import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpee
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';
@@ -41,15 +39,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    
-       final leadBloc = BlocProvider.of<LeadBloc>(context);
-      leadBloc.add(FetchLeadStatuses());
-
 
     _initializeData();
+    
   }
 
   Future<void> _initializeData() async {
+
     try {
       setState(() {
         isLoading = true;

@@ -70,7 +70,7 @@ import 'screens/home_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() async {
+  void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();

@@ -1,6 +1,12 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +29,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
   int? userRoleId ;
+  bool isPermissionsLoaded = false; 
+
 
 
 
@@ -103,6 +111,14 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     // Выводим данные в консоль
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+
+      
+      setState(() {
+        isPermissionsLoaded = true; 
+      });
 
   } catch (e) {
     print('Error loading user role!');
@@ -117,13 +133,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     if (_pin == _confirmPin) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_pin', _pin);
-      // Navigator.of(context).pushReplacementNamed('/home');
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
-        (Route<dynamic> route) =>
-            false, // Условие для удаления всех предыдущих маршрутов
-      );
+    if (isPermissionsLoaded) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+          (Route<dynamic> route) => false, 
+        );
+    }
     } else {
       _triggerErrorEffect();
     }
