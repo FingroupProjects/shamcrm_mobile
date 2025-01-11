@@ -8,9 +8,23 @@ class LeadLoading extends LeadState {}
 
 class LeadLoaded extends LeadState {
   final List<LeadStatus> leadStatuses;
+  final Map<int, int> leadCounts;
 
-  LeadLoaded(this.leadStatuses);
+  LeadLoaded(this.leadStatuses, {Map<int, int>? leadCounts})
+      : this.leadCounts = leadCounts ?? {};
+
+  // Метод copyWith для обновления состояния
+  LeadLoaded copyWith({
+    List<LeadStatus>? leadStatuses,
+    Map<int, int>? leadCounts,
+  }) {
+    return LeadLoaded(
+      leadStatuses ?? this.leadStatuses,
+      leadCounts: leadCounts ?? this.leadCounts,
+    );
+  }
 }
+
 
 class LeadDataLoaded extends LeadState {
   final List<Lead> leads;

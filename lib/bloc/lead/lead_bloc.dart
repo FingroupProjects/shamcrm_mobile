@@ -7,8 +7,8 @@ import 'lead_state.dart';
 
 class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final ApiService apiService;
-  bool allLeadsFetched =
-      false; // Переменная для отслеживания статуса завершения загрузки лидов
+  bool allLeadsFetched = false;
+  Map<int, int> _leadCounts = {}; // Хранение количества лидов
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -21,8 +21,6 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
   }
-
-// // Метод для поиска лидов
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     if (!await _checkInternetConnection()) {
@@ -48,7 +46,6 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     }
   }
-
   Future<void> _fetchLeadStatuses(
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
@@ -66,11 +63,28 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError('Нет статусов'));
         return;
       }
-      emit(LeadLoaded(response));
+
+      // Подсчёт лидов для каждого статуса
+      for (var status in response) {
+        try {
+          final leads = await apiService.getLeads(
+            status.id,
+            page: 1,
+            perPage: 100, // Получаем все лиды
+          );
+          _leadCounts[status.id] = leads.length;
+        } catch (e) {
+          print('Error fetching lead count for status ${status.id}: $e');
+          _leadCounts[status.id] = 0;
+        }
+      }
+
+      emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));
     } catch (e) {
       emit(LeadError('Не удалось загрузить данные!'));
     }
   }
+
 
   // Метод для загрузки всех лидов
   Future<void> _fetchAllLeads(
