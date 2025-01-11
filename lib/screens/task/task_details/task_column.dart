@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:flutter/material.dart';
@@ -36,20 +37,21 @@ class _TaskColumnState extends State<TaskColumn> {
 
     // Добавляем слушатель для пагинации
     void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      final currentState = _taskBloc.state;
-      if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
-        _taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        final currentState = _taskBloc.state;
+        if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
+          _taskBloc
+              .add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+        }
       }
     }
-  }
   }
 
   @override
   void didUpdateWidget(TaskColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.statusId != widget.statusId) {
-    }
+    if (oldWidget.statusId != widget.statusId) {}
   }
 
   @override
@@ -67,10 +69,9 @@ class _TaskColumnState extends State<TaskColumn> {
   }
 
   Future<void> _onRefresh() async {
+    final leadBloc = BlocProvider.of<TaskBloc>(context);
+    leadBloc.add(FetchTaskStatuses());
 
-      final leadBloc = BlocProvider.of<TaskBloc>(context);
-      leadBloc.add(FetchTaskStatuses());
-      
     _taskBloc.add(FetchTasks(widget.statusId));
     return Future.delayed(Duration(milliseconds: 1));
   }
@@ -85,9 +86,11 @@ class _TaskColumnState extends State<TaskColumn> {
           builder: (context, state) {
             if (state is TaskLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
               );
-
             } else if (state is TaskDataLoaded) {
               final tasks = state.tasks
                   .where((task) => task.statusId == widget.statusId)
@@ -101,7 +104,8 @@ class _TaskColumnState extends State<TaskColumn> {
                   child: ListView(
                     physics: AlwaysScrollableScrollPhysics(),
                     children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.4),
                       Center(child: Text('Нет задач для выбранного статуса')),
                     ],
                   ),
@@ -113,7 +117,8 @@ class _TaskColumnState extends State<TaskColumn> {
                 if (_scrollController.position.pixels ==
                         _scrollController.position.maxScrollExtent &&
                     !_taskBloc.allTasksFetched) {
-                  _taskBloc.add(FetchMoreTasks(widget.statusId, state.currentPage));
+                  _taskBloc
+                      .add(FetchMoreTasks(widget.statusId, state.currentPage));
                 }
               });
 
@@ -131,7 +136,8 @@ class _TaskColumnState extends State<TaskColumn> {
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             child: TaskCard(
                               task: tasks[index],
                               name: widget.name,
@@ -187,7 +193,8 @@ class _TaskColumnState extends State<TaskColumn> {
                   ).then((_) => _taskBloc.add(FetchTasks(widget.statusId)));
                 },
                 backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png', width: 24, height: 24),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
               )
             : null,
       ),

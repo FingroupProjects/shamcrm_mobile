@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:flutter/material.dart';
@@ -80,7 +81,10 @@ class _DealColumnState extends State<DealColumn> {
           builder: (context, state) {
             if (state is DealLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
               );
             } else if (state is DealDataLoaded) {
               final deals = state.deals
