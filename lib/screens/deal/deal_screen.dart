@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
@@ -448,11 +449,15 @@ void _addNewTab() async {
             return searchWidget(deals);
           }
           if (state is DealLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          return const Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
           } else if (state is DealLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет данных для отображения'));
+              return const Center(child: Text(''));
             }
             return TabBarView(
               controller: _tabController,

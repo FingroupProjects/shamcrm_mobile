@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:flutter/material.dart';
@@ -66,8 +67,12 @@ class _LeadColumnState extends State<LeadColumn> {
         body: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
             if (state is LeadLoading) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Color(0xfff1E2E52)));
+             return const Center(
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
             } else if (state is LeadDataLoaded) {
               final leads = state.leads
                   .where((lead) => lead.statusId == widget.statusId)

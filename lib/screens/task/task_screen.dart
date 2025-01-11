@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -457,10 +458,14 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
           }
           if (state is TaskLoading) {
             return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
+              );
           } else if (state is TaskLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет статусов для отображения'));
+              return const Center(child: Text(''));
             }
             return TabBarView(
               controller: _tabController,

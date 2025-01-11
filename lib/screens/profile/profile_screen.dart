@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
@@ -73,7 +74,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
-                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
+                      ),
                     ),
                   );
                 } else if (state is OrganizationLoaded) {

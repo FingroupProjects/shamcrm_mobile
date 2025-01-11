@@ -1,5 +1,5 @@
-
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
@@ -16,30 +16,30 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 
-  class LeadScreen extends StatefulWidget {
-    final int? initialStatusId;
+class LeadScreen extends StatefulWidget {
+  final int? initialStatusId;
 
-    LeadScreen({this.initialStatusId});
+  LeadScreen({this.initialStatusId});
 
-    @override
-    _LeadScreenState createState() => _LeadScreenState();
-  }
+  @override
+  _LeadScreenState createState() => _LeadScreenState();
+}
 
-  class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
-    late TabController _tabController;
-    late ScrollController _scrollController;
-    List<Map<String, dynamic>> _tabTitles = [];
-    int _currentTabIndex = 0;
-    List<GlobalKey> _tabKeys = [];
-    bool _isSearching = false;
-    final TextEditingController _searchController = TextEditingController();
-    bool _canReadLeadStatus = false;
-    bool _canCreateLeadStatus = false;
-    bool _canDeleteLeadStatus = false;
-    final ApiService _apiService = ApiService();
-    bool navigateToEnd = false;
-    bool navigateAfterDelete = false;
-    int? _deletedIndex;
+class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
+  late TabController _tabController;
+  late ScrollController _scrollController;
+  List<Map<String, dynamic>> _tabTitles = [];
+  int _currentTabIndex = 0;
+  List<GlobalKey> _tabKeys = [];
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  bool _canReadLeadStatus = false;
+  bool _canCreateLeadStatus = false;
+  bool _canDeleteLeadStatus = false;
+  final ApiService _apiService = ApiService();
+  bool navigateToEnd = false;
+  bool navigateAfterDelete = false;
+  int? _deletedIndex;
   @override
   void initState() {
     super.initState();
@@ -51,9 +51,11 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
           _tabTitles = cachedStatuses;
 
           // Инициализация TabController только один раз
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
 
-          int initialIndex = cachedStatuses .indexWhere((status) => status['id'] == widget.initialStatusId);
+          int initialIndex = cachedStatuses
+              .indexWhere((status) => status['id'] == widget.initialStatusId);
           if (initialIndex != -1) {
             _currentTabIndex = initialIndex;
           }
@@ -74,7 +76,7 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
         // Если нет данных в кеше, запрашиваем их через API
         // final leadBloc = BlocProvider.of<LeadBloc>(context);
         // leadBloc.add(FetchLeadStatuses());
-            BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+        BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
@@ -84,96 +86,96 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
     _checkPermissions();
   }
 
-    @override
-    void dispose() {
-      _scrollController.dispose();
-      _tabController.dispose();
-      _searchController.dispose();
-      super.dispose();
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchLeads(String query, int currentStatusId) async {
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+
+    if (query.isEmpty) {
+      leadBloc.add(FetchLeads(currentStatusId));
+    } else {
+      leadBloc.add(FetchLeads(currentStatusId, query: query));
     }
+  }
 
-    Future<void> _searchLeads(String query, int currentStatusId) async {
-      final leadBloc = BlocProvider.of<LeadBloc>(context);
+  void _onSearch(String query) {
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    _searchLeads(query, currentStatusId);
+  }
 
-      if (query.isEmpty) {
-        leadBloc.add(FetchLeads(currentStatusId));
-      } else {
-        leadBloc.add(FetchLeads(currentStatusId, query: query));
-      }
-    }
+  // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('leadStatus.read');
+    final canCreate = await _apiService.hasPermission('leadStatus.create');
+    final canDelete = await _apiService.hasPermission('leadStatus.delete');
+    setState(() {
+      _canReadLeadStatus = canRead;
+      _canCreateLeadStatus = canCreate;
+      _canDeleteLeadStatus = canDelete;
+    });
+  }
 
-    void _onSearch(String query) {
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      _searchLeads(query, currentStatusId);
-    }
+  FocusNode focusNode = FocusNode();
+  TextEditingController textEditingController = TextEditingController();
+  ValueChanged<String>? onChangedSearchInput;
 
-    // Метод для проверки разрешений
-    Future<void> _checkPermissions() async {
-      final canRead = await _apiService.hasPermission('leadStatus.read');
-      final canCreate = await _apiService.hasPermission('leadStatus.create');
-      final canDelete = await _apiService.hasPermission('leadStatus.delete');
-      setState(() {
-        _canReadLeadStatus = canRead;
-        _canCreateLeadStatus = canCreate;
-        _canDeleteLeadStatus = canDelete;
-      });
-    }
-
-    FocusNode focusNode = FocusNode();
-    TextEditingController textEditingController = TextEditingController();
-    ValueChanged<String>? onChangedSearchInput;
-
-    bool isClickAvatarIcon = false;
-    @override
-    Widget build(BuildContext context) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: CustomAppBar(
-            title: isClickAvatarIcon ? 'Настройки' : 'Лиды',
-            onClickProfileAvatar: () {
+  bool isClickAvatarIcon = false;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBar(
+          title: isClickAvatarIcon ? 'Настройки' : 'Лиды',
+          onClickProfileAvatar: () {
+            setState(() {
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          onChangedSearchInput: (String value) {
+            if (value.isNotEmpty) {
               setState(() {
-                final leadBloc = BlocProvider.of<LeadBloc>(context);
-                leadBloc.add(FetchLeadStatuses());
-                isClickAvatarIcon = !isClickAvatarIcon;
+                _isSearching = true;
               });
-            },
-            onChangedSearchInput: (String value) {
-              if (value.isNotEmpty) {
-                setState(() {
-                  _isSearching = true;
-                });
-              }
+            }
 
-              _onSearch(value);
-            },
-            textEditingController: textEditingController,
-            focusNode: focusNode,
-            clearButtonClick: (value) {
-              if (value == false) {
-                final leadBloc = BlocProvider.of<LeadBloc>(context);
-                leadBloc.add(FetchLeadStatuses());
-                setState(() {
-                  _isSearching = false;
-                });
-              }
-            },
-          ),
+            _onSearch(value);
+          },
+          textEditingController: textEditingController,
+          focusNode: focusNode,
+          clearButtonClick: (value) {
+            if (value == false) {
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
+              setState(() {
+                _isSearching = false;
+              });
+            }
+          },
         ),
-        body: isClickAvatarIcon
-            ? ProfileScreen()
-            : Column(
-                children: [
-                  const SizedBox(height: 15),
-                  if (!_isSearching) _buildCustomTabBar(),
-                  Expanded(child: _buildTabBarView()),
-                ],
-              ),
-      );
-    }
+      ),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                if (!_isSearching) _buildCustomTabBar(),
+                Expanded(child: _buildTabBarView()),
+              ],
+            ),
+    );
+  }
 
-    Widget searchWidget(List<Lead> leads) {
+  Widget searchWidget(List<Lead> leads) {
     if (_isSearching && leads.isEmpty) {
       return Center(
         child: Text(
@@ -193,13 +195,13 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
         controller: _scrollController,
         itemCount: leads.length,
         itemBuilder: (context, index) {
-          final lead = leads[index]; 
+          final lead = leads[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: LeadCard(
               lead: lead,
-              title: lead.leadStatus?.title ?? '', 
-              statusId: lead.statusId, 
+              title: lead.leadStatus?.title ?? '',
+              statusId: lead.statusId,
               onStatusUpdated: () {},
               onStatusId: (newStatusId) {},
             ),
@@ -209,32 +211,31 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
     );
   }
 
-
-    Widget _buildCustomTabBar() {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        controller: _scrollController,
-        child: Row(
-          children: [
-            ...List.generate(_tabTitles.length, (index) {
-              if (_tabKeys.length <= index) {
-                _tabKeys.add(GlobalKey());
-              }
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _buildTabButton(index),
-              );
-            }),
-            if (_canCreateLeadStatus)
-              IconButton(
-                icon: Image.asset('assets/icons/tabBar/add_black.png',
-                    width: 24, height: 24),
-                onPressed: _addNewTab,
-              ),
-          ],
-        ),
-      );
-    }
+  Widget _buildCustomTabBar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      controller: _scrollController,
+      child: Row(
+        children: [
+          ...List.generate(_tabTitles.length, (index) {
+            if (_tabKeys.length <= index) {
+              _tabKeys.add(GlobalKey());
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: _buildTabButton(index),
+            );
+          }),
+          if (_canCreateLeadStatus)
+            IconButton(
+              icon: Image.asset('assets/icons/tabBar/add_black.png',
+                  width: 24, height: 24),
+              onPressed: _addNewTab,
+            ),
+        ],
+      ),
+    );
+  }
 
   void _addNewTab() async {
     final result = await showDialog<bool>(
@@ -250,128 +251,127 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
       setState(() {
         navigateToEnd = true;
       });
-
     }
   }
 
+  Widget _buildTabButton(int index) {
+    bool isActive = _tabController.index == index;
 
-Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
-
-  return BlocBuilder<LeadBloc, LeadState>(
-    builder: (context, state) {
-      int leadCount = 0;
-      if (state is LeadLoaded) {
-        final statusId = _tabTitles[index]['id'];
-        leadCount = state.leadCounts[statusId] ?? 0;
-      }
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _tabController.animateTo(index);
-        },
-        onLongPress: () {
-          if (_canDeleteLeadStatus) {
-            _showDeleteDialog(index);
-          }
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive
-                      ? TaskStyles.activeColor
-                      : TaskStyles.inactiveColor,
-                ),
-              ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    leadCount.toString(),
-                    style: TextStyle(
-                      color: isActive
-                          ? Colors.black
-                          : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        int leadCount = 0;
+        if (state is LeadLoaded) {
+          final statusId = _tabTitles[index]['id'];
+          leadCount = state.leadCounts[statusId] ?? 0;
+        }
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
+            if (_canDeleteLeadStatus) {
+              _showDeleteDialog(index);
+            }
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
-              ),
-            ],
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      leadCount.toString(),
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
-    void _showDeleteDialog(int index) async {
-      final leadStatusId = _tabTitles[index]['id'];
-      final result = await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
-        },
-      );
+  void _showDeleteDialog(int index) async {
+    final leadStatusId = _tabTitles[index]['id'];
+    final result = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
+      },
+    );
 
-      if (result != null && result) {
+    if (result != null && result) {
+      setState(() {
         setState(() {
-          setState(() {
-            _deletedIndex = _currentTabIndex;
-            navigateAfterDelete = true;
-          });
-          _tabTitles.removeAt(index);
-          _tabKeys.removeAt(index);
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
-          
-          _currentTabIndex = 0;
-
-          _isSearching = false;
-          _searchController.clear();
-
-          context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+          _deletedIndex = _currentTabIndex;
+          navigateAfterDelete = true;
         });
-      }
-    }
+        _tabTitles.removeAt(index);
+        _tabKeys.removeAt(index);
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
 
-    Widget _buildTabBarView() {
+        _currentTabIndex = 0;
+
+        _isSearching = false;
+        _searchController.clear();
+
+        context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+      });
+    }
+  }
+
+  Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
-  if (state is LeadLoaded) {
-    // Perform async work first
-    await LeadCache.cacheLeadStatuses(state.leadStatuses
-        .map((status) => {'id': status.id, 'title': status.title})
-        .toList());
+        if (state is LeadLoaded) {
+          // Perform async work first
+          await LeadCache.cacheLeadStatuses(state.leadStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList());
 
-    // Now, update the state synchronously
-    setState(() {
-      _tabTitles = state.leadStatuses
-          .where((status) => _canReadLeadStatus)
-          .map((status) => {'id': status.id, 'title': status.title})
-          .toList();
+          // Now, update the state synchronously
+          setState(() {
+            _tabTitles = state.leadStatuses
+                .where((status) => _canReadLeadStatus)
+                .map((status) => {'id': status.id, 'title': status.title})
+                .toList();
 
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
+              _tabController =
+                  TabController(length: _tabTitles.length, vsync: this);
               _tabController.addListener(() {
                 setState(() {
                   _currentTabIndex = _tabController.index;
@@ -394,28 +394,28 @@ Widget _buildTabButton(int index) {
                 _scrollToActiveTab();
               }
 
-  //Логика для перехода к созданн статусе
-                if (navigateToEnd) {
-                  navigateToEnd = false;
-                  if (_tabController != null) {
-                    _tabController.animateTo(_tabTitles.length - 1);
-                  }
+              //Логика для перехода к созданн статусе
+              if (navigateToEnd) {
+                navigateToEnd = false;
+                if (_tabController != null) {
+                  _tabController.animateTo(_tabTitles.length - 1);
                 }
+              }
 
-  //Логика для перехода к после удаления статусе на лево
-                if (navigateAfterDelete) {
-                  navigateAfterDelete = false;
-                  if (_deletedIndex != null) {
-                    if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                      _tabController.animateTo(1);
-                    } else if (_deletedIndex == _tabTitles.length) {
-                      _tabController.animateTo(_tabTitles.length - 1);
-                    } else {
-                      _tabController.animateTo(_deletedIndex! - 1);
-                    }
+              //Логика для перехода к после удаления статусе на лево
+              if (navigateAfterDelete) {
+                navigateAfterDelete = false;
+                if (_deletedIndex != null) {
+                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                    _tabController.animateTo(1);
+                  } else if (_deletedIndex == _tabTitles.length) {
+                    _tabController.animateTo(_tabTitles.length - 1);
+                  } else {
+                    _tabController.animateTo(_deletedIndex! - 1);
                   }
                 }
-              
+              }
+
               // Сохраняем данные в кеш
               // LeadCache.cacheLeadStatuses(_tabTitles);
             }
@@ -465,10 +465,14 @@ Widget _buildTabButton(int index) {
           }
           if (state is LeadLoading) {
             return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет статусов для отображения'));
+              return const Center(child: Text(''));
             }
             return TabBarView(
               controller: _tabController,
@@ -480,11 +484,12 @@ Widget _buildTabButton(int index) {
                   title: title,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
                     if (index != -1) {
-                      _tabController.animateTo(index); 
+                      _tabController.animateTo(index);
                     }
-                  },         
+                  },
                 );
               }),
             );
@@ -495,32 +500,29 @@ Widget _buildTabButton(int index) {
     );
   }
 
+  void _scrollToActiveTab() {
+    final keyContext = _tabKeys[_currentTabIndex].currentContext;
+    if (keyContext != null) {
+      final box = keyContext.findRenderObject() as RenderBox;
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final tabWidth = box.size.width;
 
-    void _scrollToActiveTab() {
-      final keyContext = _tabKeys[_currentTabIndex].currentContext;
-      if (keyContext != null) {
-        final box = keyContext.findRenderObject() as RenderBox;
-        final position =
-            box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
-        final tabWidth = box.size.width;
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
-        if (position.dx < 0 ||
-            (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-          double targetOffset = _scrollController.offset +
-              position.dx -
-              (MediaQuery.of(context).size.width / 2) +
-              (tabWidth / 2);
-
-          if (targetOffset != _scrollController.offset) {
-            _scrollController.animateTo(
-              targetOffset,
-              duration: Duration(milliseconds: 300),
-              curve: Curves.linear,
-            );
-          }
+        if (targetOffset != _scrollController.offset) {
+          _scrollController.animateTo(
+            targetOffset,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.linear,
+          );
         }
       }
     }
   }
-
-
+}
