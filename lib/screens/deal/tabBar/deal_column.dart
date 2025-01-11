@@ -32,7 +32,6 @@ class _DealColumnState extends State<DealColumn> {
   void initState() {
     super.initState();
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
-    _dealBloc = DealBloc(_apiService);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
@@ -117,28 +116,13 @@ class _DealColumnState extends State<DealColumn> {
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-// <<<<<<< FJFJ
-//                 child: Column(
-//                   children: [
-//                     SizedBox(height: 15),
-//                     Expanded(
-//                       child: ListView.builder(
-//                         controller: _scrollController,
-//                         physics: AlwaysScrollableScrollPhysics(),
-// =======
-//                 child: deals.isEmpty
-//                     ? ListView(
-//                         physics: AlwaysScrollableScrollPhysics(),
-//                         children: [
-//                           SizedBox(
-//                               height: MediaQuery.of(context).size.height * 0.4),
-//                           Center(
-//                               child: Text('Нет сделок для выбранного статуса')),
-//                         ],
-//                       )
-//                     : ListView.builder(
-//                         controller: _scrollController,
-// >>>>>>> main
+                child: Column(
+                  children: [
+                    SizedBox(height: 15),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: AlwaysScrollableScrollPhysics(),
                         itemCount: deals.length,
                         itemBuilder: (context, index) {
                           return Padding(

@@ -78,7 +78,7 @@ import 'lead_state.dart';
           final leads = await apiService.getLeads(
             status.id,
             page: 1,
-            perPage: 100, // Получаем все лиды
+            perPage: 20, // Получаем все лиды
           );
           _leadCounts[status.id] = leads.length;
         } catch (e) {

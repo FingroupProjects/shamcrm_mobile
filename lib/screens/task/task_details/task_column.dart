@@ -33,7 +33,6 @@ class _TaskColumnState extends State<TaskColumn> {
     super.initState();
     _taskBloc = TaskBloc(_apiService)..add(FetchTasks(widget.statusId));
     _checkPermission();
-    _fetchTasks();
 
     // Добавляем слушатель для пагинации
     void _onScroll() {
@@ -50,7 +49,6 @@ class _TaskColumnState extends State<TaskColumn> {
   void didUpdateWidget(TaskColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.statusId != widget.statusId) {
-      _fetchTasks();
     }
   }
 
@@ -123,27 +121,12 @@ class _TaskColumnState extends State<TaskColumn> {
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-// <<<<<<< FJFJ
-//                 child: Column(
-//                   children: [
-//                     SizedBox(height: 15),
-//                     Expanded(
-//                       child: ListView.builder(
-//                         controller: _scrollController,
-// =======
-//                 child: tasks.isEmpty
-//                     ? ListView(
-//                         physics: AlwaysScrollableScrollPhysics(),
-//                         children: [
-//                           SizedBox(
-//                               height: MediaQuery.of(context).size.height * 0.4),
-//                           Center(
-//                               child: Text('Нет задач для выбранного статуса')),
-//                         ],
-//                       )
-//                     : ListView.builder(
-//                         controller: _scrollController, // Подключаем контроллер
-// >>>>>>> main
+                child: Column(
+                  children: [
+                    SizedBox(height: 15),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {
