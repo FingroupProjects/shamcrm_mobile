@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
@@ -43,9 +44,36 @@ int? _deletedIndex;
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    final dealBloc = BlocProvider.of<DealBloc>(context);
-    dealBloc.add(FetchDealStatuses());
-    print("Инициализация: отправлен запрос на получение статусов сделок");
+DealCache.getDealStatuses().then((cachedStatuses) {
+      if (cachedStatuses.isNotEmpty) {
+        setState(() {
+          _tabTitles = cachedStatuses;
+
+          // Инициализация TabController только один раз
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
+
+          int initialIndex = cachedStatuses .indexWhere((status) => status['id'] == widget.initialStatusId);
+          if (initialIndex != -1) {
+            _currentTabIndex = initialIndex;
+          }
+          _tabController.index = _currentTabIndex;
+        });
+
+        // Добавляем слушатель для _tabController после его инициализации
+        _tabController.addListener(() {
+          setState(() {
+            _currentTabIndex = _tabController.index;
+          });
+          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+          if (_scrollController.hasClients) {
+            _scrollToActiveTab();
+          }
+        });
+      } else {
+            BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+        print("Инициализация: отправлен запрос на получение статусов лидов");
+      }
+    });
     _checkPermissions();
   }
 
@@ -75,7 +103,6 @@ int? _deletedIndex;
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('dealStatus.read');
-    // final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
     final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
@@ -208,6 +235,10 @@ void _addNewTab() async {
   );
 
   if (result == true) {
+      await DealCache.clearCache();
+      print('Все данные удалены успешно. Статусы обновлены.');
+      context.read<DealBloc>().add(FetchDealStatuses());
+
     setState(() {
       navigateToEnd = true; 
     });
@@ -274,11 +305,18 @@ void _addNewTab() async {
     return BlocListener<DealBloc, DealState>(
       listener: (context, state) async {
         if (state is DealLoaded) {
+
+            await DealCache.cacheDealStatuses(state.dealStatuses
+        .map((status) => {'id': status.id, 'title': status.title})
+        .toList());
+
+        
           setState(() {
             _tabTitles = state.dealStatuses
                 .where((status) => _canReadDealStatus)
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
+                
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
@@ -416,11 +454,12 @@ void _addNewTab() async {
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
-            targetOffset,
-            duration: Duration(milliseconds: 10),
-            curve: Curves.easeInOut,
+
+          if (targetOffset != _scrollController.offset) {
+            _scrollController.animateTo(
+              targetOffset,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.linear,
           );
         }
       }

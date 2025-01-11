@@ -30,17 +30,8 @@ class _DealColumnState extends State<DealColumn> {
   @override
   void initState() {
     super.initState();
-    _dealBloc = DealBloc(_apiService);
+    _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
     _checkCreatePermission();
-    _fetchDeals();
-  }
-
-  @override
-  void didUpdateWidget(DealColumn oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.statusId != widget.statusId) {
-      _fetchDeals();
-    }
   }
 
   @override
@@ -56,13 +47,14 @@ class _DealColumnState extends State<DealColumn> {
     });
   }
 
-  void _fetchDeals() {
-    _dealBloc.add(FetchDeals(widget.statusId));
-  }
-
   Future<void> _onRefresh() async {
-    _fetchDeals();
-    return Future.delayed(Duration(milliseconds: 1500));
+    final dealBloc = BlocProvider.of<DealBloc>(context);
+    dealBloc.add(FetchDealStatuses());
+    
+
+    _dealBloc.add(FetchDeals(widget.statusId));
+
+    return Future.delayed(Duration(milliseconds: 1));
   }
 
   @override
@@ -81,22 +73,42 @@ class _DealColumnState extends State<DealColumn> {
               final deals = state.deals
                   .where((deal) => deal.statusId == widget.statusId)
                   .toList();
+              if (deals.isEmpty) {
+                return RefreshIndicator(
+                  backgroundColor: Colors.white,
+                  color: Color(0xff1E2E52),
+                  onRefresh: _onRefresh,
+                  child: ListView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.4),
+                      Center(child: Text('Нет сделок для выбранного статуса')),
+                    ],
+                  ),
+                );
+              }
+
+              final ScrollController _scrollController = ScrollController();
+              _scrollController.addListener(() {
+                if (_scrollController.position.pixels ==
+                        _scrollController.position.maxScrollExtent &&
+                    !_dealBloc.allDealsFetched) {
+                  _dealBloc
+                      .add(FetchMoreDeals(widget.statusId, state.currentPage));
+                }
+              });
 
               return RefreshIndicator(
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: deals.isEmpty
-                    ? ListView(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.4),
-                          Center(
-                              child: Text('Нет сделок для выбранного статуса')),
-                        ],
-                      )
-                    : ListView.builder(
+                child: Column(
+                  children: [
+                    SizedBox(height: 15),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
                         itemCount: deals.length,
                         itemBuilder: (context, index) {
@@ -107,50 +119,41 @@ class _DealColumnState extends State<DealColumn> {
                               deal: deals[index],
                               title: widget.title,
                               statusId: widget.statusId,
-                              onStatusUpdated: _fetchDeals,
-                              onStatusId: widget.onStatusId,
+                              onStatusUpdated: () {
+                                _dealBloc.add(FetchDeals(widget.statusId));
+                              },
+                              onStatusId: (StatusDealId) {
+                                widget.onStatusId(StatusDealId);
+                              },
                             ),
                           );
                         },
                       ),
+                    ),
+                  ],
+                ),
               );
             } else if (state is DealError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
+                    content: Text('${state.message}',
+                        style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white)),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     duration: Duration(seconds: 3),
                   ),
                 );
               });
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                child: ListView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.4),
-                    Center(child: Text(state.message)),
-                  ],
-                ),
-              );
             }
             return Container();
           },
@@ -164,13 +167,13 @@ class _DealColumnState extends State<DealColumn> {
                       builder: (context) =>
                           DealAddScreen(statusId: widget.statusId),
                     ),
-                  ).then((_) => _fetchDeals());
+                  ).then((_) => _dealBloc.add(FetchDeals(widget.statusId)));
                 },
                 backgroundColor: Color(0xff1E2E52),
                 child: Image.asset('assets/icons/tabBar/add.png',
                     width: 24, height: 24),
               )
-            : null, // Кнопка не отображается, если нет прав
+            : null,
       ),
     );
   }

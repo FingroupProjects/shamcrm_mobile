@@ -48,8 +48,13 @@ class _LeadColumnState extends State<LeadColumn> {
   }
 
   Future<void> _onRefresh() async {
+
+      final leadBloc = BlocProvider.of<LeadBloc>(context);
+      leadBloc.add(FetchLeadStatuses());
+
     _leadBloc.add(FetchLeads(widget.statusId));
-    return Future.delayed(Duration(milliseconds: 1500));
+
+    return Future.delayed(Duration(milliseconds: 1));
   }
 
   @override

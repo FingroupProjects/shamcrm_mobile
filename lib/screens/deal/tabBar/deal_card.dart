@@ -93,7 +93,7 @@ class _DealCardState extends State<DealCard> {
                   TextOverflow.ellipsis, 
             ),
             Text(
-            'Менеджер: ${widget.deal.manager!.name}', 
+            'Менеджер: ${widget.deal.manager?.name ?? ""}', 
             style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
@@ -102,7 +102,7 @@ class _DealCardState extends State<DealCard> {
             ),
           ),
             Text(
-            'Лид: ${widget.deal.lead!.name}', 
+            'Лид: ${widget.deal.lead?.name ?? ""}', 
             style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',

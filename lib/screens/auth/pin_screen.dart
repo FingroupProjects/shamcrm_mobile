@@ -1,15 +1,18 @@
 // lib/screens/auth/auth_screen.dart
 import 'dart:io';
-
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:local_auth/local_auth.dart';
@@ -36,12 +39,12 @@ class _PinScreenState extends State<PinScreen>
   String _userNameProfile = '';
   String _userImage = '';
   int? userRoleId;
-  bool _isLoading = true; // Флаг для отображения загрузки
+  bool _isLoading = true; 
+  bool isPermissionsLoaded = false;
 
  @override
 void initState() {
   super.initState();
-  
   _loadUserPhone().then((_) {
     if (mounted) {
       setState(() {
@@ -53,6 +56,7 @@ void initState() {
   _loadUserRoleId().then((_) {
     _checkSavedPin();
     _initBiometrics();
+
   });
 
   _animationController = AnimationController(
@@ -88,9 +92,16 @@ void initState() {
         userRoleId = userProfile.role!.first.id;
       });
       // Выводим данные в консоль
-      context
-          .read<PermissionsBloc>()
-          .add(FetchPermissionsEvent());
+      context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+
+      
+      setState(() {
+        isPermissionsLoaded = true; 
+      });
+
     } catch (e) {
       print('Error loading user role!');
       setState(() {

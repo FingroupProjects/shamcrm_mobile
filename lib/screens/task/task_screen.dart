@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart';
@@ -43,9 +44,36 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    final taskBloc = BlocProvider.of<TaskBloc>(context);
-    taskBloc.add(FetchTaskStatuses());
-    print("Инициализация: отправлен запрос на получение статусов задачи");
+TaskCache.getTaskStatuses().then((cachedStatuses) {
+      if (cachedStatuses.isNotEmpty) {
+        setState(() {
+          _tabTitles = cachedStatuses;
+
+          // Инициализация TabController только один раз
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
+
+          int initialIndex = cachedStatuses .indexWhere((status) => status['id'] == widget.initialStatusId);
+          if (initialIndex != -1) {
+            _currentTabIndex = initialIndex;
+          }
+          _tabController.index = _currentTabIndex;
+        });
+
+        // Добавляем слушатель для _tabController после его инициализации
+        _tabController.addListener(() {
+          setState(() {
+            _currentTabIndex = _tabController.index;
+          });
+          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+          if (_scrollController.hasClients) {
+            _scrollToActiveTab();
+          }
+        });
+      } else {
+            BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+        print("Инициализация: отправлен запрос на получение статусов лидов");
+      }
+    });
     _checkPermissions();
   }
 
@@ -207,6 +235,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
+      await TaskCache.clearCache();
+      print('Все данные удалены успешно. Статусы обновлены.');
+      context.read<TaskBloc>().add(FetchTaskStatuses());
+
       setState(() {
         navigateToEnd = true;
       });
@@ -294,6 +326,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     return BlocListener<TaskBloc, TaskState>(
       listener: (context, state) async {
         if (state is TaskLoaded) {
+
+              await TaskCache.cacheTaskStatuses(state.taskStatuses
+        .map((status) => {'id': status.id, 'title': status.taskStatus.name})
+        .toList());
+
           setState(() {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)
@@ -442,11 +479,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
-            targetOffset,
-            duration: Duration(milliseconds: 10),
-            curve: Curves.easeInOut,
+          if (targetOffset != _scrollController.offset) {
+            _scrollController.animateTo(
+              targetOffset,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.linear,
           );
         }
       }

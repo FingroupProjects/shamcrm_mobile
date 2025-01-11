@@ -78,7 +78,7 @@ class _LeadCardState extends State<LeadCard> {
               overflow: TextOverflow.ellipsis, 
             ),
           Text(
-            'Менеджер: ${widget.lead.manager!.name}', 
+            'Менеджер: ${widget.lead.manager?.name ?? ""}', 
             style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
