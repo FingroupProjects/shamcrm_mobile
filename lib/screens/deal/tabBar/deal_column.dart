@@ -10,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
-  final Function(int) onStatusId; // Callback to notify status change
+  final Function(int) onStatusId;
 
   DealColumn({
     required this.statusId,
@@ -26,11 +26,14 @@ class _DealColumnState extends State<DealColumn> {
   bool _canCreateDeal = false;
   final ApiService _apiService = ApiService();
   late DealBloc _dealBloc;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _dealBloc = DealBloc(_apiService);
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     _checkCreatePermission();
     _fetchDeals();
   }
@@ -45,6 +48,7 @@ class _DealColumnState extends State<DealColumn> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _dealBloc.close();
     super.dispose();
   }
@@ -58,6 +62,15 @@ class _DealColumnState extends State<DealColumn> {
 
   void _fetchDeals() {
     _dealBloc.add(FetchDeals(widget.statusId));
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      final currentState = _dealBloc.state;
+      if (currentState is DealDataLoaded && !currentState.allDealsFetched) {
+        _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+      }
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -97,7 +110,7 @@ class _DealColumnState extends State<DealColumn> {
                         ],
                       )
                     : ListView.builder(
-                        physics: AlwaysScrollableScrollPhysics(),
+                        controller: _scrollController,
                         itemCount: deals.length,
                         itemBuilder: (context, index) {
                           return Padding(
@@ -170,7 +183,7 @@ class _DealColumnState extends State<DealColumn> {
                 child: Image.asset('assets/icons/tabBar/add.png',
                     width: 24, height: 24),
               )
-            : null, // Кнопка не отображается, если нет прав
+            : null,
       ),
     );
   }

@@ -26,6 +26,7 @@ class _TaskColumnState extends State<TaskColumn> {
   bool _hasPermissionToAddTask = false;
   final ApiService _apiService = ApiService();
   late TaskBloc _taskBloc;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -33,6 +34,16 @@ class _TaskColumnState extends State<TaskColumn> {
     _taskBloc = TaskBloc(_apiService);
     _checkPermission();
     _fetchTasks();
+
+    // Добавляем слушатель для пагинации
+    void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      final currentState = _taskBloc.state;
+      if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
+        _taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+      }
+    }
+  }
   }
 
   @override
@@ -46,6 +57,7 @@ class _TaskColumnState extends State<TaskColumn> {
   @override
   void dispose() {
     _taskBloc.close();
+    _scrollController.dispose(); // Удаляем контроллер при уничтожении
     super.dispose();
   }
 
@@ -77,8 +89,7 @@ class _TaskColumnState extends State<TaskColumn> {
           builder: (context, state) {
             if (state is TaskLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52))
-              );
+                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
             } else if (state is TaskDataLoaded) {
               final tasks = state.tasks
                   .where((task) => task.statusId == widget.statusId)
@@ -92,11 +103,14 @@ class _TaskColumnState extends State<TaskColumn> {
                     ? ListView(
                         physics: AlwaysScrollableScrollPhysics(),
                         children: [
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                          Center(child: Text('Нет задач для выбранного статуса')),
+                          SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.4),
+                          Center(
+                              child: Text('Нет задач для выбранного статуса')),
                         ],
                       )
                     : ListView.builder(
+                        controller: _scrollController, // Подключаем контроллер
                         physics: AlwaysScrollableScrollPhysics(),
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {

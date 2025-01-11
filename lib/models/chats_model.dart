@@ -129,16 +129,28 @@ class Chats {
     }
   }
 
-ChatItem toChatItem() {
+  ChatItem toChatItem() {
   String avatar;
   if (group != null) {
     avatar = "assets/images/GroupChat.png";
-  } else if (chatUsers != null && chatUsers.isNotEmpty && chatUsers[1].image.isNotEmpty) {
-    avatar = chatUsers[1].image;
+  } else if (chatUsers != null && chatUsers.isNotEmpty) {
+    // Определяем, кто создатель чата
+    bool isCreator = isCurrentUserCreator(); // Нужно реализовать этот метод
+   
+    // Если текущий пользователь создатель, показываем аватар второго пользователя
+    // Если не создатель - показываем аватар первого пользователя
+    int indexToShow = isCreator ? 1 : 0;
+   
+    if (chatUsers.length > indexToShow && chatUsers[indexToShow].image.isNotEmpty) {
+      avatar = chatUsers[indexToShow].image;
+    } else {
+      avatar = "assets/images/AvatarChat.png";
+    }
   } else {
     avatar = "assets/images/AvatarChat.png";
-  }
-
+  }print("chatUsers length: ${chatUsers?.length}");
+print("Current user is creator: ${isCurrentUserCreator()}");
+print("Selected avatar: $avatar");
   return ChatItem(
     displayName,
     lastMessage,
@@ -148,6 +160,15 @@ ChatItem toChatItem() {
     unredMessage,
   );
 }
+// Метод для определения, является ли текущий пользователь создателем чата
+bool isCurrentUserCreator() {
+  // Здесь нужна ваша логика определения создателя чата
+  // Например:
+  // return chatCreatorId == getCurrentUserId();
+  return true; // Временно для тестирования
+}
+
+
 
   String _mapChannelToIcon(String channel) {
     const channelIconMap = {

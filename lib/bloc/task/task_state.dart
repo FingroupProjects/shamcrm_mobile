@@ -28,8 +28,9 @@ class TaskLoaded extends TaskState {
 class TaskDataLoaded extends TaskState {
   final List<Task> tasks;
   final int currentPage;
-
-  TaskDataLoaded(this.tasks, {this.currentPage = 1});
+  final bool allTasksFetched;
+  TaskDataLoaded(this.tasks,
+      {this.currentPage = 1, this.allTasksFetched = false});
 
   TaskDataLoaded merge(List<Task> newTasks) {
     return TaskDataLoaded(

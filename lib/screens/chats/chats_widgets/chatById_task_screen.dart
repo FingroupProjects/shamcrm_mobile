@@ -66,10 +66,10 @@ class TaskByIdScreen extends StatelessWidget {
                   priorityLevelText = 'Обычный';
                   break;
                 case '2':
-                  priorityLevelText = 'Критический';
+                  priorityLevelText = 'Срочный';
                   break;
                 case '3':
-                  priorityLevelText = 'Сложный';
+                  priorityLevelText = 'Важный';
                   break;
                 default:
                   priorityLevelText = 'Не указано';
