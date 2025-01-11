@@ -245,33 +245,73 @@ void _addNewTab() async {
   }
 }
 
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
-    return GestureDetector(
-      key: _tabKeys[index],
-      onTap: () {
-        _tabController.animateTo(index);
-      },
-      onLongPress: () {
-        if (_canDeleteDealStatus) {
-          _showDeleteDialog(index);
-        }
-      },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
-            _tabTitles[index]['title'],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-            ),
+Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
+
+  return BlocBuilder<DealBloc, DealState>(
+    builder: (context, state) {
+      int dealCount = 0;
+      if (state is DealLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        dealCount = state.dealCounts[statusId] ?? 0;
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+        },
+        onLongPress: () {
+          if (_canDeleteDealStatus) {
+            _showDeleteDialog(index);
+          }
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    dealCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              )
+            ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
+
 
    void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];

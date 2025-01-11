@@ -10,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
-  final Function(int) onStatusId; // Callback to notify status change
+  final Function(int) onStatusId;
 
   DealColumn({
     required this.statusId,
@@ -26,16 +26,22 @@ class _DealColumnState extends State<DealColumn> {
   bool _canCreateDeal = false;
   final ApiService _apiService = ApiService();
   late DealBloc _dealBloc;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
+    _dealBloc = DealBloc(_apiService);
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
     _checkCreatePermission();
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _dealBloc.close();
     super.dispose();
   }
@@ -56,7 +62,15 @@ class _DealColumnState extends State<DealColumn> {
 
     return Future.delayed(Duration(milliseconds: 1));
   }
-
+  
+ void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      final currentState = _dealBloc.state;
+      if (currentState is DealDataLoaded && !currentState.allDealsFetched) {
+        _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -103,13 +117,28 @@ class _DealColumnState extends State<DealColumn> {
                 color: Color(0xff1E2E52),
                 backgroundColor: Colors.white,
                 onRefresh: _onRefresh,
-                child: Column(
-                  children: [
-                    SizedBox(height: 15),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: AlwaysScrollableScrollPhysics(),
+// <<<<<<< FJFJ
+//                 child: Column(
+//                   children: [
+//                     SizedBox(height: 15),
+//                     Expanded(
+//                       child: ListView.builder(
+//                         controller: _scrollController,
+//                         physics: AlwaysScrollableScrollPhysics(),
+// =======
+//                 child: deals.isEmpty
+//                     ? ListView(
+//                         physics: AlwaysScrollableScrollPhysics(),
+//                         children: [
+//                           SizedBox(
+//                               height: MediaQuery.of(context).size.height * 0.4),
+//                           Center(
+//                               child: Text('Нет сделок для выбранного статуса')),
+//                         ],
+//                       )
+//                     : ListView.builder(
+//                         controller: _scrollController,
+// >>>>>>> main
                         itemCount: deals.length,
                         itemBuilder: (context, index) {
                           return Padding(

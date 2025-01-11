@@ -16,6 +16,7 @@ class CustomAppBar extends StatefulWidget {
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
   bool showSearchIcon;
+  final bool showFilterIcon; // Новое поле для отображения фильтра
 
   CustomAppBar({
     super.key,
@@ -26,14 +27,17 @@ class CustomAppBar extends StatefulWidget {
     required this.focusNode,
     required this.clearButtonClick,
     this.showSearchIcon = true,
+    this.showFilterIcon = true, // Установка значения по умолчанию
   });
 
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
 }
 
-class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderStateMixin {
+class _CustomAppBarState extends State<CustomAppBar>
+    with SingleTickerProviderStateMixin {
   bool _isSearching = false;
+  
   late TextEditingController _searchController;
   late FocusNode focusNode;
   String _userImage = '';
@@ -64,7 +68,7 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
     _setUpSocketForNotifications();
 
     _blinkController = AnimationController(
-      vsync: this, 
+      vsync: this,
       duration: Duration(milliseconds: 700),
       lowerBound: 0.0,
       upperBound: 1.0,
@@ -82,80 +86,81 @@ class _CustomAppBarState extends State<CustomAppBar> with SingleTickerProviderSt
     super.dispose();
   }
 
-Future<void> _loadNotificationState() async {
-  final prefs = await SharedPreferences.getInstance();
-  bool hasNewNotification = prefs.getBool('hasNewNotification') ?? false;
-  setState(() {
-    _hasNewNotification = hasNewNotification;
-  });
-}
-
+  Future<void> _loadNotificationState() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool hasNewNotification = prefs.getBool('hasNewNotification') ?? false;
+    setState(() {
+      _hasNewNotification = hasNewNotification;
+    });
+  }
 
   Future<void> _setUpSocketForNotifications() async {
-  debugPrint('--------------------------- start socket CUSTOM APPBAR:::::::----------------');
-  final prefs = await SharedPreferences.getInstance();
-  String? token = prefs.getString('token');
-  final baseUrlSocket = await ApiService().getSocketBaseUrl();
-  final enteredDomain = await ApiService().getEnteredDomain();
+    debugPrint(
+        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    final baseUrlSocket = await ApiService().getSocketBaseUrl();
+    final enteredDomain = await ApiService().getEnteredDomain();
 
-  final customOptions = PusherChannelsOptions.custom(
-    uriResolver: (metadata) => Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
-    metadata: PusherChannelsOptionsMetadata.byDefault(),
-  );
+    final customOptions = PusherChannelsOptions.custom(
+      uriResolver: (metadata) =>
+          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+      metadata: PusherChannelsOptionsMetadata.byDefault(),
+    );
 
-  socketClient = PusherChannelsClient.websocket(
-    options: customOptions,
-    connectionErrorHandler: (exception, trace, refresh) {},
-    minimumReconnectDelayDuration: const Duration(seconds: 1),
-  );
+    socketClient = PusherChannelsClient.websocket(
+      options: customOptions,
+      connectionErrorHandler: (exception, trace, refresh) {},
+      minimumReconnectDelayDuration: const Duration(seconds: 1),
+    );
 
-  String userId = prefs.getString('userID') ?? '';
+    String userId = prefs.getString('userID') ?? '';
 
-  final myPresenceChannel = socketClient.presenceChannel(
-    'presence-user.$userId',
-    authorizationDelegate:
-        EndpointAuthorizableChannelTokenAuthorizationDelegate
-            .forPresenceChannel(
-      authorizationEndpoint: Uri.parse(baseUrlSocket),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'X-Tenant': '$enteredDomain-back'
-      },
-      onAuthFailed: (exception, trace) {
-        debugPrint(exception);
-      },
-    ),
-  );
+    final myPresenceChannel = socketClient.presenceChannel(
+      'presence-user.$userId',
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Tenant': '$enteredDomain-back'
+        },
+        onAuthFailed: (exception, trace) {
+          debugPrint(exception);
+        },
+      ),
+    );
 
-  socketClient.onConnectionEstablished.listen((_) {
-    myPresenceChannel.subscribeIfNotUnsubscribed();
-    notificationSubscription =
-        myPresenceChannel.bind('notification.created').listen((event) {
-      debugPrint('Received notification: ${event.data}');
-      setState(() {
-        _hasNewNotification = true;
+    socketClient.onConnectionEstablished.listen((_) {
+      myPresenceChannel.subscribeIfNotUnsubscribed();
+      notificationSubscription =
+          myPresenceChannel.bind('notification.created').listen((event) {
+        debugPrint('Received notification: ${event.data}');
+        setState(() {
+          _hasNewNotification = true;
+        });
+        prefs.setBool('hasNewNotification', true);
       });
-      prefs.setBool('hasNewNotification', true);  
     });
-  });
 
-  try {
-    await socketClient.connect();
-    print('Socket connection SUCCESSS');
-  } catch (e) {
-    if (kDebugMode) {
-      print('Socket connection error!');
+    try {
+      await socketClient.connect();
+      print('Socket connection SUCCESSS');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Socket connection error!');
+      }
     }
   }
-}
-
 
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String UUID = prefs.getString('userID') ?? 'Не найдено';
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
@@ -207,109 +212,111 @@ Future<void> _loadNotificationState() async {
     });
   }
 
- String? extractImageUrlFromSvg(String svg) {
-  if (svg.contains('href="')) {
-    final start = svg.indexOf('href="') + 6;
-    final end = svg.indexOf('"', start);
-    return svg.substring(start, end);
-  }
-  return null;
-}
-
-Color? extractBackgroundColorFromSvg(String svg) {
-  final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-  if (fillMatch != null) {
-    final colorHex = fillMatch.group(1);
-    if (colorHex != null) {
-      // Конвертируем hex в Color
-      final hex = colorHex.replaceAll('#', '');
-      return Color(int.parse('FF$hex', radix: 16));
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
     }
-  }
-  return null;
-}
-
-Widget _buildAvatarImage(String imageSource) {
-  if (imageSource.isEmpty) {
-    return Image.asset(
-      'assets/icons/playstore.png',
-      width: 40,
-      height: 40,
-      fit: BoxFit.cover,
-    );
+    return null;
   }
 
-  if (imageSource.startsWith('<svg')) {
-    final imageUrl = extractImageUrlFromSvg(imageSource);
-
-    if (imageUrl != null) {
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          image: DecorationImage(
-            image: NetworkImage(imageUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    } else {
-      final text = RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
-      final backgroundColor = extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
-
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: backgroundColor,
-          border: Border.all(
-            color: Colors.white,
-            width: 1,
-          ),
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w500,
-                  height: 1,
-                  letterSpacing: 0,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      );
+  Color? extractBackgroundColorFromSvg(String svg) {
+    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+    if (fillMatch != null) {
+      final colorHex = fillMatch.group(1);
+      if (colorHex != null) {
+        // Конвертируем hex в Color
+        final hex = colorHex.replaceAll('#', '');
+        return Color(int.parse('FF$hex', radix: 16));
+      }
     }
+    return null;
   }
 
-  return Image.network(
-    imageSource,
-    width: 40,
-    height: 40,
-    fit: BoxFit.cover,
-    loadingBuilder: (context, child, loadingProgress) {
-      if (loadingProgress == null) return child;
-      return Center();
-    },
-    errorBuilder: (context, error, stackTrace) {
+  Widget _buildAvatarImage(String imageSource) {
+    if (imageSource.isEmpty) {
       return Image.asset(
         'assets/icons/playstore.png',
         width: 40,
         height: 40,
         fit: BoxFit.cover,
       );
-    },
-  );
+    }
+
+    if (imageSource.startsWith('<svg')) {
+      final imageUrl = extractImageUrlFromSvg(imageSource);
+
+      if (imageUrl != null) {
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } else {
+        final text =
+            RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
+        final backgroundColor =
+            extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
+
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: backgroundColor,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Image.network(
+      imageSource,
+      width: 40,
+      height: 40,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center();
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          'assets/icons/playstore.png',
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+        );
+      },
+    );
   }
 
   @override
@@ -368,6 +375,18 @@ Widget _buildAvatarImage(String imageSource) {
             children: [
               Row(
                 children: [
+                  // Добавляем проверку для showFilterIcon
+                  if (widget.showFilterIcon)
+                    IconButton(
+                      icon: Image.asset(
+                        'assets/icons/AppBar/filter.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      onPressed: () {
+                        // Логика для фильтра
+                      },
+                    ),
                   IconButton(
                     icon: Stack(
                       children: [
@@ -380,7 +399,7 @@ Widget _buildAvatarImage(String imageSource) {
                           Positioned(
                             right: 0,
                             child: FadeTransition(
-                              opacity: _blinkAnimation, 
+                              opacity: _blinkAnimation,
                               child: Container(
                                 width: 10,
                                 height: 10,
@@ -395,7 +414,7 @@ Widget _buildAvatarImage(String imageSource) {
                     ),
                     onPressed: () {
                       setState(() {
-                        _hasNewNotification = false; 
+                        _hasNewNotification = false;
                       });
                       SharedPreferences.getInstance().then((prefs) {
                         prefs.setBool('hasNewNotification', false);

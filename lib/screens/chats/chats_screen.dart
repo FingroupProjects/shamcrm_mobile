@@ -49,7 +49,6 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _isSearching = false;
   String searchQuery = '';
 
-
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateChat.read');
@@ -93,19 +92,19 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
 
- final PagingController<int, Chats> _pagingController = PagingController(firstPageKey: 0);
+  final PagingController<int, Chats> _pagingController =
+      PagingController(firstPageKey: 0);
 
-void _searchChats(String query, String endPoint) {
-  _pagingController.refresh();
+  void _searchChats(String query, String endPoint) {
+    _pagingController.refresh();
 
-  final chatsBloc = BlocProvider.of<ChatsBloc>(context);
-  if (query.isEmpty) {
-    chatsBloc.add(FetchChats(endPoint: endPoint)); 
-  } else {
-    chatsBloc.add(FetchChats(endPoint: endPoint, query: query)); 
+    final chatsBloc = BlocProvider.of<ChatsBloc>(context);
+    if (query.isEmpty) {
+      chatsBloc.add(FetchChats(endPoint: endPoint));
+    } else {
+      chatsBloc.add(FetchChats(endPoint: endPoint, query: query));
+    }
   }
-}
-
 
   Timer? _debounce;
 
@@ -123,12 +122,9 @@ void _searchChats(String query, String endPoint) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
 
     _debounce = Timer(const Duration(milliseconds: 600), () {
-      chatsBloc.add(FetchChats(endPoint: endPoint, query: query)); 
+      chatsBloc.add(FetchChats(endPoint: endPoint, query: query));
     });
   }
-
-
-
 
   void updateFromSocket() {
     context.read<ChatsBloc>().add(UpdateChatsFromSocket());
@@ -244,6 +240,7 @@ void _searchChats(String query, String endPoint) {
             },
             textEditingController: searchController,
             focusNode: focusNode,
+            showFilterIcon: false,
             onChangedSearchInput: (String value) {
               setState(() {
                 _isSearching = value.isNotEmpty;
@@ -251,27 +248,33 @@ void _searchChats(String query, String endPoint) {
               _onSearch(value);
             },
             clearButtonClick: (isSearching) {
-                if (!isSearching) {
-                  searchController.clear();
-                  if (!isClickAvatarIcon) {
-                    if (_debounce?.isActive ?? false) _debounce?.cancel();
-                    _debounce = Timer(const Duration(seconds: 1), () {
-                      final chatsBloc = context.read<ChatsBloc>();
-                      chatsBloc.add(ClearChats());
-                      if (selectTabIndex == 0) {
-                        context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
-                      } else if (selectTabIndex == 1) {
-                        context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
-                      } else if (selectTabIndex == 2) {
-                        context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
-                      }
-                    });
-                  }
-                  setState(() {
-                    _isSearching = false;
+              if (!isSearching) {
+                searchController.clear();
+                if (!isClickAvatarIcon) {
+                  if (_debounce?.isActive ?? false) _debounce?.cancel();
+                  _debounce = Timer(const Duration(seconds: 1), () {
+                    final chatsBloc = context.read<ChatsBloc>();
+                    chatsBloc.add(ClearChats());
+                    if (selectTabIndex == 0) {
+                      context
+                          .read<ChatsBloc>()
+                          .add(FetchChats(endPoint: 'lead'));
+                    } else if (selectTabIndex == 1) {
+                      context
+                          .read<ChatsBloc>()
+                          .add(FetchChats(endPoint: 'task'));
+                    } else if (selectTabIndex == 2) {
+                      context
+                          .read<ChatsBloc>()
+                          .add(FetchChats(endPoint: 'corporate'));
+                    }
                   });
                 }
-              },
+                setState(() {
+                  _isSearching = false;
+                });
+              }
+            },
           ),
           backgroundColor: Colors.white,
         ),
@@ -321,55 +324,52 @@ void _searchChats(String query, String endPoint) {
   }
 
   Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
-  return GestureDetector(
-    onTap: () {
-      setState(() {
-        selectTabIndex = index;
-      });
-      _tabController.animateTo(index);
+    bool isActive = _tabController.index == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectTabIndex = index;
+        });
+        _tabController.animateTo(index);
 
-      if (index == 0) {
-        endPointInTab = 'lead';
-          context.read<ChatsBloc>().add(ClearChats());  
-        
-      }
-      if (index == 1) {
-        endPointInTab = 'task';
-          context.read<ChatsBloc>().add(ClearChats());  
+        if (index == 0) {
+          endPointInTab = 'lead';
+          context.read<ChatsBloc>().add(ClearChats());
+        }
+        if (index == 1) {
+          endPointInTab = 'task';
+          context.read<ChatsBloc>().add(ClearChats());
+        }
+        if (index == 2) {
+          endPointInTab = 'corporate';
+          context.read<ChatsBloc>().add(ClearChats());
+          // context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+        }
 
-      }
-      if (index == 2) {
-        endPointInTab = 'corporate';
-        context.read<ChatsBloc>().add(ClearChats());  
-        // context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+        if (_debounce?.isActive ?? false) _debounce?.cancel();
 
-      }
+        _debounce = Timer(const Duration(seconds: 2), () {
+          final chatsBloc = context.read<ChatsBloc>();
+          chatsBloc.add(ClearChats());
 
-      if (_debounce?.isActive ?? false) _debounce?.cancel();
-
-      _debounce = Timer(const Duration(seconds: 2), () {
-        final chatsBloc = context.read<ChatsBloc>();
-        chatsBloc.add(ClearChats());
-
-        chatsBloc.add(FetchChats(endPoint: endPointInTab)); 
-      });
-    },
-    child: Container(
-      decoration: TaskStyles.tabButtonDecoration(isActive),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: Center(
-        child: Text(
-          _tabTitles[index],
-          style: TaskStyles.tabTextStyle.copyWith(
-            color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+          chatsBloc.add(FetchChats(endPoint: endPointInTab));
+        });
+      },
+      child: Container(
+        decoration: TaskStyles.tabButtonDecoration(isActive),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        child: Center(
+          child: Text(
+            _tabTitles[index],
+            style: TaskStyles.tabTextStyle.copyWith(
+              color:
+                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildTabBarView() {
     return TabBarView(
@@ -397,7 +397,8 @@ class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
   final String endPointInTab;
 
-  const _ChatItemsWidget({required this.updateChats, required this.endPointInTab});
+  const _ChatItemsWidget(
+      {required this.updateChats, required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
@@ -412,7 +413,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     super.initState();
     _pagingController.addPageRequestListener((pageKey) {
       if (pageKey == 0) {
-        _pagingController.refresh(); 
+        _pagingController.refresh();
       }
       context.read<ChatsBloc>().add(GetNextPageChats());
     });
@@ -444,61 +445,61 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     });
   }
 
- void onLongPress(Chats chat) {
-  if (widget.endPointInTab == 'task') {
-    return; 
+  void onLongPress(Chats chat) {
+    if (widget.endPointInTab == 'task') {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => DeleteChatDialog(
+        chatId: chat.id,
+        endPointInTab: widget.endPointInTab,
+      ),
+    );
   }
-
-  showDialog(
-    context: context,
-    builder: (context) => DeleteChatDialog(
-      chatId: chat.id,
-      endPointInTab: widget.endPointInTab,
-    ),
-  );
-}
-
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatsBloc, ChatsState>(
       listener: (context, state) {
         if (state is ChatsInitial) {
-          _pagingController.refresh(); 
+          _pagingController.refresh();
         }
         if (state is ChatsLoaded) {
-          if (state.chatsPagination.currentPage == state.chatsPagination.totalPage) {
+          if (state.chatsPagination.currentPage ==
+              state.chatsPagination.totalPage) {
             _pagingController.appendLastPage(state.chatsPagination.data);
           } else {
             _pagingController.appendPage(state.chatsPagination.data,
                 state.chatsPagination.currentPage + 1);
           }
         }
-    if (state is ChatsError) {
-      if (state.message.contains("Нет подключения к интернету")) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              state.message,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+        if (state is ChatsError) {
+          if (state.message.contains("Нет подключения к интернету")) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          ),
-        );
-      }
-    }
+            );
+          }
+        }
       },
       child: PagedListView<int, Chats>(
         padding: EdgeInsets.symmetric(vertical: 0),
@@ -511,7 +512,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 children: [
                   Text(
                     "Ничего не найдено.",
-                    style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                    style:
+                        TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -552,4 +554,3 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
     );
   }
 }
-

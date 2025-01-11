@@ -8,22 +8,37 @@ class LeadLoading extends LeadState {}
 
 class LeadLoaded extends LeadState {
   final List<LeadStatus> leadStatuses;
+  final Map<int, int> leadCounts;
 
-  LeadLoaded(this.leadStatuses);
+  LeadLoaded(this.leadStatuses, {Map<int, int>? leadCounts})
+      : this.leadCounts = leadCounts ?? {};
+
+  // Метод copyWith для обновления состояния
+  LeadLoaded copyWith({
+    List<LeadStatus>? leadStatuses,
+    Map<int, int>? leadCounts,
+  }) {
+    return LeadLoaded(
+      leadStatuses ?? this.leadStatuses,
+      leadCounts: leadCounts ?? this.leadCounts,
+    );
+  }
 }
+
 
 class LeadDataLoaded extends LeadState {
   final List<Lead> leads;
   final int currentPage;
+  final Map<int, int> leadCounts;
 
-  LeadDataLoaded(this.leads, {this.currentPage = 1});
+  LeadDataLoaded(this.leads, {this.currentPage = 1, required this.leadCounts});
 
-  // Метод для объединения с новыми лидами
   LeadDataLoaded merge(List<Lead> newLeads) {
     return LeadDataLoaded([...leads, ...newLeads],
-        currentPage: currentPage + 1);
+        currentPage: currentPage + 1, leadCounts: leadCounts);
   }
 }
+
 
 class LeadError extends LeadState {
   final String message;

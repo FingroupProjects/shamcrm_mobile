@@ -246,53 +246,78 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
   }
 
   Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
-  final statusId = _tabTitles[index]['id'];
-  
-  return GestureDetector(
-    key: _tabKeys[index],
-    onTap: () {
-      _tabController.animateTo(index);
-    },
-    onLongPress: () {
-      if (_canDeleteTaskStatus) {
-        _showDeleteDialog(index);
-      }
-    },
-    child: Container(
-      decoration: TaskStyles.tabButtonDecoration(isActive),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _tabTitles[index]['title'],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-            ),
-          ),
-          BlocBuilder<TaskBloc, TaskState>(
-            builder: (context, state) {
-              if (state is TaskLoaded && state.taskCounts.containsKey(statusId)) {
-                return Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Text(
-                    '${state.taskCounts[statusId]}',
-                    style: TaskStyles.tabTextStyle.copyWith(
-                      color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-                      fontSize: 14,
+    bool isActive = _tabController.index == index;
+
+    return BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        int taskCount = 0;
+        if (state is TaskLoaded) {
+          final statusId = _tabTitles[index]['id'];
+          taskCount = state.taskCounts[statusId] ?? 0;
+        }
+
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
+            if (_canDeleteTaskStatus) {
+              _showDeleteDialog(index);
+            }
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
+                  ),
+                ),
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white, // Белый фон
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(
+                                0xff1E2E52) // Цвет линии для активного состояния
+                            : const Color(
+                                0xff99A4BA), // Цвет линии для неактивного состояния
+                        width: 1, // Ширина границы
+                      ),
+                    ),
+                    child: Text(
+                      taskCount.toString(),
+                      style: TextStyle(
+                        color: isActive
+                            ? Colors
+                                .black // Черный текст для активного состояния
+                            : const Color(
+                                0xff99A4BA), // Серый текст для неактивного состояния
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                );
-              }
-              return const SizedBox();
-            },
+                )
+              ],
+            ),
           ),
-        ],
-      ),
-    ),
-  );
-}
+        );
+      },
+    );
+  }
 
   void _showDeleteDialog(int index) async {
     final taskStatusId = _tabTitles[index]['id'];

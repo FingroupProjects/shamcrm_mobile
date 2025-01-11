@@ -4,7 +4,7 @@ class FetchDealStatuses extends DealEvent {}
 
 class FetchDeals extends DealEvent {
   final int statusId;
-  final String? query; // Добавьте параметр для поиска
+  final String? query;
 
   FetchDeals(this.statusId, {this.query});
 }
@@ -15,6 +15,7 @@ class FetchMoreDeals extends DealEvent {
 
   FetchMoreDeals(this.statusId, this.currentPage);
 }
+
 
 class CreateDealStatus extends DealEvent {
   final String title;

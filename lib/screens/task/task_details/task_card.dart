@@ -104,9 +104,9 @@ class _TaskCardState extends State<TaskCard> {
       case 1:
         return 'Обычный';
       case 3:
-        return 'Критический';
+        return 'Срочный';
       case 2:
-        return 'Сложный';
+        return 'Важный';
       default:
         return 'Обычный';
     }

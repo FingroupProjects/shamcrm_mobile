@@ -176,8 +176,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     // Карта уровней приоритета
     final Map<int, String> priorityLevels = {
       1: 'Обычный',
-      3: 'Критический',
-      2: 'Сложный'
+      3: 'Срочный',
+      2: 'Важный'
     };
 
     currentTask = task;
@@ -840,9 +840,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Color _getPriorityBackgroundColor(String priority) {
     switch (priority) {
-      case 'Критический':
+      case 'Срочный':
         return Color(0xFFFFEBEE);
-      case 'Сложный':
+      case 'Важный':
         return Color(0xFFFFF3E0);
       case 'Обычный':
         return Color(0xFFE8F5E9);
@@ -853,9 +853,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Color _getPriorityBorderColor(String priority) {
     switch (priority) {
-      case 'Критический':
+      case 'Срочный':
         return Colors.red;
-      case 'Сложный':
+      case 'Важный':
         return Colors.orange;
       case 'Обычный':
         return Colors.green;
@@ -866,9 +866,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Color _getPriorityColor(String priority) {
     switch (priority) {
-      case 'Критический':
+      case 'Срочный':
         return Color(0xFFC62828);
-      case 'Сложный':
+      case 'Важный':
         return Color(0xFFEF6C00);
       case 'Обычный':
         return Color(0xFF2E7D32);

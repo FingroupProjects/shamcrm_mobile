@@ -255,8 +255,16 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
   }
 
 
-    Widget _buildTabButton(int index) {
-      bool isActive = _tabController.index == index;
+Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
+
+  return BlocBuilder<LeadBloc, LeadState>(
+    builder: (context, state) {
+      int leadCount = 0;
+      if (state is LeadLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        leadCount = state.leadCounts[statusId] ?? 0;
+      }
       return GestureDetector(
         key: _tabKeys[index],
         onTap: () {
@@ -273,13 +281,37 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Center(
-                child: Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    leadCount.toString(),
+                    style: TextStyle(
+                      color: isActive
+                          ? Colors.black
+                          : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -287,7 +319,9 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
           ),
         ),
       );
-    }
+    },
+  );
+}
 
     void _showDeleteDialog(int index) async {
       final leadStatusId = _tabTitles[index]['id'];

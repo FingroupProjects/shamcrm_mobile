@@ -3005,7 +3005,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
       }
     } catch (e) {
       print('Ошибка запроса!');
-      throw Exception('Ошибка сети или парсинга данных');
+      throw Exception('');
     }
   }
 
