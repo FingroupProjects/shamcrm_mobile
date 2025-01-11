@@ -8,7 +8,9 @@ import 'task_state.dart';
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiService apiService;
   bool allTasksFetched = false;
+  Map<int, int> _taskCounts = {}; // Добавляем приватное поле для хранения количества
 
+ 
   TaskBloc(this.apiService) : super(TaskInitial()) {
     on<FetchTaskStatuses>(_fetchTaskStatuses);
     on<FetchTasks>(_fetchTasks);
@@ -22,43 +24,78 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
-
+    
     await Future.delayed(Duration(milliseconds: 600));
-
+    
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
       return;
     }
+
     try {
       final response = await apiService.getTaskStatuses();
       if (response.isEmpty) {
         emit(TaskError('Нет статусов задачи!'));
         return;
       }
-      emit(TaskLoaded(response));
+
+      // Загружаем количество задач для каждого статуса
+      for (var status in response) {
+        try {
+          final tasks = await apiService.getTasks(
+            status.id,
+            page: 1,
+            perPage: 100, // Увеличиваем количество для получения всех задач
+          );
+          _taskCounts[status.id] = tasks.length;
+        } catch (e) {
+          print('Error fetching task count for status ${status.id}: $e');
+          _taskCounts[status.id] = 0;
+        }
+      }
+
+      emit(TaskLoaded(response, taskCounts: Map.from(_taskCounts)));
     } catch (e) {
       emit(TaskError('Не удалось загрузить данные!'));
     }
   }
 
-// // Метод для поиска лидов
   Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
+    
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
       return;
     }
 
     try {
-      // Передаем правильный leadStatusId из события FetchLeads
-      final tasks = await apiService.getTasks(
+      // Сначала получаем все задачи для подсчета
+      final allTasks = await apiService.getTasks(
+        event.statusId,
+        page: 1,
+        perPage: 100, // Увеличиваем для получения всех задач
+        search: event.query,
+      );
+      
+      // Сохраняем общее количество
+      _taskCounts[event.statusId] = allTasks.length;
+      
+      // Теперь получаем только нужную страницу для отображения
+      final pageTasks = await apiService.getTasks(
         event.statusId,
         page: 1,
         perPage: 20,
         search: event.query,
       );
-      allTasksFetched = tasks.isEmpty;
-      emit(TaskDataLoaded(tasks, currentPage: 1));
+      
+      allTasksFetched = pageTasks.isEmpty;
+      
+      if (state is TaskLoaded) {
+        final loadedState = state as TaskLoaded;
+        emit(loadedState.copyWith(taskCounts: Map.from(_taskCounts)));
+      }
+      
+      emit(TaskDataLoaded(pageTasks, currentPage: 1));
     } catch (e) {
       if (e is ApiException && e.statusCode == 401) {
         emit(TaskError('Неавторизованный доступ!'));
@@ -67,6 +104,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
     }
   }
+
 
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {

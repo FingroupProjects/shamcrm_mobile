@@ -8,8 +8,21 @@ class DealLoading extends DealState {}
 
 class DealLoaded extends DealState {
   final List<DealStatus> dealStatuses;
+  final Map<int, int> dealCounts;
 
-  DealLoaded(this.dealStatuses);
+  DealLoaded(this.dealStatuses, {Map<int, int>? dealCounts})
+      : this.dealCounts = dealCounts ?? {};
+
+  // Метод copyWith для обновления состояния
+  DealLoaded copyWith({
+    List<DealStatus>? dealStatuses,
+    Map<int, int>? dealCounts,
+  }) {
+    return DealLoaded(
+      dealStatuses ?? this.dealStatuses,
+      dealCounts: dealCounts ?? this.dealCounts,
+    );
+  }
 }
 
 class DealDataLoaded extends DealState {

@@ -7,7 +7,8 @@ import 'deal_state.dart';
 
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
-  bool allDealsFetched =false; // Переменная для отслеживания статуса завершения загрузки сделок
+  bool allDealsFetched = false; // Переменная для отслеживания завершения загрузки
+  Map<int, int> _dealCounts = {}; // Приватное поле для хранения количества сделок
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
@@ -18,7 +19,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<UpdateDeal>(_updateDeal);
     on<DeleteDeal>(_deleteDeal);
     on<DeleteDealStatuses>(_deleteDealStatuses);
-
   }
 
   Future<void> _fetchDealStatuses(
@@ -38,38 +38,71 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         emit(DealError('Нет статусов'));
         return;
       }
-      emit(DealLoaded(response));
+
+      // Загружаем количество сделок для каждого статуса
+      for (var status in response) {
+        try {
+          final deals = await apiService.getDeals(
+            status.id,
+            page: 1,
+            perPage: 100,
+          );
+          _dealCounts[status.id] = deals.length;
+        } catch (e) {
+          print('Error fetching deal count for status ${status.id}: $e');
+          _dealCounts[status.id] = 0;
+        }
+      }
+
+      emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
     } catch (e) {
       emit(DealError('Не удалось загрузить данные!'));
     }
   }
 
-  // Метод для загрузки сделок
-Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-  emit(DealLoading());
-  if (!await _checkInternetConnection()) {
-    emit(DealError('Нет подключения к интернету'));
-    return;
+  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+
+    if (!await _checkInternetConnection()) {
+      emit(DealError('Нет подключения к интернету'));
+      return;
+    }
+
+    try {
+      final allDeals = await apiService.getDeals(
+        event.statusId,
+        page: 1,
+        perPage: 100,
+        search: event.query,
+      );
+
+      _dealCounts[event.statusId] = allDeals.length;
+
+      final pageDeals = await apiService.getDeals(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+      );
+
+      allDealsFetched = pageDeals.isEmpty;
+
+      if (state is DealLoaded) {
+        final loadedState = state as DealLoaded;
+        emit(loadedState.copyWith(dealCounts: Map.from(_dealCounts)));
+      }
+
+      emit(DealDataLoaded(pageDeals, currentPage: 1));
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 401) {
+        emit(DealError('Неавторизованный доступ!'));
+      } else {
+        emit(DealError('Не удалось загрузить данные!'));
+      }
+    }
   }
 
-  try {
-    // Передаем правильный leadStatusId из события FetchLeads
-    final leads = await apiService.getDeals(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-    );
-    allDealsFetched = leads.isEmpty;
-    emit(DealDataLoaded(leads, currentPage: 1));
-  } catch (e) {
-  if (e is ApiException && e.statusCode == 401) {
-    emit(DealError('Неавторизованный доступ!'));
-  } else {
-    emit(DealError('Не удалось загрузить данные!'));
-  }
-}
-}
+
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {
     if (allDealsFetched)
