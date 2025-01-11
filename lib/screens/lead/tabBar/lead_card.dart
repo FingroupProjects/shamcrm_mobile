@@ -50,8 +50,7 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath =
-        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
+    String iconPath = sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
 
     return GestureDetector(
       onTap: () {
@@ -63,17 +62,6 @@ class _LeadCardState extends State<LeadCard> {
               leadName: widget.lead.name ?? 'Без имени',
               leadStatus: dropdownValue,
               statusId: statusId,
-              region: widget.lead.region?.name,
-              regionId: widget.lead.region?.id,
-              manager: widget.lead.manager?.name,
-              managerId: widget.lead.manager?.id,
-              birthday: widget.lead.birthday,
-              instagram: widget.lead.instagram,
-              facebook: widget.lead.facebook,
-              telegram: widget.lead.telegram,
-              phone: widget.lead.phone,
-              description: widget.lead.description,
-              leadCustomFields: widget.lead.leadCustomFields,
             ),
           ),
         );
@@ -87,9 +75,17 @@ class _LeadCardState extends State<LeadCard> {
             Text(
               widget.lead.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
-              overflow:
-                  TextOverflow.ellipsis, // Ограничение текста в одну строку
+              overflow: TextOverflow.ellipsis, 
             ),
+          Text(
+            'Менеджер: ${widget.lead.manager!.name}', 
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xfff99A4BA),
+            ),
+          ),
             const SizedBox(height: 5),
             Row(
               children: [
@@ -129,8 +125,7 @@ class _LeadCardState extends State<LeadCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric( horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
                           Container(
@@ -160,7 +155,6 @@ class _LeadCardState extends State<LeadCard> {
                 const SizedBox(width: 8),
               ],
             ),
-            const SizedBox(height: 8),
             Column(
               children: [
                 Row(

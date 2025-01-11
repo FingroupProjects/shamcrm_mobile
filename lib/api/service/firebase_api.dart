@@ -271,7 +271,6 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
             leadName: '',
             leadStatus: '',
             statusId: 1,
-            leadCustomFields: [LeadCustomField(id: 1, key: '', value: ''), LeadCustomField(id: 2, key: '', value: '')],
           ),
         ),
       );
