@@ -56,8 +56,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
 
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
-    2: 'Сложный',
-    3: 'Критический'
+    2: 'Важный',
+    3: 'Срочный'
   };
 
   @override

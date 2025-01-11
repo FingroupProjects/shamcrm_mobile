@@ -178,6 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             focusNode: FocusNode(),
             clearButtonClick: (isSearching) {},
             showSearchIcon: false,
+            showFilterIcon: false,
           ),
         ),
         body: isClickAvatarIcon

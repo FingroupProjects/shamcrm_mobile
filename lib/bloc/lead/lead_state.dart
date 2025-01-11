@@ -29,15 +29,16 @@ class LeadLoaded extends LeadState {
 class LeadDataLoaded extends LeadState {
   final List<Lead> leads;
   final int currentPage;
+  final Map<int, int> leadCounts;
 
-  LeadDataLoaded(this.leads, {this.currentPage = 1});
+  LeadDataLoaded(this.leads, {this.currentPage = 1, required this.leadCounts});
 
-  // Метод для объединения с новыми лидами
   LeadDataLoaded merge(List<Lead> newLeads) {
     return LeadDataLoaded([...leads, ...newLeads],
-        currentPage: currentPage + 1);
+        currentPage: currentPage + 1, leadCounts: leadCounts);
   }
 }
+
 
 class LeadError extends LeadState {
   final String message;

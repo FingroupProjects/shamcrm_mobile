@@ -283,7 +283,6 @@ Widget _buildTabButton(int index) {
   );
 }
 
-
   void _showDeleteDialog(int index) async {
     final leadStatusId = _tabTitles[index]['id'];
     final result = await showDialog(
