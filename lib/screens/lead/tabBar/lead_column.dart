@@ -12,11 +12,13 @@ class LeadColumn extends StatefulWidget {
   final int statusId;
   final String title;
   final Function(int) onStatusId; // Callback to notify status change
+  final int? managerId; // Добавляем параметр managerId
 
   LeadColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
+    this.managerId, // Добавляем в конструктор
   });
 
   @override
@@ -31,7 +33,8 @@ class _LeadColumnState extends State<LeadColumn> {
   @override
   void initState() {
     super.initState();
-    _leadBloc = LeadBloc(_apiService)..add(FetchLeads(widget.statusId));
+    _leadBloc = LeadBloc(_apiService)
+      ..add(FetchLeads(widget.statusId, managerId: widget.managerId));
     _checkPermission();
   }
 
@@ -49,12 +52,9 @@ class _LeadColumnState extends State<LeadColumn> {
   }
 
   Future<void> _onRefresh() async {
-
-      final leadBloc = BlocProvider.of<LeadBloc>(context);
-      leadBloc.add(FetchLeadStatuses());
-
-    _leadBloc.add(FetchLeads(widget.statusId));
-
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    leadBloc.add(FetchLeadStatuses());
+    _leadBloc.add(FetchLeads(widget.statusId, managerId: widget.managerId));
     return Future.delayed(Duration(milliseconds: 1));
   }
 
@@ -67,7 +67,7 @@ class _LeadColumnState extends State<LeadColumn> {
         body: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
             if (state is LeadLoading) {
-             return const Center(
+              return const Center(
                 child: PlayStoreImageLoading(
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),

@@ -50,8 +50,8 @@ class Lead {
           ? Organization.fromJson(json['organization'])
           : null,
       leadStatus: json['leadStatus'] != null
-        ? LeadStatus.fromJson(json['leadStatus'])
-        : null, 
+          ? LeadStatus.fromJson(json['leadStatus'])
+          : null,
     );
   }
 
@@ -72,7 +72,6 @@ class Lead {
   }
 }
 
-
 class Author {
   final int id;
   final String name;
@@ -89,7 +88,7 @@ class Author {
     );
   }
 
- Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -120,12 +119,14 @@ class LeadStatus {
   final String title;
   final String? color;
   final String? lead_status_id;
+  final int leadsCount;
 
   LeadStatus({
     required this.id,
     required this.title,
     this.color,
     this.lead_status_id,
+    required this.leadsCount,
   });
 
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
@@ -134,6 +135,7 @@ class LeadStatus {
       title: json['title'] ?? json['name'] ?? '',
       color: json['color'],
       lead_status_id: json['lead_status_id'] ?? null,
+      leadsCount: json['leads_count'] ?? 0, // Если null, то возвращаем 0
     );
   }
 
@@ -146,7 +148,6 @@ class LeadStatus {
     };
   }
 }
-
 
 class LeadCustomField {
   final int id;
@@ -166,7 +167,7 @@ class LeadCustomField {
       value: json['value'] ?? '',
     );
   }
-   Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'key': key,

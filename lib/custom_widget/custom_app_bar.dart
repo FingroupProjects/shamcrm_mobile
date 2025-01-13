@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomAppBar extends StatefulWidget {
@@ -17,6 +20,8 @@ class CustomAppBar extends StatefulWidget {
   Function(bool) clearButtonClick;
   bool showSearchIcon;
   final bool showFilterIcon; // Новое поле для отображения фильтра
+  final Function(dynamic)?
+      onManagerSelected; // Добавляем callback для выбора менеджера
 
   CustomAppBar({
     super.key,
@@ -28,6 +33,7 @@ class CustomAppBar extends StatefulWidget {
     required this.clearButtonClick,
     this.showSearchIcon = true,
     this.showFilterIcon = true, // Установка значения по умолчанию
+    this.onManagerSelected, // Добавляем в конструктор
   });
 
   @override
@@ -37,7 +43,7 @@ class CustomAppBar extends StatefulWidget {
 class _CustomAppBarState extends State<CustomAppBar>
     with SingleTickerProviderStateMixin {
   bool _isSearching = false;
-  
+
   late TextEditingController _searchController;
   late FocusNode focusNode;
   String _userImage = '';
@@ -69,7 +75,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     _blinkController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 700),
+      duration: Duration(milliseconds: 1),
       lowerBound: 0.0,
       upperBound: 1.0,
     )..repeat(reverse: true);
@@ -377,6 +383,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                 children: [
                   // Добавляем проверку для showFilterIcon
                   if (widget.showFilterIcon)
+                    // В методе build класса CustomAppBar
                     IconButton(
                       icon: Image.asset(
                         'assets/icons/AppBar/filter.png',
@@ -384,7 +391,35 @@ class _CustomAppBarState extends State<CustomAppBar>
                         height: 24,
                       ),
                       onPressed: () {
-                        // Логика для фильтра
+                        context
+                            .read<GetAllManagerBloc>()
+                            .add(GetAllManagerEv());
+                        final RenderBox button =
+                            context.findRenderObject() as RenderBox;
+                        final position = button.localToGlobal(Offset.zero);
+
+                        showMenu(
+                          context: context,
+                          position: RelativeRect.fromLTRB(
+                            position.dx,
+                            position.dy + button.size.height,
+                            position.dx + button.size.width,
+                            position.dy + button.size.height,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          color: Colors.white,
+                          items: [
+                            PopupMenuItem(
+                              padding: EdgeInsets.zero,
+                              child: ManagerFilterPopup(
+                                onManagerSelected: widget.onManagerSelected,
+                              ),
+                            ),
+                          ],
+                        );
                       },
                     ),
                   IconButton(

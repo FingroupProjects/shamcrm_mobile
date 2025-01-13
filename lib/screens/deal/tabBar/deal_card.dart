@@ -89,27 +89,17 @@ class _DealCardState extends State<DealCard> {
               widget.deal.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
               maxLines: 1,
-              overflow:
-                  TextOverflow.ellipsis, 
+              overflow: TextOverflow.ellipsis, 
             ),
             Text(
-            'Менеджер: ${widget.deal.manager?.name ?? ""}', 
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xfff99A4BA),
+              'Лид: ${widget.deal.lead?.name ?? ""}', 
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xfff99A4BA),
+              ),
             ),
-          ),
-            Text(
-            'Лид: ${widget.deal.lead?.name ?? ""}', 
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xfff99A4BA),
-            ),
-          ),
             const SizedBox(height: 5),
             Row(
               children: [
@@ -139,8 +129,7 @@ class _DealCardState extends State<DealCard> {
                     );
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -149,8 +138,7 @@ class _DealCardState extends State<DealCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
                           Container(
@@ -185,6 +173,7 @@ class _DealCardState extends State<DealCard> {
               children: [
                 const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
@@ -205,7 +194,24 @@ class _DealCardState extends State<DealCard> {
                         ),
                       ],
                     ),
-                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE9EDF5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${widget.deal.manager?.name ?? ""}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ],

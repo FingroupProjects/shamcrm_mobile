@@ -220,15 +220,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
-        backgroundColor: Colors.white);
-
-    if (!_isTextOverflow(value, style, maxWidth)) {
-      return _buildValue(value);
-    }
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+    );
 
     return GestureDetector(
       onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
@@ -450,6 +447,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
     );
   }
+
   // Построение списка деталей лида
   Widget _buildDetailsList() {
     return ListView.builder(
@@ -467,6 +465,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       },
     );
   }
+
   // Построение одной строки с деталями лида
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
@@ -497,7 +496,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
         color: Color(0xfff99A4BA),
-
       ),
     );
   }

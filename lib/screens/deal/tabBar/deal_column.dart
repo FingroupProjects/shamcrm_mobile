@@ -12,11 +12,13 @@ class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
   final Function(int) onStatusId;
+  final int? managerId; // Добавляем параметр managerId
 
   DealColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
+    this.managerId, // Добавляем в конструктор
   });
 
   @override
@@ -56,21 +58,23 @@ class _DealColumnState extends State<DealColumn> {
   Future<void> _onRefresh() async {
     final dealBloc = BlocProvider.of<DealBloc>(context);
     dealBloc.add(FetchDealStatuses());
-    
 
     _dealBloc.add(FetchDeals(widget.statusId));
 
     return Future.delayed(Duration(milliseconds: 1));
   }
-  
- void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       final currentState = _dealBloc.state;
       if (currentState is DealDataLoaded && !currentState.allDealsFetched) {
-        _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+        _dealBloc
+            .add(FetchMoreDeals(widget.statusId, currentState.currentPage));
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(

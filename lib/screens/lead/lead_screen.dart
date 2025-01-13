@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
@@ -40,6 +41,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
+  int? _selectedManagerId; // ID выбранного менеджера.
+
   @override
   void initState() {
     super.initState();
@@ -94,19 +97,49 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // Модифицируем метод _searchLeads для использования managerId
   Future<void> _searchLeads(String query, int currentStatusId) async {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
+    leadBloc.add(FetchLeads(
+      currentStatusId,
+      query: query.isNotEmpty ? query : null,
+      managerId: _selectedManagerId, // Передаем ID менеджера
+    ));
+  }
 
-    if (query.isEmpty) {
-      leadBloc.add(FetchLeads(currentStatusId));
-    } else {
-      leadBloc.add(FetchLeads(currentStatusId, query: query));
-    }
+  // Добавляем метод для обработки выбора менеджера
+  void _handleManagerSelected(dynamic manager) {
+    setState(() {
+      _selectedManagerId = manager?.id;
+    });
+    _refreshCurrentTab();
+
+    // Запрашиваем обновленные данные с учетом выбранного менеджера
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    leadBloc.add(FetchLeads(
+      currentStatusId,
+      managerId: _selectedManagerId,
+      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+    ));
   }
 
   void _onSearch(String query) {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchLeads(query, currentStatusId);
+  }
+
+  void _refreshCurrentTab() {
+    if (_tabTitles.isNotEmpty) {
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      final leadBloc = BlocProvider.of<LeadBloc>(context);
+      leadBloc.add(FetchLeads(
+        currentStatusId,
+        managerId: _selectedManagerId,
+        query:
+            _searchController.text.isNotEmpty ? _searchController.text : null,
+      ));
+    }
   }
 
   // Метод для проверки разрешений
@@ -150,6 +183,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
             _onSearch(value);
           },
+          onManagerSelected:
+              _handleManagerSelected, // Добавляем обработчик выбора менеджера
           textEditingController: textEditingController,
           focusNode: focusNode,
           clearButtonClick: (value) {
@@ -260,10 +295,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return BlocBuilder<LeadBloc, LeadState>(
       builder: (context, state) {
         int leadCount = 0;
+
         if (state is LeadLoaded) {
           final statusId = _tabTitles[index]['id'];
-          leadCount = state.leadCounts[statusId] ?? 0;
+          final leadStatus = state.leadStatuses.firstWhere(
+            (status) => status.id == statusId,
+            // orElse: () => 1,
+          );
+          leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
+
         return GestureDetector(
           key: _tabKeys[index],
           onTap: () {
@@ -379,6 +420,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                 if (_scrollController.hasClients) {
                   _scrollToActiveTab();
+                  _refreshCurrentTab(); // Добавляем обновление при смене вкладки
                 }
               });
               int initialIndex = state.leadStatuses
@@ -482,12 +524,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 return LeadColumn(
                   statusId: statusId,
                   title: title,
+                  managerId: _selectedManagerId, // Передаем ID менеджера
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
                     if (index != -1) {
                       _tabController.animateTo(index);
+                      _refreshCurrentTab(); // Добавляем обновление при смене статуса
                     }
                   },
                 );

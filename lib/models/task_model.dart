@@ -186,11 +186,13 @@ class TaskStatus {
   final int id;
   final TaskStatusName taskStatus;
   final String color;
+  final int tasksCount;
 
   TaskStatus({
     required this.id,
     required this.taskStatus,
     required this.color,
+    required this.tasksCount,
   });
 
   // Метод для создания объекта из JSON
@@ -203,6 +205,7 @@ class TaskStatus {
           : TaskStatusName(
               id: 0, name: json['taskStatus'] ?? 'Неизвестный статус'),
       color: json['color'],
+      tasksCount: json['tasks_amount'] ?? 0, // Если null, то возвращаем 0
     );
   }
 

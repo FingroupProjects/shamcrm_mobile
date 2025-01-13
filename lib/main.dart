@@ -70,7 +70,7 @@ import 'screens/home_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  void main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
@@ -79,10 +79,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   if (isDomainChecked) {
     await apiService.initialize();
   }
-  
+ 
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
-  
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -148,7 +148,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DealByIdBloc(apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-        BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
+        BlocProvider(
+            create: (context) => GetAllClientBloc(apiService: apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
@@ -160,7 +161,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBloc(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
@@ -172,15 +174,18 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
-        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
         BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
-        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(
+            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,
