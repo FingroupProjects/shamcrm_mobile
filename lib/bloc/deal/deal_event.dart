@@ -5,8 +5,13 @@ class FetchDealStatuses extends DealEvent {}
 class FetchDeals extends DealEvent {
   final int statusId;
   final String? query;
+  final int? managerId; // Добавляем поле managerId
 
-  FetchDeals(this.statusId, {this.query});
+  FetchDeals(
+    this.statusId, {
+    this.query,
+    this.managerId, // Добавляем в конструктор
+  });
 }
 
 class FetchMoreDeals extends DealEvent {
@@ -16,7 +21,6 @@ class FetchMoreDeals extends DealEvent {
   FetchMoreDeals(this.statusId, this.currentPage);
 }
 
-
 class CreateDealStatus extends DealEvent {
   final String title;
   final int? day;
@@ -24,7 +28,7 @@ class CreateDealStatus extends DealEvent {
 
   CreateDealStatus({
     required this.title,
-   this.day,
+    this.day,
     required this.color,
   });
 }
@@ -88,6 +92,7 @@ class DeleteDeal extends DealEvent {
 
   DeleteDeal(this.dealId);
 }
+
 class DeleteDealStatuses extends DealEvent {
   final int dealStatusId;
 

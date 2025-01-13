@@ -81,7 +81,7 @@ class ApiService {
     baseUrlSocket = await getSocketBaseUrl();
   }
 
-    // Инициализация API с доменом из QR-кода
+  // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain) async {
     baseUrl = 'https://$domain-back.shamcrm.com/api';
     baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
@@ -144,53 +144,52 @@ class ApiService {
   }
 
   // Метод для логаута — очистка токена
- Future<void> logout() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Сохраняем текущие значения domainChecked и enteredDomain
-  bool? domainChecked = prefs.getBool('domainChecked');
-  String? enteredDomain = prefs.getString('enteredDomain');
+    // Сохраняем текущие значения domainChecked и enteredDomain
+    bool? domainChecked = prefs.getBool('domainChecked');
+    String? enteredDomain = prefs.getString('enteredDomain');
 
-  // Удаляем токен, права доступа и организацию
-  await _removeToken();
-  await _removePermissions();
-  await _removeOrganizationId();
-  await prefs.remove('cachedLeadStatuses');
-  await prefs.remove('cachedDealStatuses');
-  await prefs.remove('cachedTaskStatuses');
+    // Удаляем токен, права доступа и организацию
+    await _removeToken();
+    await _removePermissions();
+    await _removeOrganizationId();
+    await prefs.remove('cachedLeadStatuses');
+    await prefs.remove('cachedDealStatuses');
+    await prefs.remove('cachedTaskStatuses');
 
+    // Очищаем все данные, кроме domainChecked и enteredDomain
+    bool isCleared = await prefs.clear();
 
-  // Очищаем все данные, кроме domainChecked и enteredDomain
-  bool isCleared = await prefs.clear();
+    // Восстанавливаем значения domainChecked и enteredDomain
+    if (domainChecked != null) {
+      await prefs.setBool('domainChecked', domainChecked);
+    }
+    if (enteredDomain != null) {
+      await prefs.setString('enteredDomain', enteredDomain);
+    }
 
-  // Восстанавливаем значения domainChecked и enteredDomain
-  if (domainChecked != null) {
-    await prefs.setBool('domainChecked', domainChecked);
+    // Проверяем успешность очистки
+    if (isCleared) {
+      print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
+    } else {
+      print('Ошибка при очистке данных.');
+    }
   }
-  if (enteredDomain != null) {
-    await prefs.setString('enteredDomain', enteredDomain);
+
+  Future<void> _removePermissions() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Выводим в консоль текущие права доступа до удаления
+    print('Перед удалением: ${prefs.getStringList('permissions')}');
+
+    // Удаляем права доступа
+    await prefs.remove('permissions');
+
+    // Проверяем, что ключ действительно удалён
+    print('После удаления: ${prefs.getStringList('permissions')}');
   }
-
-  // Проверяем успешность очистки
-  if (isCleared) {
-    print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
-  } else {
-    print('Ошибка при очистке данных.');
-  }
-}
-
-Future<void> _removePermissions() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-
-  // Выводим в консоль текущие права доступа до удаления
-  print('Перед удалением: ${prefs.getStringList('permissions')}');
-
-  // Удаляем права доступа
-  await prefs.remove('permissions');
-
-  // Проверяем, что ключ действительно удалён
-  print('После удаления: ${prefs.getStringList('permissions')}');
-}
 
   //_________________________________ START___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
@@ -204,7 +203,7 @@ Future<void> _removePermissions() async {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       },
     );
 
@@ -224,8 +223,9 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-        'Device' : 'mobile'
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device': 'mobile'
       },
       body: json.encode(body),
     );
@@ -246,8 +246,9 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null)'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-        'Device' : 'mobile'
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device': 'mobile'
       },
       body: json.encode(body),
     );
@@ -268,7 +269,7 @@ Future<void> _removePermissions() async {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       },
     );
 
@@ -288,8 +289,9 @@ Future<void> _removePermissions() async {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-        'Device' : 'mobile'
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device': 'mobile'
       },
       body: json.encode(body),
     );
@@ -320,7 +322,7 @@ Future<void> _removePermissions() async {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       },
       body: json.encode({
         'type': 'mobile', // Указываем тип устройства
@@ -352,42 +354,47 @@ Future<void> _removePermissions() async {
 
   //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
- // Метод для сохранения данных из QR-кода
-  Future<void> saveQrData(String domain, String login, String token,String userId, String organizationId ) async {
+  // Метод для сохранения данных из QR-кода
+  Future<void> saveQrData(String domain, String login, String token,
+      String userId, String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем данные из QR-кода
-    await prefs.setString('domain', domain?? '');
+    await prefs.setString('domain', domain ?? '');
     print(prefs.getString('domain'));
-    await prefs.setString('userLogin', login?? '');
-     print(prefs.getString('userLogin'));
-    await prefs.setString('token', token?? '');
-     print(prefs.getString('token'));
-await prefs.setString('userID', userId ?? ''); // Чтобы избежать null
-     print(prefs.getString('userID'));
-    await prefs.setString('selectedOrganization', organizationId?? '');
-     print(prefs.getString('selectedOrganization'));
+    await prefs.setString('userLogin', login ?? '');
+    print(prefs.getString('userLogin'));
+    await prefs.setString('token', token ?? '');
+    print(prefs.getString('token'));
+    await prefs.setString('userID', userId ?? ''); // Чтобы избежать null
+    print(prefs.getString('userID'));
+    await prefs.setString('selectedOrganization', organizationId ?? '');
+    print(prefs.getString('selectedOrganization'));
     // await prefs.setString('selectedOrganization', userRoleId?? '');
     //  print(prefs.getString('selectedOrganization'));
 
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
     await saveDomain(domain);
-
   }
 
   // Метод для получения данных из QR-кода
   Future<Map<String, String?>> getQrData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    String? domain = prefs.getString('domain')?? '';
-    String? login = prefs.getString('userLogin')?? '';
-    String? token = prefs.getString('token')?? '';
-      String userId = prefs.getString('userID') ?? '';
-    String? organizationId = prefs.getString('selectedOrganization')?? '';
-    return {'domain': domain, 'login': login, 'token': token,'userID': userId, 'selectedOrganization': organizationId};
+    String? domain = prefs.getString('domain') ?? '';
+    String? login = prefs.getString('userLogin') ?? '';
+    String? token = prefs.getString('token') ?? '';
+    String userId = prefs.getString('userID') ?? '';
+    String? organizationId = prefs.getString('selectedOrganization') ?? '';
+    return {
+      'domain': domain,
+      'login': login,
+      'token': token,
+      'userID': userId,
+      'selectedOrganization': organizationId
+    };
   }
-
 
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
@@ -423,9 +430,9 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
   Future<void> saveDomain(String domain) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('enteredDomain', domain);
-  print('Ввведеный домен:----------------------');
-  print('Ввведеный домен---=----:----------------------');
-  print('ДОМЕН: ${prefs.getString('enteredDomain')}');
+    print('Ввведеный домен:----------------------');
+    print('Ввведеный домен---=----:----------------------');
+    print('ДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
@@ -478,11 +485,12 @@ await prefs.setString('userID', userId ?? ''); // Чтобы избежать nu
 //     return permissions.contains(permission); // Проверяем наличие права
 //   }
 
-Future<List<String>> fetchPermissionsByRoleId() async {
-      final organizationId = await getSelectedOrganization();
+  Future<List<String>> fetchPermissionsByRoleId() async {
+    final organizationId = await getSelectedOrganization();
 
     try {
-      final response = await _getRequest('/get-all-permissions?organization_id=$organizationId');
+      final response = await _getRequest(
+          '/get-all-permissions?organization_id=$organizationId');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -611,23 +619,40 @@ Future<List<String>> fetchPermissionsByRoleId() async {
   }
 
 //Метод для получения список Лидов с пагинацией
-  Future<List<Lead>> getLeads(int? leadStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
+  Future<List<Lead>> getLeads(
+    int? leadStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    int? managerId, // Добавляем параметр managerId
+  }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
 
-    path += '&organization_id=$organizationId';
+    // Добавляем organization_id
+    if (organizationId != null) {
+      path += '&organization_id=$organizationId';
+    }
 
+    // Добавляем поиск если есть
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (leadStatusId != null) {
+    }
+
+    // Добавляем lead_status_id если есть
+    if (leadStatusId != null) {
       path += '&lead_status_id=$leadStatusId';
+    }
+
+    // Добавляем manager_id если есть
+    if (managerId != null) {
+      path += '&manager_id=$managerId';
     }
 
     // Log the final request path
     print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
 
+    final response = await _getRequest(path);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -643,62 +668,66 @@ Future<List<String>> fetchPermissionsByRoleId() async {
   }
 
   // Метод для получения статусов лидов
-Future<List<LeadStatus>> getLeadStatuses() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final organizationId = await getSelectedOrganization();
+  Future<List<LeadStatus>> getLeadStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
 
-  try {
-    // Отправляем запрос на сервер
-    final response = await _getRequest(
-        '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    try {
+      // Отправляем запрос на сервер
+      final response = await _getRequest(
+          '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        final statuses = (data['result'] as List)
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          final statuses = (data['result'] as List)
+              .map((status) => LeadStatus.fromJson(status))
+              .toList();
+
+          // Принт старых кэшированных данных (если они есть)
+          final cachedStatuses =
+              prefs.getString('cachedLeadStatuses_$organizationId');
+          if (cachedStatuses != null) {
+            final decodedData = json.decode(cachedStatuses);
+            print(
+                '------------------------------ Старые данные в кэше ------------------------------');
+            print(decodedData); // Старые данные
+          }
+
+          // Обновляем кэш новыми данными
+          await prefs.setString('cachedLeadStatuses_$organizationId',
+              json.encode(data['result']));
+          print(
+              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+          print(
+              '----p---------------¿-----UPDATE CACHE LEADSTATUS----------------------------');
+          print('Статусы лидов обновлены в кэше');
+          return statuses;
+        } else {
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
+      // Если запрос не удался, пытаемся загрузить данные из кэша
+      final cachedStatuses =
+          prefs.getString('cachedLeadStatuses_$organizationId');
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
             .map((status) => LeadStatus.fromJson(status))
             .toList();
-
-        // Принт старых кэшированных данных (если они есть)
-        final cachedStatuses = prefs.getString('cachedLeadStatuses_$organizationId');
-        if (cachedStatuses != null) {
-          final decodedData = json.decode(cachedStatuses);
-          print('------------------------------ Старые данные в кэше ------------------------------');
-          print(decodedData); // Старые данные
-        }
-
-        // Обновляем кэш новыми данными
-        await prefs.setString('cachedLeadStatuses_$organizationId', json.encode(data['result']));
-        print('------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-        print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-        print('----p---------------¿-----UPDATE CACHE LEADSTATUS----------------------------');
-        print('Статусы лидов обновлены в кэше');
-        return statuses;
+        return cachedList;
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        throw Exception(
+            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
       }
-    } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
-    // Если запрос не удался, пытаемся загрузить данные из кэша
-    final cachedStatuses = prefs.getString('cachedLeadStatuses_$organizationId');
-    if (cachedStatuses != null) {
-      final decodedData = json.decode(cachedStatuses);
-      final cachedList = (decodedData as List)
-          .map((status) => LeadStatus.fromJson(status))
-          .toList();
-      return cachedList;
-    } else {
-      throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
     }
   }
-}
-
-
-
 
   Future<bool> checkIfStatusHasLeads(int leadStatusId) async {
     try {
@@ -837,10 +866,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'Не правильная дата.'};
       } else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка!'
-        };
+        return {'success': false, 'message': 'Неизвестная ошибка!'};
       }
     } else {
       return {
@@ -886,10 +912,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'Не правильная дата.'};
       } else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка!'
-        };
+        return {'success': false, 'message': 'Неизвестная ошибка!'};
       }
     } else {
       return {
@@ -1031,10 +1054,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
           'message': 'Этот номер Whatsapp уже существует.'
         };
       } else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка!'
-        };
+        return {'success': false, 'message': 'Неизвестная ошибка!'};
       }
     } else if (response.statusCode == 500) {
       return {
@@ -1120,10 +1140,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
         };
       }
       // Другие проверки на ошибки...
-      return {
-        'success': false,
-        'message': 'Неизвестная ошибка!'
-      };
+      return {'success': false, 'message': 'Неизвестная ошибка!'};
     } else if (response.statusCode == 500) {
       return {
         'success': false,
@@ -1306,10 +1323,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'Поля не может быть пустым.'};
       } else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка!'
-        };
+        return {'success': false, 'message': 'Неизвестная ошибка!'};
       }
     } else {
       return {
@@ -1359,10 +1373,7 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'Поля не может быть пустым.'};
       } else {
-        return {
-          'success': false,
-          'message': 'Неизвестная ошибка!'
-        };
+        return {'success': false, 'message': 'Неизвестная ошибка!'};
       }
     } else {
       return {
@@ -1542,8 +1553,13 @@ Future<List<LeadStatus>> getLeadStatuses() async {
     }
   }
 
-  Future<List<Deal>> getDeals(int? dealStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
+  Future<List<Deal>> getDeals(
+    int? dealStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    int? managerId, // Добавляем параметр managerId
+  }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/deal?page=$page&per_page=$perPage';
 
@@ -1553,6 +1569,10 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       path += '&search=$search';
     } else if (dealStatusId != null) {
       path += '&deal_status_id=$dealStatusId';
+    }
+    // Добавляем manager_id если есть
+    if (managerId != null) {
+      path += '&manager_id=$managerId';
     }
 
     // Логируем конечный URL запроса
@@ -1574,60 +1594,67 @@ Future<List<LeadStatus>> getLeadStatuses() async {
       throw Exception('Ошибка загрузки сделок: ${response.body}');
     }
   }
+
 // Метод для получения статусов Сделок
-Future<List<DealStatus>> getDealStatuses() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final organizationId = await getSelectedOrganization();
+  Future<List<DealStatus>> getDealStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
 
-  try {
-    // Отправляем запрос на сервер
-    final response = await _getRequest(
-        '/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    try {
+      // Отправляем запрос на сервер
+      final response = await _getRequest(
+          '/deal/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        // Принт старых кэшированных данных (если они есть)
-        final cachedStatuses = prefs.getString('cachedDealStatuses_$organizationId');
-        if (cachedStatuses != null) {
-          final decodedData = json.decode(cachedStatuses);
-          print('------------------------------ Старые данные в кэше ------------------------------');
-          print(decodedData); // Старые данные
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          // Принт старых кэшированных данных (если они есть)
+          final cachedStatuses =
+              prefs.getString('cachedDealStatuses_$organizationId');
+          if (cachedStatuses != null) {
+            final decodedData = json.decode(cachedStatuses);
+            print(
+                '------------------------------ Старые данные в кэше ------------------------------');
+            print(decodedData); // Старые данные
+          }
+
+          // Обновляем кэш новыми данными
+          await prefs.setString('cachedDealStatuses_$organizationId',
+              json.encode(data['result']));
+          print(
+              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+          print(
+              '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
+          print('Статусы сделок обновлены в кэше');
+
+          return (data['result'] as List)
+              .map((status) => DealStatus.fromJson(status))
+              .toList();
+        } else {
+          throw Exception('Результат отсутствует в ответе');
         }
-
-        // Обновляем кэш новыми данными
-        await prefs.setString('cachedDealStatuses_$organizationId', json.encode(data['result']));
-        print('------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-        print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-        print('----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
-        print('Статусы сделок обновлены в кэше');
-
-        return (data['result'] as List)
+      } else {
+        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
+      // Если запрос не удался, пытаемся загрузить данные из кэша
+      final cachedStatuses =
+          prefs.getString('cachedDealStatuses_$organizationId');
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
             .map((status) => DealStatus.fromJson(status))
             .toList();
+        return cachedList;
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        throw Exception(
+            'Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
       }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-    }
-  } catch (e) {
-    print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
-    // Если запрос не удался, пытаемся загрузить данные из кэша
-    final cachedStatuses = prefs.getString('cachedDealStatuses_$organizationId');
-    if (cachedStatuses != null) {
-      final decodedData = json.decode(cachedStatuses);
-      final cachedList = (decodedData as List)
-          .map((status) => DealStatus.fromJson(status))
-          .toList();
-      return cachedList;
-    } else {
-      throw Exception('Ошибка загрузки статусов сделок и отсутствуют кэшированные данные!');
     }
   }
-}
-
 
   Future<bool> checkIfStatusHasDeals(int dealStatusId) async {
     try {
@@ -1778,10 +1805,7 @@ Future<List<DealStatus>> getDealStatuses() async {
         return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
       }
       // Другие проверки на ошибки...
-      return {
-        'success': false,
-        'message': 'Неизвестная ошибка!'
-      };
+      return {'success': false, 'message': 'Неизвестная ошибка!'};
     } else if (response.statusCode == 500) {
       return {
         'success': false,
@@ -1843,10 +1867,7 @@ Future<List<DealStatus>> getDealStatuses() async {
         };
       }
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
-      return {
-        'success': false,
-        'message': 'Неизвестная ошибка!'
-      };
+      return {'success': false, 'message': 'Неизвестная ошибка!'};
     } else if (response.statusCode == 500) {
       return {
         'success': false,
@@ -1977,60 +1998,66 @@ Future<List<DealStatus>> getDealStatuses() async {
   }
 
 // Метод для получения статусов задач
-Future<List<TaskStatus>> getTaskStatuses() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final organizationId = await getSelectedOrganization();
+  Future<List<TaskStatus>> getTaskStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
 
-  try {
-    // Отправляем запрос на сервер
-    final response = await _getRequest(
-        '/task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    try {
+      // Отправляем запрос на сервер
+      final response = await _getRequest(
+          '/task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        final statuses = (data['result'] as List)
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          final statuses = (data['result'] as List)
+              .map((status) => TaskStatus.fromJson(status))
+              .toList();
+
+          // Принт старых кэшированных данных (если они есть)
+          final cachedStatuses =
+              prefs.getString('cachedTaskStatuses_$organizationId');
+          if (cachedStatuses != null) {
+            final decodedData = json.decode(cachedStatuses);
+            print(
+                '------------------------------ Старые данные в кэше ------------------------------');
+            print(decodedData); // Старые данные
+          }
+
+          // Обновляем кэш новыми данными
+          await prefs.setString('cachedTaskStatuses_$organizationId',
+              json.encode(data['result']));
+          print(
+              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+          print(
+              '----p---------------¿-----UPDATE CACHE TASKSTATUS----------------------------');
+          print('Статусы задач обновлены в кэше');
+          return statuses;
+        } else {
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      // Если запрос не удался, пытаемся загрузить данные из кэша
+      final cachedStatuses =
+          prefs.getString('cachedTaskStatuses_$organizationId');
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
             .map((status) => TaskStatus.fromJson(status))
             .toList();
-
-        // Принт старых кэшированных данных (если они есть)
-        final cachedStatuses = prefs.getString('cachedTaskStatuses_$organizationId');
-        if (cachedStatuses != null) {
-          final decodedData = json.decode(cachedStatuses);
-          print('------------------------------ Старые данные в кэше ------------------------------');
-          print(decodedData); // Старые данные
-        }
-
-        // Обновляем кэш новыми данными
-        await prefs.setString('cachedTaskStatuses_$organizationId', json.encode(data['result']));
-        print('------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-        print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-        print('----p---------------¿-----UPDATE CACHE TASKSTATUS----------------------------');
-        print('Статусы задач обновлены в кэше');
-        return statuses;
+        return cachedList;
       } else {
-        throw Exception('Результат отсутствует в ответе');
+        throw Exception(
+            'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
       }
-    } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
-    // Если запрос не удался, пытаемся загрузить данные из кэша
-    final cachedStatuses = prefs.getString('cachedTaskStatuses_$organizationId');
-    if (cachedStatuses != null) {
-      final decodedData = json.decode(cachedStatuses);
-      final cachedList = (decodedData as List)
-          .map((status) => TaskStatus.fromJson(status))
-          .toList();
-      return cachedList;
-    } else {
-      throw Exception('Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
     }
   }
-}
-
 
   Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     try {
@@ -2257,7 +2284,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       });
 
       request.fields['name'] = name;
@@ -2396,7 +2423,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       });
 
       // Добавляем все поля в формате form-data
@@ -2541,7 +2568,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       });
 
       // Добавляем все поля в формате form-data
@@ -2959,7 +2986,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
         throw ('Нет данных графика в ответе "Клиенты"');
       }
     } else {
-        throw ('Ошибка загрузки данных график клиента!');
+      throw ('Ошибка загрузки данных график клиента!');
     }
   }
 
@@ -2983,7 +3010,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
     } else if (response.statusCode == 500) {
       throw ('Ошибка сервера: 500');
     } else {
-      throw ('Ошибка загрузки данных графика Конверсия лидов!');
+      throw ('');
     }
   }
 
@@ -3005,7 +3032,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
       }
     } catch (e) {
       print('Ошибка запроса!');
-      throw Exception('');
+      throw ('');
     }
   }
 
@@ -3306,7 +3333,7 @@ Future<List<TaskStatus>> getTaskStatuses() async {
             headers: {
               "Authorization": "Bearer $token",
               "Accept": "application/json",
-              'Device' : 'mobile'
+              'Device': 'mobile'
             },
             contentType: 'multipart/form-data',
           ));
@@ -3435,8 +3462,6 @@ Future<List<TaskStatus>> getTaskStatuses() async {
     }
   }
 
-
-  
   // get all users
   Future<UsersDataResponse> getAllUser() async {
     final token = await getToken(); // Получаем токен перед запросом
@@ -3541,21 +3566,25 @@ Future<List<TaskStatus>> getTaskStatuses() async {
 
     return dataUser;
   }
+
 //Список юзеров Корпорт чата  для созд с польз
   Future<UsersDataResponse> getUsersWihtoutCorporateChat() async {
     final token = await getToken(); // Получаем токен перед запросом
     final organizationId = await getSelectedOrganization();
 
     final response = await http.get(
-      Uri.parse('$baseUrl/chat/users/without-corporate-chat/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      Uri.parse(
+          '$baseUrl/chat/users/without-corporate-chat/${organizationId != null ? '?organization_id=$organizationId' : ''}'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
     );
-      print('----------------------------------------------------------------------');
-      print('-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
-      print(response);
+    print(
+        '----------------------------------------------------------------------');
+    print(
+        '-------------------------------getUsersWihtoutCorporateChat---------------------------------------');
+    print(response);
 
     late UsersDataResponse dataUser;
 
@@ -3578,7 +3607,6 @@ Future<List<TaskStatus>> getTaskStatuses() async {
 
     return dataUser;
   }
-  
 
   // create new client
   Future<Map<String, dynamic>> createNewClient(String userID) async {
@@ -3745,33 +3773,33 @@ Future<List<TaskStatus>> getTaskStatuses() async {
     }
   }
 
-
 // Метод для удаления сообщение
-Future<void> DeleteMessage({int? messageId}) async {
-  if (messageId == null) {
-    throw Exception('MessageId не может быть null');
+  Future<void> DeleteMessage({int? messageId}) async {
+    if (messageId == null) {
+      throw Exception('MessageId не может быть null');
+    }
+
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/chat/delete-message/$messageId?organization_id=$organizationId';
+
+    print('Sending DELETE request to API with path: $path');
+
+    // Используем _deleteRequest для отправки DELETE-запроса
+    final response = await _deleteRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+    }
+
+    final data = json.decode(response.body);
+    if (data['result'] == 'deleted') {
+      return;
+    } else {
+      throw Exception('Ошибка удаления уведомления');
+    }
   }
-
-  final organizationId = await getSelectedOrganization();
-
-  String path = '/chat/delete-message/$messageId?organization_id=$organizationId';
-
-  print('Sending DELETE request to API with path: $path');
-
-  // Используем _deleteRequest для отправки DELETE-запроса
-  final response = await _deleteRequest(path);
-
-  if (response.statusCode != 200) {
-    throw Exception('Ошибка удаления уведомлений: ${response.body}');
-  }
-
-  final data = json.decode(response.body);
-  if (data['result'] == 'deleted') {
-    return;
-  } else {
-    throw Exception('Ошибка удаления уведомления');
-  }
-}
 
   //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
@@ -3854,7 +3882,6 @@ Future<void> DeleteMessage({int? messageId}) async {
 
   //_________________________________ END_____API_SCREEN__PROFILE_CHAT____________________________________________//
 
-  
   //_________________________________ START_____API_SCREEN__PROFILE____________________________________________//
 
   // Метод для получения Организации
@@ -3923,20 +3950,20 @@ Future<void> DeleteMessage({int? messageId}) async {
       throw Exception('Ошибка загрузки уведомлений: ${response.body}');
     }
   }
+
   // Метод для прочтения всех  Уведомлении
-Future<void> DeleteAllNotifications() async {
-  final organizationId = await getSelectedOrganization();
-  String path = '/notification/readAll?organization_id=$organizationId';
+  Future<void> DeleteAllNotifications() async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/notification/readAll?organization_id=$organizationId';
 
-  print('Sending POST request to API with path: $path');
+    print('Sending POST request to API with path: $path');
 
-  final response = await _postRequest(path, {});
+    final response = await _postRequest(path, {});
 
-  if (response.statusCode != 200) {
-    throw Exception('Ошибка удаления уведомлений: ${response.body}');
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+    }
   }
-}
-
 
 // Метод для удаления Уведомлений
   Future<void> DeleteNotifications({int? notificationId}) async {
@@ -4016,7 +4043,7 @@ Future<void> DeleteAllNotifications() async {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
-        'Device' : 'mobile'
+        'Device': 'mobile'
       });
 
       // Добавляем поля

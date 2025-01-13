@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
@@ -526,16 +527,18 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           },
           firstPageProgressIndicatorBuilder: (context) {
             return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-              ),
+               child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
             );
           },
           newPageProgressIndicatorBuilder: (context) {
             return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-              ),
+               child: PlayStoreImageLoading(
+                  size: 80.0,
+                  duration: Duration(milliseconds: 1000),
+                ),
             );
           },
           itemBuilder: (context, item, index) {

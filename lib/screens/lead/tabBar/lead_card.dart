@@ -50,7 +50,8 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath = sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
+    String iconPath =
+        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
 
     return GestureDetector(
       onTap: () {
@@ -75,17 +76,8 @@ class _LeadCardState extends State<LeadCard> {
             Text(
               widget.lead.name ?? 'Без имени',
               style: TaskCardStyles.titleStyle,
-              overflow: TextOverflow.ellipsis, 
+              overflow: TextOverflow.ellipsis,
             ),
-          Text(
-            'Менеджер: ${widget.lead.manager?.name ?? ""}', 
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xfff99A4BA),
-            ),
-          ),
             const SizedBox(height: 5),
             Row(
               children: [
@@ -125,7 +117,8 @@ class _LeadCardState extends State<LeadCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric( horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
                           Container(
@@ -164,56 +157,89 @@ class _LeadCardState extends State<LeadCard> {
                         iconPath,
                         width: 28,
                         height: 28,
-                        fit: BoxFit
-                            .cover, // Ensures the image covers the circular shape
+                        fit: BoxFit.cover,
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.lead.source?.name ?? '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(width: 18),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Image.asset(
-                          'assets/icons/tabBar/sms.png',
-                          width: 18,
-                          height: 18,
+                        Row(
+                          children: [
+                            Image.asset(
+                              'assets/icons/tabBar/sms.png',
+                              width: 18,
+                              height: 18,
+                            ),
+                            const SizedBox(width: 0),
+                            Text(
+                              ' ${widget.lead.messageAmount ?? 0}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 0),
-                        Text(
-                          ' ${widget.lead.messageAmount ?? 0}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
+                        const SizedBox(width: 8),
+                        Row(
+                          children: [
+                            Image.asset(
+                              'assets/icons/tabBar/date.png',
+                              width: 18,
+                              height: 18,
+                            ),
+                            const SizedBox(width: 0),
+                            Text(
+                              ' ${formatDate(widget.lead.createdAt ?? 'Неизвестно')}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(width: 8),
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/icons/tabBar/date.png',
-                          width: 18,
-                          height: 18,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE9EDF5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${widget.lead.manager?.name ?? ""}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
                         ),
-                        const SizedBox(width: 0),
-                        Text(
-                          ' ${formatDate(widget.lead.createdAt ?? 'Неизвестно')}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const Spacer(),
                   ],
                 ),
               ],

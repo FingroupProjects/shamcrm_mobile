@@ -18,7 +18,7 @@ class Deal {
     required this.id,
     required this.name,
     this.startDate,
-    this.endDate, 
+    this.endDate,
     this.description,
     required this.sum,
     required this.statusId,
@@ -38,13 +38,18 @@ class Deal {
       sum: json['sum'] ?? '0.00',
       statusId: dealStatusId,
       dealStatus: json['deal_status'] != null
-        ? DealStatus.fromJson(json['deal_status'])
-        : null, 
-      manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
-      lead: json['lead'] != null ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0) : null,
+          ? DealStatus.fromJson(json['deal_status'])
+          : null,
+      manager: json['manager'] != null
+          ? ManagerData.fromJson(json['manager'])
+          : null,
+      lead: json['lead'] != null
+          ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0)
+          : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
               ?.map((field) => DealCustomField.fromJson(field))
-              .toList() ?? [],
+              .toList() ??
+          [],
     );
   }
 }
@@ -75,6 +80,7 @@ class DealStatus {
   final String color;
   final String? createdAt;
   final String? updatedAt;
+  final int dealsCount;
   final int? day;
 
   DealStatus({
@@ -83,6 +89,7 @@ class DealStatus {
     required this.color,
     this.createdAt,
     this.updatedAt,
+    required this.dealsCount,
     this.day,
   });
 
@@ -94,6 +101,7 @@ class DealStatus {
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
       day: json['day'] is int ? json['day'] : null,
+      dealsCount: json['deals_count'] ?? 0, // Если null, то возвращаем 0
     );
   }
 }

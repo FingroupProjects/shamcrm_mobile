@@ -173,17 +173,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     return textPainter.didExceedMaxLines;
   }
 
-  Widget _buildExpandableText(String label, String value, double maxWidth) {
+ Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
-        backgroundColor: Colors.white);
-
-    if (!_isTextOverflow(value, style, maxWidth)) {
-      return _buildValue(value);
-    }
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: Color(0xff1E2E52),
+      backgroundColor: Colors.white,
+    );
 
     return GestureDetector(
       onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
@@ -197,7 +194,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

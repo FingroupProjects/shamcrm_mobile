@@ -7,8 +7,10 @@ import 'deal_state.dart';
 
 class DealBloc extends Bloc<DealEvent, DealState> {
   final ApiService apiService;
-  bool allDealsFetched = false; // Переменная для отслеживания завершения загрузки
-  Map<int, int> _dealCounts = {}; // Приватное поле для хранения количества сделок
+  bool allDealsFetched =
+      false; // Переменная для отслеживания завершения загрузки
+  Map<int, int> _dealCounts =
+      {}; // Приватное поле для хранения количества сделок
 
   DealBloc(this.apiService) : super(DealInitial()) {
     on<FetchDealStatuses>(_fetchDealStatuses);
@@ -83,6 +85,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         page: 1,
         perPage: 20,
         search: event.query,
+        managerId: event.managerId, // Передаем managerId в API
       );
 
       allDealsFetched = pageDeals.isEmpty;
@@ -101,7 +104,6 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       }
     }
   }
-
 
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {
@@ -125,8 +127,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         emit(currentState.merge(deals)); // Объединяем старые и новые сделки
       }
     } catch (e) {
-      emit(DealError(
-          'Не удалось загрузить дополнительные сделки!'));
+      emit(DealError('Не удалось загрузить дополнительные сделки!'));
     }
   }
 
@@ -140,8 +141,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
 
     try {
-      final result =
-          await apiService.createDealStatus(event.title, event.color, event.day);
+      final result = await apiService.createDealStatus(
+          event.title, event.color, event.day);
 
       if (result['success']) {
         emit(DealSuccess(result['message']));
@@ -242,24 +243,24 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     }
   }
 
-  Future<void> _deleteDealStatuses(DeleteDealStatuses event, Emitter<DealState> emit) async {
-  emit(DealLoading());
+  Future<void> _deleteDealStatuses(
+      DeleteDealStatuses event, Emitter<DealState> emit) async {
+    emit(DealLoading());
 
-  try {
-    if (event.dealStatusId == 0) {
-      emit(DealError('Некорректный статус для удаления'));
-      return;
-    }
+    try {
+      if (event.dealStatusId == 0) {
+        emit(DealError('Некорректный статус для удаления'));
+        return;
+      }
 
-    final response = await apiService.deleteDealStatuses(event.dealStatusId);
-    if (response['result'] == 'Success') {
-      emit(DealDeleted('Статус сделки успешно удален'));
-    } else {
-      emit(DealError('Ошибка удаления статуса сделки'));
+      final response = await apiService.deleteDealStatuses(event.dealStatusId);
+      if (response['result'] == 'Success') {
+        emit(DealDeleted('Статус сделки успешно удален'));
+      } else {
+        emit(DealError('Ошибка удаления статуса сделки'));
+      }
+    } catch (e) {
+      emit(DealError('Ошибка удаления статуса сделки!'));
     }
-  } catch (e) {
-    emit(DealError('Ошибка удаления статуса сделки!'));
   }
-}
-
 }

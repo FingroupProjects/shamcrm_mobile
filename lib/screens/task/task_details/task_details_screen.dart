@@ -625,6 +625,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           builder: (context) => TaskEditScreen(
                             taskId: currentTask!.id,
                             taskName: currentTask!.name,
+                            priority: currentTask!.priority,
                             taskStatus: currentTask!.taskStatus?.taskStatus
                                     .toString() ??
                                 '',

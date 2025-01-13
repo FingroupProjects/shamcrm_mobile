@@ -242,20 +242,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     ? 'Новое сообщение'
                                     : notification.type == 'deal'
                                         ? 'Сделка'
-                                        : notification.type == 'notice'
-                                            ? 'Напоминание о заметке'
-                                            : notification.type == 'task'
-                                                ? 'Новая задача'
-                                                : notification.type ==
-                                                        'taskFinished'
-                                                    ? 'Задача закрыто'
+                                        : notification.type ==
+                                                'dealDeadLineNotification'
+                                            ? 'Напоминание о cделки'
+                                            : notification.type == 'notice'
+                                                ? 'Напоминание о заметке'
+                                                : notification.type == 'task'
+                                                    ? 'Новая задача'
                                                     : notification.type ==
-                                                            'taskOutDated'
-                                                        ? 'Напоминание о просроченном сроке задачи '
+                                                            'taskFinished'
+                                                        ? 'Задача закрыто'
                                                         : notification.type ==
-                                                                'lead'
-                                                            ? 'Вас назначили менеджером лида'
-                                                            : notification.type,
+                                                                'taskOutDated'
+                                                            ? 'Напоминание о просроченном сроке задачи '
+                                                            : notification
+                                                                        .type ==
+                                                                    'lead'
+                                                                ? 'Вас назначили менеджером лида'
+                                                                : notification
+                                                                    .type,
                                 style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

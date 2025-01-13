@@ -186,7 +186,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           await ApiService().getUserById(int.parse(UUID));
       // Обработка телефона
       String phoneNumber = userProfile.phone ?? '';
-      String detectedDialCode = '+7';
+      String detectedDialCode = '+992';
       String phoneWithoutCode = phoneNumber;
 
       // Проверяем код страны в полученном номере

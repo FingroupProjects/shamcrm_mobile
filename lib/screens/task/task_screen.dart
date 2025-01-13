@@ -45,15 +45,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-TaskCache.getTaskStatuses().then((cachedStatuses) {
+    TaskCache.getTaskStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
           _tabTitles = cachedStatuses;
 
           // Инициализация TabController только один раз
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
 
-          int initialIndex = cachedStatuses .indexWhere((status) => status['id'] == widget.initialStatusId);
+          int initialIndex = cachedStatuses
+              .indexWhere((status) => status['id'] == widget.initialStatusId);
           if (initialIndex != -1) {
             _currentTabIndex = initialIndex;
           }
@@ -71,7 +73,7 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
           }
         });
       } else {
-            BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+        BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
@@ -144,6 +146,7 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
           },
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showFilterIcon: false,
           clearButtonClick: (value) {
             if (value == false) {
               final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -247,78 +250,77 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
   }
 
   Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
+  bool isActive = _tabController.index == index;
 
-    return BlocBuilder<TaskBloc, TaskState>(
-      builder: (context, state) {
-        int taskCount = 0;
-        if (state is TaskLoaded) {
-          final statusId = _tabTitles[index]['id'];
-          taskCount = state.taskCounts[statusId] ?? 0;
-        }
+  return BlocBuilder<TaskBloc, TaskState>(
+    builder: (context, state) {
+      int taskCount = 0;
 
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-          },
-          onLongPress: () {
-            if (_canDeleteTaskStatus) {
-              _showDeleteDialog(index);
-            }
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
+      if (state is TaskLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        final taskStatus = state.taskStatuses.firstWhere(
+          (status) => status.id == statusId,
+          // orElse: () => null,
+        );
+        taskCount = taskStatus?.tasksCount ?? 0; // Используем tasksCount
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+        },
+        onLongPress: () {
+          if (_canDeleteTaskStatus) {
+            _showDeleteDialog(index);
+          }
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    taskCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Белый фон
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive
-                            ? const Color(
-                                0xff1E2E52) // Цвет линии для активного состояния
-                            : const Color(
-                                0xff99A4BA), // Цвет линии для неактивного состояния
-                        width: 1, // Ширина границы
-                      ),
-                    ),
-                    child: Text(
-                      taskCount.toString(),
-                      style: TextStyle(
-                        color: isActive
-                            ? Colors
-                                .black // Черный текст для активного состояния
-                            : const Color(
-                                0xff99A4BA), // Серый текст для неактивного состояния
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                )
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   void _showDeleteDialog(int index) async {
     final taskStatusId = _tabTitles[index]['id'];
@@ -352,10 +354,10 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
     return BlocListener<TaskBloc, TaskState>(
       listener: (context, state) async {
         if (state is TaskLoaded) {
-
-              await TaskCache.cacheTaskStatuses(state.taskStatuses
-        .map((status) => {'id': status.id, 'title': status.taskStatus.name})
-        .toList());
+          await TaskCache.cacheTaskStatuses(state.taskStatuses
+              .map((status) =>
+                  {'id': status.id, 'title': status.taskStatus.name})
+              .toList());
 
           setState(() {
             _tabTitles = state.taskStatuses
@@ -458,11 +460,11 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
           }
           if (state is TaskLoading) {
             return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-              );
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
           } else if (state is TaskLoaded) {
             if (_tabTitles.isEmpty) {
               return const Center(child: Text(''));
@@ -509,11 +511,11 @@ TaskCache.getTaskStatuses().then((cachedStatuses) {
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-          if (targetOffset != _scrollController.offset) {
-            _scrollController.animateTo(
-              targetOffset,
-              duration: Duration(milliseconds: 300),
-              curve: Curves.linear,
+        if (targetOffset != _scrollController.offset) {
+          _scrollController.animateTo(
+            targetOffset,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.linear,
           );
         }
       }

@@ -87,7 +87,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   final Map<int, String> priorityLevels = {
     1: 'Обычный',
     3: 'Срочный',
-    2: 'Важныйы'
+    2: 'Важный'
   };
 
   @override

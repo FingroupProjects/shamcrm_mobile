@@ -38,22 +38,25 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _canDeleteDealStatus = false;
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
-bool navigateAfterDelete = false;
-int? _deletedIndex;
+  bool navigateAfterDelete = false;
+  int? _deletedIndex;
+  int? _selectedManagerId; // ID выбранного менеджера.
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-DealCache.getDealStatuses().then((cachedStatuses) {
+    DealCache.getDealStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
           _tabTitles = cachedStatuses;
 
           // Инициализация TabController только один раз
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
 
-          int initialIndex = cachedStatuses .indexWhere((status) => status['id'] == widget.initialStatusId);
+          int initialIndex = cachedStatuses
+              .indexWhere((status) => status['id'] == widget.initialStatusId);
           if (initialIndex != -1) {
             _currentTabIndex = initialIndex;
           }
@@ -71,7 +74,7 @@ DealCache.getDealStatuses().then((cachedStatuses) {
           }
         });
       } else {
-            BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+        BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
@@ -92,8 +95,26 @@ DealCache.getDealStatuses().then((cachedStatuses) {
     if (query.isEmpty) {
       dealBloc.add(FetchDeals(currentStatusId));
     } else {
-      dealBloc.add(FetchDeals(currentStatusId, query: query));
+      dealBloc.add(FetchDeals(
+        currentStatusId, query: query,
+        managerId: _selectedManagerId, // Передаем ID менеджера
+      ));
     }
+  }
+
+  void _handleManagerSelected(dynamic manager) {
+    setState(() {
+      _selectedManagerId = manager?.id;
+    });
+
+    // Запрашиваем обновленные данные с учетом выбранного менеджера
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final leadBloc = BlocProvider.of<DealBloc>(context);
+    leadBloc.add(FetchDeals(
+      currentStatusId,
+      managerId: _selectedManagerId,
+      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+    ));
   }
 
   void _onSearch(String query) {
@@ -142,6 +163,8 @@ DealCache.getDealStatuses().then((cachedStatuses) {
 
             _onSearch(value);
           },
+          onManagerSelected:
+              _handleManagerSelected, // Добавляем обработчик выбора менеджера
           textEditingController: textEditingController,
           focusNode: focusNode,
           clearButtonClick: (value) {
@@ -187,7 +210,7 @@ DealCache.getDealStatuses().then((cachedStatuses) {
         controller: _scrollController,
         itemCount: deals.length,
         itemBuilder: (context, index) {
-          final deal=deals[index];
+          final deal = deals[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: DealCard(
@@ -195,7 +218,7 @@ DealCache.getDealStatuses().then((cachedStatuses) {
               title: deal.dealStatus?.title ?? "",
               statusId: deal.statusId,
               onStatusUpdated: () {},
-               onStatusId: (StatusDealId) {},
+              onStatusId: (StatusDealId) {},
             ),
           );
         },
@@ -229,90 +252,98 @@ DealCache.getDealStatuses().then((cachedStatuses) {
     );
   }
 
-void _addNewTab() async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) => CreateStatusDialog(),
-  );
+  void _addNewTab() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => CreateStatusDialog(),
+    );
 
-  if (result == true) {
+    if (result == true) {
       await DealCache.clearCache();
       print('Все данные удалены успешно. Статусы обновлены.');
       context.read<DealBloc>().add(FetchDealStatuses());
 
-    setState(() {
-      navigateToEnd = true; 
-    });
+      setState(() {
+        navigateToEnd = true;
+      });
+    }
   }
-}
 
   Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
+    bool isActive = _tabController.index == index;
 
-  return BlocBuilder<DealBloc, DealState>(
-    builder: (context, state) {
-      int dealCount = 0;
-      if (state is DealLoaded) {
-        final statusId = _tabTitles[index]['id'];
-        dealCount = state.dealCounts[statusId] ?? 0;
-      }
+    return BlocBuilder<DealBloc, DealState>(
+      builder: (context, state) {
+        int dealCount = 0;
 
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _tabController.animateTo(index);
-        },
-        onLongPress: () {
-          if (_canDeleteDealStatus) {
-            _showDeleteDialog(index);
-          }
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive
-                      ? TaskStyles.activeColor
-                      : TaskStyles.inactiveColor,
-                ),
-              ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    dealCount.toString(),
-                    style: TextStyle(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+        if (state is DealLoaded) {
+          final statusId = _tabTitles[index]['id'];
+          final dealStatus = state.dealStatuses.firstWhere(
+            (status) => status.id == statusId,
+            // orElse: () => null,
+          );
+          dealCount = dealStatus?.dealsCount ?? 0; // Берём количество сделок
+        }
+
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
+            if (_canDeleteDealStatus) {
+              _showDeleteDialog(index);
+            }
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
-              )
-            ],
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      dealCount.toString(),
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
-   void _showDeleteDialog(int index) async {
+        );
+      },
+    );
+  }
+
+  void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];
     final result = await showDialog(
       context: context,
@@ -323,10 +354,10 @@ void _addNewTab() async {
 
     if (result != null && result) {
       setState(() {
-            setState(() {
-             _deletedIndex = _currentTabIndex;
-             navigateAfterDelete = true; 
-           });
+        setState(() {
+          _deletedIndex = _currentTabIndex;
+          navigateAfterDelete = true;
+        });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -344,22 +375,21 @@ void _addNewTab() async {
     return BlocListener<DealBloc, DealState>(
       listener: (context, state) async {
         if (state is DealLoaded) {
+          await DealCache.cacheDealStatuses(state.dealStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList());
 
-            await DealCache.cacheDealStatuses(state.dealStatuses
-        .map((status) => {'id': status.id, 'title': status.title})
-        .toList());
-
-        
           setState(() {
             _tabTitles = state.dealStatuses
                 .where((status) => _canReadDealStatus)
                 .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
-                
+
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
             if (_tabTitles.isNotEmpty) {
-              _tabController = TabController(length: _tabTitles.length, vsync: this);
+              _tabController =
+                  TabController(length: _tabTitles.length, vsync: this);
               _tabController.addListener(() {
                 setState(() {
                   _currentTabIndex = _tabController.index;
@@ -381,28 +411,27 @@ void _addNewTab() async {
               if (_scrollController.hasClients) {
                 _scrollToActiveTab();
               }
-                 //Логика для перехода к созданн статусе
-         if (navigateToEnd) {
-         navigateToEnd = false;
-         if (_tabController != null) {
-           _tabController.animateTo(_tabTitles.length -1); 
-         }
-      }
-
-                //Логика для перехода к после удаления статусе на лево
-           if (navigateAfterDelete) {
-            navigateAfterDelete = false;
-            if (_deletedIndex != null) {
-              if (_deletedIndex == 0 && _tabTitles.length > 1) {
-                _tabController.animateTo(1); 
-              } else if (_deletedIndex == _tabTitles.length) {
-                _tabController.animateTo(_tabTitles.length - 1); 
-              } else {
-                _tabController.animateTo(_deletedIndex! - 1); 
+              //Логика для перехода к созданн статусе
+              if (navigateToEnd) {
+                navigateToEnd = false;
+                if (_tabController != null) {
+                  _tabController.animateTo(_tabTitles.length - 1);
+                }
               }
-            }
-          }
 
+              //Логика для перехода к после удаления статусе на лево
+              if (navigateAfterDelete) {
+                navigateAfterDelete = false;
+                if (_deletedIndex != null) {
+                  if (_deletedIndex == 0 && _tabTitles.length > 1) {
+                    _tabController.animateTo(1);
+                  } else if (_deletedIndex == _tabTitles.length) {
+                    _tabController.animateTo(_tabTitles.length - 1);
+                  } else {
+                    _tabController.animateTo(_deletedIndex! - 1);
+                  }
+                }
+              }
             }
           });
         } else if (state is DealError) {
@@ -414,7 +443,7 @@ void _addNewTab() async {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          }  else if (state.message.contains("Нет подключения к интернету")) {
+          } else if (state.message.contains("Нет подключения к интернету")) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -449,12 +478,12 @@ void _addNewTab() async {
             return searchWidget(deals);
           }
           if (state is DealLoading) {
-          return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-              );
+            return const Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
+            );
           } else if (state is DealLoaded) {
             if (_tabTitles.isEmpty) {
               return const Center(child: Text(''));
@@ -465,14 +494,20 @@ void _addNewTab() async {
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
-                return DealColumn(statusId: statusId, title: title, 
-                onStatusId: (newStatusId) {
+                return DealColumn(
+                  statusId: statusId,
+                  title: title,
+                  managerId: _selectedManagerId, // Передаем ID менеджера
+
+                  onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
                     if (index != -1) {
-                      _tabController.animateTo(index); 
+                      _tabController.animateTo(index);
                     }
-                  },   );
+                  },
+                );
               }),
             );
           }
@@ -497,12 +532,11 @@ void _addNewTab() async {
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-
-          if (targetOffset != _scrollController.offset) {
-            _scrollController.animateTo(
-              targetOffset,
-              duration: Duration(milliseconds: 300),
-              curve: Curves.linear,
+        if (targetOffset != _scrollController.offset) {
+          _scrollController.animateTo(
+            targetOffset,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.linear,
           );
         }
       }
