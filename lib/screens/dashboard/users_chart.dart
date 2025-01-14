@@ -159,7 +159,7 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
 
  Color _getProgressBarColor(double percent) {
   if (percent == 0) {
-    return const Color.fromARGB(255, 173, 172, 172); // Red (для 0%)
+    return const Color.fromARGB(255, 173, 172, 172); //  (для 0%)
   } else if (percent > 0 && percent <= 30) {
     return const Color(0xFFC30202); // Red (для 1-30%)
   } else if (percent < 100) {

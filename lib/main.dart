@@ -11,6 +11,11 @@ import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
@@ -79,7 +84,7 @@ void main() async {
   if (isDomainChecked) {
     await apiService.initialize();
   }
- 
+
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
 
@@ -162,10 +167,18 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
         BlocProvider(
+            create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(
             create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
+        BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
+        BlocProvider(
+            create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),

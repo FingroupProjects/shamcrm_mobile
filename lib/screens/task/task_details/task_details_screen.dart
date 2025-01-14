@@ -521,7 +521,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    'Готов',
+                                    'На проверку',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,

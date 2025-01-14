@@ -11,6 +11,12 @@ import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_
 import 'package:crm_task_manager/models/dashboard_charts_models/lead_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/process_speed%20_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/user_task%20_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models_manager/deal_stats_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models_manager/lead_chart_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models_manager/lead_conversion_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models_manager/process_speed%20_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models_manager/task_chart_model.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_task_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -3140,7 +3146,156 @@ class ApiService {
 
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
+
+    //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
+
+// Метод для получения графика Сделки
+  Future<DealStatsResponseManager> getDealStatsManagerData() async {
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/dashboard/dealStats/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return DealStatsResponseManager.fromJson(jsonData);
+      } else if (response.statusCode == 500) {
+        throw Exception('Ошибка сервера!');
+      } else {
+        throw Exception('Ошибка загрузки данных!');
+      }
+    } catch (e) {
+      print('Ошибка запроса!');
+      throw ('');
+    }
+  }
+ /// Получение данных графика для дашборда
+  Future<List<ChartDataManager>> getLeadChartManager() async {
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/dashboard/lead-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      if (data.isNotEmpty) {
+        return data.map((json) => ChartDataManager.fromJson(json)).toList();
+      } else {
+        throw ('Нет данных графика в ответе "Клиенты"');
+      }
+    } else {
+      throw ('Ошибка загрузки данных график клиента!');
+    }
+  }
+ Future<LeadConversionManager> getLeadConversionDataManager() async {
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/dashboard/leadConversion-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data.isNotEmpty) {
+        final conversion = LeadConversionManager.fromJson(data);
+        return conversion;
+      } else {
+        throw ('Нет данных графика в ответе "Конверсия лидов');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('');
+    }
+  }
+  
+  Future<ProcessSpeedManager> getProcessSpeedDataManager() async {
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/dashboard/lead-process-speed/for/manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data.isNotEmpty) {
+        final speed = ProcessSpeedManager.fromJson(data);
+        return speed;
+      } else {
+        throw ('Нет данных графика в ответе "Скорость обработки"');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
+    } else {
+      throw ('Ошибка загрузки данных графика Скорость обработки');
+    }
+  }
+
+  // Метод для получения графика Задачи
+  Future<TaskChartManager> getTaskChartDataManager() async {
+    final organizationId = await getSelectedOrganization();
+
+    String path =
+        '/dashboard/task-chart/for-manager${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    try {
+      print('getTaskChartData: Начало запроса');
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonMap = json.decode(response.body);
+
+        if (jsonMap['result'] != null && jsonMap['result']['data'] != null) {
+          final taskChart = TaskChartManager.fromJson(jsonMap);
+          return taskChart;
+        } else {
+          throw ('Нет данных графика в ответе "Задачи');
+        }
+      } else if (response.statusCode == 500) {
+        throw ('Ошибка сервера!');
+      } else {
+        throw ('Ошибка загрузки данных графика!');
+      }
+    } catch (e) {
+      throw ('Ошибка получения данных!');
+    }
+  }
+// API Service
+Future<UserTaskCompletionManager> getUserStatsManager() async {
+  final organizationId = await getSelectedOrganization();
+
+  String path =
+      '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+
+  final response = await _getRequest(path);
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> data = json.decode(response.body);
+
+    if (data['result'] != null) {
+      return UserTaskCompletionManager.fromJson(data);
+    } else {
+      throw ('Нет данных графика в ответе');
+    }
+  } else if (response.statusCode == 500) {
+    throw ('Ошибка сервера: 500');
+  } else {
+    throw ('Неизвестная ошибка');
+  }
+}
+
+  //_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
+
+
+
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
+
 
   Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
