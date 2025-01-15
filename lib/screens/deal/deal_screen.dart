@@ -163,6 +163,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           onManagerSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showFilterTaskIcon: false,
           clearButtonClick: (value) {
             if (value == false) {
               final dealBloc = BlocProvider.of<DealBloc>(context);

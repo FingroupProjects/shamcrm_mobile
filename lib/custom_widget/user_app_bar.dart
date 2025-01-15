@@ -1,15 +1,14 @@
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_state.dart';
 
-class ManagerFilterPopup extends StatelessWidget {
-  final Function(dynamic)? onManagerSelected;
+class UserFilterPopup extends StatelessWidget {
+  final Function(dynamic)? onUserSelected;
 
-  const ManagerFilterPopup({
+  const UserFilterPopup({
     Key? key,
-    this.onManagerSelected,
+    this.onUserSelected,
   }) : super(key: key);
 
   @override
@@ -30,7 +29,7 @@ class ManagerFilterPopup extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Выберите менеджера',
+                  'Выберите пользователя',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -38,25 +37,21 @@ class ManagerFilterPopup extends StatelessWidget {
                     color: Color(0xFF1E2E52),
                   ),
                 ),
-                // GestureDetector(
-                //   onTap: () => Navigator.pop(context),
-                //   child: Icon(Icons.close, size: 20),
-                // ),
               ],
             ),
           ),
           Container(
             constraints: BoxConstraints(maxHeight: 300),
-            child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
+            child: BlocBuilder<UserTaskBloc, UserTaskState>(
               builder: (context, state) {
-                if (state is GetAllManagerLoading) {
+                if (state is UserTaskLoading) {
                   return Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                     ),
                   );
-                } else if (state is GetAllManagerError) {
+                } else if (state is UserTaskError) {
                   return Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
@@ -69,14 +64,14 @@ class ManagerFilterPopup extends StatelessWidget {
                       ),
                     ),
                   );
-                } else if (state is GetAllManagerSuccess) {
-                  final managers = state.dataManager.result;
-                  if (managers == null) {
+                } else if (state is UserTaskLoaded) {
+                  final users = state.users;
+                  if (users.isEmpty) {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.all(16),
                         child: Text(
-                          'Нет доступных менеджеров',
+                          'Нет доступных пользователей',
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                           ),
@@ -84,22 +79,16 @@ class ManagerFilterPopup extends StatelessWidget {
                       ),
                     );
                   }
-                  
+
                   return ListView.builder(
                     shrinkWrap: true,
-                    itemCount: managers.length + 1,
+                    itemCount: users.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        // Опция "Все" теперь полностью сбрасывает состояние
                         return InkWell(
                           onTap: () {
-                            if (onManagerSelected != null) {
-                              // Сбрасываем все фильтры и возвращаемся к исходному состоянию
-                              onManagerSelected!(null);
-                              
-                              // Перезагружаем данные через BLoC
-                              final leadBloc = BlocProvider.of<LeadBloc>(context);
-                              leadBloc.add(FetchLeadStatuses());
+                            if (onUserSelected != null) {
+                              onUserSelected!(null);
                             }
                             Navigator.pop(context);
                           },
@@ -128,12 +117,12 @@ class ManagerFilterPopup extends StatelessWidget {
                           ),
                         );
                       }
-                      final manager = managers[index - 1];
-                      final name = manager.name ?? 'Без имени';
+                      final user = users[index - 1];
+                      final name = user.name.isNotEmpty ? user.name : 'Без имени';
                       return InkWell(
                         onTap: () {
-                          if (onManagerSelected != null) {
-                            onManagerSelected!(manager);
+                          if (onUserSelected != null) {
+                            onUserSelected!(user);
                           }
                           Navigator.pop(context);
                         },

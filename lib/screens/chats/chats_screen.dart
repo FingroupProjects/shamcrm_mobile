@@ -242,6 +242,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             textEditingController: searchController,
             focusNode: focusNode,
             showFilterIcon: false,
+            showFilterTaskIcon: false,
             onChangedSearchInput: (String value) {
               setState(() {
                 _isSearching = value.isNotEmpty;
@@ -527,18 +528,18 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           },
           firstPageProgressIndicatorBuilder: (context) {
             return Center(
-               child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
             );
           },
           newPageProgressIndicatorBuilder: (context) {
             return Center(
-               child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
             );
           },
           itemBuilder: (context, item, index) {
