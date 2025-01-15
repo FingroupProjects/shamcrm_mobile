@@ -182,6 +182,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           onManagerSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showFilterTaskIcon: false,
           clearButtonClick: (value) {
             if (value == false) {
               final leadBloc = BlocProvider.of<LeadBloc>(context);

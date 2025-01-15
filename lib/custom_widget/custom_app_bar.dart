@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/user_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -19,9 +22,10 @@ class CustomAppBar extends StatefulWidget {
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
   bool showSearchIcon;
-  final bool showFilterIcon; // Новое поле для отображения фильтра
-  final Function(dynamic)?
-      onManagerSelected; // Добавляем callback для выбора менеджера
+  final bool showFilterIcon;
+  final bool showFilterTaskIcon; // New field for task filter
+  final Function(dynamic)? onManagerSelected;
+  final Function(dynamic)? onUserSelected; // New callback for user selection
 
   CustomAppBar({
     super.key,
@@ -32,8 +36,10 @@ class CustomAppBar extends StatefulWidget {
     required this.focusNode,
     required this.clearButtonClick,
     this.showSearchIcon = true,
-    this.showFilterIcon = true, // Установка значения по умолчанию
-    this.onManagerSelected, // Добавляем в конструктор
+    this.showFilterIcon = true,
+    this.showFilterTaskIcon = true, // Default value for task filter
+    this.onManagerSelected,
+    this.onUserSelected, // Add to constructor
   });
 
   @override
@@ -49,7 +55,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
-  bool _isFiltering = false; // Флаг для кнопки фильтра
+  bool _isFiltering = false;
+  bool _isTaskFiltering = false; // New state for task filter
 
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
@@ -213,8 +220,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     setState(() {
       _isFiltering = !_isFiltering;
     });
-    widget
-        .clearButtonClick(_isFiltering); // Вызываем обработчик, если необходимо
+    widget.clearButtonClick(_isFiltering);
+  }
+
+  void _toggleTaskFilter() {
+    setState(() {
+      _isTaskFiltering = !_isTaskFiltering;
+    });
+    widget.clearButtonClick(_isTaskFiltering);
   }
 
   @override
@@ -391,14 +404,14 @@ class _CustomAppBarState extends State<CustomAppBar>
               if (widget.showFilterIcon)
                 IconButton(
                   icon: _isFiltering
-                      ? Icon(Icons.close) // Иконка "х" при активном фильтре
+                      ? Icon(Icons.close)
                       : Image.asset(
                           'assets/icons/AppBar/filter.png',
                           width: 24,
                           height: 24,
                         ),
                   onPressed: () {
-                    _toggleFilter(); // Переключение состояния
+                    _toggleFilter();
                     if (_isFiltering) {
                       context.read<GetAllManagerBloc>().add(GetAllManagerEv());
                       final RenderBox button =
@@ -423,6 +436,48 @@ class _CustomAppBarState extends State<CustomAppBar>
                             padding: EdgeInsets.zero,
                             child: ManagerFilterPopup(
                               onManagerSelected: widget.onManagerSelected,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              if (widget.showFilterTaskIcon)
+                IconButton(
+                  icon: _isTaskFiltering
+                      ? Icon(Icons.close)
+                      : Image.asset(
+                          'assets/icons/AppBar/filter.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                  onPressed: () {
+                    _toggleTaskFilter();
+                    if (_isTaskFiltering) {
+                      context.read<UserTaskBloc>().add(FetchUsers());
+                      final RenderBox button =
+                          context.findRenderObject() as RenderBox;
+                      final position = button.localToGlobal(Offset.zero);
+
+                      showMenu(
+                        context: context,
+                        position: RelativeRect.fromLTRB(
+                          position.dx,
+                          position.dy + button.size.height,
+                          position.dx + button.size.width,
+                          position.dy + button.size.height,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        color: Colors.white,
+                        items: [
+                          PopupMenuItem(
+                            padding: EdgeInsets.zero,
+                            child: UserFilterPopup(
+                              onUserSelected: widget.onUserSelected,
                             ),
                           ),
                         ],

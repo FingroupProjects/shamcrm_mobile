@@ -69,7 +69,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isLoading = true;
       });
 
-      await Future.wait([_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
+      await Future.wait(
+          [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
 
       if (mounted) {
         setState(() {
@@ -98,10 +99,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return;
       }
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
+          userRoles = userProfile.role?.map((role) => role.name).toList() ??
+              ['No role assigned'];
         });
       }
     } catch (e) {
@@ -122,7 +125,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isRefreshing = true;
       });
 
-      await Future.wait([_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
+      await Future.wait(
+          [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
     } finally {
       if (mounted) {
         setState(() {
@@ -136,20 +140,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => DashboardStatsBloc(context.read<ApiService>())..add(LoadDashboardStats())),
-        BlocProvider(create: (context) => DashboardChartBloc(context.read<ApiService>())..add(LoadLeadChartData())),
-        BlocProvider(create: (context) => DashboardChartBlocManager(context.read<ApiService>())..add(LoadLeadChartDataManager())),
-        BlocProvider(create: (context) => DashboardConversionBloc(context.read<ApiService>())..add(LoadLeadConversionData())),
-        BlocProvider(create: (context) => DashboardConversionBlocManager(context.read<ApiService>())..add(LoadLeadConversionDataManager())),
-        BlocProvider(create: (context) => DealStatsBloc(context.read<ApiService>())..add(LoadDealStatsData())),
-        BlocProvider(create: (context) => DealStatsManagerBloc(context.read<ApiService>())..add(LoadDealStatsManagerData())),
-        BlocProvider(create: (context) => UserBlocManager(context.read<ApiService>())..add(LoadUserData())),
-        BlocProvider(create: (context) => ProjectChartBloc(context.read<ApiService>())),
-        BlocProvider(create: (context) => ProcessSpeedBloc(context.read<ApiService>())..add(LoadProcessSpeedData())),
-        BlocProvider(create: (context) => DashboardTaskChartBloc(context.read<ApiService>())..add(LoadTaskChartData())),
-        BlocProvider(create: (context) => DashboardTaskChartBlocManager(context.read<ApiService>())..add(LoadTaskChartDataManager())),
-        BlocProvider(create: (context) => ProcessSpeedBlocManager(context.read<ApiService>())..add(LoadProcessSpeedDataManager())),
-        BlocProvider(create: (context) => TaskCompletionBloc(context.read<ApiService>())..add(LoadTaskCompletionData())),
+        BlocProvider(
+            create: (context) => DashboardStatsBloc(context.read<ApiService>())
+              ..add(LoadDashboardStats())),
+        BlocProvider(
+            create: (context) => DashboardChartBloc(context.read<ApiService>())
+              ..add(LoadLeadChartData())),
+        BlocProvider(
+            create: (context) =>
+                DashboardChartBlocManager(context.read<ApiService>())
+                  ..add(LoadLeadChartDataManager())),
+        BlocProvider(
+            create: (context) =>
+                DashboardConversionBloc(context.read<ApiService>())
+                  ..add(LoadLeadConversionData())),
+        BlocProvider(
+            create: (context) =>
+                DashboardConversionBlocManager(context.read<ApiService>())
+                  ..add(LoadLeadConversionDataManager())),
+        BlocProvider(
+            create: (context) => DealStatsBloc(context.read<ApiService>())
+              ..add(LoadDealStatsData())),
+        BlocProvider(
+            create: (context) =>
+                DealStatsManagerBloc(context.read<ApiService>())
+                  ..add(LoadDealStatsManagerData())),
+        BlocProvider(
+            create: (context) => UserBlocManager(context.read<ApiService>())
+              ..add(LoadUserData())),
+        BlocProvider(
+            create: (context) => ProjectChartBloc(context.read<ApiService>())),
+        BlocProvider(
+            create: (context) => ProcessSpeedBloc(context.read<ApiService>())
+              ..add(LoadProcessSpeedData())),
+        BlocProvider(
+            create: (context) =>
+                DashboardTaskChartBloc(context.read<ApiService>())
+                  ..add(LoadTaskChartData())),
+        BlocProvider(
+            create: (context) =>
+                DashboardTaskChartBlocManager(context.read<ApiService>())
+                  ..add(LoadTaskChartDataManager())),
+        BlocProvider(
+            create: (context) =>
+                ProcessSpeedBlocManager(context.read<ApiService>())
+                  ..add(LoadProcessSpeedDataManager())),
+        BlocProvider(
+            create: (context) => TaskCompletionBloc(context.read<ApiService>())
+              ..add(LoadTaskCompletionData())),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -167,6 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             focusNode: FocusNode(),
             clearButtonClick: (isSearching) {},
             showSearchIcon: false,
+            showFilterTaskIcon: false,
             showFilterIcon: false,
           ),
         ),

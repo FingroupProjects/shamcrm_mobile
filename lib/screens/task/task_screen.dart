@@ -40,6 +40,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
+  int? _selectedUserId; // ID выбранного менеджера.
 
   @override
   void initState() {
@@ -94,8 +95,27 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     if (query.isEmpty) {
       taskBloc.add(FetchTasks(currentStatusId));
     } else {
-      taskBloc.add(FetchTasks(currentStatusId, query: query));
+      taskBloc.add(FetchTasks(
+        currentStatusId,
+        query: query,
+        userId: _selectedUserId,
+      ));
     }
+  }
+
+  void _handleUserSelected(dynamic user) {
+    setState(() {
+      _selectedUserId = user?.id;
+    });
+
+    // Запрашиваем обновленные данные с учетом выбранного пользователя
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      userId: _selectedUserId,
+      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+    ));
   }
 
   void _onSearch(String query) {
@@ -130,8 +150,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           title: isClickAvatarIcon ? 'Настройки' : 'Задачи',
           onClickProfileAvatar: () {
             setState(() {
-              final taskBloc = BlocProvider.of<TaskBloc>(context);
-              taskBloc.add(FetchTaskStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
             });
           },
@@ -141,18 +159,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 _isSearching = true;
               });
             }
-
             _onSearch(value);
           },
+          onUserSelected: _handleUserSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
+          showFilterTaskIcon: true,
           clearButtonClick: (value) {
             if (value == false) {
               final taskBloc = BlocProvider.of<TaskBloc>(context);
               taskBloc.add(FetchTaskStatuses());
               setState(() {
                 _isSearching = false;
+                _selectedUserId = null;
               });
             }
           },
@@ -163,8 +183,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           : Column(
               children: [
                 const SizedBox(height: 15),
-                if (!_isSearching) _buildCustomTabBar(),
-                Expanded(child: _buildTabBarView()),
+                if (!_isSearching && _selectedUserId == null)
+                  _buildCustomTabBar(),
+                Expanded(
+                  child: _selectedUserId != null
+                      ? _buildUserView()
+                      : _buildTabBarView(),
+                ),
               ],
             ),
     );
@@ -175,6 +200,62 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           'По запросу ничего не найдено',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+
+    return Flexible(
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TaskCard(
+              task: task,
+              name: task.taskStatus?.taskStatus.name ?? "",
+              statusId: task.statusId,
+              onStatusUpdated: () {},
+              onStatusId: (StatusTaskId) {},
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildUserView() {
+    return BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        if (state is TaskDataLoaded) {
+          final List<Task> tasks = state.tasks;
+          return userWidget(tasks);
+        }
+        if (state is TaskLoading) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  Widget userWidget(List<Task> tasks) {
+    if (_selectedUserId != null && tasks.isEmpty) {
+      return Center(
+        child: Text(
+          'У выбранного пользователя нет задач',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -250,77 +331,78 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
+    bool isActive = _tabController.index == index;
 
-  return BlocBuilder<TaskBloc, TaskState>(
-    builder: (context, state) {
-      int taskCount = 0;
+    return BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        int taskCount = 0;
 
-      if (state is TaskLoaded) {
-        final statusId = _tabTitles[index]['id'];
-        final taskStatus = state.taskStatuses.firstWhere(
-          (status) => status.id == statusId,
-          // orElse: () => null,
-        );
-        taskCount = taskStatus?.tasksCount ?? 0; // Используем tasksCount
-      }
+        if (state is TaskLoaded) {
+          final statusId = _tabTitles[index]['id'];
+          final taskStatus = state.taskStatuses.firstWhere(
+            (status) => status.id == statusId,
+            // orElse: () => null,
+          );
+          taskCount = taskStatus?.tasksCount ?? 0; // Используем tasksCount
+        }
 
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _tabController.animateTo(index);
-        },
-        onLongPress: () {
-          if (_canDeleteTaskStatus) {
-            _showDeleteDialog(index);
-          }
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive
-                      ? TaskStyles.activeColor
-                      : TaskStyles.inactiveColor,
-                ),
-              ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    taskCount.toString(),
-                    style: TextStyle(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
+            if (_canDeleteTaskStatus) {
+              _showDeleteDialog(index);
+            }
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
-              ),
-            ],
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      taskCount.toString(),
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   void _showDeleteDialog(int index) async {
     final taskStatusId = _tabTitles[index]['id'];
@@ -478,6 +560,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 return TaskColumn(
                   statusId: statusId,
                   name: title,
+                  userId: _selectedUserId,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
                     final index = _tabTitles

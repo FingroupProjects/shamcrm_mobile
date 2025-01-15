@@ -8,9 +8,9 @@ import 'task_state.dart';
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiService apiService;
   bool allTasksFetched = false;
-  Map<int, int> _taskCounts = {}; // Добавляем приватное поле для хранения количества
+  Map<int, int> _taskCounts =
+      {}; // Добавляем приватное поле для хранения количества
 
- 
   TaskBloc(this.apiService) : super(TaskInitial()) {
     on<FetchTaskStatuses>(_fetchTaskStatuses);
     on<FetchTasks>(_fetchTasks);
@@ -24,9 +24,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
-    
+
     await Future.delayed(Duration(milliseconds: 600));
-    
+
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
       return;
@@ -62,7 +62,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
-    
+
     if (!await _checkInternetConnection()) {
       emit(TaskError('Нет подключения к интернету'));
       return;
@@ -76,25 +76,26 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         perPage: 20, // Увеличиваем для получения всех задач
         search: event.query,
       );
-      
+
       // Сохраняем общее количество
       _taskCounts[event.statusId] = allTasks.length;
-      
+
       // Теперь получаем только нужную страницу для отображения
       final pageTasks = await apiService.getTasks(
         event.statusId,
         page: 1,
         perPage: 20,
         search: event.query,
+        userId: event.userId, // Передаем managerId в API
       );
-      
+
       allTasksFetched = pageTasks.isEmpty;
-      
+
       if (state is TaskLoaded) {
         final loadedState = state as TaskLoaded;
         emit(loadedState.copyWith(taskCounts: Map.from(_taskCounts)));
       }
-      
+
       emit(TaskDataLoaded(pageTasks, currentPage: 1));
     } catch (e) {
       if (e is ApiException && e.statusCode == 401) {
@@ -104,7 +105,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
     }
   }
-
 
   Future<void> _fetchMoreTasks(
       FetchMoreTasks event, Emitter<TaskState> emit) async {
@@ -127,8 +127,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(currentState.merge(tasks));
       }
     } catch (e) {
-      emit(TaskError(
-          'Не удалось загрузить дополнительные задачи!'));
+      emit(TaskError('Не удалось загрузить дополнительные задачи!'));
     }
   }
 

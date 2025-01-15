@@ -12,11 +12,14 @@ class TaskColumn extends StatefulWidget {
   final int statusId;
   final String name;
   final Function(int) onStatusId;
+    final int? userId; // Добавляем параметр managerId
+
 
   TaskColumn({
     required this.statusId,
     required this.name,
     required this.onStatusId,
+    this.userId,
   });
 
   @override

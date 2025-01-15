@@ -625,7 +625,7 @@ class ApiService {
   }
 
 //Метод для получения список Лидов с пагинацией
-Future<List<Lead>> getLeads(
+  Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1557,7 +1557,7 @@ Future<List<Lead>> getLeads(
     }
   }
 
-Future<List<Deal>> getDeals(
+  Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1571,7 +1571,8 @@ Future<List<Deal>> getDeals(
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (dealStatusId != null && managerId == null) { // Условие: если нет managerId
+    } else if (dealStatusId != null && managerId == null) {
+      // Условие: если нет managerId
       path += '&deal_status_id=$dealStatusId';
     }
     // Добавляем manager_id если есть
@@ -1967,8 +1968,13 @@ Future<List<Deal>> getDeals(
     }
   }
 
-  Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
+  Future<List<Task>> getTasks(
+    int? taskStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    int? userId, // Added userId parameter
+  }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/task?page=$page&per_page=$perPage';
 
@@ -1976,12 +1982,18 @@ Future<List<Deal>> getDeals(
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (taskStatusId != null) {
+    } else if (taskStatusId != null && userId == null) {
+      // Modified condition like in getDeals
       path += '&task_status_id=$taskStatusId';
+    }
+    // Added user_id if present
+    if (userId != null) {
+      path += '&user_id=$userId';
     }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
+
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -1991,7 +2003,6 @@ Future<List<Deal>> getDeals(
         final tasks = (data['result']['data'] as List).map((json) {
           return Task.fromJson(json, taskStatusId ?? -1);
         }).toList();
-
         return tasks;
       } else {
         throw Exception('Нет данных о задачах в ответе');
@@ -3144,8 +3155,7 @@ Future<List<Deal>> getDeals(
 
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
-
-    //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
+  //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
 
 // Метод для получения графика Сделки
   Future<DealStatsResponseManager> getDealStatsManagerData() async {
@@ -3168,7 +3178,8 @@ Future<List<Deal>> getDeals(
       throw ('');
     }
   }
- /// Получение данных графика для дашборда
+
+  /// Получение данных графика для дашборда
   Future<List<ChartDataManager>> getLeadChartManager() async {
     final organizationId = await getSelectedOrganization();
 
@@ -3188,7 +3199,8 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка загрузки данных график клиента!');
     }
   }
- Future<LeadConversionManager> getLeadConversionDataManager() async {
+
+  Future<LeadConversionManager> getLeadConversionDataManager() async {
     final organizationId = await getSelectedOrganization();
 
     String path =
@@ -3211,7 +3223,7 @@ Future<List<Deal>> getDeals(
       throw ('');
     }
   }
-  
+
   Future<ProcessSpeedManager> getProcessSpeedDataManager() async {
     final organizationId = await getSelectedOrganization();
 
@@ -3264,36 +3276,34 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка получения данных!');
     }
   }
+
 // API Service
-Future<UserTaskCompletionManager> getUserStatsManager() async {
-  final organizationId = await getSelectedOrganization();
+  Future<UserTaskCompletionManager> getUserStatsManager() async {
+    final organizationId = await getSelectedOrganization();
 
-  String path =
-      '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    String path =
+        '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-  final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
 
-    if (data['result'] != null) {
-      return UserTaskCompletionManager.fromJson(data);
+      if (data['result'] != null) {
+        return UserTaskCompletionManager.fromJson(data);
+      } else {
+        throw ('Нет данных графика в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
     } else {
-      throw ('Нет данных графика в ответе');
+      throw ('Неизвестная ошибка');
     }
-  } else if (response.statusCode == 500) {
-    throw ('Ошибка сервера: 500');
-  } else {
-    throw ('Неизвестная ошибка');
   }
-}
 
   //_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
 
-
-
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
-
 
   Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
