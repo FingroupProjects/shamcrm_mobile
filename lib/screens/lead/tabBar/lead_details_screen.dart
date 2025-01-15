@@ -8,7 +8,6 @@ import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';

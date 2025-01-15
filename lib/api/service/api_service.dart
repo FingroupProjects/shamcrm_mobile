@@ -60,10 +60,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
+// final String baseUrl = 'https://fingroup-back.sham360.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
-// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
+// final String baseUrlSocket ='https://fingroup-back.sham360.com/broadcasting/auth';
 
 class ApiService {
   late final String baseUrl;
@@ -89,8 +89,8 @@ class ApiService {
 
   // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'https://$domain-back.shamcrm.com/api';
-    baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
+    baseUrl = 'https://$domain-back.sham360.com/api';
+    baseUrlSocket = 'https://$domain-back.sham360.com/broadcasting/auth';
     print('API инициализировано с доменом: $domain');
   }
 
@@ -116,7 +116,7 @@ class ApiService {
   Future<String> getDynamicBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/api';
+      return 'https://$domain-back.sham360.com/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -125,7 +125,7 @@ class ApiService {
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/broadcasting/auth';
+      return 'https://$domain-back.sham360.com/broadcasting/auth';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -288,7 +288,7 @@ class ApiService {
   // Метод для выполнения POST-запросов
   Future<http.Response> _postRequestDomain(
       String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://shamcrm.com/api';
+    final String DomainUrl = 'https://sham360.com/api';
     final token = await getToken(); // Получаем токен перед запросом
     final response = await http.post(
       Uri.parse('$DomainUrl$path'),
@@ -625,12 +625,12 @@ class ApiService {
   }
 
 //Метод для получения список Лидов с пагинацией
-  Future<List<Lead>> getLeads(
+Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
     String? search,
-    int? managerId, // Добавляем параметр managerId
+    int? managerId,
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
@@ -643,10 +643,7 @@ class ApiService {
     // Добавляем поиск если есть
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    }
-
-    // Добавляем lead_status_id если есть
-    if (leadStatusId != null) {
+    } else if (leadStatusId != null && managerId == null) {
       path += '&lead_status_id=$leadStatusId';
     }
 
@@ -659,6 +656,7 @@ class ApiService {
     print('Sending request to API with path: $path');
 
     final response = await _getRequest(path);
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -1559,7 +1557,7 @@ class ApiService {
     }
   }
 
-  Future<List<Deal>> getDeals(
+Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1573,7 +1571,7 @@ class ApiService {
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (dealStatusId != null) {
+    } else if (dealStatusId != null && managerId == null) { // Условие: если нет managerId
       path += '&deal_status_id=$dealStatusId';
     }
     // Добавляем manager_id если есть
