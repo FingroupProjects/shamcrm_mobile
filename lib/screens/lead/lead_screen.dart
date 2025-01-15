@@ -47,42 +47,37 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     super.initState();
     _scrollController = ScrollController();
     // Попытка получить данные из кеша
-    LeadCache.getLeadStatuses().then((cachedStatuses) {
-      if (cachedStatuses.isNotEmpty) {
-        setState(() {
-          _tabTitles = cachedStatuses;
+   LeadCache.getLeadStatuses().then((cachedStatuses) {
+    if (cachedStatuses.isNotEmpty) {
+      setState(() {
+        _tabTitles = cachedStatuses
+            .map((status) => {'id': status['id'], 'title': status['title']})
+            .toList();
 
-          // Инициализация TabController только один раз
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
+        _tabController.index = _currentTabIndex;
 
-          int initialIndex = cachedStatuses
-              .indexWhere((status) => status['id'] == widget.initialStatusId);
-          if (initialIndex != -1) {
-            _currentTabIndex = initialIndex;
-          }
-          _tabController.index = _currentTabIndex;
-        });
-
-        // Добавляем слушатель для _tabController после его инициализации
         _tabController.addListener(() {
           setState(() {
             _currentTabIndex = _tabController.index;
           });
-          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          if (_scrollController.hasClients) {
-            _scrollToActiveTab();
-          }
+          _scrollToActiveTab();
         });
-      } else {
-        // Если нет данных в кеше, запрашиваем их через API
-        final leadBloc = BlocProvider.of<LeadBloc>(context);
-        leadBloc.add(FetchLeadStatuses());
-        BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+      });
+    } else {
+      // Если статусов в кэше нет — запрос через API
+      final leadBloc = BlocProvider.of<LeadBloc>(context);
+      leadBloc.add(FetchLeadStatuses());
+    }
+  });
 
-        print("Инициализация: отправлен запрос на получение статусов лидов");
-      }
-    });
+  // Проверка лидов в кэше для начального статуса
+  LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
+    if (cachedLeads.isNotEmpty) {
+      print('Leads loaded from cache.');
+    }
+  });
+
 
     // Проверка разрешений
     _checkPermissions();
@@ -184,8 +179,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           focusNode: focusNode,
           clearButtonClick: (value) {
             if (value == false) {
-              final leadBloc = BlocProvider.of<LeadBloc>(context);
-              leadBloc.add(FetchLeadStatuses());
+                    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+
+              // final leadBloc = BlocProvider.of<LeadBloc>(context);
+              // leadBloc.add(FetchLeadStatuses());
               setState(() {
                 _isSearching = false;
                 _selectedManagerId = null;
@@ -454,9 +451,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       listener: (context, state) async {
         if (state is LeadLoaded) {
           // Perform async work first
-          await LeadCache.cacheLeadStatuses(state.leadStatuses
-              .map((status) => {'id': status.id, 'title': status.title})
-              .toList());
+         await LeadCache.cacheLeadStatuses(state.leadStatuses
+          .map((status) => {'id': status.id, 'title': status.title})
+          .toList());
 
           // Now, update the state synchronously
           setState(() {
