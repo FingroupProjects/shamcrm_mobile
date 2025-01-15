@@ -38,10 +38,10 @@ class ManagerFilterPopup extends StatelessWidget {
                     color: Color(0xFF1E2E52),
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Icon(Icons.close, size: 20),
-                ),
+                // GestureDetector(
+                //   onTap: () => Navigator.pop(context),
+                //   child: Icon(Icons.close, size: 20),
+                // ),
               ],
             ),
           ),

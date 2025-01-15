@@ -149,8 +149,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           title: isClickAvatarIcon ? 'Настройки' : 'Сделки',
           onClickProfileAvatar: () {
             setState(() {
-              final dealBloc = BlocProvider.of<DealBloc>(context);
-              dealBloc.add(FetchDealStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
             });
           },
@@ -160,11 +158,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 _isSearching = true;
               });
             }
-
             _onSearch(value);
           },
-          onManagerSelected:
-              _handleManagerSelected, // Добавляем обработчик выбора менеджера
+          onManagerSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           clearButtonClick: (value) {
@@ -173,6 +169,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               dealBloc.add(FetchDealStatuses());
               setState(() {
                 _isSearching = false;
+                _selectedManagerId = null;
               });
             }
           },
@@ -183,8 +180,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           : Column(
               children: [
                 const SizedBox(height: 15),
-                if (!_isSearching) _buildCustomTabBar(),
-                Expanded(child: _buildTabBarView()),
+                if (!_isSearching && _selectedManagerId == null)
+                  _buildCustomTabBar(),
+                Expanded(
+                  child: _selectedManagerId != null
+                      ? _buildManagerView()
+                      : _buildTabBarView(),
+                ),
               ],
             ),
     );
@@ -195,6 +197,62 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           'По запросу ничего не найдено',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+
+    return Flexible(
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: deals.length,
+        itemBuilder: (context, index) {
+          final deal = deals[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: DealCard(
+              deal: deal,
+              title: deal.dealStatus?.title ?? "",
+              statusId: deal.statusId,
+              onStatusUpdated: () {},
+              onStatusId: (StatusDealId) {},
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildManagerView() {
+    return BlocBuilder<DealBloc, DealState>(
+      builder: (context, state) {
+        if (state is DealDataLoaded) {
+          final List<Deal> deals = state.deals;
+          return managerWidget(deals);
+        }
+        if (state is DealLoading) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  Widget managerWidget(List<Deal> deals) {
+    if (_selectedManagerId != null && deals.isEmpty) {
+      return Center(
+        child: Text(
+          'У выбранного менеджера нет сделок',
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
