@@ -1,7 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
-import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
@@ -77,8 +76,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         });
       } else {
         // Если нет данных в кеше, запрашиваем их через API
-        // final leadBloc = BlocProvider.of<LeadBloc>(context);
-        // leadBloc.add(FetchLeadStatuses());
+        final leadBloc = BlocProvider.of<LeadBloc>(context);
+        leadBloc.add(FetchLeadStatuses());
         BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
         print("Инициализация: отправлен запрос на получение статусов лидов");
@@ -97,17 +96,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // Модифицируем метод _searchLeads для использования managerId
   Future<void> _searchLeads(String query, int currentStatusId) async {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeads(
-      currentStatusId,
-      query: query.isNotEmpty ? query : null,
-      managerId: _selectedManagerId, // Передаем ID менеджера
-    ));
+    if (query.isEmpty) {
+      leadBloc.add(FetchLeads(currentStatusId, managerId: _selectedManagerId));
+    } else {
+      leadBloc.add(FetchLeads(currentStatusId,
+          query: query, managerId: _selectedManagerId));
+    }
   }
 
-  // Добавляем метод для обработки выбора менеджера
+// Добавляем метод для обработки выбора менеджера
   void _handleManagerSelected(dynamic manager) {
     setState(() {
       _selectedManagerId = manager?.id;
@@ -124,11 +123,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     ));
   }
 
-  void _onSearch(String query) {
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    _searchLeads(query, currentStatusId);
-  }
-
   void _refreshCurrentTab() {
     if (_tabTitles.isNotEmpty) {
       final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -140,6 +134,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             _searchController.text.isNotEmpty ? _searchController.text : null,
       ));
     }
+  }
+
+  void _onSearch(String query) {
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    _searchLeads(query, currentStatusId);
   }
 
   // Метод для проверки разрешений
@@ -169,8 +168,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           title: isClickAvatarIcon ? 'Настройки' : 'Лиды',
           onClickProfileAvatar: () {
             setState(() {
-              final leadBloc = BlocProvider.of<LeadBloc>(context);
-              leadBloc.add(FetchLeadStatuses());
               isClickAvatarIcon = !isClickAvatarIcon;
             });
           },
@@ -180,11 +177,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 _isSearching = true;
               });
             }
-
             _onSearch(value);
           },
-          onManagerSelected:
-              _handleManagerSelected, // Добавляем обработчик выбора менеджера
+          onManagerSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           clearButtonClick: (value) {
@@ -193,6 +188,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               leadBloc.add(FetchLeadStatuses());
               setState(() {
                 _isSearching = false;
+                _selectedManagerId = null;
               });
             }
           },
@@ -203,8 +199,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           : Column(
               children: [
                 const SizedBox(height: 15),
-                if (!_isSearching) _buildCustomTabBar(),
-                Expanded(child: _buildTabBarView()),
+                if (!_isSearching && _selectedManagerId == null)
+                  _buildCustomTabBar(),
+                Expanded(
+                  child: _selectedManagerId != null
+                      ? _buildManagerView()
+                      : _buildTabBarView(),
+                ),
               ],
             ),
     );
@@ -235,10 +236,66 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: LeadCard(
               lead: lead,
-              title: lead.leadStatus?.title ?? '',
+              title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
               onStatusUpdated: () {},
-              onStatusId: (newStatusId) {},
+              onStatusId: (StatusLeadId) {},
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildManagerView() {
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        if (state is LeadDataLoaded) {
+          final List<Lead> leads = state.leads;
+          return managerWidget(leads);
+        }
+        if (state is LeadLoading) {
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  Widget managerWidget(List<Lead> leads) {
+    if (_selectedManagerId != null && leads.isEmpty) {
+      return Center(
+        child: Text(
+          'У выбранного менеджера нет лидов',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+
+    return Flexible(
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: leads.length,
+        itemBuilder: (context, index) {
+          final lead = leads[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: LeadCard(
+              lead: lead,
+              title: lead.leadStatus?.title ?? "",
+              statusId: lead.statusId,
+              onStatusUpdated: () {},
+              onStatusId: (StatusLeadId) {},
             ),
           );
         },
@@ -420,7 +477,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                 if (_scrollController.hasClients) {
                   _scrollToActiveTab();
-                  _refreshCurrentTab(); // Добавляем обновление при смене вкладки
                 }
               });
               int initialIndex = state.leadStatuses
@@ -514,7 +570,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             );
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text(''));
+              return const Center(child: Text('Нет статусов для отображения'));
             }
             return TabBarView(
               controller: _tabController,
@@ -531,7 +587,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         .indexWhere((status) => status['id'] == newStatusId);
                     if (index != -1) {
                       _tabController.animateTo(index);
-                      _refreshCurrentTab(); // Добавляем обновление при смене статуса
                     }
                   },
                 );

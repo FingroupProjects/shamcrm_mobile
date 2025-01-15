@@ -49,6 +49,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
+  bool _isFiltering = false; // Флаг для кнопки фильтра
 
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
@@ -75,7 +76,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     _blinkController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1),
+      duration: Duration(milliseconds: 700),
       lowerBound: 0.0,
       upperBound: 1.0,
     )..repeat(reverse: true);
@@ -206,6 +207,14 @@ class _CustomAppBarState extends State<CustomAppBar>
         focusNode.unfocus();
       }
     });
+  }
+
+  void _toggleFilter() {
+    setState(() {
+      _isFiltering = !_isFiltering;
+    });
+    widget
+        .clearButtonClick(_isFiltering); // Вызываем обработчик, если необходимо
   }
 
   @override
@@ -379,90 +388,87 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
           Row(
             children: [
-              Row(
-                children: [
-                  // Добавляем проверку для showFilterIcon
-                  if (widget.showFilterIcon)
-                    // В методе build класса CustomAppBar
-                    IconButton(
-                      icon: Image.asset(
-                        'assets/icons/AppBar/filter.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                      onPressed: () {
-                        context
-                            .read<GetAllManagerBloc>()
-                            .add(GetAllManagerEv());
-                        final RenderBox button =
-                            context.findRenderObject() as RenderBox;
-                        final position = button.localToGlobal(Offset.zero);
-
-                        showMenu(
-                          context: context,
-                          position: RelativeRect.fromLTRB(
-                            position.dx,
-                            position.dy + button.size.height,
-                            position.dx + button.size.width,
-                            position.dy + button.size.height,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                          color: Colors.white,
-                          items: [
-                            PopupMenuItem(
-                              padding: EdgeInsets.zero,
-                              child: ManagerFilterPopup(
-                                onManagerSelected: widget.onManagerSelected,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  IconButton(
-                    icon: Stack(
-                      children: [
-                        Image.asset(
-                          'assets/icons/AppBar/notification.png',
+              if (widget.showFilterIcon)
+                IconButton(
+                  icon: _isFiltering
+                      ? Icon(Icons.close) // Иконка "х" при активном фильтре
+                      : Image.asset(
+                          'assets/icons/AppBar/filter.png',
                           width: 24,
                           height: 24,
                         ),
-                        if (_hasNewNotification)
-                          Positioned(
-                            right: 0,
-                            child: FadeTransition(
-                              opacity: _blinkAnimation,
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
+                  onPressed: () {
+                    _toggleFilter(); // Переключение состояния
+                    if (_isFiltering) {
+                      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+                      final RenderBox button =
+                          context.findRenderObject() as RenderBox;
+                      final position = button.localToGlobal(Offset.zero);
+
+                      showMenu(
+                        context: context,
+                        position: RelativeRect.fromLTRB(
+                          position.dx,
+                          position.dy + button.size.height,
+                          position.dx + button.size.width,
+                          position.dy + button.size.height,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        color: Colors.white,
+                        items: [
+                          PopupMenuItem(
+                            padding: EdgeInsets.zero,
+                            child: ManagerFilterPopup(
+                              onManagerSelected: widget.onManagerSelected,
                             ),
                           ),
-                      ],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _hasNewNotification = false;
-                      });
-                      SharedPreferences.getInstance().then((prefs) {
-                        prefs.setBool('hasNewNotification', false);
-                      });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => NotificationsScreen(),
-                        ),
+                        ],
                       );
-                    },
-                  )
-                ],
+                    }
+                  },
+                ),
+              IconButton(
+                icon: Stack(
+                  children: [
+                    Image.asset(
+                      'assets/icons/AppBar/notification.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    if (_hasNewNotification)
+                      Positioned(
+                        right: 0,
+                        child: FadeTransition(
+                          opacity: _blinkAnimation,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () {
+                  setState(() {
+                    _hasNewNotification = false;
+                  });
+                  SharedPreferences.getInstance().then((prefs) {
+                    prefs.setBool('hasNewNotification', false);
+                  });
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NotificationsScreen(),
+                    ),
+                  );
+                },
               ),
               if (widget.showSearchIcon)
                 IconButton(
