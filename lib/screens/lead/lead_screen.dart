@@ -79,6 +79,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   });
 
 
+
     // Проверка разрешений
     _checkPermissions();
   }
@@ -177,6 +178,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           onManagerSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showFilterTaskIcon: false,
           clearButtonClick: (value) {
             if (value == false) {
                     BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
