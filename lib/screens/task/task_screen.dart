@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
@@ -15,6 +16,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart'
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskScreen extends StatefulWidget {
   final int? initialStatusId;
@@ -40,12 +42,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
-  int? _selectedUserId; // ID выбранного менеджера.
+  int? _selectedUserId;
+  List<String> userRoles = [];
+  bool showFilter = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _loadUserRoles();
     TaskCache.getTaskStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
@@ -79,6 +84,39 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     });
     _checkPermissions();
+  }
+
+  Future<void> _loadUserRoles() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        setState(() {
+          userRoles = ['No user ID found'];
+          showFilter = false;
+        });
+        return;
+      }
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
+      if (mounted) {
+        setState(() {
+          userRoles = userProfile.role?.map((role) => role.name).toList() ?? 
+              ['No role assigned'];
+          showFilter = userRoles.any((role) => 
+              role.toLowerCase() == 'admin' || 
+              role.toLowerCase() == 'manager');
+        });
+      }
+    } catch (e) {
+      print('Error loading user roles!');
+      if (mounted) {
+        setState(() {
+          userRoles = ['Error loading roles'];
+          showFilter = false;
+        });
+      }
+    }
   }
 
   @override
@@ -165,7 +203,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
-          showFilterTaskIcon: true,
+          showFilterTaskIcon: showFilter,
           clearButtonClick: (value) {
             if (value == false) {
               final taskBloc = BlocProvider.of<TaskBloc>(context);

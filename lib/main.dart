@@ -64,6 +64,7 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/languages_3.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +73,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -120,6 +122,7 @@ class MyApp extends StatelessWidget {
   final bool isDomainChecked;
   final String? token;
   final String? pin;
+  
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -127,6 +130,7 @@ class MyApp extends StatelessWidget {
     this.token,
     this.pin,
   });
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -205,6 +209,21 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'SHAMCRM',
         navigatorKey: navigatorKey,
+        
+        // Добавляем поддержку локализации
+        localizationsDelegates: const [
+          AppLocalizationsDelegate(),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('ru'), // Русский
+          Locale('uz'), // Узбекский
+          Locale('en'), // Английский
+        ],
+        locale: const Locale('ru'), // Язык по умолчанию
+        
         theme: ThemeData(
           primarySwatch: Colors.blue,
           scaffoldBackgroundColor: Colors.white,

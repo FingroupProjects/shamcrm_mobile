@@ -18,7 +18,7 @@ dependencies:
   flutter_bloc: ^8.1.6
   http: ^1.2.2
   equatable: ^2.0.5
-  shared_preferences: 2.3.4 
+  shared_preferences: ^2.3.5
   intl: ^0.19.0
   open_file: ^3.5.9
   path_provider: ^2.1.5
@@ -55,10 +55,9 @@ dependencies:
   image_picker: ^1.1.2
   app_tracking_transparency: ^2.0.6
   url_launcher: ^6.3.1
-  flutter_localization: ^0.3.0
+  flutter_localization: ^0.3.1
   qr_code_scanner: ^1.0.1
   scan: ^1.6.0
-
   # bottom_navy_bar: ^6.1.0
 bottom_navy_bar:
     path: lib/widgets/bottom_navy_bar.dart
@@ -77,6 +76,7 @@ flutter_native_splash:
  android: true
 #  ios: true
  image: assets/icons/playstore.png  # Убедитесь, что путь правильный
+ 
 #  color: "#000000"
 #  fullscreen: true
 # For information on the generic Dart part of this file, see the
@@ -103,6 +103,7 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/images/avatar2.png
+    - assets/icons/languages/
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg
