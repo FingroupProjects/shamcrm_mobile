@@ -52,6 +52,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
           );
         }
       },
+      
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
