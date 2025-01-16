@@ -1,61 +1,73 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
 
-class LeadBloc extends Bloc<LeadEvent, LeadState> {
-  final ApiService apiService;
-  bool allLeadsFetched = false;
-  Map<int, int> _leadCounts = {}; // Хранение количества лидов
+  class LeadBloc extends Bloc<LeadEvent, LeadState> {
+    final ApiService apiService;
+    bool allLeadsFetched = false;
+    Map<int, int> _leadCounts = {}; // Хранение количества лидов
 
-  LeadBloc(this.apiService) : super(LeadInitial()) {
-    on<FetchLeadStatuses>(_fetchLeadStatuses);
-    on<FetchLeads>(_fetchLeads);
-    on<CreateLead>(_createLead);
-    on<FetchMoreLeads>(_fetchMoreLeads);
-    on<CreateLeadStatus>(_createLeadStatus);
-    on<UpdateLead>(_updateLead);
-    on<FetchAllLeads>(_fetchAllLeads);
-    on<DeleteLead>(_deleteLead);
-    on<DeleteLeadStatuses>(_deleteLeadStatuses);
+    LeadBloc(this.apiService) : super(LeadInitial()) {
+      on<FetchLeadStatuses>(_fetchLeadStatuses);
+      on<FetchLeads>(_fetchLeads);
+      on<CreateLead>(_createLead);
+      on<FetchMoreLeads>(_fetchMoreLeads);
+      on<CreateLeadStatus>(_createLeadStatus);
+      on<UpdateLead>(_updateLead);
+      on<FetchAllLeads>(_fetchAllLeads);
+      on<DeleteLead>(_deleteLead);
+      on<DeleteLeadStatuses>(_deleteLeadStatuses);
+    }
+    // Метод для загрузки лидов с учётом кэша
+Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+  emit(LeadLoading());
+
+  if (!await _checkInternetConnection()) {
+    // Если интернета нет, пробуем загрузить лиды из кэша
+    final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
+    if (cachedLeads.isNotEmpty) {
+      emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
+    } else {
+      emit(LeadError('Нет подключения к интернету и нет данных в кэше!'));
+    }
+    return;
   }
-  Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
-    emit(LeadLoading());
-    if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
-      return;
+
+  try {
+    // Сначала пробуем загрузить лиды из кэша
+    final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
+    if (cachedLeads.isNotEmpty) {
+      emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
     }
 
-    try {
-      final leads = await apiService.getLeads(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managerId: event.managerId, // Передаем managerId в API
-      );
+    // Затем запрашиваем данные из API
+    final leads = await apiService.getLeads(
+      event.statusId,
+      page: 1,
+      perPage: 20,
+      search: event.query,
+    );
 
-      // Обновление _leadCounts
-      final leadCounts =
-          Map<int, int>.from(_leadCounts); // Создаем копию текущего состояния
-      for (var lead in leads) {
-        final statusId =
-            lead.statusId; // Предположим, что у вас есть статус в лидах
-        leadCounts[statusId] = (leadCounts[statusId] ?? 0) + 1;
-      }
+    // Сохраняем лиды в кэш
+    await LeadCache.cacheLeadsForStatus(event.statusId, leads);
 
-      allLeadsFetched = leads.isEmpty;
-      emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: leadCounts));
-    } catch (e) {
-      if (e is ApiException && e.statusCode == 401) {
-        emit(LeadError('Неавторизованный доступ!'));
-      } else {
-        emit(LeadError('Не удалось загрузить данные!'));
-      }
+    // Обновляем состояние
+    final leadCounts = Map<int, int>.from(_leadCounts);
+    for (var lead in leads) {
+      leadCounts[lead.statusId] = (leadCounts[lead.statusId] ?? 0) + 1;
     }
+
+    allLeadsFetched = leads.isEmpty;
+    emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: leadCounts));
+  } catch (e) {
+    emit(LeadError('Не удалось загрузить данные!'));
   }
+}
+
 
   Future<void> _fetchLeadStatuses(
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
@@ -95,6 +107,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       emit(LeadError('Не удалось загрузить данные!'));
     }
   }
+
 
   // Метод для загрузки всех лидов
   Future<void> _fetchAllLeads(
@@ -136,7 +149,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(currentState.merge(leads)); // Объединяем старые и новые лиды
       }
     } catch (e) {
-      emit(LeadError('Не удалось загрузить дополнительные лиды!'));
+      emit(LeadError(
+          'Не удалось загрузить дополнительные лиды!'));
     }
   }
 
