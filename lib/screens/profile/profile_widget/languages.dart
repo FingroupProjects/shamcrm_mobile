@@ -1,6 +1,8 @@
-import 'package:crm_task_manager/screens/profile/profile_widget/languages_3.dart';
-import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/languages_list.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LanguageButtonWidget extends StatelessWidget {
   const LanguageButtonWidget({super.key});
@@ -10,7 +12,9 @@ class LanguageButtonWidget extends StatelessWidget {
     final localizations = AppLocalizations.of(context);
     
     return GestureDetector(
-      onTap: () => _showLanguageDialog(context),
+      onTap: () {
+        _showLanguageDialog(context);
+      },
       child: _buildProfileOption(
         iconPath: 'assets/icons/languages/global2.png',
         text: localizations.language,
@@ -36,7 +40,7 @@ class LanguageButtonWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   localizations.selectLanguage,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -45,7 +49,7 @@ class LanguageButtonWidget extends StatelessWidget {
                 ),
               ),
               Container(
-                constraints: const BoxConstraints(maxHeight: 400),
+                constraints: BoxConstraints(maxHeight: 400),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SingleChildScrollView(
                   child: Column(
@@ -54,19 +58,19 @@ class LanguageButtonWidget extends StatelessWidget {
                         context,
                         localizations.russian,
                         'assets/icons/languages/russian.png',
-                        const Locale('ru'),
+                        'ru',
                       ),
                       _languageOption(
                         context,
                         localizations.uzbek,
                         'assets/icons/languages/uzbek.png',
-                        const Locale('uz'),
+                        'uz',
                       ),
                       _languageOption(
                         context,
                         localizations.english,
                         'assets/icons/languages/usa.png',
-                        const Locale('en'),
+                        'en',
                       ),
                     ],
                   ),
@@ -77,7 +81,7 @@ class LanguageButtonWidget extends StatelessWidget {
                 child: CustomButton(
                   buttonText: localizations.close,
                   onPressed: () => Navigator.pop(context),
-                  buttonColor: const Color(0xff1E2E52),
+                  buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
                 ),
               ),
@@ -92,15 +96,13 @@ class LanguageButtonWidget extends StatelessWidget {
     BuildContext context,
     String language,
     String iconPath,
-    Locale locale,
+    String languageCode,
   ) {
     return GestureDetector(
       onTap: () {
-        // Обновляем локаль приложения
-        Localizations.override(
-          context: context,
-          locale: locale,
-        );
+        print('Changing language to: $languageCode');
+        context.read<LocaleCubit>().setLocale(Locale(languageCode));
+        print('Language changed, current locale: ${context.read<LocaleCubit>().state}');
         Navigator.pop(context);
       },
       child: Padding(

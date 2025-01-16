@@ -119,6 +119,7 @@ class UserFilterPopup extends StatelessWidget {
                       }
                       final user = users[index - 1];
                       final name = user.name.isNotEmpty ? user.name : 'Без имени';
+                      final lastname = user.lastname.isNotEmpty ? user.lastname : '';
                       return InkWell(
                         onTap: () {
                           if (onUserSelected != null) {
@@ -132,7 +133,7 @@ class UserFilterPopup extends StatelessWidget {
                             vertical: 12,
                           ),
                           child: Text(
-                            name,
+                            '$name $lastname',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
