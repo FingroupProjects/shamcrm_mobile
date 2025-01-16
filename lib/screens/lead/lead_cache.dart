@@ -26,33 +26,82 @@ class LeadCache {
   }
 
   // Save leads for a specific status to cache
-// Метод для кэширования лидов по статусам
-static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String key = 'cachedLeads_$statusId';
-  final String encodedLeads = json.encode(leads.map((lead) => lead.toJson()).toList());
-  await prefs.setString(key, encodedLeads);
-}
-
-// Метод для получения лидов из кэша по статусу
-static Future<List<Lead>> getLeadsForStatus(int? statusId) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String key = 'cachedLeads_$statusId';
-  final String? cachedLeads = prefs.getString(key);
-
-  if (cachedLeads != null) {
-    final List<dynamic> decodedData = json.decode(cachedLeads);
-    return decodedData.map((lead) => Lead.fromJson(lead, statusId ?? 0)).toList();
+  static Future<void> cacheLeadsForStatus(int? statusId, List<Lead> leads) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String key = 'cachedLeads_$statusId';
+    final String encodedLeads = json.encode(leads.map((lead) => lead.toJson()).toList());
+    await prefs.setString(key, encodedLeads);
   }
-  return [];
-}
 
+  // Get leads for a specific status from cache
+  static Future<List<Lead>> getLeadsForStatus(int? statusId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String key = 'cachedLeads_$statusId';
+    final String? cachedLeads = prefs.getString(key);
 
+    if (cachedLeads != null) {
+      final List<dynamic> decodedData = json.decode(cachedLeads);
+      return decodedData.map((lead) => Lead.fromJson(lead, statusId ?? 0)).toList();
+    }
+    return [];
+  }
+
+  // Clear all cached leads
+  static Future<void> clearAllLeads() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    
+    // Get all the keys from SharedPreferences
+    final keys = prefs.getKeys();
+
+    // Filter out the keys that are related to leads
+    final leadKeys = keys.where((key) => key.startsWith('cachedLeads_')).toList();
+    
+    // Remove all lead-related keys
+    for (var key in leadKeys) {
+      await prefs.remove(key);
+      print('Удалены лиды для ключа: $key');
+    }
+
+    print('-----------------------------------------------');
+    print('УДАЛЕНЫ ВСЕ ЛИДЫ ИЗ КЕША !!!');
+  }
+
+  // Clear cached lead statuses and leads
+  static Future<void> clearLeadStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? cachedStatuses = prefs.getString(_cachedLeadStatusesKey);
+
+    List<dynamic> decodedData = [];
+
+    if (cachedStatuses != null) {
+      decodedData = json.decode(cachedStatuses);
+      print('-----------------------------------------------');
+      print('Статусы, которые были в кэше:');
+      for (var status in decodedData) {
+        print('ID: ${status['id']}, Название: ${status['name']}');
+      }
+    } else {
+      print('Нет кэшированных статусов для удаления.');
+    }
+
+    // Удаляем кэшированные статусы
+    await prefs.remove(_cachedLeadStatusesKey);
+
+    // Очищаем кэш лидов, связанные с этими статусами
+    final Set<int> statusIds = decodedData.map<int>((status) => status['id']).toSet();
+    for (var statusId in statusIds) {
+      await prefs.remove('cachedLeads_$statusId');
+      print('Удалены лиды для статуса с ID: $statusId');
+    }
+
+    // Выводим сообщение об удалении всех статусов и лидов
+    print('-----------------------------------------------');
+    print('УДАЛЕНЫ ВСЕ СТАТУСЫ И ЛИДЫ ИЗ КЕША !!!');
+  }
 
   // Clear the cached data
   static Future<void> clearCache() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cachedLeadStatusesKey);
-    await prefs.clear();
   }
 }

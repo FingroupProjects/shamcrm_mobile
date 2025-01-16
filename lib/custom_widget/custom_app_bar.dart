@@ -55,7 +55,6 @@ class _CustomAppBarState extends State<CustomAppBar>
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
-
   bool _isFiltering = false;
   bool _isTaskFiltering = false; // New state for task filter
 
@@ -229,7 +228,6 @@ class _CustomAppBarState extends State<CustomAppBar>
       _isTaskFiltering = !_isTaskFiltering;
     });
     widget.clearButtonClick(_isTaskFiltering);
-
   }
 
   @override
@@ -455,9 +453,6 @@ class _CustomAppBarState extends State<CustomAppBar>
                           height: 24,
                         ),
                   onPressed: () {
-                    _toggleFilter(); // Переключение состояния
-                    if (_isFiltering) {
-                      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
                     _toggleTaskFilter();
                     if (_isTaskFiltering) {
                       context.read<UserTaskBloc>().add(FetchUsers());
@@ -481,8 +476,6 @@ class _CustomAppBarState extends State<CustomAppBar>
                         items: [
                           PopupMenuItem(
                             padding: EdgeInsets.zero,
-                            child: ManagerFilterPopup(
-                              onManagerSelected: widget.onManagerSelected,
                             child: UserFilterPopup(
                               onUserSelected: widget.onUserSelected,
                             ),

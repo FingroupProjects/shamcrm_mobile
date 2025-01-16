@@ -623,7 +623,7 @@ class ApiService {
       throw Exception('Ошибка загрузки лида ID!');
     }
   }
-
+  
 //Метод для получения список Лидов с пагинацией
 Future<List<Lead>> getLeads(
     int? leadStatusId, {

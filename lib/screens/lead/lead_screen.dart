@@ -77,9 +77,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       print('Leads loaded from cache.');
     }
   });
-
-
-
     // Проверка разрешений
     _checkPermissions();
   }
@@ -181,10 +178,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           showFilterTaskIcon: false,
           clearButtonClick: (value) {
             if (value == false) {
-                    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+            // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
-              // final leadBloc = BlocProvider.of<LeadBloc>(context);
-              // leadBloc.add(FetchLeadStatuses());
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
               setState(() {
                 _isSearching = false;
                 _selectedManagerId = null;
@@ -335,11 +332,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      await LeadCache.clearCache();
-      print('Все данные удалены успешно. Статусы обновлены.');
       context.read<LeadBloc>().add(FetchLeadStatuses());
-
-      setState(() {
+    
+       setState(() {
         navigateToEnd = true;
       });
     }
@@ -419,34 +414,36 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showDeleteDialog(int index) async {
-    final leadStatusId = _tabTitles[index]['id'];
-    final result = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
-      },
-    );
+void _showDeleteDialog(int index) async {
+  final leadStatusId = _tabTitles[index]['id'];
 
-    if (result != null && result) {
-      setState(() {
-        setState(() {
-          _deletedIndex = _currentTabIndex;
-          navigateAfterDelete = true;
-        });
-        _tabTitles.removeAt(index);
-        _tabKeys.removeAt(index);
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
+  final result = await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
+    },
+  );
 
-        _currentTabIndex = 0;
+  if (result != null && result) {
+    setState(() {
+      _deletedIndex = _currentTabIndex;
+      navigateAfterDelete = true;
 
-        _isSearching = false;
-        _searchController.clear();
+      _tabTitles.removeAt(index);
+      _tabKeys.removeAt(index);
+      _tabController = TabController(length: _tabTitles.length, vsync: this);
 
-        context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
-      });
-    }
+      _currentTabIndex = 0;
+      _isSearching = false;
+      _searchController.clear();
+
+      context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+    });
+
+    // 🔄 Отправляем запрос на обновление статусов лидов
+    context.read<LeadBloc>().add(FetchLeadStatuses()); // Pass forceRefresh flag
   }
+}
 
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
@@ -569,7 +566,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             );
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет статусов для отображения'));
+              return const Center(child: Text(''));
             }
             return TabBarView(
               controller: _tabController,
@@ -582,8 +579,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   managerId: _selectedManagerId, // Передаем ID менеджера
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles
-                        .indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+
+                    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+
                     if (index != -1) {
                       _tabController.animateTo(index);
                     }
@@ -616,7 +615,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
             targetOffset,
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 100),
             curve: Curves.linear,
           );
         }

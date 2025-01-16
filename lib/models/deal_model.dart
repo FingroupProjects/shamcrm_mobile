@@ -52,6 +52,23 @@ class Deal {
           [],
     );
   }
+
+  // Method to convert Deal object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'start_date': startDate,
+      'end_date': endDate,
+      'description': description,
+      'sum': sum,
+      'status_id': statusId,
+      'manager': manager?.toJson(),
+      'lead': lead?.toJson(),
+      'deal_status': dealStatus?.toJson(),
+      'deal_custom_fields': dealCustomFields.map((field) => field.toJson()).toList(),
+    };
+  }
 }
 
 class DealCustomField {
@@ -71,6 +88,14 @@ class DealCustomField {
       key: json['key'] ?? '',
       value: json['value'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'key': key,
+      'value': value,
+    };
   }
 }
 
@@ -101,7 +126,19 @@ class DealStatus {
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
       day: json['day'] is int ? json['day'] : null,
-      dealsCount: json['deals_count'] ?? 0, // Если null, то возвращаем 0
+      dealsCount: json['deals_count'] ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'color': color,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'deals_count': dealsCount,
+      'day': day,
+    };
   }
 }
