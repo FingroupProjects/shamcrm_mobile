@@ -29,13 +29,26 @@ class TaskDataLoaded extends TaskState {
   final List<Task> tasks;
   final int currentPage;
   final bool allTasksFetched;
+  final Map<int, int> taskCounts;
+
   TaskDataLoaded(this.tasks,
-      {this.currentPage = 1, this.allTasksFetched = false});
+      {this.currentPage = 1, this.allTasksFetched = false, Map<int, int>? taskCounts})
+      : taskCounts = taskCounts ?? {};
 
   TaskDataLoaded merge(List<Task> newTasks) {
     return TaskDataLoaded(
       tasks + newTasks,
       currentPage: currentPage,
+      taskCounts: taskCounts,
+    );
+  }
+
+  // Метод для обновления taskCounts
+  TaskDataLoaded updateTaskCounts(Map<int, int> newTaskCounts) {
+    return TaskDataLoaded(
+      tasks,
+      currentPage: currentPage,
+      taskCounts: newTaskCounts,
     );
   }
 }
@@ -59,3 +72,4 @@ class TaskStatusDeleted extends TaskState {
   final String message;
   TaskStatusDeleted(this.message);
 }
+

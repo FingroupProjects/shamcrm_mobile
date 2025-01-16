@@ -46,38 +46,35 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    DealCache.getDealStatuses().then((cachedStatuses) {
-      if (cachedStatuses.isNotEmpty) {
-        setState(() {
-          _tabTitles = cachedStatuses;
+       DealCache.getDealStatuses().then((cachedStatuses) {
+    if (cachedStatuses.isNotEmpty) {
+      setState(() {
+        _tabTitles = cachedStatuses.map((status) => {'id': status['id'], 'title': status['title']}).toList();
 
-          // Инициализация TabController только один раз
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
+        _tabController.index = _currentTabIndex;
 
-          int initialIndex = cachedStatuses
-              .indexWhere((status) => status['id'] == widget.initialStatusId);
-          if (initialIndex != -1) {
-            _currentTabIndex = initialIndex;
-          }
-          _tabController.index = _currentTabIndex;
-        });
-
-        // Добавляем слушатель для _tabController после его инициализации
         _tabController.addListener(() {
           setState(() {
             _currentTabIndex = _tabController.index;
           });
-          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          if (_scrollController.hasClients) {
-            _scrollToActiveTab();
-          }
+          _scrollToActiveTab();
         });
-      } else {
-        BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-        print("Инициализация: отправлен запрос на получение статусов лидов");
-      }
-    });
+      });
+    } else {
+      // Если статусов в кэше нет — запрос через API
+      final leadBloc = BlocProvider.of<DealBloc>(context);
+      leadBloc.add(FetchDealStatuses());
+    }
+  });
+
+  // Проверка лидов в кэше для начального статуса
+  DealCache.getDealsForStatus(widget.initialStatusId).then((cachedLeads) {
+    if (cachedLeads.isNotEmpty) {
+      print('Leads loaded from cache.');
+    }
+  });
+ 
     _checkPermissions();
   }
 
@@ -124,9 +121,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('dealStatus.read');
-    final canCreate = await _apiService.hasPermission('dealStatus.create');
-    final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    final canRead = await _apiService.hasPermission('deal.read');
+    final canCreate = await _apiService.hasPermission('deal.create');
+    final canDelete = await _apiService.hasPermission('deal.delete');
+    // final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
       _canReadDealStatus = canRead;
       _canCreateDealStatus = canCreate;
@@ -318,8 +316,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      await DealCache.clearCache();
-      print('Все данные удалены успешно. Статусы обновлены.');
+      // await DealCache.clearCache();
+      // print('Все данные удалены успешно. Статусы обновлены.');
       context.read<DealBloc>().add(FetchDealStatuses());
 
       setState(() {
@@ -401,34 +399,36 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       },
     );
   }
+void _showDeleteDialog(int index) async {
+  final dealStatusId = _tabTitles[index]['id'];
 
-  void _showDeleteDialog(int index) async {
-    final dealStatusId = _tabTitles[index]['id'];
-    final result = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return DeleteDealStatusDialog(dealStatusId: dealStatusId);
-      },
-    );
+  final result = await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return DeleteDealStatusDialog(dealStatusId: dealStatusId);
+    },
+  );
 
-    if (result != null && result) {
-      setState(() {
-        setState(() {
-          _deletedIndex = _currentTabIndex;
-          navigateAfterDelete = true;
-        });
-        _tabTitles.removeAt(index);
-        _tabKeys.removeAt(index);
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
-        _currentTabIndex = 0;
+  if (result != null && result) {
+    setState(() {
+      _deletedIndex = _currentTabIndex;
+      navigateAfterDelete = true;
 
-        _isSearching = false;
-        _searchController.clear();
+      _tabTitles.removeAt(index);
+      _tabKeys.removeAt(index);
+      _tabController = TabController(length: _tabTitles.length, vsync: this);
 
-        context.read<DealBloc>().add(FetchDeals(_currentTabIndex));
-      });
-    }
+      _currentTabIndex = 0;
+      _isSearching = false;
+      _searchController.clear();
+
+      context.read<DealBloc>().add(FetchDeals(_currentTabIndex));
+    });
+
+    final dealBloc = BlocProvider.of<DealBloc>(context);
+    dealBloc.add(FetchDealStatuses());
   }
+}
 
   Widget _buildTabBarView() {
     return BlocListener<DealBloc, DealState>(
@@ -560,8 +560,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles
-                        .indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+
+                    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+
                     if (index != -1) {
                       _tabController.animateTo(index);
                     }
@@ -594,7 +596,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
             targetOffset,
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 100),
             curve: Curves.linear,
           );
         }

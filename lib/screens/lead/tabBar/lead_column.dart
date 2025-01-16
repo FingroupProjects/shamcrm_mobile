@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +35,7 @@ class _LeadColumnState extends State<LeadColumn> {
   void initState() {
     super.initState();
     _leadBloc = LeadBloc(_apiService)
+    
       ..add(FetchLeads(widget.statusId, managerId: widget.managerId));
     _checkPermission();
   }
@@ -51,12 +53,21 @@ class _LeadColumnState extends State<LeadColumn> {
     });
   }
 
-  Future<void> _onRefresh() async {
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses());
-    _leadBloc.add(FetchLeads(widget.statusId, managerId: widget.managerId));
-    return Future.delayed(Duration(milliseconds: 1));
-  }
+ Future<void> _onRefresh() async {
+  // Clear all cached leads and statuses
+  // await LeadCache.clearAllLeads(); // Optionally use clearLeadStatuses() if you need both statuses and leads removed.
+        BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+
+
+  // Fetch new data
+  // final leadBloc = BlocProvider.of<LeadBloc>(context);
+  // leadBloc.add(FetchLeadStatuses());
+
+  _leadBloc.add(FetchLeads(widget.statusId, managerId: widget.managerId));
+
+  return Future.delayed(Duration(milliseconds: 1));
+}
+
 
   @override
   Widget build(BuildContext context) {
