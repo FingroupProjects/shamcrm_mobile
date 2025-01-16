@@ -625,7 +625,7 @@ class ApiService {
   }
 
 //Метод для получения список Лидов с пагинацией
-  Future<List<Lead>> getLeads(
+Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1557,7 +1557,7 @@ class ApiService {
     }
   }
 
-  Future<List<Deal>> getDeals(
+Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1571,8 +1571,8 @@ class ApiService {
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (dealStatusId != null && managerId == null) {
-      // Условие: если нет managerId
+    } else if (dealStatusId != null && managerId == null) { // Условие: если нет managerId
+
       path += '&deal_status_id=$dealStatusId';
     }
     // Добавляем manager_id если есть
