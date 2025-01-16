@@ -73,31 +73,30 @@ class _NotesWidgetState extends State<NotesWidget> {
         } else if (state is NotesLoaded) {
           notes = state.notes;
         } else if (state is NotesError) {
-           WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${state.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${state.message}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          });
         }
 
         return _buildNotesList(notes);
@@ -149,11 +148,10 @@ class _NotesWidgetState extends State<NotesWidget> {
   }
 
   Widget _buildNoteItem(Notes note) {
-final formattedDate = note.date != null
-    ? DateFormat('dd-MM-yyyy HH:mm')
-        .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
-    : 'Не указано';
-
+    final formattedDate = note.date != null
+        ? DateFormat('dd-MM-yyyy HH:mm')
+            .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
+        : 'Не указано';
 
     return GestureDetector(
       onTap: _canUpdateNotes
@@ -250,8 +248,13 @@ final formattedDate = note.date != null
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true, // Добавляем этот параметр
       builder: (BuildContext context) {
-        return CreateNotesDialog(leadId: widget.leadId);
+        return Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: CreateNotesDialog(leadId: widget.leadId),
+        );
       },
     );
   }
@@ -260,11 +263,16 @@ final formattedDate = note.date != null
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true, // Добавляем и сюда
       builder: (BuildContext context) {
-        return EditNotesDialog(leadId: widget.leadId, note: note);
+        return Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: EditNotesDialog(leadId: widget.leadId, note: note),
+        );
       },
     );
-  }
+  } 
 
   void _showDeleteNoteDialog(Notes note) {
     showDialog(
