@@ -161,9 +161,17 @@ class ApiService {
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-    await prefs.remove('cachedLeadStatuses');
-    await prefs.remove('cachedDealStatuses');
-    await prefs.remove('cachedTaskStatuses');
+    // await prefs.remove('cachedLeadStatuses');
+    // await prefs.remove('cachedDealStatuses');
+    // await prefs.remove('cachedTaskStatuses');
+
+    // await prefs.remove('leadConversionData');
+
+
+
+
+
+    // await prefs.remove('userRoles');
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
     bool isCleared = await prefs.clear();
