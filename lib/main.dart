@@ -158,8 +158,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => DealByIdBloc(apiService)),
         BlocProvider(create: (context) => TaskByIdBloc(apiService)),
         BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-        BlocProvider(
-            create: (context) => GetAllClientBloc(apiService: apiService)),
+        BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
         BlocProvider(create: (context) => CreateClientBloc()),
         BlocProvider(create: (context) => GroupChatBloc(apiService)),
         BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
@@ -171,19 +170,15 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => OrganizationBloc(ApiService())),
         BlocProvider(create: (context) => NotificationBloc(ApiService())),
         BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardChartBlocManager(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardConversionBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
+        BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
         BlocProvider(create: (context) => UserBlocManager(ApiService())),
         BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsBloc(ApiService())),
         BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
         BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-        BlocProvider(
-            create: (context) => DashboardTaskChartBlocManager(ApiService())),
+        BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
         BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
         BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
         BlocProvider(create: (context) => DealTasksBloc(ApiService())),
@@ -193,18 +188,15 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
         BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
         BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
-        BlocProvider(
-            create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
         BlocProvider(create: (context) => SourceLeadBloc(apiService)),
         BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
         BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
         BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
         BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
-        BlocProvider(
-            create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
       ],
       child: MaterialApp(
         color: Colors.white,

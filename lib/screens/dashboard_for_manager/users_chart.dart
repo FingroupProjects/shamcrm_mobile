@@ -29,12 +29,12 @@ class _GoalCompletionChartState extends State<GoalCompletionChart> {
   ];
   String? userName;
   int currentMonth = DateTime.now().month - 1; // 0-based index (январь - 0, февраль - 1, ...)
-  double currentMonthProgress = 12.0; // Начальный примерный прогресс
+  double currentMonthProgress = 0; // Начальный примерный прогресс
   List<double> monthlyData = []; // Список для данных с сервера
 
   @override
   void initState() {
-    super.initState();
+    super.initState(); 
     _loadUserName();
     _loadUserStats();  // Загружаем данные с сервера
   }
