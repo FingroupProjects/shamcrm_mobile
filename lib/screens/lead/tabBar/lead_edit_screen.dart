@@ -79,9 +79,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   String? selectedManager;
   String selectedDialCode = '+992';
+  String selectedWhatsAppDialCode = '+992'; // Новая переменная для WhatsApp
 
   List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1'];
   bool _isPhoneEdited = false;
+  bool _isWhatsAppEdited =
+      false; // Новая переменная для отслеживания изменений WhatsApp
 
   List<CustomField> customFields = [];
 
@@ -125,6 +128,22 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     }
     print(widget.sourceId);
     print('jkdbfjkwehfkjbwejnffvknfklewnr------------------------');
+    if (widget.whatsApp != null) {
+      String whatsAppNumber = widget.whatsApp!;
+      for (var code in countryCodes) {
+        if (whatsAppNumber.startsWith(code)) {
+          setState(() {
+            selectedWhatsAppDialCode = code;
+            whatsAppController.text = whatsAppNumber.substring(code.length);
+          });
+          break;
+        }
+      }
+      if (whatsAppController.text.isEmpty) {
+        whatsAppController.text = whatsAppNumber;
+      }
+      _isWhatsAppEdited = false;
+    }
 
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
@@ -323,14 +342,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       const SizedBox(height: 8),
                       CustomPhoneNumberInput(
                         controller: whatsAppController,
-                        selectedDialCode: selectedDialCode,
+                        selectedDialCode:
+                            selectedWhatsAppDialCode, // Используем отдельный код страны для WhatsApp
                         onInputChanged: (String number) {
                           setState(() {
-                            _isPhoneEdited = true;
-                            selectedDialCode = number;
+                            _isWhatsAppEdited = true;
+                            selectedWhatsAppDialCode = number;
                           });
                         },
-                        // Убираем validator, так как поле не обязательное
                         label: 'WhatsApp',
                       ),
                       const SizedBox(height: 8),
@@ -412,6 +431,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   String phoneToSend;
+                                  String whatsAppToSend;
 
                                   if (_isPhoneEdited) {
                                     phoneToSend = selectedDialCode;
@@ -419,7 +439,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     phoneToSend =
                                         '$selectedDialCode${phoneController.text}';
                                   }
-
+                                  if (_isWhatsAppEdited) {
+                                    whatsAppToSend = selectedWhatsAppDialCode;
+                                  } else {
+                                    whatsAppToSend = whatsAppController
+                                            .text.isNotEmpty
+                                        ? '$selectedWhatsAppDialCode${whatsAppController.text}'
+                                        : ''; // Если поле пустое, отправляем пустую строку
+                                  }
                                   DateTime? parsedBirthday;
 
                                   if (birthdayController.text.isNotEmpty) {
@@ -442,6 +469,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       [];
                                   for (var field in customFields) {
                                     String fieldName = field.fieldName.trim();
+
                                     String fieldValue =
                                         field.controller.text.trim();
                                     if (fieldName.isNotEmpty &&
@@ -458,7 +486,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     leadId: widget.leadId,
                                     name: titleController.text,
                                     phone: phoneToSend,
-                                    waPhone: phoneToSend,
+                                    waPhone:
+                                        whatsAppToSend, // Теперь передаем отдельный номер для WhatsApp
                                     regionId: selectedRegion != null
                                         ? int.parse(selectedRegion!)
                                         : null,

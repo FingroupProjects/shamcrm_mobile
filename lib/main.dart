@@ -65,13 +65,14 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/languages_3.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/languages_list.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -117,13 +118,29 @@ void main() async {
 
 Future<void> getFCMTokens(ApiService apiService) async {}
 
+class LocaleCubit extends Cubit<Locale> {
+  LocaleCubit() : super(const Locale('ru'));
+
+  Future<void> setLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language_code', locale.languageCode);
+    emit(locale);
+  }
+
+  Future<void> loadSavedLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('language_code') ?? 'ru';
+    emit(Locale(languageCode));
+  }
+}
+
 class MyApp extends StatelessWidget {
   final ApiService apiService;
   final AuthService authService;
   final bool isDomainChecked;
   final String? token;
   final String? pin;
-  
+
   const MyApp({
     required this.apiService,
     required this.authService,
@@ -197,6 +214,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
         BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
         BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+        BlocProvider(create: (context) => LocaleCubit()..loadSavedLocale()),
       ],
       child: MaterialApp(
         color: Colors.white,
@@ -215,33 +233,53 @@ class MyApp extends StatelessWidget {
           Locale('ru'), // Русский
           Locale('uz'), // Узбекский
           Locale('en'), // Английский
+
         ],
-        locale: const Locale('ru'), // Язык по умолчанию
-        
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-        ),
-        home: Builder(
-          builder: (context) {
-            if (token == null) {
-              return isDomainChecked ? LoginScreen() : AuthScreen();
-            } else if (pin == null) {
-              return PinSetupScreen();
-            } else {
-              return PinScreen();
-            }
-          },
-        ),
-        routes: {
-          '/login': (context) => LoginScreen(),
-          '/home': (context) => HomeScreen(),
-          '/chats': (context) => ChatsScreen(),
-          '/pin_setup': (context) => PinSetupScreen(),
-          '/local_auth': (context) => const AuthScreen(),
-          '/pin_screen': (context) => PinScreen(),
-        },
-      ),
-    );
+        child: BlocBuilder<LocaleCubit, Locale>(builder: (context, locale) {
+          return MaterialApp(
+            color: Colors.white,
+            debugShowCheckedModeBanner: false,
+            title: 'SHAMCRM',
+            navigatorKey: navigatorKey,
+
+            // Добавляем поддержку локализации
+            localizationsDelegates: const [
+              AppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('ru'), // Русский
+              Locale('uz'), // Узбекский
+              Locale('en'), // Английский
+            ],
+            locale: const Locale('ru'), // Язык по умолчанию
+
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              scaffoldBackgroundColor: Colors.white,
+            ),
+            home: Builder(
+              builder: (context) {
+                if (token == null) {
+                  return isDomainChecked ? LoginScreen() : AuthScreen();
+                } else if (pin == null) {
+                  return PinSetupScreen();
+                } else {
+                  return PinScreen();
+                }
+              },
+            ),
+            routes: {
+              '/login': (context) => LoginScreen(),
+              '/home': (context) => HomeScreen(),
+              '/chats': (context) => ChatsScreen(),
+              '/pin_setup': (context) => PinSetupScreen(),
+              '/local_auth': (context) => const AuthScreen(),
+              '/pin_screen': (context) => PinScreen(),
+            },
+          );
+        }));
   }
 }

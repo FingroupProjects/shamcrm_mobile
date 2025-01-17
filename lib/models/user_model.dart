@@ -1,6 +1,8 @@
 class UserTask {
   final int id;
   final String name;
+  final String lastname;
+
   final String? login;
   final String? startDate;
   final String? endDate;
@@ -12,6 +14,7 @@ class UserTask {
     required this.id,
     required this.name,
     this.login,
+    required this.lastname,
     this.startDate,
     this.endDate,
     this.phone,
@@ -23,6 +26,7 @@ class UserTask {
     return UserTask(
       id: json['id'] as int,
       name: json['name']?.toString() ?? '',
+      lastname: json['lastname']?.toString() ?? '',
       login: json['login']?.toString(),
       startDate: json['startDate']?.toString(),
       endDate: json['endDate']?.toString(),
