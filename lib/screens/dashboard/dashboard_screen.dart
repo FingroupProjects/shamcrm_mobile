@@ -71,7 +71,7 @@ Future<void> _initializeData() async {
     });
 
     // await Future.wait([_loadUserRoles(), 
-    // Future.delayed(const Duration(milliseconds: 1))]
+    // Future.delayed(const Duration(seconds: 3))]
     // );
 
     _loadUserRoles();
