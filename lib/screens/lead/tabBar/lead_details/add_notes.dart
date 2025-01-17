@@ -74,7 +74,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 CustomTextField(
                   controller: titleController,
                   hintText: 'Введите название',
-                  label: 'Название',
+                  label: 'Тематика',
                   maxLines: 1,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -87,7 +87,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 CustomTextField(
                   controller: bodyController,
                   hintText: 'Введите текст',
-                  label: 'Текст',
+                  label: 'Описание',
                   maxLines: 5,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -99,7 +99,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 SizedBox(height: 8),
                 CustomTextFieldDate(
                   controller: dateController,
-                  label: 'Дата',
+                  label: 'Напоминание',
                   withTime: true,
                 ),
                 SizedBox(height: 8),
