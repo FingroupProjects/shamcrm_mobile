@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
@@ -22,13 +23,102 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
 
-  @override
+
+ @override
   void initState() {
     super.initState();
-    // context.read<GetAllClientBloc>().add(GetAllClientEv());
     context.read<GetAllClientBloc>().add(GetAnotherClientEv());
   }
 
+
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
+    }
+    return null;
+  }
+
+  String? extractTextFromSvg(String svg) {
+    final textMatch = RegExp(r'<text[^>]*>(.*?)</text>').firstMatch(svg);
+    return textMatch?.group(1);
+  }
+
+  Color? extractBackgroundColorFromSvg(String svg) {
+    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+    if (fillMatch != null) {
+      final colorHex = fillMatch.group(1);
+      if (colorHex != null) {
+        final hex = colorHex.replaceAll('#', '');
+        return Color(int.parse('FF$hex', radix: 16));
+      }
+    }
+    return null;
+  }
+
+  Widget _buildAvatar(String avatar) {
+    if (avatar.contains('<svg')) {
+      final imageUrl = extractImageUrlFromSvg(avatar);
+      if (imageUrl != null) {
+        return Container(
+          width: 31,
+          height: 31,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } else {
+        final text = extractTextFromSvg(avatar);
+        final backgroundColor = extractBackgroundColorFromSvg(avatar);
+
+        if (text != null && backgroundColor != null) {
+          return Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: backgroundColor,
+              border: Border.all(
+                color: Colors.white,
+                width: 1,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        } else {
+          return SvgPicture.string(
+            avatar,
+            width: 31,
+            height: 31,
+            placeholderBuilder: (context) => CircularProgressIndicator(),
+          );
+        }
+      }
+    }
+
+    return CircleAvatar(
+      backgroundImage: AssetImage(avatar),
+      radius: 20,
+      backgroundColor: Colors.white,
+    );
+  }
+
+ 
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -36,7 +126,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
         BlocBuilder<GetAllClientBloc, GetAllClientState>(
           builder: (context, state) {
             if (state is GetAllClientLoading) {
-              return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)),);
+              return Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+              );
             }
 
             if (state is GetAllClientError) {
@@ -90,8 +182,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return ListTile(
                           minTileHeight: 1,
                           minVerticalPadding: 2,
@@ -118,16 +209,21 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       : null,
                                 ),
                                 const SizedBox(width: 10),
-                                // Wrap the Text widget in a Flexible
+                                if (item.image != null) ...[
+                                  _buildAvatar(item.image!),
+                                  const SizedBox(width: 10),
+                                ],
                                 Flexible(
-                                  child: Text(item.name!,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff1E2E52),
-                                      )),
+                                  child: Text(
+                                    item.name!,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -150,7 +246,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           ),
                         );
                       },
-
                       hintBuilder: (context, hint, enabled) =>
                           Text('Выберите пользователей',
                               style: TextStyle(
