@@ -98,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // const NotificationSettingsWidget(),
                       const PinChangeWidget(),
                       const ProfileEdit(),
-                      // const LanguageButtonWidget(),
+                      const LanguageButtonWidget(),
                       const LogoutButtonWidget(),
                       UpdateWidget1C(organization: selectedOrg),
                     ],

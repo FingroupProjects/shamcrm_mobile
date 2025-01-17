@@ -80,6 +80,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         });
       } else {
         BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+        
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
@@ -358,9 +359,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      await TaskCache.clearCache();
-      print('Все данные удалены успешно. Статусы обновлены.');
-      context.read<TaskBloc>().add(FetchTaskStatuses());
+      
+        BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+
+
+        final taskBloc = BlocProvider.of<TaskBloc>(context);
+        taskBloc.add(FetchTaskStatuses());
 
       setState(() {
         navigateToEnd = true;
@@ -467,6 +471,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
         context.read<TaskBloc>().add(FetchTasks(_currentTabIndex));
       });
+        final taskBloc = BlocProvider.of<TaskBloc>(context);
+        taskBloc.add(FetchTaskStatuses());
     }
   }
 
@@ -601,8 +607,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   userId: _selectedUserId,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles
-                        .indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+
+                          context.read<TaskBloc>().add(FetchTaskStatuses());
+
                     if (index != -1) {
                       _tabController.animateTo(index);
                     }
@@ -635,7 +643,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
             targetOffset,
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 100),
             curve: Curves.linear,
           );
         }

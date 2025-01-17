@@ -22,6 +22,8 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
 
+import 'package:url_launcher/url_launcher.dart';
+
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
   final String leadName;
@@ -152,6 +154,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
+  // Добавьте эту функцию для совершения звонка
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
@@ -216,6 +229,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     return textPainter.didExceedMaxLines;
   }
+
+  
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -499,15 +514,35 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Построение значения
+ // Модифицируем функцию построения значения
   Widget _buildValue(String value) {
+    if (value.isEmpty) return Container();
+
+    // Проверяем, является ли это телефонным номером
+    if (details.any((detail) =>
+        detail['label'] == 'Телефон:' && detail['value'] == value)) {
+      return GestureDetector(
+        onTap: () => _makePhoneCall(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52),
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+
     return Text(
       value,
       style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xfff1E2E52),
+        color: Color(0xFF1E2E52),
       ),
       overflow: TextOverflow.visible,
     );
