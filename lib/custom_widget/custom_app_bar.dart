@@ -57,7 +57,6 @@ class _CustomAppBarState extends State<CustomAppBar>
   static String _cachedUserImage = '';
   bool _isFiltering = false;
   bool _isTaskFiltering = false; // New state for task filter
-
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;

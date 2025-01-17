@@ -306,6 +306,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   onPressed: () {
                                     showDialog(
                                       context: context,
+                                      
                                       builder: (BuildContext context) =>
                                           AlertDialog(
                                         title: Text(
@@ -331,7 +332,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                             ),
                                             style: TextButton.styleFrom(
                                               backgroundColor: Colors.red,
-                                              minimumSize: Size(120, 48),
+                                              minimumSize: Size(110, 48),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
@@ -496,7 +497,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                 style: TextButton.styleFrom(
                                                   backgroundColor:
                                                       Color(0xff1E2E52),
-                                                  minimumSize: Size(120, 48),
+                                                  minimumSize: Size(110, 48),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
