@@ -93,7 +93,7 @@ class TaskByIdScreen extends StatelessWidget {
                           buildDivider(),
                           buildInfoRow("Уровень приоритета", priorityLevelText, Icons.low_priority, null),
                           buildDivider(),
-                          buildInfoRow("Статус", task.taskStatus.taskStatus.name, Icons.assignment, null),
+                          buildInfoRow("Статус", task.taskStatus.taskStatus!.name ?? "", Icons.assignment, null),
                           buildDivider(),
                           buildInfoRow("Автор", task.authorName, Icons.person, null),
                           buildDivider(),

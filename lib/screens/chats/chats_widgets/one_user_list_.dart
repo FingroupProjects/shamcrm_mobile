@@ -19,6 +19,12 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
   List<String> items = [];
   List<UserData> usersList = [];
 
+ @override
+  void initState() {
+    context.read<GetAllClientBloc>().add(GetUsersWithoutCorporateChatEv());
+    super.initState();
+  }
+  
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
@@ -84,11 +90,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
     );
   }
 
-  @override
-  void initState() {
-    context.read<GetAllClientBloc>().add(GetUsersWithoutCorporateChatEv());
-    super.initState();
-  }
+ 
 
   @override
   Widget build(BuildContext context) {

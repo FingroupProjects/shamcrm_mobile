@@ -23,6 +23,14 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
 
+
+ @override
+  void initState() {
+    super.initState();
+    context.read<GetAllClientBloc>().add(GetAnotherClientEv());
+  }
+
+
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
@@ -110,12 +118,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<GetAllClientBloc>().add(GetAnotherClientEv());
-  }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Column(

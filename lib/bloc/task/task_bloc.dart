@@ -60,7 +60,7 @@ Future<void> _fetchTaskStatuses(FetchTaskStatuses event, Emitter<TaskState> emit
 
     // Сохраняем статусы задач в кэш
     await TaskCache.cacheTaskStatuses(
-        response.map((status) => {'id': status.id, 'title': status.taskStatus.name}).toList());
+        response.map((status) => {'id': status.id, 'title': status.taskStatus!.name ?? ""}).toList());
 
     // Параллельно загружаем количество задач для каждого статуса
     final futures = response.map((status) {

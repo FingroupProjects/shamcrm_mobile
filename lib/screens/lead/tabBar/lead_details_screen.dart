@@ -164,7 +164,26 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       throw Exception('Could not launch $launchUri');
     }
   }
-
+ // Добавляем функцию для открытия WhatsApp
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    // Убираем все не числовые символы из номера телефона
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Если номер начинается с '8', заменяем на '+7'
+    if (cleanNumber.startsWith('8')) {
+      cleanNumber = '+7${cleanNumber.substring(1)}';
+    }
+    // Если номер начинается с '7', добавляем '+'
+    else if (cleanNumber.startsWith('7')) {
+      cleanNumber = '+$cleanNumber';
+    }
+    
+    final Uri whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
+    
+    if (!await launchUrl(whatsappUri)) {
+      throw Exception('Could not launch WhatsApp');
+    }
+  }
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
@@ -515,7 +534,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
  // Модифицируем функцию построения значения
-  Widget _buildValue(String value) {
+   Widget _buildValue(String value) {
     if (value.isEmpty) return Container();
 
     // Проверяем, является ли это телефонным номером
@@ -530,6 +549,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             color: Color(0xFF1E2E52),
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+    
+    // Добавляем проверку на WhatsApp
+    if (details.any((detail) =>
+        detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
+      return GestureDetector(
+        onTap: () => _openWhatsApp(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52), // Цвет WhatsApp
             decoration: TextDecoration.underline,
           ),
         ),

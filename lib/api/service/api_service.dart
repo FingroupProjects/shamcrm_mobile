@@ -161,9 +161,17 @@ class ApiService {
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-    await prefs.remove('cachedLeadStatuses');
-    await prefs.remove('cachedDealStatuses');
-    await prefs.remove('cachedTaskStatuses');
+    // await prefs.remove('cachedLeadStatuses');
+    // await prefs.remove('cachedDealStatuses');
+    // await prefs.remove('cachedTaskStatuses');
+
+    // await prefs.remove('leadConversionData');
+
+
+
+
+
+    // await prefs.remove('userRoles');
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
     bool isCleared = await prefs.clear();
@@ -1973,7 +1981,7 @@ Future<List<Deal>> getDeals(
     int page = 1,
     int perPage = 20,
     String? search,
-    int? userId, // Added userId parameter
+    int? userId, // Добавляем параметр userId
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/task?page=$page&per_page=$perPage';
@@ -1982,97 +1990,93 @@ Future<List<Deal>> getDeals(
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (taskStatusId != null && userId == null) {
-      // Modified condition like in getDeals
+    } else if (taskStatusId != null && userId == null) { // Условие: если нет userId
       path += '&task_status_id=$taskStatusId';
     }
-    // Added user_id if present
+    // Добавляем user_id если есть
     if (userId != null) {
       path += '&user_id=$userId';
     }
 
     // Логируем конечный URL запроса
     print('Sending request to API with path: $path');
-
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
-        // Логирование задач
-        final tasks = (data['result']['data'] as List).map((json) {
-          return Task.fromJson(json, taskStatusId ?? -1);
-        }).toList();
-        return tasks;
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .toList();
       } else {
         throw Exception('Нет данных о задачах в ответе');
       }
     } else {
+      // Логирование ошибки с ответом сервера
+      print('Error response: ${response.statusCode} - ${response.body}');
       throw Exception('Ошибка загрузки задач: ${response.body}');
     }
   }
 
 // Метод для получения статусов задач
-  Future<List<TaskStatus>> getTaskStatuses() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final organizationId = await getSelectedOrganization();
+Future<List<TaskStatus>> getTaskStatuses() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final organizationId = await getSelectedOrganization();
 
-    try {
-      // Отправляем запрос на сервер
-      final response = await _getRequest(
-          '/task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  try {
+    // Отправляем запрос на сервер
+    final response = await _getRequest(
+        '/task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          final statuses = (data['result'] as List)
-              .map((status) => TaskStatus.fromJson(status))
-              .toList();
-
-          // Принт старых кэшированных данных (если они есть)
-          final cachedStatuses =
-              prefs.getString('cachedTaskStatuses_$organizationId');
-          if (cachedStatuses != null) {
-            final decodedData = json.decode(cachedStatuses);
-            print(
-                '------------------------------ Старые данные в кэше ------------------------------');
-            print(decodedData); // Старые данные
-          }
-
-          // Обновляем кэш новыми данными
-          await prefs.setString('cachedTaskStatuses_$organizationId',
-              json.encode(data['result']));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        // Принт старых кэшированных данных (если они есть)
+        final cachedStatuses =
+            prefs.getString('cachedTaskStatuses_$organizationId');
+        if (cachedStatuses != null) {
+          final decodedData = json.decode(cachedStatuses);
           print(
-              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          print(data['result']); // Новые данные, которые будут сохранены в кэш
-
-          print(
-              '----p---------------¿-----UPDATE CACHE TASKSTATUS----------------------------');
-          print('Статусы задач обновлены в кэше');
-          return statuses;
-        } else {
-          throw Exception('Результат отсутствует в ответе');
+              '------------------------------ Старые данные в кэше ------------------------------');
+          print(decodedData); // Старые данные
         }
-      } else {
-        throw Exception('Ошибка при получении данных: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
-      // Если запрос не удался, пытаемся загрузить данные из кэша
-      final cachedStatuses =
-          prefs.getString('cachedTaskStatuses_$organizationId');
-      if (cachedStatuses != null) {
-        final decodedData = json.decode(cachedStatuses);
-        final cachedList = (decodedData as List)
+
+        // Обновляем кэш новыми данными
+        await prefs.setString('cachedTaskStatuses_$organizationId',
+            json.encode(data['result']));
+        print(
+            '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+        print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+        print(
+            '------------------------------ Статусы задач обновлены в кэше ------------------------------');
+        return (data['result'] as List)
             .map((status) => TaskStatus.fromJson(status))
             .toList();
-        return cachedList;
       } else {
-        throw Exception(
-            'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
+        throw Exception('Результат отсутствует в ответе');
       }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+    // Если запрос не удался, пытаемся загрузить данные из кэша
+    final cachedStatuses =
+        prefs.getString('cachedTaskStatuses_$organizationId');
+    if (cachedStatuses != null) {
+      final decodedData = json.decode(cachedStatuses);
+      final cachedList = (decodedData as List)
+          .map((status) => TaskStatus.fromJson(status))
+          .toList();
+      return cachedList;
+    } else {
+      throw Exception(
+          'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
     }
   }
+}
+
 
   Future<bool> checkIfStatusHasTasks(int taskStatusId) async {
     try {

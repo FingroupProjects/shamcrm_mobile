@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_state.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
-class DealStatsChart extends StatelessWidget {
+class DealStatsChart extends StatefulWidget {
   const DealStatsChart({Key? key}) : super(key: key);
 
+  @override
+  _DealStatsChartState createState() => _DealStatsChartState();
+}
+
+class _DealStatsChartState extends State<DealStatsChart> {
   final List<String> months = const [
     'Январь',
     'Февраль',
@@ -24,6 +30,13 @@ class DealStatsChart extends StatelessWidget {
     'Ноябрь',
     'Декабрь'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+      context.read<DealStatsBloc>().add(LoadDealStatsData());
+  }
+
   String formatNumber(double value) {
     if (value >= 1e9) {
       return '${(value / 1e9).toStringAsFixed(1)}млрд';
@@ -35,6 +48,8 @@ class DealStatsChart extends StatelessWidget {
       return value.toStringAsFixed(0);
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {

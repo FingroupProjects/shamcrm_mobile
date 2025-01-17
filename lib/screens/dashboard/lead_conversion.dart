@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -28,6 +29,12 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
     'Ноябрь',
     'Декабрь'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+          context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+  }
 
   String formatPercent(double value) {
     if (value == 100 || value == 0 || value % 1 == 0) {

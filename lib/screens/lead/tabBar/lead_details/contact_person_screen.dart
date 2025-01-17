@@ -8,6 +8,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_update_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactPersonWidget extends StatefulWidget {
   final int leadId;
@@ -33,6 +34,16 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
   }
 
   @override
@@ -141,14 +152,30 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        contactPerson.name,
+                        '${contactPerson.name}',
                         style: TaskCardStyles.titleStyle,
                       ),
-                      Text(
-                        contactPerson.phone,
+                      GestureDetector(
+                        onTap: () => _makePhoneCall(contactPerson.phone),
+                        child: Text(
+                          'Телефон: ${contactPerson.phone}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1E2E52),
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
                       Text(
-                        contactPerson.position.toString(),
+                        'Должность: ${contactPerson.position ?? ""}',
+                      ),
+                      Text(
+                        'Автор: ${contactPerson.author?.name ?? ""}',
+                      ),
+                      Text(
+                        'Дата создания: ${contactPerson.formattedDate}',
                       ),
                     ],
                   ),

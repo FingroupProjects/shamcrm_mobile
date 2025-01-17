@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
@@ -57,139 +58,126 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   bool isRefreshing = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeData();
-  }
+ @override
+void initState() {
+  super.initState();
+  _initializeData();
+}
 
-  Future<void> _initializeData() async {
-    try {
+Future<void> _initializeData() async {
+  try {
+    setState(() {
+      isLoading = true;
+    });
+
+    // await Future.wait([_loadUserRoles(), 
+    // Future.delayed(const Duration(milliseconds: 1))]
+    // );
+
+    _loadUserRoles();
+
+    if (mounted) {
       setState(() {
-        isLoading = true;
+        isLoading = false;
+      });
+    }
+  } catch (e) {
+    print('Error in initialization: $e');
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+}
+
+
+ Future<void> _loadUserRoles() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userId = prefs.getString('userID') ?? '';
+
+    if (userId.isEmpty) {
+      setState(() {
+        userRoles = ['No user ID found'];
+      });
+      return;
+    }
+
+    String? storedRoles = prefs.getString('userRoles');
+    if (storedRoles != null) {
+      setState(() {
+        userRoles = storedRoles.split(',');
+      });
+      return;
+    }
+
+    // If roles are not stored, call the API and save them
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+    if (mounted) {
+      setState(() {
+        userRoles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
       });
 
-      await Future.wait(
-          [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
-
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error in initialization: $e');
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      // Save roles in SharedPreferences for future use
+      await prefs.setString('userRoles', userRoles.join(','));
     }
-  }
-
-  Future<void> _loadUserRoles() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-
-      if (userId.isEmpty) {
-        setState(() {
-          userRoles = ['No user ID found'];
-        });
-        return;
-      }
-
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      if (mounted) {
-        setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ??
-              ['No role assigned'];
-        });
-      }
-    } catch (e) {
-      print('Error loading user roles!');
-      if (mounted) {
-        setState(() {
-          userRoles = ['Error loading roles'];
-        });
-      }
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    if (isRefreshing) return;
-
-    try {
+  } catch (e) {
+    print('Error loading user roles!');
+    if (mounted) {
       setState(() {
-        isRefreshing = true;
+        userRoles = ['Error loading roles'];
+      });
+    }
+  }
+}
+
+
+ Future<void> _onRefresh() async {
+  if (isRefreshing) return;
+
+  try {
+    setState(() {
+      isRefreshing = true;
+    });
+
+    // Загрузка данных пользователя и задержка (эмуляция загрузки)
+    await Future.wait(
+        [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
+
+    if (mounted) {
+      setState(() {
+        isRefreshing = false;
       });
 
-      await Future.wait(
-          [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
-    } finally {
-      if (mounted) {
-        setState(() {
-          isRefreshing = false;
-        });
-      }
+      // Отправляем события для обновления всех блоков графиков
+      context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
+      context.read<DashboardChartBloc>().add(LoadLeadChartData());
+      context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
+      context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
+      context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+      context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+      context.read<DealStatsBloc>().add(LoadDealStatsData());
+      context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
+      context.read<UserBlocManager>().add(LoadUserData());
+      context.read<ProjectChartBloc>().add(LoadProjectChartData());
+      context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+      context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
+      context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+      
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        isRefreshing = false;
+      });
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-            create: (context) => DashboardStatsBloc(context.read<ApiService>())
-              ..add(LoadDashboardStats())),
-        BlocProvider(
-            create: (context) => DashboardChartBloc(context.read<ApiService>())
-              ..add(LoadLeadChartData())),
-        BlocProvider(
-            create: (context) =>
-                DashboardChartBlocManager(context.read<ApiService>())
-                  ..add(LoadLeadChartDataManager())),
-        BlocProvider(
-            create: (context) =>
-                DashboardConversionBloc(context.read<ApiService>())
-                  ..add(LoadLeadConversionData())),
-        BlocProvider(
-            create: (context) =>
-                DashboardConversionBlocManager(context.read<ApiService>())
-                  ..add(LoadLeadConversionDataManager())),
-        BlocProvider(
-            create: (context) => DealStatsBloc(context.read<ApiService>())
-              ..add(LoadDealStatsData())),
-        BlocProvider(
-            create: (context) =>
-                DealStatsManagerBloc(context.read<ApiService>())
-                  ..add(LoadDealStatsManagerData())),
-        BlocProvider(
-            create: (context) => UserBlocManager(context.read<ApiService>())
-              ..add(LoadUserData())),
-        BlocProvider(
-            create: (context) => ProjectChartBloc(context.read<ApiService>())),
-        BlocProvider(
-            create: (context) => ProcessSpeedBloc(context.read<ApiService>())
-              ..add(LoadProcessSpeedData())),
-        BlocProvider(
-            create: (context) =>
-                DashboardTaskChartBloc(context.read<ApiService>())
-                  ..add(LoadTaskChartData())),
-        BlocProvider(
-            create: (context) =>
-                DashboardTaskChartBlocManager(context.read<ApiService>())
-                  ..add(LoadTaskChartDataManager())),
-        BlocProvider(
-            create: (context) =>
-                ProcessSpeedBlocManager(context.read<ApiService>())
-                  ..add(LoadProcessSpeedDataManager())),
-        BlocProvider(
-            create: (context) => TaskCompletionBloc(context.read<ApiService>())
-              ..add(LoadTaskCompletionData())),
-      ],
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           forceMaterialTransparency: true,
@@ -237,11 +225,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                 ],
               ),
-      ),
     );
   }
 
-  List<Widget> _buildDashboardContent() {
+
+List<Widget> _buildDashboardContent() {
     if (userRoles.contains('admin')) {
       return [
         LeadConversionChart(),
@@ -270,12 +258,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Divider(thickness: 1, color: Colors.grey[300]),
         DealStatsChartManager(),
       ];
-    } else {
+    } else if (userRoles.contains('user')) {
       return [
         GoalCompletionChart(),
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidgetManager(),
       ];
+    } else {
+      return [
+Container()
+         ];
     }
   }
 }
