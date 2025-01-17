@@ -209,6 +209,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             if (value == false) {
               final taskBloc = BlocProvider.of<TaskBloc>(context);
               taskBloc.add(FetchTaskStatuses());
+
+            //  BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+
               setState(() {
                 _isSearching = false;
                 _selectedUserId = null;
@@ -259,7 +262,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TaskCard(
               task: task,
-              name: task.taskStatus?.taskStatus.name ?? "",
+              name: task.taskStatus?.taskStatus?.name ?? "",
               statusId: task.statusId,
               onStatusUpdated: () {},
               onStatusId: (StatusTaskId) {},
@@ -315,7 +318,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TaskCard(
               task: task,
-              name: task.taskStatus?.taskStatus.name ?? "",
+              name: task.taskStatus?.taskStatus?.name ?? "",
               statusId: task.statusId,
               onStatusUpdated: () {},
               onStatusId: (StatusTaskId) {},
@@ -359,7 +362,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      
+
         BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
 
 
@@ -482,14 +485,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (state is TaskLoaded) {
           await TaskCache.cacheTaskStatuses(state.taskStatuses
               .map((status) =>
-                  {'id': status.id, 'title': status.taskStatus.name})
+                  {'id': status.id, 'title': status.taskStatus!.name ?? ""})
               .toList());
 
           setState(() {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)
                 .map((status) =>
-                    {'id': status.id, 'title': status.taskStatus.name})
+                    {'id': status.id, 'title': status.taskStatus!.name ?? ""})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -609,7 +612,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                     print('Status ID changed: $newStatusId');
                     final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
 
-                          context.read<TaskBloc>().add(FetchTaskStatuses());
+                          // context.read<TaskBloc>().add(FetchTaskStatuses());
+                                  final taskBloc = BlocProvider.of<TaskBloc>(context);
+        taskBloc.add(FetchTaskStatuses());
 
                     if (index != -1) {
                       _tabController.animateTo(index);

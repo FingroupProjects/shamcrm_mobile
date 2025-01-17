@@ -1,19 +1,4 @@
-// Вспомогательные функции для безопасного парсинга
 import 'package:crm_task_manager/models/project_model.dart';
-
-String? parseString(dynamic value) {
-  if (value is String) return value;
-  if (value is Map<String, dynamic>) {
-    return value.toString(); // If it's a Map, convert it to a string
-  }
-  return null;
-}
-
-int? parseInt(dynamic value) {
-  if (value is int) return value;
-  if (value is String) return int.tryParse(value);
-  return null;
-}
 
 class Task {
   final int id;
@@ -54,16 +39,17 @@ class Task {
     try {
       return Task(
         id: json['id'] is int ? json['id'] : 0,
-        name: parseString(json['name']) ?? 'Без имени',
-        startDate: parseString(json['from']),
-        endDate: parseString(json['to']),
-        description: parseString(json['description']) ?? '',
+        name: json['name'] is String ? json['name'] : 'Без имени',
+        startDate: json['from'] is String ? json['from'] : null,
+        endDate: json['to'] is String ? json['to'] : null,
+        description: json['description'] is String ? json['description'] : '',
         statusId: taskStatusId,
-        priority: parseInt(json['priority_level']) ?? 1,
-        overdue: parseInt(json['overdue']) ?? 0,
-        taskStatus: json['taskStatus'] != null
-            ? TaskStatus.fromJson(json['taskStatus'])
-            : null,
+        priority: json['priority_level'] is int ? json['priority_level'] : 1,
+        overdue: json['overdue'] is int ? json['overdue'] : 0,
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
+          ? TaskStatus.fromJson(json['taskStatus'])
+          : null,
         project: json['project'] != null ? Project.fromJson(json['project']) : null,
         usersImage: (json['users'] as List?)
             ?.map((userJson) => UserTaskImage.fromJson(userJson))
@@ -71,7 +57,7 @@ class Task {
         user: json['users'] != null && json['users'] is Map<String, dynamic>
             ? UserTaskImage.fromJson(json['users'])
             : null,
-        color: parseString(json['color']),
+        color: json['color'] is String ? json['color'] : null,
         file: json['file'] != null
             ? (json['file'] is Map<String, dynamic>
                 ? TaskFile.fromJson(json['file'])
@@ -170,10 +156,10 @@ class UserTaskImage {
     try {
       return UserTaskImage(
         id: json['id'] ?? 0,
-        name: parseString(json['name']) ?? 'Не указано',
-        email: parseString(json['email']) ?? 'Не указано',
-        phone: parseString(json['phone']) ?? 'Не указано',
-        image: parseString(json['image']) ?? '',
+        name: json['name'] is String ? json['name'] : 'Не указано',
+        email: json['email'] is String ? json['email'] : 'Не указано',
+        phone: json['phone'] is String ? json['phone'] : 'Не указано',
+        image: json['image'] is String ? json['image'] : '',
       );
     } catch (e) {
       print('Error parsing UserTaskImage: $e');
@@ -216,7 +202,6 @@ class TaskFile {
         size: json["size"] ?? 'Unknown',
       );
     } catch (e) {
-      print('Error parsing TaskFile: $e');
       return TaskFile(name: 'Unknown', size: 'Unknown');
     }
   }
@@ -224,38 +209,32 @@ class TaskFile {
 
 class TaskStatus {
   final int id;
-  final TaskStatusName taskStatus;
+  final TaskStatusName? taskStatus; // Make taskStatus nullable
   final String color;
   final int tasksCount;
 
   TaskStatus({
     required this.id,
-    required this.taskStatus,
+    this.taskStatus,
     required this.color,
     required this.tasksCount,
   });
 
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
-    try {
-      return TaskStatus(
-        id: json['id'],
-        taskStatus: json['taskStatus'] is Map<String, dynamic>
-            ? TaskStatusName.fromJson(json['taskStatus'])
-            : TaskStatusName(
-                id: 0, name: parseString(json['taskStatus']) ?? 'Неизвестный статус'),
-        color: parseString(json['color']) ?? 'Неизвестный цвет',
-        tasksCount: parseInt(json['tasks_amount']) ?? 0,
-      );
-    } catch (e) {
-      print('Error parsing TaskStatus: $e');
-      return TaskStatus(id: 0, taskStatus: TaskStatusName(id: 0, name: 'Ошибка'), color: 'Unknown', tasksCount: 0);
-    }
+    return TaskStatus(
+      id: json['id'] as int,
+      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+          ? TaskStatusName.fromJson(json['taskStatus'])
+          : null,
+      color: json['color'] is String ? json['color'] : 'Неизвестный цвет',
+      tasksCount: json['tasks_amount'] is int ? json['tasks_amount'] : 0,
+    );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'taskStatus': taskStatus.toJson(),
+      'taskStatus': taskStatus?.toJson(),
       'color': color,
       'tasks_amount': tasksCount,
     };
@@ -276,17 +255,12 @@ class TaskStatusName {
   });
 
   factory TaskStatusName.fromJson(Map<String, dynamic> json) {
-    try {
-      return TaskStatusName(
-        id: json['id'] ?? 0,
-        name: parseString(json['name']) ?? 'Неизвестное имя',
-        createdAt: parseString(json['created_at']),
-        updatedAt: parseString(json['updated_at']),
-      );
-    } catch (e) {
-      print('Error parsing TaskStatusName: $e');
-      return TaskStatusName(id: 0, name: 'Неизвестное имя');
-    }
+    return TaskStatusName(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] is String ? json['name'] : 'Неизвестное имя',
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -298,3 +272,4 @@ class TaskStatusName {
     };
   }
 }
+

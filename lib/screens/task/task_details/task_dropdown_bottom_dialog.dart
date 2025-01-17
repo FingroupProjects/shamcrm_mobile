@@ -53,13 +53,13 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue = status.taskStatus.name;
+                                selectedValue = status.taskStatus!.name ?? " ";
                                 selectedStatusId = status.id;
                               });
                             },
                             child: buildDropDownStyles(
-                              text: status.taskStatus.name,
-                              isSelected: selectedValue == status.taskStatus.name,
+                              text: status.taskStatus!.name ?? "",
+                              isSelected: selectedValue == status.taskStatus!.name,
                             ),
                           );
                         }).toList(),

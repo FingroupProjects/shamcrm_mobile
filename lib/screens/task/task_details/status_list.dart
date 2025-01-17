@@ -134,13 +134,13 @@ class _TaskStatusRadioGroupWidgetState
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(
-                          item.taskStatus.name,
+                          item.taskStatus?.name ?? "",
                           style: statusTextStyle,
                         );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.taskStatus.name ?? 'Выберите статус',
+                          selectedItem?.taskStatus?.name ?? 'Выберите статус',
                           style: statusTextStyle,
                         );
                       },
