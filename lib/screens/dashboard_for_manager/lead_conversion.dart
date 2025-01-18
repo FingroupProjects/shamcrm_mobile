@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +16,13 @@ class _LeadConversionChartStateManager
   final List<String> months = const [
     'Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'
   ];
+
+  
+  @override
+  void initState() {
+    super.initState();
+          context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+  }
 
   String formatPercent(double value) {
     if (value == 100 || value == 0 || value % 1 == 0) {

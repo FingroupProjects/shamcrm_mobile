@@ -120,6 +120,7 @@ class LeadStatus {
   final String? color;
   final String? lead_status_id;
   final int leadsCount;
+  final List<Lead> leads; // Добавляем список лидов
 
   LeadStatus({
     required this.id,
@@ -127,6 +128,7 @@ class LeadStatus {
     this.color,
     this.lead_status_id,
     required this.leadsCount,
+    this.leads = const [], // По умолчанию пустой список
   });
 
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
@@ -135,7 +137,11 @@ class LeadStatus {
       title: json['title'] ?? json['name'] ?? '',
       color: json['color'],
       lead_status_id: json['lead_status_id'] ?? null,
-      leadsCount: json['leads_count'] ?? 0, // Если null, то возвращаем 0
+      leadsCount: json['leads_count'] ?? 0,
+      leads: (json['leads'] as List<dynamic>?)
+              ?.map((lead) => Lead.fromJson(lead, json['id']))
+              .toList() ??
+          [],
     );
   }
 
@@ -145,9 +151,11 @@ class LeadStatus {
       'title': title,
       'color': color,
       'lead_status_id': lead_status_id,
+      'leads': leads.map((lead) => lead.toJson()).toList(),
     };
   }
 }
+
 
 class LeadCustomField {
   final int id;

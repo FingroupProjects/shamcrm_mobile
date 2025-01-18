@@ -229,7 +229,7 @@ class _LeadCardState extends State<LeadCard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '${widget.lead.manager?.name ?? ""}',
+                        '${widget.lead.manager?.name ?? "Cистема"}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',

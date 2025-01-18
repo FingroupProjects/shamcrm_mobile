@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,6 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // const NotificationSettingsWidget(),
                       const PinChangeWidget(),
                       const ProfileEdit(),
+                      // const LanguageButtonWidget(),
                       const LogoutButtonWidget(),
                       UpdateWidget1C(organization: selectedOrg),
                     ],

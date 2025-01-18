@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'lead_event.dart';
 import 'lead_state.dart';
@@ -21,39 +23,51 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
   }
+
+  // Метод для загрузки лидов с учётом кэша
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
+
     if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
+      // Если интернета нет, пробуем загрузить лиды из кэша
+      final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
+      if (cachedLeads.isNotEmpty) {
+        emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
+      } else {
+        emit(LeadError('Нет подключения к интернету и нет данных в кэше!'));
+      }
       return;
     }
 
     try {
+      // Сначала пробуем загрузить лиды из кэша
+      final cachedLeads = await LeadCache.getLeadsForStatus(event.statusId);
+      if (cachedLeads.isNotEmpty) {
+        emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
+      }
+
+      // Затем запрашиваем данные из API
       final leads = await apiService.getLeads(
         event.statusId,
         page: 1,
         perPage: 20,
         search: event.query,
-        managerId: event.managerId, // Передаем managerId в API
+        managerId: event.managerId,
       );
 
-      // Обновление _leadCounts
-      final leadCounts =
-          Map<int, int>.from(_leadCounts); // Создаем копию текущего состояния
+      // Сохраняем лиды в кэш
+      await LeadCache.cacheLeadsForStatus(event.statusId, leads);
+
+      // Обновляем состояние
+      final leadCounts = Map<int, int>.from(_leadCounts);
       for (var lead in leads) {
-        final statusId =
-            lead.statusId; // Предположим, что у вас есть статус в лидах
-        leadCounts[statusId] = (leadCounts[statusId] ?? 0) + 1;
+        leadCounts[lead.statusId] = (leadCounts[lead.statusId] ?? 0) + 1;
       }
 
       allLeadsFetched = leads.isEmpty;
       emit(LeadDataLoaded(leads, currentPage: 1, leadCounts: leadCounts));
     } catch (e) {
-      if (e is ApiException && e.statusCode == 401) {
-        emit(LeadError('Неавторизованный доступ!'));
-      } else {
-        emit(LeadError('Не удалось загрузить данные!'));
-      }
+      emit(LeadError('Не удалось загрузить данные!'));
     }
   }
 
@@ -61,8 +75,16 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       FetchLeadStatuses event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
 
-    await Future.delayed(Duration(milliseconds: 500)); // Небольшая задержка
+    // Try fetching data from cache first
+    final cachedStatuses = await LeadCache.getLeadStatuses();
+    if (cachedStatuses.isNotEmpty) {
+      emit(LeadLoaded(
+        cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList(),
+        leadCounts: Map.from(_leadCounts),
+      ));
+    }
 
+    // Then fetch from API
     if (!await _checkInternetConnection()) {
       emit(LeadError('Нет подключения к интернету'));
       return;
@@ -75,19 +97,21 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         return;
       }
 
-      // Подсчёт лидов для каждого статуса
-      for (var status in response) {
-        try {
-          final leads = await apiService.getLeads(
-            status.id,
-            page: 1,
-            perPage: 20, // Получаем все лиды
-          );
-          _leadCounts[status.id] = leads.length;
-        } catch (e) {
-          print('Error fetching lead count for status ${status.id}: $e');
-          _leadCounts[status.id] = 0;
-        }
+      // Cache the statuses
+      await LeadCache.cacheLeadStatuses(response
+          .map((status) => {'id': status.id, 'title': status.title})
+          .toList());
+
+      // Fetch lead counts for all statuses in parallel
+      final futures = response.map((status) {
+        return apiService.getLeads(status.id, page: 1, perPage: 1);
+      }).toList();
+
+      final leadCountsResults = await Future.wait(futures);
+
+      // Update lead counts
+      for (int i = 0; i < response.length; i++) {
+        _leadCounts[response[i].id] = leadCountsResults[i].length;
       }
 
       emit(LeadLoaded(response, leadCounts: Map.from(_leadCounts)));

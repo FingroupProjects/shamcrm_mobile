@@ -308,207 +308,259 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                       context: context,
                                       builder: (BuildContext context) =>
                                           AlertDialog(
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 20),
                                         title: Text(
                                           'Хотите завершить задачу?',
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontFamily: 'Gilroy',
                                             fontSize: 18,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: Text(
-                                              'Отмена',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontFamily: 'Gilroy',
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            style: TextButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              minimumSize: Size(120, 48),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                          ),
-                                          StatefulBuilder(
-                                            builder: (BuildContext context,
-                                                StateSetter setState) {
-                                              return TextButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : () async {
-                                                        setState(() {
-                                                          _isLoading = true;
-                                                        });
-
-                                                        final taskId =
-                                                            int.parse(
-                                                                widget.taskId);
-                                                        final result =
-                                                            await context
-                                                                .read<
-                                                                    ApiService>()
-                                                                .finishTask(
-                                                                    taskId);
-
-                                                        if (result['success']) {
-                                                          Navigator.pop(
-                                                              context);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                result[
-                                                                    'message'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontFamily:
-                                                                      'Gilroy',
-                                                                  fontSize: 16,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                              ),
-                                                              behavior:
-                                                                  SnackBarBehavior
-                                                                      .floating,
-                                                              margin: EdgeInsets
-                                                                  .symmetric(
-                                                                horizontal: 16,
-                                                                vertical: 8,
-                                                              ),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              backgroundColor:
-                                                                  Colors.green,
-                                                              elevation: 3,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                vertical: 12,
-                                                                horizontal: 16,
-                                                              ),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          2),
-                                                            ),
-                                                          );
-                                                          Navigator.pop(
-                                                              context);
-                                                          context
-                                                              .read<TaskBloc>()
-                                                              .add(
-                                                                  FetchTaskStatuses());
-                                                        } else {
-                                                          Navigator.pop(
-                                                              context);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                result[
-                                                                    'message'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontFamily:
-                                                                      'Gilroy',
-                                                                  fontSize: 16,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                              ),
-                                                              behavior:
-                                                                  SnackBarBehavior
-                                                                      .floating,
-                                                              margin: EdgeInsets
-                                                                  .symmetric(
-                                                                horizontal: 16,
-                                                                vertical: 8,
-                                                              ),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              backgroundColor:
-                                                                  Colors.red,
-                                                              elevation: 3,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                vertical: 12,
-                                                                horizontal: 16,
-                                                              ),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          2),
-                                                            ),
-                                                          );
-                                                        }
-
-                                                        setState(() {
-                                                          _isLoading = false;
-                                                        });
-                                                      },
-                                                child: _isLoading
-                                                    ? SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      )
-                                                    : Text(
-                                                        'Подтвердить',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontFamily: 'Gilroy',
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff1E2E52),
-                                                  minimumSize: Size(120, 48),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
+                                        content: Container(
+                                          width: double.maxFinite,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: Text(
+                                                    'Отмена',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontFamily: 'Gilroy',
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    minimumSize: Size(110, 48),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 16),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
                                                   ),
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: StatefulBuilder(
+                                                  builder: (BuildContext
+                                                          context,
+                                                      StateSetter setState) {
+                                                    return TextButton(
+                                                      onPressed: _isLoading
+                                                          ? null
+                                                          : () async {
+                                                              setState(() {
+                                                                _isLoading =
+                                                                    true;
+                                                              });
+
+                                                              final taskId = int
+                                                                  .parse(widget
+                                                                      .taskId);
+                                                              final result =
+                                                                  await context
+                                                                      .read<
+                                                                          ApiService>()
+                                                                      .finishTask(
+                                                                          taskId);
+
+                                                              if (result[
+                                                                  'success']) {
+                                                                Navigator.pop(
+                                                                    context);
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  SnackBar(
+                                                                    content:
+                                                                        Text(
+                                                                      result[
+                                                                          'message'],
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontFamily:
+                                                                            'Gilroy',
+                                                                        fontSize:
+                                                                            16,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                        color: Colors
+                                                                            .white,
+                                                                      ),
+                                                                    ),
+                                                                    behavior:
+                                                                        SnackBarBehavior
+                                                                            .floating,
+                                                                    margin: EdgeInsets
+                                                                        .symmetric(
+                                                                      horizontal:
+                                                                          16,
+                                                                      vertical:
+                                                                          8,
+                                                                    ),
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              12),
+                                                                    ),
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .green,
+                                                                    elevation:
+                                                                        3,
+                                                                    padding:
+                                                                        EdgeInsets
+                                                                            .symmetric(
+                                                                      vertical:
+                                                                          12,
+                                                                      horizontal:
+                                                                          16,
+                                                                    ),
+                                                                    duration: Duration(
+                                                                        seconds:
+                                                                            2),
+                                                                  ),
+                                                                );
+                                                                Navigator.pop(
+                                                                    context);
+                                                                context
+                                                                    .read<
+                                                                        TaskBloc>()
+                                                                    .add(
+                                                                        FetchTaskStatuses());
+                                                              } else {
+                                                                Navigator.pop(
+                                                                    context);
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  SnackBar(
+                                                                    content:
+                                                                        Text(
+                                                                      result[
+                                                                          'message'],
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontFamily:
+                                                                            'Gilroy',
+                                                                        fontSize:
+                                                                            16,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                        color: Colors
+                                                                            .white,
+                                                                      ),
+                                                                    ),
+                                                                    behavior:
+                                                                        SnackBarBehavior
+                                                                            .floating,
+                                                                    margin: EdgeInsets
+                                                                        .symmetric(
+                                                                      horizontal:
+                                                                          16,
+                                                                      vertical:
+                                                                          8,
+                                                                    ),
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              12),
+                                                                    ),
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .red,
+                                                                    elevation:
+                                                                        3,
+                                                                    padding:
+                                                                        EdgeInsets
+                                                                            .symmetric(
+                                                                      vertical:
+                                                                          12,
+                                                                      horizontal:
+                                                                          16,
+                                                                    ),
+                                                                    duration: Duration(
+                                                                        seconds:
+                                                                            2),
+                                                                  ),
+                                                                );
+                                                              }
+
+                                                              setState(() {
+                                                                _isLoading =
+                                                                    false;
+                                                              });
+                                                            },
+                                                      child: _isLoading
+                                                          ? SizedBox(
+                                                              width: 20,
+                                                              height: 20,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                color: Colors
+                                                                    .white,
+                                                                strokeWidth: 2,
+                                                              ),
+                                                            )
+                                                          : Text(
+                                                              'Подтвердить',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontFamily:
+                                                                    'Gilroy',
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                            ),
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            Color(0xff1E2E52),
+                                                        minimumSize:
+                                                            Size(110, 48),
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 16),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                         backgroundColor:
                                             Color.fromARGB(255, 255, 255, 255),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
                                       ),
                                     );
                                   },

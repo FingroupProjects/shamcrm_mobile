@@ -18,6 +18,7 @@ class Chats {
   final List<ChatUser> chatUsers;
   final Group? group;
   final Task? task;
+  final ChatUser? user; // добавим поле user
 
   Chats({
     required this.id,
@@ -36,6 +37,7 @@ class Chats {
     required this.chatUsers,
     this.group,
     this.task,
+    this.user, // добавим в конструктор
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
@@ -55,7 +57,10 @@ class Chats {
     if (json['task'] != null) {
       task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
     }
-
+    ChatUser? user;
+    if (json['user'] != null) {
+      user = ChatUser.fromJson({'participant': json['user']});
+    }
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
@@ -66,6 +71,7 @@ class Chats {
                   ? json['lead']['name'] ?? 'Без имени'
                   : '',
       image: json['image'] ?? '',
+      user: user,
       createDate: json['task'] != null
           ? json['task']['created_at'] ?? ''
           : json['lead'] != null
@@ -128,15 +134,27 @@ class Chats {
     }
   }
 
- ChatItem toChatItem() {
+   ChatItem toChatItem() {
     String avatar;
     if (group != null) {
       avatar = "assets/images/GroupChat.png";
-    } else if (chatUsers != null && chatUsers.isNotEmpty) {
-      // Используем participant.image вместо просто image
-      avatar = (chatUsers.length > 1) 
-          ? chatUsers[1].image 
-          : "assets/images/AvatarChat.png";
+    } else if (chatUsers.isNotEmpty) {
+      // Получаем ID текущего пользователя из поля user
+      int currentUserId = user?.id ?? 0;
+      print('Current user ID: $currentUserId'); // для отладки
+      
+      if (chatUsers.length > 1) {
+        if (chatUsers[1].id == currentUserId) {
+          // Если первый пользователь - это текущий пользователь,
+          // показываем аватар второго
+          avatar = chatUsers[1].image;
+        } else {
+          // Иначе показываем аватар первого
+          avatar = chatUsers[0].image;
+        }
+      } else {
+        avatar = chatUsers[0].image;
+      }
     } else {
       avatar = "assets/images/AvatarChat.png";
     }
@@ -149,7 +167,7 @@ class Chats {
       _mapChannelToIcon(channel),
       unredMessage,
     );
-}
+  }
 
   String _mapChannelToIcon(String channel) {
     const channelIconMap = {
@@ -300,12 +318,4 @@ class Message {
   }
 }
 
-
-
-
-
-
-
-
-
-  // var audioUrl;
+// var audioUrl;

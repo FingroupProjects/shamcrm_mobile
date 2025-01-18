@@ -11,9 +11,6 @@ import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_event.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
@@ -69,7 +66,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isLoading = true;
       });
 
-      await Future.wait([_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+
+    if (isFirstTime) {
+      await Future.wait([
+        _loadUserRoles(),
+        Future.delayed(const Duration(seconds: 3)),
+      ]);
+
+      await prefs.setBool('isFirstTime', false);
+    } else {
+      await _loadUserRoles();
+    }
 
       if (mounted) {
         setState(() {
@@ -86,23 +96,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _loadUserRoles() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
+ Future<void> _loadUserRoles() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userId = prefs.getString('userID') ?? '';
 
-      if (userId.isEmpty) {
+
+      String? storedRoles = prefs.getString('userRoles');
+      if (storedRoles != null) {
         setState(() {
-          userRoles = ['No user ID found'];
+          userRoles = storedRoles.split(',');
         });
         return;
       }
 
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      // If roles are not stored, call the API and save them
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
+          userRoles = userProfile.role?.map((role) => role.name).toList() ??
+              ['No role assigned'];
         });
+
+        // Save roles in SharedPreferences for future use
+        await prefs.setString('userRoles', userRoles.join(','));
       }
     } catch (e) {
       print('Error loading user roles!');
@@ -122,83 +140,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isRefreshing = true;
       });
 
-      await Future.wait([_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
-    } finally {
-      if (mounted) {
-        setState(() {
-          isRefreshing = false;
-        });
-      }
+      // Отправляем события для обновления всех блоков графиков
+      context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
+      context.read<DashboardChartBloc>().add(LoadLeadChartData());
+      context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
+      context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
+      context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+      context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+      context.read<DealStatsBloc>().add(LoadDealStatsData());
+      context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
+      context.read<UserBlocManager>().add(LoadUserData());
+      context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+      context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
+      context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+      
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        isRefreshing = false;
+      });
+
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => DashboardStatsBloc(context.read<ApiService>())..add(LoadDashboardStats())),
-        BlocProvider(create: (context) => DashboardChartBloc(context.read<ApiService>())..add(LoadLeadChartData())),
-        BlocProvider(create: (context) => DashboardChartBlocManager(context.read<ApiService>())..add(LoadLeadChartDataManager())),
-        BlocProvider(create: (context) => DashboardConversionBloc(context.read<ApiService>())..add(LoadLeadConversionData())),
-        BlocProvider(create: (context) => DashboardConversionBlocManager(context.read<ApiService>())..add(LoadLeadConversionDataManager())),
-        BlocProvider(create: (context) => DealStatsBloc(context.read<ApiService>())..add(LoadDealStatsData())),
-        BlocProvider(create: (context) => DealStatsManagerBloc(context.read<ApiService>())..add(LoadDealStatsManagerData())),
-        BlocProvider(create: (context) => UserBlocManager(context.read<ApiService>())..add(LoadUserData())),
-        BlocProvider(create: (context) => ProjectChartBloc(context.read<ApiService>())),
-        BlocProvider(create: (context) => ProcessSpeedBloc(context.read<ApiService>())..add(LoadProcessSpeedData())),
-        BlocProvider(create: (context) => DashboardTaskChartBloc(context.read<ApiService>())..add(LoadTaskChartData())),
-        BlocProvider(create: (context) => DashboardTaskChartBlocManager(context.read<ApiService>())..add(LoadTaskChartDataManager())),
-        BlocProvider(create: (context) => ProcessSpeedBlocManager(context.read<ApiService>())..add(LoadProcessSpeedDataManager())),
-        BlocProvider(create: (context) => TaskCompletionBloc(context.read<ApiService>())..add(LoadTaskCompletionData())),
-      ],
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: CustomAppBar(
-            title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
-            onClickProfileAvatar: () {
-              setState(() {
-                isClickAvatarIcon = !isClickAvatarIcon;
-              });
-            },
-            onChangedSearchInput: (input) {},
-            textEditingController: TextEditingController(),
-            focusNode: FocusNode(),
-            clearButtonClick: (isSearching) {},
-            showSearchIcon: false,
-            showFilterIcon: false,
-          ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBar(
+          title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
+          onClickProfileAvatar: () {
+            setState(() {
+              isClickAvatarIcon = !isClickAvatarIcon;
+            });
+          },
+          onChangedSearchInput: (input) {},
+          textEditingController: TextEditingController(),
+          focusNode: FocusNode(),
+          clearButtonClick: (isSearching) {},
+          showSearchIcon: false,
+          showFilterTaskIcon: false,
+          showFilterIcon: false,
+          showMyTaskIcon: false,
+          
         ),
-        body: isClickAvatarIcon
-            ? ProfileScreen()
-            : Stack(
-                children: [
-                  RefreshIndicator(
-                    color: Color(0xff1E2E52),
-                    backgroundColor: Colors.white,
-                    onRefresh: _onRefresh,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        children: _buildDashboardContent(),
+      ),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Stack(
+              children: [
+                RefreshIndicator(
+                  color: Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  onRefresh: _onRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      children: _buildDashboardContent(),
+                    ),
+                  ),
+                ),
+                if (isLoading || isRefreshing)
+                  Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
                       ),
                     ),
                   ),
-                  if (isLoading || isRefreshing)
-                    Container(
-                      color: Colors.white,
-                      child: const Center(
-                        child: PlayStoreImageLoading(
-                          size: 80.0,
-                          duration: Duration(milliseconds: 1000),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-      ),
+              ],
+            ),
     );
   }
 
@@ -237,6 +254,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidgetManager(),
       ];
+    } else {
+      return [Container()];
     }
   }
 }
+

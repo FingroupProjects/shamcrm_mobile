@@ -11,7 +11,6 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
 import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
     as task_status_add;
 import 'package:crm_task_manager/models/project_task_model.dart';
-import 'package:crm_task_manager/screens/task/task_details/project_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';

@@ -128,7 +128,6 @@ class ManagerFilterPopup extends StatelessWidget {
                           ),
                         );
                       }
-                      
                       final manager = managers[index - 1];
                       final name = manager.name ?? 'Без имени';
                       return InkWell(

@@ -18,10 +18,14 @@ import 'package:crm_task_manager/models/dashboard_charts_models_manager/process_
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/task_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_task_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
+import 'package:crm_task_manager/models/my-task_model.dart';
+import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -50,6 +54,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/my-task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -161,9 +166,13 @@ class ApiService {
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-    await prefs.remove('cachedLeadStatuses');
-    await prefs.remove('cachedDealStatuses');
-    await prefs.remove('cachedTaskStatuses');
+    // await prefs.remove('cachedLeadStatuses');
+    // await prefs.remove('cachedDealStatuses');
+    // await prefs.remove('cachedTaskStatuses');
+
+    // await prefs.remove('leadConversionData');
+
+    // await prefs.remove('userRoles');
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
     bool isCleared = await prefs.clear();
@@ -625,7 +634,7 @@ class ApiService {
   }
 
 //Метод для получения список Лидов с пагинацией
-Future<List<Lead>> getLeads(
+  Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1557,7 +1566,7 @@ Future<List<Lead>> getLeads(
     }
   }
 
-Future<List<Deal>> getDeals(
+  Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1571,7 +1580,9 @@ Future<List<Deal>> getDeals(
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (dealStatusId != null && managerId == null) { // Условие: если нет managerId
+    } else if (dealStatusId != null && managerId == null) {
+      // Условие: если нет managerId
+
       path += '&deal_status_id=$dealStatusId';
     }
     // Добавляем manager_id если есть
@@ -1967,8 +1978,13 @@ Future<List<Deal>> getDeals(
     }
   }
 
-  Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
+  Future<List<Task>> getTasks(
+    int? taskStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    int? userId, // Добавляем параметр userId
+  }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/task?page=$page&per_page=$perPage';
 
@@ -1976,8 +1992,13 @@ Future<List<Deal>> getDeals(
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (taskStatusId != null) {
+    } else if (taskStatusId != null && userId == null) {
+      // Условие: если нет userId
       path += '&task_status_id=$taskStatusId';
+    }
+    // Добавляем user_id если есть
+    if (userId != null) {
+      path += '&user_id=$userId';
     }
 
     // Логируем конечный URL запроса
@@ -1987,16 +2008,15 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
-        // Логирование задач
-        final tasks = (data['result']['data'] as List).map((json) {
-          return Task.fromJson(json, taskStatusId ?? -1);
-        }).toList();
-
-        return tasks;
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .toList();
       } else {
         throw Exception('Нет данных о задачах в ответе');
       }
     } else {
+      // Логирование ошибки с ответом сервера
+      print('Error response: ${response.statusCode} - ${response.body}');
       throw Exception('Ошибка загрузки задач: ${response.body}');
     }
   }
@@ -2014,10 +2034,6 @@ Future<List<Deal>> getDeals(
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['result'] != null) {
-          final statuses = (data['result'] as List)
-              .map((status) => TaskStatus.fromJson(status))
-              .toList();
-
           // Принт старых кэшированных данных (если они есть)
           final cachedStatuses =
               prefs.getString('cachedTaskStatuses_$organizationId');
@@ -2036,14 +2052,15 @@ Future<List<Deal>> getDeals(
           print(data['result']); // Новые данные, которые будут сохранены в кэш
 
           print(
-              '----p---------------¿-----UPDATE CACHE TASKSTATUS----------------------------');
-          print('Статусы задач обновлены в кэше');
-          return statuses;
+              '------------------------------ Статусы задач обновлены в кэше ------------------------------');
+          return (data['result'] as List)
+              .map((status) => TaskStatus.fromJson(status))
+              .toList();
         } else {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка при получении данных: ${response.statusCode}');
+        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
@@ -3144,8 +3161,7 @@ Future<List<Deal>> getDeals(
 
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
-
-    //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
+  //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
 
 // Метод для получения графика Сделки
   Future<DealStatsResponseManager> getDealStatsManagerData() async {
@@ -3168,7 +3184,8 @@ Future<List<Deal>> getDeals(
       throw ('');
     }
   }
- /// Получение данных графика для дашборда
+
+  /// Получение данных графика для дашборда
   Future<List<ChartDataManager>> getLeadChartManager() async {
     final organizationId = await getSelectedOrganization();
 
@@ -3188,7 +3205,8 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка загрузки данных график клиента!');
     }
   }
- Future<LeadConversionManager> getLeadConversionDataManager() async {
+
+  Future<LeadConversionManager> getLeadConversionDataManager() async {
     final organizationId = await getSelectedOrganization();
 
     String path =
@@ -3211,7 +3229,7 @@ Future<List<Deal>> getDeals(
       throw ('');
     }
   }
-  
+
   Future<ProcessSpeedManager> getProcessSpeedDataManager() async {
     final organizationId = await getSelectedOrganization();
 
@@ -3264,36 +3282,34 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка получения данных!');
     }
   }
+
 // API Service
-Future<UserTaskCompletionManager> getUserStatsManager() async {
-  final organizationId = await getSelectedOrganization();
+  Future<UserTaskCompletionManager> getUserStatsManager() async {
+    final organizationId = await getSelectedOrganization();
 
-  String path =
-      '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    String path =
+        '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-  final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
 
-    if (data['result'] != null) {
-      return UserTaskCompletionManager.fromJson(data);
+      if (data['result'] != null) {
+        return UserTaskCompletionManager.fromJson(data);
+      } else {
+        throw ('Нет данных графика в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
     } else {
-      throw ('Нет данных графика в ответе');
+      throw ('Неизвестная ошибка');
     }
-  } else if (response.statusCode == 500) {
-    throw ('Ошибка сервера: 500');
-  } else {
-    throw ('Неизвестная ошибка');
   }
-}
 
   //_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
 
-
-
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
-
 
   Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
@@ -4264,4 +4280,694 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
   }
 
   //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
+
+  //_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
+
+  //Метод для получения Задачи через его ID
+  Future<MyTaskById> getMyTaskById(int taskId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+          '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic>? resultList = decodedJson['result'];
+
+        if (resultList == null || resultList.isEmpty) {
+          throw Exception('Некорректные данные от API');
+        }
+
+        final Map<String, dynamic> jsonMyTask = resultList.first;
+
+        if (jsonMyTask['taskStatus'] == null) {
+          throw Exception('Статус задачи отсутствует в данных API');
+        }
+
+        return MyTaskById.fromJson(
+            jsonMyTask, jsonMyTask['taskStatus']['id'] ?? 0);
+      } else if (response.statusCode == 404) {
+        throw Exception('Ресурс с задачи $taskId не найден');
+      } else if (response.statusCode == 500) {
+        throw Exception('Ошибка сервера. Попробуйте позже');
+      } else {
+        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Ошибка загрузки task ID');
+    }
+  }
+
+  Future<List<MyTask>> getMyTasks(
+    int? taskStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/my-task?page=$page&per_page=$perPage';
+
+    path += '&organization_id=$organizationId';
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    } else if (taskStatusId != null) {
+      // Условие: если нет userId
+      path += '&task_status_id=$taskStatusId';
+    }
+    // Логируем конечный URL запроса
+    print('Sending request to API with path: $path');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => MyTask.fromJson(json, taskStatusId ?? -1))
+            .toList();
+      } else {
+        throw Exception('Нет данных о задачах в ответе');
+      }
+    } else {
+      // Логирование ошибки с ответом сервера
+      print('Error response: ${response.statusCode} - ${response.body}');
+      throw Exception('Ошибка загрузки задач: ${response.body}');
+    }
+  }
+
+// Метод для получения статусов задач
+  Future<List<MyTaskStatus>> getMyTaskStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+
+    try {
+      // Отправляем запрос на сервер
+      final response = await _getRequest(
+          '/my-task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          // Принт старых кэшированных данных (если они есть)
+          final cachedStatuses =
+              prefs.getString('cachedMyTaskStatuses_$organizationId');
+          if (cachedStatuses != null) {
+            final decodedData = json.decode(cachedStatuses);
+          }
+
+          // Обновляем кэш новыми данными
+          await prefs.setString('cachedMyTaskStatuses_$organizationId',
+              json.encode(data['result']));
+          print(
+              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+          print(
+              '------------------------------ Статусы задач обновлены в кэше ------------------------------');
+          return (data['result'] as List)
+              .map((status) => MyTaskStatus.fromJson(status))
+              .toList();
+        } else {
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      // Если запрос не удался, пытаемся загрузить данные из кэша
+      final cachedStatuses =
+          prefs.getString('cachedMyTaskStatuses_$organizationId');
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
+            .map((status) => MyTaskStatus.fromJson(status))
+            .toList();
+        return cachedList;
+      } else {
+        throw Exception(
+            'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
+      }
+    }
+  }
+
+  Future<bool> checkIfStatusHasMyTasks(int taskStatusId) async {
+    try {
+      // Получаем список лидов для указанного статуса, берем только первую страницу
+      final List<MyTask> tasks =
+          await getMyTasks(taskStatusId, page: 1, perPage: 1);
+
+      // Если список лидов не пуст, значит статус содержит элементы
+      return tasks.isNotEmpty;
+    } catch (e) {
+      print('Error while checking if status has deals!');
+      return false;
+    }
+  }
+
+//Обновление статуса карточки Задачи  в колонке
+
+  Future<void> updateMyTaskStatus(
+      int taskId, int position, int statusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/my-task/change-status/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'position': 1,
+          'status_id': statusId,
+        });
+
+    if (response.statusCode == 200) {
+      print('Статус задачи успешно обновлен');
+    } else if (response.statusCode == 422) {
+      throw MyTaskStatusUpdateException(
+          422, 'Вы не можете переместить задачу на этот статус');
+    } else {
+      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+    }
+  }
+
+  Map<String, dynamic> _handleMyTaskResponse(
+      http.Response response, String operation) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+
+      // Проверяем наличие ошибок в ответе
+      if (data['errors'] != null) {
+        return {
+          'success': false,
+          'message': 'Ошибка ${operation} задачи: ${data['errors']}',
+        };
+      }
+
+      return {
+        'success': true,
+        'message':
+            'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'data': data['result'],
+      };
+    }
+
+    if (response.statusCode == 422) {
+      final data = json.decode(response.body);
+      final validationErrors = {
+        'name': 'Название задачи должно содержать минимум 3 символа.',
+        'from': 'Неверный формат даты начала.',
+        'to': 'Неверный формат даты окончания.',
+        'project_id': 'Указанный проект не существует.',
+        'user_id': 'Указанный пользователь не существует.',
+        // Убрана валидация файла
+      };
+
+      // Игнорируем ошибки валидации файла
+      if (data['errors']?['file'] != null) {
+        data['errors'].remove('file');
+      }
+
+      // Проверяем каждое поле на наличие ошибки, кроме файла
+      for (var entry in validationErrors.entries) {
+        if (data['errors']?[entry.key] != null) {
+          return {'success': false, 'message': entry.value};
+        }
+      }
+
+      // Если остались только ошибки файла, считаем что валидация прошла успешно
+      if (data['errors']?.isEmpty ?? true) {
+        return {
+          'success': true,
+          'message':
+              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        };
+      }
+
+      return {
+        'success': false,
+        'message': 'Ошибка валидации: ${data['errors'] ?? response.body}',
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'Ошибка ${operation} задачи: ${response.body}',
+    };
+  }
+
+  // // Общий метод обработки ошибок
+  // Exception _handleErrorResponse(http.Response response, String operation) {
+  //   try {
+  //     final data = json.decode(response.body);
+  //     final errorMessage = data['errors'] ?? data['message'] ?? response.body;
+  //     return Exception(
+  //         'Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+  //   } catch (e) {
+  //     return Exception(
+  //         'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+  //   }
+  // }
+  /// Создает новый статус задачи
+  Future<Map<String, dynamic>> CreateMyTaskStatusAdd({
+    required String statusName,
+    required bool finalStep,
+  }) async {
+    try {
+      // Формируем данные для запроса
+      final Map<String, dynamic> data = {
+        'name': statusName,
+        'final_step': finalStep ? 1 : 0,
+      };
+
+      // Получаем идентификатор организации
+      final organizationIdProfile = await getSelectedOrganization();
+
+      // Формируем URL с учетом organization_id
+      final String url =
+          '/my-task-status${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}';
+
+      // Выполняем запрос
+      final response = await _postRequest(url, data);
+
+      // Проверяем успешность запроса
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Статус задачи успешно создан',
+          'data': responseData,
+        };
+      }
+
+      // Получаем текст ошибки в зависимости от кода ответа
+      final errorMessage = _getErrorMessage(response.statusCode);
+
+      return {
+        'success': false,
+        'message': errorMessage,
+        'statusCode': response.statusCode,
+        'details': response.body,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при создании статуса',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Возвращает сообщение об ошибке по коду статуса
+  String _getErrorMessage(int statusCode) {
+    switch (statusCode) {
+      case 400:
+        return 'Неверные данные для создания статуса';
+      case 401:
+        return 'Необходима авторизация';
+      case 403:
+        return 'Недостаточно прав для создания статуса';
+      case 404:
+        return 'Ресурс не найден';
+      case 409:
+        return 'Статус с таким названием уже существует';
+      case 500:
+        return 'Внутренняя ошибка сервера';
+      default:
+        return 'Произошла ошибка при создании статуса (код: $statusCode)';
+    }
+  }
+
+// Метод для создание задачи
+  Future<Map<String, dynamic>> createMyTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+    List<Map<String, String>>? customFields,
+    String? filePath,
+    int position = 1,
+  }) async {
+    try {
+      final token = await getToken(); // Получаем токен
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/my-task${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      // Создаем multipart request
+      var request = http.MultipartRequest('POST', uri);
+
+      // Добавляем заголовки с токеном
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
+
+      // Добавляем все поля в формате form-data
+      request.fields['name'] = name;
+      request.fields['status_id'] = statusId.toString();
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
+
+      if (startDate != null) {
+        request.fields['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        request.fields['to'] = endDate.toIso8601String();
+      }
+
+      if (description != null) {
+        request.fields['description'] = description;
+      }
+      // Добавляем кастомные поля
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+          request.fields['task_custom_fields[$i][value]'] = field.values.first;
+        }
+      }
+
+      // Добавляем файл, если он есть
+      if (filePath != null) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          final fileName = file.path.split('/').last;
+          final fileStream = http.ByteStream(file.openRead());
+          final length = await file.length();
+
+          final multipartFile = http.MultipartFile(
+            'file',
+            fileStream,
+            length,
+            filename: fileName,
+          );
+          request.files.add(multipartFile);
+        }
+      }
+
+      // Отправляем запрос
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Задача успешно создана.',
+        };
+      } else if (response.statusCode == 422) {
+        // Обработка ошибок валидации
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'Название задачи должно быть не менее 3 символов.',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'Дата начала задачи указана некорректно.',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'Дата завершения задачи указана некорректно.',
+          };
+        }
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка!',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка создания задачи: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при создании задачи!',
+      };
+    }
+  }
+
+  //Метод для обновление задачи
+  Future<Map<String, dynamic>> updateMyTask({
+    required int taskId,
+    required String name,
+    required int statusId,
+    required int taskStatusId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+    String? filePath,
+    List<Map<String, String>>? customFields,
+  }) async {
+    try {
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      // Создаем multipart request
+      var request = http.MultipartRequest('POST', uri);
+
+      // Добавляем заголовки с токеном
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
+
+      // Добавляем все поля в формате form-data
+      request.fields['name'] = name;
+      request.fields['status_id'] = statusId.toString();
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['_method'] = 'POST'; // Для эмуляции PUT запроса
+
+      if (startDate != null) {
+        request.fields['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        request.fields['to'] = endDate.toIso8601String();
+      }
+
+      if (description != null) {
+        request.fields['description'] = description;
+      }
+
+      // Добавляем кастомные поля
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+          request.fields['task_custom_fields[$i][value]'] = field.values.first;
+        }
+      }
+
+      // Добавляем файл, если он есть
+      if (filePath != null) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          final fileName = file.path.split('/').last;
+          final fileStream = http.ByteStream(file.openRead());
+          final length = await file.length();
+
+          final multipartFile = http.MultipartFile(
+            'file',
+            fileStream,
+            length,
+            filename: fileName,
+          );
+          request.files.add(multipartFile);
+        }
+      }
+      // Отправляем запрос
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Задача успешно обновлена.',
+        };
+      } else if (response.statusCode == 422) {
+        // Обработка ошибок валидации
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'Название задачи должно быть не менее 3 символов.',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'Дата начала задачи указана некорректно.',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'Дата завершения задачи указана некорректно.',
+          };
+        }
+        return {
+          'success': false,
+          'message': 'Неизвестная ошибка!',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'Ошибка на сервере. Попробуйте позже.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Ошибка обновления задачи: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при обновлении задачи!',
+      };
+    }
+  }
+
+// Метод для получения Истории Задачи
+  Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      // Используем метод _getRequest вместо прямого выполнения запроса
+      final response = await _getRequest(
+          '/my-task/history/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result']['history'];
+        return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
+      } else {
+        print('Failed to load task history: ${response.statusCode}');
+        throw Exception(
+            'Ошибка загрузки истории задач: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории задач!');
+    }
+  }
+
+// Метод для получения Cтатуса задачи
+  Future<List<MyStatusName>> getMyStatusName() async {
+    final organizationId = await getSelectedOrganization();
+
+    print('Начало запроса статусов задач'); // Отладочный вывод
+    final response = await _getRequest(
+        '/my-taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    print('Статус код ответа: ${response.statusCode}'); // Отладочный вывод
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Полученные данные: $data'); // Отладочный вывод
+
+      if (data['result'] != null) {
+        final statusList = (data['result'] as List)
+            .map((name) => MyStatusName.fromJson(name))
+            .toList();
+        print(
+            'Преобразованный список статусов: $statusList'); // Отладочный вывод
+        return statusList;
+      } else {
+        throw Exception('Статусы задач не найдены');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  // Метод для Удаления Задачи
+  Future<Map<String, dynamic>> deleteMyTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete task: ${response.body}');
+    }
+  }
+
+  // Метод для Удаления Статуса Задачи
+
+  Future<Map<String, dynamic>> deleteMyTaskStatuses(int taskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/my-task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete taskStatus: ${response.body}');
+    }
+  }
+
+  // Метод для завершения задачи
+  Future<Map<String, dynamic>> finishMyTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/my-task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'task_id': taskId,
+        });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача успешно завершена'};
+    } else if (response.statusCode == 422) {
+      return {
+        'success': false,
+        'message': 'Этот проект не имеет завершающий этап!'
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Ошибка завершения задачи: ${response.body}'
+      };
+    }
+  }
+
+  //Метод для получение кастомных полей Задачи
+  Future<Map<String, dynamic>> getMyCustomFields() async {
+    final organizationId = await getSelectedOrganization();
+
+    // Выполняем запрос
+    final response = await _getRequest(
+      '/my-task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return data; // Возвращаем данные, если они есть
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  //_________________________________ END_____API_SCREEN__MY-TASK____________________________________________//a
 }

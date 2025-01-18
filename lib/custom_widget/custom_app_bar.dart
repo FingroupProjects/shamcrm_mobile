@@ -2,9 +2,13 @@ import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/user_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
+import 'package:crm_task_manager/screens/my-task/task_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +23,11 @@ class CustomAppBar extends StatefulWidget {
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
   bool showSearchIcon;
-  final bool showFilterIcon; // Новое поле для отображения фильтра
-  final Function(dynamic)?
-      onManagerSelected; // Добавляем callback для выбора менеджера
+  final bool showFilterIcon;
+  final bool showFilterTaskIcon; // New field for task filter
+  final Function(dynamic)? onManagerSelected;
+  final Function(dynamic)? onUserSelected; // New callback for user selection
+  final bool showMyTaskIcon; // Новый параметр
 
   CustomAppBar({
     super.key,
@@ -32,8 +38,11 @@ class CustomAppBar extends StatefulWidget {
     required this.focusNode,
     required this.clearButtonClick,
     this.showSearchIcon = true,
-    this.showFilterIcon = true, // Установка значения по умолчанию
-    this.onManagerSelected, // Добавляем в конструктор
+    this.showFilterIcon = true,
+    this.showFilterTaskIcon = true, // Default value for task filter
+    this.onManagerSelected,
+    this.onUserSelected, // Add to constructor
+    this.showMyTaskIcon = false, // По умолчанию выключено
   });
 
   @override
@@ -49,8 +58,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
-  bool _isFiltering = false; // Флаг для кнопки фильтра
-
+  bool _isFiltering = false;
+  bool _isTaskFiltering = false; // New state for task filter
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;
@@ -213,8 +222,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     setState(() {
       _isFiltering = !_isFiltering;
     });
-    widget
-        .clearButtonClick(_isFiltering); // Вызываем обработчик, если необходимо
+    widget.clearButtonClick(_isFiltering);
+  }
+
+  void _toggleTaskFilter() {
+    setState(() {
+      _isTaskFiltering = !_isTaskFiltering;
+    });
+    widget.clearButtonClick(_isTaskFiltering);
   }
 
   @override
@@ -388,104 +403,264 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
           Row(
             children: [
-              if (widget.showFilterIcon)
-                IconButton(
-                  icon: _isFiltering
-                      ? Icon(Icons.close) // Иконка "х" при активном фильтре
-                      : Image.asset(
-                          'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                  onPressed: () {
-                    _toggleFilter(); // Переключение состояния
-                    if (_isFiltering) {
-                      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-                      final RenderBox button =
-                          context.findRenderObject() as RenderBox;
-                      final position = button.localToGlobal(Offset.zero);
-
-                      showMenu(
-                        context: context,
-                        position: RelativeRect.fromLTRB(
-                          position.dx,
-                          position.dy + button.size.height,
-                          position.dx + button.size.width,
-                          position.dy + button.size.height,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                        color: Colors.white,
-                        items: [
-                          PopupMenuItem(
-                            padding: EdgeInsets.zero,
-                            child: ManagerFilterPopup(
-                              onManagerSelected: widget.onManagerSelected,
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                  },
-                ),
-              IconButton(
-                icon: Stack(
-                  children: [
-                    Image.asset(
-                      'assets/icons/AppBar/notification.png',
+              if (widget.showMyTaskIcon)
+                Tooltip(
+                  message: 'Мои задачи', // Текст подсказки
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Белый фон
+                    borderRadius:
+                        BorderRadius.circular(8), // Слегка скругленные углы
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ], // Тень
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12, // Размер текста подсказки
+                    color: Colors.black, // Цвет текста
+                  ),
+                  child: IconButton(
+                    icon: Image.asset(
+                      'assets/icons/AppBar/my-task.png',
                       width: 24,
                       height: 24,
                     ),
-                    if (_hasNewNotification)
-                      Positioned(
-                        right: 0,
-                        child: FadeTransition(
-                          opacity: _blinkAnimation,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyTaskScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              if (widget.showFilterIcon)
+                Tooltip(
+                  message: 'Фильтр', // Текст подсказки
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Белый фон
+                    borderRadius:
+                        BorderRadius.circular(8), // Слегка скругленные углы
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ], // Тень
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12, // Размер текста подсказки
+                    color: Colors.black, // Цвет текста
+                  ),
+                  child: IconButton(
+                    icon: _isFiltering
+                        ? Icon(Icons.close)
+                        : Image.asset(
+                            'assets/icons/AppBar/filter.png',
+                            width: 24,
+                            height: 24,
+                          ),
+                    onPressed: () {
+                      _toggleFilter();
+                      if (_isFiltering) {
+                        context
+                            .read<GetAllManagerBloc>()
+                            .add(GetAllManagerEv());
+                        final RenderBox button =
+                            context.findRenderObject() as RenderBox;
+                        final position = button.localToGlobal(Offset.zero);
+
+                        showMenu(
+                          context: context,
+                          position: RelativeRect.fromLTRB(
+                            position.dx,
+                            position.dy + button.size.height,
+                            position.dx + button.size.width,
+                            position.dy + button.size.height,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          color: Colors.white,
+                          items: [
+                            PopupMenuItem(
+                              padding: EdgeInsets.zero,
+                              child: ManagerFilterPopup(
+                                onManagerSelected: widget.onManagerSelected,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ),
+              if (widget.showFilterTaskIcon)
+                Tooltip(
+                  message: 'Фильтр', // Текст подсказки
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Белый фон
+                    borderRadius:
+                        BorderRadius.circular(8), // Слегка скругленные углы
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ], // Тень
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12, // Размер текста подсказки
+                    color: Colors.black, // Цвет текста
+                  ),
+                  child: IconButton(
+                    icon: _isTaskFiltering
+                        ? Icon(Icons.close)
+                        : Image.asset(
+                            'assets/icons/AppBar/filter.png',
+                            width: 24,
+                            height: 24,
+                          ),
+                    onPressed: () {
+                      _toggleTaskFilter();
+                      if (_isTaskFiltering) {
+                        context.read<UserTaskBloc>().add(FetchUsers());
+                        final RenderBox button =
+                            context.findRenderObject() as RenderBox;
+                        final position = button.localToGlobal(Offset.zero);
+
+                        showMenu(
+                          context: context,
+                          position: RelativeRect.fromLTRB(
+                            position.dx,
+                            position.dy + button.size.height,
+                            position.dx + button.size.width,
+                            position.dy + button.size.height,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          color: Colors.white,
+                          items: [
+                            PopupMenuItem(
+                              padding: EdgeInsets.zero,
+                              child: UserFilterPopup(
+                                onUserSelected: widget.onUserSelected,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ),
+              Tooltip(
+                message: 'Уведомление', // Текст подсказки
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white, // Белый фон
+                  borderRadius:
+                      BorderRadius.circular(8), // Слегка скругленные углы
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ], // Тень
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12, // Размер текста подсказки
+                  color: Colors.black, // Цвет текста
+                ),
+                child: IconButton(
+                  icon: Stack(
+                    children: [
+                      Image.asset(
+                        'assets/icons/AppBar/notification.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      if (_hasNewNotification)
+                        Positioned(
+                          right: 0,
+                          child: FadeTransition(
+                            opacity: _blinkAnimation,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
                         ),
+                    ],
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _hasNewNotification = false;
+                    });
+                    SharedPreferences.getInstance().then((prefs) {
+                      prefs.setBool('hasNewNotification', false);
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NotificationsScreen(),
                       ),
-                  ],
+                    );
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    _hasNewNotification = false;
-                  });
-                  SharedPreferences.getInstance().then((prefs) {
-                    prefs.setBool('hasNewNotification', false);
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsScreen(),
-                    ),
-                  );
-                },
               ),
               if (widget.showSearchIcon)
-                IconButton(
-                  icon: _isSearching
-                      ? Icon(Icons.close)
-                      : Image.asset(
-                          'assets/icons/AppBar/search.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                  onPressed: () {
-                    _toggleSearch();
-                    widget.clearButtonClick(_isSearching);
-                    if (_isSearching) {
-                      FocusScope.of(context).requestFocus(focusNode);
-                    }
-                  },
+                Tooltip(
+                  message: 'Поиск', // Текст подсказки
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Белый фон
+                    borderRadius:
+                        BorderRadius.circular(8), // Слегка скругленные углы
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ], // Тень
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12, // Размер текста подсказки
+                    color: Colors.black, // Цвет текста
+                  ),
+                  child: IconButton(
+                    icon: _isSearching
+                        ? Icon(Icons.close)
+                        : Image.asset(
+                            'assets/icons/AppBar/search.png',
+                            width: 24,
+                            height: 24,
+                          ),
+                    onPressed: () {
+                      _toggleSearch();
+                      widget.clearButtonClick(_isSearching);
+                      if (_isSearching) {
+                        FocusScope.of(context).requestFocus(focusNode);
+                      }
+                    },
+                  ),
                 ),
             ],
           ),

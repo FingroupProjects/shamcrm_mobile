@@ -50,40 +50,34 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
-          _tabTitles = cachedStatuses;
+          _tabTitles = cachedStatuses
+              .map((status) => {'id': status['id'], 'title': status['title']})
+              .toList();
 
-          // Инициализация TabController только один раз
           _tabController =
               TabController(length: _tabTitles.length, vsync: this);
-
-          int initialIndex = cachedStatuses
-              .indexWhere((status) => status['id'] == widget.initialStatusId);
-          if (initialIndex != -1) {
-            _currentTabIndex = initialIndex;
-          }
           _tabController.index = _currentTabIndex;
-        });
 
-        // Добавляем слушатель для _tabController после его инициализации
-        _tabController.addListener(() {
-          setState(() {
-            _currentTabIndex = _tabController.index;
-          });
-          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          if (_scrollController.hasClients) {
+          _tabController.addListener(() {
+            setState(() {
+              _currentTabIndex = _tabController.index;
+            });
             _scrollToActiveTab();
-          }
+          });
         });
       } else {
-        // Если нет данных в кеше, запрашиваем их через API
+        // Если статусов в кэше нет — запрос через API
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses());
-        BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-
-        print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
 
+    // Проверка лидов в кэше для начального статуса
+    LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
+      if (cachedLeads.isNotEmpty) {
+        print('Leads loaded from cache.');
+      }
+    });
     // Проверка разрешений
     _checkPermissions();
   }
@@ -182,8 +176,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           onManagerSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showFilterTaskIcon: false,
+          showMyTaskIcon: false, // Выключаем иконку My Tasks
+
           clearButtonClick: (value) {
             if (value == false) {
+              // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+
               final leadBloc = BlocProvider.of<LeadBloc>(context);
               leadBloc.add(FetchLeadStatuses());
               setState(() {
@@ -336,8 +335,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      await LeadCache.clearCache();
-      print('Все данные удалены успешно. Статусы обновлены.');
       context.read<LeadBloc>().add(FetchLeadStatuses());
 
       setState(() {
@@ -422,6 +419,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   void _showDeleteDialog(int index) async {
     final leadStatusId = _tabTitles[index]['id'];
+
     final result = await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -431,21 +429,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     if (result != null && result) {
       setState(() {
-        setState(() {
-          _deletedIndex = _currentTabIndex;
-          navigateAfterDelete = true;
-        });
+        _deletedIndex = _currentTabIndex;
+        navigateAfterDelete = true;
+
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
 
         _currentTabIndex = 0;
-
         _isSearching = false;
         _searchController.clear();
 
         context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
       });
+
+      // 🔄 Отправляем запрос на обновление статусов лидов
+      context
+          .read<LeadBloc>()
+          .add(FetchLeadStatuses()); // Pass forceRefresh flag
     }
   }
 
@@ -570,7 +571,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             );
           } else if (state is LeadLoaded) {
             if (_tabTitles.isEmpty) {
-              return const Center(child: Text('Нет статусов для отображения'));
+              return const Center(child: Text(''));
             }
             return TabBarView(
               controller: _tabController,
@@ -585,6 +586,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     print('Status ID changed: $newStatusId');
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
+
+                    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+
                     if (index != -1) {
                       _tabController.animateTo(index);
                     }
@@ -617,7 +621,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
             targetOffset,
-            duration: Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 100),
             curve: Curves.linear,
           );
         }

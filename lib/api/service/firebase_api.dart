@@ -207,13 +207,23 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
           chatName = chatProfileTask.name;
           break;
      case 'corporate':
-         final getChatById = await ApiService().getChatById(chatId);
+              final prefs = await SharedPreferences.getInstance();
+              String userId = prefs.getString('userID').toString();
 
-         chatName = getChatById.group != null 
-             ? getChatById.group!.name 
-             : getChatById.chatUsers.length > 1
-                 ? '${getChatById.chatUsers[0].participant.name}'
-                 : getChatById.chatUsers[0].participant.name;
+              final getChatById = await ApiService().getChatById(chatId);
+
+              if (getChatById.group != null) {
+                chatName = getChatById.group!.name;
+              } else {
+                int userIndex = getChatById.chatUsers.indexWhere((user) => user.participant.id.toString() == userId);
+                if (userIndex != -1) {
+                  int otherUserIndex = (userIndex == 0) ? 1 : 0;
+                  chatName = '${getChatById.chatUsers[otherUserIndex].participant.name}';
+                } else {
+                  chatName = getChatById.chatUsers[0].participant.name;
+                }
+              }
+
          break;
         default:
           print('Неизвестный тип чата');

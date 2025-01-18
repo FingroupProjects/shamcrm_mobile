@@ -12,11 +12,14 @@ class TaskColumn extends StatefulWidget {
   final int statusId;
   final String name;
   final Function(int) onStatusId;
+    final int? userId; // Добавляем параметр managerId
+
 
   TaskColumn({
     required this.statusId,
     required this.name,
     required this.onStatusId,
+    this.userId,
   });
 
   @override
@@ -41,8 +44,7 @@ class _TaskColumnState extends State<TaskColumn> {
           _scrollController.position.maxScrollExtent) {
         final currentState = _taskBloc.state;
         if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
-          _taskBloc
-              .add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+          _taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
         }
       }
     }
@@ -71,6 +73,8 @@ class _TaskColumnState extends State<TaskColumn> {
   Future<void> _onRefresh() async {
     final leadBloc = BlocProvider.of<TaskBloc>(context);
     leadBloc.add(FetchTaskStatuses());
+
+        // BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
 
     _taskBloc.add(FetchTasks(widget.statusId));
     return Future.delayed(Duration(milliseconds: 1));

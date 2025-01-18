@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -21,6 +23,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
+
+import 'package:url_launcher/url_launcher.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -152,6 +156,90 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     });
   }
 
+  // Добавьте эту функцию для совершения звонка
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    // Убираем все не числовые символы из номера телефона
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Если номер начинается с '8', заменяем на '+7'
+    if (cleanNumber.startsWith('8')) {
+      cleanNumber = '+7${cleanNumber.substring(1)}';
+    }
+    // Если номер начинается с '7', добавляем '+'
+    else if (cleanNumber.startsWith('7')) {
+      cleanNumber = '+$cleanNumber';
+    }
+
+    try {
+      Uri whatsappUri;
+      if (Platform.isIOS) {
+        // Для iOS используем другую схему URL
+        whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
+      } else {
+        // Для Android оставляем прежнюю схему
+        whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
+      }
+
+      if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+        // Если не удалось открыть, показываем сообщение
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'WhatsApp не установлен',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      // Обработка ошибок
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Не удалось открыть WhatsApp',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
@@ -186,10 +274,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     currentLead = lead; // Сохраняем актуального лида
     details = [
       // {'label': 'ID лида:', 'value': lead.id.toString()},
-      {'label': 'Наименование лида :', 'value': lead.name},
+      {'label': 'Имя:', 'value': lead.name},
       {'label': 'Телефон:', 'value': lead.phone ?? ''},
       {'label': 'Регион:', 'value': lead.region?.name ?? ''},
-      {'label': 'Менеджер:', 'value': lead.manager?.name ?? ''},
+      {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Система'},
       {'label': 'Источник:', 'value': lead.source?.name ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
@@ -216,6 +304,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     return textPainter.didExceedMaxLines;
   }
+
+  
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -475,7 +565,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains('Наименование лида') ||
+              child: (label.contains('Лид') ||
                       label.contains('Описание'))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value),
@@ -499,15 +589,53 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Построение значения
-  Widget _buildValue(String value) {
+ // Модифицируем функцию построения значения
+   Widget _buildValue(String value) {
+    if (value.isEmpty) return Container();
+
+    // Проверяем, является ли это телефонным номером
+    if (details.any((detail) =>
+        detail['label'] == 'Телефон:' && detail['value'] == value)) {
+      return GestureDetector(
+        onTap: () => _makePhoneCall(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52),
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+    
+    // Добавляем проверку на WhatsApp
+    if (details.any((detail) =>
+        detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
+      return GestureDetector(
+        onTap: () => _openWhatsApp(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52), // Цвет WhatsApp
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+
     return Text(
       value,
       style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xfff1E2E52),
+        color: Color(0xFF1E2E52),
       ),
       overflow: TextOverflow.visible,
     );
