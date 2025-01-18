@@ -13,8 +13,6 @@ import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_event
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
