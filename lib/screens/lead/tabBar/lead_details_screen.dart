@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -164,7 +166,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       throw Exception('Could not launch $launchUri');
     }
   }
- // Добавляем функцию для открытия WhatsApp
+
   Future<void> _openWhatsApp(String phoneNumber) async {
     // Убираем все не числовые символы из номера телефона
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
@@ -177,13 +179,67 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     else if (cleanNumber.startsWith('7')) {
       cleanNumber = '+$cleanNumber';
     }
-    
-    final Uri whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
-    
-    if (!await launchUrl(whatsappUri)) {
-      throw Exception('Could not launch WhatsApp');
+
+    try {
+      Uri whatsappUri;
+      if (Platform.isIOS) {
+        // Для iOS используем другую схему URL
+        whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
+      } else {
+        // Для Android оставляем прежнюю схему
+        whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
+      }
+
+      if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+        // Если не удалось открыть, показываем сообщение
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'WhatsApp не установлен',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      // Обработка ошибок
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Не удалось открыть WhatsApp',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
+
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
@@ -218,7 +274,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     currentLead = lead; // Сохраняем актуального лида
     details = [
       // {'label': 'ID лида:', 'value': lead.id.toString()},
-      {'label': 'Наименование лида :', 'value': lead.name},
+      {'label': 'Имя:', 'value': lead.name},
       {'label': 'Телефон:', 'value': lead.phone ?? ''},
       {'label': 'Регион:', 'value': lead.region?.name ?? ''},
       {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Система'},
@@ -509,7 +565,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains('Наименование лида') ||
+              child: (label.contains('Лид') ||
                       label.contains('Описание'))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value),

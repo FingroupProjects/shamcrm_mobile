@@ -46,35 +46,38 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-       DealCache.getDealStatuses().then((cachedStatuses) {
-    if (cachedStatuses.isNotEmpty) {
-      setState(() {
-        _tabTitles = cachedStatuses.map((status) => {'id': status['id'], 'title': status['title']}).toList();
+    DealCache.getDealStatuses().then((cachedStatuses) {
+      if (cachedStatuses.isNotEmpty) {
+        setState(() {
+          _tabTitles = cachedStatuses
+              .map((status) => {'id': status['id'], 'title': status['title']})
+              .toList();
 
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
-        _tabController.index = _currentTabIndex;
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
+          _tabController.index = _currentTabIndex;
 
-        _tabController.addListener(() {
-          setState(() {
-            _currentTabIndex = _tabController.index;
+          _tabController.addListener(() {
+            setState(() {
+              _currentTabIndex = _tabController.index;
+            });
+            _scrollToActiveTab();
           });
-          _scrollToActiveTab();
         });
-      });
-    } else {
-      // Если статусов в кэше нет — запрос через API
-      final leadBloc = BlocProvider.of<DealBloc>(context);
-      leadBloc.add(FetchDealStatuses());
-    }
-  });
+      } else {
+        // Если статусов в кэше нет — запрос через API
+        final leadBloc = BlocProvider.of<DealBloc>(context);
+        leadBloc.add(FetchDealStatuses());
+      }
+    });
 
-  // Проверка лидов в кэше для начального статуса
-  DealCache.getDealsForStatus(widget.initialStatusId).then((cachedLeads) {
-    if (cachedLeads.isNotEmpty) {
-      print('Leads loaded from cache.');
-    }
-  });
- 
+    // Проверка лидов в кэше для начального статуса
+    DealCache.getDealsForStatus(widget.initialStatusId).then((cachedLeads) {
+      if (cachedLeads.isNotEmpty) {
+        print('Leads loaded from cache.');
+      }
+    });
+
     _checkPermissions();
   }
 
@@ -162,6 +165,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
+          showMyTaskIcon: false, // Выключаем иконку My Tasks
+
           clearButtonClick: (value) {
             if (value == false) {
                     // BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
@@ -401,36 +406,37 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       },
     );
   }
-void _showDeleteDialog(int index) async {
-  final dealStatusId = _tabTitles[index]['id'];
 
-  final result = await showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return DeleteDealStatusDialog(dealStatusId: dealStatusId);
-    },
-  );
+  void _showDeleteDialog(int index) async {
+    final dealStatusId = _tabTitles[index]['id'];
 
-  if (result != null && result) {
-    setState(() {
-      _deletedIndex = _currentTabIndex;
-      navigateAfterDelete = true;
+    final result = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteDealStatusDialog(dealStatusId: dealStatusId);
+      },
+    );
 
-      _tabTitles.removeAt(index);
-      _tabKeys.removeAt(index);
-      _tabController = TabController(length: _tabTitles.length, vsync: this);
+    if (result != null && result) {
+      setState(() {
+        _deletedIndex = _currentTabIndex;
+        navigateAfterDelete = true;
 
-      _currentTabIndex = 0;
-      _isSearching = false;
-      _searchController.clear();
+        _tabTitles.removeAt(index);
+        _tabKeys.removeAt(index);
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
 
-      context.read<DealBloc>().add(FetchDeals(_currentTabIndex));
-    });
+        _currentTabIndex = 0;
+        _isSearching = false;
+        _searchController.clear();
 
-    final dealBloc = BlocProvider.of<DealBloc>(context);
-    dealBloc.add(FetchDealStatuses());
+        context.read<DealBloc>().add(FetchDeals(_currentTabIndex));
+      });
+
+      final dealBloc = BlocProvider.of<DealBloc>(context);
+      dealBloc.add(FetchDealStatuses());
+    }
   }
-}
 
   Widget _buildTabBarView() {
     return BlocListener<DealBloc, DealState>(
@@ -562,7 +568,8 @@ void _showDeleteDialog(int index) async {
 
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
 
                     BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
 

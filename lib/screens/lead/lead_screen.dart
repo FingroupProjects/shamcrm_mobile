@@ -47,36 +47,37 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     super.initState();
     _scrollController = ScrollController();
     // Попытка получить данные из кеша
-   LeadCache.getLeadStatuses().then((cachedStatuses) {
-    if (cachedStatuses.isNotEmpty) {
-      setState(() {
-        _tabTitles = cachedStatuses
-            .map((status) => {'id': status['id'], 'title': status['title']})
-            .toList();
+    LeadCache.getLeadStatuses().then((cachedStatuses) {
+      if (cachedStatuses.isNotEmpty) {
+        setState(() {
+          _tabTitles = cachedStatuses
+              .map((status) => {'id': status['id'], 'title': status['title']})
+              .toList();
 
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
-        _tabController.index = _currentTabIndex;
+          _tabController =
+              TabController(length: _tabTitles.length, vsync: this);
+          _tabController.index = _currentTabIndex;
 
-        _tabController.addListener(() {
-          setState(() {
-            _currentTabIndex = _tabController.index;
+          _tabController.addListener(() {
+            setState(() {
+              _currentTabIndex = _tabController.index;
+            });
+            _scrollToActiveTab();
           });
-          _scrollToActiveTab();
         });
-      });
-    } else {
-      // Если статусов в кэше нет — запрос через API
-      final leadBloc = BlocProvider.of<LeadBloc>(context);
-      leadBloc.add(FetchLeadStatuses());
-    }
-  });
+      } else {
+        // Если статусов в кэше нет — запрос через API
+        final leadBloc = BlocProvider.of<LeadBloc>(context);
+        leadBloc.add(FetchLeadStatuses());
+      }
+    });
 
-  // Проверка лидов в кэше для начального статуса
-  LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
-    if (cachedLeads.isNotEmpty) {
-      print('Leads loaded from cache.');
-    }
-  });
+    // Проверка лидов в кэше для начального статуса
+    LeadCache.getLeadsForStatus(widget.initialStatusId).then((cachedLeads) {
+      if (cachedLeads.isNotEmpty) {
+        print('Leads loaded from cache.');
+      }
+    });
     // Проверка разрешений
     _checkPermissions();
   }
@@ -176,9 +177,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
+          showMyTaskIcon: false, // Выключаем иконку My Tasks
+
           clearButtonClick: (value) {
             if (value == false) {
-            // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+              // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
               final leadBloc = BlocProvider.of<LeadBloc>(context);
               leadBloc.add(FetchLeadStatuses());
@@ -333,8 +336,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     if (result == true) {
       context.read<LeadBloc>().add(FetchLeadStatuses());
-    
-       setState(() {
+
+      setState(() {
         navigateToEnd = true;
       });
     }
@@ -414,45 +417,47 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
-void _showDeleteDialog(int index) async {
-  final leadStatusId = _tabTitles[index]['id'];
+  void _showDeleteDialog(int index) async {
+    final leadStatusId = _tabTitles[index]['id'];
 
-  final result = await showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
-    },
-  );
+    final result = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
+      },
+    );
 
-  if (result != null && result) {
-    setState(() {
-      _deletedIndex = _currentTabIndex;
-      navigateAfterDelete = true;
+    if (result != null && result) {
+      setState(() {
+        _deletedIndex = _currentTabIndex;
+        navigateAfterDelete = true;
 
-      _tabTitles.removeAt(index);
-      _tabKeys.removeAt(index);
-      _tabController = TabController(length: _tabTitles.length, vsync: this);
+        _tabTitles.removeAt(index);
+        _tabKeys.removeAt(index);
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
 
-      _currentTabIndex = 0;
-      _isSearching = false;
-      _searchController.clear();
+        _currentTabIndex = 0;
+        _isSearching = false;
+        _searchController.clear();
 
-      context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
-    });
+        context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+      });
 
-    // 🔄 Отправляем запрос на обновление статусов лидов
-    context.read<LeadBloc>().add(FetchLeadStatuses()); // Pass forceRefresh flag
+      // 🔄 Отправляем запрос на обновление статусов лидов
+      context
+          .read<LeadBloc>()
+          .add(FetchLeadStatuses()); // Pass forceRefresh flag
+    }
   }
-}
 
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
           // Perform async work first
-         await LeadCache.cacheLeadStatuses(state.leadStatuses
-          .map((status) => {'id': status.id, 'title': status.title})
-          .toList());
+          await LeadCache.cacheLeadStatuses(state.leadStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList());
 
           // Now, update the state synchronously
           setState(() {
@@ -579,7 +584,8 @@ void _showDeleteDialog(int index) async {
                   managerId: _selectedManagerId, // Передаем ID менеджера
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
 
                     BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
