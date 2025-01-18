@@ -221,7 +221,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       {'label': 'Наименование лида :', 'value': lead.name},
       {'label': 'Телефон:', 'value': lead.phone ?? ''},
       {'label': 'Регион:', 'value': lead.region?.name ?? ''},
-      {'label': 'Менеджер:', 'value': lead.manager?.name ?? ''},
+      {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Система'},
       {'label': 'Источник:', 'value': lead.source?.name ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},

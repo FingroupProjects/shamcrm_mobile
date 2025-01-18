@@ -2,18 +2,18 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-class TaskChartCacheHandler {
-  static const _cacheKey = 'task_chart_data';
+class TaskChartCacheHandlerManager {
+  static const _cacheKey = 'task_chart_data_manager';
 
   // Сохранить данные графика задач в кэш
-  static Future<void> saveTaskChartData(List<double> data) async {
+  static Future<void> saveTaskChartDataManager(List<double> data) async {
     final prefs = await SharedPreferences.getInstance();
     final dataString = json.encode(data);
     await prefs.setString(_cacheKey, dataString);
   }
 
   // Получить данные графика задач из кэша
-  static Future<List<double>?> getTaskChartData() async {
+  static Future<List<double>?> getTaskChartDataManager() async {
     final prefs = await SharedPreferences.getInstance();
     final dataString = prefs.getString(_cacheKey);
     if (dataString != null) {

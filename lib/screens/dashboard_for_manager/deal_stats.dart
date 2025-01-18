@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_state.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
-class DealStatsChartManager extends StatelessWidget {
+class DealStatsChartManager extends StatefulWidget {
   const DealStatsChartManager({Key? key}) : super(key: key);
 
+  @override
+  _DealStatsChartManagerState createState() => _DealStatsChartManagerState();
+}
+
+class _DealStatsChartManagerState extends State<DealStatsChartManager> {
   final List<String> months = const [
     'Январь',
     'Февраль',
@@ -24,6 +30,13 @@ class DealStatsChartManager extends StatelessWidget {
     'Ноябрь',
     'Декабрь'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
+  }
+
   String formatNumber(double value) {
     if (value >= 1e9) {
       return '${(value / 1e9).toStringAsFixed(1)}млрд';
@@ -81,7 +94,7 @@ class DealStatsChartManager extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                    'Статистика сделок',
+                    '   Статистика сделок',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,

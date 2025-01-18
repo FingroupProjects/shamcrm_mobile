@@ -1,5 +1,6 @@
 
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/lead_chart_model.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -19,6 +20,14 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
   int? selectedIndex;
   int? selectedLineIndex;
   final Map<String, bool> _lineVisibility = {};
+
+
+@override
+  void initState() {
+    super.initState();
+      context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
+  }
+
 
   bool _isAllZeros(List<ChartDataManager> data) {
     return data

@@ -43,4 +43,11 @@ class MonthData {
       successfulSum: (json['successful_sum'] as num).toDouble(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'total_sum': totalSum,
+      'successful_sum': successfulSum,
+    };
+  }
 }

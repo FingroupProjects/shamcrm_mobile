@@ -5,16 +5,12 @@ import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_blo
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_event.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_event.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
@@ -70,11 +66,20 @@ Future<void> _initializeData() async {
       isLoading = true;
     });
 
-    // await Future.wait([_loadUserRoles(), 
-    // Future.delayed(const Duration(seconds: 3))]
-    // );
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    _loadUserRoles();
+    bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+
+    if (isFirstTime) {
+      await Future.wait([
+        _loadUserRoles(),
+        Future.delayed(const Duration(seconds: 3)),
+      ]);
+
+      await prefs.setBool('isFirstTime', false);
+    } else {
+      await _loadUserRoles();
+    }
 
     if (mounted) {
       setState(() {
@@ -90,7 +95,6 @@ Future<void> _initializeData() async {
     }
   }
 }
-
 
  Future<void> _loadUserRoles() async {
   try {
@@ -160,7 +164,6 @@ Future<void> _initializeData() async {
       context.read<DealStatsBloc>().add(LoadDealStatsData());
       context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
       context.read<UserBlocManager>().add(LoadUserData());
-      context.read<ProjectChartBloc>().add(LoadProjectChartData());
       context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
       context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
       context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
@@ -258,16 +261,12 @@ List<Widget> _buildDashboardContent() {
         Divider(thickness: 1, color: Colors.grey[300]),
         DealStatsChartManager(),
       ];
-    } else if (userRoles.contains('user')) {
+    } else {
       return [
         GoalCompletionChart(),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(),
-      ];
-    } else {
-      return [
-Container()
-         ];
+        TaskChartWidgetManager(),         ];
     }
   }
 }
+
