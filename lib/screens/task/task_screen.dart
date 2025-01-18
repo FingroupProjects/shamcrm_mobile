@@ -80,7 +80,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         });
       } else {
         BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-        
+
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
@@ -102,11 +102,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ?? 
+          userRoles = userProfile.role?.map((role) => role.name).toList() ??
               ['No role assigned'];
-          showFilter = userRoles.any((role) => 
-              role.toLowerCase() == 'admin' || 
-              role.toLowerCase() == 'manager');
+          showFilter = userRoles.any((role) =>
+              role.toLowerCase() == 'admin' || role.toLowerCase() == 'manager');
         });
       }
     } catch (e) {
@@ -204,13 +203,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
+          showMyTaskIcon: false, // Выключаем иконку My Tasks
           showFilterTaskIcon: showFilter,
           clearButtonClick: (value) {
             if (value == false) {
               final taskBloc = BlocProvider.of<TaskBloc>(context);
               taskBloc.add(FetchTaskStatuses());
 
-            //  BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+              //  BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
 
               setState(() {
                 _isSearching = false;
@@ -362,12 +362,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
+      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
 
-        BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-
-
-        final taskBloc = BlocProvider.of<TaskBloc>(context);
-        taskBloc.add(FetchTaskStatuses());
+      final taskBloc = BlocProvider.of<TaskBloc>(context);
+      taskBloc.add(FetchTaskStatuses());
 
       setState(() {
         navigateToEnd = true;
@@ -474,8 +472,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
         context.read<TaskBloc>().add(FetchTasks(_currentTabIndex));
       });
-        final taskBloc = BlocProvider.of<TaskBloc>(context);
-        taskBloc.add(FetchTaskStatuses());
+      final taskBloc = BlocProvider.of<TaskBloc>(context);
+      taskBloc.add(FetchTaskStatuses());
     }
   }
 
@@ -610,11 +608,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   userId: _selectedUserId,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
 
-                          // context.read<TaskBloc>().add(FetchTaskStatuses());
-                                  final taskBloc = BlocProvider.of<TaskBloc>(context);
-        taskBloc.add(FetchTaskStatuses());
+                    // context.read<TaskBloc>().add(FetchTaskStatuses());
+                    final taskBloc = BlocProvider.of<TaskBloc>(context);
+                    taskBloc.add(FetchTaskStatuses());
 
                     if (index != -1) {
                       _tabController.animateTo(index);
