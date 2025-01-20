@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_state.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -16,20 +17,23 @@ class DealStatsChart extends StatefulWidget {
 }
 
 class _DealStatsChartState extends State<DealStatsChart> {
-  final List<String> months = const [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
+List<String> getMonths(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  return [
+    localizations.translate('january'),
+    localizations.translate('february'),
+    localizations.translate('march'),
+    localizations.translate('april'),
+    localizations.translate('may'),
+    localizations.translate('june'),
+    localizations.translate('july'),
+    localizations.translate('august'),
+    localizations.translate('september'),
+    localizations.translate('october'),
+    localizations.translate('november'),
+    localizations.translate('december'),
   ];
+}
 
   @override
   void initState() {
@@ -51,10 +55,13 @@ class _DealStatsChartState extends State<DealStatsChart> {
 
   @override
   Widget build(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  final months = getMonths(context);
+
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
         if (state is DealStatsError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
+          if (state.message.contains(localizations.translate('unauthorized_access'))) {
             _handleLogout(context);
             return const SizedBox();
           } else {
@@ -91,10 +98,10 @@ class _DealStatsChartState extends State<DealStatsChart> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                    'Статистика сделок',
+                    localizations.translate('deal_stats'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,
@@ -219,8 +226,8 @@ class _DealStatsChartState extends State<DealStatsChart> {
                         ),
                       ),
                     ),
-                    const Text(
-                      'Нет данных для отображения',
+                    Text(
+                    localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -236,10 +243,10 @@ class _DealStatsChartState extends State<DealStatsChart> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
-                  'Статистика сделок',
+                  localizations.translate('deal_stats'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
@@ -266,7 +273,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
                         fitInsideHorizontally: true,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
                           String label =
-                              rodIndex == 0 ? 'Общая сумма' : 'Успешные';
+                              rodIndex == 0 ? localizations.translate('total_amount') : localizations.translate('successful');
                           double value = rod.toY;
                           return BarTooltipItem(
                             '${months[groupIndex]}\n$label\n',

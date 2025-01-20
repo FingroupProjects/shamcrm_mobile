@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -20,6 +21,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -37,7 +39,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Забыли PIN - код?',
+              localizations.translate('forgot_pin_title'),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -48,8 +50,8 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
             SizedBox(height: 16),
             CustomTextField(
               controller: _loginController,
-              hintText: 'Введите логин',
-              label: 'Логин',
+              hintText: localizations.translate('enter_login'),
+              label: localizations.translate('login_label'),
             ),
             const SizedBox(height: 16),
             Center(
@@ -66,8 +68,8 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Введите логин'),
+                      SnackBar(
+                        content: Text(localizations.translate('enter_login_error')),
                       ),
                     );
                   }
@@ -84,7 +86,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Запросить подтверждение'),
+                child: Text(localizations.translate('request_confirmation')),
               ),
             ),
           ],
@@ -167,6 +169,7 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -198,15 +201,15 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
               const SizedBox(height: 8),
               CustomTextField(
                 controller: _pinController,
-                hintText: 'Введите код подтверждения',
-                label: 'Код подтверждения',
+                hintText: localizations.translate('enter_confirmation_code'),
+                label: localizations.translate('confirmation_code_label'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
               if (_isTimerActive)
-                Center(
+                 Center(
                   child: Text(
-                    'Повторный запрос доступен через $_secondsRemaining секунд',
+                    '${localizations.translate('resend_available_in')} $_secondsRemaining ${localizations.translate('seconds')}',
                     style: const TextStyle(
                       color: Colors.black,
                       fontFamily: 'Gilroy',
@@ -225,8 +228,8 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                         fontFamily: 'Gilroy',
                       ),
                     ),
-                    child: const Text(
-                      'Не получили код подтверждения?',
+                    child:  Text(
+                      localizations.translate('did_not_receive_code'),
                       style: TextStyle(
                         color: Color.fromARGB(255, 255, 255, 255),
                         fontFamily: 'Gilroy',
@@ -243,7 +246,7 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Неверный код подтверждения!'),
+                          content: Text(localizations.translate('wrong_confirmation_code')),
                           backgroundColor: Colors.red, // Красный фон
                         ),
                       );
@@ -257,8 +260,8 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                       fontFamily: 'Gilroy',
                     ),
                   ),
-                  child: const Text(
-                    'Подтвердить код подтверждение',
+                  child: Text(
+                    localizations.translate('confirm_code'),
                     style: TextStyle(
                       color: Color.fromARGB(255, 255, 255, 255),
                       fontFamily: 'Gilroy',

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,11 +31,6 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
     setState(() {
       is1cIntegration = prefs.getBool('is1cIntegration') ?? false;
       lastUpdated = prefs.getString('last1cUpdate');
-      print('----------------------------------------------------------------------------');
-      print('-------------------------------------------1CINTEGRATYE---');
-
-
-      print(is1cIntegration);
     });
   }
 
@@ -53,10 +49,12 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!; 
+
     return GestureDetector(
       onTap: () async {
         if (!is1cIntegration) {
-          return;  // Do not proceed if integration is not enabled
+          return;  
         }
 
         setState(() {
@@ -73,12 +71,12 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
         });
 
         _controller.stop();
-        await _savePreferences();  // Save the updated timestamp
+        await _savePreferences();  
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Данные 1С успешно обновлены',
+              localizations.translate('data_updated_successfully'), 
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -92,15 +90,15 @@ class _UpdateWidget1CState extends State<UpdateWidget1C> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (is1cIntegration)  // Show only if integration is true
+          if (is1cIntegration)  
             _buildProfileOption(
               iconPath: 'assets/icons/1c/5.png',
-              text: 'Обновить данные 1С',
+              text: localizations.translate('update_1c_data'),
             ),
           if (lastUpdated != null && !is1cIntegration)
             Center(
               child: Text(
-                'Последнее обновление: $lastUpdated',
+                '${localizations.translate('last_update')}: $lastUpdated', 
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,

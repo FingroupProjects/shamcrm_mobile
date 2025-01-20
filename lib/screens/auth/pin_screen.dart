@@ -13,6 +13,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -168,7 +169,9 @@ try {
 }
 }
   Future<void> _initBiometrics() async {
-    try {
+    final localizations = AppLocalizations.of(context)!;
+
+   try {
       _canCheckBiometrics = await _auth.canCheckBiometrics;
 
       if (_canCheckBiometrics) {
@@ -185,8 +188,8 @@ try {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Биометрическая аутентификация недоступна'),
+            SnackBar(
+            content: Text(localizations.translate('biometric_unavailable')), 
             ),
           );
         }
@@ -196,27 +199,30 @@ try {
     }
   }
 
-  Future<void> _authenticate() async {
-    try {
-      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Биометрическая аутентификация недоступна'),
-            ),
-          );
-        }
-        return;
-      }
+Future<void> _authenticate() async {
+  final localizations = AppLocalizations.of(context)!;
 
-      final bool didAuthenticate = await _auth.authenticate(
-        localizedReason: 'Подтвердите личность',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          useErrorDialogs: true,
-          stickyAuth: true,
-        ),
-      );
+  try {
+    if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.translate('biometric_unavailable')), 
+          ),
+        );
+      }
+      return;
+    }
+
+    final bool didAuthenticate = await _auth.authenticate(
+      localizedReason: localizations.translate('confirm_identity'),
+      options: const AuthenticationOptions(
+        biometricOnly: true,
+        useErrorDialogs: true,
+        stickyAuth: true,
+      ),
+    );
+
 
       if (didAuthenticate && mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
@@ -224,11 +230,6 @@ try {
       }
     } on PlatformException catch (e) {
       if (mounted) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text('Ошибка биометрической аутентификации: ${e.message}'),
-        //   ),
-        // );
       }
     }
   }
@@ -304,56 +305,25 @@ try {
     super.dispose();
   }
 
-  String getGreetingMessage() {
-    final hour = DateTime.now().hour;
-    final greetingPrefix;
+String getGreetingMessage() {
+  final hour = DateTime.now().hour;
+  final localizations = AppLocalizations.of(context)!;
 
-    if (hour >= 5 && hour < 11) {
-      greetingPrefix = 'Доброе утро';
-    } else if (hour >= 11 && hour < 18) {
-      greetingPrefix = 'Добрый день';
-    } else if (hour >= 18 && hour < 22) {
-      greetingPrefix = 'Добрый вечер';
-    } else {
-      greetingPrefix = 'Доброй ночи';
-    }
-    print(
-        '-----------------------------------------------------------------------------');
-    print(
-        '-------------------------------------------------UESRNAMFPROIEFIEJFSOPFSJ----------------------------');
-    print(_userNameProfile);
-    return '$greetingPrefix, $_userNameProfile!';
+  if (hour >= 5 && hour < 11) {
+    return '${localizations.translate('greeting_morning')}, $_userNameProfile!';
+  } else if (hour >= 11 && hour < 18) {
+    return '${localizations.translate('greeting_day')}, $_userNameProfile!';
+  } else if (hour >= 18 && hour < 22) {
+    return '${localizations.translate('greeting_evening')}, $_userNameProfile!';
+  } else {
+    return '${localizations.translate('greeting_night')}, $_userNameProfile!';
   }
+}
 
-  @override
-  Widget _build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: _isLoading
-            ? const CircularProgressIndicator() // Анимация загрузки
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Введите PIN-код",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Добавьте логику кнопки здесь
-                    },
-                    child: const Text("Продолжить"),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -380,12 +350,14 @@ try {
               ),
               const SizedBox(height: 8),
               Text(
-                _isWrongPin ? 'Неправильный пароль' : 'Введите ваш PIN-код',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _isWrongPin ? Colors.red : Colors.grey,
-                ),
+              _isWrongPin
+                  ? localizations.translate('wrong_pin')
+                  : localizations.translate('enter_pin'),
+              style: TextStyle(
+                fontSize: 16,
+                color: _isWrongPin ? Colors.red : Colors.grey,
               ),
+            ),
               const SizedBox(height: 24),
               AnimatedBuilder(
                 animation: _shakeAnimation,
@@ -430,16 +402,16 @@ try {
                               fontSize: 24, color: Colors.black),
                         ),
                       ),
-                    TextButton(
-                      onPressed: _onExitPressed,
-                      child: const Text(
-                        'Выйти',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color.fromARGB(255, 33, 41, 188),
-                        ),
+                  TextButton(
+                    onPressed: _onExitPressed,
+                    child: Text(
+                      localizations.translate('exit'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color.fromARGB(255, 33, 41, 188),
                       ),
                     ),
+                  ),
                     TextButton(
                       onPressed: () => _onNumberPressed('0'),
                       child: const Text(
@@ -467,10 +439,10 @@ try {
                     builder: (context) => ForgotPinScreen(),
                   ));
                 },
-                child: const Text(
-                  'Забыли PIN-код?',
-                  style: TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
-                ),
+              child: Text(
+                localizations.translate('forgot_pin'),
+                style: const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
+              ),
               ),
             ],
           ),

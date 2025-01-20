@@ -39,6 +39,7 @@ import 'package:crm_task_manager/screens/dashboard_for_manager/process_speed.dar
 import 'package:crm_task_manager/screens/dashboard_for_manager/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/users_chart.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -136,7 +137,6 @@ Future<void> _initializeData() async {
   }
 }
 
-
  Future<void> _onRefresh() async {
   if (isRefreshing) return;
 
@@ -148,7 +148,6 @@ Future<void> _initializeData() async {
     // Загрузка данных пользователя и задержка (эмуляция загрузки)
     await Future.wait(
         [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
-
     if (mounted) {
       setState(() {
         isRefreshing = false;
@@ -180,12 +179,13 @@ Future<void> _initializeData() async {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return  Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: CustomAppBar(
-            title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
+            title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_dashboard'),
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
@@ -266,7 +266,9 @@ List<Widget> _buildDashboardContent() {
       return [
         GoalCompletionChart(),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(),         ];
+        TaskChartWidgetManager(),   
+      ];
+
     }
   }
 }

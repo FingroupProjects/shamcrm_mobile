@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
@@ -8,6 +9,8 @@ class LogoutButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+        final localizations = AppLocalizations.of(context);
+
     return GestureDetector(
       onTap: () async {
         // Получаем экземпляр SharedPreferences
@@ -30,8 +33,7 @@ class LogoutButtonWidget extends StatelessWidget {
 
         // Проверяем успешность очистки
         if (isCleared) {
-          print(
-              'Все данные успешно очищены, кроме domainChecked и enteredDomain.');
+          print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
         } else {
           print('Ошибка при очистке данных.');
         }
@@ -49,7 +51,7 @@ class LogoutButtonWidget extends StatelessWidget {
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',
-        text: 'Выйти',
+        text: localizations!.exit ,
       ),
     );
   }
