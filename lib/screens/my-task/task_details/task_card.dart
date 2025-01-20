@@ -163,7 +163,6 @@ class _MyTaskCardState extends State<MyTaskCard> {
               taskStatus: dropdownValue, // Текущий статус задачи
               statusId: widget.statusId, // ID статуса задачи
               description: widget.task.description, // Описание задачи
-              taskCustomFields: widget.task.taskCustomFields,
             ),
           ),
         );

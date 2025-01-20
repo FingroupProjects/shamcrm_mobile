@@ -5,6 +5,8 @@ import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -96,6 +98,7 @@ void initState() {
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
 
       
       setState(() {

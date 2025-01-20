@@ -6,8 +6,6 @@ class MyTaskById {
   final String? description;
   final int statusId;
   final MyTaskStatusById? taskStatus;
-  final String? color;
-  final List<MyTaskCustomFieldsById> taskCustomFields;
   final String? taskFile;
 
   MyTaskById({
@@ -18,107 +16,21 @@ class MyTaskById {
     this.description,
     required this.statusId,
     this.taskStatus,
-    this.color,
-    required this.taskCustomFields,
     this.taskFile,
   });
 
-  factory MyTaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
+  factory MyTaskById.fromJson(Map<String, dynamic> json, [int statusId = 0]) {
     return MyTaskById(
-      id: json['id'] is int ? json['id'] : 0,
-      name: json['name'] is String ? json['name'] : 'Без имени',
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
-      description: json['description'] is String ? json['description'] : '',
-      statusId: taskStatusId,
-      taskStatus: json['taskStatus'] != null &&
-              json['taskStatus'] is Map<String, dynamic>
+      description: json['description'] ?? '',
+      statusId: statusId,
+      taskStatus: json['taskStatus'] != null
           ? MyTaskStatusById.fromJson(json['taskStatus'])
           : null,
       taskFile: json['file'],
-      taskCustomFields: (json['task_custom_fields'] as List<dynamic>?)
-              ?.map((field) => MyTaskCustomFieldsById.fromJson(field))
-              .toList() ??
-          [],
-    );
-  }
-}
-
-class MyTaskCustomFieldsById {
-  final int id;
-  final String key;
-  final String value;
-
-  MyTaskCustomFieldsById({
-    required this.id,
-    required this.key,
-    required this.value,
-  });
-
-  factory MyTaskCustomFieldsById.fromJson(Map<String, dynamic> json) {
-    return MyTaskCustomFieldsById(
-      id: json['id'] ?? 0,
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
-    );
-  }
-}
-
-class ChatById {
-  final int id;
-  final String? lead;
-  final String type;
-  final String? user;
-  final bool canSendMessage;
-
-  ChatById({
-    required this.id,
-    this.lead,
-    required this.type,
-    this.user,
-    required this.canSendMessage,
-  });
-
-  factory ChatById.fromJson(Map<String, dynamic> json) {
-    return ChatById(
-      id: json['id'] ?? 0,
-      lead: json['lead'] as String?,
-      type: json['type'] as String? ?? 'unknown',
-      user: json['user'] as String?,
-      canSendMessage: json["can_send_message"] ?? false,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'lead': lead,
-      'type': type,
-      'user': user,
-      'can_send_message': canSendMessage,
-    };
-  }
-}
-
-class UserById {
-  final int id;
-  final String name;
-  final String email;
-  final String phone;
-
-  UserById({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phone,
-  });
-
-  factory UserById.fromJson(Map<String, dynamic> json) {
-    return UserById(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано',
-      email: json['email'] ?? 'Не указано',
-      phone: json['phone'] ?? 'Не указано',
     );
   }
 }
@@ -203,8 +115,3 @@ class MyTaskStatusNameById {
     };
   }
 }
-
-
-/*
-
-*/

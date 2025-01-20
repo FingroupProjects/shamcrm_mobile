@@ -24,19 +24,17 @@ class MyTask {
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
     try {
       return MyTask(
-        id: json['id'] is int ? json['id'] : 0,
-        name: json['name'] is String ? json['name'] : 'Без имени',
-        startDate: json['from'],  // Remove type check since it's nullable
-        endDate: json['to'],      // Remove type check since it's nullable
-        description: json['description'] is String ? json['description'] : '',
+        id: json['id'] ?? 0,
+        name: json['name'] ?? 'Без имени',
+        startDate: json['from'],
+        endDate: json['to'],
+        description: json['description'] ?? '',
         statusId: taskStatusId,
         taskStatus: json['taskStatus'] != null
             ? MyTaskStatus.fromJson(json['taskStatus'])
             : null,
-        file: json['file'] != null
-            ? (json['file'] is Map<String, dynamic>
-                ? MyTaskFile.fromJson(json['file'])
-                : MyTaskFile(name: json['file'].toString(), size: 'Неизвестно'))
+        file: json['file'] != null && json['file'] is Map<String, dynamic>
+            ? MyTaskFile.fromJson(json['file'])
             : null,
         taskCustomFields: json['task_custom_fields'] != null
             ? (json['task_custom_fields'] as List)
@@ -45,11 +43,9 @@ class MyTask {
             : [],
       );
     } catch (e) {
-      print('Error parsing MyTask: $e');
       print('Error parsing MyTask: $e, JSON: $json');
-
       return MyTask(
-        id: 52,
+        id: 0,
         name: 'Ошибка загрузки',
         startDate: null,
         endDate: null,
@@ -134,7 +130,7 @@ class MyTaskFile {
 class MyTaskStatus {
   final int id;
   final String title;
-  final String color;
+  final String? color;
   final int? organizationId;
   final int position;
   final int tasksCount;
@@ -142,7 +138,7 @@ class MyTaskStatus {
   MyTaskStatus({
     required this.id,
     required this.title,
-    required this.color,
+    this.color,
     this.organizationId,
     required this.position,
     required this.tasksCount,
@@ -150,12 +146,12 @@ class MyTaskStatus {
 
   factory MyTaskStatus.fromJson(Map<String, dynamic> json) {
     return MyTaskStatus(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      color: json['color'] as String,
+      id: json['id'] ?? 0,
+      title: json['title'] ?? 'Без статуса',
+      color: json['color'] ?? '#FFFFFF',
       organizationId: json['organization_id'] as int?,
-      position: json['position'] as int,
-      tasksCount: json['tasks_count'] as int,
+      position: json['position'] ?? 0,
+      tasksCount: json['tasks_count'] ?? 0,
     );
   }
 
@@ -170,4 +166,3 @@ class MyTaskStatus {
     };
   }
 }
-

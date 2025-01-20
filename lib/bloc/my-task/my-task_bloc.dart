@@ -172,7 +172,6 @@ Future<void> _fetchMyTasks(FetchMyTasks event, Emitter<MyTaskState> emit) async 
         startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
-        customFields: event.customFields,
         filePath: event.filePath,
       );
 
@@ -199,12 +198,10 @@ Future<void> _fetchMyTasks(FetchMyTasks event, Emitter<MyTaskState> emit) async 
       final result = await apiService.updateMyTask(
         taskId: event.taskId,
         name: event.name,
-        statusId: event.statusId,
         startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
         taskStatusId: event.taskStatusId,
-        customFields: event.customFields,
         filePath: event.filePath,
       );
 

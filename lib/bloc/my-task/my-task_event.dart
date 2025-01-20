@@ -45,24 +45,19 @@ class CreateMyTask extends MyTaskEvent {
 class UpdateMyTask extends MyTaskEvent {
   final int taskId;
   final String name;
-  final int statusId;
   final DateTime? startDate;
   final DateTime? endDate;
   final String? description;
   final int taskStatusId;
-  final List<Map<String, String>>? customFields;
-
   final String? filePath;
 
   UpdateMyTask({
     required this.taskId,
     required this.name,
-    required this.statusId,
     this.startDate,
     this.endDate,
     this.description,
     required this.taskStatusId,
-    this.customFields,
     this.filePath,
   });
 }

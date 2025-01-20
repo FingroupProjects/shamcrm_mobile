@@ -10,13 +10,11 @@ abstract class MyTaskStatusEvent extends Equatable {
 
 class CreateMyTaskStatusAdd extends MyTaskStatusEvent {
   final String statusName;
-  final bool finalStep;
 
   const CreateMyTaskStatusAdd({
     required this.statusName,
-    required this.finalStep,
   });
 
   @override
-  List<Object> get props => [statusName, finalStep];
+  List<Object> get props => [statusName];
 }

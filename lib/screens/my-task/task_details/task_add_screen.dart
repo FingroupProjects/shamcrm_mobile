@@ -1,16 +1,9 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
-
-import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:crm_task_manager/bloc/user/user_event.dart';
-import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -33,25 +26,11 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   final TextEditingController startDateController = TextEditingController();
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-
-  // Переменные для файла
   // Переменные для файла
   String? selectedFile;
   String? fileName;
   String? fileSize;
-  int? selectedPriority;
-  String? selectedProject;
-    String? selectedStatus;
-  List<String>? selectedUsers;
-  List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-
-  // Карта уровней приоритета
-  final Map<int, String> priorityLevels = {
-    1: 'Обычный',
-    2: 'Важный',
-    3: 'Срочный'
-  };
 
   @override
   void initState() {
@@ -59,52 +38,15 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     // Устанавливаем значения по умолчанию
     _setDefaultValues();
-    _fetchAndAddCustomFields();
     // Подписываемся на изменения в блоках
   }
 
-  void _fetchAndAddCustomFields() async {
-    try {
-      // Здесь предполагается, что getCustomFields определён в ApiService
-      final data = await ApiService().getCustomFields(); // Выполнить GET-запрос
-      if (data['result'] != null) {
-        data['result'].forEach((value) {
-          setState(() {
-            customFields.add(CustomField(fieldName: value));
-          });
-        });
-      }
-    } catch (e) {
-      print('Ошибка!');
-    }
-  }
 
   void _setDefaultValues() {
     // Устанавливаем приоритет по умолчанию (Обычный)
-    selectedPriority = 1;
-
     // Устанавливаем текущую дату в поле "От"
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
-  }
-
-  void _addCustomField(String fieldName) {
-    setState(() {
-      customFields.add(CustomField(fieldName: fieldName));
-    });
-  }
-
-  void _showAddFieldDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddCustomFieldDialog(
-          onAddField: (fieldName) {
-            _addCustomField(fieldName);
-          },
-        );
-      },
-    );
   }
 
   // Функция выбора файла
@@ -206,13 +148,6 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           ),
         ],
       ],
-    );
-  }
-
-  // Построение выпадающего списка приоритетов
-  Widget _buildPriorityDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
     );
   }
 
@@ -336,8 +271,6 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      _buildPriorityDropdown(),
-                      const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'От',
@@ -369,32 +302,6 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildFileSelection(), // Добавляем виджет выбора файла
-                      const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomButton(
-                        buttonText: 'Добавить поле',
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                      const SizedBox(height: 8),
-                      // _buildFileSelection(), // Добавляем виджет выбора файла
                     ],
                   ),
                 ),
@@ -533,17 +440,6 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         size: fileSize ?? "0KB",
       );
     }
-    // Создание задачи
-    List<Map<String, String>> customFieldMap = [];
-    for (var field in customFields) {
-      String fieldName = field.fieldName.trim();
-      String fieldValue = field.controller.text.trim();
-      if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
-        customFieldMap.add({fieldName: fieldValue});
-      }
-    }
-    print("fileData: $fileData");
-
     context.read<MyTaskBloc>().add(CreateMyTask(
           name: name,
           statusId: widget.statusId,
@@ -551,15 +447,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           startDate: startDate,
           endDate: endDate,
           description: description,
-          customFields: customFieldMap,
           filePath: selectedFile, // Передаем путь к файлу
         ));
   }
-}
-
-class CustomField {
-  final String fieldName;
-  final TextEditingController controller = TextEditingController();
-
-  CustomField({required this.fieldName});
 }
