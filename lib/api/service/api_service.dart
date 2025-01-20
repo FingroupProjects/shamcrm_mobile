@@ -639,29 +639,27 @@ class ApiService {
     int page = 1,
     int perPage = 20,
     String? search,
-    int? managerId,
+    List<int>? managers, // Изменено: массив менеджеров
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
 
-    // Добавляем organization_id
     if (organizationId != null) {
       path += '&organization_id=$organizationId';
     }
 
-    // Добавляем поиск если есть
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (leadStatusId != null && managerId == null) {
+    } else if (leadStatusId != null && (managers == null || managers.isEmpty)) {
       path += '&lead_status_id=$leadStatusId';
     }
 
-    // Добавляем manager_id если есть
-    if (managerId != null) {
-      path += '&manager_id=$managerId';
+    // Передаем массив менеджеров
+    if (managers != null && managers.isNotEmpty) {
+      final managerIds = managers.map((id) => '"$id"').join(',');
+      path += '&managers=[$managerIds]';
     }
 
-    // Log the final request path
     print('Sending request to API with path: $path');
 
     final response = await _getRequest(path);
@@ -4528,10 +4526,7 @@ class ApiService {
   }) async {
     try {
       // Формируем данные для запроса
-      final Map<String, dynamic> data = {
-        'title': statusName,
-        'color':"#000"
-      };
+      final Map<String, dynamic> data = {'title': statusName, 'color': "#000"};
 
       // Получаем идентификатор организации
       final organizationIdProfile = await getSelectedOrganization();
@@ -4591,7 +4586,7 @@ class ApiService {
     }
   }
 
-// Метод для создание задачи
+  // Метод для создание задачи
   Future<Map<String, dynamic>> createMyTask({
     required String name,
     required int? statusId,
@@ -4601,39 +4596,51 @@ class ApiService {
     String? description,
     String? filePath,
     int position = 1,
+    required bool setPush,
   }) async {
     try {
-      final token = await getToken(); // Получаем токен
+      final token = await getToken();
       final organizationId = await getSelectedOrganization();
       var uri = Uri.parse(
           '${baseUrl}/my-task${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
+      Map<String, dynamic> body = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'position': position,
+        'sent_push': setPush, // Чистый boolean без преобразования в строку
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (description != null) 'description': description,
+        if (organizationId != null) 'organization_id': organizationId,
+      };
+
+      if (startDate != null) {
+        body['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        body['to'] = endDate.toIso8601String();
+      }
+      if (description != null) {
+        body['description'] = description;
+      }
+
       // Создаем multipart request
       var request = http.MultipartRequest('POST', uri);
 
-      // Добавляем заголовки с токеном
+      // Добавляем заголовки
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
         'Device': 'mobile'
       });
 
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['position'] = position.toString();
-
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
-      }
-
-      if (description != null) {
-        request.fields['description'] = description;
-      }
+      // Конвертируем Map в fields
+      body.forEach((key, value) {
+        request.fields[key] = value
+            .toString(); // toString() для bool даст 'true' или 'false' без кавычек
+      });
 
       // Добавляем файл, если он есть
       if (filePath != null) {
@@ -4653,7 +4660,6 @@ class ApiService {
         }
       }
 
-      // Отправляем запрос
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
@@ -4663,7 +4669,6 @@ class ApiService {
           'message': 'Задача успешно создана.',
         };
       } else if (response.statusCode == 422) {
-        // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
             'success': false,
@@ -4705,7 +4710,6 @@ class ApiService {
     }
   }
 
-  //Метод для обновление задачи
   Future<Map<String, dynamic>> updateMyTask({
     required int taskId,
     required String name,
@@ -4714,12 +4718,30 @@ class ApiService {
     DateTime? endDate,
     String? description,
     String? filePath,
+    required bool setPush,
   }) async {
     try {
       final token = await getToken();
       final organizationId = await getSelectedOrganization();
       var uri = Uri.parse(
           '${baseUrl}/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      // Создаем Map с данными
+      Map<String, dynamic> body = {
+        'name': name,
+        'task_status_id': taskStatusId,
+        'sent_push': setPush, // Добавляем setPush как bool
+      };
+
+      if (startDate != null) {
+        body['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        body['to'] = endDate.toIso8601String();
+      }
+      if (description != null) {
+        body['description'] = description;
+      }
 
       // Создаем multipart request
       var request = http.MultipartRequest('POST', uri);
@@ -4731,19 +4753,12 @@ class ApiService {
         'Device': 'mobile'
       });
 
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
-      }
+      // Конвертируем Map в fields
+      body.forEach((key, value) {
+        request.fields[key] = value
+            .toString(); // toString() для bool даст true или false без кавычек
+      });
 
-      if (description != null) {
-        request.fields['description'] = description;
-      }
       // Добавляем файл, если он есть
       if (filePath != null) {
         final file = File(filePath);
@@ -4761,6 +4776,7 @@ class ApiService {
           request.files.add(multipartFile);
         }
       }
+
       // Отправляем запрос
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);

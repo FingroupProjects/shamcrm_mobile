@@ -4,15 +4,16 @@ class FetchLeadStatuses extends LeadEvent {}
 
 class FetchLeads extends LeadEvent {
   final int statusId;
-  final String? query; // Параметр для поиска
-  final int? managerId; // Добавляем поле managerId
+  final String? query;
+  final List<int>? managerIds; // Изменено: массив менеджеров
 
   FetchLeads(
     this.statusId, {
     this.query,
-    this.managerId, // Добавляем в конструктор
+    this.managerIds,
   });
 }
+
 
 class FetchMoreLeads extends LeadEvent {
   final int statusId;

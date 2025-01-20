@@ -45,28 +45,16 @@ class MyTaskDetailsScreen extends StatefulWidget {
 class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   List<Map<String, String>> details = [];
   MyTaskById? currentMyTask;
-  bool _canEditMyTask = false;
-  bool _canDeleteMyTask = false;
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
     context
         .read<MyTaskByIdBloc>()
         .add(FetchMyTaskByIdEvent(taskId: int.parse(widget.taskId)));
   }
 
-  // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canEdit = await _apiService.hasPermission('task.update');
-    final canDelete = await _apiService.hasPermission('task.delete');
-    setState(() {
-      _canEditMyTask = canEdit;
-      _canDeleteMyTask = canDelete;
-    });
-  }
 
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
@@ -290,11 +278,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         ),
       ),
       actions: [
-        if (_canEditMyTask || _canDeleteMyTask)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_canEditMyTask)
                 IconButton(
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(),
@@ -331,7 +317,6 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                     }
                   },
                 ),
-              if (_canDeleteMyTask)
                 IconButton(
                   padding: EdgeInsets.only(right: 8),
                   constraints: BoxConstraints(),

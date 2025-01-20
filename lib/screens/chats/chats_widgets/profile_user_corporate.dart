@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ParticipantProfileScreen extends StatelessWidget {
   final String userId;
@@ -43,6 +44,25 @@ class ParticipantProfileScreen extends StatelessWidget {
       return "Неизвестно";
     }
   }
+ // Добавьте эту функцию для совершения звонка
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+Future<void> _sendEmail(String email) async {
+  final Uri launchUri = Uri(
+    scheme: 'mailto',
+    path: email,
+  );
+  if (!await launchUrl(launchUri)) {
+    throw Exception('Could not launch $launchUri');
+  }
+}
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
@@ -319,42 +339,61 @@ class ParticipantProfileScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget buildInfoRow(String title, String value, IconData icon) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 32, color: Color(0xff1E2E52)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
-                ),
+Widget buildInfoRow(String title, String value, IconData icon) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Icon(icon, size: 32, color: Color(0xff1E2E52)),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff6E7C97),
               ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ],
-          ),
+            ),
+            // Проверяем тип поля и делаем его кликабельным если это телефон или email
+            title == "Номер телефона" || title == "Email" 
+                ? GestureDetector(
+                    onTap: () {
+                      if (title == "Номер телефона") {
+                        _makePhoneCall(value);
+                      } else if (title == "Email") {
+                        _sendEmail(value);
+                      }
+                    },
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+          ],
         ),
-      ],
-    );
-  }
-
+      ),
+    ],
+  );
+}
   Widget buildDivider() {
     return const Divider(
       color: Color(0xffE1E6F0),

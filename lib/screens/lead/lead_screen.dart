@@ -53,7 +53,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
-
           _tabController =
               TabController(length: _tabTitles.length, vsync: this);
           _tabController.index = _currentTabIndex;
@@ -93,10 +92,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   Future<void> _searchLeads(String query, int currentStatusId) async {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     if (query.isEmpty) {
-      leadBloc.add(FetchLeads(currentStatusId, managerId: _selectedManagerId));
+      leadBloc.add(FetchLeads(
+        currentStatusId,
+        managerIds: _selectedManagerId != null ? [_selectedManagerId!] : null,
+      ));
     } else {
-      leadBloc.add(FetchLeads(currentStatusId,
-          query: query, managerId: _selectedManagerId));
+      leadBloc.add(FetchLeads(
+        currentStatusId,
+        query: query,
+        managerIds: _selectedManagerId != null ? [_selectedManagerId!] : null,
+      ));
     }
   }
 
@@ -112,7 +117,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeads(
       currentStatusId,
-      managerId: _selectedManagerId,
+      managerIds: _selectedManagerId != null ? [_selectedManagerId!] : null,
       query: _searchController.text.isNotEmpty ? _searchController.text : null,
     ));
   }
@@ -123,7 +128,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       final leadBloc = BlocProvider.of<LeadBloc>(context);
       leadBloc.add(FetchLeads(
         currentStatusId,
-        managerId: _selectedManagerId,
+        managerIds: _selectedManagerId != null ? [_selectedManagerId!] : null,
         query:
             _searchController.text.isNotEmpty ? _searchController.text : null,
       ));
@@ -178,7 +183,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           focusNode: focusNode,
           showFilterTaskIcon: false,
           showMyTaskIcon: false, // Выключаем иконку My Tasks
-
           clearButtonClick: (value) {
             if (value == false) {
               // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());

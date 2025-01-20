@@ -31,6 +31,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   String? fileName;
   String? fileSize;
   bool isEndDateInvalid = false;
+  bool setPush = false;
 
   @override
   void initState() {
@@ -40,7 +41,6 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
     _setDefaultValues();
     // Подписываемся на изменения в блоках
   }
-
 
   void _setDefaultValues() {
     // Устанавливаем приоритет по умолчанию (Обычный)
@@ -72,6 +72,35 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildPushNotificationCheckbox() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Checkbox(
+            value: setPush,
+            onChanged: (bool? value) {
+              setState(() {
+                setPush = value ?? true;
+              });
+            },
+            activeColor: const Color(0xff1E2E52),
+          ),
+          
+          const Text(
+            'Отправить Push-уведомление',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Виджет выбора файла
@@ -302,6 +331,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildFileSelection(), // Добавляем виджет выбора файла
+                      _buildPushNotificationCheckbox(), // Add this line
                     ],
                   ),
                 ),
@@ -385,9 +415,12 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
 
   void _createMyTask() {
     final String name = nameController.text;
-    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
-    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
-    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+    final String? startDateString =
+        startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString =
+        endDateController.text.isEmpty ? null : endDateController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
 
     DateTime? startDate;
     if (startDateString != null && startDateString.isNotEmpty) {
@@ -448,6 +481,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           endDate: endDate,
           description: description,
           filePath: selectedFile, // Передаем путь к файлу
+          setPush: setPush, // Add this line
         ));
   }
 }
