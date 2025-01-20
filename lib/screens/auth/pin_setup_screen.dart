@@ -9,6 +9,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   @override
   void initState() {
     super.initState();
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
     _animationController = AnimationController(
       vsync: this,
@@ -110,7 +112,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     await prefs.setString('userRoleName', userProfile.role![0].name);
 
     // Выводим данные в консоль
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
     BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
     BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
@@ -172,12 +173,12 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 height: 160,
               ),
               const SizedBox(height: 16),
-              Text(
+               Text(
                 _isConfirming
                     ? (_pinsDoNotMatch
-                        ? 'Пароли не совпадают'
-                        : 'Повторите PIN-код')
-                    : 'Установите PIN-код',
+                        ? AppLocalizations.of(context)!.translate('pins_do_not_match_error') 
+                        : AppLocalizations.of(context)!.translate('confirm_pin_title')) 
+                    : AppLocalizations.of(context)!.translate('set_pin_title'), 
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

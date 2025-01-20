@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
@@ -61,9 +62,10 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
   }
 
   Widget _buildErrorSnackbar(String message) {
+   final localizations = AppLocalizations.of(context);
     return Center(
       child: Text(
-        "Ошибка: $message",
+        "$localizations!.translate('error_text'): $message",
         style: const TextStyle(
           fontFamily: 'Gilroy',
           fontSize: 16,
@@ -75,6 +77,7 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
   }
 
   Widget _buildTaskList(TaskCompletionLoaded state) {
+    final localizations = AppLocalizations.of(context);
     const double itemHeight = 60.0;
     double calculatedHeight =
         (state.data.length * itemHeight).clamp(0, 300).toDouble();
@@ -82,10 +85,10 @@ class _TaskCompletionChartState extends State<TaskCompletionChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+         Padding(
           padding: EdgeInsets.all(4.0),
           child: Text(
-            'Выполнение целей',
+            localizations!.translate('achieving_goals'),
             style: TextStyle(
               fontSize: 24,
               fontFamily: "Gilroy",

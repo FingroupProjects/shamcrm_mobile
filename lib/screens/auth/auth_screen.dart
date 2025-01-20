@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth_domain/domain_bloc.dart';
@@ -42,6 +43,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     if (!_isDomainChecked) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
@@ -83,16 +85,16 @@ class _AuthScreenState extends State<AuthScreen> {
                   SizedBox(height: screenHeight * 0.15),
                   Image.asset('assets/icons/11.jpg', height: 80),
                   SizedBox(height: 30),
-                  const Text(
-                    'Введите ваш поддомен',
+                  Text(
+                    localizations!.translate('enter_subdomain'), // Локализованный текст
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'Gilroy'),
                   ),
                   SizedBox(height: 24),
                   CustomTextField(
                     controller: subdomainController,
-                    hintText: 'Введите поддомен',
-                    label: 'Поддомен',
+                    hintText: localizations.translate('subdomain_hint'), // Локализованный текст
+                    label: localizations.translate('subdomain_label'), // Локализованный текст
                   ),
                   SizedBox(height: 24),
                   BlocConsumer<DomainBloc, DomainState>(
@@ -113,7 +115,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Неверный поддомен',
+                                localizations.translate('invalid_subdomain'), // Локализованный текст
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 16,
@@ -139,7 +141,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         );
                       }
                       return CustomButton(
-                        buttonText: 'Войти',
+                        buttonText: localizations.translate('login_button'), 
                         buttonColor: Color(0xff4F40EC),
                         textColor: Colors.white,
                         onPressed: () async {
@@ -149,7 +151,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             context.read<DomainBloc>().add(CheckDomain(subdomain));
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Пожалуйста, введите поддомен')),
+                              SnackBar(content: Text(localizations.translate('enter_subdomain_error')),),
                             );
                           }
                         },

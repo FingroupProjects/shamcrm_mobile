@@ -68,14 +68,14 @@ import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/languages_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -110,39 +110,30 @@ void main() async {
   );
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
+
+  final String? savedLanguageCode = await LanguageManager.getLanguage();
+  final Locale savedLocale = savedLanguageCode != null ? Locale(savedLanguageCode) : const Locale('ru');
+  
   runApp(MyApp(
     apiService: apiService,
     authService: authService,
     isDomainChecked: isDomainChecked,
     token: token,
     pin: pin,
+    initialLocale: savedLocale, 
+
   ));
 }
 
 Future<void> getFCMTokens(ApiService apiService) async {}
 
-class LocaleCubit extends Cubit<Locale> {
-  LocaleCubit() : super(const Locale('ru'));
-
-  Future<void> setLocale(Locale locale) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('language_code', locale.languageCode);
-    emit(locale);
-  }
-
-  Future<void> loadSavedLocale() async {
-    final prefs = await SharedPreferences.getInstance();
-    final languageCode = prefs.getString('language_code') ?? 'ru';
-    emit(Locale(languageCode));
-  }
-}
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final ApiService apiService;
   final AuthService authService;
   final bool isDomainChecked;
   final String? token;
   final String? pin;
+  final Locale initialLocale; 
 
   const MyApp({
     required this.apiService,
@@ -150,41 +141,66 @@ class MyApp extends StatelessWidget {
     required this.isDomainChecked,
     this.token,
     this.pin,
+    required this.initialLocale, 
   });
+
+  static void setLocale(BuildContext context, Locale newLocale) {
+    _MyAppState? state = context.findAncestorStateOfType<_MyAppState>();
+    state?.setLocale(newLocale);
+  }
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Locale? _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _locale = widget.initialLocale; 
+  }
+
+  void setLocale(Locale newLocale) {
+    setState(() {
+      _locale = newLocale;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-        providers: [
-          Provider<ApiService>.value(value: apiService),
-          Provider<AuthService>.value(value: authService),
-          BlocProvider(create: (context) => DomainBloc(apiService)),
-          BlocProvider(create: (context) => LoginBloc(apiService)),
-          BlocProvider(create: (context) => LeadBloc(apiService)),
-          BlocProvider(create: (context) => HistoryBloc(apiService)),
-          BlocProvider(create: (context) => NotesBloc(apiService)),
+      providers: [
+          Provider<ApiService>.value(value: widget.apiService),
+          Provider<AuthService>.value(value: widget.authService),
+          BlocProvider(create: (context) => DomainBloc(widget.apiService)),
+          BlocProvider(create: (context) => LoginBloc(widget.apiService)),
+          BlocProvider(create: (context) => LeadBloc(widget.apiService)),
+          BlocProvider(create: (context) => HistoryBloc(widget.apiService)),
+          BlocProvider(create: (context) => NotesBloc(widget.apiService)),
           BlocProvider(create: (context) => GetAllManagerBloc()),
           BlocProvider(create: (context) => GetAllRegionBloc()),
           BlocProvider(create: (context) => GetAllLeadBloc()),
-          BlocProvider(create: (context) => DealBloc(apiService)),
-          BlocProvider(create: (context) => TaskBloc(apiService)),
-          BlocProvider(create: (context) => MyTaskBloc(apiService)),
+          BlocProvider(create: (context) => DealBloc(widget.apiService)),
+          BlocProvider(create: (context) => TaskBloc(widget.apiService)),
+          BlocProvider(create: (context) => MyTaskBloc(widget.apiService)),
           BlocProvider(create: (context) => GetTaskProjectBloc()),
           BlocProvider(create: (context) => GetAllProjectBloc()),
-          BlocProvider(create: (context) => UserTaskBloc(apiService)),
-          BlocProvider(create: (context) => HistoryBlocTask(apiService)),
-          BlocProvider(create: (context) => HistoryBlocMyTask(apiService)),
-          BlocProvider(create: (context) => RoleBloc(apiService)),
-          BlocProvider(create: (context) => TaskStatusNameBloc(apiService)),
-          BlocProvider(create: (context) => MyTaskMyStatusNameBloc(apiService)),
-          BlocProvider(create: (context) => LeadByIdBloc(apiService)),
-          BlocProvider(create: (context) => DealByIdBloc(apiService)),
-          BlocProvider(create: (context) => TaskByIdBloc(apiService)),
-          BlocProvider(create: (context) => MyTaskByIdBloc(apiService)),
-          BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-          BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
+          BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
+          BlocProvider(create: (context) => HistoryBlocTask(widget.apiService)),
+          BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
+          BlocProvider(create: (context) => RoleBloc(widget.apiService)),
+          BlocProvider(create: (context) => TaskStatusNameBloc(widget.apiService)),
+          BlocProvider(create: (context) => MyTaskMyStatusNameBloc(widget.apiService)),
+          BlocProvider(create: (context) => LeadByIdBloc(widget.apiService)),
+          BlocProvider(create: (context) => DealByIdBloc(widget.apiService)),
+          BlocProvider(create: (context) => TaskByIdBloc(widget.apiService)),
+          BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
+          BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
+          BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
           BlocProvider(create: (context) => CreateClientBloc()),
-          BlocProvider(create: (context) => GroupChatBloc(apiService)),
+          BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
           BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
           BlocProvider(create: (context) => ListenSenderTextCubit()),
           BlocProvider(create: (context) => ListenSenderVoiceCubit()),
@@ -199,76 +215,76 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
           BlocProvider(create: (context) =>DashboardConversionBlocManager(ApiService())),
           BlocProvider(create: (context) => UserBlocManager(ApiService())),
-          BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
           BlocProvider(create: (context) => DealStatsBloc(ApiService())),
           BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
           BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
           BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
-          BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
           BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
           BlocProvider(create: (context) => DealTasksBloc(ApiService())),
           BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
           BlocProvider(create: (context) => ContactPersonBloc(ApiService())),
-          BlocProvider(create: (context) => LeadToChatBloc(apiService)),
+          BlocProvider(create: (context) => LeadToChatBloc(widget.apiService)),
           BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
           BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
           BlocProvider(create: (context) => PermissionsBloc(ApiService())),
           BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
-          BlocProvider(create: (context) => ForgotPinBloc(apiService: ApiService())),
-          BlocProvider(create: (context) => SourceLeadBloc(apiService)),
-          BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
-          BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
-          BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
-          BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
-          BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
+          BlocProvider(create: (context) => SourceLeadBloc(widget.apiService)),
+          BlocProvider(create: (context) => LeadToCBloc(apiService: widget.apiService)),
+          BlocProvider(create: (context) => Data1CBloc(apiService: widget.apiService)),
+          BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
+          BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
+          BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
           BlocProvider(create: (context) =>TaskAddFromDealBloc(apiService: ApiService())),
-          BlocProvider(create: (context) => LocaleCubit()..loadSavedLocale()),
+          ],
+      child: MaterialApp(
+        locale: _locale ?? const Locale('ru'), 
+        color: Colors.white,
+        debugShowCheckedModeBanner: false,
+        title: 'SHAMCRM',
+        navigatorKey: navigatorKey,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Colors.white,
+        ),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
         ],
-        child: BlocBuilder<LocaleCubit, Locale>(builder: (context, locale) {
-          return MaterialApp(
-            color: Colors.white,
-            debugShowCheckedModeBanner: false,
-            title: 'SHAMCRM',
-            navigatorKey: navigatorKey,
-
-            // Добавляем поддержку локализации
-            localizationsDelegates: const [
-              AppLocalizationsDelegate(),
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('ru'), // Русский
-              Locale('uz'), // Узбекский
-              Locale('en'), // Английский
-            ],
-            locale: const Locale('ru'), // Язык по умолчанию
-
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              scaffoldBackgroundColor: Colors.white,
-            ),
-            home: Builder(
-              builder: (context) {
-                if (token == null) {
-                  return isDomainChecked ? LoginScreen() : AuthScreen();
-                } else if (pin == null) {
-                  return PinSetupScreen();
-                } else {
-                  return PinScreen();
-                }
-              },
-            ),
-            routes: {
-              '/login': (context) => LoginScreen(),
-              '/home': (context) => HomeScreen(),
-              '/chats': (context) => ChatsScreen(),
-              '/pin_setup': (context) => PinSetupScreen(),
-              '/local_auth': (context) => const AuthScreen(),
-              '/pin_screen': (context) => PinScreen(),
-            },
-          );
-        }));
+        supportedLocales: [
+          const Locale('ru', ''),
+          const Locale('en', ''),
+          const Locale('uz', ''),
+        ],
+        localeResolutionCallback: (locale, supportedLocales) {
+          for (var supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == locale?.languageCode) {
+              return supportedLocale;
+            }
+          }
+          return supportedLocales.first;
+        },
+        home: Builder(
+          builder: (context) {
+            if (widget.token == null) {
+              return widget.isDomainChecked ? LoginScreen() : AuthScreen();
+            } else if (widget.pin == null) {
+              return PinSetupScreen();
+            } else {
+              return PinScreen();
+            }
+          },
+        ),
+        routes: {
+          '/login': (context) => LoginScreen(),
+          '/home': (context) => HomeScreen(),
+          '/chats': (context) => ChatsScreen(),
+          '/pin_setup': (context) => PinSetupScreen(),
+          '/local_auth': (context) => const AuthScreen(),
+          '/pin_screen': (context) => PinScreen(),
+        },
+      ),
+    );
   }
 }

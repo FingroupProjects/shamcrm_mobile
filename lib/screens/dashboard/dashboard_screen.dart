@@ -39,6 +39,7 @@ import 'package:crm_task_manager/screens/dashboard_for_manager/process_speed.dar
 import 'package:crm_task_manager/screens/dashboard_for_manager/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/users_chart.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,17 +55,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   bool isRefreshing = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeData();
-  }
+ @override
+void initState() {
+  super.initState();
+  _initializeData();
+}
 
-  Future<void> _initializeData() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
+Future<void> _initializeData() async {
+  try {
+    setState(() {
+      isLoading = true;
+    });
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -81,63 +82,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _loadUserRoles();
     }
 
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error in initialization: $e');
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  } catch (e) {
+    print('Error in initialization: $e');
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
+}
 
  Future<void> _loadUserRoles() async {
   try {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String userId = prefs.getString('userID') ?? '';
 
+    if (userId.isEmpty) {
+      setState(() {
+        userRoles = ['No user ID found'];
+      });
+      return;
+    }
 
-      String? storedRoles = prefs.getString('userRoles');
-      if (storedRoles != null) {
-        setState(() {
-          userRoles = storedRoles.split(',');
-        });
-        return;
-      }
+    String? storedRoles = prefs.getString('userRoles');
+    if (storedRoles != null) {
+      setState(() {
+        userRoles = storedRoles.split(',');
+      });
+      return;
+    }
 
-      // If roles are not stored, call the API and save them
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      if (mounted) {
-        setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ??
-              ['No role assigned'];
-        });
+    // If roles are not stored, call the API and save them
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+    if (mounted) {
+      setState(() {
+        userRoles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
+      });
 
-        // Save roles in SharedPreferences for future use
-        await prefs.setString('userRoles', userRoles.join(','));
-      }
-    } catch (e) {
-      print('Error loading user roles!');
-      if (mounted) {
-        setState(() {
-          userRoles = ['Error loading roles'];
-        });
-      }
+      // Save roles in SharedPreferences for future use
+      await prefs.setString('userRoles', userRoles.join(','));
+    }
+  } catch (e) {
+    print('Error loading user roles!');
+    if (mounted) {
+      setState(() {
+        userRoles = ['Error loading roles'];
+      });
     }
   }
+}
 
-  Future<void> _onRefresh() async {
-    if (isRefreshing) return;
 
-    try {
+ Future<void> _onRefresh() async {
+  if (isRefreshing) return;
+
+  try {
+    setState(() {
+      isRefreshing = true;
+    });
+
+    // Загрузка данных пользователя и задержка (эмуляция загрузки)
+    await Future.wait(
+        [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
+
+    if (mounted) {
       setState(() {
-        isRefreshing = true;
+        isRefreshing = false;
       });
 
       // Отправляем события для обновления всех блоков графиков
@@ -160,66 +175,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         isRefreshing = false;
       });
-
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Дашборд',
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
-          showSearchIcon: false,
-          showFilterTaskIcon: false,
-          showFilterIcon: false,
-          showMyTaskIcon: false,
-          
+    final localizations = AppLocalizations.of(context);
+    return  Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          title: CustomAppBar(
+            title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_dashboard'),
+            onClickProfileAvatar: () {
+              setState(() {
+                isClickAvatarIcon = !isClickAvatarIcon;
+              });
+            },
+            onChangedSearchInput: (input) {},
+            textEditingController: TextEditingController(),
+            focusNode: FocusNode(),
+            clearButtonClick: (isSearching) {},
+            showSearchIcon: false,
+            showFilterTaskIcon: false,
+            showFilterIcon: false,
+            showMyTaskIcon: false,
+          ),
         ),
-      ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Stack(
-              children: [
-                RefreshIndicator(
-                  color: Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  onRefresh: _onRefresh,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: _buildDashboardContent(),
-                    ),
-                  ),
-                ),
-                if (isLoading || isRefreshing)
-                  Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
+        body: isClickAvatarIcon
+            ? ProfileScreen()
+            : Stack(
+                children: [
+                  RefreshIndicator(
+                    color: Color(0xff1E2E52),
+                    backgroundColor: Colors.white,
+                    onRefresh: _onRefresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: _buildDashboardContent(),
                       ),
                     ),
                   ),
-              ],
-            ),
+                  if (isLoading || isRefreshing)
+                    Container(
+                      color: Colors.white,
+                      child: const Center(
+                        child: PlayStoreImageLoading(
+                          size: 80.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
     );
   }
 
-  List<Widget> _buildDashboardContent() {
+
+List<Widget> _buildDashboardContent() {
     if (userRoles.contains('admin')) {
       return [
         LeadConversionChart(),
@@ -252,10 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return [
         GoalCompletionChart(),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(),
+        TaskChartWidgetManager(),   
       ];
-    } else {
-      return [Container()];
     }
   }
 }

@@ -100,6 +100,7 @@ flutter:
     - assets/images/
     - assets/images/avatar2.png
     - assets/icons/languages/
+    - assets/langs/
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg
