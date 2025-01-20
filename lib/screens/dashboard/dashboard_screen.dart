@@ -137,7 +137,6 @@ Future<void> _initializeData() async {
   }
 }
 
-
  Future<void> _onRefresh() async {
   if (isRefreshing) return;
 
@@ -149,7 +148,6 @@ Future<void> _initializeData() async {
     // Загрузка данных пользователя и задержка (эмуляция загрузки)
     await Future.wait(
         [_loadUserRoles(), Future.delayed(const Duration(seconds: 3))]);
-
     if (mounted) {
       setState(() {
         isRefreshing = false;
@@ -200,7 +198,7 @@ Future<void> _initializeData() async {
             showSearchIcon: false,
             showFilterTaskIcon: false,
             showFilterIcon: false,
-            showMyTaskIcon: false,
+            showMyTaskIcon: true,
           ),
         ),
         body: isClickAvatarIcon
@@ -270,6 +268,7 @@ List<Widget> _buildDashboardContent() {
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidgetManager(),   
       ];
+
     }
   }
 }

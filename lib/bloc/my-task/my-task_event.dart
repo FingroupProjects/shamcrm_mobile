@@ -1,4 +1,3 @@
-
 abstract class MyTaskEvent {}
 
 class FetchMyTaskStatuses extends MyTaskEvent {}
@@ -29,6 +28,7 @@ class CreateMyTask extends MyTaskEvent {
   final String? description;
   final String? filePath;
   final List<Map<String, String>>? customFields;
+  final bool setPush; // Add this line
 
   CreateMyTask({
     required this.name,
@@ -39,31 +39,29 @@ class CreateMyTask extends MyTaskEvent {
     this.description,
     this.customFields,
     this.filePath,
+    this.setPush = false, // Add this line with default value
   });
 }
 
 class UpdateMyTask extends MyTaskEvent {
   final int taskId;
   final String name;
-  final int statusId;
   final DateTime? startDate;
   final DateTime? endDate;
   final String? description;
   final int taskStatusId;
-  final List<Map<String, String>>? customFields;
-
   final String? filePath;
+  final bool setPush; // Add this line
 
   UpdateMyTask({
     required this.taskId,
     required this.name,
-    required this.statusId,
     this.startDate,
     this.endDate,
     this.description,
     required this.taskStatusId,
-    this.customFields,
     this.filePath,
+    this.setPush = false, // Add this line with default value
   });
 }
 

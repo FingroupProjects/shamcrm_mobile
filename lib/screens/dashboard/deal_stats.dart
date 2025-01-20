@@ -38,7 +38,7 @@ List<String> getMonths(BuildContext context) {
   @override
   void initState() {
     super.initState();
-      context.read<DealStatsBloc>().add(LoadDealStatsData());
+    context.read<DealStatsBloc>().add(LoadDealStatsData());
   }
 
   String formatNumber(double value) {
@@ -52,8 +52,6 @@ List<String> getMonths(BuildContext context) {
       return value.toStringAsFixed(0);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +91,7 @@ List<String> getMonths(BuildContext context) {
                       math.max(item.totalSum.toDouble(),
                           item.successfulSum.toDouble())))
               : 100.0;
-          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 100.0;
+          double maxY = maxCount > 0 ? maxCount.ceilToDouble() : 100.0;
 
           if (!hasData) {
             final random = math.Random();

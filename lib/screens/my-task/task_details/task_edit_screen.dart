@@ -2,16 +2,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
-import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/models/my-taskbyId_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
-import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
-import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -25,28 +18,20 @@ class MyTaskEditScreen extends StatefulWidget {
   final String taskName;
   final String taskStatus;
   final int statusId;
-  final String? project;
-  final List<int>? user;
   final String? startDate;
   final String? endDate;
   final String? description;
-  final int? priority;
   final String? file;
-  final List<MyTaskCustomFieldsById> taskCustomFields;
 
   MyTaskEditScreen({
     required this.taskId,
     required this.taskName,
     required this.taskStatus,
     required this.statusId,
-    this.project,
-    this.user,
     this.startDate,
     this.endDate,
     this.description,
-    this.priority,
     this.file,
-    required this.taskCustomFields,
   });
 
   @override
@@ -60,15 +45,12 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  String? selectedProject;
-  List<String>? selectedUsers;
-  int? selectedPriority;
-  List<CustomField> customFields = [];
   // Добавьте эти переменные в класс _MyTaskEditScreenState
   String? selectedFile;
   String? fileName;
   String? fileSize;
   bool isEndDateInvalid = false;
+  bool setPush = false;
 
   final ApiService _apiService = ApiService();
 
@@ -96,37 +78,10 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       endDateController.text = DateFormat('dd/MM/yyyy').format(parsedEndDate);
     }
     descriptionController.text = widget.description ?? '';
-    selectedProject = widget.project;
-    selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
-
-    selectedPriority = widget.priority ?? 1;
-    for (var customField in widget.taskCustomFields) {
-      customFields.add(CustomField(fieldName: customField.key)
-        ..controller.text = customField.value);
-    }
   }
 
   void _loadInitialData() {
     context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
-  }
-
-  void _addCustomField(String fieldName) {
-    setState(() {
-      customFields.add(CustomField(fieldName: fieldName));
-    });
-  }
-
-  void _showAddFieldDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddCustomFieldDialog(
-          onAddField: (fieldName) {
-            _addCustomField(fieldName);
-          },
-        );
-      },
-    );
   }
 
   InputDecoration _inputDecoration() {
@@ -138,22 +93,38 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     );
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        fontFamily: 'Gilroy',
-        color: Color(0xff1E2E52),
+  Widget _buildPushNotificationCheckbox() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Checkbox(
+            value: setPush,
+            onChanged: (bool? value) {
+              setState(() {
+                setPush = value ?? true;
+              });
+            },
+            activeColor: const Color(0xff1E2E52),
+          ),
+          const Text(
+            'Отправить Push-уведомление',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ],
       ),
     );
   }
-
   Widget _buildFileSelection(MyTaskEditScreen task) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Если файл существует, отображаем информацию о нем
         if (task.file != null && task.file!.isNotEmpty) ...[
           Row(
             children: [
@@ -186,6 +157,19 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
           ),
           const SizedBox(height: 16),
         ],
+        // Отображаем надпись "Файл", если файл не выбран
+        if (task.file == null || task.file!.isEmpty) ...[
+          Text(
+            'Файл:',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy', // Используем шрифт Gilroy
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         // Поле выбора файла
         GestureDetector(
           onTap: _pickFile,
@@ -201,12 +185,12 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                 Expanded(
                   child: Text(
                     // Отображаем текст до выбора файла или название нового файла
-                    fileName ?? 'Выберите файл',
+                    task.file ?? 'Выберите файл',
                     style: TextStyle(
                       fontFamily: 'Gilroy', // Используем шрифт Gilroy
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: fileName != null
+                      color: task.file != null
                           ? const Color(0xff1E2E52)
                           : const Color(0xff99A4BA),
                     ),
@@ -299,13 +283,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     );
   }
 
- Widget _buildPriorityDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -335,7 +312,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       ),
       body: BlocListener<MyTaskBloc, MyTaskState>(
         listener: (context, state) {
-
           if (state is MyTaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -381,8 +357,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                             : null,
                       ),
                       const SizedBox(height: 16),
-                      _buildPriorityDropdown(),
-                      const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'От',
@@ -414,30 +388,9 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildFileSelection(widget),
+                      _buildPushNotificationCheckbox(), // Add this line
+
                       // Добавляем виджет выбора файла
-                      const SizedBox(height: 20),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: 'Добавить поле',
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
                     ],
                   ),
                 ),
@@ -505,65 +458,54 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                       );
                                       return;
                                     }
-                                    List<Map<String, String>> customFieldList =
-                                        [];
-                                    for (var field in customFields) {
-                                      String fieldName = field.fieldName.trim();
-                                      String fieldValue =
-                                          field.controller.text.trim();
-                                      if (fieldName.isNotEmpty &&
-                                          fieldValue.isNotEmpty) {
-                                        customFieldList
-                                            .add({fieldName: fieldValue});
-                                      }
-                                    }
+
                                     context.read<MyTaskBloc>().add(
                                           UpdateMyTask(
                                             taskId: widget.taskId,
                                             name: nameController.text,
-                                            statusId: widget.statusId,
                                             taskStatusId: widget.statusId,
                                             startDate: startDate,
                                             endDate: endDate,
                                             description:
                                                 descriptionController.text,
-                                            customFields: customFieldList,
                                             filePath:
                                                 selectedFile, // Добавляем путь к файлу
+                                            setPush: setPush, // Add this line
                                           ),
                                         );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(
-                                            'Ошибка в формате даты!'),
+                                        content: Text('Ошибка в формате даты!'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
                                   }
-                                  } else {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                       content: Text(
-                                         'Пожалуйста, заполните все обязательные поля!',
-                                         style: TextStyle(
-                                           fontFamily: 'Gilroy',
-                                           fontSize: 16,
-                                           fontWeight: FontWeight.w500,
-                                           color: Colors.white,
-                                         ),
-                                       ),
-                                       behavior: SnackBarBehavior.floating,
-                                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                       shape: RoundedRectangleBorder(
-                                         borderRadius: BorderRadius.circular(12),
-                                       ),
-                                       backgroundColor: Colors.red,
-                                       elevation: 3,
-                                       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                       duration: Duration(seconds: 3),
-                                     ),
-                                   );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Пожалуйста, заполните все обязательные поля!',
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
                                 }
                               },
                             );

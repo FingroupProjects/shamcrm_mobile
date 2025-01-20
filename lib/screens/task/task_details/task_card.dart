@@ -3,7 +3,6 @@ import 'package:crm_task_manager/models/task_model.dart'; // Импорт мод
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart'; // Импорт экрана деталей задачи
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; // Импорт виджета выпадающего диалога для выбора статуса задачи
 import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
-import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart'; // Импорт для форматирования даты
 
 /// Класс виджета для отображения карточки задачи

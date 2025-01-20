@@ -35,9 +35,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-  bool _canReadMyTaskStatus = false;
-  bool _canCreateMyTaskStatus = false;
-  bool _canDeleteMyTaskStatus = false;
   final ApiService _apiService = ApiService();
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
@@ -84,7 +81,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
-    _checkPermissions();
   }
 
   Future<void> _loadUserRoles() async {
@@ -161,19 +157,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchMyTasks(query, currentStatusId);
   }
-
-  // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('taskStatus.read');
-    final canCreate = await _apiService.hasPermission('taskStatus.create');
-    final canDelete = await _apiService.hasPermission('taskStatus.delete');
-    setState(() {
-      _canReadMyTaskStatus = canRead;
-      _canCreateMyTaskStatus = canCreate;
-      _canDeleteMyTaskStatus = canDelete;
-    });
-  }
-
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
@@ -344,7 +327,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
               child: _buildTabButton(index),
             );
           }),
-          if (_canCreateMyTaskStatus)
             IconButton(
               icon: Image.asset('assets/icons/tabBar/add_black.png',
                   width: 24, height: 24),
@@ -397,7 +379,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
             _tabController.animateTo(index);
           },
           onLongPress: () {
-            if (_canDeleteMyTaskStatus) {
+             {
               _showDeleteDialog(index);
             }
           },
@@ -490,7 +472,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
 
           setState(() {
             _tabTitles = state.taskStatuses
-                .where((status) => _canReadMyTaskStatus)
                 .map((status) =>
                     {'id': status.id, 'title': status.title ?? ""})
                 .toList();

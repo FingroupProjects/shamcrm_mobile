@@ -37,13 +37,20 @@ List<String> getMonths(BuildContext context) {
   @override
   void initState() {
     super.initState();
-          context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+    context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
   }
 
   String formatPercent(double value) {
-    if (value == 100 || value == 0 || value % 1 == 0) {
-      return '${value.toInt()}%';
+    // Если значение точно 100, убираем добавленную единицу
+    if (value == 100) {
+      return '${value.toInt()}%'; // Просто выводим 100%
     }
+    // Если значение равно 0 или целое число, также выводим без изменений
+    if (value == 0 || value % 1 == 0) {
+      return '${value.toInt()}%'; // Преобразуем в целое число и добавляем '%'
+    }
+
+    // В остальных случаях возвращаем значение с двумя знаками после запятой
     return '${value.toStringAsFixed(2)}%';
   }
 

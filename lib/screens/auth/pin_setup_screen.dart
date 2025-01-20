@@ -3,6 +3,8 @@ import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
@@ -29,11 +31,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   bool _pinsDoNotMatch = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
-  int? userRoleId ;
-  bool isPermissionsLoaded = false; 
-
-
-
+  int? userRoleId;
+  bool isPermissionsLoaded = false;
 
   @override
   void initState() {
@@ -48,7 +47,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
-
 
   @override
   void dispose() {
@@ -91,56 +89,56 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     });
   }
 
-   Future<void> _loadUserRoleId() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? '';
-    if (userId.isEmpty) {
+  Future<void> _loadUserRoleId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        setState(() {
+          userRoleId = 0;
+        });
+        return;
+      }
+
+      // Получение ИД РОЛЯ через API
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userRoleId = userProfile.role!.first.id;
+      });
+
+      await prefs.setInt('userRoleId', userRoleId!);
+      await prefs.setString('userRoleName', userProfile.role![0].name);
+
+      // Выводим данные в консоль
+      context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+
+      setState(() {
+        isPermissionsLoaded = true;
+      });
+    } catch (e) {
+      print('Error loading user role!');
       setState(() {
         userRoleId = 0;
       });
-      return;
     }
-
-    // Получение ИД РОЛЯ через API
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
-    setState(() {
-      userRoleId = userProfile.role!.first.id;
-    });
-
-    await prefs.setInt('userRoleId', userRoleId!);
-    await prefs.setString('userRoleName', userProfile.role![0].name);
-
-    // Выводим данные в консоль
-    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-
-      
-      setState(() {
-        isPermissionsLoaded = true; 
-      });
-
-  } catch (e) {
-    print('Error loading user role!');
-    setState(() {
-      userRoleId = 0;
-    });
   }
-}
-
 
   Future<void> _validatePins() async {
     if (_pin == _confirmPin) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_pin', _pin);
-    if (isPermissionsLoaded) {
+      if (isPermissionsLoaded) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
-          (Route<dynamic> route) => false, 
+          (Route<dynamic> route) => false,
         );
-    }
+      }
     } else {
       _triggerErrorEffect();
     }
@@ -190,7 +188,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 animation: _shakeAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,0), // Эффект "шатания".
+                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,
+                        0), // Эффект "шатания".
                     child: Column(
                       children: [
                         _buildPinRow(_pin),
@@ -260,4 +259,3 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     );
   }
 }
-
