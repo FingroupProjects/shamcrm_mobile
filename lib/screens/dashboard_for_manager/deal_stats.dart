@@ -84,7 +84,7 @@ class _DealStatsChartManagerState extends State<DealStatsChartManager> {
                       math.max(item.totalSum.toDouble(),
                           item.successfulSum.toDouble())))
               : 100.0;
-          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 100.0;
+          double maxY = maxCount > 0 ? maxCount.ceilToDouble() : 100.0;
 
           if (!hasData) {
             final random = math.Random();

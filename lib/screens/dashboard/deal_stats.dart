@@ -34,7 +34,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
   @override
   void initState() {
     super.initState();
-      context.read<DealStatsBloc>().add(LoadDealStatsData());
+    context.read<DealStatsBloc>().add(LoadDealStatsData());
   }
 
   String formatNumber(double value) {
@@ -48,8 +48,6 @@ class _DealStatsChartState extends State<DealStatsChart> {
       return value.toStringAsFixed(0);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +84,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
                       math.max(item.totalSum.toDouble(),
                           item.successfulSum.toDouble())))
               : 100.0;
-          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 100.0;
+          double maxY = maxCount > 0 ? maxCount.ceilToDouble() : 100.0;
 
           if (!hasData) {
             final random = math.Random();

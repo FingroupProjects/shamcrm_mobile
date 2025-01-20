@@ -52,7 +52,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         page: 1,
         perPage: 20,
         search: event.query,
-        managerId: event.managerId,
+        managers: event.managerIds,
       );
 
       // Сохраняем лиды в кэш

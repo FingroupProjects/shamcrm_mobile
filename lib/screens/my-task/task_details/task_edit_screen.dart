@@ -2,16 +2,9 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
-import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/models/my-taskbyId_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
-import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
-import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +50,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   String? fileName;
   String? fileSize;
   bool isEndDateInvalid = false;
+  bool setPush = false;
 
   final ApiService _apiService = ApiService();
 
@@ -90,8 +84,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
   }
 
-
-
   InputDecoration _inputDecoration() {
     return const InputDecoration(
       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -101,22 +93,38 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     );
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        fontFamily: 'Gilroy',
-        color: Color(0xff1E2E52),
+  Widget _buildPushNotificationCheckbox() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Checkbox(
+            value: setPush,
+            onChanged: (bool? value) {
+              setState(() {
+                setPush = value ?? true;
+              });
+            },
+            activeColor: const Color(0xff1E2E52),
+          ),
+          const Text(
+            'Отправить Push-уведомление',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ],
       ),
     );
   }
-
   Widget _buildFileSelection(MyTaskEditScreen task) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Если файл существует, отображаем информацию о нем
         if (task.file != null && task.file!.isNotEmpty) ...[
           Row(
             children: [
@@ -149,6 +157,19 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
           ),
           const SizedBox(height: 16),
         ],
+        // Отображаем надпись "Файл", если файл не выбран
+        if (task.file == null || task.file!.isEmpty) ...[
+          Text(
+            'Файл:',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy', // Используем шрифт Gilroy
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         // Поле выбора файла
         GestureDetector(
           onTap: _pickFile,
@@ -164,12 +185,12 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                 Expanded(
                   child: Text(
                     // Отображаем текст до выбора файла или название нового файла
-                    fileName ?? 'Выберите файл',
+                    task.file ?? 'Выберите файл',
                     style: TextStyle(
                       fontFamily: 'Gilroy', // Используем шрифт Gilroy
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: fileName != null
+                      color: task.file != null
                           ? const Color(0xff1E2E52)
                           : const Color(0xff99A4BA),
                     ),
@@ -291,7 +312,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       ),
       body: BlocListener<MyTaskBloc, MyTaskState>(
         listener: (context, state) {
-
           if (state is MyTaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -368,6 +388,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildFileSelection(widget),
+                      _buildPushNotificationCheckbox(), // Add this line
+
                       // Добавляем виджет выбора файла
                     ],
                   ),
@@ -436,7 +458,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                       );
                                       return;
                                     }
-                                
+
                                     context.read<MyTaskBloc>().add(
                                           UpdateMyTask(
                                             taskId: widget.taskId,
@@ -448,40 +470,42 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                                 descriptionController.text,
                                             filePath:
                                                 selectedFile, // Добавляем путь к файлу
+                                            setPush: setPush, // Add this line
                                           ),
                                         );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(
-                                            'Ошибка в формате даты!'),
+                                        content: Text('Ошибка в формате даты!'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
                                   }
-                                  } else {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                       content: Text(
-                                         'Пожалуйста, заполните все обязательные поля!',
-                                         style: TextStyle(
-                                           fontFamily: 'Gilroy',
-                                           fontSize: 16,
-                                           fontWeight: FontWeight.w500,
-                                           color: Colors.white,
-                                         ),
-                                       ),
-                                       behavior: SnackBarBehavior.floating,
-                                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                       shape: RoundedRectangleBorder(
-                                         borderRadius: BorderRadius.circular(12),
-                                       ),
-                                       backgroundColor: Colors.red,
-                                       elevation: 3,
-                                       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                       duration: Duration(seconds: 3),
-                                     ),
-                                   );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Пожалуйста, заполните все обязательные поля!',
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
                                 }
                               },
                             );
