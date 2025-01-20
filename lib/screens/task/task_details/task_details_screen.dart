@@ -16,7 +16,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -940,7 +939,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
       // Формируем полный URL файла
       final fullUrl =
-          Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
+          Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла

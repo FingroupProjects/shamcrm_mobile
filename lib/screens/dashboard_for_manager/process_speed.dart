@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/process_speed/ProcessSpeed_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/process_speed/ProcessSpeed_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/process_speed/ProcessSpeed_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +22,9 @@ class _ProcessSpeedGaugeStateManager extends State<ProcessSpeedGaugeManager>
   @override
   void initState() {
     super.initState();
+        context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),

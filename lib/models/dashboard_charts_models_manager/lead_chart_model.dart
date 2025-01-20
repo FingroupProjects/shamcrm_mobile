@@ -1,4 +1,3 @@
-// ChartData модель
 class ChartDataManager {
   final String label;
   final List<double> data;
@@ -18,5 +17,14 @@ class ChartDataManager {
           .toList(),
       color: json['color'] ?? '#000000',
     );
+  }
+
+  // toJson method to convert ChartDataManager instance to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'label': label,
+      'data': data.map((x) => x).toList(), // List<double> to JSON-compatible list
+      'color': color,
+    };
   }
 }

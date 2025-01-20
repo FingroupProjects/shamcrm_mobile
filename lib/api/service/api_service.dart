@@ -4283,30 +4283,26 @@ class ApiService {
 
   //_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
 
-  //Метод для получения Задачи через его ID
   Future<MyTaskById> getMyTaskById(int taskId) async {
     try {
       final organizationId = await getSelectedOrganization();
 
       final response = await _getRequest(
-          '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
-        final List<dynamic>? resultList = decodedJson['result'];
 
-        if (resultList == null || resultList.isEmpty) {
+        // Проверяем, что поле result существует и является объектом
+        final Map<String, dynamic>? result = decodedJson['result'];
+        if (result == null) {
           throw Exception('Некорректные данные от API');
         }
 
-        final Map<String, dynamic> jsonMyTask = resultList.first;
-
-        if (jsonMyTask['taskStatus'] == null) {
-          throw Exception('Статус задачи отсутствует в данных API');
-        }
-
+        // Создаем объект задачи из JSON
         return MyTaskById.fromJson(
-            jsonMyTask, jsonMyTask['taskStatus']['id'] ?? 0);
+            result, 0); // Передаем 0, если taskStatus отсутствует
       } else if (response.statusCode == 404) {
         throw Exception('Ресурс с задачи $taskId не найден');
       } else if (response.statusCode == 500) {
@@ -4315,7 +4311,7 @@ class ApiService {
         throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки task ID');
+      throw Exception('Ошибка загрузки task ID: $e');
     }
   }
 
@@ -4529,13 +4525,12 @@ class ApiService {
   /// Создает новый статус задачи
   Future<Map<String, dynamic>> CreateMyTaskStatusAdd({
     required String statusName,
-    required bool finalStep,
   }) async {
     try {
       // Формируем данные для запроса
       final Map<String, dynamic> data = {
-        'name': statusName,
-        'final_step': finalStep ? 1 : 0,
+        'title': statusName,
+        'color':"#000"
       };
 
       // Получаем идентификатор организации
@@ -4604,7 +4599,6 @@ class ApiService {
     DateTime? startDate,
     DateTime? endDate,
     String? description,
-    List<Map<String, String>>? customFields,
     String? filePath,
     int position = 1,
   }) async {
@@ -4639,14 +4633,6 @@ class ApiService {
 
       if (description != null) {
         request.fields['description'] = description;
-      }
-      // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
       }
 
       // Добавляем файл, если он есть
@@ -4723,13 +4709,11 @@ class ApiService {
   Future<Map<String, dynamic>> updateMyTask({
     required int taskId,
     required String name,
-    required int statusId,
     required int taskStatusId,
     DateTime? startDate,
     DateTime? endDate,
     String? description,
     String? filePath,
-    List<Map<String, String>>? customFields,
   }) async {
     try {
       final token = await getToken();
@@ -4749,10 +4733,7 @@ class ApiService {
 
       // Добавляем все поля в формате form-data
       request.fields['name'] = name;
-      request.fields['status_id'] = statusId.toString();
       request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['_method'] = 'POST'; // Для эмуляции PUT запроса
-
       if (startDate != null) {
         request.fields['from'] = startDate.toIso8601String();
       }
@@ -4763,16 +4744,6 @@ class ApiService {
       if (description != null) {
         request.fields['description'] = description;
       }
-
-      // Добавляем кастомные поля
-      if (customFields != null && customFields.isNotEmpty) {
-        for (int i = 0; i < customFields.length; i++) {
-          var field = customFields[i];
-          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
-          request.fields['task_custom_fields[$i][value]'] = field.values.first;
-        }
-      }
-
       // Добавляем файл, если он есть
       if (filePath != null) {
         final file = File(filePath);

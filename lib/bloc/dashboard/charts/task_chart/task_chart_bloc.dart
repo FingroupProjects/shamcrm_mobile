@@ -16,25 +16,6 @@ class DashboardTaskChartBloc
     on<LoadTaskChartData>(_onLoadTaskChartData);
   }
 
-  // Проверка подключения к интернету
-  Future<bool> _checkInternetConnection() async {
-    try {
-      final result = await InternetAddress.lookup('example.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException {
-      return false;
-    }
-  }
-
-  // Сравнение двух списков данных
-  bool _areListsEqual(List<double> a, List<double> b) {
-    if (a.length != b.length) return false; // Сравниваем длину списков
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false; // Сравниваем элементы на каждой позиции
-    }
-    return true;
-  }
-
   Future<void> _onLoadTaskChartData(
     LoadTaskChartData event,
     Emitter<DashboardTaskChartState> emit,
@@ -79,4 +60,24 @@ class DashboardTaskChartBloc
       emit(DashboardTaskChartError(message: e.toString()));
     }
   }
+  
+  // Проверка подключения к интернету
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    }
+  }
+
+  // Сравнение двух списков данных
+  bool _areListsEqual(List<double> a, List<double> b) {
+    if (a.length != b.length) return false; // Сравниваем длину списков
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false; // Сравниваем элементы на каждой позиции
+    }
+    return true;
+  }
+
 }

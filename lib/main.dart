@@ -33,9 +33,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/charts/project_chart/task_chart_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_bloc.dart';
-import 'package:crm_task_manager/bloc/dashboard/stats_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
@@ -201,12 +199,10 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
           BlocProvider(create: (context) =>DashboardConversionBlocManager(ApiService())),
           BlocProvider(create: (context) => UserBlocManager(ApiService())),
-          BlocProvider(create: (context) => DashboardStatsBloc(ApiService())),
           BlocProvider(create: (context) => DealStatsBloc(ApiService())),
           BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
           BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
           BlocProvider(create: (context) => DashboardTaskChartBlocManager(ApiService())),
-          BlocProvider(create: (context) => ProjectChartBloc(ApiService())),
           BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
           BlocProvider(create: (context) => DealTasksBloc(ApiService())),
           BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),

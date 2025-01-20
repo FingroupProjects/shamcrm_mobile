@@ -4,7 +4,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
-import 'package:crm_task_manager/models/my-task_model.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_edit_screen.dart';
@@ -24,7 +24,6 @@ class MyTaskDetailsScreen extends StatefulWidget {
   final String? description;
   final String? startDate;
   final String? endDate;
-  final List<MyTaskCustomField> taskCustomFields;
   final String? taskFile; // Добавлено поле для файла
 
   MyTaskDetailsScreen({
@@ -36,7 +35,6 @@ class MyTaskDetailsScreen extends StatefulWidget {
     this.startDate,
     this.endDate,
     // this.projectName,
-    required this.taskCustomFields,
     this.taskFile, // Инициализация опционального параметра
   });
 
@@ -69,6 +67,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       _canDeleteMyTask = canDelete;
     });
   }
+
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return '';
     try {
@@ -78,6 +77,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       return 'Неверный формат';
     }
   }
+
   // Обновление данных задачи
   void _updateDetails(MyTaskById? task) {
     if (task == null) {
@@ -104,20 +104,71 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         'label': 'Описание:',
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
-      {
-        'label': 'Статус:',
-        'value': task.taskStatus?.taskStatus.name ?? '',
-      },
+      if (task.taskFile != null && task.taskFile!.isNotEmpty)
+        {'label': 'Файл:', 'value': 'Ссылка'},
     ];
-
-    for (var field in task.taskCustomFields) {
-      details.add({'label': '${field.key}:', 'value': field.value});
-    }
-
     // Вывод каждой детали в консоль
     for (var detail in details) {
       print("${detail['label']} ${detail['value']}");
     }
+  }
+
+// Функция для показа диалогового окна с полным текстом
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: 'Закрыть',
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -253,7 +304,6 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                     height: 24,
                   ),
                   onPressed: () async {
-
                     if (currentMyTask != null) {
                       final shouldUpdate = await Navigator.push(
                         context,
@@ -263,21 +313,19 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                             taskName: currentMyTask!.name,
                             taskStatus: currentMyTask!.taskStatus?.taskStatus
                                     .toString() ??
-                                '',                           
-                            statusId: currentMyTask!.statusId,
+                                '',
+                            statusId: widget.statusId,
                             description: currentMyTask!.description,
                             startDate: currentMyTask!.startDate,
                             endDate: currentMyTask!.endDate,
-                            taskCustomFields: currentMyTask!.taskCustomFields,
                             file: currentMyTask!.taskFile,
                           ),
                         ),
                       );
 
                       if (shouldUpdate == true) {
-                        context
-                            .read<MyTaskByIdBloc>()
-                            .add(FetchMyTaskByIdEvent(taskId: currentMyTask!.id));
+                        context.read<MyTaskByIdBloc>().add(
+                            FetchMyTaskByIdEvent(taskId: currentMyTask!.id));
                         context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
                       }
                     }
@@ -325,6 +373,41 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
+    // Специальная обработка для названия и описания
+    if (label == 'Название задачи:' || label == 'Описание:') {
+      return GestureDetector(
+        onTap: () {
+          if (value.isNotEmpty) {
+            _showFullTextDialog(
+              label.replaceAll(':', ''),
+              value,
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration:
+                      value.isNotEmpty ? TextDecoration.underline : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (label == 'Файл:') {
       return Row(
@@ -352,7 +435,6 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         ],
       );
     }
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -375,7 +457,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 
       // Формируем полный URL файла
       final fullUrl =
-          Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
+          Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла
@@ -425,31 +507,31 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       ),
     );
   }
-  }
+}
 
-  // Построение метки
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
-      ),
-    );
-  }
+// Построение метки
+Widget _buildLabel(String label) {
+  return Text(
+    label,
+    style: TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w400,
+      color: Color(0xff99A4BA),
+    ),
+  );
+}
 
-  // Построение значения
-  Widget _buildValue(String value) {
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
-      ),
-      overflow: TextOverflow.visible,
-    );
-  }
+// Построение значения
+Widget _buildValue(String value) {
+  return Text(
+    value,
+    style: TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: Color(0xff1E2E52),
+    ),
+    overflow: TextOverflow.visible,
+  );
+}

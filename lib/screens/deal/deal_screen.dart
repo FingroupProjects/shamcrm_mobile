@@ -124,7 +124,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('deal.read');
+    final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
     final canDelete = await _apiService.hasPermission('dealStatus.delete');
     // final canDelete = await _apiService.hasPermission('dealStatus.delete');
@@ -169,6 +169,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
           clearButtonClick: (value) {
             if (value == false) {
+                    // BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+
               final dealBloc = BlocProvider.of<DealBloc>(context);
               dealBloc.add(FetchDealStatuses());
               setState(() {

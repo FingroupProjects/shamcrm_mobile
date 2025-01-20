@@ -25,28 +25,20 @@ class MyTaskEditScreen extends StatefulWidget {
   final String taskName;
   final String taskStatus;
   final int statusId;
-  final String? project;
-  final List<int>? user;
   final String? startDate;
   final String? endDate;
   final String? description;
-  final int? priority;
   final String? file;
-  final List<MyTaskCustomFieldsById> taskCustomFields;
 
   MyTaskEditScreen({
     required this.taskId,
     required this.taskName,
     required this.taskStatus,
     required this.statusId,
-    this.project,
-    this.user,
     this.startDate,
     this.endDate,
     this.description,
-    this.priority,
     this.file,
-    required this.taskCustomFields,
   });
 
   @override
@@ -60,10 +52,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  String? selectedProject;
-  List<String>? selectedUsers;
-  int? selectedPriority;
-  List<CustomField> customFields = [];
   // Добавьте эти переменные в класс _MyTaskEditScreenState
   String? selectedFile;
   String? fileName;
@@ -96,38 +84,13 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       endDateController.text = DateFormat('dd/MM/yyyy').format(parsedEndDate);
     }
     descriptionController.text = widget.description ?? '';
-    selectedProject = widget.project;
-    selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
-
-    selectedPriority = widget.priority ?? 1;
-    for (var customField in widget.taskCustomFields) {
-      customFields.add(CustomField(fieldName: customField.key)
-        ..controller.text = customField.value);
-    }
   }
 
   void _loadInitialData() {
     context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
   }
 
-  void _addCustomField(String fieldName) {
-    setState(() {
-      customFields.add(CustomField(fieldName: fieldName));
-    });
-  }
 
-  void _showAddFieldDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddCustomFieldDialog(
-          onAddField: (fieldName) {
-            _addCustomField(fieldName);
-          },
-        );
-      },
-    );
-  }
 
   InputDecoration _inputDecoration() {
     return const InputDecoration(
@@ -299,13 +262,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     );
   }
 
- Widget _buildPriorityDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -381,8 +337,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                             : null,
                       ),
                       const SizedBox(height: 16),
-                      _buildPriorityDropdown(),
-                      const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: startDateController,
                         label: 'От',
@@ -415,29 +369,6 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       const SizedBox(height: 16),
                       _buildFileSelection(widget),
                       // Добавляем виджет выбора файла
-                      const SizedBox(height: 20),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: 'Добавить поле',
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
                     ],
                   ),
                 ),
@@ -505,29 +436,16 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                       );
                                       return;
                                     }
-                                    List<Map<String, String>> customFieldList =
-                                        [];
-                                    for (var field in customFields) {
-                                      String fieldName = field.fieldName.trim();
-                                      String fieldValue =
-                                          field.controller.text.trim();
-                                      if (fieldName.isNotEmpty &&
-                                          fieldValue.isNotEmpty) {
-                                        customFieldList
-                                            .add({fieldName: fieldValue});
-                                      }
-                                    }
+                                
                                     context.read<MyTaskBloc>().add(
                                           UpdateMyTask(
                                             taskId: widget.taskId,
                                             name: nameController.text,
-                                            statusId: widget.statusId,
                                             taskStatusId: widget.statusId,
                                             startDate: startDate,
                                             endDate: endDate,
                                             description:
                                                 descriptionController.text,
-                                            customFields: customFieldList,
                                             filePath:
                                                 selectedFile, // Добавляем путь к файлу
                                           ),

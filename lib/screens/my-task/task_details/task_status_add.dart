@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
+import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task_status_add/task_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,7 +14,6 @@ class CreateStatusDialog extends StatefulWidget {
 
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _controller = TextEditingController();
-  bool isFinalStage = false;
   String? _errorMessage;
 
   @override
@@ -56,36 +57,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                 ),
                 filled: true,
                 fillColor: Color(0xffF4F7FD),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Завершающий этап',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  Switch(
-                    value: isFinalStage,
-                    onChanged: (value) {
-                      setState(() {
-                        isFinalStage = value;
-                      });
-                    },
-                    activeColor: Colors.white,
-                    inactiveTrackColor: Colors.grey.withOpacity(0.5),
-                    activeTrackColor: Color(0xFF1E2E52).withOpacity(0.5),
-                    inactiveThumbColor: Colors.white,
-                  ),
-                ],
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
             if (_errorMessage != null)
@@ -160,7 +133,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   }
 
   void _createStatus() {
-    if (_controller.text.trim().isEmpty) {
+    final statusName = _controller.text.trim();
+
+    if (statusName.isEmpty) {
       setState(() {
         _errorMessage = 'Введите название статуса';
       });
@@ -171,6 +146,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       _errorMessage = null;
     });
 
+    // Отправляем событие на добавление статуса
+    context.read<MyTaskStatusBloc>().add(
+          CreateMyTaskStatusAdd(
+            statusName: statusName, // Передаем название статуса
+          ),
+        );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

@@ -2,7 +2,10 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_state.dart';
+import 'package:crm_task_manager/models/dashboard_charts_models/deal_stats_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:crm_task_manager/screens/dashboard/CACHE/deal_stats_cache.dart';
 
 class DealStatsBloc extends Bloc<DealStatsEvent, DealStatsState> {
   final ApiService apiService;
@@ -26,15 +29,38 @@ class DealStatsBloc extends Bloc<DealStatsEvent, DealStatsState> {
   ) async {
     try {
       emit(DealStatsLoading());
+      print("🔄 Начата загрузка данных...");
 
-      // Check for internet connection
-      if (await _checkInternetConnection()) {
-        final dealStatsData = await apiService.getDealStatsData();
-        emit(DealStatsLoaded(dealStatsData: dealStatsData));
+      // Попытка загрузить данные из кеша
+      final cachedData = await DealStatsCache.getDealStatsData();
+      if (cachedData != null) {
+        print("📦 Найдены данные в кеше Deal Stats: $cachedData");
+        emit(DealStatsLoaded(dealStatsData: DealStatsResponse(data: cachedData)));
       } else {
-        emit(DealStatsError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+        print("⚠️ Данные не найдены в кэше.");
+      }
+
+      // Проверка интернет-соединения
+      if (await _checkInternetConnection()) {
+        print("🌐 Интернет-соединение установлено. Загружаем данные с сервера...");
+        final serverData = await apiService.getDealStatsData();
+
+        // Обновление кеша, если данные отличаются
+        if (cachedData == null || cachedData != serverData.data) {
+          print("🔄DEAL STATS Данные с сервера совпадают с кешированными. Обновление не требуется.");
+
+          await DealStatsCache.saveDealStatsData(serverData.data);
+        } else {
+          print("✅ Кэш уже содержит актуальные данные.");
+        }
+
+        emit(DealStatsLoaded(dealStatsData: serverData));
+      } else if (cachedData == null) {
+        print("❌ Нет подключения к интернету и данных в кэше.");
+        emit(DealStatsError(message: 'Нет подключения к интернету и данных в кеше.'));
       }
     } catch (e) {
+      print("⚠️ Ошибка загрузки данных: $e");
       emit(DealStatsError(message: e.toString()));
     }
   }

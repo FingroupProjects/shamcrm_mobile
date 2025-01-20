@@ -21,7 +21,6 @@ class MyTaskStatusBloc extends Bloc<MyTaskStatusEvent, MyTaskStatusState> {
       try {
         final response = await apiService.CreateMyTaskStatusAdd(
           statusName: event.statusName,
-          finalStep: event.finalStep,
         );
         
         if (response['success']) {
