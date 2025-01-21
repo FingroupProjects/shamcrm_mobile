@@ -156,7 +156,6 @@ class LeadStatus {
   }
 }
 
-
 class LeadCustomField {
   final int id;
   final String key;

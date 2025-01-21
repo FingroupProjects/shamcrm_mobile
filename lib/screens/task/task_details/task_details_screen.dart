@@ -340,7 +340,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                   ),
                                                   style: TextButton.styleFrom(
                                                     backgroundColor: Colors.red,
-                                                    minimumSize: Size(110, 48),
+                                                    minimumSize: Size(80, 48),
                                                     padding:
                                                         EdgeInsets.symmetric(
                                                             horizontal: 16),
@@ -536,7 +536,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                         backgroundColor:
                                                             Color(0xff1E2E52),
                                                         minimumSize:
-                                                            Size(110, 48),
+                                                            Size(130, 48),
                                                         padding: EdgeInsets
                                                             .symmetric(
                                                                 horizontal: 16),

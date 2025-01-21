@@ -91,7 +91,6 @@ void main() async {
   if (isDomainChecked) {
     await apiService.initialize();
   }
-
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
 

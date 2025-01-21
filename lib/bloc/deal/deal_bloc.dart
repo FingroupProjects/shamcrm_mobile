@@ -26,101 +26,100 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   }
 
   // Метод для загрузки сделок с учётом кэша
-Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-  emit(DealLoading());
+  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+    emit(DealLoading());
 
-  if (!await _checkInternetConnection()) {
-    // Если интернета нет, пробуем загрузить сделки из кэша
-    final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
-    if (cachedDeals.isNotEmpty) {
-      emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
-    } else {
-      emit(DealError('Нет подключения к интернету и нет данных в кэше!'));
-    }
-    return;
-  }
-
-  try {
-    // Сначала пробуем загрузить сделки из кэша
-    final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
-    if (cachedDeals.isNotEmpty) {
-      emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
-    }
-
-    // Затем запрашиваем данные из API
-    final deals = await apiService.getDeals(
-      event.statusId,
-      page: 1,
-      perPage: 20,
-      search: event.query,
-      managerId: event.managerId,
-    );
-
-    // Сохраняем сделки в кэш
-    await DealCache.cacheDealsForStatus(event.statusId, deals);
-
-    // Обновляем состояние
-    final dealCounts = Map<int, int>.from(_dealCounts);
-    for (var deal in deals) {
-      dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
-    }
-
-    allDealsFetched = deals.isEmpty;
-    emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
-  } catch (e) {
-    emit(DealError('Не удалось загрузить данные!'));
-  }
-}
-
-// Метод для загрузки статусов сделок с учётом кэша
-Future<void> _fetchDealStatuses(FetchDealStatuses event, Emitter<DealState> emit) async {
-  emit(DealLoading());
-
-  // Сначала пробуем получить данные из кэша
-  final cachedStatuses = await DealCache.getDealStatuses();
-  if (cachedStatuses.isNotEmpty) {
-    emit(DealLoaded(
-      cachedStatuses.map((status) => DealStatus.fromJson(status)).toList(),
-      dealCounts: Map.from(_dealCounts),
-    ));
-  }
-
-  // Затем запрашиваем данные из API
-  if (!await _checkInternetConnection()) {
-    emit(DealError('Нет подключения к интернету'));
-    return;
-  }
-
-  try {
-    final response = await apiService.getDealStatuses();
-    if (response.isEmpty) {
-      emit(DealError('Нет статусов'));
+    if (!await _checkInternetConnection()) {
+      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
+      if (cachedDeals.isNotEmpty) {
+        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+      } else {
+        emit(DealError('Нет подключения к интернету и нет данных в кэше!'));
+      }
       return;
     }
 
-    // Сохраняем статусы в кэш
-    await DealCache.cacheDealStatuses(
-      response.map((status) => {'id': status.id, 'title': status.title}).toList(),
-    );
+    try {
+      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
+      if (cachedDeals.isNotEmpty) {
+        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+      }
 
-    // Параллельно загружаем количество сделок для каждого статуса
-    final futures = response.map((status) {
-      return apiService.getDeals(status.id, page: 1, perPage: 1);
-    }).toList();
+      final deals = await apiService.getDeals(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+        managers: event.managerIds ?? [], // Pass managers list
+      );
 
-    final dealCountsResults = await Future.wait(futures);
+      print('Переданные менеджеры: ${event.managerIds}');
 
-    // Обновляем количество сделок
-    for (int i = 0; i < response.length; i++) {
-      _dealCounts[response[i].id] = dealCountsResults[i].length;
+      await DealCache.cacheDealsForStatus(event.statusId, deals);
+
+      final dealCounts = Map<int, int>.from(_dealCounts);
+      for (var deal in deals) {
+        dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
+      }
+
+      allDealsFetched = deals.isEmpty;
+      emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
+    } catch (e) {
+      emit(DealError('Не удалось загрузить данные!'));
+    }
+  }
+
+// Метод для загрузки статусов сделок с учётом кэша
+  Future<void> _fetchDealStatuses(
+      FetchDealStatuses event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+
+    // Сначала пробуем получить данные из кэша
+    final cachedStatuses = await DealCache.getDealStatuses();
+    if (cachedStatuses.isNotEmpty) {
+      emit(DealLoaded(
+        cachedStatuses.map((status) => DealStatus.fromJson(status)).toList(),
+        dealCounts: Map.from(_dealCounts),
+      ));
     }
 
-    emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
-  } catch (e) {
-    emit(DealError('Не удалось загрузить данные!'));
-  }
-}
+    // Затем запрашиваем данные из API
+    if (!await _checkInternetConnection()) {
+      emit(DealError('Нет подключения к интернету'));
+      return;
+    }
 
+    try {
+      final response = await apiService.getDealStatuses();
+      if (response.isEmpty) {
+        emit(DealError('Нет статусов'));
+        return;
+      }
+
+      // Сохраняем статусы в кэш
+      await DealCache.cacheDealStatuses(
+        response
+            .map((status) => {'id': status.id, 'title': status.title})
+            .toList(),
+      );
+
+      // Параллельно загружаем количество сделок для каждого статуса
+      final futures = response.map((status) {
+        return apiService.getDeals(status.id, page: 1, perPage: 1);
+      }).toList();
+
+      final dealCountsResults = await Future.wait(futures);
+
+      // Обновляем количество сделок
+      for (int i = 0; i < response.length; i++) {
+        _dealCounts[response[i].id] = dealCountsResults[i].length;
+      }
+
+      emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
+    } catch (e) {
+      emit(DealError('Не удалось загрузить данные!'));
+    }
+  }
 
   Future<void> _fetchMoreDeals(
       FetchMoreDeals event, Emitter<DealState> emit) async {

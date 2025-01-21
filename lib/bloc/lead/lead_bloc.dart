@@ -46,14 +46,16 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
       }
 
-      // Затем запрашиваем данные из API
       final leads = await apiService.getLeads(
         event.statusId,
         page: 1,
         perPage: 20,
         search: event.query,
-        managers: event.managerIds,
+        managers: event.managerIds ??
+            [], // Передаем пустой список, если managerIds null
+        // Убедимся, что менеджеры передаются
       );
+      print('Переданные менеджеры: ${event.managerIds}');
 
       // Сохраняем лиды в кэш
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);
