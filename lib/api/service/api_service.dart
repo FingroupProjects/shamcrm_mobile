@@ -423,7 +423,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return DomainCheck.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Не удалось загрузить домен: ${response.body}');
+      throw Exception('Не удалось загрузить поддомен: ${response.body}');
     }
   }
 
@@ -633,13 +633,13 @@ class ApiService {
     }
   }
 
-//Метод для получения список Лидов с пагинацией
+  // Метод для получения списка Лидов с пагинацией
   Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
     String? search,
-    List<int>? managers, // Изменено: массив менеджеров
+    List<int>? managers, // Массив ID менеджеров
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
@@ -648,19 +648,27 @@ class ApiService {
       path += '&organization_id=$organizationId';
     }
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    } else if (leadStatusId != null && (managers == null || managers.isEmpty)) {
+    // Если задан поиск или менеджеры, НЕ передаем lead_status_id
+    bool shouldSkipLeadStatusId = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty);
+
+    if (!shouldSkipLeadStatusId && leadStatusId != null) {
+      // Если поиск и менеджеры не заданы, передаем lead_status_id
       path += '&lead_status_id=$leadStatusId';
     }
 
-    // Передаем массив менеджеров
-    if (managers != null && managers.isNotEmpty) {
-      final managerIds = managers.map((id) => '"$id"').join(',');
-      path += '&managers=[$managerIds]';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    print('Sending request to API with path: $path');
+    // Формируем массив managers с индексами
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+
+    print('Отправка запроса на API с путём: $path');
 
     final response = await _getRequest(path);
 
@@ -671,10 +679,10 @@ class ApiService {
             .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();
       } else {
-        throw Exception('No lead data found in the response');
+        throw Exception('Данные лидов отсутствуют в ответе');
       }
     } else {
-      throw Exception('Error loading leads: ${response.body}');
+      throw Exception('Ошибка загрузки лидов: ${response.body}');
     }
   }
 
@@ -1564,32 +1572,40 @@ class ApiService {
     }
   }
 
+  // 1. First, update the Deal API service to handle multiple managers
   Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
     String? search,
-    int? managerId, // Добавляем параметр managerId
+    List<int>? managers, // Changed from single managerId to List of managers
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/deal?page=$page&per_page=$perPage';
 
-    path += '&organization_id=$organizationId';
+    if (organizationId != null) {
+      path += '&organization_id=$organizationId';
+    }
+
+    // Similar logic as in getLeads
+    bool shouldSkipDealStatusId = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty);
+
+    if (!shouldSkipDealStatusId && dealStatusId != null) {
+      path += '&deal_status_id=$dealStatusId';
+    }
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (dealStatusId != null && managerId == null) {
-      // Условие: если нет managerId
-
-      path += '&deal_status_id=$dealStatusId';
-    }
-    // Добавляем manager_id если есть
-    if (managerId != null) {
-      path += '&manager_id=$managerId';
     }
 
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
+    // Add managers array parameter
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -1602,8 +1618,6 @@ class ApiService {
         throw Exception('Нет данных о сделках в ответе');
       }
     } else {
-      // Логирование ошибки с ответом сервера
-      print('Error response: ${response.statusCode} - ${response.body}');
       throw Exception('Ошибка загрузки сделок: ${response.body}');
     }
   }

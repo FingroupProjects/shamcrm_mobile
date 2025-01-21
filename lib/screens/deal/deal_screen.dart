@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
@@ -40,6 +41,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
+  List<int>? _selectedManagerIds; // Add this field
   int? _selectedManagerId; // ID выбранного менеджера.
 
   @override
@@ -97,22 +99,50 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     } else {
       dealBloc.add(FetchDeals(
         currentStatusId, query: query,
-        managerId: _selectedManagerId, // Передаем ID менеджера
+        managerIds: _selectedManagerIds, // Передаем список ID менеджеров
       ));
     }
   }
 
-  void _handleManagerSelected(dynamic manager) {
+  void _handleManagerSelected(List<dynamic> managers) {
+    print('Selected managers: $managers');
+
     setState(() {
-      _selectedManagerId = manager?.id;
+      _selectedManagerIds = managers
+          .map((manager) {
+            if (manager is String) {
+              return int.tryParse(manager);
+            } else if (manager is ManagerData) {
+              return manager.id;
+            }
+            return null;
+          })
+          .where((id) => id != null)
+          .cast<int>()
+          .toList();
     });
 
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final dealBloc = BlocProvider.of<DealBloc>(context);
+
+    dealBloc.add(FetchDeals(
+      currentStatusId,
+      managerIds:
+          _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
+      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+    ));
+  }
+
+  void _onManagerSelected(List<int> managerIds) {
+    setState(() {
+      _selectedManagerIds = managerIds;
+    });
     // Запрашиваем обновленные данные с учетом выбранного менеджера
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final leadBloc = BlocProvider.of<DealBloc>(context);
     leadBloc.add(FetchDeals(
       currentStatusId,
-      managerId: _selectedManagerId,
+      managerIds: _selectedManagerIds, // Передаем список ID менеджеров
       query: _searchController.text.isNotEmpty ? _searchController.text : null,
     ));
   }
@@ -161,7 +191,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             }
             _onSearch(value);
           },
-          onManagerSelected: _handleManagerSelected,
+          onManagersSelected: _handleManagerSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
@@ -169,7 +199,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
           clearButtonClick: (value) {
             if (value == false) {
-                    // BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+              // BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
 
               final dealBloc = BlocProvider.of<DealBloc>(context);
               dealBloc.add(FetchDealStatuses());
@@ -239,7 +269,39 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       builder: (context, state) {
         if (state is DealDataLoaded) {
           final List<Deal> deals = state.deals;
-          return managerWidget(deals);
+          if (deals.isEmpty) {
+            return Center(
+              child: Text(
+                _selectedManagerIds?.isNotEmpty == true
+                    ? 'У выбранных менеджеров нет сделок'
+                    : 'По запросу ничего не найдено',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            );
+          }
+          return ListView.builder(
+            controller: _scrollController,
+            itemCount: deals.length,
+            itemBuilder: (context, index) {
+              final deal = deals[index];
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: DealCard(
+                  deal: deal,
+                  title: deal.dealStatus?.title ?? "",
+                  statusId: deal.statusId,
+                  onStatusUpdated: () {},
+                  onStatusId: (StatusDealId) {},
+                ),
+              );
+            },
+          );
         }
         if (state is DealLoading) {
           return const Center(

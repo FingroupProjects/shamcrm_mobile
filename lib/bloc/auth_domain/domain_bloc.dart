@@ -28,7 +28,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
         final domainCheck = await apiService.checkDomain(event.domain);
         emit(DomainLoaded(domainCheck));
       } catch (e) {
-        emit(DomainError('Не правильный домен'));
+        emit(DomainError('Не правильный поддомен'));
       }
     });
   }
