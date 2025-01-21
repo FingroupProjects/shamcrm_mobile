@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -46,8 +47,8 @@ class DeleteDealDialog extends StatelessWidget {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              'Удалить сделку',
-              style: TextStyle(
+              AppLocalizations.of(context)!.translate('delete_deal'),        
+               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
@@ -56,7 +57,7 @@ class DeleteDealDialog extends StatelessWidget {
             ),
           ),
           content: Text(
-            'Вы уверены, что хотите удалить эту сделку?',
+            AppLocalizations.of(context)!.translate('confirm_delete_deal'),
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
@@ -70,7 +71,7 @@ class DeleteDealDialog extends StatelessWidget {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText: 'Отмена',
+                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -81,13 +82,13 @@ class DeleteDealDialog extends StatelessWidget {
                 SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText: 'Удалить',
+                    buttonText: AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
                       context.read<DealBloc>().add(DeleteDeal(dealId));
                       ScaffoldMessenger.of(context).showSnackBar(
                    SnackBar(
                      content: Text(
-                       'Сделка успешно удалена!',
+                       AppLocalizations.of(context)!.translate('deal_deleted_successfully'),
                        style: TextStyle(
                          fontFamily: 'Gilroy',
                          fontSize: 16, 

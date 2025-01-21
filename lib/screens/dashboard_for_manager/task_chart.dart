@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/task_chart_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,6 +30,7 @@ class _TaskChartWidgetStateManager extends State<TaskChartWidgetManager>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return BlocConsumer<DashboardTaskChartBlocManager, DashboardTaskChartStateManager>(
       listener: (context, state) {},
       builder: (context, state) {
@@ -40,8 +42,8 @@ class _TaskChartWidgetStateManager extends State<TaskChartWidgetManager>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Задачи',
+                Text(
+                  localizations!.translate('tasks'),
                   style: TextStyle(
                     fontSize: 24,
                     fontFamily: "Gilroy",
@@ -58,8 +60,8 @@ class _TaskChartWidgetStateManager extends State<TaskChartWidgetManager>
                       _buildChart(state),
                       if (state.taskChartData.data.every((value) => value == 0))
                         Center(
-                          child: const Text(
-                            'Нет данных для отображения',
+                          child: Text(
+                          localizations.translate('no_data_to_display'),
                             style: TextStyle(
                               fontSize: 16,
                               fontFamily: "Gilroy",
@@ -74,7 +76,7 @@ class _TaskChartWidgetStateManager extends State<TaskChartWidgetManager>
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    'Общее количество задач: ${totalTasks.toInt()}',
+                  '${localizations.translate('total_tasks')}: ${totalTasks.toInt()}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontFamily: "Gilroy",
@@ -90,7 +92,7 @@ class _TaskChartWidgetStateManager extends State<TaskChartWidgetManager>
         } else if (state is DashboardTaskChartErrorManager) {
           return Center(
             child: Text(
-              'Ошибка загрузки данных',
+            localizations!.translate('data_loading_error'),
               style: TextStyle(
                 color: Colors.red,
                 fontSize: 16,
@@ -206,32 +208,33 @@ class _TaskChartWidgetStateManager extends State<TaskChartWidgetManager>
   }
 
   Widget _buildLegend(TaskChartManager taskChart) {
+    final localizations = AppLocalizations.of(context)!;
     return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildLegendItem(
-              'Активные ',
-              const Color(0xFF3935E7),
-            ),
-            const SizedBox(
-              width: 24,
-              height: 12,
-            ),
-            _buildLegendItem(
-              'Просроченные',
-              const Color(0xFFC30202),
-            ),
-          ],
-        ),
-        _buildLegendItem(
-          'Завершённые ',
-          const Color(0xFF27A945),
-        ),
-      ],
-    );
-  }
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildLegendItem(
+            localizations.translate('active_tasks'),
+            const Color(0xFF3935E7),
+          ),
+          const SizedBox(
+            width: 24,
+            height: 12,
+          ),
+          _buildLegendItem(
+            localizations.translate('overdue_tasks'),
+            const Color(0xFFC30202),
+          ),
+        ],
+      ),
+      _buildLegendItem(
+        localizations.translate('completed_tasks'),
+        const Color(0xFF27A945),
+      ),
+    ],
+  );
+}
 
   Widget _buildLegendItem(String title, Color color) {
     return Row(

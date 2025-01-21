@@ -5,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -76,8 +77,8 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Редактировать контакт',
+        title: Text(
+          AppLocalizations.of(context)!.translate('edit_contact'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -115,7 +116,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
                    SnackBar(
                      content: Text(
-                       'Контактное лицо успешно обновлено!',
+                       AppLocalizations.of(context)!.translate('contact_add_successfully'),
                        style: TextStyle(
                          fontFamily: 'Gilroy',
                          fontSize: 16, 
@@ -149,11 +150,11 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                     children: [
                       CustomTextField(
                         controller: nameController,
-                        hintText: 'Введите ФИО',
-                        label: 'ФИО',
+                        hintText: AppLocalizations.of(context)!.translate('enter_full_name'),
+                        label: AppLocalizations.of(context)!.translate('full_name'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -169,18 +170,18 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                             });
                           },
                           validator: (value) => value!.isEmpty
-                              ? 'Поле обязательно для заполнения'
+                              ? AppLocalizations.of(context)!.translate('field_required')
                               : null,
-                          label: 'Телефон',
+                        label: AppLocalizations.of(context)!.translate('phone'),
                         ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: positionController,
-                        hintText: 'Введите позицию',
-                        label: 'Позиция',
+                        hintText: AppLocalizations.of(context)!.translate('enter_position'),
+                        label: AppLocalizations.of(context)!.translate('position'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -195,7 +196,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -215,7 +216,7 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Сохранить',
+                              buttonText: AppLocalizations.of(context)!.translate('save'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {

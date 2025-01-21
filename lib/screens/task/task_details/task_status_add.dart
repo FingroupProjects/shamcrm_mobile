@@ -11,6 +11,7 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
 import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
     as task_status_add;
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
@@ -45,7 +46,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(
-        'Добавить статус',
+        AppLocalizations.of(context)!.translate('add_status'),
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -87,7 +88,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'С доступом',
+                          AppLocalizations.of(context)!.translate('with_access'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 14,
@@ -123,7 +124,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Завершающий этап',
+                          AppLocalizations.of(context)!.translate('final_stage_add'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 14,
@@ -200,7 +201,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     ),
                   ),
                   child: Text(
-                    'Отмена',
+                    AppLocalizations.of(context)!.translate('cancel'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -222,7 +223,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     ),
                   ),
                   child: Text(
-                    'Добавить',
+                   AppLocalizations.of(context)!.translate('add'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -242,7 +243,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   void _createStatus() {
     if (selectedStatusNameId == null || selectedProjectId == null) {
       setState(() {
-        _errorMessage = 'Заполните обязательные поля';
+        _errorMessage =  AppLocalizations.of(context)!.translate('fill_required_fields');
       });
       return;
     }
@@ -265,7 +266,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Статус успешно создан!',
+          AppLocalizations.of(context)!.translate('status_created_successfully'),
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,

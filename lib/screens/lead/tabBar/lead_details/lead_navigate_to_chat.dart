@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
@@ -91,7 +92,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Перейти в чат',
+                        AppLocalizations.of(context)!.translate('go_to_chat'),
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       Icon(
@@ -121,7 +122,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               Container(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Список чатов',
+                  AppLocalizations.of(context)!.translate('list_chat'), 
                   style: TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
@@ -144,7 +145,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                       if (leadtochat.isEmpty) {
                         return Center(
                           child: Text(
-                            'Нет чатов для текущего лида',
+                            AppLocalizations.of(context)!.translate('no_chat_in_list'),
                             style: TextStyle(
                                 color: Color(0xff1E2E52), fontSize: 16),
                           ),
@@ -161,7 +162,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 customChannelNames[channelName] ??
                                     (channelName.isNotEmpty
                                         ? channelName
-                                        : 'Без названия');
+                                        : AppLocalizations.of(context)!.translate('no_name_chat'));
                             return ListTile(
                               leading: Image.asset(
                                 iconPath,
@@ -186,7 +187,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     } else {
                       return Center(
                         child: Text(
-                          'Нет чатов для текущего лида',
+                          AppLocalizations.of(context)!.translate('no_chat_in_list'),
                           style: TextStyle(color: Color(0xff1E2E52)),
                         ),
                       );
@@ -197,7 +198,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
                     Navigator.pop(context);
                   },

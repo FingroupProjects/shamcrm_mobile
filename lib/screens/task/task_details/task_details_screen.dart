@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
@@ -102,7 +103,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
-      return 'Неверный формат';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
@@ -151,7 +152,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -172,51 +173,51 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       return;
     }
 
-    // Карта уровней приоритета
+
     final Map<int, String> priorityLevels = {
-      1: 'Обычный',
-      3: 'Срочный',
-      2: 'Важный'
-    };
+  1: AppLocalizations.of(context)!.translate('normal'), 
+  2: AppLocalizations.of(context)!.translate('important'),
+  3: AppLocalizations.of(context)!.translate('urgent'), 
+};
 
     currentTask = task;
     details = [
-      {'label': 'Название задачи:', 'value': task?.name ?? ""},
+      {'label': AppLocalizations.of(context)!.translate('task_name'), 'value': task?.name ?? ""},
       {
-        'label': 'Уровень приоритета:',
-        'value': priorityLevels[task.priority] ?? 'Обычний',
+        'label': AppLocalizations.of(context)!.translate('priority_level'),
+        'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
       },
       {
-        'label': 'От:',
+        'label': AppLocalizations.of(context)!.translate('from_details'),
         'value': task.startDate != null && task.startDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
             : ''
       },
       {
-        'label': 'До:',
+        'label':  AppLocalizations.of(context)!.translate('to_details'),
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
       },
-      {'label': 'Проект:', 'value': task.project?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('project_details'),  'value': task.project?.name ?? ''},
       {
-        'label': 'Исполнитель:',
+        'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
             : '',
       },
       {
-        'label': 'Описание:',
+        'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
       {
-        'label': 'Статус:',
+        'label': AppLocalizations.of(context)!.translate('status_details'),
         'value': task.taskStatus?.taskStatus.name ?? '',
       },
-      {'label': 'Автор:', 'value': task.author?.name ?? ''},
-      {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('author_details'),'value': task.author?.name ?? ''},
+      {'label':  AppLocalizations.of(context)!.translate('creation_date_details'), 'value': formatDate(task.createdAt)},
       if (task.taskFile != null && task.taskFile!.isNotEmpty)
-        {'label': 'Файл:', 'value': 'Ссылка'},
+        {'label': AppLocalizations.of(context)!.translate('file_details'), 'value': AppLocalizations.of(context)!.translate('link'),},
     ];
 
     for (var field in task.taskCustomFields) {
@@ -232,7 +233,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр задачи'),
+        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_task'),),
         backgroundColor: Colors.white,
         body: BlocListener<TaskByIdBloc, TaskByIdState>(
           listener: (context, state) {
@@ -271,7 +272,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 );
               } else if (state is TaskByIdLoaded) {
                 if (state.task == null) {
-                  return Center(child: Text('Данные о задаче недоступны.'));
+                  return Center(child: Text(AppLocalizations.of(context)!.translate('task_data_unavailable'),));
                 }
                 TaskById task = state.task!;
                 _updateDetails(task);
@@ -310,7 +311,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                         contentPadding: EdgeInsets.symmetric(
                                             horizontal: 24, vertical: 20),
                                         title: Text(
-                                          'Хотите завершить задачу?',
+                                         AppLocalizations.of(context)!.translate('confirm_task_completion'),
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontFamily: 'Gilroy',
@@ -329,7 +330,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                   onPressed: () =>
                                                       Navigator.pop(context),
                                                   child: Text(
-                                                    'Отмена',
+                                                    AppLocalizations.of(context)!.translate('cancel'),
                                                     style: TextStyle(
                                                       color: Colors.white,
                                                       fontFamily: 'Gilroy',
@@ -519,7 +520,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                               ),
                                                             )
                                                           : Text(
-                                                              'Подтвердить',
+                                                              AppLocalizations.of(context)!.translate('confirm'),
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white,
@@ -572,7 +573,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    'На проверку',
+                                    AppLocalizations.of(context)!.translate('for_review'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -750,7 +751,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _buildDetailItem(String label, String value) {
     // Специальная обработка для названия и описания
-    if (label == 'Название задачи:' || label == 'Описание:') {
+    if (label == AppLocalizations.of(context)!.translate('task_name') || label == AppLocalizations.of(context)!.translate('description_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -785,11 +786,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == 'Исполнитель:' && value.contains(',')) {
-      label = 'Исполнители:';
+    if (label == AppLocalizations.of(context)!.translate('assignee') && value.contains(',')) {
+      label = AppLocalizations.of(context)!.translate('assignees');
     }
 
-    if (label == 'Исполнители:') {
+    if (label == AppLocalizations.of(context)!.translate('assignees')) {
       return GestureDetector(
         onTap: () => _showUsersDialog(value),
         child: Row(
@@ -817,7 +818,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == 'Файл:') {
+    if (label == AppLocalizations.of(context)!.translate('file_details')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -830,7 +831,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               }
             },
             child: Text(
-              'Ссылка',
+              AppLocalizations.of(context)!.translate('link'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -844,7 +845,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == 'Уровень приоритета:') {
+    if (label == AppLocalizations.of(context)!.translate('priority_level_colon')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -963,7 +964,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       }
     } catch (e) {
       print('Ошибка при скачивании или открытии файла!');
-      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
     }
   }
 
@@ -1005,7 +1006,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Container(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Список исполнителей',
+                  AppLocalizations.of(context)!.translate('assignee_list'),
                   style: TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
@@ -1037,7 +1038,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
                     Navigator.pop(context);
                   },

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -34,7 +35,7 @@ class CustomFieldWidget extends StatelessWidget {
               TextField(
                 controller: valueController,
                 decoration: InputDecoration(
-                  hintText: 'Введите значение поля',
+                  hintText: AppLocalizations.of(context)!.translate('enter_textfield_text'),
                   hintStyle: TextStyle(
                     fontFamily: 'Gilroy',
                     color: Color(0xff99A4BA),

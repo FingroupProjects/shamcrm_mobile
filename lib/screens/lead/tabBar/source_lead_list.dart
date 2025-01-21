@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_state.dart';
 import 'package:crm_task_manager/models/source_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -61,7 +62,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                  'Загрузка...',
+                  AppLocalizations.of(context)!.translate('loading'), 
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -77,7 +78,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                 DropdownMenuItem(
                   value: null,
                   child: Text(
-                    'Нет источников',
+                    AppLocalizations.of(context)!.translate('no_source'),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -111,8 +112,8 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Источник',
+               Text(
+                AppLocalizations.of(context)!.translate('source'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -132,8 +133,8 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                       : null,
                   hint: Padding(
                     padding: const EdgeInsets.only(left: 8.0),
-                    child: const Text(
-                      'Выберите источник',
+                    child:  Text(
+                       AppLocalizations.of(context)!.translate('select_source'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -152,7 +153,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                   },
                   validator: (value) {
                     if (value == null) {
-                      return ' Поле обязательно для заполнения';
+                      return  AppLocalizations.of(context)!.translate('field_required_source');
                     }
                     return null;
                   },

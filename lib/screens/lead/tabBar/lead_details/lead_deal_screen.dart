@@ -8,6 +8,7 @@ import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_lead_deal.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_add_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -115,7 +116,8 @@ class _DealsWidgetState extends State<DealsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Сделки'),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('deal'), 
+        ),
         SizedBox(height: 8),
         if (deals.isEmpty)
           Padding(
@@ -126,7 +128,7 @@ class _DealsWidgetState extends State<DealsWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пусто',
+                    AppLocalizations.of(context)!.translate('empty'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -160,10 +162,10 @@ class _DealsWidgetState extends State<DealsWidget> {
   try {
     formattedDate = (deal.lastseen != null && deal.lastseen!.isNotEmpty)
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.lastseen!))
-        : 'Не указано';
+        : AppLocalizations.of(context)!.translate('not_specified');
   } catch (e) {
-    formattedDate = 'Не указано'; // Обработка ошибки
-  }
+    formattedDate = AppLocalizations.of(context)!.translate('not_specified'); 
+      }
 
   return GestureDetector(
     onTap: () {
@@ -281,7 +283,7 @@ class _DealsWidgetState extends State<DealsWidget> {
               ),
             ),
             child: Text(
-              'Добавить',
+              AppLocalizations.of(context)!.translate('add'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',

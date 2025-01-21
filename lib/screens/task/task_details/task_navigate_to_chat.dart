@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -35,11 +36,6 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
               CustomButton(
                 buttonText: '',
                 onPressed: () {
-                  print(
-                      "------------------------------------------------------------------------");
-                  print("CANSENDSSSSSMESAGE");
-                  print('canSendMessage: ${widget.canSendMessage}');
-
                   navigatorKey.currentState?.push(
                     MaterialPageRoute(
                       builder: (context) => BlocProvider(
@@ -75,7 +71,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Перейти в чат',
+                      AppLocalizations.of(context)!.translate('go_to_chat'),
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],

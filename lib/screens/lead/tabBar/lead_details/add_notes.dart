@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -62,7 +63,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Добавить заметку',
+                  AppLocalizations.of(context)!.translate('add_note'), 
                   style: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -73,12 +74,12 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 SizedBox(height: 8),
                 CustomTextField(
                   controller: titleController,
-                  hintText: 'Введите название',
-                  label: 'Тематика',
+                  hintText: AppLocalizations.of(context)!.translate('enter_title'), 
+                  label: AppLocalizations.of(context)!.translate('theme'), 
                   maxLines: 1,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Поле обязательно для заполнения';
+                      return AppLocalizations.of(context)!.translate('field_required');
                     }
                     return null;
                   },
@@ -86,12 +87,12 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 SizedBox(height: 8),
                 CustomTextField(
                   controller: bodyController,
-                  hintText: 'Введите текст',
-                  label: 'Описание',
+                  hintText: AppLocalizations.of(context)!.translate('enter_text'),
+                  label: AppLocalizations.of(context)!.translate('description_list'),
                   maxLines: 5,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Поле обязательно для заполнения';
+                      return AppLocalizations.of(context)!.translate('field_required');
                     }
                     return null;
                   },
@@ -99,12 +100,12 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 SizedBox(height: 8),
                 CustomTextFieldDate(
                   controller: dateController,
-                  label: 'Напоминание',
+                  label: AppLocalizations.of(context)!.translate('reminder'),
                   withTime: true,
                 ),
                 SizedBox(height: 8),
                 CustomButton(
-                  buttonText: 'Сохранить',
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final String title = titleController.text;
@@ -122,7 +123,8 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  'Введите корректную дату и время в формате ДД/ММ/ГГГГ ЧЧ:ММ'),
+                                  AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+                                  )
                             ),
                           );
                           return;
@@ -139,7 +141,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                         ScaffoldMessenger.of(context).showSnackBar(
                          SnackBar(
                            content: Text(
-                             'Заметка успешно создана!',
+                             AppLocalizations.of(context)!.translate('note_created_successfully'),
                              style: TextStyle(
                                fontFamily: 'Gilroy',
                                fontSize: 16, 

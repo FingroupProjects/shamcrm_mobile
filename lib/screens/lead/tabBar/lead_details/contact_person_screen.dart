@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_update_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -88,7 +89,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Контактные лица'),
+        _buildTitleRow( AppLocalizations.of(context)!.translate('contacts')),
         SizedBox(height: 8),
         if (contactPerson.isEmpty)
           Padding(
@@ -99,7 +100,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пусто',
+                    AppLocalizations.of(context)!.translate('empty'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -158,7 +159,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                       GestureDetector(
                         onTap: () => _makePhoneCall(contactPerson.phone),
                         child: Text(
-                          'Телефон: ${contactPerson.phone}',
+                          '${AppLocalizations.of(context)!.translate('phone_use')} ${contactPerson.phone}',
                           style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
@@ -169,13 +170,13 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                         ),
                       ),
                       Text(
-                        'Должность: ${contactPerson.position ?? ""}',
+                        '${AppLocalizations.of(context)!.translate('position_contact')} ${contactPerson.position ?? ""}',
                       ),
                       Text(
-                        'Автор: ${contactPerson.author?.name ?? ""}',
+                        '${AppLocalizations.of(context)!.translate('author_contact')} ${contactPerson.author?.name ?? ""}',
                       ),
                       Text(
-                        'Дата создания: ${contactPerson.formattedDate}',
+                        '${AppLocalizations.of(context)!.translate('created_at_contact')}${contactPerson.formattedDate}',
                       ),
                     ],
                   ),
@@ -247,7 +248,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
             ),
           ),
           child: Text(
-            'Добавить',
+            AppLocalizations.of(context)!.translate('add'),
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

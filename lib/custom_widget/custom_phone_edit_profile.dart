@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -70,13 +71,13 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     
     setState(() {
       if (value.isEmpty) {
-        _errorText = 'Поле обязательно для ввода!';
+        _errorText = AppLocalizations.of(context)!.translate('field_required');
         _hasReachedMaxLength = false;
       } else if (value.length == maxLength) {
         _errorText = null;
         _hasReachedMaxLength = true;
       } else {
-        _errorText = 'Неправильный номер телефона!';
+        _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
         _hasReachedMaxLength = false;
       }
     });
@@ -99,7 +100,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         TextFormField(
           controller: widget.controller,
           decoration: InputDecoration(
-            hintText: 'Введите номер телефона',
+            hintText: AppLocalizations.of(context)!.translate('enter_phone_number'), 
             hintStyle: TextStyle(
               fontFamily: 'Gilroy',
               color: Color(0xff99A4BA),

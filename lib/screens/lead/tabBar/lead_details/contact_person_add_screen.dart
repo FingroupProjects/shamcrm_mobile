@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -69,10 +70,10 @@ void _showErrorSnackBar(BuildContext context, String message) {
             Navigator.pop(context, widget.leadId);
           },
         ),
-        title: const Row(
+        title: Row(
           children: [
             Text(
-              'Добавить контакт',
+              AppLocalizations.of(context)!.translate('add_contact'), 
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -91,7 +92,7 @@ void _showErrorSnackBar(BuildContext context, String message) {
        ScaffoldMessenger.of(context).showSnackBar(
                    SnackBar(
                      content: Text(
-                       'Контактное лицо успешно создано!',
+                       AppLocalizations.of(context)!.translate('contact_created_successfully'), 
                        style: TextStyle(
                          fontFamily: 'Gilroy',
                          fontSize: 16, 
@@ -125,11 +126,11 @@ void _showErrorSnackBar(BuildContext context, String message) {
                     children: [
                       CustomTextField(
                         controller: nameController,
-                        hintText: 'Введите ФИО',
-                        label: 'ФИО',
+                        hintText: AppLocalizations.of(context)!.translate('enter_full_name'),
+                        label: AppLocalizations.of(context)!.translate('full_name'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -144,20 +145,20 @@ void _showErrorSnackBar(BuildContext context, String message) {
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
-                        label: 'Телефон',
+                        label: AppLocalizations.of(context)!.translate('phone'),
                       ),
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: positionController,
-                        hintText: 'Введите должность',
-                        label: 'Должность',
+                        hintText: AppLocalizations.of(context)!.translate('enter_position'),
+                        label: AppLocalizations.of(context)!.translate('position'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -172,7 +173,7 @@ void _showErrorSnackBar(BuildContext context, String message) {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -192,7 +193,7 @@ void _showErrorSnackBar(BuildContext context, String message) {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Сохранить',
+                              buttonText: AppLocalizations.of(context)!.translate('save'),
                               buttonColor: Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
