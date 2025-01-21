@@ -1,15 +1,13 @@
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ManagerFilterPopup extends StatefulWidget {
-  final Function(List<dynamic>)? onManagerSelected;
+  final Function(List<dynamic>)? onManagersSelected;
 
   const ManagerFilterPopup({
     Key? key,
-    this.onManagerSelected,
+    this.onManagersSelected,
   }) : super(key: key);
 
   @override
@@ -17,39 +15,18 @@ class ManagerFilterPopup extends StatefulWidget {
 }
 
 class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
-  Set<dynamic> selectedManagers = {};
+  List<dynamic> _selectedManagers = [];
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
 
-  void updateSelection(dynamic manager) {
-    setState(() {
-      if (selectedManagers.contains(manager)) {
-        selectedManagers.remove(manager);
-      } else {
-        selectedManagers.add(manager);
-      }
-    });
-    _notifySelectionChanged();
-  }
-
-  void _notifySelectionChanged() {
-    if (widget.onManagerSelected != null) {
-      final managerIds = selectedManagers.map((manager) => manager.id).toList();
-      widget.onManagerSelected!(managerIds);
-    }
-  }
-
   void toggleSelectAll(List<dynamic> managers) {
     setState(() {
-      if (selectedManagers.length == managers.length) {
-        // Если все выбраны - снимаем выбор
-        selectedManagers.clear();
+      if (_selectedManagers.length == managers.length) {
+        _selectedManagers.clear();
       } else {
-        // Иначе выбираем всех
-        selectedManagers = Set.from(managers);
+        _selectedManagers = List.from(managers);
       }
     });
-    _notifySelectionChanged();
   }
 
   List<dynamic> filterManagers(List<dynamic> managers) {
@@ -78,13 +55,11 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                   ? state.dataManager.result ?? []
                   : [];
               final isAllSelected = allManagers.isNotEmpty &&
-                  selectedManagers.length == allManagers.length;
-
+                  _selectedManagers.length == allManagers.length;
               return Padding(
                 padding: EdgeInsets.all(8),
                 child: Row(
                   children: [
-                    // Select All Checkbox
                     Container(
                       width: 24,
                       height: 24,
@@ -110,7 +85,6 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                         ),
                       ),
                     ),
-                    // Search Field
                     Expanded(
                       child: TextField(
                         controller: searchController,
@@ -152,9 +126,9 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                 if (state is GetAllManagerLoading) {
                   return Center(
                     child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(
-                            color: Color(0xff1E2E52))),
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                    ),
                   );
                 } else if (state is GetAllManagerError) {
                   return Center(
@@ -193,10 +167,18 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                     itemBuilder: (context, index) {
                       final manager = filteredManagers[index];
                       final name = manager.name ?? 'Без имени';
-                      final isSelected = selectedManagers.contains(manager);
+                      final isSelected = _selectedManagers.contains(manager);
 
                       return InkWell(
-                        onTap: () => updateSelection(manager),
+                        onTap: () {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedManagers.remove(manager);
+                            } else {
+                              _selectedManagers.add(manager);
+                            }
+                          });
+                        },
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 16,
@@ -260,8 +242,10 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
             padding: EdgeInsets.all(8),
             child: ElevatedButton(
               onPressed: () {
-                _notifySelectionChanged();
-                Navigator.of(context).pop();
+                if (widget.onManagersSelected != null) {
+                  widget.onManagersSelected!(_selectedManagers);
+                }
+                Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF4339F2),

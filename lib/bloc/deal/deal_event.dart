@@ -5,12 +5,12 @@ class FetchDealStatuses extends DealEvent {}
 class FetchDeals extends DealEvent {
   final int statusId;
   final String? query;
-  final int? managerId; // Добавляем поле managerId
+  final List<int>? managerIds; // Changed from single managerId
 
   FetchDeals(
     this.statusId, {
     this.query,
-    this.managerId, // Добавляем в конструктор
+    this.managerIds, 
   });
 }
 
