@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -60,7 +61,7 @@ class _LeadCardState extends State<LeadCard> {
           MaterialPageRoute(
             builder: (context) => LeadDetailsScreen(
               leadId: widget.lead.id.toString(),
-              leadName: widget.lead.name ?? 'Без имени',
+              leadName: widget.lead.name,
               leadStatus: dropdownValue,
               statusId: statusId,
             ),
@@ -74,15 +75,15 @@ class _LeadCardState extends State<LeadCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.lead.name ?? 'Без имени',
+              widget.lead.name,
               style: TaskCardStyles.titleStyle,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 5),
             Row(
               children: [
-                const Text(
-                  'Колонка: ',
+                Text(
+                  AppLocalizations.of(context)!.translate('column'), 
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -209,7 +210,7 @@ class _LeadCardState extends State<LeadCard> {
                             ),
                             const SizedBox(width: 0),
                             Text(
-                              ' ${formatDate(widget.lead.createdAt ?? 'Неизвестно')}',
+                              ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
@@ -229,7 +230,7 @@ class _LeadCardState extends State<LeadCard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '${widget.lead.manager?.name ?? "Cистема"}',
+                        '${widget.lead.manager?.name ?? {AppLocalizations.of(context)!.translate('system_text')}}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',

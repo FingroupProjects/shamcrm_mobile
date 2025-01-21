@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
@@ -26,7 +27,7 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
             DropdownMenuItem(
               value: null,
               child: Text(
-                'Загрузка...',
+                AppLocalizations.of(context)!.translate('loading'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -42,7 +43,7 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                  'Нет статусов сделки',
+                  AppLocalizations.of(context)!.translate('no_deal_status'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -78,8 +79,8 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Статус сделки',
+            Text(
+              AppLocalizations.of(context)!.translate('deal_status'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -93,8 +94,8 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 value: dropdownItems.any((item) => item.value == widget.selectedDealStatus)
                     ? widget.selectedDealStatus
                     : null,
-                hint: const Text(
-                  'Выберите статус сделки',
+                hint: Text(
+                  AppLocalizations.of(context)!.translate('select_deal_status'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -106,7 +107,7 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 onChanged: widget.onChanged,
                 validator: (value) {
                   if (value == null) {
-                    return 'Поле обязательно для заполнения';
+                    return AppLocalizations.of(context)!.translate('field_required');
                   }
                   return null;
                 },

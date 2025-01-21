@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
@@ -180,12 +181,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Задачи',
+            title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_tasks'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -241,7 +243,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     if (_isSearching && tasks.isEmpty) {
       return Center(
         child: Text(
-          'По запросу ничего не найдено',
+          AppLocalizations.of(context)!.translate('nothing_found'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -297,7 +299,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     if (_selectedUserId != null && tasks.isEmpty) {
       return Center(
         child: Text(
-          'У выбранного пользователя нет задач',
+          AppLocalizations.of(context)!.translate('no_tasks_for_user'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -543,7 +545,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is TaskError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
+          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'),)) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -551,7 +553,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains("Нет подключения к интернету")) {
+          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'),)) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

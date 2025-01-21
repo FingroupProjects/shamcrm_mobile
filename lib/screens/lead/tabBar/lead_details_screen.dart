@@ -18,12 +18,12 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_scre
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
-
 import 'package:url_launcher/url_launcher.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
@@ -136,7 +136,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'), 
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -195,7 +195,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'WhatsApp не установлен',
+              AppLocalizations.of(context)!.translate('whatsapp_not_installed'), 
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -219,7 +219,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Не удалось открыть WhatsApp',
+            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -262,33 +262,29 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
-      return 'Неверный формат';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
   // Обновление данных лида
   void _updateDetails(LeadById lead) {
-    print('Lead author: ${lead.author?.name}'); // Добавьте вывод для отладки
-    print(
-        '-------------------llll-ll-l-ll-l--l-l-l-l-l--------...........................${lead.sourceLead?.name}');
     currentLead = lead; // Сохраняем актуального лида
     details = [
-      // {'label': 'ID лида:', 'value': lead.id.toString()},
-      {'label': 'Имя:', 'value': lead.name},
-      {'label': 'Телефон:', 'value': lead.phone ?? ''},
-      {'label': 'Регион:', 'value': lead.region?.name ?? ''},
-      {'label': 'Менеджер:', 'value': lead.manager?.name ?? 'Система'},
-      {'label': 'Источник:', 'value': lead.source?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('name_details'), 'value': lead.name},
+      {'label': AppLocalizations.of(context)!.translate('phone_use'), 'value': lead.phone ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('region_details'), 'value': lead.region?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': lead.manager?.name ?? AppLocalizations.of(context)!.translate('system_text')},
+      {'label': AppLocalizations.of(context)!.translate('source_details'), 'value': lead.source?.name ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
       {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-      {'label': 'Электронная почта:', 'value': lead.email ?? ''},
-      {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
-      {'label': 'Описание:', 'value': lead.description ?? ''},
-      {'label': 'Автор:', 'value': lead.author?.name ?? ''},
-      {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
-      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('email_details'), 'value': lead.email ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('birthday_details'), 'value': formatDate(lead.birthday)},
+      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': lead.description ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('author_details'), 'value': lead.author?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('created_at_details'), 'value': formatDate(lead.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': lead.leadStatus?.title ?? ''},
     ];
     for (var field in lead.leadCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
@@ -332,12 +328,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр лида'),
+        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_lead')),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
             if (state is LeadByIdLoaded) {
-              print("Лид Data: ${state.lead.toString()}");
             } else if (state is LeadByIdError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -565,8 +560,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains('Лид') ||
-                      label.contains('Описание'))
+              child: (label.contains(AppLocalizations.of(context)!.translate('lead')) ||
+                      label.contains(AppLocalizations.of(context)!.translate('description_list')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value),
             ),
@@ -595,7 +590,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     // Проверяем, является ли это телефонным номером
     if (details.any((detail) =>
-        detail['label'] == 'Телефон:' && detail['value'] == value)) {
+        detail['label'] == AppLocalizations.of(context)!.translate('phone_use') && detail['value'] == value)) {
       return GestureDetector(
         onTap: () => _makePhoneCall(value),
         child: Text(

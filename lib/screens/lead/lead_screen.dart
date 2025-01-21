@@ -8,6 +8,7 @@ import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -156,15 +157,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
 
+
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Лиды',
+          title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_leads'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -218,7 +221,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     if (_isSearching && leads.isEmpty) {
       return Center(
         child: Text(
-          'По запросу ничего не найдено',
+         AppLocalizations.of(context)!.translate('nothing_found'), 
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -274,7 +277,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     if (_selectedManagerId != null && leads.isEmpty) {
       return Center(
         child: Text(
-          'У выбранного менеджера нет лидов',
+          AppLocalizations.of(context)!.translate('selected_manager_has_any_lead'), 
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',

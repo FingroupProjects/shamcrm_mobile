@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_state.dart';
 import 'package:crm_task_manager/models/role_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,7 +56,7 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
   }
 
   String _getSelectedRolesText(List<Role> roles) {
-    if (_selectedRoleIds.isEmpty) return 'Выберите роли';
+    if (_selectedRoleIds.isEmpty) return AppLocalizations.of(context)!.translate('select_roles');
 
     return roles
         .where((role) => _selectedRoleIds.contains(role.id))
@@ -72,7 +73,7 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
         if (state is RoleLoading) {
           return Center(
             child: Text(
-              'Загрузка...',
+              AppLocalizations.of(context)!.translate('loading'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -86,7 +87,7 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
           roleCheckboxes.add(
             CheckboxListTile(
               title: Text(
-                'Все',
+                AppLocalizations.of(context)!.translate('all'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
@@ -139,8 +140,8 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Роль',
+            Text(
+              AppLocalizations.of(context)!.translate('role'), 
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -169,7 +170,7 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                       child: Text(
                         state is RoleLoaded
                             ? _getSelectedRolesText(state.roles)
-                            : 'Выберите роли',
+                            : AppLocalizations.of(context)!.translate('select_roles'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w500,

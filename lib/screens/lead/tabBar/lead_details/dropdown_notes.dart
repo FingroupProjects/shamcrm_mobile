@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/edit_notes.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -108,7 +109,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Заметки'),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('notice')),
         SizedBox(height: 8),
         if (notes.isEmpty)
           Padding(
@@ -119,7 +120,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пусто',
+                    AppLocalizations.of(context)!.translate('empty'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -151,7 +152,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     final formattedDate = note.date != null
         ? DateFormat('dd-MM-yyyy HH:mm')
             .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
-        : 'Не указано';
+        : AppLocalizations.of(context)!.translate('not_specified');
 
     return GestureDetector(
       onTap: _canUpdateNotes
@@ -231,7 +232,7 @@ class _NotesWidgetState extends State<NotesWidget> {
               ),
             ),
             child: Text(
-              'Добавить',
+              AppLocalizations.of(context)!.translate('add'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',

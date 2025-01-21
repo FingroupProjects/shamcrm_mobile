@@ -41,17 +41,19 @@ List<String> getMonths(BuildContext context) {
     context.read<DealStatsBloc>().add(LoadDealStatsData());
   }
 
-  String formatNumber(double value) {
-    if (value >= 1e9) {
-      return '${(value / 1e9).toStringAsFixed(1)}млрд';
-    } else if (value >= 1e6) {
-      return '${(value / 1e6).toStringAsFixed(1)}м';
-    } else if (value >= 1e3) {
-      return '${(value / 1e3).toStringAsFixed(1)}т';
-    } else {
-      return value.toStringAsFixed(0);
-    }
+String formatNumber(double value, BuildContext context) {
+  final localizations = AppLocalizations.of(context)!; 
+
+  if (value >= 1e9) {
+    return '${(value / 1e9).toStringAsFixed(1)}${localizations.translate('billion')}'; 
+  } else if (value >= 1e6) {
+    return '${(value / 1e6).toStringAsFixed(1)}${localizations.translate('million')}'; 
+  } else if (value >= 1e3) {
+    return '${(value / 1e3).toStringAsFixed(1)}${localizations.translate('thousand')}'; 
+  } else {
+    return value.toStringAsFixed(0); 
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -334,7 +336,7 @@ List<String> getMonths(BuildContext context) {
                             return SizedBox(
                               width: 60,
                               child: Text(
-                                formatNumber(value.toDouble()),
+                                formatNumber(value.toDouble(), context), 
                                 textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',

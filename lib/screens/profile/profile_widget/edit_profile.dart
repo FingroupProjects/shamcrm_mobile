@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/profile/profile_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -107,8 +108,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         if (fileSize > 2 * 1024 * 1024) {
           // Если размер больше 2 MB
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Выбранный файл слишком большой.'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.translate('file_too_large'),),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -122,8 +123,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Изображение успешно выбрано!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.translate('image_selected_successfully'),),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -132,7 +133,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка при выборе изображения: $e'),
+            content: Text(AppLocalizations.of(context)!.translate('image_selection_error'),),
           backgroundColor: Colors.red,
         ),
       );
@@ -252,7 +253,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Галерея'),
+              title: Text(AppLocalizations.of(context)!.translate('gallery'),),
               onTap: () async {
                 // Показываем диалог загрузки
                 showDialog(
@@ -270,8 +271,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               color: Color(0xff1E2E52),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Проверка изображения...',
+                            Text(AppLocalizations.of(context)!.translate('checking_image'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -300,11 +300,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.of(context).pop();
 
                     if (fileSize > 2 * 1024 * 1024) {
-                      Navigator.pop(context); // Закрываем модальное окно выбора
+                      Navigator.pop(context); 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Файл слишком большой. Максимальный размер — 2 MB.'),
+                         SnackBar(
+                           content: Text(AppLocalizations.of(context)!.translate('file_size_limit'),),                      
                           backgroundColor: Colors.red,
                           behavior: SnackBarBehavior.floating,
                           margin:
@@ -325,8 +324,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Изображение успешно выбрано!'),
+                      SnackBar(
+                        content: Text(AppLocalizations.of(context)!.translate('image_selected_successfully'),),                      
                         backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
                         margin:
@@ -343,7 +342,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка при выборе изображения: $e'),
+                        content: Text(AppLocalizations.of(context)!.translate('image_selection_error'),),                      
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -362,7 +361,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Камера'),
+              title: Text(AppLocalizations.of(context)!.translate('camera'),),
               onTap: () async {
                 // Показываем диалог загрузки
                 showDialog(
@@ -380,8 +379,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               color: Color(0xff1E2E52),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Проверка изображения...',
+                            Text(AppLocalizations.of(context)!.translate('checking_image'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -412,9 +410,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     if (fileSize > 2 * 1024 * 1024) {
                       Navigator.pop(context); // Закрываем модальное окно выбора
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Файл слишком большой. Максимальный размер — 2 MB.'),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context)!.translate('file_size_limit'),),
                           backgroundColor: Colors.red,
                           behavior: SnackBarBehavior.floating,
                           margin:
@@ -435,8 +432,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Изображение успешно выбрано!'),
+                      SnackBar(
+                        content: Text(AppLocalizations.of(context)!.translate('image_selected_successfully'),),
                         backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
                         margin:
@@ -453,7 +450,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Ошибка при выборе изображения: $e'),
+                        content: Text(AppLocalizations.of(context)!.translate('image_selection_error'),),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -552,7 +549,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return Scaffold(
       key: _formKey,
       appBar: AppBar(
-        title: Text('Редактирование профиля',
+        title:  Text(AppLocalizations.of(context)!.translate('edit_profile'),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -599,7 +596,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                         backgroundImage:
                                             FileImage(_localImage!),
                                       )
-                                    : _userImage != 'Не найдено' &&
+                                    : _userImage != AppLocalizations.of(context)!.translate('not_found') &&
                                             _userImage.isNotEmpty
                                         ? _userImage.contains('<svg')
                                             ? buildSvgAvatar(_userImage)
@@ -635,10 +632,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                     backgroundColor: const Color(0xff1E2E52),
                                   ),
                                   child: Text(
-                                    _userImage == 'Не найдено' ||
+                                    _userImage == AppLocalizations.of(context)!.translate('not_found') ||
                                             _userImage.isEmpty
-                                        ? 'Сменить фото'
-                                        : 'Сменить фото',
+                                        ? AppLocalizations.of(context)!.translate('change_photo')
+                                        : AppLocalizations.of(context)!.translate('change_photo'),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -652,8 +649,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: NameController,
-                          hintText: 'Введите Имя',
-                          label: 'Имя',
+                          hintText: AppLocalizations.of(context)!.translate('enter_name'),
+                          label: AppLocalizations.of(context)!.translate('name'),
                           onChanged: (value) {
                             setState(() {
                               _nameError = null;
@@ -678,8 +675,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: SurnameController,
-                          hintText: 'Введите Фамилию',
-                          label: 'Фамилия',
+                          hintText: AppLocalizations.of(context)!.translate('enter_surname'),
+                          label: AppLocalizations.of(context)!.translate('surname'),
                           onChanged: (value) {
                             setState(() {
                               _surnameError = null;
@@ -717,15 +714,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               }
                             }
                           },
-                          label: 'Телефон',
+                          label: AppLocalizations.of(context)!.translate('phone'),
                         ),
                         const SizedBox(height: 8),
                         Opacity(
                           opacity: 0.6, // Прозрачность для всего виджета
                           child: CustomTextField(
                             controller: roleController,
-                            hintText: 'Введите роль',
-                            label: 'Роль',
+                          hintText: AppLocalizations.of(context)!.translate('enter_role'),
+                          label: AppLocalizations.of(context)!.translate('role'),
                             readOnly: true,
                           ),
                         ),
@@ -734,16 +731,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           opacity: 0.6, // Прозрачность для всего виджета
                           child: CustomTextField(
                             controller: loginController,
-                            hintText: 'Введите логин',
-                            label: 'Логин',
+                        hintText: AppLocalizations.of(context)!.translate('enter_login'),
+                        label: AppLocalizations.of(context)!.translate('login'),
                             readOnly: true,
                           ),
                         ),
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: emailController,
-                          hintText: 'Введите электронную почту',
-                          label: 'Электронная почта',
+                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
+                        label: AppLocalizations.of(context)!.translate('email'),
                           keyboardType: TextInputType.emailAddress,
                           onChanged: (value) {
                             setState(() {
@@ -772,7 +769,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Профиль успешно обновлен!',
+                                    AppLocalizations.of(context)!.translate('profile_updated_successfully'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontFamily: 'Gilroy',
@@ -798,15 +795,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               String message;
 
                               if (state.message.contains('500')) {
-                                message =
-                                    'Ошибка на сервере. Попробуйте позже.';
+                                message = AppLocalizations.of(context)!.translate('server_error');
                               } else if (state.message.contains('422')) {
-                                message = 'Проверьте введенные данные';
+                                message = AppLocalizations.of(context)!.translate('validation_error');
                               } else if (state.message.contains('404')) {
-                                message = 'Ресурс не найден';
+                                message = AppLocalizations.of(context)!.translate('resource_not_found');
                               } else {
-                                message =
-                                    'Неправильный номер телефона. Проверьте формат и количество цифр.';
+                                message = AppLocalizations.of(context)!.translate('invalid_phone_number');
                               }
 
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -878,16 +873,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                           if (NameController.text.trim().isEmpty) {
                             setState(() {
-                              _nameError =
-                                  'Поле имя обязательно для заполнения';
+                              _nameError = AppLocalizations.of(context)!.translate('name_required');
                             });
                             isValid = false;
                           }
 
                           if (SurnameController.text.trim().isEmpty) {
                             setState(() {
-                              _surnameError =
-                                  'Поле фамилия обязательно для заполнения';
+                              _surnameError = AppLocalizations.of(context)!.translate('surname_required'); 
                             });
                             isValid = false;
                           }
@@ -895,7 +888,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           if (emailController.text.trim().isNotEmpty &&
                               !isValidEmail(emailController.text.trim())) {
                             setState(() {
-                              _emailError = 'Введите корректный email адрес';
+                              _emailError = AppLocalizations.of(context)!.translate('invalid_email'); 
                             });
                             isValid = false;
                           }
@@ -913,8 +906,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             }
 
                             String UserNameProfile = NameController.text;
-                            await prefs.setString(
-                                'userNameProfile', UserNameProfile);
+                            await prefs.setString('userNameProfile', UserNameProfile);
 
                             int userId = int.parse(UUID);
                             final image = _getImageToUpload();
@@ -927,12 +919,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 image: image,
                                 pname: ''));
                           } catch (e) {
-                            _showErrorMessage(
-                                'Произошла ошибка при обновлении профиля');
+                            _showErrorMessage(AppLocalizations.of(context)!.translate('profile_update_error'));
                           }
                         },
                         child: Text(
-                          'Сохранить',
+                          AppLocalizations.of(context)!.translate('save'),
                           style: TextStyle(
                             color: Colors.white,
                             fontFamily: 'Gilroy',

@@ -71,8 +71,8 @@ Future<void> _onLoadLeadConversionData(
       }
     }
   } catch (e) {
-    print("❌ Произошла ошибка: $e");
-    emit(DashboardConversionError(message: e.toString()));
+    print("❌ Произошла ошибка!");
+    emit(DashboardConversionError(message: ""));
   }
 }
 

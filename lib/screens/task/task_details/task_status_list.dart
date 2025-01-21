@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_state.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -30,7 +31,7 @@ class _TaskStatusListState extends State<StatusList> {
             DropdownMenuItem(
               value: null,
               child: Text(
-                'Загрузка...',
+                AppLocalizations.of(context)!.translate('loading'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -81,8 +82,8 @@ class _TaskStatusListState extends State<StatusList> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Статус задачи',
+            Text(
+              AppLocalizations.of(context)!.translate('task_status'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -103,8 +104,8 @@ class _TaskStatusListState extends State<StatusList> {
                         .any((item) => item.value == widget.selectedTaskStatus)
                     ? widget.selectedTaskStatus
                     : null,
-                hint: const Text(
-                  'Выберите статус задачи',
+                hint: Text(
+                  AppLocalizations.of(context)!.translate('select_status_task'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -124,7 +125,7 @@ class _TaskStatusListState extends State<StatusList> {
                 },
                 validator: (value) {
                   if (value == null) {
-                    return 'Поле обязательно для заполнения';
+                    return AppLocalizations.of(context)!.translate('field_required');
                   }
                   return null;
                 },

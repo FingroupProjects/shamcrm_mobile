@@ -70,8 +70,8 @@ class DashboardConversionBlocManager
         }
       }
     } catch (e) {
-      print("❌ Произошла ошибка: $e");
-      emit(DashboardConversionErrorManager(message: e.toString()));
+      print("❌ Произошла ошибка!");
+      emit(DashboardConversionErrorManager(message: ""));
     }
   }
 

@@ -14,6 +14,7 @@ import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
@@ -79,11 +80,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   final ApiService _apiService = ApiService();
 
-  final Map<int, String> priorityLevels = {
-    1: 'Обычный',
-    3: 'Срочный',
-    2: 'Важный'
-  };
+
 
   @override
   void initState() {
@@ -175,7 +172,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           Row(
             children: [
               Text(
-                'Файл:',
+                AppLocalizations.of(context)!.translate('file_details'), 
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -189,7 +186,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   _showFile(task.file!); // Показываем старый файл
                 },
                 child: Text(
-                  'Ссылка',
+                AppLocalizations.of(context)!.translate('link'), 
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -218,7 +215,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 Expanded(
                   child: Text(
                     // Отображаем текст до выбора файла или название нового файла
-                    fileName ?? 'Выберите файл',
+                    fileName ?? AppLocalizations.of(context)!.translate('select_file'), 
                     style: TextStyle(
                       fontFamily: 'Gilroy', // Используем шрифт Gilroy
                       fontSize: 16,
@@ -250,7 +247,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         fileName = result.files.single.name;
         fileSize = '${(result.files.single.size / 1024).toStringAsFixed(2)} KB';
       });
-
       // Вывод в консоль
       print('Файл выбран: $fileName, Путь: $selectedFile');
     }
@@ -259,25 +255,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
-
-      // Получаем базовый домен из ApiService
       final domain = await _apiService.getEnteredDomain();
-      print('Полученный базовый домен: $domain');
-
-      // Формируем полный URL файла
-      final fullUrl =
-          Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
-      print('Сформированный полный URL: $fullUrl');
-
-      // Путь для сохранения файла
+      final fullUrl = Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
       final directory = await getApplicationDocumentsDirectory();
       final fileName = fileUrl.split('/').last;
       final filePath = '${directory.path}/$fileName';
-
-      // Загружаем файл
       final dio = Dio();
       await dio.download(fullUrl.toString(), filePath);
-
       print('Файл успешно скачан в $filePath');
 
       // Открываем файл
@@ -290,7 +274,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       }
     } catch (e) {
       print('Ошибка при скачивании или открытии файла!');
-      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
     }
   }
 
@@ -317,11 +301,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
  Widget _buildPriorityDropdown() {
+          final Map<int, String> priorityLevels = {
+              1: AppLocalizations.of(context)!.translate('normal'), 
+              2: AppLocalizations.of(context)!.translate('important'),
+              3: AppLocalizations.of(context)!.translate('urgent'), 
+            };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Уровень приоритета',
+        Text(
+          AppLocalizations.of(context)!.translate('priority_level'),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -389,7 +378,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               },
               decoration: _inputDecoration(),
               validator: (value) =>
-                  value == null ? 'Поле обязательно для заполнения' : null,
+                  value == null ? AppLocalizations.of(context)!.translate('field_required') : null,
             ),
           ),
         ),
@@ -415,8 +404,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           ),
           onPressed: () => Navigator.pop(context, null),
         ),
-        title: const Text(
-          'Редактирование задачи',
+        title: Text(
+          AppLocalizations.of(context)!.translate('task_edit'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -474,10 +463,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     children: [
                       CustomTextField(
                         controller: nameController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!.translate('name_list'),
                         validator: (value) => value!.isEmpty
-                            ? 'Поле обязательно для заполнения'
+                            ? AppLocalizations.of(context)!.translate('field_required')
                             : null,
                       ),
                       const SizedBox(height: 16),
@@ -485,10 +474,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: 'От',
+                        label: AppLocalizations.of(context)!.translate('from_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -496,11 +485,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'До',
+                        label: AppLocalizations.of(context)!.translate('to_list'),
                         hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -529,8 +518,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 16),
@@ -554,7 +543,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: 'Добавить поле',
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -588,7 +577,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Сохранить',
+                              buttonText: AppLocalizations.of(context)!.translate('save'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
@@ -616,7 +605,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            'Дата начала не может быть позже даты завершения!',
+                                            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
                                             style: TextStyle(
                                               color: Colors.white,
                                             ),
@@ -667,7 +656,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                            'Ошибка в формате даты!'),
+                                            AppLocalizations.of(context)!.translate('error_format_date'),
+                                            ),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
@@ -676,7 +666,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                    ScaffoldMessenger.of(context).showSnackBar(
                                      SnackBar(
                                        content: Text(
-                                         'Пожалуйста, заполните все обязательные поля!',
+                                         AppLocalizations.of(context)!.translate('fill_required_fields'),
                                          style: TextStyle(
                                            fontFamily: 'Gilroy',
                                            fontSize: 16,

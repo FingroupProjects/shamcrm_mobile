@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -34,13 +35,13 @@ class CustomTextFieldDate extends StatelessWidget {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      fieldHintText: "дд/ММ/гггг",
-      cancelText: "Назад",
-      confirmText: "Ок",
-      helpText: "Выберите дату",
-      errorFormatText: "Ошибка! Пример: $formattedDate",
-      errorInvalidText: "Неправильный формат даты! дд/ММ/гггг",
-      fieldLabelText: "Введите дату",
+      fieldHintText: AppLocalizations.of(context)!.translate('ddmmyyyy'),
+      cancelText: AppLocalizations.of(context)!.translate('back'),
+      confirmText: AppLocalizations.of(context)!.translate('ok'),
+      helpText: AppLocalizations.of(context)!.translate('select_date'),
+      errorFormatText: "${AppLocalizations.of(context)!.translate('error_example')}$formattedDate",
+      errorInvalidText: AppLocalizations.of(context)!.translate('invalid_format_date'),
+      fieldLabelText: AppLocalizations.of(context)!.translate('enter_date'),
       firstDate: DateTime(1940),
       lastDate: DateTime(2101),
       builder: (BuildContext context, Widget? child) {
@@ -61,11 +62,11 @@ class CustomTextFieldDate extends StatelessWidget {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
           initialTime: TimeOfDay.now(),
-          cancelText: "Назад",
-          confirmText: "Ок",
-          helpText: "Выберите время",
-          minuteLabelText: "Минута",
-          hourLabelText: "Час",
+          cancelText: AppLocalizations.of(context)!.translate('back'),
+          confirmText: AppLocalizations.of(context)!.translate('ok'),
+          helpText: AppLocalizations.of(context)!.translate('select_time'),
+          minuteLabelText: AppLocalizations.of(context)!.translate('minute'),
+          hourLabelText: AppLocalizations.of(context)!.translate('hour'),
           builder: (BuildContext context, Widget? child) {
             return MediaQuery(
               data:
