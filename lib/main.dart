@@ -97,8 +97,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await FirebaseMessaging.instance.requestPermission();
-  await getFCMTokens(apiService);
+  // await FirebaseMessaging.instance.requestPermission();
+  // await getFCMTokens(apiService);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -124,7 +124,7 @@ void main() async {
   ));
 }
 
-Future<void> getFCMTokens(ApiService apiService) async {}
+// Future<void> getFCMTokens(ApiService apiService) async {}
 
 class MyApp extends StatefulWidget {
   final ApiService apiService;

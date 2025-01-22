@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -43,7 +44,7 @@ class DeleteMyTaskDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-          'Удалить задачу',
+          AppLocalizations.of(context)!.translate('delete_task'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -53,7 +54,7 @@ class DeleteMyTaskDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        'Вы уверены, что хотите удалить эту задачу?',
+        AppLocalizations.of(context)!.translate('confirm_delete_task'),
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
@@ -67,7 +68,7 @@ class DeleteMyTaskDialog extends StatelessWidget {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -78,14 +79,14 @@ class DeleteMyTaskDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: 'Удалить',
+                buttonText: AppLocalizations.of(context)!.translate('delete'),
                 onPressed: () {
                   context.read<MyTaskBloc>().add(DeleteMyTask(taskId)); 
                   context.read<MyTaskBloc>().add(FetchMyTaskStatuses()); 
                   ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Задача успешно удалена!',
+                 AppLocalizations.of(context)!.translate('task_deleted_successfully'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_card.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -106,7 +107,7 @@ Future<void> _onRefresh() async {
                     children: [
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4),
-                      Center(child: Text('Нет задач для выбранного статуса')),
+                      Center(child: Text(AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'))),
                     ],
                   ),
                 );

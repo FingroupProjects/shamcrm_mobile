@@ -1,8 +1,8 @@
-
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_event.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_state.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -62,7 +62,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
         }
 
         return _buildExpandableActionContainer(
-          'История действий',
+          AppLocalizations.of(context)!.translate('action_history'),
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
           () {
@@ -134,32 +134,33 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
   }
 
   Column _buildItemList(List<String> items) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: items.map((item) {
-      return _buildActionItem(item);
-    }).toList(),
-  );
-}
-
-Widget _buildActionItem(String item) {
-  final parts = item.split('\n');
-  final status = parts[0];
-  final userName = parts.length > 1 ? parts[1] : '';
-  final additionalDetails = parts.sublist(2); 
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildStatusRow(status, userName),
-        SizedBox(height: 10),
-        if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
-      ],
-    ),
-  );
-}
+      children: items.map((item) {
+        return _buildActionItem(item);
+      }).toList(),
+    );
+  }
+
+  Widget _buildActionItem(String item) {
+    final parts = item.split('\n');
+    final status = parts[0];
+    final userName = parts.length > 1 ? parts[1] : '';
+    final additionalDetails = parts.sublist(2);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatusRow(status, userName),
+          SizedBox(height: 10),
+          if (additionalDetails.isNotEmpty)
+            _buildAdditionalDetails(additionalDetails),
+        ],
+      ),
+    );
+  }
 
   Row _buildStatusRow(String status, String userName) {
     return Row(
@@ -222,77 +223,87 @@ Widget _buildActionItem(String item) {
   }
 
   List<String> _buildActionHistoryItems(List<MyTaskHistory> history) {
-  return history.map((entry) {
-    final changes = entry.changes;
-    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
-    String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
+    return history.map((entry) {
+      final changes = entry.changes;
+      final formattedDate =
+          DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+      String actionDetail =
+          '${entry.status}\n${entry.user.name} $formattedDate';
 
-    // Форматирование дат
-    String formatDate(String? dateString) {
-      if (dateString == null || dateString == "Не указано") {
-        return "Не указано";
-      }
-      try {
-        DateTime date = DateTime.parse(dateString);
-        return DateFormat('dd/MM/yyyy').format(date);
-      } catch (e) {
-        return "Не указано";
-      }
-    }
-
-    if (changes != null) {
-
-      // Статус задачи
-      if (changes.taskStatusNewValue != null || changes.taskStatusPreviousValue != null) {
-        actionDetail +=
-            '\nСтатус задачи: ${changes.taskStatusPreviousValue ?? "Не указано"} > ${changes.taskStatusNewValue ?? "Не указано"}';
+      // Форматирование дат
+      String formatDate(String? dateString) {
+        if (dateString == null ||
+            dateString ==
+                AppLocalizations.of(context)!.translate('not_specified')) {
+          return    AppLocalizations.of(context)!.translate('not_specified');
+        }
+        try {
+          DateTime date = DateTime.parse(dateString);
+          return DateFormat('dd/MM/yyyy').format(date);
+        } catch (e) {
+          return    AppLocalizations.of(context)!.translate('not_specified');
+        }
       }
 
-      // Название
-      if (changes.historyNameNewValue != null || changes.historyNamePreviousValue != null) {
-        actionDetail +=
-            '\nНазвание: ${changes.historyNamePreviousValue ?? "Не указано"} > ${changes.historyNameNewValue ?? "Не указано"}';
+      if (changes != null) {
+        // Статус задачи
+        if (changes.taskStatusNewValue != null ||
+            changes.taskStatusPreviousValue != null) {
+          actionDetail +=
+              '\n${AppLocalizations.of(context)!.translate('status_task')}${changes.taskStatusPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.taskStatusNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        }
+
+        // Название
+        if (changes.historyNameNewValue != null ||
+            changes.historyNamePreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        }
+
+        // Завершающий этап
+        if (changes.isFinishedNewValue != null ||
+            changes.isFinishedPreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('final_stage')}${changes.isFinishedPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.isFinishedNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        }
+
+        // Дата начала
+        if (changes.startDateNewValue != null ||
+            changes.startDatePreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('from')}${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
+        }
+
+        // Дата окончания
+        if (changes.endDateNewValue != null ||
+            changes.endDatePreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('to')}${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
+        }
+
+        // Проект
+        if (changes.projectNewValue != null ||
+            changes.projectPreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('project')}${changes.projectPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.projectNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        }
+
+        // Пользователи
+        if (changes.usersNewValue != null ||
+            changes.usersPreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('users')}${changes.usersPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.usersNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        }
+
+        // Описание
+        if (changes.descriptionNewValue != null ||
+            changes.descriptionPreviousValue != null) {
+          actionDetail +=
+            '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
+        }
       }
 
-      // Завершающий этап
-      if (changes.isFinishedNewValue != null || changes.isFinishedPreviousValue != null) {
-        actionDetail +=
-            '\nЗавершающий этап: ${changes.isFinishedPreviousValue ?? "Не указано"} > ${changes.isFinishedNewValue ?? "Не указано"}';
-      }
-
-      // Дата начала
-      if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
-        actionDetail +=
-            '\nОт: ${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
-      }
-
-      // Дата окончания
-      if (changes.endDateNewValue != null || changes.endDatePreviousValue != null) {
-        actionDetail +=
-            '\nДо: ${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
-      }
-
-      // Проект
-      if (changes.projectNewValue != null || changes.projectPreviousValue != null) {
-        actionDetail +=
-            '\nПроект: ${changes.projectPreviousValue ?? "Не указано"} > ${changes.projectNewValue ?? "Не указано"}';
-      }
-
-      // Пользователи
-      if (changes.usersNewValue != null || changes.usersPreviousValue != null) {
-        actionDetail +=
-            '\nПользователи: ${changes.usersPreviousValue ?? "Не указано"} > ${changes.usersNewValue ?? "Не указано"}';
-      }
-
-      // Описание
-      if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
-        actionDetail +=
-            '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';
-      }
-    }
-
-    return actionDetail;
-  }).toList();
-}
-
+      return actionDetail;
+    }).toList();
+  }
 }

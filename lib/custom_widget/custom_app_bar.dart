@@ -28,7 +28,8 @@ class CustomAppBar extends StatefulWidget {
   final bool showFilterTaskIcon; // New field for task filter
   final Function(List<dynamic>)?
       onManagersSelected; // Изменено на List<dynamic>
-  final Function(dynamic)? onUserSelected; // New callback for user selection
+        final Function(List<dynamic>)?
+      onUsersSelected; // Изменено на List<dynamic>
   final bool showMyTaskIcon; // Новый параметр
 
   CustomAppBar({
@@ -43,7 +44,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIcon = true,
     this.showFilterTaskIcon = true, // Default value for task filter
     this.onManagersSelected,
-    this.onUserSelected, // Add to constructor
+    this.onUsersSelected, // Add to constructor
     this.showMyTaskIcon = false, // По умолчанию выключено
   });
 
@@ -525,7 +526,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                   if (widget.showFilterTaskIcon)
                     Tooltip(
-                      message: 'Фильтр задач',
+                      message: 'Фильтр',
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -581,7 +582,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   PopupMenuItem(
                                     padding: EdgeInsets.zero,
                                     child: UserFilterPopup(
-                                      onUserSelected: widget.onUserSelected,
+                                      onUsersSelected: widget.onUsersSelected,
                                     ),
                                   ),
                                 ],

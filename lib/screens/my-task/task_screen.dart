@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/my-task/task_details/task_card.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_column.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_status_add.dart';
 import 'package:crm_task_manager/screens/my-task/task_status_delete.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +28,8 @@ class MyTaskScreen extends StatefulWidget {
   _MyTaskScreenState createState() => _MyTaskScreenState();
 }
 
-class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMixin {
+class _MyTaskScreenState extends State<MyTaskScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
   List<Map<String, dynamic>> _tabTitles = [];
@@ -77,7 +79,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
         });
       } else {
         BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
-        
+
         print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
@@ -91,8 +93,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
         setState(() {
           userRoles = ['No user ID found'];
           showFilter = false;
-          
-
         });
         return;
       }
@@ -100,11 +100,10 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
           await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ?? 
+          userRoles = userProfile.role?.map((role) => role.name).toList() ??
               ['No role assigned'];
-          showFilter = userRoles.any((role) => 
-              role.toLowerCase() == 'admin' || 
-              role.toLowerCase() == 'manager');
+          showFilter = userRoles.any((role) =>
+              role.toLowerCase() == 'admin' || role.toLowerCase() == 'manager');
         });
       }
     } catch (e) {
@@ -139,24 +138,12 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
     }
   }
 
-  void _handleUserSelected(dynamic user) {
-    setState(() {
-      _selectedUserId = user?.id;
-    });
-
-    // Запрашиваем обновленные данные с учетом выбранного пользователя
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-    taskBloc.add(FetchMyTasks(
-      currentStatusId,
-      query: _searchController.text.isNotEmpty ? _searchController.text : null,
-    ));
-  }
 
   void _onSearch(String query) {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchMyTasks(query, currentStatusId);
   }
+
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
@@ -164,12 +151,16 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Мои задачи',
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_my_tasks'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -183,7 +174,6 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
             }
             _onSearch(value);
           },
-          onUserSelected: _handleUserSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
@@ -193,7 +183,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
               final taskBloc = BlocProvider.of<MyTaskBloc>(context);
               taskBloc.add(FetchMyTaskStatuses());
 
-            //  BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+              //  BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
 
               setState(() {
                 _isSearching = false;
@@ -224,7 +214,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
     if (_isSearching && tasks.isEmpty) {
       return Center(
         child: Text(
-          'По запросу ничего не найдено',
+          AppLocalizations.of(context)!.translate('nothing_found'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -280,7 +270,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
     if (_selectedUserId != null && tasks.isEmpty) {
       return Center(
         child: Text(
-          'У выбранного пользователя нет задач',
+          AppLocalizations.of(context)!.translate('no_tasks_for_user'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -327,11 +317,11 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
               child: _buildTabButton(index),
             );
           }),
-            IconButton(
-              icon: Image.asset('assets/icons/tabBar/add_black.png',
-                  width: 24, height: 24),
-              onPressed: _addNewTab,
-            ),
+          IconButton(
+            icon: Image.asset('assets/icons/tabBar/add_black.png',
+                width: 24, height: 24),
+            onPressed: _addNewTab,
+          ),
         ],
       ),
     );
@@ -344,12 +334,10 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
     );
 
     if (result == true) {
+      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
 
-        BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
-
-
-        final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-        taskBloc.add(FetchMyTaskStatuses());
+      final taskBloc = BlocProvider.of<MyTaskBloc>(context);
+      taskBloc.add(FetchMyTaskStatuses());
 
       setState(() {
         navigateToEnd = true;
@@ -379,7 +367,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
             _tabController.animateTo(index);
           },
           onLongPress: () {
-             {
+            {
               _showDeleteDialog(index);
             }
           },
@@ -456,8 +444,8 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
 
         context.read<MyTaskBloc>().add(FetchMyTasks(_currentTabIndex));
       });
-        final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-        taskBloc.add(FetchMyTaskStatuses());
+      final taskBloc = BlocProvider.of<MyTaskBloc>(context);
+      taskBloc.add(FetchMyTaskStatuses());
     }
   }
 
@@ -466,14 +454,12 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
       listener: (context, state) async {
         if (state is MyTaskLoaded) {
           await MyTaskCache.cacheMyTaskStatuses(state.taskStatuses
-              .map((status) =>
-                  {'id': status.id, 'title': status.title?? ""})
+              .map((status) => {'id': status.id, 'title': status.title ?? ""})
               .toList());
 
           setState(() {
             _tabTitles = state.taskStatuses
-                .map((status) =>
-                    {'id': status.id, 'title': status.title ?? ""})
+                .map((status) => {'id': status.id, 'title': status.title ?? ""})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -526,7 +512,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
             }
           });
         } else if (state is MyTaskError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
+          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'),)) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -534,7 +520,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains("Нет подключения к интернету")) {
+          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'),)) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -591,11 +577,12 @@ class _MyTaskScreenState extends State<MyTaskScreen> with TickerProviderStateMix
                   userId: _selectedUserId,
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
-                    final index = _tabTitles.indexWhere((status) => status['id'] == newStatusId);
+                    final index = _tabTitles
+                        .indexWhere((status) => status['id'] == newStatusId);
 
-                          // context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
-                                  final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-        taskBloc.add(FetchMyTaskStatuses());
+                    // context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+                    final taskBloc = BlocProvider.of<MyTaskBloc>(context);
+                    taskBloc.add(FetchMyTaskStatuses());
 
                     if (index != -1) {
                       _tabController.animateTo(index);

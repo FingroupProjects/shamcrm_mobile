@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -46,6 +47,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   int? _selectedUserId;
   List<String> userRoles = [];
   bool showFilter = false;
+  List<int> _selectedUserIds = [];
 
   @override
   void initState() {
@@ -137,24 +139,50 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       taskBloc.add(FetchTasks(
         currentStatusId,
         query: query,
-        userId: _selectedUserId,
+        userIds: _selectedUserIds,
       ));
     }
   }
 
-  void _handleUserSelected(dynamic user) {
+  
+  void _handleUserSelected(List<dynamic> users) {
+    print('Selected managers: $users');
     setState(() {
-      _selectedUserId = user?.id;
+      _selectedUserIds = users
+          .map((user) {
+            if (user is String) {
+              return int.tryParse(user);
+            } else if (user is UserData) {
+              return user.id;
+            }
+            return null;
+          })
+          .where((id) => id != null)
+          .cast<int>()
+          .toList();
     });
+    _refreshCurrentTab();
 
     // Запрашиваем обновленные данные с учетом выбранного пользователя
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     taskBloc.add(FetchTasks(
       currentStatusId,
-      userId: _selectedUserId,
+      userIds: _selectedUserIds.isNotEmpty ? _selectedUserIds : null,
       query: _searchController.text.isNotEmpty ? _searchController.text : null,
     ));
+  }
+ void _refreshCurrentTab() {
+    if (_tabTitles.isNotEmpty) {
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      final taskBloc = BlocProvider.of<TaskBloc>(context);
+      taskBloc.add(FetchTasks(
+        currentStatusId,
+        userIds: _selectedUserIds.isNotEmpty ? _selectedUserIds : null,
+        query:
+            _searchController.text.isNotEmpty ? _searchController.text : null,
+      ));
+    }
   }
 
   void _onSearch(String query) {
@@ -201,7 +229,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
             _onSearch(value);
           },
-          onUserSelected: _handleUserSelected,
+          onUsersSelected: _handleUserSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
@@ -275,12 +303,46 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
   }
 
+
+// Обновляем метод _buildManagerView для корректной обработки обоих случаев
   Widget _buildUserView() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
         if (state is TaskDataLoaded) {
           final List<Task> tasks = state.tasks;
-          return userWidget(tasks);
+          if (tasks.isEmpty) {
+            return Center(
+              child: Text(
+                _selectedUserId != null
+                    ? 'У выбранного менеджера нет лидов'
+                    : 'По запросу ничего не найдено',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            );
+          }
+          return ListView.builder(
+            controller: _scrollController,
+            itemCount: tasks.length,
+            itemBuilder: (context, index) {
+              final task = tasks[index];
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TaskCard(
+                  task: task,
+                  name: task.taskStatus?.taskStatus?.name ?? "",
+                  statusId: task.statusId,
+                  onStatusUpdated: () {},
+                  onStatusId: (StatusLeadId) {},
+                ),
+              );
+            },
+          );
         }
         if (state is TaskLoading) {
           return const Center(
@@ -292,42 +354,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         }
         return const SizedBox();
       },
-    );
-  }
-
-  Widget userWidget(List<Task> tasks) {
-    if (_selectedUserId != null && tasks.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('no_tasks_for_user'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
-      );
-    }
-
-    return Flexible(
-      child: ListView.builder(
-        controller: _scrollController,
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TaskCard(
-              task: task,
-              name: task.taskStatus?.taskStatus?.name ?? "",
-              statusId: task.statusId,
-              onStatusUpdated: () {},
-              onStatusId: (StatusTaskId) {},
-            ),
-          );
-        },
-      ),
     );
   }
 

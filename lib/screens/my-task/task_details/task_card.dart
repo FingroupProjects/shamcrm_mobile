@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_my-tasks_tabBar.dart'
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
 import 'package:intl/intl.dart'; // Импорт для форматирования даты
 
@@ -41,12 +42,13 @@ class _MyTaskCardState extends State<MyTaskCard> {
   }
 
   String formatDate(String? dateString) {
-    if (dateString == null) return 'Дата не указана';
+    if (dateString == null)
+      return AppLocalizations.of(context)!.translate('date_not');
     try {
       DateTime dateTime = DateTime.parse(dateString);
       return DateFormat('dd.MM.yyyy').format(dateTime);
     } catch (e) {
-      return 'Неверный формат даты';
+      return AppLocalizations.of(context)!.translate('Invalid_date_format');
     }
   }
 
@@ -157,7 +159,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
             builder: (context) => MyTaskDetailsScreen(
               taskId:
                   widget.task.id.toString(), // ID задачи для детального экрана
-              taskName: widget.task.name ?? 'Без имени', // Название задачи
+              taskName: widget.task.name ??
+                  AppLocalizations.of(context)!
+                      .translate('no_name'), // Название задачи
               startDate: widget.task.startDate, // Дата начала задачи
               endDate: widget.task.endDate, // Дата окончания задачи
               taskStatus: dropdownValue, // Текущий статус задачи
@@ -181,7 +185,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
                 children: [
                   Expanded(
                     child: Text(
-                      widget.task.name ?? 'Без имени', // Название задачи
+                      widget.task.name ??
+                          AppLocalizations.of(context)!
+                              .translate('no_name'), // Название задачи
                       style:
                           MyTaskCardStyles.titleStyle, // Стиль заголовка задачи
                       overflow: TextOverflow
@@ -193,8 +199,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
               const SizedBox(height: 0),
               Row(
                 children: [
-                  const Text(
-                    'Колонка: ', // Надпись "Колонка" для статуса задачи
+                   Text(
+                    AppLocalizations.of(context)!.translate(
+                        'column'), // Надпись "Колонка" для статуса задачи
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',

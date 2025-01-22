@@ -10,11 +10,13 @@
   "exit": "Exit",
   "error_text": "Error",
   "change_pin_code": "Change PIN-CODE",
+
   "COMMENT_TITLE_SCREEN_Organizations": "----------------------------Тексты для экрана Organizations----------------------------",
   "loading": "Loading...",
   "organizations": "Organization",
   "no_organizations": "No organizations",
   "select_organizations": "Select organization",
+
   "COMMENT_TITLE_SCREEN_Button_1C": "----------------------------Тексты для экрана BUTTON-1C----------------------------",
   "update_1c_data": "Update 1C data",
   "last_update_1c": "Last 1C update",
@@ -54,7 +56,6 @@
   "invalid_email": "Please enter a valid email address",
   "profile_update_error": "An error occurred while updating the profile",
   "save": "Save",
-  
 
   "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Domain----------------------------",
   "enter your subdomain": "Enter your subdomain",
@@ -127,8 +128,6 @@
   "october": "October",
   "november": "November",
   "december": "December",
-
-
   "COMMENT_TITLE_SCREEN_Dashboard_User_Chart": "----------------------------Тексты для экрана DASHBOARD-USER-CHART----------------------------",
   "achieving_goals": "Achieving goals",
 
@@ -178,7 +177,6 @@
   "delete": "Delete",
   "remove_cards_first": "Please remove cards from this status first!",
   "status_deleted_successfully": "Status deleted successfully!",
-
   "action_history": "Action History",
   "not_specified": "Not Specified",
   "status_task": "Task status: ",
@@ -189,20 +187,16 @@
   "project": "Project: ",
   "users": "Users: ",
   "description": "Description: ",
-
   "projects": "Projects",
   "search": "Search",
   "search_appbar": "Search...",
   "select_project": "Select Project",
   "field_required_project": "   Field is required",
-
   "select_roles": "Select Roles",
   "all": "All",
-
   "task_statuses": "Task Statuses",
   "select_status": "Select Status",
   "field_required": "Field is required",
-
   "normal": "Normal",
   "important": "Important",
   "urgent": "Urgent",
@@ -222,17 +216,13 @@
   "fill_required_fields": "Please fill in all required fields!",
   "enter_valid_date": "Please enter a valid date in the format DD/MM/YYYY",
   "start_date_after_end_date": "Start date cannot be after end date!",
-
   "no_name": "No Name",
   "no_project": "No Project",
   "column": "Column: ",
-
   "no_tasks_for_selected_status": "No tasks for the selected status",
-
   "delete_task": "Delete Task",
   "confirm_delete_task": "Are you sure you want to delete this task?",
   "task_deleted_successfully": "Task deleted successfully!",
-
   "invalid_format": "Invalid format",
   "task_name": "Task name:",
   "from_details": "From:",
@@ -522,6 +512,44 @@
   "video_message": "You received a video message",
   "location_message": "You received a location: {location}",
   "sticker_message": "You received a sticker"
+
+  "COMMENT_TITLE_SCREEN_MY_TASK_SCREEN": "----------------------------Тексты для экрана Мои задачи---------------------------",
+  "set_push_notification": "Send Push Notification",
+  "date_not": "Date not specified",
+  "Invalid_date_format": "Invalid date format",
+  "enter_status_namer": "Enter status name",
+  "appbar_my_tasks": "My tasks",
+
+  "COMMENT_TITLE_SCREEN_LEAD_PROFILE_SCREEN": "----------------------------Texts for Lead Profile---------------------------",
+"lead_profile": "Lead Profile",
+"whatsApp": "WhatsApp",
+"creation_date_lead": "Creation Date",
+"status_lead_profile": "Status",
+"download_data": "Download Data",
+
+"COMMENT_TITLE_SCREEN_TASK_PROFILE_SCREEN": "----------------------------Texts for Task Profile---------------------------",
+"about_task": "About Task",
+"task_name_profile": "Task Name",
+"number_task": "Task Number",
+"author": "Author",
+"and_else": " and more",
+"COMMENT_TITLE_SCREEN_GROUP_PROFILE_SCREEN": "----------------------------Texts for Group Profile---------------------------",
+"group_profile": "Group Profile",
+"participant": "participant",
+"participantss": "participants",
+"participants": "Participants",
+"add_participant": "Add Participant",
+"deleted_account": "Deleted Account",
+"owner": "Owner",
+"you": "You",
+
+"COMMENT_TITLE_SCREEN_USER_PROFILE_SCREEN": "----------------------------Texts for User Profile---------------------------",
+"user_profile": "User Profile",
+"user_name": "User Name",
+"Email": "Email",
+"number_phone": "Phone Number",
+"last_login": "Last Login"
+
 
 
 }

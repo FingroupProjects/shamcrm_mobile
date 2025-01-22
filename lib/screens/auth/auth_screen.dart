@@ -83,7 +83,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: screenHeight * 0.15),
-                  Image.asset('assets/icons/11.jpg', height: 80),
+                  Image.asset('assets/icons/shamCRM.jpg', height: 80),
                   SizedBox(height: 30),
                   Text(
                     localizations!.translate('enter_subdomain'), // Локализованный текст
