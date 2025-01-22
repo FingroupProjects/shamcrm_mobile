@@ -338,7 +338,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -401,7 +401,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdError) {
                 return Center(
                   child: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,

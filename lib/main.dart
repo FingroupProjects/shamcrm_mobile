@@ -204,7 +204,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => ListenSenderTextCubit()),
           BlocProvider(create: (context) => ListenSenderVoiceCubit()),
           BlocProvider(create: (context) => ListenSenderFileCubit()),
-          BlocProvider(create: (context) => ChatsBloc(ApiService())),
+          BlocProvider(create: (context) => ChatsBloc(ApiService(), context),),
           BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
           BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
           BlocProvider(create: (context) => OrganizationBloc(ApiService())),

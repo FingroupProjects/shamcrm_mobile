@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -37,13 +38,13 @@ class _DealCardState extends State<DealCard> {
 
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) {
-      return 'Неизвестно';
+      return AppLocalizations.of(context)!.translate('unknow');
     }
     try {
       DateTime dateTime = DateTime.parse(dateString);
       return DateFormat('dd-MM-yyyy').format(dateTime);
     } catch (e) {
-      return 'Неизвестно'; // Fallback for invalid dates
+      return AppLocalizations.of(context)!.translate('unknow');
     }
   }
 
@@ -64,7 +65,7 @@ class _DealCardState extends State<DealCard> {
           MaterialPageRoute(
             builder: (context) => DealDetailsScreen(
               dealId: widget.deal.id.toString(),
-              dealName: widget.deal.name ?? 'Без имени',
+              dealName: widget.deal.name ?? AppLocalizations.of(context)!.translate('no_name'),
               startDate: widget.deal.startDate,
               endDate: widget.deal.endDate,
               sum: widget.deal.sum,
@@ -86,13 +87,13 @@ class _DealCardState extends State<DealCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.deal.name ?? 'Без имени',
+              widget.deal.name ?? AppLocalizations.of(context)!.translate('no_name'),
               style: TaskCardStyles.titleStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis, 
             ),
             Text(
-              'Лид: ${widget.deal.lead?.name ?? ""}', 
+              '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}', 
               style: TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
@@ -103,8 +104,8 @@ class _DealCardState extends State<DealCard> {
             const SizedBox(height: 5),
             Row(
               children: [
-                const Text(
-                  'Колонка: ',
+                Text(
+                  AppLocalizations.of(context)!.translate('column'),
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -184,7 +185,7 @@ class _DealCardState extends State<DealCard> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          ' ${formatDate(widget.deal.startDate ?? 'Неизвестно')}',
+                          ' ${formatDate(widget.deal.startDate ?? AppLocalizations.of(context)!.translate('unknow'),)}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',

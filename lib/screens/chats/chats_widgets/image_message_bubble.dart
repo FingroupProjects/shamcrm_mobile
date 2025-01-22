@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
@@ -65,7 +66,7 @@ class ImageMessageBubble extends StatelessWidget {
                           width: 200,
                           height: 200,
                           color: Colors.grey,
-                          child: const Center(child: Text('Ошибка загрузки')),
+                          child: Center(child: Text(AppLocalizations.of(context)!.translate('error_loading'))),
                         );
                       },
                     ),

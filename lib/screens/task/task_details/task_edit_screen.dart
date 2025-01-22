@@ -429,7 +429,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -559,7 +559,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),

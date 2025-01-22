@@ -281,8 +281,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             return Center(
               child: Text(
                 _selectedManagerId != null
-                    ? 'У выбранного менеджера нет лидов'
-                    : 'По запросу ничего не найдено',
+                    ? AppLocalizations.of(context)!.translate('selected_manager_has_any_lead')
+                    : AppLocalizations.of(context)!.translate('nothing_found'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
@@ -541,7 +541,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is LeadError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
+          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -549,11 +549,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains("Нет подключения к интернету")) {
+          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  state.message,
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

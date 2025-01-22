@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 void DropdownBottomSheet(
@@ -42,9 +43,9 @@ void DropdownBottomSheet(
                     future: ApiService().getDealStatuses(),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        return Center(child: Text('Ошибка: ${snapshot.error}'));
+                        return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text('Загрузка....'));
+                        return Center(child: Text(AppLocalizations.of(context)!.translate('loading')));
                       }
 
                       List<DealStatus> statuses = snapshot.data!;
@@ -54,8 +55,8 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue = status.title; // Set the selected status
-                                selectedStatusId = status.id; // Set the status ID
+                                selectedValue = status.title; 
+                                selectedStatusId = status.id; 
                               });
                             },
                             child: buildDropDownStyles(
@@ -75,7 +76,7 @@ void DropdownBottomSheet(
                         ),
                       )
                     : CustomButton(
-                        buttonText: 'Сохранить',
+                        buttonText: AppLocalizations.of(context)!.translate('save'),
                         buttonColor: Color(0xfff4F40EC),
                         textColor: Colors.white,
                         onPressed: () {
@@ -88,7 +89,7 @@ void DropdownBottomSheet(
                               ScaffoldMessenger.of(context).showSnackBar(
                                  SnackBar(
                                    content: Text(
-                                     'Статус успешно изменен!',
+                                     AppLocalizations.of(context)!.translate('status_changed_successfully'),
                                      style: TextStyle(
                                        fontFamily: 'Gilroy',
                                        fontSize: 16,
@@ -123,7 +124,7 @@ void DropdownBottomSheet(
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Вы не можете переместить задачу на этот статус!',
+                                     AppLocalizations.of(context)!.translate('cannot_move_task_to_status'),
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,

@@ -222,8 +222,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа!');
+    print('Тело ответа!');
 
     return _handleResponse(response);
   }
@@ -245,8 +245,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа!');
+    print('Тело ответа!');
 
     return _handleResponse(response);
   }
@@ -268,8 +268,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа!');
+    print('Тело ответа!');
 
     return _handleResponse(response);
   }
@@ -288,8 +288,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа!');
+    print('Тело ответа!');
 
     return _handleResponse(response);
   }
@@ -311,8 +311,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа!');
+    print('Тело ответа!');
 
     return response;
   }
@@ -348,8 +348,8 @@ class ApiService {
     if (response.statusCode == 200) {
       print('FCM-токен успешно отправлен!');
     } else {
-      print('Ошибка при отправке FCM-токена: ${response.statusCode}');
-      throw Exception('Ошибка: ${response.body}');
+      print('Ошибка при отправке FCM-токена!');
+      throw Exception('Ошибка!');
     }
   }
 
@@ -363,7 +363,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return ChatsGetId.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Ошибка получения чата: ${response.body}');
+      throw Exception('Ошибка получения чата!');
     }
   }
 
@@ -423,7 +423,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return DomainCheck.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Не удалось загрузить поддомен: ${response.body}');
+      throw Exception('Не удалось загрузить поддомен!');
     }
   }
 
@@ -462,12 +462,15 @@ class ApiService {
   //_________________________________ START___API__LOGIN____________________________________________//
 
   // Метод для проверки логина и пароля
-  Future<LoginResponse> login(LoginModel loginModel) async {
+ Future<LoginResponse> login(LoginModel loginModel) async {
     final organizationId = await getSelectedOrganization();
     print("------------------------ $organizationId");
     final response = await _postRequest(
         '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
         loginModel.toJson());
+
+    // Выводим ответ от сервера в консоль
+    print("Response from server: ${response.body}");
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -478,7 +481,7 @@ class ApiService {
 
       return loginResponse;
     } else {
-      throw Exception('Неправильный Логин или Пароль: ${response.body}');
+      throw Exception('Неправильный Логин или Пароль!');
     }
   }
 
@@ -520,7 +523,7 @@ class ApiService {
         }
       } else {
         throw Exception(
-            'Ошибка при получении прав доступа: ${response.statusCode}: ${response.body}');
+            'Ошибка при получении прав доступа!!');
       }
     } catch (e) {
       print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
@@ -600,8 +603,8 @@ class ApiService {
       else if (response.statusCode == 400) {
         throw Exception('Некорректные данные запроса.');
       } else {
-        print('Ошибка API forgotPin: ${response.statusCode}');
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        print('Ошибка API forgotPin!');
+        throw Exception('Ошибка сервера!');
       }
     } catch (e) {
       print('Ошибка в forgotPin!');
@@ -682,7 +685,7 @@ class ApiService {
         throw Exception('Данные лидов отсутствуют в ответе');
       }
     } else {
-      throw Exception('Ошибка загрузки лидов: ${response.body}');
+      throw Exception('Ошибка загрузки лидов!');
     }
   }
 
@@ -728,7 +731,7 @@ class ApiService {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка при получении данных: ${response.statusCode}');
+        throw Exception('Ошибка при получении данных!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
@@ -742,8 +745,7 @@ class ApiService {
             .toList();
         return cachedList;
       } else {
-        throw Exception(
-            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+        throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
       }
     }
   }
@@ -779,7 +781,7 @@ class ApiService {
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания статуса лида: ${response.body}'
+        'message': 'Ошибка создания статуса лида!'
       };
     }
   }
@@ -804,7 +806,7 @@ class ApiService {
         'Вы не можете переместить задачу на этот статус',
       );
     } else {
-      throw Exception('Ошибка обновления задач лида: ${response.body}');
+      throw Exception('Ошибка обновления задач лида!');
     }
   }
 
@@ -822,8 +824,8 @@ class ApiService {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load lead history: ${response.statusCode}');
-        throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
+        print('Failed to load lead history!');
+        throw Exception('Ошибка загрузки истории лида!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -870,27 +872,27 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка успешно создана.'};
+      return {'success': true, 'message': 'note_created_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
         return {
           'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
+          'message': 'error_field_is_not_empty'
         };
       } else if (response.body.contains('body')) {
         return {
           'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
+          'message': 'error_field_is_not_empty'
         };
       } else if (response.body.contains('date')) {
-        return {'success': false, 'message': 'Не правильная дата.'};
+        return {'success': false, 'message': 'error_valid_date'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания Заметки: ${response.body}'
+        'message': 'error_create_note'
       };
     }
   }
@@ -921,22 +923,22 @@ class ApiService {
       if (response.body.contains('title')) {
         return {
           'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
+          'message': 'error_field_is_not_empty'
         };
       } else if (response.body.contains('body')) {
         return {
           'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
+          'message': 'error_field_is_not_empty'
         };
       } else if (response.body.contains('date')) {
-        return {'success': false, 'message': 'Не правильная дата.'};
+        return {'success': false, 'message': 'error_valid_date'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания Заметки: ${response.body}'
+        'message': 'error_update_note'
       };
     }
   }
@@ -951,7 +953,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete note: ${response.body}');
+      throw Exception('Failed to delete note!');
     }
   }
 
@@ -1023,67 +1025,66 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Лид успешно создан'};
+      return {'success': true, 'message': 'lead_created_successfully'};
     } else if (response.statusCode == 422) {
       // Обработка ошибки дублирования номера телефона
       if (response.body.contains('The phone has already been taken.')) {
         return {
           'success': false,
-          'message': 'Этот номер телефона уже существует.'
+          'message': 'phone_already_exists'
         };
       }
       if (response.body.contains('validation.phone')) {
         return {
           'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+          'message':'invalid_phone_format'
         };
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
         return {
           'success': false,
-          'message': 'Неправильный e-mail!! Введите корректный e-mail.'
+          'message': 'error_enter_email'
         };
       }
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       // Обработка ошибки дублирования логина Instagram
       else if (response.body.contains('insta_login')) {
         return {
           'success': false,
-          'message': 'Этот логин Instagram уже используется.'
+          'message': 'instagram_login_exists'
         };
       } else if (response.body.contains('facebook_login')) {
         return {
           'success': false,
-          'message': 'Этот логин facebook уже используется.'
+          'message': 'facebook_login_exists'
         };
       } else if (response.body.contains('tg_nick')) {
         return {
           'success': false,
-          'message': 'Этот логин Telegram уже используется.'
+          'message': 'telegram_nick_exists'
         };
       } else if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'Не правильная дата рождения.'};
+        return {'success': false, 'message': 'invalid_birthday'};
       } else if (response.body.contains('wa_phone')) {
         return {
           'success': false,
-          'message': 'Этот номер Whatsapp уже существует.'
+          'message': 'whatsapp_number_exists'
         };
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else if (response.statusCode == 500) {
       return {
         'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
+        'message': 'error_server_text'
       };
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания лида: ${response.body}'
+        'message': 'lead_creation_error'
       };
     }
   }
@@ -1136,7 +1137,7 @@ class ApiService {
         });
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Лид успешно обновлен'};
+      return {'success': true, 'message': 'lead_updated_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('phone')) {
         return {
@@ -1146,29 +1147,29 @@ class ApiService {
         };
       }
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'Не правильная дата рождения.'};
+        return {'success': false, 'message': 'invalid_birthday'};
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
         return {
           'success': false,
-          'message': 'Неправильный e-mail!! Введите корректный e-mail.'
+          'message': 'error_enter_email'
         };
       }
       // Другие проверки на ошибки...
-      return {'success': false, 'message': 'Неизвестная ошибка!'};
+      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
       return {
         'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
+        'message': 'error_server_text'
       };
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления лида: ${response.body}'
+        'message': 'lead_creation_error'
       };
     }
   }
@@ -1191,11 +1192,11 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll region: ${response.body}');
+      print('getAll region!');
     }
 
     return dataRegion;
@@ -1220,11 +1221,11 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll manager: ${response.body}');
+      print('getAll manager!');
     }
 
     return dataManager;
@@ -1248,11 +1249,11 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll lead: ${response.body}');
+      print('getAll lead!');
     }
 
     return dataLead;
@@ -1268,7 +1269,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete leadStatus: ${response.body}');
+      throw Exception('Failed to delete leadStatus!');
     }
   }
 
@@ -1282,7 +1283,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete lead: ${response.body}');
+      throw Exception('Failed to delete lead!');
     }
   }
 
@@ -1322,32 +1323,31 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка успешно создана'};
+      return {'success': true, 'message': 'contact_create_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
         return {
           'success': false,
-          'message': 'Этот номер телефона уже существует.'
+          'message': 'phone_already_exists'
         };
       }
       if (response.body.contains('validation.phone')) {
         return {
           'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+          'message': 'invalid_phone_format'
         };
       } else if (response.body.contains('position')) {
-        return {'success': false, 'message': 'Поля не может быть пустым.'};
+        return {'success': false, 'message': 'field_is_not_empty'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания Контактного лица: ${response.body}'
+        'message': 'error_contact_create'
       };
     }
   }
@@ -1372,32 +1372,31 @@ class ApiService {
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка успешно создана'};
+      return {'success': true, 'message': 'contact_update_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
         return {
           'success': false,
-          'message': 'Этот номер телефона уже существует.'
+          'message': 'phone_already_exists'
         };
       }
       if (response.body.contains('validation.phone')) {
         return {
           'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+          'message':'invalid_phone_format'
         };
       } else if (response.body.contains('position')) {
-        return {'success': false, 'message': 'Поля не может быть пустым.'};
+        return {'success': false, 'message': 'field_is_not_empty'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания Контактного лица: ${response.body}'
+        'message': 'error_contact_update_successfully'
       };
     }
   }
@@ -1412,7 +1411,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete contactPerson: ${response.body}');
+      throw Exception('Failed to delete contactPerson!');
     }
   }
 
@@ -1464,8 +1463,8 @@ class ApiService {
       if (response.statusCode == 200) {
         print('Успешно отправлено в 1С');
       } else {
-        print('Ошибка отправки в 1С Лид: ${response.statusCode}');
-        throw Exception('Ошибка отправки в 1С: ${response.statusCode}');
+        print('Ошибка отправки в 1С Лид!');
+        throw Exception('Ошибка отправки в 1С!');
       }
     } catch (e) {
       print('Произошла ошибка!');
@@ -1491,8 +1490,8 @@ class ApiService {
 
   //       // return data;
   //     } else {
-  //       print('Ошибка отправки в  1С Лид: ${response.statusCode}');
-  //       throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
+  //       print('Ошибка отправки в  1С Лид!');
+  //       throw Exception('Ошибка отправки в  Лид 1С!');
   //     }
   //   } catch (e) {
   //     print('Произошла ошибка!');
@@ -1519,7 +1518,7 @@ class ApiService {
     } else if (response.statusCode == 422) {
       throw Exception('Ошибка валидации (422): Некорректные данные');
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -1540,7 +1539,7 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
@@ -1565,7 +1564,7 @@ class ApiService {
 
         return DealById.fromJson(jsonDeal, jsonDeal['deal_status']['id'] ?? 0);
       } else {
-        throw Exception('Ошибка загрузки deal ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки deal ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки deal ID!');
@@ -1618,7 +1617,7 @@ class ApiService {
         throw Exception('Нет данных о сделках в ответе');
       }
     } else {
-      throw Exception('Ошибка загрузки сделок: ${response.body}');
+      throw Exception('Ошибка загрузки сделок!');
     }
   }
 
@@ -1663,7 +1662,7 @@ class ApiService {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+        throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
@@ -1715,7 +1714,7 @@ class ApiService {
     } else {
       return {
         'success': false,
-        'message': 'Ошибка создания статуса сделки: ${response.body}'
+        'message': 'Ошибка создания статуса сделки!'
       };
     }
   }
@@ -1734,9 +1733,9 @@ class ApiService {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => DealHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load deal history: ${response.statusCode}');
+        print('Failed to load deal history!');
         throw Exception(
-            'Ошибка загрузки истории сделки: ${response.statusCode}');
+            'Ошибка загрузки истории сделки!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -1764,7 +1763,7 @@ class ApiService {
         'Вы не можете переместить задачу на этот статус',
       );
     } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки!');
     }
   }
 
@@ -1826,22 +1825,22 @@ class ApiService {
         requestBody);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Сделка успешно создана.'};
+      return {'success': true, 'message': 'deal_create_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       // Другие проверки на ошибки...
-      return {'success': false, 'message': 'Неизвестная ошибка!'};
+      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
       return {
         'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
+        'message': 'error_server_text'
       };
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления лида: ${response.body}'
+        'message': 'error_deal_create_successfully'
       };
     }
   }
@@ -1885,25 +1884,25 @@ class ApiService {
 
     // Обработка ответа
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Сделка успешно обновлена.'};
+      return {'success': true, 'message': 'deal_update_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('"name"')) {
         return {
           'success': false,
-          'message': 'Название должно содержать не менее 3 символов.'
+          'message': 'invalid_name_length'
         };
       }
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
-      return {'success': false, 'message': 'Неизвестная ошибка!'};
+      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
       return {
         'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
+        'message': 'error_server_text'
       };
     } else {
       return {
         'success': false,
-        'message': 'Ошибка обновления лида: ${response.body}'
+        'message': 'error_deal_update_successfully'
       };
     }
   }
@@ -1918,7 +1917,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete dealStatus: ${response.body}');
+      throw Exception('Failed to delete dealStatus!');
     }
   }
 
@@ -1932,7 +1931,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete deal: ${response.body}');
+      throw Exception('Failed to delete deal!');
     }
   }
 
@@ -1953,7 +1952,7 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -1983,7 +1982,7 @@ class ApiService {
       } else if (response.statusCode == 500) {
         throw Exception('Ошибка сервера. Попробуйте позже');
       } else {
-        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки task ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки task ID');
@@ -2036,8 +2035,8 @@ class ApiService {
       }
     } else {
       // Логирование ошибки с ответом сервера
-      print('Error response: ${response.statusCode} - ${response.body}');
-      throw Exception('Ошибка загрузки задач: ${response.body}');
+      print('Error response! - ${response.body}');
+      throw Exception('Ошибка загрузки задач!');
     }
   }
 
@@ -2080,7 +2079,7 @@ class ApiService {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+        throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
@@ -2132,7 +2131,7 @@ class ApiService {
       throw TaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
     } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки!');
     }
   }
 
@@ -2197,7 +2196,7 @@ class ApiService {
 
     return {
       'success': false,
-      'message': 'Ошибка ${operation} задачи: ${response.body}',
+      'message': 'Ошибка ${operation} задачи!',
     };
   }
 
@@ -2207,10 +2206,10 @@ class ApiService {
       final data = json.decode(response.body);
       final errorMessage = data['errors'] ?? data['message'] ?? response.body;
       return Exception(
-          'Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+          'Ошибка ${operation}! - $errorMessage');
     } catch (e) {
       return Exception(
-          'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+          'Ошибка ${operation}! - ${response.body}');
     }
   }
 
@@ -2286,7 +2285,7 @@ class ApiService {
 
       return {
         'success': false,
-        'message': '$errorMessage: ${response.body}',
+        'message': '$errorMessage!',
         'statusCode': response.statusCode,
       };
     } catch (e) {
@@ -2385,53 +2384,53 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно создана из сделки.',
+          'message': 'task_deal_create_successfully',
         };
       } else if (response.statusCode == 422) {
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.statusCode == 500) {
           return {
             'success': false,
-            'message': 'Ошибка сервера. Пожалуйста, попробуйте позже'
+            'message': 'error_server_text'
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         if (response.body.contains('priority_level')) {
           return {
             'success': false,
-            'message': 'Указан некорректный уровень приоритета.',
+            'message': 'error_priority_level',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания задачи!',
+          'message': 'error_create_task',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи!',
+        'message': 'error_create_task',
       };
     }
   }
@@ -2530,53 +2529,53 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно создана.',
+          'message': 'task_create_successfully',
         };
       } else if (response.statusCode == 422) {
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         if (response.body.contains('priority_level')) {
           return {
             'success': false,
-            'message': 'Указан некорректный уровень приоритета.',
+            'message': 'error_priority_level',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания задачи: ${response.body}',
+          'message': 'error_create_task',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи!',
+        'message': 'error_create_task',
       };
     }
   }
@@ -2674,53 +2673,53 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно обновлена.',
+          'message': 'task_update_successfully',
         };
       } else if (response.statusCode == 422) {
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         if (response.body.contains('priority_level')) {
           return {
             'success': false,
-            'message': 'Указан некорректный уровень приоритета.',
+            'message': 'error_priority_level',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка обновления задачи: ${response.body}',
+          'message': 'error_task_update_successfully',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении задачи!',
+        'message': 'error_task_update_successfully',
       };
     }
   }
@@ -2739,9 +2738,9 @@ class ApiService {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load task history: ${response.statusCode}');
+        print('Failed to load task history!');
         throw Exception(
-            'Ошибка загрузки истории задач: ${response.statusCode}');
+            'Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -2767,11 +2766,11 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll project: ${response.body}');
+      print('getAll project!');
     }
 
     return dataProject;
@@ -2795,11 +2794,11 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll project: ${response.body}');
+      print('getAll project!');
     }
 
     return dataProject;
@@ -2813,8 +2812,8 @@ class ApiService {
       print('Отправка запроса на /user');
       final response = await _getRequest(
           '/user${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      print('Статус ответа: ${response.statusCode}');
-      print('Тело ответа: ${response.body}');
+      print('Статус ответа!');
+      print('Тело ответа!');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -2832,8 +2831,8 @@ class ApiService {
           throw Exception('Неверная структура данных пользователей');
         }
       } else {
-        print('Ошибка HTTP: ${response.statusCode}');
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        print('Ошибка HTTP!');
+        throw Exception('Ошибка сервера!');
       }
     } catch (e) {
       print('Ошибка при получении пользователей!');
@@ -2855,7 +2854,7 @@ class ApiService {
   //     throw Exception('Пользователи не найдены');
   //   }
   // } else {
-  //   throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  //   throw Exception('Ошибка ${response.statusCode}!');
   // }}
 
   // Метод для получение Роли
@@ -2863,6 +2862,7 @@ class ApiService {
     final organizationId = await getSelectedOrganization();
     final response = await _getRequest(
         '/role${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
@@ -2873,7 +2873,7 @@ class ApiService {
         throw Exception('Роли не найдены');
       }
     } else {
-      throw Exception('Ошибка при получении ролей: ${response.statusCode}');
+      throw Exception('Ошибка при получении ролей!');
     }
   }
 
@@ -2884,7 +2884,7 @@ class ApiService {
     print('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(
         '/taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    print('Статус код ответа: ${response.statusCode}'); // Отладочный вывод
+    print('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2901,7 +2901,7 @@ class ApiService {
         throw Exception('Статусы задач не найдены');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -2915,7 +2915,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete task: ${response.body}');
+      throw Exception('Failed to delete task!');
     }
   }
 
@@ -2930,7 +2930,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete taskStatus: ${response.body}');
+      throw Exception('Failed to delete taskStatus!');
     }
   }
 
@@ -2954,7 +2954,7 @@ class ApiService {
     } else {
       return {
         'success': false,
-        'message': 'Ошибка завершения задачи: ${response.body}'
+        'message': 'Ошибка завершения задачи!'
       };
     }
   }
@@ -2976,7 +2976,7 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -3331,43 +3331,47 @@ class ApiService {
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
-      [int page = 1, String? search]) async {
-    final token = await getToken();
-    final organizationId = await getSelectedOrganization();
+  Future<PaginationDTO<Chats>> getAllChats(
+  String endPoint,
+  BuildContext context, // Добавляем контекст
+  [int page = 1, String? search]
+) async {
+  final token = await getToken();
+  final organizationId = await getSelectedOrganization();
 
-    String url =
-        '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
+  String url =
+      '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
-    if (search != null && search.isNotEmpty) {
-      url += '&search=$search'; // Добавляем параметр поиска
-    }
-
-    print('Request URL: $url'); // Печать URL запроса
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        print('Parsed data: ${data['result']}'); // Печать результата парсинга
-        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e);
-        });
-      } else {
-        print('No result found in the response');
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      print('Error: ${response.statusCode}, Body: ${response.body}');
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-    }
+  if (search != null && search.isNotEmpty) {
+    url += '&search=$search'; // Добавляем параметр поиска
   }
+
+  print('Request URL: $url'); // Печать URL запроса
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      print('Parsed data: ${data['result']}'); // Печать результата парсинга
+      return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+        return Chats.fromJson(e, context); // Передаем контекст
+      });
+    } else {
+      print('No result found in the response');
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    print('Error!, Body!');
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();
@@ -3393,7 +3397,7 @@ class ApiService {
       final data = json.decode(response.body);
       return data['message'] ?? 'Success';
     } else {
-      throw Exception('Error ${response.statusCode}: ${response.body}');
+      throw Exception('Error ${response.statusCode}!');
     }
   }
 
@@ -3426,7 +3430,7 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -3441,14 +3445,14 @@ class ApiService {
         });
 
     if (kDebugMode) {
-      print('Response from sendMessage: ${response.body}');
+      print('Response from sendMessage!');
     } // Добавлено для отладки
 
     if (response.statusCode != 200) {
       if (kDebugMode) {
-        print('Ошибка отправки сообщения: ${response.body}');
+        print('Ошибка отправки сообщения!');
       } // Отладка ошибок
-      throw Exception('Ошибка отправки сообщения: ${response.body}');
+      throw Exception('Ошибка отправки сообщения!');
     }
   }
 
@@ -3479,7 +3483,7 @@ class ApiService {
             // contentType: 'multipart/form-data',
           ));
       if (kDebugMode) {
-        print('response.statusCode: ${response.statusCode}');
+        print('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
@@ -3527,7 +3531,7 @@ class ApiService {
             contentType: 'multipart/form-data',
           ));
       if (kDebugMode) {
-        print('response.statusCode: ${response.statusCode}');
+        print('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
@@ -3562,7 +3566,7 @@ class ApiService {
         });
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки файла: ${response.body}');
+      throw Exception('Ошибка отправки файла!');
     }
   }
 
@@ -3578,7 +3582,7 @@ class ApiService {
         });
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
+      throw Exception('Ошибка отправки голосового сообщения!');
     }
   }
 
@@ -3606,7 +3610,7 @@ class ApiService {
 //       if (response.statusCode == 200) {
 //         print('Messages marked as read');
 //       } else {
-//         print('Error marking messages as read: ${response.body}');
+//         print('Error marking messages as read!');
 //       }
 //     } catch (e) {
 //       print('Exception when marking messages as read!');
@@ -3677,10 +3681,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user: ${response.body}');
+      print('getAll user!');
     }
 
     return dataUser;
@@ -3711,10 +3715,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user: ${response.body}');
+      print('getAll user!');
     }
 
     return dataUser;
@@ -3747,10 +3751,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getUsersNotInChat: ${response.body}');
+      print('getUsersNotInChat!');
     }
 
     return dataUser;
@@ -3788,10 +3792,10 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user: ${response.body}');
+      print('getAll user!');
     }
 
     return dataUser;
@@ -3812,8 +3816,8 @@ class ApiService {
     );
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-      print('data: ${response.body}');
+      print('Статус ответа!');
+      print('data!');
     }
 
     if (response.statusCode == 200) {
@@ -3846,34 +3850,34 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Групповой чат успешно создан.',
+          'message': 'group_chat_created_successfully',
         };
       } else if (response.statusCode == 422) {
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название группы должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         return {
           'success': false,
-          'message': 'Ошибки валидации: ${response.body}',
+          'message': 'error_validation',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания гр. чата: ${response.body}',
+          'message': 'error_create_group_chat',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании гр. чата!',
+        'message': 'error_create_group_chat',
       };
     }
   }
@@ -3909,7 +3913,7 @@ class ApiService {
       } else {
         return {
           'success': false,
-          'message': 'Ошибка добавления участника: ${response.body}',
+          'message': 'Ошибка добавления участника!',
         };
       }
     } catch (e) {
@@ -3951,7 +3955,7 @@ class ApiService {
       } else {
         return {
           'success': false,
-          'message': 'Ошибка добавления участника: ${response.body}',
+          'message': 'Ошибка добавления участника!',
         };
       }
     } catch (e) {
@@ -3979,7 +3983,7 @@ class ApiService {
     final response = await _deleteRequest(path);
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+      throw Exception('Ошибка удаления уведомлений!');
     }
 
     final data = json.decode(response.body);
@@ -4012,7 +4016,7 @@ class ApiService {
       } else if (response.statusCode == 404) {
         throw ('Такого Лида не существует');
       } else {
-        print('Ошибка загрузки профиля чата: ${response.statusCode}');
+        print('Ошибка загрузки профиля чата!');
         throw Exception('${response.statusCode}');
       }
     } catch (e) {
@@ -4031,8 +4035,8 @@ class ApiService {
       );
 
       print(
-          'Response status code: ${response.statusCode}'); // Логируем статус ответа
-      print('Response body: ${response.body}'); // Логируем тело ответа
+          'Response status code!'); // Логируем статус ответа
+      print('Response body!'); // Логируем тело ответа
 
       if (response.statusCode == 200) {
         try {
@@ -4059,8 +4063,8 @@ class ApiService {
           throw Exception('Ошибка парсинга ответа: $parseError');
         }
       } else {
-        print('Ошибка загрузки задачи: ${response.statusCode}');
-        throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
+        print('Ошибка загрузки задачи!');
+        throw Exception('Ошибка загрузки задачи!');
       }
     } catch (e) {
       print('Полная ошибка в getTaskProfile!');
@@ -4089,7 +4093,7 @@ class ApiService {
         throw Exception('Организация не найдено');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -4136,7 +4140,7 @@ class ApiService {
         throw Exception('Нет данных о уведомлениях в ответе');
       }
     } else {
-      throw Exception('Ошибка загрузки уведомлений: ${response.body}');
+      throw Exception('Ошибка загрузки уведомлений!');
     }
   }
 
@@ -4150,7 +4154,7 @@ class ApiService {
     final response = await _postRequest(path, {});
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+      throw Exception('Ошибка удаления уведомлений!');
     }
   }
 
@@ -4170,7 +4174,7 @@ class ApiService {
     final response = await _postRequest(path, body);
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+      throw Exception('Ошибка удаления уведомлений!');
     }
     final data = json.decode(response.body);
     if (data['result'] == 'Success') {
@@ -4201,7 +4205,7 @@ class ApiService {
 
         return UserByIdProfile.fromJson(jsonUser);
       } else {
-        throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки User ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки User ID!');
@@ -4267,34 +4271,34 @@ class ApiService {
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': 'Профиль успешно обновлен'};
+        return {'success': true, 'message': 'profile_updated_successfully'};
       } else if (response.statusCode == 422) {
         return {
           'success': false,
-          'message': 'Ошибка валидации данных. Проверьте введенные данные.'
+          'message': 'error_validation_data'
         };
       }
       if (response.body.contains('validation.phone')) {
         return {
           'success': false,
           'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
+              'invalid_phone_format'
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.'
+          'message': 'error_server_text'
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка обновления профиля: ${response.body}'
+          'message': 'error_update_profile'
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении профиля!',
+        'message': 'error_update_profile',
       };
     }
   }
@@ -4328,7 +4332,7 @@ class ApiService {
       } else if (response.statusCode == 500) {
         throw Exception('Ошибка сервера. Попробуйте позже');
       } else {
-        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки task ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки task ID: $e');
@@ -4367,8 +4371,8 @@ class ApiService {
       }
     } else {
       // Логирование ошибки с ответом сервера
-      print('Error response: ${response.statusCode} - ${response.body}');
-      throw Exception('Ошибка загрузки задач: ${response.body}');
+      print('Error response! - ${response.body}');
+      throw Exception('Ошибка загрузки задач!');
     }
   }
 
@@ -4408,7 +4412,7 @@ class ApiService {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+        throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
@@ -4461,7 +4465,7 @@ class ApiService {
       throw MyTaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
     } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки!');
     }
   }
 
@@ -4526,7 +4530,7 @@ class ApiService {
 
     return {
       'success': false,
-      'message': 'Ошибка ${operation} задачи: ${response.body}',
+      'message': 'Ошибка ${operation} задачи!',
     };
   }
 
@@ -4536,10 +4540,10 @@ class ApiService {
   //     final data = json.decode(response.body);
   //     final errorMessage = data['errors'] ?? data['message'] ?? response.body;
   //     return Exception(
-  //         'Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+  //         'Ошибка ${operation}! - $errorMessage');
   //   } catch (e) {
   //     return Exception(
-  //         'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+  //         'Ошибка ${operation}! - ${response.body}');
   //   }
   // }
   /// Создает новый статус задачи
@@ -4688,46 +4692,46 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно создана.',
+          'message': 'task_create_successfully',
         };
       } else if (response.statusCode == 422) {
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания задачи: ${response.body}',
+          'message': 'error_create_task',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи!',
+        'message': 'error_create_task',
       };
     }
   }
@@ -4806,41 +4810,41 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно обновлена.',
+          'message': 'task_update_successfully',
         };
       } else if (response.statusCode == 422) {
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка обновления задачи: ${response.body}',
+          'message': 'error_task_update_successfully',
         };
       }
     } catch (e) {
@@ -4865,9 +4869,9 @@ class ApiService {
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load task history: ${response.statusCode}');
+        print('Failed to load task history!');
         throw Exception(
-            'Ошибка загрузки истории задач: ${response.statusCode}');
+            'Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -4882,7 +4886,7 @@ class ApiService {
     print('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(
         '/my-taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    print('Статус код ответа: ${response.statusCode}'); // Отладочный вывод
+    print('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -4899,7 +4903,7 @@ class ApiService {
         throw Exception('Статусы задач не найдены');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -4913,7 +4917,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete task: ${response.body}');
+      throw Exception('Failed to delete task!');
     }
   }
 
@@ -4928,7 +4932,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete taskStatus: ${response.body}');
+      throw Exception('Failed to delete taskStatus!');
     }
   }
 
@@ -4952,7 +4956,7 @@ class ApiService {
     } else {
       return {
         'success': false,
-        'message': 'Ошибка завершения задачи: ${response.body}'
+        'message': 'Ошибка завершения задачи!'
       };
     }
   }
@@ -4974,7 +4978,7 @@ class ApiService {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 

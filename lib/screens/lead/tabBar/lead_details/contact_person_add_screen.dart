@@ -87,7 +87,8 @@ void _showErrorSnackBar(BuildContext context, String message) {
       body: BlocListener<ContactPersonBloc, ContactPersonState>(
   listener: (context, state) {
     if (state is ContactPersonError) {
-      _showErrorSnackBar(context, state.message);
+      _showErrorSnackBar(context,AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+      );
     } else if (state is ContactPersonSuccess) {
        ScaffoldMessenger.of(context).showSnackBar(
                    SnackBar(

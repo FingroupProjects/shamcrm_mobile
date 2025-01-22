@@ -136,7 +136,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -155,7 +155,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

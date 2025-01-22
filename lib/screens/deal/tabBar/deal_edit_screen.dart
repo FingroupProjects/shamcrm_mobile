@@ -12,6 +12,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart'
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -127,8 +128,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Редактирование сделки',
+        title: Text(
+          AppLocalizations.of(context)!.translate('edit_deal'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -143,7 +144,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -166,7 +167,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Сделка успешно обновлена!',
+                  AppLocalizations.of(context)!.translate('deal_updated_successfully'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -200,10 +201,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
+                        label: AppLocalizations.of(context)!.translate('name_list'), 
                         validator: (value) => value!.isEmpty
-                            ? 'Поле обязательно для заполнения'
+                            ? AppLocalizations.of(context)!.translate('field_required')
                             : null,
                       ),
                       const SizedBox(height: 8),
@@ -227,24 +228,24 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: 'Дата начала',
+                        label: AppLocalizations.of(context)!.translate('start_date'),
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'Дата завершения',
+                        label: AppLocalizations.of(context)!.translate('end_date'),
                         hasError: isEndDateInvalid,
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: sumController,
-                        hintText: 'Введите сумму',
-                        label: 'Сумма',
+                        hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+                        label: AppLocalizations.of(context)!.translate('summ'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                           return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -252,8 +253,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 20),
@@ -274,7 +275,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: 'Добавить поле',
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -290,7 +291,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText:  AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),
@@ -308,7 +309,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Сохранить',
+                              buttonText:  AppLocalizations.of(context)!.translate('save'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
@@ -327,8 +328,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content: const Text(
-                                              'Ошибка парсинга даты начала. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                          content: Text(
+                                              AppLocalizations.of(context)!.translate('error_parsing_date'),),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -343,9 +344,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content: const Text(
-                                              'Ошибка парсинга даты окончания. Пожалуйста, используйте формат DD/MM/YYYY.'),
-                                          backgroundColor: Colors.red,
+                                          content:  Text(
+                                        AppLocalizations.of(context)!.translate('error_parsing_date'),), 
+                                         backgroundColor: Colors.red,
                                         ),
                                       );
                                       return;
@@ -358,8 +359,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       });
                                    ScaffoldMessenger.of(context).showSnackBar(
                                      SnackBar(
-                                       content: const Text(
-                                           'Дата начала не может быть позже даты завершения!'),
+                                       content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date'),),
                                        backgroundColor: Colors.red,
                                      ),
                                    );
@@ -398,7 +398,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                    ScaffoldMessenger.of(context).showSnackBar(
                                      SnackBar(
                                        content: Text(
-                                         'Пожалуйста, заполните все обязательные поля!',
+                                         AppLocalizations.of(context)!.translate('fill_required_fields'),
                                          style: TextStyle(
                                            fontFamily: 'Gilroy',
                                            fontSize: 16,
