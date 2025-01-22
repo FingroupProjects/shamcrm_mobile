@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -79,7 +80,7 @@ class DeleteChatDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            'Удалить участника',
+            AppLocalizations.of(context)!.translate('delete_user'), 
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -89,7 +90,7 @@ class DeleteChatDialog extends StatelessWidget {
           ),
         ),
         content: Text(
-          'Вы уверены, что хотите удалить этого участника?',
+          AppLocalizations.of(context)!.translate('confirm_delete_user'), 
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -103,7 +104,7 @@ class DeleteChatDialog extends StatelessWidget {
             children: [
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Отмена',
+                  buttonText: AppLocalizations.of(context)!.translate('cancel'), 
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -114,7 +115,7 @@ class DeleteChatDialog extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Удалить',
+                  buttonText: AppLocalizations.of(context)!.translate('delete'), 
                   onPressed: () {
                     final parentContext = context;
 
@@ -146,7 +147,7 @@ class DeleteChatDialog extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: MessageSneckbar!.contains('удален')
+                            backgroundColor: MessageSneckbar!.contains(AppLocalizations.of(context)!.translate('deleted'), )
                                 ? Colors.green
                                 : Colors.red,
                             elevation: 3,

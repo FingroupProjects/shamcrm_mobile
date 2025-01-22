@@ -149,7 +149,8 @@ class _LeadColumnState extends State<LeadColumn> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${state.message}',
+                    content: Text(
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                         style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,

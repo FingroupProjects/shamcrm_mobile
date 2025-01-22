@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart'; 
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -44,7 +45,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            'Удалить статус лида',
+            AppLocalizations.of(context)!.translate('delete_lead_status'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -54,7 +55,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
           ),
         ),
         content: Text(
-          'Вы уверены, что хотите удалить этот статус лида?',
+          AppLocalizations.of(context)!.translate('confrim_delete_lead_status'),
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -68,7 +69,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
             children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'), 
                 onPressed: () {
                   Navigator.of(context).pop(); 
                 },
@@ -79,7 +80,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
   child: CustomButton(
-    buttonText: 'Удалить',
+    buttonText: AppLocalizations.of(context)!.translate('delete'), 
     onPressed: () async {
       final _apiService = ApiService();
       final hasLeads = await _apiService.checkIfStatusHasLeads(leadStatusId);
@@ -88,7 +89,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Сначала уберите карточки из этого статуса!',
+              AppLocalizations.of(context)!.translate('remove_cards_first'), 
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -113,7 +114,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Статус успешно удален!',
+              AppLocalizations.of(context)!.translate('status_deleted_successfully'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,

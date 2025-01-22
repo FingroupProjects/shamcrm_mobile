@@ -62,7 +62,7 @@ class _TaskStatusListState extends State<StatusList> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  state.message,
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

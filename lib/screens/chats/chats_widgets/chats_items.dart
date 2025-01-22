@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -55,7 +56,7 @@ class ChatListItem extends StatelessWidget {
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        chatItem.name.isNotEmpty ? chatItem.name : 'Без имени',
+                        chatItem.name.isNotEmpty ? chatItem.name : AppLocalizations.of(context)!.translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

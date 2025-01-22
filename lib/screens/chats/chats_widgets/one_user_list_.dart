@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:radio_group_v2/widgets/view_models/radio_group_controller.dart';
@@ -115,8 +116,8 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 12),
-                  const Text(
-                    'Пользователь',
+                  Text(
+                    AppLocalizations.of(context)!.translate('user'), 
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -134,7 +135,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                     child: CustomDropdown<UserData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: usersList,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'), 
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -174,7 +175,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите пользователя'),
+                          Text(AppLocalizations.of(context)!.translate('select_user')),
                       excludeSelected: false,
                       onChanged: (value) {},
                     ),

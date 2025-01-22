@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/user_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/screens/my-task/task_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -405,7 +406,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                       focusNode: focusNode,
                       onChanged: widget.onChangedSearchInput,
                       decoration: InputDecoration(
-                        hintText: 'Поиск...',
+                        hintText: AppLocalizations.of(context)!.translate('search_appbar'), 
                         border: InputBorder.none,
                       ),
                       style: TextStyle(fontSize: 16),
@@ -652,7 +653,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   ),
                   if (widget.showSearchIcon)
                     Tooltip(
-                      message: 'Поиск',
+                      message: AppLocalizations.of(context)!.translate('search'), 
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white,

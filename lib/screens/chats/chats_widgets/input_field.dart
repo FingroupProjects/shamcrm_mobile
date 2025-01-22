@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,7 +14,7 @@ class InputField extends StatelessWidget {
   final Function onSend;
   final VoidCallback onAttachFile;
   final Function onRecordVoice;
-  final TextEditingController messageController; // Контроллер для поля ввода
+  final TextEditingController messageController;
   final Function(File soundFile, String time) sendRequestFunction;
 
   const InputField({
@@ -48,8 +49,8 @@ class InputField extends StatelessWidget {
                           padding: const EdgeInsets.only(left: 16),
                           child: TextField(
                             controller: messageController,
-                            decoration: const InputDecoration(
-                              hintText: "Введите ваше сообщение...",
+                            decoration: InputDecoration(
+                              hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
                               hintStyle: TextStyle(
                                 fontSize: 14,
                                 color: ChatSmsStyles.hintTextColor,
@@ -104,9 +105,9 @@ class InputField extends StatelessWidget {
                       // function called when stop recording, return the recording time
                     },
                     sendRequestFunction: sendRequestFunction,
-                    cancelText: 'Отменить',
+                    cancelText: AppLocalizations.of(context)!.translate('cancel'),
                     cancelTextStyle: TextStyle(fontSize: 16,fontFamily: 'Gilroy',fontWeight: FontWeight.w500),
-                    slideToCancelText: ' Отменить >',
+                    slideToCancelText: AppLocalizations.of(context)!.translate('cancel_chat_sms'),
                     slideToCancelTextStyle: TextStyle(fontSize: 16,fontFamily: 'Gilroy',fontWeight: FontWeight.w500),
                     recordIconBackGroundColor: Color(0xfff4F40EC),
                     counterTextStyle: TextStyle(fontSize: 14,fontFamily: 'Gilroy',fontWeight: FontWeight.w500),
