@@ -109,7 +109,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       page: 1,
       perPage: 20,
       search: event.query,
-      userId: event.userId,
+      users: event.userIds,
     );
 
     // Сохраняем задачи в кэш

@@ -7,12 +7,12 @@ class FetchTaskStatuses extends TaskEvent {}
 class FetchTasks extends TaskEvent {
   final int statusId;
   final String? query; // Добавьте параметр для поиска
-  final int? userId; // Добавляем поле managerId
+  final List<int>? userIds; // Изменено: массив менеджеров
 
   FetchTasks(
     this.statusId, {
     this.query,
-    this.userId, // Добавляем в конструктор
+    this.userIds, // Добавляем в конструктор
   });
 }
 
