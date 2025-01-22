@@ -393,14 +393,43 @@
     "note_reminder": "Напоминание о заметке",
     "task_closed": "Задача закрыта",
     "task_deadline_reminder": "Напоминание о просроченном сроке задачи",
-    "assigned_as_lead_manager": "Вас назначили менеджером лида."
+    "assigned_as_lead_manager": "Вас назначили менеджером лида.",
 
+    "COMMENT_TITLE_SCREEN_MY_TASK_SCREEN": "----------------------------Тексты для экрана Мои задачи---------------------------",
+    "set_push_notification": "Отправить Push-уведомление",
+    "date_not":"Дата не указана",
+    "Invalid_date_format":"Неверный формат даты",
+    "enter_status_namer":"Введите название статуса",
+    "appbar_my_tasks": "Мои задачи",
 
+    "COMMENT_TITLE_SCREEN_LEAD_PROFILE_SCREEN": "----------------------------Тексты для Профиль Лида---------------------------",
+    "lead_profile":"Профиль лида",
+    "whatsApp":"WhatsApp",
+    "creation_date_lead":"Дата создания",
+    "status_lead_profile":"Статус",
+    "download_data":"Загрузите данные",
 
-    
+    "COMMENT_TITLE_SCREEN_TASK_PROFILE_SCREEN": "----------------------------Тексты для Профиль Задачи---------------------------",
+    "about_task":"Информация о задаче",
+    "task_name_profile":"Название задачи",
+    "number_task":"Номер задачи",
+    "author":"Автор",
+    "and_else":" и еще",
 
+    "COMMENT_TITLE_SCREEN_GROUP_PROFILE_SCREEN": "----------------------------Тексты для Профиль Группы---------------------------",
+    "group_profile":"Профиль группы",
+    "participant":"участника",
+    "participantss":"участников",
+    "participants":"Участники",
+    "add_participant":"Добавить участника",
+    "deleted_account":"Удаленный аккаунт",
+    "owner":"Владелец",
+    "you":"Вы",
 
-
-    
-
+    "COMMENT_TITLE_SCREEN_USER_PROFILE_SCREEN": "----------------------------Тексты для Профиль пользователя---------------------------",
+    "user_profile":"Профиль пользователя",
+    "user_name":"Имя пользователя",
+    "Email":"Email",
+    "number_phone":"Номер телефона",
+    "last_login":"Последний вход"
   }

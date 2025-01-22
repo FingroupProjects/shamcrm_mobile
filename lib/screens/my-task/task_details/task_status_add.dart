@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_event.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,7 +28,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(
-        'Добавить статус',
+        AppLocalizations.of(context)!.translate('add_status'),
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -44,7 +45,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             TextFormField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: 'Введите название',
+                hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -93,7 +94,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     ),
                   ),
                   child: Text(
-                    'Отмена',
+                    AppLocalizations.of(context)!.translate('cancel'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -115,7 +116,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     ),
                   ),
                   child: Text(
-                    'Добавить',
+                    AppLocalizations.of(context)!.translate('add'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -137,7 +138,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
 
     if (statusName.isEmpty) {
       setState(() {
-        _errorMessage = 'Введите название статуса';
+        _errorMessage =
+            AppLocalizations.of(context)!.translate('fill_required_fields');
       });
       return;
     }
@@ -155,7 +157,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Статус успешно создан!',
+          AppLocalizations.of(context)!
+              .translate('status_created_successfully'),
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,

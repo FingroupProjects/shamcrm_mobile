@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_edit_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -62,7 +63,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
-      return 'Неверный формат';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
@@ -75,25 +76,25 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     }
     currentMyTask = task;
     details = [
-      {'label': 'Название задачи:', 'value': task?.name ?? ""},
-      {
-        'label': 'От:',
+      {'label': AppLocalizations.of(context)!.translate('task_name'), 'value': task?.name ?? ""},
+       {
+        'label': AppLocalizations.of(context)!.translate('from_details'),
         'value': task.startDate != null && task.startDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
             : ''
       },
-      {
-        'label': 'До:',
+     {
+        'label':  AppLocalizations.of(context)!.translate('to_details'),
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
       },
       {
-        'label': 'Описание:',
+        'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
-      if (task.taskFile != null && task.taskFile!.isNotEmpty)
-        {'label': 'Файл:', 'value': 'Ссылка'},
+       if (task.taskFile != null && task.taskFile!.isNotEmpty)
+        {'label': AppLocalizations.of(context)!.translate('file_details'), 'value': AppLocalizations.of(context)!.translate('link'),},
     ];
     // Вывод каждой детали в консоль
     for (var detail in details) {
@@ -146,7 +147,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -162,7 +163,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр задачи'),
+        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_task'),),
         backgroundColor: Colors.white,
         body: BlocListener<MyTaskByIdBloc, MyTaskByIdState>(
           listener: (context, state) {
@@ -201,7 +202,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                 );
               } else if (state is MyTaskByIdLoaded) {
                 if (state.task == null) {
-                  return Center(child: Text('Данные о задаче недоступны.'));
+                  return Center(child: Text(AppLocalizations.of(context)!.translate('task_data_unavailable'),));
                 }
                 MyTaskById task = state.task!;
                 _updateDetails(task);
@@ -359,7 +360,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 
   Widget _buildDetailItem(String label, String value) {
     // Специальная обработка для названия и описания
-    if (label == 'Название задачи:' || label == 'Описание:') {
+    if (label == AppLocalizations.of(context)!.translate('task_name') || label == AppLocalizations.of(context)!.translate('description_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -394,7 +395,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       );
     }
 
-    if (label == 'Файл:') {
+    if (label == AppLocalizations.of(context)!.translate('file_details')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -407,7 +408,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
               }
             },
             child: Text(
-              'Ссылка',
+              AppLocalizations.of(context)!.translate('link'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -460,13 +461,13 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
         print('Не удалось открыть файл: ${result.message}');
-        _showErrorSnackBar('Не удалось открыть файл.');
+        _showErrorSnackBar(AppLocalizations.of(context)!.translate('failed_to_open_file'));
       } else {
         print('Файл открыт успешно.');
       }
     } catch (e) {
       print('Ошибка при скачивании или открытии файла!');
-      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
     }
   }
 
