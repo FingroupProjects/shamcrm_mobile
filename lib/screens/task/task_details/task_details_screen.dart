@@ -958,7 +958,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
         print('Не удалось открыть файл: ${result.message}');
-        _showErrorSnackBar('Не удалось открыть файл.');
+        _showErrorSnackBar(AppLocalizations.of(context)!.translate('failed_to_open_file'));
       } else {
         print('Файл открыт успешно.');
       }

@@ -2,10 +2,11 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_state.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final int chatId;
@@ -13,7 +14,7 @@ class UserProfileScreen extends StatelessWidget {
   UserProfileScreen({
     required this.chatId,
   });
- Future<void> _makePhoneCall(String phoneNumber) async {
+  Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber,
@@ -60,7 +61,7 @@ class UserProfileScreen extends StatelessWidget {
         backgroundColor: const Color(0xffF4F7FD),
         appBar: AppBar(
           title: Text(
-            "Профиль лида",
+            AppLocalizations.of(context)!.translate('lead_profile'),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -84,8 +85,9 @@ class UserProfileScreen extends StatelessWidget {
         body: BlocBuilder<ChatProfileBloc, ChatProfileState>(
           builder: (context, state) {
             if (state is ChatProfileLoading) {
-              return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-);
+              return Center(
+                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+              );
             } else if (state is ChatProfileLoaded) {
               final profile = state.profile;
               final DateTime parsedDate = DateTime.parse(profile.createdAt);
@@ -100,38 +102,92 @@ class UserProfileScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
                       child: Column(
                         children: [
-                      buildInfoRow("Имя", profile.name, Icons.person, null),
-                      buildDivider(),
-                      buildInfoRow("Телефон", profile.phone ?? 'Не указано', Icons.phone, null),
-                      buildDivider(),
-                      buildInfoRow("Instagram", profile.instaLogin ?? 'Не указано', null, 
-                      'assets/icons/leads/instagram.png' 
-                      ),
-                      buildDivider(),
-                      buildInfoRow("Telegram", profile.tgNick ?? 'Не указано', null, 
-                      'assets/icons/leads/telegram.png' 
-                      ),
-                      buildDivider(),
-                      buildInfoRow("WhatsApp", profile.waPhone ?? 'Не указано', null, 
-                      'assets/icons/leads/whatsapp.png' 
-                      ),
-                      buildDivider(),
-                      buildInfoRow("WhatsApp", profile.facebookLogin ?? 'Не указано', null, 
-                      'assets/icons/leads/facebook.png' 
-                      ),                      buildDivider(),
-                      buildInfoRow("Описание", profile.description ?? 'Не указано', Icons.description, null),
-                      buildDivider(),
-                      buildInfoRow("Дата создания", formattedDate, Icons.calendar_today, null),
-                      buildDivider(),
-                      buildInfoRow("Менеджер", profile.manager?.name ?? 'Не указано', Icons.supervisor_account, null),
-                      buildDivider(),
-                      buildInfoRow("Статус", profile.leadStatus?.title ?? 'Не указано', Icons.assignment, null),
-                      
+                          buildInfoRow(
+                              AppLocalizations.of(context)!.translate('name'),
+                              profile.name,
+                              Icons.person,
+                              null),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!.translate('phone'),
+                              profile.phone ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              Icons.phone,
+                              null),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('instagram'),
+                              profile.instaLogin ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              null,
+                              'assets/icons/leads/instagram.png'),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('telegram'),
+                              profile.tgNick ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              null,
+                              'assets/icons/leads/telegram.png'),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('whatsApp'),
+                              profile.waPhone ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              null,
+                              'assets/icons/leads/whatsapp.png'),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('facebook'),
+                              profile.facebookLogin ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              null,
+                              'assets/icons/leads/facebook.png'),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('description_list'),
+                              profile.description ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              Icons.description,
+                              null),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('creation_date_lead'),
+                              formattedDate,
+                              Icons.calendar_today,
+                              null),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('manager'),
+                              profile.manager?.name ??
+                                  AppLocalizations.of(context)!
+                                      .translate('not_specified'),
+                              Icons.supervisor_account,
+                              null),
+                          buildDivider(),
+                          buildInfoRow(
+                              AppLocalizations.of(context)!
+                                  .translate('status_lead_profile'),
+                              profile.leadStatus?.title ?? 'Не указано',
+                              Icons.assignment,
+                              null),
                         ],
                       ),
                     ),
@@ -141,7 +197,8 @@ class UserProfileScreen extends StatelessWidget {
             } else if (state is ChatProfileError) {
               return Center(child: Text(state.error));
             }
-            return Center(child: Text("Загрузите данные"));
+            return Center(child: Text(   AppLocalizations.of(context)!
+                                  .translate('download_data')));
           },
         ),
       ),
@@ -149,9 +206,10 @@ class UserProfileScreen extends StatelessWidget {
   }
 
   // Info row widget to match the design
-  Widget buildInfoRow(String title, String value, IconData? icon, String? customIconPath) {
+  Widget buildInfoRow(
+      String title, String value, IconData? icon, String? customIconPath) {
     Widget content;
-    
+
     // Определяем стиль для кликабельного текста
     final clickableStyle = TextStyle(
       fontSize: 16,
@@ -226,7 +284,6 @@ class UserProfileScreen extends StatelessWidget {
       ],
     );
   }
-
 
   Widget buildDivider() {
     return const Divider(

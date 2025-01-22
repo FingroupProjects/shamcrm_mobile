@@ -4,6 +4,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/add_user_to_group.d
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/delete_from_group_dialog.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -26,7 +27,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
   late List<Map<String, String>> memberDetails;
   bool isLoading = true;
   bool isGroupChat = false;
- // Добавьте эту функцию здесь
+  // Добавьте эту функцию здесь
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
       final start = svg.indexOf('href="') + 6;
@@ -35,6 +36,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     }
     return null;
   }
+
   @override
   void initState() {
     super.initState();
@@ -100,7 +102,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: Text(
-            "Профиль группы",
+            AppLocalizations.of(context)!.translate('group_profile'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -132,7 +134,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: Text(
-          "Профиль группы",
+          AppLocalizations.of(context)!.translate('group_profile'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -177,7 +179,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   fontWeight: FontWeight.w600),
             ),
             Text(
-              "$memberCount ${(memberCount >= 2 && memberCount <= 4) ? 'участника' : 'участников'}",
+              "$memberCount ${(memberCount >= 2 && memberCount <= 4) ? AppLocalizations.of(context)!.translate('participant') : AppLocalizations.of(context)!.translate('participantss')}",
               style: TextStyle(
                   fontSize: 16, fontFamily: 'Gilroy', color: Colors.grey),
             ),
@@ -191,7 +193,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Участники",
+                        AppLocalizations.of(context)!.translate('participants'),
                         style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
@@ -219,7 +221,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             ),
                           ),
                           child: Text(
-                            "Добавить участника",
+                            AppLocalizations.of(context)!
+                                .translate('add_participant'),
                             style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
@@ -235,8 +238,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     physics: NeverScrollableScrollPhysics(),
                     itemCount: members.length,
                     itemBuilder: (context, index) {
-                      bool isDeletedAccount =
-                          memberDetails[index]['name'] == 'Удаленный аккаунт';
+                      bool isDeletedAccount = memberDetails[index]['name'] ==
+                          AppLocalizations.of(context)!
+                              .translate('deleted_account');
                       bool isOwner = index == 0;
                       bool isCurrentUser =
                           memberDetails[index]['id'] == userIdCheck;
@@ -369,7 +373,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               ),
                               if (isOwner)
                                 Text(
-                                  'Владелец',
+                                  AppLocalizations.of(context)!
+                                      .translate('owner'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
@@ -379,7 +384,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 )
                               else if (isCurrentUser)
                                 Text(
-                                  'Вы',
+                                  AppLocalizations.of(context)!
+                                      .translate('you'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,

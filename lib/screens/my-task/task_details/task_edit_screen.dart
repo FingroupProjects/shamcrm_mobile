@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -107,8 +108,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
             },
             activeColor: const Color(0xff1E2E52),
           ),
-          const Text(
-            'Отправить Push-уведомление',
+          Text(
+            AppLocalizations.of(context)!.translate('set_push_notification'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -120,6 +121,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       ),
     );
   }
+
   Widget _buildFileSelection(MyTaskEditScreen task) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +131,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
           Row(
             children: [
               Text(
-                'Файл:',
+                AppLocalizations.of(context)!.translate('file_details'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -143,7 +145,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                   _showFile(task.file!); // Показываем старый файл
                 },
                 child: Text(
-                  'Ссылка',
+                  AppLocalizations.of(context)!.translate('link'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -160,7 +162,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
         // Отображаем надпись "Файл", если файл не выбран
         if (task.file == null || task.file!.isEmpty) ...[
           Text(
-            'Файл:',
+            AppLocalizations.of(context)!.translate('file_details'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -185,7 +187,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                 Expanded(
                   child: Text(
                     // Отображаем текст до выбора файла или название нового файла
-                    task.file ?? 'Выберите файл',
+                    task.file ??
+                        AppLocalizations.of(context)!.translate('select_file'),
                     style: TextStyle(
                       fontFamily: 'Gilroy', // Используем шрифт Gilroy
                       fontSize: 16,
@@ -251,13 +254,15 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
         print('Не удалось открыть файл: ${result.message}');
-        _showErrorSnackBar('Не удалось открыть файл.');
+        _showErrorSnackBar(
+            AppLocalizations.of(context)!.translate('failed_to_open_file'));
       } else {
         print('Файл открыт успешно.');
       }
     } catch (e) {
       print('Ошибка при скачивании или открытии файла!');
-      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('file_download_or_open_error'));
     }
   }
 
@@ -300,8 +305,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
           ),
           onPressed: () => Navigator.pop(context, null),
         ),
-        title: const Text(
-          'Редактирование задачи',
+        title: Text(
+          AppLocalizations.of(context)!.translate('task_edit'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -350,19 +355,24 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                     children: [
                       CustomTextField(
                         controller: nameController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
                         validator: (value) => value!.isEmpty
-                            ? 'Поле обязательно для заполнения'
+                            ? AppLocalizations.of(context)!
+                                .translate('field_required')
                             : null,
                       ),
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: 'От',
+                        label: AppLocalizations.of(context)!
+                            .translate('from_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
@@ -370,11 +380,13 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'До',
+                        label:
+                            AppLocalizations.of(context)!.translate('to_list'),
                         hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
@@ -382,8 +394,10 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 16),
@@ -402,7 +416,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),
@@ -420,7 +435,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Сохранить',
+                              buttonText: AppLocalizations.of(context)!
+                                  .translate('save'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
@@ -448,7 +464,9 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            'Дата начала не может быть позже даты завершения!',
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'start_date_after_end_date'),
                                             style: TextStyle(
                                               color: Colors.white,
                                             ),
@@ -476,7 +494,10 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Ошибка в формате даты!'),
+                                        content: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate('error_format_date'),
+                                        ),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
@@ -485,7 +506,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Пожалуйста, заполните все обязательные поля!',
+                                         AppLocalizations.of(context)!.translate('fill_required_fields'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,
