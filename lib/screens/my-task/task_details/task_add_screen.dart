@@ -109,8 +109,8 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Файл',
+         Text(
+          AppLocalizations.of(context)!.translate('file'),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -132,7 +132,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    fileName ?? 'Выберите файл',
+                    fileName ?? AppLocalizations.of(context)!.translate('select_file'),
                     style: TextStyle(
                       color: fileName != null
                           ? const Color(0xff1E2E52)

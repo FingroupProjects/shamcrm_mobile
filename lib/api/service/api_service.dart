@@ -94,7 +94,7 @@ class ApiService {
 
   // Инициализация API с доменом из QR-кода
   Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'https://$domain-back.shamcrm.com/api';
+    baseUrl = 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
     baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
     print('API инициализировано с доменом: $domain');
   }
@@ -121,7 +121,7 @@ class ApiService {
   Future<String> getDynamicBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/api';
+      return 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -130,7 +130,7 @@ class ApiService {
   Future<String> getSocketBaseUrl() async {
     String? domain = await getEnteredDomain();
     if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.com/broadcasting/auth';
+      return 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
     }
@@ -297,7 +297,7 @@ class ApiService {
   // Метод для выполнения POST-запросов
   Future<http.Response> _postRequestDomain(
       String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://shamcrm.com/api';
+    final String DomainUrl = 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
     final token = await getToken(); // Получаем токен перед запросом
     final response = await http.post(
       Uri.parse('$DomainUrl$path'),
@@ -1995,22 +1995,30 @@ class ApiService {
     int page = 1,
     int perPage = 20,
     String? search,
-    int? userId, // Добавляем параметр userId
+    List<int>? users, // Массив ID менеджеров
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/task?page=$page&per_page=$perPage';
 
     path += '&organization_id=$organizationId';
+ // Если задан поиск или менеджеры, НЕ передаем lead_status_id
+    bool shouldSkipTaskStatusId = (search != null && search.isNotEmpty) ||
+        (users != null && users.isNotEmpty);
+   
+    if (!shouldSkipTaskStatusId && taskStatusId != null) {
+      // Если поиск и менеджеры не заданы, передаем lead_status_id
+      path += '&task_status_id=$taskStatusId';
+    }
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (taskStatusId != null && userId == null) {
-      // Условие: если нет userId
-      path += '&task_status_id=$taskStatusId';
     }
-    // Добавляем user_id если есть
-    if (userId != null) {
-      path += '&user_id=$userId';
+
+   // Добавляем user_id если есть
+    if (users != null && users.isNotEmpty) {
+      for (int i = 0; i < users.length; i++) {
+        path += '&users[$i]=${users[i]}';
+      }
     }
 
     // Логируем конечный URL запроса

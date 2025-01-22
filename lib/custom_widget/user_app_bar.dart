@@ -4,11 +4,11 @@ import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_state.dart';
 
 class UserFilterPopup extends StatefulWidget {
-  final Function(List<dynamic>)? onUserSelected;
+  final Function(List<dynamic>)? onUsersSelected;
 
   const UserFilterPopup({
     Key? key,
-    this.onUserSelected,
+    this.onUsersSelected,
   }) : super(key: key);
 
   @override
@@ -16,46 +16,25 @@ class UserFilterPopup extends StatefulWidget {
 }
 
 class _UserFilterPopupState extends State<UserFilterPopup> {
-  Set<dynamic> selectedUsers = {};
+  List<dynamic> _selectedUsers = [];
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
 
-  void updateSelection(dynamic user) {
-    setState(() {
-      if (selectedUsers.contains(user)) {
-        selectedUsers.remove(user);
-      } else {
-        selectedUsers.add(user);
-      }
-    });
-    _notifySelectionChanged();
-  }
-
-  void _notifySelectionChanged() {
-    if (widget.onUserSelected != null) {
-      final userIds = selectedUsers.map((user) => user.id).toList();
-      widget.onUserSelected!(userIds);
-    }
-  }
-
   void toggleSelectAll(List<dynamic> users) {
     setState(() {
-      if (selectedUsers.length == users.length) {
-        selectedUsers.clear();
+      if (_selectedUsers.length == users.length) {
+        _selectedUsers.clear();
       } else {
-        selectedUsers = Set.from(users);
+        _selectedUsers = List.from(users);
       }
     });
-    _notifySelectionChanged();
   }
 
   List<dynamic> filterUsers(List<dynamic> users) {
     if (searchQuery.isEmpty) return users;
     return users.where((user) {
       final name = user.name?.toString().toLowerCase() ?? '';
-      final lastname = user.lastname?.toString().toLowerCase() ?? '';
-      final fullName = '$name $lastname';
-      return fullName.contains(searchQuery.toLowerCase());
+      return name.contains(searchQuery.toLowerCase());
     }).toList();
   }
 
@@ -74,9 +53,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
           BlocBuilder<UserTaskBloc, UserTaskState>(
             builder: (context, state) {
               final allUsers = state is UserTaskLoaded ? state.users : [];
-              final isAllSelected = allUsers.isNotEmpty && 
-                  selectedUsers.length == allUsers.length;
-
+              final isAllSelected = allUsers.isNotEmpty &&
+                  _selectedUsers.length == allUsers.length;
               return Padding(
                 padding: EdgeInsets.all(8),
                 child: Row(
@@ -89,10 +67,14 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                         onTap: () => toggleSelectAll(allUsers),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isAllSelected ? Color(0xFF4339F2) : Colors.white,
+                            color: isAllSelected
+                                ? Color(0xFF4339F2)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: isAllSelected ? Color(0xFF4339F2) : Color(0xFFCCCCCC),
+                              color: isAllSelected
+                                  ? Color(0xFF4339F2)
+                                  : Color(0xFFCCCCCC),
                               width: 1,
                             ),
                           ),
@@ -108,7 +90,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                         decoration: InputDecoration(
                           hintText: 'Поиск',
                           prefixIcon: Icon(Icons.search, color: Colors.grey),
-                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(color: Color(0xFFEEEEEE)),
@@ -160,9 +143,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                     ),
                   );
                 } else if (state is UserTaskLoaded) {
-                  final filteredUsers = filterUsers(state.users);
-                  
-                  if (filteredUsers.isEmpty) {
+                  final users = state.users;
+                  if (users == null) {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.all(16),
@@ -176,16 +158,26 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                     );
                   }
 
+                  final filteredUsers = filterUsers(users);
+
                   return ListView.builder(
                     shrinkWrap: true,
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
                       final user = filteredUsers[index];
                       final name = user.name ?? 'Без имени';
-                      final isSelected = selectedUsers.contains(user);
+                      final isSelected = _selectedUsers.contains(user);
 
                       return InkWell(
-                        onTap: () => updateSelection(user),
+                        onTap: () {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedUsers.remove(user);
+                            } else {
+                              _selectedUsers.add(user);
+                            }
+                          });
+                        },
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 16,
@@ -206,15 +198,20 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                                 height: 24,
                                 margin: EdgeInsets.only(right: 12),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? Color(0xFF4339F2) : Colors.white,
+                                  color: isSelected
+                                      ? Color(0xFF4339F2)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: isSelected ? Color(0xFF4339F2) : Color(0xFFCCCCCC),
+                                    color: isSelected
+                                        ? Color(0xFF4339F2)
+                                        : Color(0xFFCCCCCC),
                                     width: 1,
                                   ),
                                 ),
-                                child: isSelected 
-                                    ? Icon(Icons.check, size: 18, color: Colors.white)
+                                child: isSelected
+                                    ? Icon(Icons.check,
+                                        size: 18, color: Colors.white)
                                     : null,
                               ),
                               Expanded(
@@ -244,8 +241,10 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
             padding: EdgeInsets.all(8),
             child: ElevatedButton(
               onPressed: () {
-                _notifySelectionChanged();
-                Navigator.of(context).pop();
+                if (widget.onUsersSelected != null) {
+                  widget.onUsersSelected!(_selectedUsers);
+                }
+                Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF4339F2),

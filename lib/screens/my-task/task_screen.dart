@@ -138,19 +138,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     }
   }
 
-  void _handleUserSelected(dynamic user) {
-    setState(() {
-      _selectedUserId = user?.id;
-    });
-
-    // Запрашиваем обновленные данные с учетом выбранного пользователя
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-    taskBloc.add(FetchMyTasks(
-      currentStatusId,
-      query: _searchController.text.isNotEmpty ? _searchController.text : null,
-    ));
-  }
 
   void _onSearch(String query) {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -187,7 +174,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             }
             _onSearch(value);
           },
-          onUserSelected: _handleUserSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
