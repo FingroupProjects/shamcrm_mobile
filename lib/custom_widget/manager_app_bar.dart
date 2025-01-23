@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -89,7 +90,7 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                       child: TextField(
                         controller: searchController,
                         decoration: InputDecoration(
-                          hintText: 'Поиск',
+                          hintText: AppLocalizations.of(context)!.translate('search'), 
                           prefixIcon: Icon(Icons.search, color: Colors.grey),
                           contentPadding:
                               EdgeInsets.symmetric(vertical: 8, horizontal: 12),

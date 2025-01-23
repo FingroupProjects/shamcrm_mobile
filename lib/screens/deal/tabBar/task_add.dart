@@ -1,6 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
-import 'package:crm_task_manager/bloc/deal_task/deal_task_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
@@ -12,6 +10,7 @@ import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/status_list.dart';
 import 'package:file_picker/file_picker.dart';
@@ -20,9 +19,6 @@ import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -54,11 +50,6 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
 
-  final Map<int, String> priorityLevels = {
-    1: 'Обычный',
-    2: 'Важный',
-    3: 'Срочный'
-  };
 
   @override
   void initState() {
@@ -125,8 +116,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     } catch (e) {
       print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ошибка при выборе файла'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.translate('file_selection_error')),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,8 +128,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Файл',
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -160,7 +151,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               children: [
                 Expanded(
                   child: Text(
-                    fileName ?? 'Выберите файл',
+                    fileName ?? AppLocalizations.of(context)!.translate('select_file'),
                     style: TextStyle(
                       color: fileName != null
                           ? const Color(0xff1E2E52)
@@ -182,11 +173,18 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   }
 
   Widget _buildPriorityDropdown() {
+
+    final Map<int, String> priorityLevels = {
+        1: AppLocalizations.of(context)!.translate('normal'), 
+        2: AppLocalizations.of(context)!.translate('important'),
+        3: AppLocalizations.of(context)!.translate('urgent'), 
+      };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Уровень приоритета',
+        Text(
+          AppLocalizations.of(context)!.translate('priority_level'), 
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -275,7 +273,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         children: [
           Expanded(
             child: CustomButton(
-              buttonText: 'Отмена',
+              buttonText: AppLocalizations.of(context)!.translate('cancel'), 
               buttonColor: const Color(0xffF4F7FD),
               textColor: Colors.black,
               onPressed: () => Navigator.pop(context),
@@ -292,7 +290,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                         ),
                       )
                     : CustomButton(
-                        buttonText: 'Добавить',
+                        buttonText: AppLocalizations.of(context)!.translate('add'), 
                         buttonColor: const Color(0xff4759FF),
                         textColor: Colors.white,
                         onPressed: _submitForm,
@@ -309,8 +307,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     if (_formKey.currentState!.validate()) {
       if (selectedStatusId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Пожалуйста, выберите статус задачи'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.translate('please_select_status_task')),
             backgroundColor: Colors.red,
           ),
         );
@@ -333,8 +331,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             isEndDateInvalid = true;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Дата начала не может быть позже даты завершения!'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date')),
               backgroundColor: Colors.red,
             ),
           );
@@ -369,15 +367,15 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при создании задачи!'),
+            content: Text(AppLocalizations.of(context)!.translate('error_create_task')),
             backgroundColor: Colors.red,
           ),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Пожалуйста, заполните все обязательные поля!'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.translate('fill_required_fields')),
           backgroundColor: Colors.red,
         ),
       );
@@ -400,8 +398,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             context.read<TaskAddFromDealBloc>().add(FetchTaskDealStatuses());
           },
         ),
-        title: const Text(
-          'Новая задача',
+        title: Text(
+          AppLocalizations.of(context)!.translate('new_task'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -418,7 +416,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  state.message,
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -441,7 +439,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -486,11 +484,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
 
                       CustomTextField(
                         controller: nameController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText:  AppLocalizations.of(context)!.translate('enter_name_list'), 
+                        label:  AppLocalizations.of(context)!.translate('name_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -500,10 +498,10 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: 'От',
+                        label: AppLocalizations.of(context)!.translate('from_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -511,11 +509,11 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'До',
+                        label: AppLocalizations.of(context)!.translate('to_list'),
                         hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -545,8 +543,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'), 
                         maxLines: 5,
                       ),
                       const SizedBox(height: 16),
@@ -592,7 +590,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                       const SizedBox(height: 8),
 
                       CustomButton(
-                        buttonText: 'Добавить поле',
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -626,8 +624,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Введите корректную дату в формате ДД/ММ/ГГГГ'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
           ),
         );
         return;
@@ -640,8 +638,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Введите корректную дату в формате ДД/ММ/ГГГГ'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
           ),
         );
         return;
@@ -654,7 +652,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Дата начала не может быть позже даты завершения!',
+            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
             style: TextStyle(
               color: Colors.white,
             ),
@@ -699,8 +697,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             isEndDateInvalid = true;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Дата начала не может быть позже даты завершения!'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date')),
               backgroundColor: Colors.red,
             ),
           );
@@ -733,7 +731,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при создании задачи!'),
+            content: Text(AppLocalizations.of(context)!.translate('error_create_task')),
             backgroundColor: Colors.red,
           ),
         );

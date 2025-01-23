@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubbl
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/chats/delete_message.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -140,7 +141,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Перейти к дате',
+                      AppLocalizations.of(context)!.translate('go_to_date'), 
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -438,7 +439,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 Expanded(
                   child: Text(
                     widget.chatItem.name.isEmpty
-                        ? 'Без имени'
+                        ? AppLocalizations.of(context)!.translate('no_name')
                         : widget.chatItem.name,
                     style: const TextStyle(
                       fontSize: 18,
@@ -466,8 +467,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 child: Center(
                   child: Text(
                     widget.canSendMessage
-                        ? 'У вас нет доступа для отправки сообщения!'
-                        : 'Прошло 24 часа как лид написал вам! Отправка сообщения будет доступна только после получения нового сообщения',
+                        ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
+                        : AppLocalizations.of(context)!.translate('24_hour_leads'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -497,7 +498,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           if (state.messages.isEmpty) {
             return Center(
               child: Text(
-                'Нет сообщений',
+                AppLocalizations.of(context)!.translate('not_sms'),
                 style: TextStyle(color: AppColors.textPrimary700),
               ),
             );
@@ -593,7 +594,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           if (state.messages.isEmpty) {
             return Center(
               child: Text(
-                'Нет сообщений',
+                AppLocalizations.of(context)!.translate('not_sms'),
                 style: TextStyle(color: AppColors.textPrimary700),
               ),
             );
@@ -973,7 +974,7 @@ class MessageItemWidget extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Сообщение успешно удалено!',
+            AppLocalizations.of(context)!.translate('sms_deletes_successfully'), 
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -996,7 +997,7 @@ class MessageItemWidget extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Вы не можете удалить чужое сообщение!',
+            AppLocalizations.of(context)!.translate('cannot_someone_delete_sms'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,

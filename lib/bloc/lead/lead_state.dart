@@ -17,7 +17,8 @@ class LeadLoaded extends LeadState {
   LeadLoaded copyWith({
     List<LeadStatus>? leadStatuses,
     Map<int, int>? leadCounts,
-  }) {
+  }) {print(leadCounts);
+  print("-------------------------TaskLoaded------------------");
     return LeadLoaded(
       leadStatuses ?? this.leadStatuses,
       leadCounts: leadCounts ?? this.leadCounts,
@@ -33,7 +34,8 @@ class LeadDataLoaded extends LeadState {
 
   LeadDataLoaded(this.leads, {this.currentPage = 1, required this.leadCounts});
 
-  LeadDataLoaded merge(List<Lead> newLeads) {
+  LeadDataLoaded merge(List<Lead> newLeads) {print(leadCounts);
+  print("-------------------------TaskLoaded------------------");
     return LeadDataLoaded([...leads, ...newLeads],
         currentPage: currentPage + 1, leadCounts: leadCounts);
   }

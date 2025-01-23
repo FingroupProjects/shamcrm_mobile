@@ -48,6 +48,8 @@ class _PinScreenState extends State<PinScreen>
  @override
 void initState() {
   super.initState();
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+
   _loadUserPhone().then((_) {
     if (mounted) {
       setState(() {

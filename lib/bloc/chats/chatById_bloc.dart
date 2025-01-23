@@ -3,12 +3,17 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chatById_event.dart';
 import 'package:crm_task_manager/bloc/chats/chatById_state.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ChatByIdBloc extends Bloc<ChatByIdEvent, ChatByIdState> {
   final ApiService apiService;
+  final AppLocalizations localizations;
 
-  ChatByIdBloc(this.apiService) : super(ChatByIdInitial()) {
+  ChatByIdBloc({
+    required this.apiService,
+    required this.localizations,
+  }) : super(ChatByIdInitial()) {
     on<FetchChatByIdEvent>(_getChatById);
   }
 
@@ -20,10 +25,10 @@ class ChatByIdBloc extends Bloc<ChatByIdEvent, ChatByIdState> {
         final chat = await apiService.getChatById(event.chatId);
         emit(ChatByIdLoaded(chat));
       } catch (e) {
-        emit(ChatByIdError('Не удалось загрузить данные чата!'));
+        emit(ChatByIdError(localizations.translate('cannot_data_load_chat')));
       }
     } else {
-      emit(ChatByIdError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));
+      emit(ChatByIdError(localizations.translate('error_internet_connection')));
     }
   }
 

@@ -11,7 +11,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
   final int taskStatusId; // ID удаляемого статуса
 
   DeleteTaskStatusDialog({required this.taskStatusId});
-
+  
   @override
   Widget build(BuildContext context) {
     return BlocListener<TaskBloc, TaskState>(
@@ -21,7 +21,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16, // Размер шрифта совпадает с CustomTextField

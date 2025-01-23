@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
@@ -13,7 +14,7 @@ class AddCustomFieldDialog extends StatelessWidget {
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(
-        'Добавить поле',
+        AppLocalizations.of(context)!.translate('add_field'), 
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -27,7 +28,7 @@ class AddCustomFieldDialog extends StatelessWidget {
           TextField(
             controller: fieldNameController,
             decoration: InputDecoration(
-              hintText: 'Введите название поля',
+              hintText: AppLocalizations.of(context)!.translate('enter_name_field'), 
               hintStyle: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -51,7 +52,7 @@ class AddCustomFieldDialog extends StatelessWidget {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'), 
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -62,7 +63,7 @@ class AddCustomFieldDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: 'Добавить',
+                buttonText: AppLocalizations.of(context)!.translate('add'), 
                 onPressed: () {
                   if (fieldNameController.text.isNotEmpty) {
                     onAddField(fieldNameController.text);

@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -147,8 +148,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Пользователи',
+                  Text(
+                    AppLocalizations.of(context)!.translate('users_list'), 
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -166,7 +167,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     child: CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
                       initialItems: selectedUsersData,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'), 
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -236,8 +237,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
                         return Text(
                           selectedUsersCount == 0
-                              ? 'Выберите пользователей'
-                              : 'Выбрано пользователей: $selectedUsersCount',
+                              ?  AppLocalizations.of(context)!.translate('select_users')
+                              : '${AppLocalizations.of(context)!.translate('selected_users')}$selectedUsersCount',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -247,7 +248,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите пользователей',
+                          Text(AppLocalizations.of(context)!.translate('select_users'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 void showDeleteDialog(BuildContext context, Function onDelete) {
@@ -8,7 +9,7 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            'Удалить сообщение?',
+            AppLocalizations.of(context)!.translate('delete_sms'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -18,7 +19,7 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
           ),
         ),
         content: Text(
-          'Вы уверены, что хотите удалить это сообщение?',
+          AppLocalizations.of(context)!.translate('confirm_delete_sms'),
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -40,7 +41,7 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                   child: Text(
-                    'Отмена',
+                    AppLocalizations.of(context)!.translate('cancel'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -62,7 +63,7 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                   child: Text(
-                    'Удалить',
+                    AppLocalizations.of(context)!.translate('delete'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,

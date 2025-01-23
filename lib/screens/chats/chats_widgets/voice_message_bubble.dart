@@ -83,7 +83,7 @@ class VoiceMessageBubble extends StatelessWidget {
                     child: Text(
                       fileName,
                       style: TextStyle(
-                          color: isSender ? Colors.white : Colors.black),
+                      color: isSender ? Colors.white : Colors.black),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

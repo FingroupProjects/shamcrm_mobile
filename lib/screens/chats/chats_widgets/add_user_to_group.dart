@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/user_list_group.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -90,7 +91,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            'Добавить участника',
+            AppLocalizations.of(context)!.translate('add_user'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -139,7 +140,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
             children: [
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Отмена',
+                  buttonText: AppLocalizations.of(context)!.translate('cancel'),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -150,7 +151,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
               SizedBox(width: 8),
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Добавить',
+                  buttonText: AppLocalizations.of(context)!.translate('add'),
                   onPressed: () {
                     if (selectedUserData != null) {
                       context.read<GroupChatBloc>().add(
@@ -167,8 +168,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                       Navigator.of(context).pop();
                     } else {
                       setState(() {
-                        selectedUsersError =
-                            'Пожалуйста, выберите пользователя';
+                        selectedUsersError = AppLocalizations.of(context)!.translate('please_select_user');
                       });
                     }
                   },

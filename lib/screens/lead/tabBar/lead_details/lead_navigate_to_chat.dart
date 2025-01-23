@@ -53,7 +53,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,

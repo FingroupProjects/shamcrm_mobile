@@ -55,7 +55,7 @@ class _TaskStatusRadioGroupWidgetState
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      state.message,
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,

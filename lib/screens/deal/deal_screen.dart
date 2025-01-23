@@ -9,6 +9,7 @@ import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -172,12 +173,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon ? 'Настройки' : 'Сделки',
+          title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_deals'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -232,7 +234,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     if (_isSearching && deals.isEmpty) {
       return Center(
         child: Text(
-          'По запросу ничего не найдено',
+         AppLocalizations.of(context)!.translate('nothing_found'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -273,8 +275,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             return Center(
               child: Text(
                 _selectedManagerIds?.isNotEmpty == true
-                    ? 'У выбранных менеджеров нет сделок'
-                    : 'По запросу ничего не найдено',
+                    ? AppLocalizations.of(context)!.translate('no_manager_in_deal')
+                    : AppLocalizations.of(context)!.translate('nothing_found'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
@@ -320,7 +322,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     if (_selectedManagerId != null && deals.isEmpty) {
       return Center(
         child: Text(
-          'У выбранного менеджера нет сделок',
+          AppLocalizations.of(context)!.translate('no_manager_in_deals'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -564,7 +566,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is DealError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
+          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -572,11 +574,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains("Нет подключения к интернету")) {
+          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  state.message,
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

@@ -443,7 +443,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 
       // Формируем полный URL файла
       final fullUrl =
-          Uri.parse('https://$domain-back.shamcrm.com/storage/$fileUrl');
+          Uri.parse('https://$domain-back.shamcrm.pro/storage/$fileUrl');
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла

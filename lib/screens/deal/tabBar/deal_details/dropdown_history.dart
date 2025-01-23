@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_event.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_state.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -59,7 +60,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       }
 
       return _buildExpandableActionContainer(
-        'История действий',
+        AppLocalizations.of(context)!.translate('action_history'), 
         _buildActionHistoryItems(actionHistory),
         isActionHistoryExpanded,
         () {
@@ -226,49 +227,49 @@ Widget _buildActionItem(String item) {
     String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
     String formatDate(String? dateString) {
-      if (dateString == null || dateString == "Не указано") {
-        return "Не указано";
+      if (dateString == null || dateString == AppLocalizations.of(context)!.translate('not_specified')) {
+        return AppLocalizations.of(context)!.translate('not_specified');
       }
       try {
         DateTime date = DateTime.parse(dateString);
         return DateFormat('dd-MM-yyyy').format(date);
       } catch (e) {
-        return "Не указано";
+        return AppLocalizations.of(context)!.translate('not_specified');
       }
     }
 
     String formatDateTime(DateTime? dateTime) {
-      if (dateTime == null) return "Не указано";
+      if (dateTime == null) return AppLocalizations.of(context)!.translate('not_specified');
       return DateFormat('dd-MM-yyyy').format(dateTime);
     }
 
     if (changes != null) {
       if (changes.dealStatusNewValue != null || changes.dealStatusPreviousValue != null) {
-        actionDetail += '\nСтатус: ${changes.dealStatusPreviousValue ?? "Не указано"} > ${changes.dealStatusNewValue ?? "Не указано"}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.dealStatusPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.dealStatusNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       if (changes.historyNameNewValue != null || changes.historyNamePreviousValue != null) {
-        actionDetail += '\nНазвание: ${changes.historyNamePreviousValue ?? "Не указано"} > ${changes.historyNameNewValue ?? "Не указано"}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       if (changes.leadNewValue != null || changes.leadPreviousValue != null) {
-        actionDetail += '\nЛид: ${changes.leadPreviousValue ?? "Не указано"} > ${changes.leadNewValue ?? "Не указано"}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('lead_deal_card')}${changes.leadPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.leadNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
-        actionDetail += '\nМенеджер: ${changes.managerPreviousValue?.toString() ?? "Не указано"} > ${changes.managerNewValue?.toString() ?? "Не указано"}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('manager_details')}${changes.managerPreviousValue?.toString() ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.managerNewValue?.toString() ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
-        actionDetail += '\nДата начала: ${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('start_date_history')}${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
       }
       if (changes.endDateNewValue != null || changes.endDatePreviousValue != null) {
-        actionDetail += '\nДата завершения: ${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('end_date_history')}${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
       }
       if (changes.sumNewValue != null || changes.sumPreviousValue != null) {
-        actionDetail += '\nСумма: ${changes.sumPreviousValue ?? "Не указано"} > ${changes.sumNewValue ?? "Не указано"}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('summa_history')}${changes.sumPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.sumNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
-        actionDetail += '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       if (changes.statusUpdateDateNewValue != null || changes.statusUpdateDatePreviousValue != null) {
-        actionDetail += '\nДата обновления статуса: ${formatDateTime(changes.statusUpdateDatePreviousValue)} > ${formatDateTime(changes.statusUpdateDateNewValue)}';
+        actionDetail += '\n${AppLocalizations.of(context)!.translate('date_update_status_history')}${formatDateTime(changes.statusUpdateDatePreviousValue)} > ${formatDateTime(changes.statusUpdateDateNewValue)}';
       }
     }
 
