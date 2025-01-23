@@ -945,6 +945,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       // Формируем полный URL файла
       final fullUrl =
           Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла

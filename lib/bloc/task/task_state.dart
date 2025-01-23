@@ -17,7 +17,8 @@ class TaskLoaded extends TaskState {
   TaskLoaded copyWith({
     List<TaskStatus>? taskStatuses,
     Map<int, int>? taskCounts,
-  }) {
+  }) {print(taskCounts);
+  print("-------------------------TaskLoaded------------------");
     return TaskLoaded(
       taskStatuses ?? this.taskStatuses,
       taskCounts: taskCounts ?? this.taskCounts,
@@ -35,7 +36,8 @@ class TaskDataLoaded extends TaskState {
       {this.currentPage = 1, this.allTasksFetched = false, Map<int, int>? taskCounts})
       : taskCounts = taskCounts ?? {};
 
-  TaskDataLoaded merge(List<Task> newTasks) {
+  TaskDataLoaded merge(List<Task> newTasks) {print(taskCounts);
+  print("-------------------------TaskLoaded------------------");
     return TaskDataLoaded(
       tasks + newTasks,
       currentPage: currentPage,
