@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Task {
   final int id;
@@ -10,7 +11,7 @@ class Task {
   final TaskStatus? taskStatus;
   final String? color;
   final Project? project;
-  final UserTaskImage? user;
+  final UserData? user;
   final List<UserTaskImage>? usersImage;
   final TaskFile? file;
   final int priority;
@@ -46,16 +47,17 @@ class Task {
         statusId: taskStatusId,
         priority: json['priority_level'] is int ? json['priority_level'] : 1,
         overdue: json['overdue'] is int ? json['overdue'] : 0,
-      taskStatus: json['taskStatus'] != null &&
-              json['taskStatus'] is Map<String, dynamic>
-          ? TaskStatus.fromJson(json['taskStatus'])
-          : null,
-        project: json['project'] != null ? Project.fromJson(json['project']) : null,
+        taskStatus: json['taskStatus'] != null &&
+                json['taskStatus'] is Map<String, dynamic>
+            ? TaskStatus.fromJson(json['taskStatus'])
+            : null,
+        project:
+            json['project'] != null ? Project.fromJson(json['project']) : null,
         usersImage: (json['users'] as List?)
             ?.map((userJson) => UserTaskImage.fromJson(userJson))
             .toList(),
-        user: json['users'] != null && json['users'] is Map<String, dynamic>
-            ? UserTaskImage.fromJson(json['users'])
+        user: json['user'] != null && json['user'] is Map<String, dynamic>
+            ? UserData.fromJson(json['user'])
             : null,
         color: json['color'] is String ? json['color'] : null,
         file: json['file'] != null
@@ -223,7 +225,8 @@ class TaskStatus {
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
     return TaskStatus(
       id: json['id'] as int,
-      taskStatus: json['taskStatus'] != null && json['taskStatus'] is Map<String, dynamic>
+      taskStatus: json['taskStatus'] != null &&
+              json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusName.fromJson(json['taskStatus'])
           : null,
       color: json['color'] is String ? json['color'] : 'Неизвестный цвет',
@@ -272,4 +275,3 @@ class TaskStatusName {
     };
   }
 }
-

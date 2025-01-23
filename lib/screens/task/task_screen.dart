@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -144,22 +145,21 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
   }
 
-  
   void _handleUserSelected(List<dynamic> users) {
-    print('Selected managers: $users');
+    print('Raw selected users: $users');
     setState(() {
       _selectedUserIds = users
           .map((user) {
-            if (user is String) {
-              return int.tryParse(user);
-            } else if (user is UserData) {
-              return user.id;
+            if (user is UserTask) {
+              return user.id; // Assuming UserTask has an id property
             }
             return null;
           })
           .where((id) => id != null)
           .cast<int>()
           .toList();
+
+      print('Converted user IDs: $_selectedUserIds'); // Debug print
     });
     _refreshCurrentTab();
 
@@ -172,7 +172,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       query: _searchController.text.isNotEmpty ? _searchController.text : null,
     ));
   }
- void _refreshCurrentTab() {
+
+  void _refreshCurrentTab() {
     if (_tabTitles.isNotEmpty) {
       final currentStatusId = _tabTitles[_currentTabIndex]['id'];
       final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -215,7 +216,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-            title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_tasks'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_tasks'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -266,74 +269,70 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             ),
     );
   }
-
-  Widget searchWidget(List<Task> tasks) {
-    if (_isSearching && tasks.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
+Widget searchWidget(List<Task> tasks) {
+  if (_isSearching && tasks.isEmpty) {
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!.translate('nothing_found'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
         ),
-      );
-    }
-
-    return Flexible(
-      child: ListView.builder(
-        controller: _scrollController,
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TaskCard(
-              task: task,
-              name: task.taskStatus?.taskStatus?.name ?? "",
-              statusId: task.statusId,
-              onStatusUpdated: () {},
-              onStatusId: (StatusTaskId) {},
-            ),
-          );
-        },
       ),
     );
   }
+  return Flexible(
+    child: ListView.builder(
+      controller: _scrollController,
+      itemCount: tasks.length,
+      itemBuilder: (context, index) {
+        final task = tasks[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+           child: TaskCard(
+                  task: task,
+                  name: task.taskStatus?.taskStatus?.name ?? "",
+                  statusId: task.statusId,
+                  onStatusUpdated: () {},
+                  onStatusId: (StatusLeadId) {},
+          ),
+        );
+      },
+    ),
+  );
+}
 
-
-// Обновляем метод _buildManagerView для корректной обработки обоих случаев
-  Widget _buildUserView() {
-    return BlocBuilder<TaskBloc, TaskState>(
-      builder: (context, state) {
-        if (state is TaskDataLoaded) {
-          final List<Task> tasks = state.tasks;
-          if (tasks.isEmpty) {
-            return Center(
-              child: Text(
-                _selectedUserId != null
-                    ? 'У выбранного менеджера нет лидов'
-                    : 'По запросу ничего не найдено',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
-                ),
+Widget _buildUserView() {
+  return BlocBuilder<TaskBloc, TaskState>(
+    builder: (context, state) {
+      if (state is TaskDataLoaded) {
+        final List<Task> tasks = state.tasks;
+        if (tasks.isEmpty) {
+          return Center(
+            child: Text(
+              _selectedUserId != null
+                  ? 'У выбранного менеджера нет лидов'
+                  : 'По запросу ничего не найдено',
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff99A4BA),
               ),
-            );
-          }
-          return ListView.builder(
+            ),
+          );
+        }
+        return Flexible(
+          child: ListView.builder(
             controller: _scrollController,
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               final task = tasks[index];
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TaskCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+               child: TaskCard(
                   task: task,
                   name: task.taskStatus?.taskStatus?.name ?? "",
                   statusId: task.statusId,
@@ -342,21 +341,21 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 ),
               );
             },
-          );
-        }
-        if (state is TaskLoading) {
-          return const Center(
-            child: PlayStoreImageLoading(
-              size: 80.0,
-              duration: Duration(milliseconds: 1000),
-            ),
-          );
-        }
-        return const SizedBox();
-      },
-    );
-  }
-
+          ),
+        );
+      }
+      if (state is TaskLoading) {
+        return const Center(
+          child: PlayStoreImageLoading(
+            size: 80.0,
+            duration: Duration(milliseconds: 1000),
+          ),
+        );
+      }
+      return const SizedBox();
+    },
+  );
+}
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -407,7 +406,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
         int taskCount = 0;
-
+        print("==========================count");
+        print(taskCount);
         if (state is TaskLoaded) {
           final statusId = _tabTitles[index]['id'];
           final taskStatus = state.taskStatuses.firstWhere(
@@ -416,7 +416,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           );
           taskCount = taskStatus?.tasksCount ?? 0; // Используем tasksCount
         }
-
+        print("==========================count");
+        print(taskCount);
         return GestureDetector(
           key: _tabKeys[index],
           onTap: () {
@@ -571,7 +572,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is TaskError) {
-          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'),)) {
+          if (state.message.contains(
+            AppLocalizations.of(context)!.translate('unauthorized_access'),
+          )) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -579,11 +582,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'),)) {
+          } else if (state.message.contains(
+            AppLocalizations.of(context)!.translate('no_internet_connection'),
+          )) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

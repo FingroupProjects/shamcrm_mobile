@@ -11,7 +11,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
   final int taskStatusId; // ID удаляемого статуса
 
   DeleteTaskStatusDialog({required this.taskStatusId});
-
+  
   @override
   Widget build(BuildContext context) {
     return BlocListener<TaskBloc, TaskState>(

@@ -511,7 +511,7 @@
   "image_message": "Image",
   "video_message": "You received a video message",
   "location_message": "You received a location: {location}",
-  "sticker_message": "You received a sticker"
+  "sticker_message": "You received a sticker",
 
   "COMMENT_TITLE_SCREEN_MY_TASK_SCREEN": "----------------------------Тексты для экрана Мои задачи---------------------------",
   "set_push_notification": "Send Push Notification",

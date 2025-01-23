@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/task_model.dart';
 
 abstract class TaskEvent {}
 
