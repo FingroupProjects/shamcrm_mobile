@@ -28,8 +28,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showFilterTaskIcon; // New field for task filter
   final Function(List<dynamic>)?
       onManagersSelected; // Изменено на List<dynamic>
-        final Function(List<dynamic>)?
-      onUsersSelected; // Изменено на List<dynamic>
+  final Function(dynamic)? onUserSelected; // New callback for user selection
   final bool showMyTaskIcon; // Новый параметр
 
   CustomAppBar({
@@ -44,7 +43,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIcon = true,
     this.showFilterTaskIcon = true, // Default value for task filter
     this.onManagersSelected,
-    this.onUsersSelected, // Add to constructor
+    this.onUserSelected, // Add to constructor
     this.showMyTaskIcon = false, // По умолчанию выключено
   });
 
@@ -119,11 +118,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final baseUrlSocket = await ApiService().getSocketBaseUrl();
-    final enteredDomain = await ApiService().getEnteredDomain();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -137,10 +139,8 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
+      authorizationDelegate:EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -407,7 +407,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                       focusNode: focusNode,
                       onChanged: widget.onChangedSearchInput,
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.translate('search_appbar'), 
+                        hintText: AppLocalizations.of(context)!.translate('search'), 
                         border: InputBorder.none,
                       ),
                       style: TextStyle(fontSize: 16),
@@ -526,7 +526,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                   if (widget.showFilterTaskIcon)
                     Tooltip(
-                      message: 'Фильтр',
+                      message: 'Фильтр задач',
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -582,7 +582,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   PopupMenuItem(
                                     padding: EdgeInsets.zero,
                                     child: UserFilterPopup(
-                                      onUsersSelected: widget.onUsersSelected,
+                                      // onUserSelected: widget.onUserSelected,
                                     ),
                                   ),
                                 ],

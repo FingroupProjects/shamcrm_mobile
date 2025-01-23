@@ -2,9 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'chats_event.dart';
@@ -12,11 +10,10 @@ part 'chats_state.dart';
 
 class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   final ApiService apiService;
-  final BuildContext context; 
   String endPoint = '';
   PaginationDTO<Chats>? chatsPagination;
 
-  ChatsBloc(this.apiService, this.context) : super(ChatsInitial()) {
+  ChatsBloc(this.apiService) : super(ChatsInitial()) {
     on<FetchChats>(_fetchChatsEvent);
     on<RefreshChats>(_refetchChatsEvent);
     on<GetNextPageChats>(_getNextPageChatsEvent);
@@ -36,71 +33,78 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   }
 
   // Fetch chats with the internet connection check
-  Future<void> _fetchChatsEvent(FetchChats event, Emitter<ChatsState> emit) async {
-  endPoint = event.endPoint;
-  emit(ChatsLoading());
+  Future<void> _fetchChatsEvent(
+      FetchChats event, Emitter<ChatsState> emit) async {
+    endPoint = event.endPoint;
+    emit(ChatsLoading());
 
-  if (await _checkInternetConnection()) {
-    try {
-      chatsPagination = await apiService.getAllChats(event.endPoint, context, 1, event.query); 
-      emit(ChatsLoaded(chatsPagination!));
-    } catch (e) {
-      emit(ChatsError(e.toString()));
+    if (await _checkInternetConnection()) {
+      try {
+        chatsPagination = await apiService.getAllChats(event.endPoint, 1, event.query);
+        emit(ChatsLoaded(chatsPagination!));
+      } catch (e) {
+        emit(ChatsError(e.toString()));
+      }
+    } else {
+      emit(ChatsError('Нет подключения к интернету'));
     }
-  } else {
-    emit(ChatsError(AppLocalizations.of(context)!.translate('no_internet_connection')));
   }
-}
 
-Future<void> _refetchChatsEvent(RefreshChats event, Emitter<ChatsState> emit) async {
-  emit(ChatsInitial());
+  // Refetch chats with the internet connection check
+  Future<void> _refetchChatsEvent(
+      RefreshChats event, Emitter<ChatsState> emit) async {
+    emit(ChatsInitial());
 
-  if (await _checkInternetConnection()) {
-    try {
-      chatsPagination = await apiService.getAllChats(endPoint, context); 
-      emit(ChatsLoaded(chatsPagination!));
-    } catch (e) {
-      emit(ChatsError(e.toString()));
+    if (await _checkInternetConnection()) {
+      try {
+        chatsPagination = await apiService.getAllChats(endPoint);
+        emit(ChatsLoaded(chatsPagination!));
+      } catch (e) {
+        emit(ChatsError(e.toString()));
+      }
+    } else {
+      emit(ChatsError('Нет подключения к интернету'));
     }
-  } else {
-    emit(ChatsError(AppLocalizations.of(context)!.translate('no_internet_connection')));
   }
-}
 
-Future<void> _getNextPageChatsEvent(GetNextPageChats event, Emitter<ChatsState> emit) async {
-  if (state is ChatsLoaded) {
-    final state = this.state as ChatsLoaded;
-    if (state.chatsPagination.currentPage != state.chatsPagination.totalPage) {
-      emit(ChatsLoading());
+  // Get next page chats with the internet connection check
+  Future<void> _getNextPageChatsEvent(
+      GetNextPageChats event, Emitter<ChatsState> emit) async {
+    if (state is ChatsLoaded) {
+      final state = this.state as ChatsLoaded;
+      if (state.chatsPagination.currentPage != state.chatsPagination.totalPage) {
+        emit(ChatsLoading());
 
-      if (await _checkInternetConnection()) {
-        try {
-          chatsPagination = await apiService.getAllChats(
-              endPoint, context, state.chatsPagination.currentPage + 1);
-          emit(ChatsLoaded(chatsPagination!));
-        } catch (e) {
-          emit(ChatsError(e.toString()));
+        if (await _checkInternetConnection()) {
+          try {
+            chatsPagination = await apiService.getAllChats(
+                endPoint, state.chatsPagination.currentPage + 1);
+            emit(ChatsLoaded(chatsPagination!));
+          } catch (e) {
+            emit(ChatsError(e.toString()));
+          }
+        } else {
+          emit(ChatsError('Нет подключения к интернету'));
         }
-      } else {
-        emit(ChatsError(AppLocalizations.of(context)!.translate('no_internet_connection')));
       }
     }
   }
-}
 
-Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
-  if (await _checkInternetConnection()) {
-    try {
-      chatsPagination = await apiService.getAllChats(endPoint, context);
-      emit(ChatsInitial());
-      emit(ChatsLoaded(chatsPagination!));
-    } catch (e) {
-      emit(ChatsError(e.toString()));
+  // Update chats from socket with the internet connection check
+  Future<void> _updateChatsFromSocketFetch(
+      UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
+    if (await _checkInternetConnection()) {
+      try {
+        chatsPagination = await apiService.getAllChats(endPoint);
+        emit(ChatsInitial());
+        emit(ChatsLoaded(chatsPagination!));
+      } catch (e) {
+        emit(ChatsError(e.toString()));
+      }
+    } else {
+      emit(ChatsError('Нет подключения к интернету'));
     }
-  } else {
-    emit(ChatsError(AppLocalizations.of(context)!.translate('no_internet_connection')));
   }
-}
 
   // Delete a chat with the internet connection check
   Future<void> _deleteChat(DeleteChat event, Emitter<ChatsState> emit) async {
@@ -110,15 +114,15 @@ Future<void> _updateChatsFromSocketFetch(UpdateChatsFromSocket event, Emitter<Ch
       try {
         final response = await apiService.deleteChat(event.chatId);
         if (response['result'] == true) {
-          emit(ChatsDeleted(AppLocalizations.of(context)!.translate('chat_deleted_successfully')));
+          emit(ChatsDeleted('Чат успешно удален'));
         } else {
-          emit(ChatsError(AppLocalizations.of(context)!.translate('you_dont_delete_this_group')));
+          emit(ChatsError('Вы не можете удалить эту группу!'));
         }
       } catch (e) {
-        emit(ChatsError(AppLocalizations.of(context)!.translate('error_delete_chat')));
+        emit(ChatsError('Ошибка удаления чата!'));
       }
     } else {
-      emit(ChatsError(AppLocalizations.of(context)!.translate('no_internet_connection')));
+      emit(ChatsError('Нет подключения к интернету'));
     }
   }
 
