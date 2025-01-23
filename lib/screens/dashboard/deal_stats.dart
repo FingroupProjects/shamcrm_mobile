@@ -62,24 +62,25 @@ String formatNumber(double value, BuildContext context) {
 
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
-        if (state is DealStatsError) {
-          if (state.message.contains(localizations.translate('unauthorized_access'))) {
-            _handleLogout(context);
-            return const SizedBox();
-          } else {
-            return Center(
-              child: Text(
-                '${state.message}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
-            );
-          }
-        } else if (state is DealStatsLoaded) {
+        // if (state is DealStatsError) {
+        //   if (state.message.contains(localizations.translate('unauthorized_access'))) {
+        //     _handleLogout(context);
+        //     return const SizedBox();
+        //   } else {
+        //     return Center(
+        //       child: Text(
+        //         '${state.message}',
+        //         style: const TextStyle(
+        //           fontFamily: 'Gilroy',
+        //           fontSize: 16,
+        //           fontWeight: FontWeight.w500,
+        //           color: Colors.black,
+        //         ),
+        //       ),
+        //     );
+        //   }
+        // } else 
+        if (state is DealStatsLoaded) {
           final data = state.dealStatsData.data;
 
           bool hasData =

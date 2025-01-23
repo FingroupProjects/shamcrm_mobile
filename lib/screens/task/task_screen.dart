@@ -229,7 +229,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
             _onSearch(value);
           },
-          onUsersSelected: _handleUserSelected,
+          // onUsersSelected: _handleUserSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,

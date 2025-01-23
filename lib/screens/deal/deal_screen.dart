@@ -574,11 +574,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
+          } else if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  state.message,
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

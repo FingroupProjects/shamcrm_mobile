@@ -71,8 +71,8 @@ import '../../models/login_model.dart';
 // final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
-  late final String baseUrl;
-  late final String baseUrlSocket;
+  String? baseUrl;
+  String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -93,10 +93,33 @@ class ApiService {
   }
 
   // Инициализация API с доменом из QR-кода
-  Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
-    baseUrlSocket = 'https://$domain-back.shamcrm.com/broadcasting/auth';
-    print('API инициализировано с доменом: $domain');
+  Future<void> initializeWithDomain(String domain, String mainDomain) async {
+    baseUrl = 'https://$domain-back.$mainDomain/api';
+    baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
+    print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
+  }
+
+  Future<String> getDynamicBaseUrl() async {
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain']; // Извлекаем значение по ключу
+  String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+
+  if (domain != null && domain.isNotEmpty) {
+    return 'https://$domain-back.$mainDomain/api';
+  } else {
+    throw Exception('Домен не установлен в SharedPreferences');
+  }
+}
+
+  Future<String> getSocketBaseUrl() async {
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain']; // Извлекаем значение по ключу
+  String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+      if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.$mainDomain/broadcasting/auth';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
   }
 
   // Общая обработка ответа от сервера 401
@@ -113,29 +136,17 @@ class ApiService {
   void _redirectToLogin() {
     final navigatorKey = GlobalKey<NavigatorState>();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      '/login',
+      '/local_auth',
       (route) => false,
     );
   }
 
-  Future<String> getDynamicBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+  Future<void> reset() async {
+    // Сброс значений при выходе
+    baseUrl = null;
+    baseUrlSocket = null;
+    print('API сброшено');
   }
-
-  Future<String> getSocketBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
-  }
-
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -159,38 +170,38 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем текущие значения domainChecked и enteredDomain
-    bool? domainChecked = prefs.getBool('domainChecked');
-    String? enteredDomain = prefs.getString('enteredDomain');
+    // bool? domainChecked = prefs.getBool('domainChecked');
+    // String? enteredDomain = prefs.getString('enteredDomain');
+    // String? enteredMainDomain = prefs.getString('enteredMainDomain');
 
     // Удаляем токен, права доступа и организацию
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-    // await prefs.remove('cachedLeadStatuses');
-    // await prefs.remove('cachedDealStatuses');
-    // await prefs.remove('cachedTaskStatuses');
-
-    // await prefs.remove('leadConversionData');
-
-    // await prefs.remove('userRoles');
+    await prefs.clear();
+    await prefs.remove('enteredMainDomain');
+    await prefs.remove('enteredDomain');
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
-    bool isCleared = await prefs.clear();
+    // bool isCleared = await prefs.clear();
 
-    // Восстанавливаем значения domainChecked и enteredDomain
-    if (domainChecked != null) {
-      await prefs.setBool('domainChecked', domainChecked);
-    }
-    if (enteredDomain != null) {
-      await prefs.setString('enteredDomain', enteredDomain);
-    }
+    // // Восстанавливаем значения domainChecked и enteredDomain
+    // if (domainChecked != null) {
+    //   await prefs.setBool('domainChecked', domainChecked);
+    // }
+    // if (enteredDomain != null) {
+    //   await prefs.setString('enteredDomain', enteredDomain);
+    // }
+    // if (enteredMainDomain != null) {
+    //   await prefs.setString('enteredMainDomain', enteredMainDomain);
+    // }
 
-    // Проверяем успешность очистки
-    if (isCleared) {
-      print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
-    } else {
-      print('Ошибка при очистке данных.');
-    }
+    // // Проверяем успешность очистки
+    // if (isCleared) {
+    //   print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
+    // } else {
+    //   print('Ошибка при очистке данных.');
+    // }
   }
 
   Future<void> _removePermissions() async {
@@ -212,6 +223,14 @@ class ApiService {
   Future<http.Response> _getRequest(String path) async {
     final token = await getToken(); // Получаем токен перед запросом
 
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST START==-=---==-=-=-=-=--==-=-=-=-=-");
+print(baseUrl);
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST END==-=---==-=-=-=-=--==-=-=-=-=-");
+
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST PATH START==-=---==-=-=-=-=--==-=-=-=-=-");
+print(path);
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST PATH END==-=---==-=-=-=-=--==-=-=-=-=-");
+
     final response = await http.get(
       Uri.parse('$baseUrl$path'),
       headers: {
@@ -222,8 +241,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -245,8 +264,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -268,8 +287,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -288,34 +307,12 @@ class ApiService {
       },
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
 
-  // Метод для выполнения POST-запросов
-  Future<http.Response> _postRequestDomain(
-      String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'http://cx34222-bitrix-nmss6.tw1.ru/crm/public/api';
-    final token = await getToken(); // Получаем токен перед запросом
-    final response = await http.post(
-      Uri.parse('$DomainUrl$path'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-
-    print('Статус ответа!');
-    print('Тело ответа!');
-
-    return response;
-  }
   //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
   //        if (!await hasPermission('deal.read')) {
@@ -370,27 +367,27 @@ class ApiService {
   //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
   // Метод для сохранения данных из QR-кода
-  Future<void> saveQrData(String domain, String login, String token,
+  Future<void> saveQrData(String mainDomain,String domain, String login, String token,
       String userId, String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем данные из QR-кода
     await prefs.setString('domain', domain ?? '');
     print(prefs.getString('domain'));
+    await prefs.setString('mainDomain', mainDomain ?? '');
+    print(prefs.getString('mainDomain'));
     await prefs.setString('userLogin', login ?? '');
     print(prefs.getString('userLogin'));
-    await prefs.setString('token', token ?? '');
+    await prefs.setString('token', token); 
     print(prefs.getString('token'));
-    await prefs.setString('userID', userId ?? ''); // Чтобы избежать null
+    await prefs.setString('userID', userId ?? ''); 
     print(prefs.getString('userID'));
     await prefs.setString('selectedOrganization', organizationId ?? '');
     print(prefs.getString('selectedOrganization'));
-    // await prefs.setString('selectedOrganization', userRoleId?? '');
-    //  print(prefs.getString('selectedOrganization'));
 
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
-    await saveDomain(domain);
+    await saveDomain(mainDomain,domain);
   }
 
   // Метод для получения данных из QR-кода
@@ -398,12 +395,15 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String? domain = prefs.getString('domain') ?? '';
+    String? mainDomain = prefs.getString('mainDomain') ?? '';
+
     String? login = prefs.getString('userLogin') ?? '';
     String? token = prefs.getString('token') ?? '';
     String userId = prefs.getString('userID') ?? '';
     String? organizationId = prefs.getString('selectedOrganization') ?? '';
     return {
       'domain': domain,
+      'mainDomain': mainDomain,
       'login': login,
       'token': token,
       'userID': userId,
@@ -413,11 +413,49 @@ class ApiService {
 
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
+
+  // Метод для выполнения POST-запросов
+// Метод для выполнения POST-запросов
+Future<http.Response> _postRequestDomain(String path, Map<String, dynamic> body) async {
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+
+  final String DomainUrl = 'https://$enteredMainDomain/api';
+  
+  // Выводим URL домена перед отправкой запроса
+  print("-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
+  print(DomainUrl);
+
+  final token = await getToken(); // Получаем токен перед запросом
+  
+  // Выводим статус и тело запроса перед отправкой
+  print('Отправка запроса на проверку домена...');
+  
+  final response = await http.post(
+    Uri.parse('$DomainUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null)
+      'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+      'Device': 'mobile'
+    },
+    body: json.encode(body),
+  );
+
+  // Выводим статус и тело ответа после получения ответа
+  print('Статус ответа: ${response.statusCode}');
+  print('Тело ответа: ${response.body}');
+
+  return response;
+}
+
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
+    print('-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
+    print(domain);
     final organizationId = await getSelectedOrganization();
-    final response = await _postRequestDomain(
-        '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    final response = await _postRequestDomain('/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {'domain': domain});
 
     if (response.statusCode == 200) {
@@ -430,33 +468,37 @@ class ApiService {
   // Метод для сохранения домена
   Future<void> saveDomainChecked(bool value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        'domainChecked', value); // Сохраняем статус проверки домена
+    await prefs.setBool('domainChecked', value); // Сохраняем статус проверки домена
   }
 
   // Метод для проверки домена из SharedPreferences
   Future<bool> isDomainChecked() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('domainChecked') ??
-        false; // Проверяем статус или возвращаем false
+    return prefs.getBool('domainChecked') ?? false; // Проверяем статус или возвращаем false
   }
 
   // Метод для сохранения введенного домена
-  Future<void> saveDomain(String domain) async {
+  Future<void> saveDomain(String domain, String mainDomain) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('enteredMainDomain', mainDomain);
     await prefs.setString('enteredDomain', domain);
-    print('Ввведеный домен:----------------------');
-    print('Ввведеный домен---=----:----------------------');
-    print('ДОМЕН: ${prefs.getString('enteredDomain')}');
+    print('Ввведеный Doмен:----------------------');
+    print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
+    print('Ввведеный Poddomen---=----:----------------------');
+    print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
-  Future<String?> getEnteredDomain() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs
-        .getString('enteredDomain'); // Возвращаем введенный домен или null
-  }
-
+Future<Map<String, String?>> getEnteredDomain() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? mainDomain = prefs.getString('enteredMainDomain');
+  String? domain = prefs.getString('enteredDomain');
+  
+  return {
+    'enteredMainDomain': mainDomain,
+    'enteredDomain': domain,
+  };
+}
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
   //_________________________________ START___API__LOGIN____________________________________________//
@@ -675,6 +717,9 @@ class ApiService {
 
     final response = await _getRequest(path);
 
+    print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+    print('Отправка запроса на API с путём: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -698,6 +743,9 @@ class ApiService {
       // Отправляем запрос на сервер
       final response = await _getRequest(
           '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+              print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+    print('Отправка запроса на API с путём: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -3132,6 +3180,10 @@ class ApiService {
 
   Future<ProcessSpeed> getProcessSpeedData() async {
     final organizationId = await getSelectedOrganization();
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     String path =
         '/dashboard/lead-process-speed${organizationId != null ? '?organization_id=$organizationId' : ''}';
@@ -3331,47 +3383,44 @@ class ApiService {
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  Future<PaginationDTO<Chats>> getAllChats(
-  String endPoint,
-  BuildContext context, // Добавляем контекст
-  [int page = 1, String? search]
-) async {
-  final token = await getToken();
-  final organizationId = await getSelectedOrganization();
 
-  String url =
-      '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
+  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+      [int page = 1, String? search]) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
 
-  if (search != null && search.isNotEmpty) {
-    url += '&search=$search'; // Добавляем параметр поиска
-  }
+    String url =
+        '$baseUrl/chat/getMyChats/$endPoint?page=$page&organization_id=$organizationId';
 
-  print('Request URL: $url'); // Печать URL запроса
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      print('Parsed data: ${data['result']}'); // Печать результата парсинга
-      return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-        return Chats.fromJson(e, context); // Передаем контекст
-      });
-    } else {
-      print('No result found in the response');
-      throw Exception('Результат отсутствует в ответе');
+    if (search != null && search.isNotEmpty) {
+      url += '&search=$search'; // Добавляем параметр поиска
     }
-  } else {
-    print('Error!, Body!');
-    throw Exception('Ошибка ${response.statusCode}!');
+
+    print('Request URL: $url'); // Печать URL запроса
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        print('Parsed data: ${data['result']}'); // Печать результата парсинга
+        return PaginationDTO<Chats>.fromJson(data['result'], (e) {
+          return Chats.fromJson(e);
+        });
+      } else {
+        print('No result found in the response');
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      print('Error: ${response.statusCode}, Body: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
   }
-}
 
   Future<String> sendMessages(List<int> messageIds) async {
     final token = await getToken();

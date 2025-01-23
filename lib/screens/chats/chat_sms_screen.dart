@@ -747,11 +747,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     String? token = prefs.getString('token');
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain(); // Получаем домен
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -768,10 +771,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
+      authorizationDelegate:EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back',

@@ -97,8 +97,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // await FirebaseMessaging.instance.requestPermission();
-  // await getFCMTokens(apiService);
+  await FirebaseMessaging.instance.requestPermission();
+  await getFCMTokens(apiService);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -124,7 +124,7 @@ void main() async {
   ));
 }
 
-// Future<void> getFCMTokens(ApiService apiService) async {}
+Future<void> getFCMTokens(ApiService apiService) async {}
 
 class MyApp extends StatefulWidget {
   final ApiService apiService;
@@ -204,7 +204,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => ListenSenderTextCubit()),
           BlocProvider(create: (context) => ListenSenderVoiceCubit()),
           BlocProvider(create: (context) => ListenSenderFileCubit()),
-          BlocProvider(create: (context) => ChatsBloc(ApiService(), context),),
+          BlocProvider(create: (context) => ChatsBloc(ApiService()),),
           BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
           BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
           BlocProvider(create: (context) => OrganizationBloc(ApiService())),
@@ -280,7 +280,7 @@ class _MyAppState extends State<MyApp> {
           '/home': (context) => HomeScreen(),
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
-          '/local_auth': (context) => const AuthScreen(),
+          '/local_auth': (context) => AuthScreen(),
           '/pin_screen': (context) => PinScreen(),
         },
       ),
