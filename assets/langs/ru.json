@@ -435,9 +435,10 @@
     "new_message": "Новое сообщение",
     "deal_reminder": "Напоминание о сделке",
     "note_reminder": "Напоминание о заметке",
+    "task_new": "Новая задача",
     "task_closed": "Задача закрыта",
     "task_deadline_reminder": "Напоминание о просроченном сроке задачи",
-    "assigned_as_lead_manager": "Вас назначили менеджером лида.",
+    "assigned_as_lead_manager": "Вас назначили менеджером лида",
 
     "COMMENT_TITLE_SCREEN_DEAL": "----------------------------Тексты для экрана DEAL---------------------------",
     "delete_deal_status": "Удалить статус сделки",

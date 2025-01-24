@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
 import 'qr_scanner_screen.dart';
+import 'dart:ui' as ui; // Добавьте этот импорт
+
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -23,6 +26,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   bool _isDomainChecked = false;
   bool _showManualInput = false;
 
+
   @override
   void initState() {
     super.initState();
@@ -34,7 +38,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     if (isChecked) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => LoginScreen()),
+        MaterialPageRoute(builder: (_) => AuthScreen()),
       );
     } else {
       setState(() {
