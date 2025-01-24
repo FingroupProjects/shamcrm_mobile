@@ -102,10 +102,10 @@ class Chats {
   );
 }
 
-  String get displayName {
+  String? get displayName {
     if (group != null && group!.name.isNotEmpty) {
       return group!.name;
-    } else if (task != null && task!.name.isNotEmpty) {
+    } else if (task != null && task!.name!.isNotEmpty) {
       return task!.name;
     } else {
       return name;
@@ -160,7 +160,7 @@ static String _getLastMessageText(Map<String, dynamic> lastMessage, BuildContext
     }
     
     return ChatItem(
-      displayName,
+      displayName!,
       lastMessage,
       createDate,
       avatar,

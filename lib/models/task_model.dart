@@ -3,7 +3,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Task {
   final int id;
-  final String name;
+  final String? name;
   final String? startDate;
   final String? endDate;
   final String? description;
@@ -20,7 +20,7 @@ class Task {
 
   Task({
     required this.id,
-    required this.name,
+    this.name,
     required this.startDate,
     required this.endDate,
     this.description,
