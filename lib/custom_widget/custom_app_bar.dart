@@ -691,10 +691,19 @@ class _CustomAppBarState extends State<CustomAppBar>
                               _isSearching = !_isSearching;
                             });
                           } else {
-                            _toggleSearch();
+                            setState(() {
+                              _isSearching = !_isSearching;
+                            });
                             widget.clearButtonClick(_isSearching);
+
                             if (_isSearching) {
-                              FocusScope.of(context).requestFocus(focusNode);
+                              // Открытие поля поиска и клавиатуры
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                FocusScope.of(context).requestFocus(focusNode);
+                              });
+                            } else {
+                              // Закрытие клавиатуры при выключении поиска
+                              FocusScope.of(context).unfocus();
                             }
                           }
                         },

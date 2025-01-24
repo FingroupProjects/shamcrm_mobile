@@ -661,17 +661,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
 
       final response = await _getRequest(
           '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
         return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
       } else {
-        print('Failed to load lead ID!');
         throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
-      print('Error occurred!');
       throw Exception('Ошибка загрузки лида ID!');
     }
   }
@@ -703,21 +700,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
     }
-
+    
     // Формируем массив managers с индексами
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
         path += '&managers[$i]=${managers[i]}';
       }
     }
-
-    print('Отправка запроса на API с путём: $path');
-
     final response = await _getRequest(path);
-
-    print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
-    print('Отправка запроса на API с путём: ${response.body}');
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
