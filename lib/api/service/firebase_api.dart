@@ -19,6 +19,7 @@ class FirebaseApi {
   Future<void> initNotifications() async {
     // Запрос разрешений на уведомления
     await _firebaseMessaging.requestPermission();
+    
 
     // Получение FCM токена
     final fcmToken = await _firebaseMessaging.getToken();
@@ -35,6 +36,7 @@ void initPushNotification() async {
         print('------------------------');
         print('-----------------SAVEPINCODE-------');
         print(savedPin);
+        
 
  if (savedPin == null) {
     FirebaseMessaging.instance.getInitialMessage().then((message) {
@@ -141,10 +143,10 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
         await navigateToScreen(screenIndex, id, 'lead', message);
         break;
 
-      case 'deal':
+      case 'dealDeadLineNotification':
         print('Переход на экран сделки с ID: $id');
         screenIndex = 4;
-        await navigateToScreen(screenIndex, id, 'deal', message);
+        await navigateToScreen(screenIndex, id, 'dealDeadLineNotification', message);
         break;
 
       case 'lead':
@@ -180,7 +182,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
         await navigateToLeadScreen(id, message);
         break;
 
-      case 'deal':
+      case 'dealDeadLineNotification':
         await navigateToDealScreen(id, message);
         break;
 

@@ -97,6 +97,10 @@ class ApiService {
     baseUrl = 'https://$domain-back.$mainDomain/api';
     baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
     print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('domain', domain);
+  await prefs.setString('mainDomain', mainDomain);
   }
 
   Future<String> getDynamicBaseUrl() async {
@@ -136,7 +140,7 @@ class ApiService {
   void _redirectToLogin() {
     final navigatorKey = GlobalKey<NavigatorState>();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      '/login',
+      '/local_auth',
       (route) => false,
     );
   }

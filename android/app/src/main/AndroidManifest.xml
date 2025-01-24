@@ -22,7 +22,7 @@
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/LaunchTheme"
-        tools:replace="android:icon, android:label">
+        tools:replace="android:theme, android:icon, android:label">
 
 
         <activity

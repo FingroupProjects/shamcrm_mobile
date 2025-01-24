@@ -240,26 +240,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               title: Text(
                                 notification.type == 'message'
                                     ? AppLocalizations.of(context)!.translate('new_message')
-                                    : notification.type == 'deal'
-                                        ? AppLocalizations.of(context)!.translate('deal')
-                                        : notification.type ==
-                                                'dealDeadLineNotification'
-                                            ? AppLocalizations.of(context)!.translate('deal_reminder')
-                                            : notification.type == 'notice'
-                                                ? AppLocalizations.of(context)!.translate('note_reminder')
-                                                : notification.type == 'task'
-                                                    ? AppLocalizations.of(context)!.translate('new_task')
-                                                    : notification.type ==
-                                                            'taskFinished'
-                                                        ? AppLocalizations.of(context)!.translate('task_closed')
-                                                        : notification.type ==
-                                                                'taskOutDated'
-                                                            ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
-                                                            : notification
-                                                                        .type ==
-                                                                    'lead'
-                                                                ? AppLocalizations.of(context)!.translate('assigned_as_lead_manager')
-                                                                : notification.type,
+                                    : notification.type == 'dealDeadLineNotification'
+                                        ? AppLocalizations.of(context)!.translate('deal_reminder')
+                                        : notification.type == 'notice'
+                                            ? AppLocalizations.of(context)!.translate('note_reminder')
+                                            : notification.type == 'task'
+                                                ? AppLocalizations.of(context)!.translate('task_new')
+                                                : notification.type ==  'taskFinished'
+                                                    ? AppLocalizations.of(context)!.translate('task_closed')
+                                                    : notification.type =='taskOutDated'
+                                                        ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                                        : notification.type == 'lead'
+                                                            ? AppLocalizations.of(context)!.translate('assigned_as_lead_manager')
+                                                            : notification.type,
                                 style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -481,7 +474,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       );
-    } else if (type == 'deal') {
+    } else if (type == 'dealDeadLineNotification') {
       // Переход на экран сделки
       print('Переход на экран сделки с ID: $chatId');
       List<DealCustomField> defaultCustomFields = [

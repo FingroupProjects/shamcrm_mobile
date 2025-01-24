@@ -1,62 +1,51 @@
-import 'package:crm_task_manager/screens/auth/auth_screen.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/auth/auth_screen.dart';
+import 'dart:ui' as ui; // Добавьте этот импорт
 
 class LogoutButtonWidget extends StatelessWidget {
   const LogoutButtonWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-        final localizations = AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(context);
 
     return GestureDetector(
       onTap: () async {
-        // Получаем экземпляр SharedPreferences
+        // Очистка SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? token = prefs.getString('token') ?? '';
+        print('------=-=--=-==--=-=-=-=-=-=-TOKEN LOGOUT =-=-=-==--=-=-=-=-==--==-=-');
+        print(token);
+        await prefs.clear();
 
-        // Сохраняем текущие значения domainChecked и enteredDomain
-        bool? domainChecked = prefs.getBool('domainChecked');
-        String? enteredDomain = prefs.getString('enteredDomain');
-        String? enteredMainDomain = prefs.getString('enteredMainDomain');
-
-        // Очищаем все данные
-        final isCleared = await prefs.clear();
-
-        // Восстанавливаем значения domainChecked и enteredDomain
-        if (domainChecked != null) {
-          await prefs.setBool('domainChecked', domainChecked);
-        }
-        if (enteredDomain != null) {
-          await prefs.setString('enteredDomain', enteredDomain);
-        }
-          if (enteredMainDomain != null) {
-      await prefs.setString('enteredMainDomain', enteredMainDomain);
-    }
-
-        // Проверяем успешность очистки
-        if (isCleared) {
-      print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
-        } else {
-          print('Ошибка при очистке данных.');
-        }
-
-        // Логика выхода (например, вызов logout API)
+        // Вызов метода logout в ApiService
         ApiService apiService = ApiService();
         await apiService.logout();
 
-        // Перенаправление на экран входа после выхода
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => AuthScreen()),
           (Route<dynamic> route) => false,
         );
+
+        // Перезапуск приложения
+          Restart.restartApp();
+
+             
+      //  ui.window.onBeginFrame = null;
+      //   ui.window.onDrawFrame = null;
+      //   main();
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',
-        text: localizations!.exit ,
+        text: localizations!.exit,
       ),
     );
   }

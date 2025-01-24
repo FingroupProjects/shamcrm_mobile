@@ -82,7 +82,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+
 void main() async {
+  await initializeApp();
+}
+
+Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
@@ -91,6 +96,7 @@ void main() async {
   if (isDomainChecked) {
     await apiService.initialize();
   }
+  
   final String? token = await apiService.getToken();
   final String? pin = await authService.getPin();
 
@@ -112,15 +118,14 @@ void main() async {
 
   final String? savedLanguageCode = await LanguageManager.getLanguage();
   final Locale savedLocale = savedLanguageCode != null ? Locale(savedLanguageCode) : const Locale('ru');
-  
+
   runApp(MyApp(
     apiService: apiService,
     authService: authService,
     isDomainChecked: isDomainChecked,
     token: token,
     pin: pin,
-    initialLocale: savedLocale, 
-
+    initialLocale: savedLocale,
   ));
 }
 
@@ -159,6 +164,14 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _locale = widget.initialLocale; 
+
+      print('==============================================================================');
+      print('========================================TOKEN MAIN.dart==START====================================');
+      print('Token: ${widget.token}');
+      print('Domain CHEck: ${widget.isDomainChecked}');
+
+   print('==============================================================================');
+      print('========================================TOKEN MAIN.dart=====END=================================');
   }
 
   void setLocale(Locale newLocale) {
@@ -269,7 +282,7 @@ class _MyAppState extends State<MyApp> {
         home: Builder(
           builder: (context) {
             if (widget.token == null) {
-              return widget.isDomainChecked ? LoginScreen() : AuthScreen();
+              return AuthScreen();
             } else if (widget.pin == null) {
               return PinSetupScreen();
             } else {
@@ -278,11 +291,11 @@ class _MyAppState extends State<MyApp> {
           },
         ),
         routes: {
+          '/local_auth': (context) => AuthScreen(),
           '/login': (context) => LoginScreen(),
           '/home': (context) => HomeScreen(),
           '/chats': (context) => ChatsScreen(),
           '/pin_setup': (context) => PinSetupScreen(),
-          '/local_auth': (context) => AuthScreen(),
           '/pin_screen': (context) => PinScreen(),
         },
       ),
