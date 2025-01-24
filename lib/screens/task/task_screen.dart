@@ -232,7 +232,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             }
             _onSearch(value);
           },
-          // onUsersSelected: _handleUserSelected,
+          onUsersSelected: _handleUserSelected,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
@@ -405,7 +405,7 @@ Widget _buildUserView() {
 
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
-        int taskCount = 0;
+        String taskCount = "0";
         print("==========================count");
         print(taskCount);
         if (state is TaskLoaded) {
@@ -414,7 +414,7 @@ Widget _buildUserView() {
             (status) => status.id == statusId,
             // orElse: () => null,
           );
-          taskCount = taskStatus?.tasksCount ?? 0; // Используем tasksCount
+          taskCount = taskStatus?.tasksCount ?? "0"; // Используем leadsCount
         }
         print("==========================count");
         print(taskCount);

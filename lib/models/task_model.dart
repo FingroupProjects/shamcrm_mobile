@@ -208,12 +208,11 @@ class TaskFile {
     }
   }
 }
-
 class TaskStatus {
   final int id;
-  final TaskStatusName? taskStatus; // Make taskStatus nullable
+  final TaskStatusName? taskStatus;
   final String color;
-  final int tasksCount;
+  final String tasksCount; // Changed to String
 
   TaskStatus({
     required this.id,
@@ -230,7 +229,7 @@ class TaskStatus {
           ? TaskStatusName.fromJson(json['taskStatus'])
           : null,
       color: json['color'] is String ? json['color'] : 'Неизвестный цвет',
-      tasksCount: json['tasks_amount'] is int ? json['tasks_amount'] : 0,
+      tasksCount: json['tasks_amount']?.toString() ?? '0', // Convert to string, with '0' as default
     );
   }
 
@@ -243,7 +242,6 @@ class TaskStatus {
     };
   }
 }
-
 class TaskStatusName {
   final int id;
   final String name;

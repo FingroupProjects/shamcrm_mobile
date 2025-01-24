@@ -28,7 +28,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showFilterTaskIcon; // New field for task filter
   final Function(List<dynamic>)?
       onManagersSelected; // Изменено на List<dynamic>
-  final Function(dynamic)? onUserSelected; // New callback for user selection
+  final Function(List<dynamic>)? onUsersSelected; // Изменено на List<dynamic>
   final bool showMyTaskIcon; // Новый параметр
 
   CustomAppBar({
@@ -43,7 +43,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIcon = true,
     this.showFilterTaskIcon = true, // Default value for task filter
     this.onManagersSelected,
-    this.onUserSelected, // Add to constructor
+    this.onUsersSelected, // Add to constructor
     this.showMyTaskIcon = false, // По умолчанию выключено
   });
 
@@ -118,14 +118,11 @@ class _CustomAppBarState extends State<CustomAppBar>
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final baseUrlSocket = await ApiService().getSocketBaseUrl();
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-  // Извлекаем значения из Map
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
+    final enteredDomain = await ApiService().getEnteredDomain();
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -139,8 +136,10 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
-      authorizationDelegate:EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
-        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate:
+          EndpointAuthorizableChannelTokenAuthorizationDelegate
+              .forPresenceChannel(
+        authorizationEndpoint: Uri.parse(baseUrlSocket),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -176,7 +175,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? 'Не найдено';
+      String UUID = prefs.getString('userID') ??
+          AppLocalizations.of(context)!.translate('not_found');
 
       UserByIdProfile userProfile =
           await ApiService().getUserById(int.parse(UUID));
@@ -407,7 +407,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                       focusNode: focusNode,
                       onChanged: widget.onChangedSearchInput,
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.translate('search'), 
+                        hintText: AppLocalizations.of(context)!
+                            .translate('search_appbar'),
                         border: InputBorder.none,
                       ),
                       style: TextStyle(fontSize: 16),
@@ -419,7 +420,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                 children: [
                   if (widget.showMyTaskIcon)
                     Tooltip(
-                      message: 'Мои задачи', // Текст подсказки
+                      message: AppLocalizations.of(context)!
+                          .translate('appbar_my_tasks'),
+                      // Текст подсказки
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white, // Белый фон
@@ -455,7 +458,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                   if (widget.showFilterIcon)
                     Tooltip(
-                      message: 'Фильтр',
+                      message: AppLocalizations.of(context)!.translate('filtr'),
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -481,7 +484,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 height: 24,
                               ),
                         onPressed: () {
-                          if (_isSearching || _isTaskFiltering) {
+                          if (_isTaskFiltering || _isTaskFiltering) {
                             setState(() {
                               _isFiltering = !_isFiltering;
                             });
@@ -526,7 +529,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                   if (widget.showFilterTaskIcon)
                     Tooltip(
-                      message: 'Фильтр задач',
+                      message: AppLocalizations.of(context)!.translate('filtr'),
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -552,7 +555,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 height: 24,
                               ),
                         onPressed: () {
-                          if (_isSearching || _isFiltering) {
+                          if (_isFiltering || _isFiltering) {
                             setState(() {
                               _isTaskFiltering = !_isTaskFiltering;
                             });
@@ -582,7 +585,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   PopupMenuItem(
                                     padding: EdgeInsets.zero,
                                     child: UserFilterPopup(
-                                      // onUserSelected: widget.onUserSelected,
+                                      onUsersSelected: widget.onUsersSelected,
                                     ),
                                   ),
                                 ],
@@ -593,7 +596,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                       ),
                     ),
                   Tooltip(
-                    message: 'Уведомление', // Текст подсказки
+                    message:
+                        AppLocalizations.of(context)!.translate('notification'),
+// Текст подсказки
                     preferBelow: false,
                     decoration: BoxDecoration(
                       color: Colors.white, // Белый фон
@@ -654,7 +659,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                   ),
                   if (widget.showSearchIcon)
                     Tooltip(
-                      message: AppLocalizations.of(context)!.translate('search'), 
+                      message:
+                          AppLocalizations.of(context)!.translate('search'),
                       preferBelow: false,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -680,7 +686,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 height: 24,
                               ),
                         onPressed: () {
-                          if (_isFiltering || _isTaskFiltering) {
+                          if (_isTaskFiltering || _isTaskFiltering) {
                             setState(() {
                               _isSearching = !_isSearching;
                             });
