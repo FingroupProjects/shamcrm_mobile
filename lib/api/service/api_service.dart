@@ -700,7 +700,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
     }
-    
+
     // Формируем массив managers с индексами
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
@@ -4673,7 +4673,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
         'status_id': statusId,
         'task_status_id': taskStatusId,
         'position': position,
-        'sent_push': setPush, // Чистый boolean без преобразования в строку
+        'send_notification': setPush, // Чистый boolean без преобразования в строку
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (description != null) 'description': description,
@@ -4794,7 +4794,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
       Map<String, dynamic> body = {
         'name': name,
         'task_status_id': taskStatusId,
-        'sent_push': setPush, // Добавляем setPush как bool
+        'send_notification': setPush, // Добавляем setPush как bool
       };
 
       if (startDate != null) {
