@@ -1,16 +1,29 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
 
-
 class ApiServiceDownload {
-  final String baseUrl = 'https://shamcrm.com';
+  
   // final String baseUrl = 'http://192.168.1.61:8008';
 
   // Метод для загрузки и открытия файла
   Future<void> downloadAndOpenFile(String filePath) async {
     try {
+
+      final ApiService _apiService = ApiService();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+
+      print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---======-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
+      print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=START=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
+      print('Полученный базовый домен: $enteredMainDomain');
+      print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=END=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
+
+
+      final String baseUrl = 'https://$enteredMainDomain';
+
       // Полный URL файла для загрузки
       final String fullUrl = '$baseUrl/storage/$filePath';
 

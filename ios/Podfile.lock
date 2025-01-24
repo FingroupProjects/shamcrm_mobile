@@ -142,6 +142,8 @@ PODS:
     - MTBBarcodeScanner
   - record (0.0.1):
     - Flutter
+  - restart_app (0.0.1):
+    - Flutter
   - scan (0.0.1):
     - Flutter
   - SDWebImage (5.20.0):
@@ -181,6 +183,7 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - qr_code_scanner (from `.symlinks/plugins/qr_code_scanner/ios`)
   - record (from `.symlinks/plugins/record/ios`)
+  - restart_app (from `.symlinks/plugins/restart_app/ios`)
   - scan (from `.symlinks/plugins/scan/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
@@ -248,6 +251,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/qr_code_scanner/ios"
   record:
     :path: ".symlinks/plugins/record/ios"
+  restart_app:
+    :path: ".symlinks/plugins/restart_app/ios"
   scan:
     :path: ".symlinks/plugins/scan/ios"
   shared_preferences_foundation:
@@ -294,6 +299,7 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   record: cae05d8dd3cdb1dea3511b20e5a5811a1ae00d0d
+  restart_app: 806659942bf932f6ce51c5372f91ce5e81c8c14a
   scan: aea35bb4aa59ccc8839c576a18cd57c7d492cc86
   SDWebImage: 73c6079366fea25fa4bb9640d5fb58f0893facd8
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78

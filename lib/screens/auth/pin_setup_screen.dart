@@ -37,7 +37,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   @override
   void initState() {
     super.initState();
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+    // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
     _animationController = AnimationController(
       vsync: this,
@@ -76,6 +76,15 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           _isConfirming = true;
         }
       }
+    });
+  }
+
+  void _onClear() {
+    setState(() {
+      _pin = '';
+      _confirmPin = '';
+      _pinsDoNotMatch = false; // Сбросим ошибку, если была
+      _isConfirming = false; // Сбросим процесс подтверждения
     });
   }
 
@@ -171,12 +180,14 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 height: 160,
               ),
               const SizedBox(height: 16),
-               Text(
+              Text(
                 _isConfirming
                     ? (_pinsDoNotMatch
-                        ? AppLocalizations.of(context)!.translate('pins_do_not_match_error') 
-                        : AppLocalizations.of(context)!.translate('confirm_pin_title')) 
-                    : AppLocalizations.of(context)!.translate('set_pin_title'), 
+                        ? AppLocalizations.of(context)!
+                            .translate('pins_do_not_match_error')
+                        : AppLocalizations.of(context)!
+                            .translate('confirm_pin_title'))
+                    : AppLocalizations.of(context)!.translate('set_pin_title'),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -229,6 +240,19 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   ),
                   const SizedBox(), // Пустое место для сетки.
                 ],
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _onClear, // Очистить оба пин-кода
+                child:  Text(
+                  AppLocalizations.of(context)!.translate('clear'),
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xff1E2E52),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10.0, horizontal: 20.0),
+                ),
               ),
             ],
           ),

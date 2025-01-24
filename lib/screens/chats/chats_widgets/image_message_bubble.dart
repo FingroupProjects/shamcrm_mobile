@@ -1,10 +1,11 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
 
-class ImageMessageBubble extends StatelessWidget {
+class ImageMessageBubble extends StatefulWidget {
   final String time;
   final bool isSender;
   final String filePath;
@@ -17,63 +18,112 @@ class ImageMessageBubble extends StatelessWidget {
     required this.isSender,
     required this.senderName,
     required this.filePath,
-    required this.fileName, required Message message,
+    required this.fileName,
+    required Message message,
   }) : super(key: key);
 
   @override
+  State<ImageMessageBubble> createState() => _ImageMessageBubbleState();
+}
+
+class _ImageMessageBubbleState extends State<ImageMessageBubble> {
+  final ApiService _apiService = ApiService();
+  String? baseUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeBaseUrl();
+  }
+
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final enteredDomainMap = await _apiService.getEnteredDomain();
+      setState(() {
+        baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
+      });
+    } catch (error) {
+      // Handle error or set a default URL
+      setState(() {
+        baseUrl = 'https://shamcrm.pro/storage/';
+
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final String baseUrl = 'https://shamcrm.com/storage/';
-    // final String baseUrl = 'http://192.168.1.61:8008/storage/';
-    final String fullUrl = '$baseUrl$filePath';
+    final String? fullUrl = baseUrl != null ? '$baseUrl${widget.filePath}' : null;
 
     return Align(
-      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: widget.isSender ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
         crossAxisAlignment:
-            isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 8),
-          if(!isSender) Text(
-            senderName,
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
+          const SizedBox(height: 8),
+          if (!widget.isSender)
+            Text(
+              widget.senderName,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           GestureDetector(
-            onTap: ()  {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FullImageScreenViewer(imagePath: fullUrl, time: time, fileName: fileName, senderName: (!isSender) ? senderName : '',),
-                ),
-              );
-            },
+            onTap: fullUrl != null
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FullImageScreenViewer(
+                          imagePath: fullUrl,
+                          time: widget.time,
+                          fileName: widget.fileName,
+                          senderName: (!widget.isSender) ? widget.senderName : '',
+                        ),
+                      ),
+                    );
+                  }
+                : null,
             child: Column(
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 5),
                   decoration: BoxDecoration(
-                      border: Border.all(width: 1, color: Colors.black26),
-                      borderRadius: BorderRadius.all(Radius.circular(12))
+                    border: Border.all(width: 1, color: Colors.black26),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      fullUrl,
-                      width: 200,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 200,
-                          height: 200,
-                          color: Colors.grey,
-                          child: Center(child: Text(AppLocalizations.of(context)!.translate('error_loading'))),
-                        );
-                      },
-                    ),
+                    child: fullUrl != null
+                        ? Image.network(
+                            fullUrl,
+                            width: 200,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 200,
+                                height: 200,
+                                color: Colors.grey,
+                                child: Center(
+                                  child: Text(AppLocalizations.of(context)!
+                                      .translate('error_loading')),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            width: 200,
+                            height: 200,
+                            color: Colors.grey,
+                            child: Center(
+                              child: Text(AppLocalizations.of(context)!
+                                  .translate('loading')),
+                            ),
+                          ),
                   ),
                 ),
                 Text(
-                  time,
+                  widget.time,
                   style: const TextStyle(
                     fontSize: 12,
                     color: ChatSmsStyles.appBarTitleColor,
@@ -83,8 +133,7 @@ class ImageMessageBubble extends StatelessWidget {
                 ),
               ],
             ),
-          )
-
+          ),
         ],
       ),
     );

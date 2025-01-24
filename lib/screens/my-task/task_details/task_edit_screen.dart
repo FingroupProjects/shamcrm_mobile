@@ -231,12 +231,15 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       print('Входящий fileUrl: $fileUrl');
 
       // Получаем базовый домен из ApiService
-      final domain = await _apiService.getEnteredDomain();
-      print('Полученный базовый домен: $domain');
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain']; 
+         print('Полученный базовый домен: $enteredDomain');
 
       // Формируем полный URL файла
       final fullUrl =
-          Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
+          Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла

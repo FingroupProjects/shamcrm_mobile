@@ -372,7 +372,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       builder: (context, state) {
         int leadCount = 0;
 
-        if (state is LeadLoaded) {
+
+        if (state is LeadLoaded) {print("----------1==1=1=1==11=1=1=1=1=1=1==1=1=1----$leadCount");
           final statusId = _tabTitles[index]['id'];
           final leadStatus = state.leadStatuses.firstWhere(
             (status) => status.id == statusId,

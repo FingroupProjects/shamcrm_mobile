@@ -145,11 +145,14 @@ class _ChatsScreenState extends State<ChatsScreen>
     String? token = prefs.getString('token');
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -168,7 +171,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -240,9 +243,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                   } else if (selectTabIndex == 1) {
                     context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
                   } else if (selectTabIndex == 2) {
-                    context
-                        .read<ChatsBloc>()
-                        .add(FetchChats(endPoint: 'corporate'));
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
                   }
                 }
               });
@@ -300,7 +301,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                             }
                             return Padding(
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              const EdgeInsets.symmetric(horizontal: 8),
                               child: _buildTabButton(index),
                             );
                           }),
@@ -546,6 +547,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           itemBuilder: (context, item, index) {
+
             return InkWell(
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),

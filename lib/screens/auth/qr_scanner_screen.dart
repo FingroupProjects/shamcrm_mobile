@@ -17,6 +17,7 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
+  bool isInitialized = false;
 
   @override
   void dispose() {
@@ -24,80 +25,85 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    isInitialized = false;
+  }
+
   void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) async {
-      if (scanData.code != null) {
-        print('Сканированный QR-код: ${scanData.code}');
+    if (!isInitialized) {
+      this.controller = controller;
+      isInitialized = true;
 
-        try {
-          String base64String = scanData.code!;
-          Uint8List bytes = base64Decode(base64String);
+      controller.scannedDataStream.listen((scanData) async {
+        if (scanData.code != null) {
+          print('Сканированный QR-код: ${scanData.code}');
 
-          String decodedString = utf8.decode(bytes);
+          try {
+            String base64String = scanData.code!;
+            Uint8List bytes = base64Decode(base64String);
 
-          print('Декодированная строка: $decodedString');
+            String decodedString = utf8.decode(bytes);
 
-          // Очистка строки от лишнего -back-
-          String cleanedResult = decodedString.replaceAll('-back-', '-');
+            print('Декодированная строка: $decodedString');
 
-          // Разделяем строку на части
-          List<String> qrParts = cleanedResult.split('-');
+            String cleanedResult = decodedString.replaceAll('-back-', '-');
+            List<String> qrParts = cleanedResult.split('-');
 
-          // Извлекаем нужные данные
-          String token = qrParts[0];
-          String domain = qrParts[1];
-          String userId = qrParts[2];
-          String login = qrParts[3];
-          String organizationId = qrParts[4];
+            String token = qrParts[0];
+            String domain = qrParts[2];
+            String mainDomain = qrParts[1];
+            String userId = qrParts[3];
+            String login = qrParts[4];
+            String organizationId = qrParts[5];
 
-          // Выводим результат
-          print('Token: $token');
-          print('Domain: $domain');
-          print('User ID: $userId');
-          print('Login: $login');
-          print('Organization ID: $organizationId');
+            print('Token: $token');
+            print('Domain: $domain');
+            print('MainDomain: $mainDomain');
+            print('User ID: $userId');
+            print('Login: $login');
+            print('Organization ID: $organizationId');
 
-          await context.read<ApiService>().initializeWithDomain(domain);
+            await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+            await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
-          // Сохраняем данные из QR-кода
-          await context
-              .read<ApiService>()
-              .saveQrData(domain, login, token, userId, organizationId);
+            await controller.pauseCamera();
 
-          await controller.pauseCamera();
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
 
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
-
-        } catch (e) {
-          print('Ошибка при декодировании Base64: $e');
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'QR-код не найден!',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+          } catch (e, stackTrace) {
+            print('Ошибка при декодировании Base64: $e');
+            print('Стек вызовов: $stackTrace');
+            print('Исходные данные сканирования: ${scanData.code}');
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'QR-код не найден!',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    });
+          );
+        }
+      });
+    }
   }
 
   Future<void> _pickFile() async {
@@ -106,7 +112,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       final file = File(result.files.single.path!);
       print('Файл выбран: ${file.path}');
 
-      // Используем библиотеку scan для считывания QR-кода из изображения
       String? qrCode = await Scan.parse(file.path);
 
       if (qrCode != null) {
@@ -120,28 +125,25 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
           print('Декодированная строка: $decodedString');
 
-          // Очистка строки от лишнего -back-
           String cleanedResult = decodedString.replaceAll('-back-', '-');
-
-          // Разделяем строку на части
           List<String> qrParts = cleanedResult.split('-');
 
-          // Извлекаем нужные данные
           String token = qrParts[0];
-          String domain = qrParts[1];
-          String userId = qrParts[2];
-          String login = qrParts[3];
-          String organizationId = qrParts[4];
+          String domain = qrParts[2];
+          String mainDomain = qrParts[1];
+          String userId = qrParts[3];
+          String login = qrParts[4];
+          String organizationId = qrParts[5];
 
-          // Выводим результат
           print('Token: $token');
           print('Domain: $domain');
+          print('MainDomain: $mainDomain');
           print('User ID: $userId');
           print('Login: $login');
           print('Organization ID: $organizationId');
 
-          await context.read<ApiService>().initializeWithDomain(domain);
-          await context.read<ApiService>().saveQrData(domain, login, token, userId, organizationId);
+          await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+          await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
@@ -187,17 +189,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         backgroundColor: Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
         iconTheme: IconThemeData(color: Color(0xff1E2E52)),
-          forceMaterialTransparency: true,
-          leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+        forceMaterialTransparency: true,
+        leading: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
           ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

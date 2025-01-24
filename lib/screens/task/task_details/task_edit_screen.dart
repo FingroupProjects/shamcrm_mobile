@@ -255,8 +255,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
-      final domain = await _apiService.getEnteredDomain();
-      final fullUrl = Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain']; 
+         print('Полученный базовый домен: $enteredDomain');
+      final fullUrl = Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
       final directory = await getApplicationDocumentsDirectory();
       final fileName = fileUrl.split('/').last;
       final filePath = '${directory.path}/$fileName';

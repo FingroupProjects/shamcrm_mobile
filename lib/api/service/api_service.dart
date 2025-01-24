@@ -65,14 +65,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-// final String baseUrl = 'https://fingroup-back.shamcrm.pro/api';
+// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
-// final String baseUrlSocket ='https://fingroup-back.shamcrm.pro/broadcasting/auth';
+// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
-  late final String baseUrl;
-  late final String baseUrlSocket;
+  String? baseUrl;
+  String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -93,10 +93,33 @@ class ApiService {
   }
 
   // Инициализация API с доменом из QR-кода
-  Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'https://$domain-back.shamcrm.pro/api';
-    baseUrlSocket = 'https://$domain-back.shamcrm.pro/broadcasting/auth';
-    print('API инициализировано с доменом: $domain');
+  Future<void> initializeWithDomain(String domain, String mainDomain) async {
+    baseUrl = 'https://$domain-back.$mainDomain/api';
+    baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
+    print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
+  }
+
+  Future<String> getDynamicBaseUrl() async {
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain']; // Извлекаем значение по ключу
+  String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+
+  if (domain != null && domain.isNotEmpty) {
+    return 'https://$domain-back.$mainDomain/api';
+  } else {
+    throw Exception('Домен не установлен в SharedPreferences');
+  }
+}
+
+  Future<String> getSocketBaseUrl() async {
+  Map<String, String?> domains = await getEnteredDomain();
+  String? mainDomain = domains['enteredMainDomain']; // Извлекаем значение по ключу
+  String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+      if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.$mainDomain/broadcasting/auth';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
   }
 
   // Общая обработка ответа от сервера 401
@@ -118,24 +141,12 @@ class ApiService {
     );
   }
 
-  Future<String> getDynamicBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.pro/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+  Future<void> reset() async {
+    // Сброс значений при выходе
+    baseUrl = null;
+    baseUrlSocket = null;
+    print('API сброшено');
   }
-
-  Future<String> getSocketBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.shamcrm.pro/broadcasting/auth';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
-  }
-
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -159,38 +170,36 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем текущие значения domainChecked и enteredDomain
-    bool? domainChecked = prefs.getBool('domainChecked');
-    String? enteredDomain = prefs.getString('enteredDomain');
+    // bool? domainChecked = prefs.getBool('domainChecked');
+    // String? enteredDomain = prefs.getString('enteredDomain');
+    // String? enteredMainDomain = prefs.getString('enteredMainDomain');
 
     // Удаляем токен, права доступа и организацию
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-    // await prefs.remove('cachedLeadStatuses');
-    // await prefs.remove('cachedDealStatuses');
-    // await prefs.remove('cachedTaskStatuses');
-
-    // await prefs.remove('leadConversionData');
-
-    // await prefs.remove('userRoles');
+  
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
-    bool isCleared = await prefs.clear();
+    // bool isCleared = await prefs.clear();
 
-    // Восстанавливаем значения domainChecked и enteredDomain
-    if (domainChecked != null) {
-      await prefs.setBool('domainChecked', domainChecked);
-    }
-    if (enteredDomain != null) {
-      await prefs.setString('enteredDomain', enteredDomain);
-    }
+    // // Восстанавливаем значения domainChecked и enteredDomain
+    // if (domainChecked != null) {
+    //   await prefs.setBool('domainChecked', domainChecked);
+    // }
+    // if (enteredDomain != null) {
+    //   await prefs.setString('enteredDomain', enteredDomain);
+    // }
+    // if (enteredMainDomain != null) {
+    //   await prefs.setString('enteredMainDomain', enteredMainDomain);
+    // }
 
-    // Проверяем успешность очистки
-    if (isCleared) {
-      print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
-    } else {
-      print('Ошибка при очистке данных.');
-    }
+    // // Проверяем успешность очистки
+    // if (isCleared) {
+    //   print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
+    // } else {
+    //   print('Ошибка при очистке данных.');
+    // }
   }
 
   Future<void> _removePermissions() async {
@@ -212,6 +221,14 @@ class ApiService {
   Future<http.Response> _getRequest(String path) async {
     final token = await getToken(); // Получаем токен перед запросом
 
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST START==-=---==-=-=-=-=--==-=-=-=-=-");
+print(baseUrl);
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST END==-=---==-=-=-=-=--==-=-=-=-=-");
+
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST PATH START==-=---==-=-=-=-=--==-=-=-=-=-");
+print(path);
+print("-=--=-=-=-=-==--=-=-=-GET REQUEST PATH END==-=---==-=-=-=-=--==-=-=-=-=-");
+
     final response = await http.get(
       Uri.parse('$baseUrl$path'),
       headers: {
@@ -222,8 +239,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -231,7 +248,6 @@ class ApiService {
   // Метод для выполнения POST-запросов
   Future<http.Response> _postRequest(
       String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://shamcrm.pro/api';
     final token = await getToken(); // Получаем токен перед запросом
 
     final response = await http.post(
@@ -246,8 +262,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -269,8 +285,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -289,34 +305,12 @@ class ApiService {
       },
     );
 
-    print('Статус ответа!');
-    print('Тело ответа!');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
 
-  // Метод для выполнения POST-запросов
-  Future<http.Response> _postRequestDomain(
-      String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://shamcrm.pro/api';
-    final token = await getToken(); // Получаем токен перед запросом
-    final response = await http.post(
-      Uri.parse('$DomainUrl$path'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-
-    print('Статус ответа!');
-    print('Тело ответа!');
-
-    return response;
-  }
   //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
   //        if (!await hasPermission('deal.read')) {
@@ -371,27 +365,27 @@ class ApiService {
   //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
   // Метод для сохранения данных из QR-кода
-  Future<void> saveQrData(String domain, String login, String token,
+  Future<void> saveQrData(String mainDomain,String domain, String login, String token,
       String userId, String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем данные из QR-кода
     await prefs.setString('domain', domain ?? '');
     print(prefs.getString('domain'));
+    await prefs.setString('mainDomain', mainDomain ?? '');
+    print(prefs.getString('mainDomain'));
     await prefs.setString('userLogin', login ?? '');
     print(prefs.getString('userLogin'));
-    await prefs.setString('token', token ?? '');
+    await prefs.setString('token', token); 
     print(prefs.getString('token'));
-    await prefs.setString('userID', userId ?? ''); // Чтобы избежать null
+    await prefs.setString('userID', userId ?? ''); 
     print(prefs.getString('userID'));
     await prefs.setString('selectedOrganization', organizationId ?? '');
     print(prefs.getString('selectedOrganization'));
-    // await prefs.setString('selectedOrganization', userRoleId?? '');
-    //  print(prefs.getString('selectedOrganization'));
 
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
-    await saveDomain(domain);
+    await saveDomain(mainDomain,domain);
   }
 
   // Метод для получения данных из QR-кода
@@ -399,12 +393,15 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String? domain = prefs.getString('domain') ?? '';
+    String? mainDomain = prefs.getString('mainDomain') ?? '';
+
     String? login = prefs.getString('userLogin') ?? '';
     String? token = prefs.getString('token') ?? '';
     String userId = prefs.getString('userID') ?? '';
     String? organizationId = prefs.getString('selectedOrganization') ?? '';
     return {
       'domain': domain,
+      'mainDomain': mainDomain,
       'login': login,
       'token': token,
       'userID': userId,
@@ -414,11 +411,49 @@ class ApiService {
 
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
+
+  // Метод для выполнения POST-запросов
+// Метод для выполнения POST-запросов
+Future<http.Response> _postRequestDomain(String path, Map<String, dynamic> body) async {
+  final enteredDomainMap = await ApiService().getEnteredDomain();
+  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+
+  final String DomainUrl = 'https://$enteredMainDomain/api';
+  
+  // Выводим URL домена перед отправкой запроса
+  print("-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
+  print(DomainUrl);
+
+  final token = await getToken(); // Получаем токен перед запросом
+  
+  // Выводим статус и тело запроса перед отправкой
+  print('Отправка запроса на проверку домена...');
+  
+  final response = await http.post(
+    Uri.parse('$DomainUrl$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null)
+      'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+      'Device': 'mobile'
+    },
+    body: json.encode(body),
+  );
+
+  // Выводим статус и тело ответа после получения ответа
+  print('Статус ответа: ${response.statusCode}');
+  print('Тело ответа: ${response.body}');
+
+  return response;
+}
+
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
+    print('-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
+    print(domain);
     final organizationId = await getSelectedOrganization();
-    final response = await _postRequestDomain(
-        '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    final response = await _postRequestDomain('/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {'domain': domain});
 
     if (response.statusCode == 200) {
@@ -431,39 +466,43 @@ class ApiService {
   // Метод для сохранения домена
   Future<void> saveDomainChecked(bool value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        'domainChecked', value); // Сохраняем статус проверки домена
+    await prefs.setBool('domainChecked', value); // Сохраняем статус проверки домена
   }
 
   // Метод для проверки домена из SharedPreferences
   Future<bool> isDomainChecked() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('domainChecked') ??
-        false; // Проверяем статус или возвращаем false
+    return prefs.getBool('domainChecked') ?? false; // Проверяем статус или возвращаем false
   }
 
   // Метод для сохранения введенного домена
-  Future<void> saveDomain(String domain) async {
+  Future<void> saveDomain(String domain, String mainDomain) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('enteredMainDomain', mainDomain);
     await prefs.setString('enteredDomain', domain);
-    print('Ввведеный домен:----------------------');
-    print('Ввведеный домен---=----:----------------------');
-    print('ДОМЕН: ${prefs.getString('enteredDomain')}');
+    print('Ввведеный Doмен:----------------------');
+    print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
+    print('Ввведеный Poddomen---=----:----------------------');
+    print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
-  Future<String?> getEnteredDomain() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs
-        .getString('enteredDomain'); // Возвращаем введенный домен или null
-  }
-
+Future<Map<String, String?>> getEnteredDomain() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? mainDomain = prefs.getString('enteredMainDomain');
+  String? domain = prefs.getString('enteredDomain');
+  
+  return {
+    'enteredMainDomain': mainDomain,
+    'enteredDomain': domain,
+  };
+}
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
   //_________________________________ START___API__LOGIN____________________________________________//
 
   // Метод для проверки логина и пароля
-  Future<LoginResponse> login(LoginModel loginModel) async {
+ Future<LoginResponse> login(LoginModel loginModel) async {
     final organizationId = await getSelectedOrganization();
     print("------------------------ $organizationId");
     final response = await _postRequest(
@@ -523,7 +562,8 @@ class ApiService {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка при получении прав доступа!!');
+        throw Exception(
+            'Ошибка при получении прав доступа!!');
       }
     } catch (e) {
       print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
@@ -675,6 +715,9 @@ class ApiService {
 
     final response = await _getRequest(path);
 
+    print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+    print('Отправка запроса на API с путём: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -698,6 +741,9 @@ class ApiService {
       // Отправляем запрос на сервер
       final response = await _getRequest(
           '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+              print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+    print('Отправка запроса на API с путём: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -745,8 +791,7 @@ class ApiService {
             .toList();
         return cachedList;
       } else {
-        throw Exception(
-            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+        throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
       }
     }
   }
@@ -780,7 +825,10 @@ class ApiService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Статус лида создан успешно'};
     } else {
-      return {'success': false, 'message': 'Ошибка создания статуса лида!'};
+      return {
+        'success': false,
+        'message': 'Ошибка создания статуса лида!'
+      };
     }
   }
 
@@ -873,16 +921,25 @@ class ApiService {
       return {'success': true, 'message': 'note_created_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
+        return {
+          'success': false,
+          'message': 'error_field_is_not_empty'
+        };
       } else if (response.body.contains('body')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
+        return {
+          'success': false,
+          'message': 'error_field_is_not_empty'
+        };
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'error_valid_date'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {'success': false, 'message': 'error_create_note'};
+      return {
+        'success': false,
+        'message': 'error_create_note'
+      };
     }
   }
 
@@ -910,16 +967,25 @@ class ApiService {
       return {'success': true, 'message': 'Заметка успешно обновлена'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
+        return {
+          'success': false,
+          'message': 'error_field_is_not_empty'
+        };
       } else if (response.body.contains('body')) {
-        return {'success': false, 'message': 'error_field_is_not_empty'};
+        return {
+          'success': false,
+          'message': 'error_field_is_not_empty'
+        };
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'error_valid_date'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {'success': false, 'message': 'error_update_note'};
+      return {
+        'success': false,
+        'message': 'error_update_note'
+      };
     }
   }
 
@@ -1009,36 +1075,63 @@ class ApiService {
     } else if (response.statusCode == 422) {
       // Обработка ошибки дублирования номера телефона
       if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
+        return {
+          'success': false,
+          'message': 'phone_already_exists'
+        };
       }
       if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
+        return {
+          'success': false,
+          'message':'invalid_phone_format'
+        };
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
+        return {
+          'success': false,
+          'message': 'error_enter_email'
+        };
       }
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'invalid_name_length'};
       }
       // Обработка ошибки дублирования логина Instagram
       else if (response.body.contains('insta_login')) {
-        return {'success': false, 'message': 'instagram_login_exists'};
+        return {
+          'success': false,
+          'message': 'instagram_login_exists'
+        };
       } else if (response.body.contains('facebook_login')) {
-        return {'success': false, 'message': 'facebook_login_exists'};
+        return {
+          'success': false,
+          'message': 'facebook_login_exists'
+        };
       } else if (response.body.contains('tg_nick')) {
-        return {'success': false, 'message': 'telegram_nick_exists'};
+        return {
+          'success': false,
+          'message': 'telegram_nick_exists'
+        };
       } else if (response.body.contains('birthday')) {
         return {'success': false, 'message': 'invalid_birthday'};
       } else if (response.body.contains('wa_phone')) {
-        return {'success': false, 'message': 'whatsapp_number_exists'};
+        return {
+          'success': false,
+          'message': 'whatsapp_number_exists'
+        };
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
+      return {
+        'success': false,
+        'message': 'error_server_text'
+      };
     } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+      return {
+        'success': false,
+        'message': 'lead_creation_error'
+      };
     }
   }
 
@@ -1107,14 +1200,23 @@ class ApiService {
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
-        return {'success': false, 'message': 'error_enter_email'};
+        return {
+          'success': false,
+          'message': 'error_enter_email'
+        };
       }
       // Другие проверки на ошибки...
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
+      return {
+        'success': false,
+        'message': 'error_server_text'
+      };
     } else {
-      return {'success': false, 'message': 'lead_creation_error'};
+      return {
+        'success': false,
+        'message': 'lead_creation_error'
+      };
     }
   }
 
@@ -1273,17 +1375,26 @@ class ApiService {
         return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
+        return {
+          'success': false,
+          'message': 'phone_already_exists'
+        };
       }
       if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
+        return {
+          'success': false,
+          'message': 'invalid_phone_format'
+        };
       } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'field_is_not_empty'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {'success': false, 'message': 'error_contact_create'};
+      return {
+        'success': false,
+        'message': 'error_contact_create'
+      };
     }
   }
 
@@ -1313,17 +1424,26 @@ class ApiService {
         return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
-        return {'success': false, 'message': 'phone_already_exists'};
+        return {
+          'success': false,
+          'message': 'phone_already_exists'
+        };
       }
       if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
+        return {
+          'success': false,
+          'message':'invalid_phone_format'
+        };
       } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'field_is_not_empty'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {'success': false, 'message': 'error_contact_update_successfully'};
+      return {
+        'success': false,
+        'message': 'error_contact_update_successfully'
+      };
     }
   }
 
@@ -1638,7 +1758,10 @@ class ApiService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Статус сделки успешно создан'};
     } else {
-      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
+      return {
+        'success': false,
+        'message': 'Ошибка создания статуса сделки!'
+      };
     }
   }
 
@@ -1657,7 +1780,8 @@ class ApiService {
         return jsonList.map((json) => DealHistory.fromJson(json)).toList();
       } else {
         print('Failed to load deal history!');
-        throw Exception('Ошибка загрузки истории сделки!');
+        throw Exception(
+            'Ошибка загрузки истории сделки!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -1755,9 +1879,15 @@ class ApiService {
       // Другие проверки на ошибки...
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
+      return {
+        'success': false,
+        'message': 'error_server_text'
+      };
     } else {
-      return {'success': false, 'message': 'error_deal_create_successfully'};
+      return {
+        'success': false,
+        'message': 'error_deal_create_successfully'
+      };
     }
   }
 
@@ -1803,14 +1933,23 @@ class ApiService {
       return {'success': true, 'message': 'deal_update_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('"name"')) {
-        return {'success': false, 'message': 'invalid_name_length'};
+        return {
+          'success': false,
+          'message': 'invalid_name_length'
+        };
       }
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {'success': false, 'message': 'error_server_text'};
+      return {
+        'success': false,
+        'message': 'error_server_text'
+      };
     } else {
-      return {'success': false, 'message': 'error_deal_update_successfully'};
+      return {
+        'success': false,
+        'message': 'error_deal_update_successfully'
+      };
     }
   }
 
@@ -1896,7 +2035,7 @@ class ApiService {
     }
   }
 
-  Future<List<Task>> getTasks(
+   Future<List<Task>> getTasks(
     int? taskStatusId, {
     int page = 1,
     int perPage = 20,
@@ -1946,6 +2085,7 @@ class ApiService {
       throw Exception('Ошибка загрузки задач!');
     }
   }
+
 
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -2112,9 +2252,11 @@ class ApiService {
     try {
       final data = json.decode(response.body);
       final errorMessage = data['errors'] ?? data['message'] ?? response.body;
-      return Exception('Ошибка ${operation}! - $errorMessage');
+      return Exception(
+          'Ошибка ${operation}! - $errorMessage');
     } catch (e) {
-      return Exception('Ошибка ${operation}! - ${response.body}');
+      return Exception(
+          'Ошибка ${operation}! - ${response.body}');
     }
   }
 
@@ -2299,7 +2441,10 @@ class ApiService {
           };
         }
         if (response.statusCode == 500) {
-          return {'success': false, 'message': 'error_server_text'};
+          return {
+            'success': false,
+            'message': 'error_server_text'
+          };
         }
         if (response.body.contains('from')) {
           return {
@@ -2641,7 +2786,8 @@ class ApiService {
         return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
       } else {
         print('Failed to load task history!');
-        throw Exception('Ошибка загрузки истории задач!');
+        throw Exception(
+            'Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -2853,7 +2999,10 @@ class ApiService {
         'message': 'Этот проект не имеет завершающий этап!'
       };
     } else {
-      return {'success': false, 'message': 'Ошибка завершения задачи!'};
+      return {
+        'success': false,
+        'message': 'Ошибка завершения задачи!'
+      };
     }
   }
 
@@ -3030,6 +3179,10 @@ class ApiService {
 
   Future<ProcessSpeed> getProcessSpeedData() async {
     final organizationId = await getSelectedOrganization();
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     String path =
         '/dashboard/lead-process-speed${organizationId != null ? '?organization_id=$organizationId' : ''}';
@@ -3229,10 +3382,9 @@ class ApiService {
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
 
-  Future<PaginationDTO<Chats>> getAllChats(
-      String endPoint, BuildContext context, // Добавляем контекст
-      [int page = 1,
-      String? search]) async {
+
+  Future<PaginationDTO<Chats>> getAllChats(String endPoint,
+      [int page = 1, String? search]) async {
     final token = await getToken();
     final organizationId = await getSelectedOrganization();
 
@@ -3252,21 +3404,20 @@ class ApiService {
         'Content-Type': 'application/json',
       },
     );
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
         print('Parsed data: ${data['result']}'); // Печать результата парсинга
         return PaginationDTO<Chats>.fromJson(data['result'], (e) {
-          return Chats.fromJson(e, context); // Передаем контекст
+          return Chats.fromJson(e);
         });
       } else {
         print('No result found in the response');
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      print('Error!, Body!');
-      throw Exception('Ошибка ${response.statusCode}!');
+      print('Error: ${response.statusCode}, Body: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
     }
   }
 
@@ -3931,7 +4082,8 @@ class ApiService {
         '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       );
 
-      print('Response status code!'); // Логируем статус ответа
+      print(
+          'Response status code!'); // Логируем статус ответа
       print('Response body!'); // Логируем тело ответа
 
       if (response.statusCode == 200) {
@@ -4169,14 +4321,27 @@ class ApiService {
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'profile_updated_successfully'};
       } else if (response.statusCode == 422) {
-        return {'success': false, 'message': 'error_validation_data'};
+        return {
+          'success': false,
+          'message': 'error_validation_data'
+        };
       }
       if (response.body.contains('validation.phone')) {
-        return {'success': false, 'message': 'invalid_phone_format'};
+        return {
+          'success': false,
+          'message':
+              'invalid_phone_format'
+        };
       } else if (response.statusCode == 500) {
-        return {'success': false, 'message': 'error_server_text'};
+        return {
+          'success': false,
+          'message': 'error_server_text'
+        };
       } else {
-        return {'success': false, 'message': 'error_update_profile'};
+        return {
+          'success': false,
+          'message': 'error_update_profile'
+        };
       }
     } catch (e) {
       return {
@@ -4753,7 +4918,8 @@ class ApiService {
         return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
       } else {
         print('Failed to load task history!');
-        throw Exception('Ошибка загрузки истории задач!');
+        throw Exception(
+            'Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -4836,7 +5002,10 @@ class ApiService {
         'message': 'Этот проект не имеет завершающий этап!'
       };
     } else {
-      return {'success': false, 'message': 'Ошибка завершения задачи!'};
+      return {
+        'success': false,
+        'message': 'Ошибка завершения задачи!'
+      };
     }
   }
 

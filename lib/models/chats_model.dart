@@ -1,7 +1,5 @@
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:flutter/material.dart';
 
 class Chats {
   final int id;
@@ -42,65 +40,65 @@ class Chats {
     this.user, // добавим в конструктор
   });
 
-  factory Chats.fromJson(Map<String, dynamic> json, BuildContext context) {
-  List<ChatUser> users = [];
-  if (json['chatUsers'] != null) {
-    for (var userJson in json['chatUsers']) {
-      users.add(ChatUser.fromJson(userJson));
+  factory Chats.fromJson(Map<String, dynamic> json) {
+    List<ChatUser> users = [];
+    if (json['chatUsers'] != null) {
+      for (var userJson in json['chatUsers']) {
+        users.add(ChatUser.fromJson(userJson));
+      }
     }
-  }
 
-  Group? group;
-  if (json['group'] != null) {
-    group = Group.fromJson(json['group']);
-  }
+    Group? group;
+    if (json['group'] != null) {
+      group = Group.fromJson(json['group']);
+    }
 
-  Task? task;
-  if (json['task'] != null) {
-    task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
+    Task? task;
+    if (json['task'] != null) {
+      task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
+    }
+    ChatUser? user;
+    if (json['user'] != null) {
+      user = ChatUser.fromJson({'participant': json['user']});
+    }
+    return Chats(
+      id: json['id'] ?? 0,
+      name: json['user'] != null
+          ? json['user']['name']
+          : json['task'] != null
+              ? json['task']['name'] ?? ''
+              : json['lead'] != null
+                  ? json['lead']['name'] ?? 'Без имени'
+                  : '',
+      image: json['image'] ?? '',
+      user: user,
+      createDate: json['task'] != null
+          ? json['task']['created_at'] ?? ''
+          : json['lead'] != null
+              ? json['lead']['created_at'] ?? ''
+              : '',
+      unredMessage: json['task'] != null
+          ? json['task']['unread_messages_count'] ?? 0
+          : json['lead'] != null
+              ? json['lead']['unread_messages_count'] ?? 0
+              : 0,
+      taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
+      taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
+      description:
+          json['task'] != null ? json['task']['description'] ?? '' : '',
+      channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
+      lastMessage: json['lastMessage'] != null
+          ? _getLastMessageText(json['lastMessage'])
+          : '',
+      messageType:
+          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
+      canSendMessage: json["can_send_message"] ?? false,
+      type: json['type'],
+      chatUsers: users,
+      group: group,
+      task: task,
+    );
   }
-
-  ChatUser? user;
-  if (json['user'] != null) {
-    user = ChatUser.fromJson({'participant': json['user']});
-  }
-
-  return Chats(
-    id: json['id'] ?? 0,
-    name: json['user'] != null
-        ? json['user']['name']
-        : json['task'] != null
-            ? json['task']['name'] ?? ''
-            : json['lead'] != null
-                ? json['lead']['name'] ?? 'Без имени'
-                : '',
-    image: json['image'] ?? '',
-    user: user,
-    createDate: json['task'] != null
-        ? json['task']['created_at'] ?? ''
-        : json['lead'] != null
-            ? json['lead']['created_at'] ?? ''
-            : '',
-    unredMessage: json['task'] != null
-        ? json['task']['unread_messages_count'] ?? 0
-        : json['lead'] != null
-            ? json['lead']['unread_messages_count'] ?? 0
-            : 0,
-    taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
-    taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-    description: json['task'] != null ? json['task']['description'] ?? '' : '',
-    channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
-    lastMessage: json['lastMessage'] != null
-        ? _getLastMessageText(json['lastMessage'], context) // Передаем контекст
-        : '',
-    messageType: json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
-    canSendMessage: json["can_send_message"] ?? false,
-    type: json['type'],
-    chatUsers: users,
-    group: group,
-    task: task,
-  );
-}
 
   String? get displayName {
     if (group != null && group!.name.isNotEmpty) {
@@ -112,44 +110,46 @@ class Chats {
     }
   }
 
-static String _getLastMessageText(Map<String, dynamic> lastMessage, BuildContext context) {
-  final localizations = AppLocalizations.of(context)!; 
-  
-  final isMyMessage = lastMessage['is_my_message'] ?? false;
-
-  switch (lastMessage['type']) {
-    case 'text':
-      return lastMessage['text'] ?? localizations.translate('text_message');
-    case 'voice':
-      return isMyMessage
-          ? localizations.translate('sent_voice_message')
-          : localizations.translate('received_voice_message');
-    case 'file':
-      return localizations.translate('file_message');
-    case 'image':
-      return localizations.translate('image_message');
-    case 'video':
-      return localizations.translate('video_message');
-    case 'location':
-      final location = lastMessage['location'] ?? localizations.translate('unknown');
-      return localizations.translate('location_message').replaceAll('{location}', location);
-    case 'sticker':
-      return localizations.translate('sticker_message');
-    default:
-      return localizations.translate('new_message');
+  static String _getLastMessageText(Map<String, dynamic> lastMessage) {
+    final isMyMessage = lastMessage['is_my_message'] ?? false;
+    switch (lastMessage['type']) {
+      case 'text':
+        return lastMessage['text'] ?? 'Текстовое сообщение';
+      case 'voice':
+        return isMyMessage
+            ? 'Отправлено голосовое сообщение'
+            : 'Вам пришло голосовое сообщение';
+      case 'file':
+        return 'Файл: неизвестное имя';
+      case 'image':
+        return 'Изображение';
+      case 'video':
+        return 'Вам пришло видео сообщение';
+      case 'location':
+        return 'Вам пришло местоположение: ${lastMessage['location'] ?? 'неизвестно'}';
+      case 'sticker':
+        return 'Вам пришел стикер';
+      default:
+        return 'Новое сообщение';
+    }
   }
-}
 
    ChatItem toChatItem() {
     String avatar;
     if (group != null) {
       avatar = "assets/images/GroupChat.png";
     } else if (chatUsers.isNotEmpty) {
+      // Получаем ID текущего пользователя из поля user
       int currentUserId = user?.id ?? 0;
+      print('Current user ID: $currentUserId'); // для отладки
+      
       if (chatUsers.length > 1) {
         if (chatUsers[1].id == currentUserId) {
+          // Если первый пользователь - это текущий пользователь,
+          // показываем аватар второго
           avatar = chatUsers[1].image;
         } else {
+          // Иначе показываем аватар первого
           avatar = chatUsers[0].image;
         }
       } else {

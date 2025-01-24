@@ -83,8 +83,10 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       emit(LeadLoaded(
         cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList(),
         leadCounts: Map.from(_leadCounts),
+        
       ));
-    }
+    }    print("Updated leass counts: $_leadCounts");
+
 
     // Then fetch from API
     if (!await _checkInternetConnection()) {
@@ -98,6 +100,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError('Нет статусов'));
         return;
       }
+    print("Updated lead counts: $_leadCounts");
 
       // Cache the statuses
       await LeadCache.cacheLeadStatuses(response
