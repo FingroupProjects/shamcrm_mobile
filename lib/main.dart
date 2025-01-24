@@ -209,7 +209,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
           BlocProvider(create: (context) => OrganizationBloc(ApiService())),
           BlocProvider(create: (context) => NotificationBloc(ApiService())),
-          BlocProvider(create: (context) => ChatsBloc(ApiService(), context),),
+          BlocProvider(create: (context) => ChatsBloc(ApiService()),),
           BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
           BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
           BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),

@@ -18,35 +18,34 @@ class LogoutButtonWidget extends StatelessWidget {
         SharedPreferences prefs = await SharedPreferences.getInstance();
 
         // Сохраняем текущие значения domainChecked и enteredDomain
-        // bool? domainChecked = prefs.getBool('domainChecked');
-        // String? enteredDomain = prefs.getString('enteredDomain');
-        // String? enteredMainDomain = prefs.getString('enteredMainDomain');
+        bool? domainChecked = prefs.getBool('domainChecked');
+        String? enteredDomain = prefs.getString('enteredDomain');
+        String? enteredMainDomain = prefs.getString('enteredMainDomain');
 
         // Очищаем все данные
         final isCleared = await prefs.clear();
 
         // Восстанавливаем значения domainChecked и enteredDomain
-    //     if (domainChecked != null) {
-    //       await prefs.setBool('domainChecked', domainChecked);
-    //     }
-    //     if (enteredDomain != null) {
-    //       await prefs.setString('enteredDomain', enteredDomain);
-    //     }
-    //       if (enteredMainDomain != null) {
-    //   await prefs.setString('enteredMainDomain', enteredMainDomain);
-    // }
+        if (domainChecked != null) {
+          await prefs.setBool('domainChecked', domainChecked);
+        }
+        if (enteredDomain != null) {
+          await prefs.setString('enteredDomain', enteredDomain);
+        }
+          if (enteredMainDomain != null) {
+      await prefs.setString('enteredMainDomain', enteredMainDomain);
+    }
 
         // Проверяем успешность очистки
-      //   if (isCleared) {
-      // print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
-      //   } else {
-      //     print('Ошибка при очистке данных.');
-      //   }
+        if (isCleared) {
+      print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
+        } else {
+          print('Ошибка при очистке данных.');
+        }
 
         // Логика выхода (например, вызов logout API)
         ApiService apiService = ApiService();
         await apiService.logout();
-        
 
         // Перенаправление на экран входа после выхода
         Navigator.pushAndRemoveUntil(
