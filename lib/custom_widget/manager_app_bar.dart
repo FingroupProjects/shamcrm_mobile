@@ -33,7 +33,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
   List<dynamic> filterManagers(List<dynamic> managers) {
     if (searchQuery.isEmpty) return managers;
     return managers.where((manager) {
-      final name = manager.name?.toString().toLowerCase() ?? '';
+      final name = (manager.name?.toString().toLowerCase() ?? '') + 
+                   (manager.lastname?.toString().toLowerCase() ?? '');
       return name.contains(searchQuery.toLowerCase());
     }).toList();
   }
@@ -90,7 +91,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                       child: TextField(
                         controller: searchController,
                         decoration: InputDecoration(
-                          hintText: AppLocalizations.of(context)!.translate('search'), 
+                          hintText:
+                              AppLocalizations.of(context)!.translate('search'),
                           prefixIcon: Icon(Icons.search, color: Colors.grey),
                           contentPadding:
                               EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -128,7 +130,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                   return Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                      child:
+                          CircularProgressIndicator(color: Color(0xff1E2E52)),
                     ),
                   );
                 } else if (state is GetAllManagerError) {
@@ -151,7 +154,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                       child: Padding(
                         padding: EdgeInsets.all(16),
                         child: Text(
-                          'Нет доступных менеджеров',
+                          AppLocalizations.of(context)!
+                              .translate('no_any_managers'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                           ),
@@ -167,7 +171,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                     itemCount: filteredManagers.length,
                     itemBuilder: (context, index) {
                       final manager = filteredManagers[index];
-                      final name = manager.name ?? 'Без имени';
+                      final name = (manager.name ?? 'Без имени') + 
+                                   ' ' + (manager.lastname ?? '');
                       final isSelected = _selectedManagers.contains(manager);
 
                       return InkWell(
@@ -256,7 +261,7 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                 ),
               ),
               child: Text(
-                'Применить',
+                AppLocalizations.of(context)!.translate('selected'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,

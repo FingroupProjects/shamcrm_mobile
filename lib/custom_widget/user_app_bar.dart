@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
@@ -34,7 +35,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
     if (searchQuery.isEmpty) return users;
     return users.where((user) {
       final name = user.name?.toString().toLowerCase() ?? '';
-      return name.contains(searchQuery.toLowerCase());
+      final lastname = user.lastname?.toString().toLowerCase() ?? '';
+      return name.contains(searchQuery.toLowerCase()) || lastname.contains(searchQuery.toLowerCase());
     }).toList();
   }
 
@@ -88,7 +90,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                       child: TextField(
                         controller: searchController,
                         decoration: InputDecoration(
-                          hintText: 'Поиск',
+                          hintText:
+                              AppLocalizations.of(context)!.translate('search'),
                           prefixIcon: Icon(Icons.search, color: Colors.grey),
                           contentPadding:
                               EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -126,7 +129,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                   return Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                      child:
+                          CircularProgressIndicator(color: Color(0xff1E2E52)),
                     ),
                   );
                 } else if (state is UserTaskError) {
@@ -149,7 +153,8 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                       child: Padding(
                         padding: EdgeInsets.all(16),
                         child: Text(
-                          'Нет доступных пользователей',
+                          AppLocalizations.of(context)!
+                              .translate('no_any_users'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                           ),
@@ -166,6 +171,7 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                     itemBuilder: (context, index) {
                       final user = filteredUsers[index];
                       final name = user.name ?? 'Без имени';
+                      final lastname = user.lastname ?? 'Без фамилии';
                       final isSelected = _selectedUsers.contains(user);
 
                       return InkWell(
@@ -216,7 +222,7 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                               ),
                               Expanded(
                                 child: Text(
-                                  name,
+                                  '$name $lastname',
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 14,
@@ -254,7 +260,7 @@ class _UserFilterPopupState extends State<UserFilterPopup> {
                 ),
               ),
               child: Text(
-                'Применить',
+                AppLocalizations.of(context)!.translate('selected'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,

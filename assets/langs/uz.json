@@ -531,6 +531,12 @@
   "image_message": "Rasm",
   "video_message": "Sizga video xabar keldi",
   "location_message": "Sizga joylashuv keldi: {location}",
-  "sticker_message": "Sizga stiker keldi"
+  "sticker_message": "Sizga stiker keldi",
+  "selected": "Qo'llash",
+"no_any_users": "Mavjud foydalanuvchilar yo'q",
+"no_any_managers": "Mavjud menejerlar yo'q",
+"notification": "Bildirishnoma",
+"filtr": "Filtr",
+"clear":"Toza"
 
 }

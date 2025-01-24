@@ -549,7 +549,13 @@
 "user_name": "User Name",
 "Email": "Email",
 "number_phone": "Phone Number",
-"last_login": "Last Login"
+"last_login": "Last Login",
+"selected": "Apply",
+"no_any_users": "No available users",
+"no_any_managers": "No available managers",
+"notification": "Notification",
+"filtr": "Filter",
+"clear":"Clear"
 
 
 

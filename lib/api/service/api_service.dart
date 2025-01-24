@@ -665,17 +665,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
 
       final response = await _getRequest(
           '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
         return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
       } else {
-        print('Failed to load lead ID!');
         throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
-      print('Error occurred!');
       throw Exception('Ошибка загрузки лида ID!');
     }
   }
@@ -707,21 +704,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
     }
-
+    
     // Формируем массив managers с индексами
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
         path += '&managers[$i]=${managers[i]}';
       }
     }
-
-    print('Отправка запроса на API с путём: $path');
-
     final response = await _getRequest(path);
-
-    print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
-    print('Отправка запроса на API с путём: ${response.body}');
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -2039,7 +2029,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
     }
   }
 
-  Future<List<Task>> getTasks(
+   Future<List<Task>> getTasks(
     int? taskStatusId, {
     int page = 1,
     int perPage = 20,
@@ -2050,10 +2040,10 @@ Future<Map<String, String?>> getEnteredDomain() async {
     String path = '/task?page=$page&per_page=$perPage';
 
     path += '&organization_id=$organizationId';
- // Если задан поиск или менеджеры, НЕ передаем lead_status_id
+    // Если задан поиск или менеджеры, НЕ передаем lead_status_id
     bool shouldSkipTaskStatusId = (search != null && search.isNotEmpty) ||
         (users != null && users.isNotEmpty);
-   
+
     if (!shouldSkipTaskStatusId && taskStatusId != null) {
       // Если поиск и менеджеры не заданы, передаем lead_status_id
       path += '&task_status_id=$taskStatusId';
@@ -2063,7 +2053,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
       path += '&search=$search';
     }
 
-   // Добавляем user_id если есть
+    // Добавляем user_id если есть
     if (users != null && users.isNotEmpty) {
       for (int i = 0; i < users.length; i++) {
         path += '&users[$i]=${users[i]}';
@@ -2089,6 +2079,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
       throw Exception('Ошибка загрузки задач!');
     }
   }
+
 
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {

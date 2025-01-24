@@ -47,6 +47,7 @@ class TaskDataLoaded extends TaskState {
 
   // Метод для обновления taskCounts
   TaskDataLoaded updateTaskCounts(Map<int, int> newTaskCounts) {
+    
     return TaskDataLoaded(
       tasks,
       currentPage: currentPage,

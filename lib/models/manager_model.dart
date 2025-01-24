@@ -3,10 +3,12 @@ import 'dart:convert';
 class ManagerData{
   final int id;
   final String name;
+  final String? lastname;
 
   ManagerData({
     required this.id,
     required this.name,
+    this.lastname
   });
 
 
@@ -14,18 +16,20 @@ class ManagerData{
   factory ManagerData.fromJson(Map<String, dynamic> json) => ManagerData(
     id: json["id"],
     name: json["name"],
+    lastname: json["lastname"]
   
   );
 
   Map<String, dynamic> toJson() => {
     "id": id,
     "name": name,
+    "lastname":lastname
    
   };
 
   @override
   String toString() {
-    return 'UserData{id: $id, name: $name}';
+    return 'UserData{id: $id, name: $name, lastname:$lastname}';
   }
 }
 
