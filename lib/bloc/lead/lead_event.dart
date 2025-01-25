@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+
 abstract class LeadEvent {}
 
 class FetchLeadStatuses extends LeadEvent {}
@@ -6,6 +8,7 @@ class FetchLeads extends LeadEvent {
   final int statusId;
   final String? query;
   final List<int>? managerIds; // Изменено: массив менеджеров
+
 
   FetchLeads(
     this.statusId, {
@@ -35,10 +38,13 @@ class FetchAllLeads extends LeadEvent {}
 class CreateLeadStatus extends LeadEvent {
   final String title;
   final String color;
+  final AppLocalizations localizations;  
+
 
   CreateLeadStatus({
     required this.title,
     required this.color,
+    required this.localizations,
   });
 }
 
@@ -57,6 +63,8 @@ class CreateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
+  final AppLocalizations localizations;  
+
 
   CreateLead({
     required this.name,
@@ -73,6 +81,8 @@ class CreateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    required this.localizations,  
+
   });
 }
 
@@ -93,6 +103,8 @@ class UpdateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
+  final AppLocalizations localizations;  
+
 
   UpdateLead({
     required this.leadId,
@@ -110,17 +122,30 @@ class UpdateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
+    required this.localizations,  
+
   });
 }
 
 class DeleteLead extends LeadEvent {
   final int leadId;
+  final AppLocalizations localizations;  
 
-  DeleteLead(this.leadId);
+
+  DeleteLead(
+    this.leadId,
+    this.localizations,  
+    );
 }
 
 class DeleteLeadStatuses extends LeadEvent {
   final int leadStatusId;
+    final AppLocalizations localizations;  
 
-  DeleteLeadStatuses(this.leadStatusId);
+
+  DeleteLeadStatuses(
+    this.leadStatusId,
+    this.localizations,  
+
+);
 }

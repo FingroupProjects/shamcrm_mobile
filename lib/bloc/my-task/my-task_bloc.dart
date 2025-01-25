@@ -170,7 +170,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
     emit(MyTaskLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(MyTaskError('Нет подключения к интернету'));
+      emit(MyTaskError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -187,13 +187,13 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
       );
 
       if (result['success']) {
-        emit(MyTaskSuccess('Задача успешно создана!'));
+        emit(MyTaskSuccess(event.localizations.translate('task_create_successfully')));
         // add(FetchMyTasks(event.statusId));
       } else {
         emit(MyTaskError(result['message']));
       }
     } catch (e) {
-      emit(MyTaskError('Ошибка создания задачи!'));
+      emit(MyTaskError(event.localizations.translate('task_creation_error')));
     }
   }
 
@@ -202,7 +202,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
     emit(MyTaskLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(MyTaskError('Нет подключения к интернету'));
+      emit(MyTaskError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -219,13 +219,13 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
       );
 
       if (result['success']) {
-        emit(MyTaskSuccess('Задача успешно обновлена!'));
+        emit(MyTaskSuccess(event.localizations.translate('task_update_successfully')));
         // add(FetchMyTasks(event.statusId));
       } else {
         emit(MyTaskError(result['message']));
       }
     } catch (e) {
-      emit(MyTaskError('Ошибка обновления задачи!'));
+      emit(MyTaskError(event.localizations.translate('error_task_update_successfully')));
     }
   }
 
@@ -245,12 +245,12 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
     try {
       final response = await apiService.deleteMyTask(event.taskId);
       if (response['result'] == 'Success') {
-        emit(MyTaskDeleted('Задача успешно удалена!'));
+        emit(MyTaskDeleted(event.localizations.translate('task_deleted_successfully')));
       } else {
-        emit(MyTaskError('Ошибка удаления задача'));
+        emit(MyTaskError(event.localizations.translate('error_delete_task')));
       }
     } catch (e) {
-      emit(MyTaskError('Ошибка удаления задача!'));
+      emit(MyTaskError(event.localizations.translate('error_delete_task')));
     }
   }
 
@@ -262,12 +262,12 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
       final response =
           await apiService.deleteMyTaskStatuses(event.taskStatusId);
       if (response['result'] == 'Success') {
-        emit(MyTaskDeleted('Статус задачи успешно удалена!'));
+        emit(MyTaskDeleted(event.localizations.translate('task_create_successfully')));
       } else {
-        emit(MyTaskError('Ошибка удаления статуса задачи'));
+        emit(MyTaskError(event.localizations.translate('error_delete_task_status')));
       }
     } catch (e) {
-      emit(MyTaskError('Ошибка удаления статуса сделки!'));
+      emit(MyTaskError(event.localizations.translate('error_delete_task_status')));
     }
   }
 }

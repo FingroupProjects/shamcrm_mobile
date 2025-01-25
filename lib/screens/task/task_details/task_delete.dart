@@ -80,7 +80,9 @@ class DeleteTaskDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('delete'),
                 onPressed: () {
-                  context.read<TaskBloc>().add(DeleteTask(taskId)); 
+                    final localizations = AppLocalizations.of(context)!;
+
+                  context.read<TaskBloc>().add(DeleteTask(taskId,localizations)); 
                   context.read<TaskBloc>().add(FetchTaskStatuses()); 
                   ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

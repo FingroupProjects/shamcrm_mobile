@@ -56,7 +56,9 @@ class DeleteDealDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('delete'),
                 onPressed: () {
-                  context.read<DealBloc>().add(DeleteDeal(dealId)); 
+                  final localizations = AppLocalizations.of(context)!;
+
+                  context.read<DealBloc>().add(DeleteDeal(dealId,localizations)); 
                   context.read<DealBloc>().add(FetchDealStatuses()); 
                   context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
 

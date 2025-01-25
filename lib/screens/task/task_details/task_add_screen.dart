@@ -660,6 +660,7 @@ final Map<int, String> priorityLevels = {
       }
     }
     print("fileData: $fileData");
+  final localizations = AppLocalizations.of(context)!;
 
     context.read<TaskBloc>().add(CreateTask(
           name: name,
@@ -667,8 +668,7 @@ final Map<int, String> priorityLevels = {
           taskStatusId: widget.statusId,
           startDate: startDate,
           endDate: endDate,
-          projectId:
-              selectedProject != null ? int.parse(selectedProject!) : null,
+          projectId:selectedProject != null ? int.parse(selectedProject!) : null,
           userId: selectedUsers != null
               ? selectedUsers!.map((id) => int.parse(id)).toList()
               : null,
@@ -676,6 +676,8 @@ final Map<int, String> priorityLevels = {
           description: description,
           customFields: customFieldMap,
           filePath: selectedFile, // Передаем путь к файлу
+          localizations: localizations,  // Pass the localizations here
+
         ));
   }
 }

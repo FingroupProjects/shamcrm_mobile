@@ -119,7 +119,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       setState(() {
                         _errorMessage = null; 
                       });
-                      context.read<LeadBloc>().add(CreateLeadStatus(title: title, color: color));
+                        final localizations = AppLocalizations.of(context)!;
+
+                      context.read<LeadBloc>().add(CreateLeadStatus(title: title, color: color, localizations: localizations));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(

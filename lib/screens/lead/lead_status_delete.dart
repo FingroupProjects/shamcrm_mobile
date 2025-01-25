@@ -86,62 +86,55 @@ class DeleteLeadStatusDialog extends StatelessWidget {
                     final hasLeads =
                         await _apiService.checkIfStatusHasLeads(leadStatusId);
 
-                    if (hasLeads) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!
-                                .translate('remove_cards_first'),
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.red,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                      Navigator.of(context).pop();
-                    } else {
-                      context
-                          .read<LeadBloc>()
-                          .add(DeleteLeadStatuses(leadStatusId));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!
-                                .translate('status_deleted_successfully'),
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.green,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
+      if (hasLeads) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('remove_cards_first'), 
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        Navigator.of(context).pop(); 
+      } else {
+        final localizations = AppLocalizations.of(context)!;
+        context.read<LeadBloc>().add(DeleteLeadStatuses(leadStatusId, localizations));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('status_deleted_successfully'),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.green,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
                       Navigator.of(context).pop(true);
                       context.read<LeadBloc>().add(FetchLeadStatuses());
                     }

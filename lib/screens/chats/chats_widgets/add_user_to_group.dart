@@ -154,10 +154,13 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                   buttonText: AppLocalizations.of(context)!.translate('add'),
                   onPressed: () {
                     if (selectedUserData != null) {
+                        final localizations = AppLocalizations.of(context)!;
+
                       context.read<GroupChatBloc>().add(
                             AddUserToGroup(
                               chatId: widget.chatId,
                               userId: selectedUserData!.id,
+                              localizations: localizations,
                             ),
                           );
 

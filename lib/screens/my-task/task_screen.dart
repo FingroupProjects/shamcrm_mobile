@@ -433,9 +433,11 @@ Widget build(BuildContext context) {
 
     if (result != null && result) {
       // Удаляем статус
-      setState(() {
-        _deletedIndex = _currentTabIndex;
-        navigateAfterDelete = true;
+
+        setState(() {
+          _deletedIndex = _currentTabIndex;
+          navigateAfterDelete = true;
+      
 
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);

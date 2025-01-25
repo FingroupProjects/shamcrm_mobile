@@ -152,7 +152,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+      emit(DealError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -167,14 +167,14 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания статуса Сделки!'));
+      emit(DealError(event.localizations.translate('error_delete_status_deal')));
     }
   }
 
   Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
     if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+      emit(DealError(event.localizations.translate('no_internet_connection')));
       return;
     }
     try {
@@ -191,13 +191,13 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         customFields: event.customFields,
       );
       if (result['success']) {
-        emit(DealSuccess('Сделка успешно создана'));
+        emit(DealSuccess(event.localizations.translate('deal_created_successfully')));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания сделки!'));
+      emit(DealError(event.localizations.translate('error_deal_create_successfully')));
     }
   }
 
@@ -205,7 +205,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+      emit(DealError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -225,13 +225,13 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       );
 
       if (result['success']) {
-        emit(DealSuccess('Сделка успешно обновлена'));
+        emit(DealSuccess(event.localizations.translate('deal_update_successfully')));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка обновления сделки!'));
+      emit(DealError(event.localizations.translate('error_deal_update_successfully')));
     }
   }
 
@@ -250,12 +250,12 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     try {
       final response = await apiService.deleteDeal(event.dealId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Сделка успешно удалена'));
+        emit(DealDeleted(event.localizations.translate('deal_delete_successfully')));
       } else {
-        emit(DealError('Ошибка удаления сделки'));
+        emit(DealError(event.localizations.translate('error_delete_deal')));
       }
     } catch (e) {
-      emit(DealError('Ошибка удаления сделки!'));
+      emit(DealError(event.localizations.translate('error_delete_deal')));
     }
   }
 
@@ -271,12 +271,12 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       final response = await apiService.deleteDealStatuses(event.dealStatusId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Статус сделки успешно удален'));
+        emit(DealDeleted(event.localizations.translate('status_deal_delete_successfully')));
       } else {
-        emit(DealError('Ошибка удаления статуса сделки'));
+        emit(DealError(event.localizations.translate('error_status_deal_delete')));
       }
     } catch (e) {
-      emit(DealError('Ошибка удаления статуса сделки!'));
+      emit(DealError(event.localizations.translate('error_status_deal_delete')));
     }
   }
 }

@@ -157,11 +157,14 @@ Future<void> _fetchChatData() async {
                         buttonText: AppLocalizations.of(context)!.translate('delete'),
                         onPressed: () async {
                           final parentContext = context;
+                            final localizations = AppLocalizations.of(context)!;
+
 
                           if (isGroupChat == true) {
-                            context.read<ChatsBloc>().add(DeleteChat(widget.chatId));
+
+                            context.read<ChatsBloc>().add(DeleteChat(widget.chatId,localizations));
                           } else {
-                            context.read<ChatsBloc>().add(DeleteChat(widget.chatId));
+                            context.read<ChatsBloc>().add(DeleteChat(widget.chatId,localizations));
                           }
 
                           Future.delayed(Duration(seconds: 1), () {

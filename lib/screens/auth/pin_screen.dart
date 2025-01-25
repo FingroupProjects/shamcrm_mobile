@@ -97,7 +97,7 @@ void initState() {
         userRoleId = userProfile.role!.first.id;
       });
       // Выводим данные в консоль
-      context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());

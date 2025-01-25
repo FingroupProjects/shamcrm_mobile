@@ -45,6 +45,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<int>? _selectedManagerIds; // Add this field
   int? _selectedManagerId; // ID выбранного менеджера.
 
+    bool _showCustomTabBar = true;
+
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +112,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     print('Selected managers: $managers');
 
     setState(() {
+          _showCustomTabBar = false;
+
       _selectedManagerIds = managers
           .map((manager) {
             if (manager is String) {
@@ -136,6 +141,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   void _onManagerSelected(List<int> managerIds) {
     setState(() {
+                      _showCustomTabBar = false;
+
       _selectedManagerIds = managerIds;
     });
     // Запрашиваем обновленные данные с учетом выбранного менеджера
@@ -157,7 +164,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   Future<void> _checkPermissions() async {
     final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
-    final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    final canDelete = await _apiService.hasPermission('deal.delete');
     // final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
       _canReadDealStatus = canRead;
@@ -208,25 +215,29 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               setState(() {
                 _isSearching = false;
                 _selectedManagerId = null;
+                _showCustomTabBar = true;
+
               });
             }
           }, clearButtonClickFiltr: (bool ) {  },
         ),
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Column(
-              children: [
-                const SizedBox(height: 15),
-                if (!_isSearching && _selectedManagerId == null)
-                  _buildCustomTabBar(),
-                Expanded(
-                  child: _selectedManagerId != null
-                      ? _buildManagerView()
-                      : _buildTabBarView(),
-                ),
-              ],
-            ),
+     body: isClickAvatarIcon
+    ? ProfileScreen()
+    : Column(
+        children: [
+          const SizedBox(height: 15),
+          // Условие для отображения табов с использованием флага
+          if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
+            _buildCustomTabBar(),
+          Expanded(
+            child: _isSearching || _selectedManagerId != null
+                ? _buildManagerView()
+                : _buildTabBarView(),
+          ),
+        ],
+      ),
+
     );
   }
 

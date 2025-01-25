@@ -70,6 +70,8 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
+    bool _showCustomTabBar = true;
+
 
   @override
   void initState() {
@@ -120,11 +122,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final baseUrlSocket = await ApiService().getSocketBaseUrl();
-    final enteredDomain = await ApiService().getEnteredDomain();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -141,7 +145,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -408,8 +412,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                       focusNode: focusNode,
                       onChanged: widget.onChangedSearchInput,
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!
-                            .translate('search_appbar'),
+                        hintText: AppLocalizations.of(context)!.translate('search_appbar'),
                         border: InputBorder.none,
                       ),
                       style: TextStyle(fontSize: 16),
@@ -421,8 +424,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                 children: [
                   if (widget.showMyTaskIcon)
                     Tooltip(
-                      message: AppLocalizations.of(context)!
-                          .translate('appbar_my_tasks'),
+                      message: AppLocalizations.of(context)!.translate('appbar_my_tasks'),
                       // Текст подсказки
                       preferBelow: false,
                       decoration: BoxDecoration(
@@ -599,7 +601,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   Tooltip(
                     message:
                         AppLocalizations.of(context)!.translate('notification'),
-// Текст подсказки
+
                     preferBelow: false,
                     decoration: BoxDecoration(
                       color: Colors.white, // Белый фон

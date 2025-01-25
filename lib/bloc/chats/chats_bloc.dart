@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/pagination_dto.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -114,15 +115,15 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       try {
         final response = await apiService.deleteChat(event.chatId);
         if (response['result'] == true) {
-          emit(ChatsDeleted('Чат успешно удален'));
+          emit(ChatsDeleted(event.localizations.translate('chat_deleted_successfully')));
         } else {
-          emit(ChatsError('Вы не можете удалить эту группу!'));
+          emit(ChatsError(event.localizations.translate('you_dont_delete_this_group')));
         }
       } catch (e) {
-        emit(ChatsError('Ошибка удаления чата!'));
+        emit(ChatsError(event.localizations.translate('error_delete_chat')));
       }
     } else {
-      emit(ChatsError('Нет подключения к интернету'));
+      emit(ChatsError(event.localizations.translate('no_internet_connection')));
     }
   }
 

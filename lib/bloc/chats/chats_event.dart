@@ -38,7 +38,11 @@ class UpdateChatsFromSocket extends ChatsEvent {
 
 class DeleteChat extends ChatsEvent {
     final int chatId;
+    final AppLocalizations localizations;  
 
-  const DeleteChat(this.chatId);
+  const DeleteChat(
+    this.chatId,
+    this.localizations,
+    );
 }
 

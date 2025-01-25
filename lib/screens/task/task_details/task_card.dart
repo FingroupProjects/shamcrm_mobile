@@ -100,6 +100,10 @@ class _TaskCardState extends State<TaskCard> {
 
   /// Получение текстового представления приоритета
 String _getPriorityText(int? priority, BuildContext context) {
+  print('========================================================================');
+  print('====================================================================================');
+  print(priority);
+  
   switch (priority) {
     case 1:
       return AppLocalizations.of(context)!.translate('normal'); 
@@ -122,6 +126,7 @@ String _getPriorityText(int? priority, BuildContext context) {
     }
     return '';
   }
+
 
  @override
 Widget build(BuildContext context) {
@@ -223,7 +228,7 @@ Widget build(BuildContext context) {
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
           decoration:
-              TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
+          TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
           child: Stack(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -233,26 +238,21 @@ Widget build(BuildContext context) {
                     Expanded(
                       child: Text(
                         widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
-                        style:
-                            TaskCardStyles.titleStyle, // Стиль заголовка задачи
-                        overflow: TextOverflow
-                            .ellipsis, // Обрезка текста, если не помещается
+                        style:TaskCardStyles.titleStyle, // Стиль заголовка задачи
+                        overflow: TextOverflow.ellipsis, // Обрезка текста, если не помещается
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getPriorityBackgroundColor(
-                            widget.task.priority), // Цвет фона приоритета
-                        borderRadius:
-                            BorderRadius.circular(16), // Радиус скругления
+                        color: _getPriorityBackgroundColor( widget.task.priority), // Цвет фона приоритета
+                        borderRadius: BorderRadius.circular(16), // Радиус скругления
                       ),
                       child: Text(
                         _getPriorityText(widget.task.priority, context),// Текст приоритета
                         style: TextStyle(
-                          color: _getPriorityTextColor(
-                              widget.task.priority), // Цвет текста приоритета
+                          color: _getPriorityTextColor(widget.task.priority), // Цвет текста приоритета
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
@@ -261,7 +261,7 @@ Widget build(BuildContext context) {
                     ),
                   ],
                 ),
-                const SizedBox(height: 0), // Отступ в 12 пикселей сверху
+                const SizedBox(height: 0), 
                 Text(
                   widget.task.project?.name ?? AppLocalizations.of(context)!.translate('no_project'),
                   style: const TextStyle(
@@ -275,7 +275,7 @@ Widget build(BuildContext context) {
                 Row(
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.translate('column'), // Надпись "Колонка" для статуса задачи
+                      AppLocalizations.of(context)!.translate('column'), 
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

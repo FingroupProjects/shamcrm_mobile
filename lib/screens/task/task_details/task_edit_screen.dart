@@ -631,6 +631,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                             .add({fieldName: fieldValue});
                                       }
                                     }
+                                      final localizations = AppLocalizations.of(context)!;
+
                                     context.read<TaskBloc>().add(
                                           UpdateTask(
                                             taskId: widget.taskId,
@@ -652,8 +654,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                             description:
                                                 descriptionController.text,
                                             customFields: customFieldList,
-                                            filePath:
-                                                selectedFile, // Добавляем путь к файлу
+                                            filePath: selectedFile, // Добавляем путь к файлу
+                                           localizations: localizations, 
+
                                           ),
                                         );
                                   } catch (e) {

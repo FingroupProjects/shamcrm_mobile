@@ -66,8 +66,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               orElse: () => widget.organization,
             );
             final updatedTime = updatedOrganization.last1cUpdate != null
-                ? DateFormat('dd.MM.yyyy HH:mm')
-                    .format(DateTime.parse(updatedOrganization.last1cUpdate!))
+                ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(updatedOrganization.last1cUpdate!))
                 : null;
 
             // Обновление значения в ValueNotifier
@@ -100,7 +99,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                localizations.translate('data_update_failed'), 
+                localizations.translate('data_updated_successfully'), 
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,

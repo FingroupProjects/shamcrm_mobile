@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -174,7 +173,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
     // Проверка подключения к интернету
     if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
+      emit(LeadError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -199,7 +198,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess('Лид успешно создан!'));
+        emit(LeadSuccess(event.localizations.translate('lead_created_successfully')));
         // Передаем статус лида (event.leadStatusId) в событие FetchLeads
         // add(FetchLeads(event.leadStatusId));
       } else {
@@ -208,7 +207,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       }
     } catch (e) {
       // Логирование ошибки
-      emit(LeadError('Ошибка создания лида!'));
+      emit(LeadError(event.localizations.translate('lead_creation_error')));
     }
   }
 
@@ -226,7 +225,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
     // Проверка подключения к интернету
     if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
+      emit(LeadError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -252,13 +251,13 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess('Лид успешно обновлен!'));
+        emit(LeadSuccess(event.localizations.translate('lead_updated_successfully')));
         // add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
       } else {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError('Ошибка обновления лида!'));
+      emit(LeadError(event.localizations.translate('error_update_lead')));
     }
   }
 
@@ -267,7 +266,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     emit(LeadLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(LeadError('Нет подключения к интернету'));
+      emit(LeadError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -282,7 +281,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError('Ошибка создания статуса лида!'));
+      emit(LeadError(event.localizations.translate('error_create_status_lead')));
     }
   }
 
@@ -292,12 +291,12 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     try {
       final response = await apiService.deleteLead(event.leadId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted('Лид успешно удален!'));
+        emit(LeadDeleted(event.localizations.translate('lead_deleted_successfully')));
       } else {
-        emit(LeadError('Ошибка удаления лида!'));
+        emit(LeadError(event.localizations.translate('error_delete_lead')));
       }
     } catch (e) {
-      emit(LeadError('Ошибка удаления лида!'));
+      emit(LeadError(event.localizations.translate('error_delete_lead')));
     }
   }
 
@@ -308,12 +307,12 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     try {
       final response = await apiService.deleteLeadStatuses(event.leadStatusId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted('Статус Лида успешно удалена'));
+        emit(LeadDeleted(event.localizations.translate('delete_status_lead_successfully')));
       } else {
-        emit(LeadError('Ошибка удаления статуса лида'));
+        emit(LeadError(event.localizations.translate('error_delete_status_lead')));
       }
     } catch (e) {
-      emit(LeadError('Ошибка удаления статуса лида!'));
+      emit(LeadError(event.localizations.translate('error_delete_status_lead')));
     }
   }
 }

@@ -30,7 +30,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _checkDomain();
+      //  main();
+    // _checkDomain();
   }
 
   Future<void> _checkDomain() async {
@@ -50,11 +51,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    if (!_isDomainChecked) {
-      return Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
-      );
-    }
+    // if (!_isDomainChecked) {
+    //   return Scaffold(
+    //     body: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+    //   );
+    // }
 
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
