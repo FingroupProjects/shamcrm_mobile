@@ -15,7 +15,7 @@
 
     <application
         android:enableOnBackInvokedCallback="true"
-        android:label="SHAMCRM"
+        android:label="shamCRM"
         android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
         android:networkSecurityConfig="@xml/network_security_config"

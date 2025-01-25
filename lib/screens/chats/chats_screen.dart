@@ -279,7 +279,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                   _isSearching = false;
                 });
               }
-            },
+            }, clearButtonClickFiltr: (bool ) {  },
           ),
           backgroundColor: Colors.white,
         ),

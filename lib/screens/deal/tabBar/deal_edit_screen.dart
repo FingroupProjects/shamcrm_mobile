@@ -243,12 +243,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         controller: sumController,
                         hintText: AppLocalizations.of(context)!.translate('enter_summ'),
                         label: AppLocalizations.of(context)!.translate('summ'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                           return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //    return AppLocalizations.of(context)!.translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

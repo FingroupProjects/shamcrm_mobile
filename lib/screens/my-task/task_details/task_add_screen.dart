@@ -90,7 +90,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
             },
             activeColor: const Color(0xff1E2E52),
           ),
-           Text(
+          Text(
             AppLocalizations.of(context)!.translate('set_push_notification'),
             style: TextStyle(
               fontSize: 16,
@@ -109,7 +109,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-         Text(
+        Text(
           AppLocalizations.of(context)!.translate('file'),
           style: TextStyle(
             fontSize: 16,
@@ -132,7 +132,8 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    fileName ?? AppLocalizations.of(context)!.translate('select_file'),
+                    fileName ??
+                        AppLocalizations.of(context)!.translate('select_file'),
                     style: TextStyle(
                       color: fileName != null
                           ? const Color(0xff1E2E52)
@@ -285,13 +286,13 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         controller: startDateController,
                         label: AppLocalizations.of(context)!
                             .translate('from_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
@@ -299,13 +300,13 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         label:
                             AppLocalizations.of(context)!.translate('to_list'),
                         hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -464,6 +465,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
       );
     }
       final localizations = AppLocalizations.of(context)!;
+
 
     context.read<MyTaskBloc>().add(CreateMyTask(
           name: name,

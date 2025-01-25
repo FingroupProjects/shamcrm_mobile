@@ -219,7 +219,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
               });
             }
-          },
+          }, clearButtonClickFiltr: (bool ) {  },
         ),
       ),
      body: isClickAvatarIcon

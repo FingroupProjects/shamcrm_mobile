@@ -246,7 +246,7 @@ class _MyAppState extends State<MyApp> {
         locale: _locale ?? const Locale('ru'), 
         color: Colors.white,
         debugShowCheckedModeBanner: false,
-        title: 'SHAMCRM',
+        title: 'shamCRM',
         navigatorKey: navigatorKey,
         theme: ThemeData(
           primarySwatch: Colors.blue,

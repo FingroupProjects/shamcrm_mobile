@@ -235,12 +235,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                           return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //    return AppLocalizations.of(context)!.translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

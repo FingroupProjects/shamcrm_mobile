@@ -138,7 +138,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     }
   }
 
-
   void _onSearch(String query) {
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchMyTasks(query, currentStatusId);
@@ -149,66 +148,68 @@ class _MyTaskScreenState extends State<MyTaskScreen>
   ValueChanged<String>? onChangedSearchInput;
 
   bool isClickAvatarIcon = false;
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_my_tasks'),
-          onClickProfileAvatar: () {
+
+@override
+Widget build(BuildContext context) {
+  final localizations = AppLocalizations.of(context);
+
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      forceMaterialTransparency: true,
+      title: CustomAppBar(
+        title: isClickAvatarIcon
+            ? localizations!.translate('appbar_settings')
+            : localizations!.translate('appbar_my_tasks'),
+        onClickProfileAvatar: () {
+          setState(() {
+            isClickAvatarIcon = !isClickAvatarIcon;
+          });
+        },
+        onChangedSearchInput: (String value) {
+          if (value.isNotEmpty) {
             setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
+              _isSearching = true;
             });
-          },
-          onChangedSearchInput: (String value) {
-            if (value.isNotEmpty) {
-              setState(() {
-                _isSearching = true;
-              });
-            }
-            _onSearch(value);
-          },
-          textEditingController: textEditingController,
-          focusNode: focusNode,
-          showFilterIcon: false,
-          showFilterTaskIcon: false,
-          clearButtonClick: (value) {
-            if (value == false) {
-              final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-              taskBloc.add(FetchMyTaskStatuses());
+          }
+          _onSearch(value);
+        },
+        textEditingController: textEditingController,
+        focusNode: focusNode,
+        showFilterIcon: false,
+        showFilterTaskIcon: false,
+        clearButtonClick: (value) {
+          if (value == false) {
+            final taskBloc = BlocProvider.of<MyTaskBloc>(context);
+            taskBloc.add(FetchMyTaskStatuses());
 
-              //  BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
-
-              setState(() {
-                _isSearching = false;
-                _selectedUserId = null;
-              });
-            }
-          },
-        ),
+            setState(() {
+              _isSearching = false;
+              _selectedUserId = null;
+            });
+          }
+        }, clearButtonClickFiltr: (bool ) {  },
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Column(
-              children: [
-                const SizedBox(height: 15),
-                if (!_isSearching && _selectedUserId == null)
-                  _buildCustomTabBar(),
-                Expanded(
-                  child: _selectedUserId != null
-                      ? _buildUserView()
-                      : _buildTabBarView(),
-                ),
-              ],
-            ),
-    );
-  }
+    ),
+    body: isClickAvatarIcon
+        ? ProfileScreen()
+        : Column(
+            children: [
+              const SizedBox(height: 15),
+              if (!_isSearching && _selectedUserId == null)
+                _buildCustomTabBar(),
+              // Оборачиваем TabBarView в Expanded
+              Expanded(
+                child: _selectedUserId != null
+                    ? _buildUserView()
+                    : _buildTabBarView(),
+              ),
+            ],
+          ),
+  );
+}
+
 
   Widget searchWidget(List<MyTask> tasks) {
     if (_isSearching && tasks.isEmpty) {
@@ -421,6 +422,8 @@ class _MyTaskScreenState extends State<MyTaskScreen>
 
   void _showDeleteDialog(int index) async {
     final taskStatusId = _tabTitles[index]['id'];
+
+    // Показываем диалог подтверждения удаления
     final result = await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -429,12 +432,13 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     );
 
     if (result != null && result) {
-      setState(() {
+      // Удаляем статус
+
         setState(() {
           _deletedIndex = _currentTabIndex;
           navigateAfterDelete = true;
       
-        });
+
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
         _tabController = TabController(length: _tabTitles.length, vsync: this);
@@ -442,9 +446,25 @@ class _MyTaskScreenState extends State<MyTaskScreen>
 
         _isSearching = false;
         _searchController.clear();
-
-        context.read<MyTaskBloc>().add(FetchMyTasks(_currentTabIndex));
       });
+
+      // Проверяем количество оставшихся статусов
+      if (_tabTitles.isEmpty) {
+        // Если нет оставшихся статусов, очищаем кэш
+        await MyTaskCache.clearAllMyTasks(); // Очищаем задачи из кэша
+        await MyTaskCache.clearCache(); // Очищаем статусы из кэша
+        print('Кэш полностью очищен, так как все статусы удалены.');
+      } else if (_tabTitles.length == 1) {
+        // Если остался только один статус, удаляем его из кэша
+        final remainingStatusId = _tabTitles.first['id'];
+        await MyTaskCache
+            .clearMyTaskStatuses(); // Удаляем все связанные статусы
+        await MyTaskCache.cacheMyTaskStatuses(
+            _tabTitles); // Перезаписываем оставшийся статус
+        print('Кэш обновлён: один статус остался после удаления.');
+      }
+
+      // Обновляем данные через Bloc
       final taskBloc = BlocProvider.of<MyTaskBloc>(context);
       taskBloc.add(FetchMyTaskStatuses());
     }
@@ -513,7 +533,9 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             }
           });
         } else if (state is MyTaskError) {
-          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'),)) {
+          if (state.message.contains(
+            AppLocalizations.of(context)!.translate('unauthorized_access'),
+          )) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -521,7 +543,9 @@ class _MyTaskScreenState extends State<MyTaskScreen>
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'),)) {
+          } else if (state.message.contains(
+            AppLocalizations.of(context)!.translate('no_internet_connection'),
+          )) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -568,7 +592,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             }
             return TabBarView(
               controller: _tabController,
-              // key: UniqueKey(),
               children: List.generate(_tabTitles.length, (index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
@@ -581,7 +604,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 
-                    // context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
                     final taskBloc = BlocProvider.of<MyTaskBloc>(context);
                     taskBloc.add(FetchMyTaskStatuses());
 
