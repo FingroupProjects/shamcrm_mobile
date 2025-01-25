@@ -118,10 +118,11 @@ class DeleteChatDialog extends StatelessWidget {
                   buttonText: AppLocalizations.of(context)!.translate('delete'), 
                   onPressed: () {
                     final parentContext = context;
-
+                    final localizations = AppLocalizations.of(context)!;
                     context.read<GroupChatBloc>().add(DeleteUserFromGroup(
                           chatId: chatId,
                           userId: userId,
+                          localizations: localizations,
                         ));
 
                     Future.delayed(Duration(seconds: 1), () {

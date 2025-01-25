@@ -478,9 +478,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     }
                                   }
                                   final leadBloc = context.read<LeadBloc>();
-                                  context
-                                      .read<LeadBloc>()
-                                      .add(FetchLeadStatuses());
+                                  context.read<LeadBloc>().add(FetchLeadStatuses());
+  final localizations = AppLocalizations.of(context)!;
+
+
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
@@ -503,6 +504,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     description: descriptionController.text,
                                     leadStatusId: widget.statusId,
                                     customFields: customFieldList,
+                                    localizations: localizations,  
+
                                   ));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(

@@ -419,6 +419,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
       }
     }
 
+      final localizations = AppLocalizations.of(context)!;
+
+
     context.read<DealBloc>().add(CreateDeal(
           name: name,
           dealStatusId: widget.statusId,
@@ -430,6 +433,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
           sum: sum,
           description: description,
           customFields: customFieldMap,
+          localizations: localizations, 
         ));
   }
 }

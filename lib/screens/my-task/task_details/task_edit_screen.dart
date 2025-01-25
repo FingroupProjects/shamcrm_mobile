@@ -479,7 +479,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                       );
                                       return;
                                     }
-
+                                    final localizations = AppLocalizations.of(context)!;
                                     context.read<MyTaskBloc>().add(
                                           UpdateMyTask(
                                             taskId: widget.taskId,
@@ -492,6 +492,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                             filePath:
                                                 selectedFile, // Добавляем путь к файлу
                                             setPush: setPush, // Add this line
+                                            localizations: localizations,
                                           ),
                                         );
                                   } catch (e) {

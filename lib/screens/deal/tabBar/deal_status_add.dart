@@ -184,12 +184,13 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       });
                       return;
                     }
-
+                    final localizations = AppLocalizations.of(context)!;
                     context.read<DealBloc>().add(
                           CreateDealStatus(
                             title: title,
                             color: color,
-                            day: day, // Может быть null
+                            day: day, 
+                            localizations: localizations,
                           ),
                         );
 

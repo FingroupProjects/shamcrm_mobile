@@ -39,7 +39,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   void initState() {
     super.initState();
 
-    // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
     _animationController = AnimationController(
       vsync: this,
@@ -122,7 +122,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       await prefs.setString('userRoleName', userProfile.role![0].name);
 
       // Выводим данные в консоль
-      context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());

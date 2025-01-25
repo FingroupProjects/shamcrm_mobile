@@ -376,7 +376,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       customFieldList.add({fieldName: fieldValue});
                                     }
                                   }
-
+                                  final localizations = AppLocalizations.of(context)!;
                                   context.read<DealBloc>().add(UpdateDeal(
                                         dealId: widget.dealId,
                                         name: titleController.text,
@@ -393,6 +393,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         sum: sumController.text,
                                         dealtypeId: 1,
                                         customFields: customFieldList,
+                                        localizations: localizations,
                                       ));
                                 } else {
                                    ScaffoldMessenger.of(context).showSnackBar(

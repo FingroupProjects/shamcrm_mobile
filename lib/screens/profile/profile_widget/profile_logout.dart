@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,7 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
+
         // Очистка SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String? token = prefs.getString('token') ?? '';
@@ -29,19 +32,22 @@ class LogoutButtonWidget extends StatelessWidget {
         await apiService.logout();
 
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => AuthScreen()),
-          (Route<dynamic> route) => false,
-        );
+      //  await Future.delayed(Duration(seconds: 2)); // Задержка в 2 секунды
 
-        // Перезапуск приложения
-          Restart.restartApp();
+        // Navigator.pushAndRemoveUntil(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => AuthScreen()),
+        //   (Route<dynamic> route) => false,
+        // );
+   Restart.restartApp();
+
+       
+    exit(0);
 
              
       //  ui.window.onBeginFrame = null;
       //   ui.window.onDrawFrame = null;
-      //   main();
+        // main();
       },
       child: _buildProfileOption(
         iconPath: 'assets/icons/Profile/logout.png',

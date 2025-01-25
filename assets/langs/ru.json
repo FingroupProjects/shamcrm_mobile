@@ -372,8 +372,8 @@
     "confrim_delete_lead_status": "Вы уверены, что хотите удалить этот статус лида?",
 
     "COMMENT_TITLE_SCREEN_API_SERVICE": "----------------------------Тексты для экрана API SERVICE---------------------------",
-    "lead_created_successfully": "Лид успешно создан",
-    "lead_updated_successfully": "Лид успешно обновлен",
+    "lead_created_successfully": "Лид успешно создан!",
+    "lead_updated_successfully": "Лид успешно обновлен!",
     "phone_already_exists": "Этот номер телефона уже существует.",
     "invalid_phone_format": "Неправильный номер телефона. Проверьте формат и количество цифр.",
     "invalid_name_length": "Введите хотя бы 3 символа!",
@@ -506,7 +506,7 @@
     "selected_users": "Выбрано пользователей: ",
     "user": "Пользователь",
     "select_user": "Выберите пользователя",
-    "chat_deleted_successfully": "Чат успешно удален",
+    "chat_deleted_successfully": "Чат успешно удален!",
     "you_dont_delete_this_group": "Вы не можете удалить эту группу!",
     "error_delete_chat": "Ошибка удаления чата!",
     "cannot_data_load_chat": "Не удалось загрузить данные чата!",
@@ -515,7 +515,7 @@
     "user_added_successfully": "Пользователь успешно добавлен в группу!",
     "error_add_user": "Ошибка добавления пользователя!",
     "user_delete_successfully": "Пользователь успешно удален из группы",
-    "cannot_delete_user": "Нельзя удалить участника",
+    "cannot_delete_user": "Нельзя удалить участника!",
     "error_delete_user": "Ошибка удаления пользователя!",
 
 
@@ -572,5 +572,28 @@
     "no_any_managers":"Нет доступных менеджеров",
     "notification":"Уведомление",
     "filtr":"Фильтр",
-    "clear":"Очистить"
+    "clear":"Очистить",
+
+    "COMMENT_TITLE_SCREEN_BLOC": "----------------------------Тексты для экрана  BLOC---------------------------",
+    "no_status_task":"Нет статусов задачи!",
+    "status_task_delete_successfully":"Статус задачи успешно удалена!",
+    "error_delete_task_status":"Ошибка удаления статуса задачи!",
+    "error_delete_task":"Ошибка удаления задача!",
+    "error_update_lead":"Ошибка обновление лида!",
+    "error_create_status_lead":"Ошибка создания статуса лида!",
+    "error_delete_lead":"Ошибка удаления лида!",
+    "delete_status_lead_successfully":"Статус лида успешно удалена!",
+    "error_delete_status_lead":"Ошибка удаления статуса лида!",
+    "error_delete_status_deal":"Ошибка создания статуса cделки!",
+    "deal_delete_successfully":"Cделка успешно удалена!",
+    "error_delete_deal":"Ошибка удаления сделки!",
+    "status_deal_delete_successfully":"Статус сделки успешно удален!",
+    "error_status_deal_delete":"Ошибка удаления статуса сделки!",
+   
+    "error_get_data_lead":"Не удалось загрузить данные лида!"
+
+    
+
+
+
   }

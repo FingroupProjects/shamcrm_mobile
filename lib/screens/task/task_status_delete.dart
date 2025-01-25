@@ -114,7 +114,9 @@ class DeleteTaskStatusDialog extends StatelessWidget {
         );
         Navigator.of(context).pop(); 
       } else {
-        context.read<TaskBloc>().add(DeleteTaskStatuses(taskStatusId));
+          final localizations = AppLocalizations.of(context)!;
+
+        context.read<TaskBloc>().add(DeleteTaskStatuses(taskStatusId,localizations));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

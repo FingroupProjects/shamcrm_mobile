@@ -146,7 +146,6 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
-  // Извлекаем значения из Map
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 

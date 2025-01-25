@@ -73,8 +73,7 @@ import '../../models/login_model.dart';
 class ApiService {
   String? baseUrl;
   String? baseUrlSocket;
-  static final GlobalKey<NavigatorState> navigatorKey =
-      GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   ApiService() {
     _initializeIfDomainExists();

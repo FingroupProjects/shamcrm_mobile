@@ -110,7 +110,8 @@ class DeleteLeadStatusDialog extends StatelessWidget {
         );
         Navigator.of(context).pop(); 
       } else {
-        context.read<LeadBloc>().add(DeleteLeadStatuses(leadStatusId));
+        final localizations = AppLocalizations.of(context)!;
+        context.read<LeadBloc>().add(DeleteLeadStatuses(leadStatusId, localizations));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

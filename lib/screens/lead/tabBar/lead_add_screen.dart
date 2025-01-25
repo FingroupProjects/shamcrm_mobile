@@ -439,6 +439,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       }
     }
 
+  final localizations = AppLocalizations.of(context)!;
+
     context.read<LeadBloc>().add(CreateLead(
           name: name,
           leadStatusId: widget.statusId,
@@ -457,6 +459,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           email: email,
           description: description,
           customFields: customFieldMap,
+          localizations: localizations,  
+
         ));
   }
 }

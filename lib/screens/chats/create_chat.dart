@@ -280,10 +280,13 @@ class _AddClientDialogState extends State<AddClientDialog> {
             }
 
             if (!hasError) {
+                final localizations = AppLocalizations.of(context)!;
+
               context.read<GroupChatBloc>().add(
                     CreateGroupChat(
                       name: groupNameController.text,
                       userId: selectedUsers.map((user) => user.id!).toList(),
+                      localizations: localizations,
                     ),
                   );
             }

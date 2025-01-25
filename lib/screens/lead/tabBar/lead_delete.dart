@@ -81,7 +81,8 @@ class DeleteLeadDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText:  AppLocalizations.of(context)!.translate('delete'), 
                 onPressed: () {
-                  context.read<LeadBloc>().add(DeleteLead(leadId)); 
+                    final localizations = AppLocalizations.of(context)!;
+                  context.read<LeadBloc>().add(DeleteLead(leadId,localizations)); 
                   context.read<LeadBloc>().add(FetchLeadStatuses()); 
                   ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

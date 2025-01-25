@@ -87,9 +87,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     _loadSelectedOrganization(); // Загружаем выбранную организацию
 
-    context
-        .read<LeadByIdBloc>()
-        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 
   void _showFullTextDialog(String title, String content) {

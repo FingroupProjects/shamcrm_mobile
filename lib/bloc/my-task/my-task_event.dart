@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+
 abstract class MyTaskEvent {}
 
 class FetchMyTaskStatuses extends MyTaskEvent {}
@@ -29,6 +31,7 @@ class CreateMyTask extends MyTaskEvent {
   final String? filePath;
   final List<Map<String, String>>? customFields;
   final bool setPush; // Add this line
+  final AppLocalizations localizations; 
 
   CreateMyTask({
     required this.name,
@@ -40,6 +43,7 @@ class CreateMyTask extends MyTaskEvent {
     this.customFields,
     this.filePath,
     this.setPush = false, // Add this line with default value
+    required this.localizations,
   });
 }
 
@@ -52,6 +56,7 @@ class UpdateMyTask extends MyTaskEvent {
   final int taskStatusId;
   final String? filePath;
   final bool setPush; // Add this line
+   final AppLocalizations localizations; 
 
   UpdateMyTask({
     required this.taskId,
@@ -62,6 +67,8 @@ class UpdateMyTask extends MyTaskEvent {
     required this.taskStatusId,
     this.filePath,
     this.setPush = false, // Add this line with default value
+    required this.localizations,
+
   });
 }
 
@@ -69,22 +76,33 @@ class CreateMyTaskStatus extends MyTaskEvent {
   final int taskStatusNameId;
   final int organizationId;
   final bool needsPermission;
+   final AppLocalizations localizations; 
 
   CreateMyTaskStatus({
     required this.taskStatusNameId,
     required this.organizationId,
     required this.needsPermission,
+    required this.localizations,
+
   });
 }
 
 class DeleteMyTask extends MyTaskEvent {
   final int taskId;
+   final AppLocalizations localizations; 
 
-  DeleteMyTask(this.taskId);
+  DeleteMyTask(
+    this.taskId,
+    this.localizations,
+    );
 }
 
 class DeleteMyTaskStatuses extends MyTaskEvent {
   final int taskStatusId;
+   final AppLocalizations localizations; 
 
-  DeleteMyTaskStatuses(this.taskStatusId);
+  DeleteMyTaskStatuses(
+    this.taskStatusId,
+    this.localizations,
+    );
 }

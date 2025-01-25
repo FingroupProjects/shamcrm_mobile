@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'task_event.dart';
@@ -44,7 +45,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
       return;
     }
-    print("Updated task counts: $_taskCounts");
 
     try {
       // Сначала пробуем загрузить статусы задач из кэша
@@ -106,8 +106,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
       return;
     }
-    print("==========blocccc================count");
-    print(_taskCounts);
+
     try {
       // Сначала пробуем загрузить задачи из кэша
       final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
@@ -169,45 +168,46 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
-    emit(TaskLoading());
+Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+  emit(TaskLoading());
 
-    if (!await _checkInternetConnection()) {
-      emit(TaskError('Нет подключения к интернету'));
-      return;
-    }
-
-    try {
-      final result = await apiService.createTask(
-        name: event.name,
-        statusId: event.statusId,
-        taskStatusId: event.taskStatusId,
-        priority: event.priority,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        projectId: event.projectId,
-        userId: event.userId,
-        description: event.description,
-        customFields: event.customFields,
-        filePath: event.filePath,
-      );
-
-      if (result['success']) {
-        emit(TaskSuccess('Задача успешно создана!'));
-        // add(FetchTasks(event.statusId));
-      } else {
-        emit(TaskError(result['message']));
-      }
-    } catch (e) {
-      emit(TaskError('Ошибка создания задачи!'));
-    }
+  if (!await _checkInternetConnection()) {
+    emit(TaskError(event.localizations.translate('no_internet_connection')));
+    return;
   }
+
+  try {
+    final result = await apiService.createTask(
+      name: event.name,
+      statusId: event.statusId,
+      taskStatusId: event.taskStatusId,
+      priority: event.priority,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      projectId: event.projectId,
+      userId: event.userId,
+      description: event.description,
+      customFields: event.customFields,
+      filePath: event.filePath,
+    );
+
+    if (result['success']) {
+      emit(TaskSuccess(event.localizations.translate('task_create_successfully')));
+    } else {
+      emit(TaskError(result['message']));
+    }
+  } catch (e) {
+    emit(TaskError(event.localizations.translate('task_creation_error')));
+  }
+}
+
+
 
   Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(TaskError('Нет подключения к интернету'));
+      emit(TaskError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -228,13 +228,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       );
 
       if (result['success']) {
-        emit(TaskSuccess('Задача успешно обновлена!'));
+        emit(TaskSuccess(event.localizations!.translate('task_update_successfully')));
         // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
       }
     } catch (e) {
-      emit(TaskError('Ошибка обновления задачи!'));
+    emit(TaskError(event.localizations.translate('error_task_update_successfully')));
     }
   }
 
@@ -253,12 +253,12 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     try {
       final response = await apiService.deleteTask(event.taskId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted('Задача успешно удалена!'));
+        emit(TaskDeleted(event.localizations.translate('task_deleted_successfully')));
       } else {
-        emit(TaskError('Ошибка удаления задача'));
+        emit(TaskError(event.localizations.translate('error_delete_task')));
       }
     } catch (e) {
-      emit(TaskError('Ошибка удаления задача!'));
+      emit(TaskError(event.localizations.translate('error_delete_task')));
     }
   }
 
@@ -269,12 +269,12 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     try {
       final response = await apiService.deleteTaskStatuses(event.taskStatusId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted('Статус задачи успешно удалена!'));
+        emit(TaskDeleted(event.localizations.translate('task_create_successfully')));
       } else {
-        emit(TaskError('Ошибка удаления статуса задачи'));
+        emit(TaskError(event.localizations.translate('error_delete_task_status')));
       }
     } catch (e) {
-      emit(TaskError('Ошибка удаления статуса сделки!'));
+      emit(TaskError(event.localizations.translate('error_delete_task_status')));
     }
   }
 }

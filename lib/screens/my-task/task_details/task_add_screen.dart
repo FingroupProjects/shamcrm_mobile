@@ -463,6 +463,8 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         size: fileSize ?? "0KB",
       );
     }
+      final localizations = AppLocalizations.of(context)!;
+
     context.read<MyTaskBloc>().add(CreateMyTask(
           name: name,
           statusId: widget.statusId,
@@ -472,6 +474,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           description: description,
           filePath: selectedFile, // Передаем путь к файлу
           setPush: setPush, // Add this line
+          localizations: localizations,
         ));
   }
 }

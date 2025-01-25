@@ -46,6 +46,9 @@ class AppLocalizations {
   String get uzbek => translate('uzbek');
   String get english => translate('english');
   String get exit => translate('exit');
+  String get urgent => translate('urgent');
+  String get important => translate('important');
+  String get normal => translate('normal');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

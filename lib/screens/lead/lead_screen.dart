@@ -42,6 +42,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
+  
+  bool _showCustomTabBar = true;
+
   int? _selectedManagerId; // ID выбранного менеджера.
   List<int> _selectedManagerIds = [];
 
@@ -113,6 +116,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   void _handleManagerSelected(List<dynamic> managers) {
     print('Selected managers: $managers');
     setState(() {
+          _showCustomTabBar = false;
+
       _selectedManagerIds = managers
           .map((manager) {
             if (manager is String) {
@@ -208,30 +213,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               leadBloc.add(FetchLeadStatuses());
               setState(() {
                 _isSearching = false;
+                _showCustomTabBar = true;
                 _selectedManagerId = null;
               });
             }
           },
         ),
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Column(
-              children: [
-                const SizedBox(height: 15),
-                // Изменили условие отображения табов
-                if (!_isSearching &&
-                    _selectedManagerId == null &&
-                    !_isSearching)
-                  _buildCustomTabBar(),
-                Expanded(
-                  // Изменили условие выбора отображения
-                  child: _isSearching || _selectedManagerId != null
-                      ? _buildManagerView()
-                      : _buildTabBarView(),
-                ),
-              ],
-            ),
+     body: isClickAvatarIcon
+    ? ProfileScreen()
+    : Column(
+        children: [
+          const SizedBox(height: 15),
+          // Условие для отображения табов с использованием флага
+          if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
+            _buildCustomTabBar(),
+          Expanded(
+            child: _isSearching || _selectedManagerId != null
+                ? _buildManagerView()
+                : _buildTabBarView(),
+          ),
+        ],
+      ),
+
     );
   }
 

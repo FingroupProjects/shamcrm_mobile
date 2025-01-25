@@ -390,6 +390,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       return;
     }
     final String name = titleController.text;
+      final localizations = AppLocalizations.of(context)!;
+
     context.read<DealBloc>().add(CreateDeal(
           name: name,
           dealStatusId: int.parse(selectedDealStatus!),
@@ -405,6 +407,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           sum: sumController.text,
           description: descriptionController.text,
           customFields: [],
+          localizations: localizations, 
+
         ));
   }
 }

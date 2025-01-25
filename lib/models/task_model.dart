@@ -37,15 +37,25 @@ class Task {
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
+        final rawPriority = json['priority_level'];
+    final int priorityLevel;
+    if (rawPriority is int) {
+      priorityLevel = rawPriority;
+    } else if (rawPriority is String) {
+      priorityLevel = int.tryParse(rawPriority) ?? 0;
+    } else {
+      priorityLevel = 0;
+    }
     try {
       return Task(
+
         id: json['id'] is int ? json['id'] : 0,
         name: json['name'] is String ? json['name'] : 'Без имени',
         startDate: json['from'] is String ? json['from'] : null,
         endDate: json['to'] is String ? json['to'] : null,
         description: json['description'] is String ? json['description'] : '',
         statusId: taskStatusId,
-        priority: json['priority_level'] is int ? json['priority_level'] : 1,
+        priority:priorityLevel,
         overdue: json['overdue'] is int ? json['overdue'] : 0,
         taskStatus: json['taskStatus'] != null &&
                 json['taskStatus'] is Map<String, dynamic>

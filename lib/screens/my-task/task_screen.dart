@@ -433,6 +433,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         setState(() {
           _deletedIndex = _currentTabIndex;
           navigateAfterDelete = true;
+      
         });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);

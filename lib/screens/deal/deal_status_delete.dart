@@ -111,8 +111,10 @@ class DeleteDealStatusDialog extends StatelessWidget {
         );
         Navigator.of(context).pop();
       } else {
+          final localizations = AppLocalizations.of(context)!;
+
         // Отправляем событие на удаление статуса
-        context.read<DealBloc>().add(DeleteDealStatuses(dealStatusId));
+        context.read<DealBloc>().add(DeleteDealStatuses(dealStatusId,localizations));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
