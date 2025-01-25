@@ -23,6 +23,7 @@ class CustomAppBar extends StatefulWidget {
   TextEditingController textEditingController;
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
+  Function(bool) clearButtonClickFiltr;
   bool showSearchIcon;
   final bool showFilterIcon;
   final bool showFilterTaskIcon; // New field for task filter
@@ -39,6 +40,7 @@ class CustomAppBar extends StatefulWidget {
     required this.textEditingController,
     required this.focusNode,
     required this.clearButtonClick,
+    required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
     this.showFilterTaskIcon = true, // Default value for task filter
@@ -213,23 +215,21 @@ class _CustomAppBarState extends State<CustomAppBar>
     setState(() {
       _isSearching = !_isSearching;
       if (_isSearching) {
-        _isFiltering = false;
-        _isTaskFiltering = false;
         FocusScope.of(context).requestFocus(focusNode);
       } else {
         _searchController.clear();
         focusNode.unfocus();
       }
     });
-    widget.clearButtonClick(_isSearching);
   }
 
   void _toggleFilter() {
     setState(() {
       _isFiltering = !_isFiltering;
       if (_isFiltering) {
-        _isSearching = false;
-        _isTaskFiltering = false;
+        FocusScope.of(context).requestFocus(focusNode);
+      } else {
+        focusNode.unfocus();
       }
     });
     widget.clearButtonClick(_isFiltering);
@@ -239,8 +239,9 @@ class _CustomAppBarState extends State<CustomAppBar>
     setState(() {
       _isTaskFiltering = !_isTaskFiltering;
       if (_isTaskFiltering) {
-        _isSearching = false;
-        _isFiltering = false;
+        FocusScope.of(context).requestFocus(focusNode);
+      } else {
+        focusNode.unfocus();
       }
     });
     widget.clearButtonClick(_isTaskFiltering);

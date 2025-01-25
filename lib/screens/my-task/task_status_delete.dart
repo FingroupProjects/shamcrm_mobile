@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DeleteMyTaskStatusDialog extends StatelessWidget {
-  final int taskStatusId; // ID удаляемого статуса
+  final int taskStatusId;
 
   DeleteMyTaskStatusDialog({required this.taskStatusId});
 
@@ -17,30 +17,26 @@ class DeleteMyTaskStatusDialog extends StatelessWidget {
     return BlocListener<MyTaskBloc, MyTaskState>(
       listener: (context, state) {
         if (state is MyTaskError) {
-          // Показываем сообщение об ошибке через SnackBar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 '${state.message}',
                 style: TextStyle(
                   fontFamily: 'Gilroy',
-                  fontSize: 16, // Размер шрифта совпадает с CustomTextField
-                  fontWeight: FontWeight.w500, // Жирность текста
-                  color: Colors.white, // Цвет текста для читаемости
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(12), // Радиус, как у текстового поля
+                borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+              backgroundColor: Colors.red,
               elevation: 3,
-              padding: EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 16), // Паддинг для комфортного восприятия
-              duration: Duration(seconds: 3), // Установлено на 2 секунды
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
           );
         }
@@ -75,7 +71,7 @@ class DeleteMyTaskStatusDialog extends StatelessWidget {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('cancel'),
                   onPressed: () {
-                    Navigator.of(context).pop(); // Закрываем диалог
+                    Navigator.of(context).pop();
                   },
                   buttonColor: Colors.red,
                   textColor: Colors.white,
@@ -95,7 +91,7 @@ class DeleteMyTaskStatusDialog extends StatelessWidget {
                         SnackBar(
                           content: Text(
                             AppLocalizations.of(context)!.translate(
-                                'remove_cards_first'), // Локализованный текст
+                                'remove_cards_first'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -121,6 +117,7 @@ class DeleteMyTaskStatusDialog extends StatelessWidget {
                       context
                           .read<MyTaskBloc>()
                           .add(DeleteMyTaskStatuses(taskStatusId));
+                      
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -143,9 +140,10 @@ class DeleteMyTaskStatusDialog extends StatelessWidget {
                           elevation: 3,
                           padding: EdgeInsets.symmetric(
                               vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
+                          duration: Duration(seconds: 1),
                         ),
                       );
+                      await Future.delayed(Duration(seconds: 1));
                       Navigator.of(context).pop(true);
                       context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
                     }

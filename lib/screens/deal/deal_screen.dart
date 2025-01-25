@@ -210,7 +210,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 _selectedManagerId = null;
               });
             }
-          },
+          }, clearButtonClickFiltr: (bool ) {  },
         ),
       ),
       body: isClickAvatarIcon

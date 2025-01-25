@@ -34,6 +34,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
+  bool _isFiltr = false;
   final TextEditingController _searchController = TextEditingController();
   bool _canReadLeadStatus = false;
   bool _canCreateLeadStatus = false;
@@ -171,7 +172,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
 
-
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
@@ -181,7 +181,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_leads'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_leads'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -208,6 +210,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               leadBloc.add(FetchLeadStatuses());
               setState(() {
                 _isSearching = false;
+                _selectedManagerId = null;
+              });
+            }
+          },
+          clearButtonClickFiltr: (value) {
+            if (value == false) {
+              final leadBloc = BlocProvider.of<LeadBloc>(context);
+              leadBloc.add(FetchLeadStatuses());
+              setState(() {
+                _isFiltr = false;
                 _selectedManagerId = null;
               });
             }
@@ -239,7 +251,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     if (_isSearching && leads.isEmpty) {
       return Center(
         child: Text(
-         AppLocalizations.of(context)!.translate('nothing_found'), 
+          AppLocalizations.of(context)!.translate('nothing_found'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -277,11 +289,18 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       builder: (context, state) {
         if (state is LeadDataLoaded) {
           final List<Lead> leads = state.leads;
-          if (leads.isEmpty) {
+
+          // Filtrujeme podle vybraného statusu
+          final statusId = _tabTitles[_tabController.index]['id'];
+          final filteredLeads =
+              leads.where((lead) => lead.statusId == statusId).toList();
+
+          if (filteredLeads.isEmpty) {
             return Center(
               child: Text(
                 _selectedManagerId != null
-                    ? AppLocalizations.of(context)!.translate('selected_manager_has_any_lead')
+                    ? AppLocalizations.of(context)!
+                        .translate('selected_manager_has_any_lead')
                     : AppLocalizations.of(context)!.translate('nothing_found'),
                 style: const TextStyle(
                   fontSize: 18,
@@ -292,23 +311,26 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               ),
             );
           }
-          return ListView.builder(
-            controller: _scrollController,
-            itemCount: leads.length,
-            itemBuilder: (context, index) {
-              final lead = leads[index];
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: LeadCard(
-                  lead: lead,
-                  title: lead.leadStatus?.title ?? "",
-                  statusId: lead.statusId,
-                  onStatusUpdated: () {},
-                  onStatusId: (StatusLeadId) {},
-                ),
-              );
-            },
+
+          return Flexible(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: filteredLeads.length,
+              itemBuilder: (context, index) {
+                final lead = filteredLeads[index];
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: LeadCard(
+                    lead: lead,
+                    title: lead.leadStatus?.title ?? "",
+                    statusId: lead.statusId,
+                    onStatusUpdated: () {},
+                    onStatusId: (StatusLeadId) {},
+                  ),
+                );
+              },
+            ),
           );
         }
         if (state is LeadLoading) {
@@ -372,8 +394,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       builder: (context, state) {
         int leadCount = 0;
 
-
-        if (state is LeadLoaded) {print("----------1==1=1=1==11=1=1=1=1=1=1==1=1=1----$leadCount");
+        if (state is LeadLoaded) {
+          print("----------1==1=1=1==11=1=1=1=1=1=1==1=1=1----$leadCount");
           final statusId = _tabTitles[index]['id'];
           final leadStatus = state.leadStatuses.firstWhere(
             (status) => status.id == statusId,
@@ -542,7 +564,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             }
           });
         } else if (state is LeadError) {
-          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
+          if (state.message.contains(
+              AppLocalizations.of(context)!.translate('unauthorized_access'))) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -550,11 +573,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
+          } else if (state.message.contains(AppLocalizations.of(context)!
+              .translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

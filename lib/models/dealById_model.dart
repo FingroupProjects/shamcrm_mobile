@@ -38,7 +38,7 @@ class DealById {
       endDate: json['end_date'],
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       description: json['description'] ?? '',
-      sum: json['sum'] ?? '0.00',
+      sum: json['sum'] ?? '',
       statusId: dealStatusId,
       manager:
           json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,

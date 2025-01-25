@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:file_picker/file_picker.dart';
@@ -19,9 +20,18 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   QRViewController? controller;
   bool isInitialized = false;
 
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   void dispose() {
-    controller?.dispose();
+controller?.pauseCamera();
+controller?.dispose();
+
     super.dispose();
   }
 
@@ -29,82 +39,163 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     isInitialized = false;
+    
   }
 
   void _onQRViewCreated(QRViewController controller) {
-    if (!isInitialized) {
-      this.controller = controller;
-      isInitialized = true;
+  if (!isInitialized) {
+    this.controller = controller;
+    isInitialized = true;
 
-      controller.scannedDataStream.listen((scanData) async {
-        if (scanData.code != null) {
-          print('Сканированный QR-код: ${scanData.code}');
+    controller.scannedDataStream.listen((scanData) async {
+      if (scanData.code != null) {
+        print('Сканированный QR-код: ${scanData.code}');
 
-          try {
-            String base64String = scanData.code!;
-            Uint8List bytes = base64Decode(base64String);
+        try {
+          String base64String = scanData.code!;
+          Uint8List bytes = base64Decode(base64String);
 
-            String decodedString = utf8.decode(bytes);
+          String decodedString = utf8.decode(bytes);
+          print('Декодированная строка: $decodedString');
 
-            print('Декодированная строка: $decodedString');
+          String cleanedResult = decodedString.replaceAll('-back-', '-');
+          List<String> qrParts = cleanedResult.split('-');
 
-            String cleanedResult = decodedString.replaceAll('-back-', '-');
-            List<String> qrParts = cleanedResult.split('-');
+          String token = qrParts[0];
+          String domain = qrParts[2];
+          String mainDomain = qrParts[1];
+          String userId = qrParts[3];
+          String login = qrParts[4];
+          String organizationId = qrParts[5];
 
-            String token = qrParts[0];
-            String domain = qrParts[2];
-            String mainDomain = qrParts[1];
-            String userId = qrParts[3];
-            String login = qrParts[4];
-            String organizationId = qrParts[5];
+          print('Token: $token');
+          print('Domain: $domain');
+          print('MainDomain: $mainDomain');
+          print('User ID: $userId');
+          print('Login: $login');
+          print('Organization ID: $organizationId');
 
-            print('Token: $token');
-            print('Domain: $domain');
-            print('MainDomain: $mainDomain');
-            print('User ID: $userId');
-            print('Login: $login');
-            print('Organization ID: $organizationId');
+          await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+          await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
-            await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
-            await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
+          await controller.pauseCamera();
 
-            await controller.pauseCamera();
-
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
-
-          } catch (e, stackTrace) {
-            print('Ошибка при декодировании Base64: $e');
-            print('Стек вызовов: $stackTrace');
-            print('Исходные данные сканирования: ${scanData.code}');
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'QR-код не найден!',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.red,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
-          );
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+        } catch (e, stackTrace) {
+          print('Ошибка при декодировании Base64: $e');
+          print('Стек вызовов: $stackTrace');
+          print('Исходные данные сканирования: ${scanData.code}');
+          
+          // Если ошибка при декодировании, пробуем использовать альтернативный метод
+          _useAlternativeScanner();
         }
-      });
-    }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'QR-код не найден!',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    });
   }
+}
+
+Future<void> _useAlternativeScanner() async {
+  try {
+    print('Пробуем использовать альтернативный сканер для QR-кода...');
+
+    // Используем flutter_barcode_scanner для сканирования QR-кода
+    String qrCodeFromScanner = await FlutterBarcodeScanner.scanBarcode(
+      '#ff6666', // Цвет для сканера
+      'Отмена',  // Кнопка отмены
+      true,      // Показывать вспышку (если поддерживается)
+      ScanMode.QR  // Только для QR-кодов
+    );
+
+    if (qrCodeFromScanner != '-1') {  // если не была нажата кнопка отмены
+      print('Альтернативный QR-код: $qrCodeFromScanner');
+      
+      // Здесь предполагаем, что qrCodeFromScanner - это строка Base64
+      String base64String = qrCodeFromScanner;
+      Uint8List bytes = base64Decode(base64String);
+
+      String decodedString = utf8.decode(bytes);
+      print('Декодированная строка: $decodedString');
+
+      String cleanedResult = decodedString.replaceAll('-back-', '-');
+      List<String> qrParts = cleanedResult.split('-');
+
+      String token = qrParts[0];
+      String domain = qrParts[2];
+      String mainDomain = qrParts[1];
+      String userId = qrParts[3];
+      String login = qrParts[4];
+      String organizationId = qrParts[5];
+
+      print('Token: $token');
+      print('Domain: $domain');
+      print('MainDomain: $mainDomain');
+      print('User ID: $userId');
+      print('Login: $login');
+      print('Organization ID: $organizationId');
+
+      await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+      await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
+
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+    } else {
+      _showError('QR-код не найден в процессе сканирования!');
+    }
+  } catch (e) {
+    print('Ошибка при обработке альтернативного сканера: $e');
+    _showError('Не удалось обработать QR-код.');
+  }
+}
+
+void _showError(String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        message,
+        style: TextStyle(
+          fontFamily: 'Gilroy',
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+      behavior: SnackBarBehavior.floating,
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      backgroundColor: Colors.red,
+      elevation: 3,
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      duration: Duration(seconds: 3),
+    ),
+  );
+}
+
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);

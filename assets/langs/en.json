@@ -421,6 +421,7 @@
   "new_message": "New Message",
   "deal_reminder": "Deal Reminder",
   "note_reminder": "Note Reminder",
+  "task_new": "New task",
   "task_closed": "Task Closed",
   "task_deadline_reminder": "Task Deadline Reminder",
   "assigned_as_lead_manager": "You have been assigned as the lead manager.",

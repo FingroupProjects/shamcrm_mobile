@@ -198,7 +198,7 @@ Future<void> _initializeData() async {
             showSearchIcon: false,
             showFilterTaskIcon: false,
             showFilterIcon: false,
-            showMyTaskIcon: true,
+            showMyTaskIcon: true, clearButtonClickFiltr: (bool ) {  },
           ),
         ),
         body: isClickAvatarIcon
