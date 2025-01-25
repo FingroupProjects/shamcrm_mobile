@@ -82,7 +82,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-
 void main() async {
   await initializeApp();
 }
@@ -164,14 +163,6 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _locale = widget.initialLocale; 
-
-      print('==============================================================================');
-      print('========================================TOKEN MAIN.dart==START====================================');
-      print('Token: ${widget.token}');
-      print('Domain CHEck: ${widget.isDomainChecked}');
-
-   print('==============================================================================');
-      print('========================================TOKEN MAIN.dart=====END=================================');
   }
 
   void setLocale(Locale newLocale) {
@@ -254,7 +245,7 @@ class _MyAppState extends State<MyApp> {
         locale: _locale ?? const Locale('ru'), 
         color: Colors.white,
         debugShowCheckedModeBanner: false,
-        title: 'SHAMCRM',
+        title: 'shamCRM',
         navigatorKey: navigatorKey,
         theme: ThemeData(
           primarySwatch: Colors.blue,

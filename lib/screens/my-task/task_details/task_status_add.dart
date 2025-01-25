@@ -16,6 +16,7 @@ class CreateStatusDialog extends StatefulWidget {
 class _CreateStatusDialogState extends State<CreateStatusDialog> {
   final TextEditingController _controller = TextEditingController();
   String? _errorMessage;
+  bool isFinalStage = false;
 
   @override
   void dispose() {
@@ -45,7 +46,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             TextFormField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
+                hintText:
+                    AppLocalizations.of(context)!.translate('enter_name_list'),
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -75,6 +77,38 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   ),
                 ),
               ),
+            const SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.translate('final_stage_add'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  Switch(
+                    value: isFinalStage,
+                    onChanged: (value) {
+                      setState(() {
+                        isFinalStage = value;
+                      });
+                    },
+                    activeColor: const Color.fromARGB(255, 255, 255, 255),
+                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179)
+                        .withOpacity(0.5),
+                    activeTrackColor:
+                        const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+                    inactiveThumbColor:
+                        const Color.fromARGB(255, 255, 255, 255),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

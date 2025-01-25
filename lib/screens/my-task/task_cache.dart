@@ -105,35 +105,3 @@ class MyTaskCache {
     await prefs.remove(_cachedMyTaskStatusesKey);
   }
 }
-
-// import 'dart:convert';
-// import 'package:shared_preferences/shared_preferences.dart';
-
-// class MyTaskCache {
-//   static const String _cachedMyTaskStatusesKey = 'cachedMyTaskStatuses';
-
-//   // Save task statuses to cache
-//   static Future<void> cacheMyTaskStatuses(List<Map<String, dynamic>> taskStatuses) async {
-//     final SharedPreferences prefs = await SharedPreferences.getInstance();
-//     final String encodedStatuses = json.encode(taskStatuses);
-//     await prefs.setString(_cachedMyTaskStatusesKey, encodedStatuses);
-//   }
-
-//   // Get task statuses from cache
-//   static Future<List<Map<String, dynamic>>> getMyTaskStatuses() async {
-//     final SharedPreferences prefs = await SharedPreferences.getInstance();
-//     final String? cachedStatuses = prefs.getString(_cachedMyTaskStatusesKey);
-    
-//     if (cachedStatuses != null) {
-//       final List<dynamic> decodedData = json.decode(cachedStatuses);
-//       return decodedData.map((status) => Map<String, dynamic>.from(status)).toList();
-//     }
-//     return [];
-//   }
-
-//   // Clear the cached task statuses
-//   static Future<void> clearCache() async {
-//     final SharedPreferences prefs = await SharedPreferences.getInstance();
-//     await prefs.remove(_cachedMyTaskStatusesKey);
-//   }
-// }

@@ -7,7 +7,6 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -208,6 +207,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   ValueChanged<String>? onChangedSearchInput;
 
   bool isClickAvatarIcon = false;
+
+  
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -250,7 +251,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 _selectedUserId = null;
               });
             }
-          },
+          }, clearButtonClickFiltr: (bool ) {  },
         ),
       ),
       body: isClickAvatarIcon
@@ -406,8 +407,6 @@ Widget _buildUserView() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
         String taskCount = "0";
-        print("==========================count");
-        print(taskCount);
         if (state is TaskLoaded) {
           final statusId = _tabTitles[index]['id'];
           final taskStatus = state.taskStatuses.firstWhere(
@@ -416,8 +415,6 @@ Widget _buildUserView() {
           );
           taskCount = taskStatus?.tasksCount ?? "0"; // Используем leadsCount
         }
-        print("==========================count");
-        print(taskCount);
         return GestureDetector(
           key: _tabKeys[index],
           onTap: () {
