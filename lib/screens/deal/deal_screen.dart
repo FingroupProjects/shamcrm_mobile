@@ -1,11 +1,13 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
+import 'package:crm_task_manager/screens/deal/deal_status_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
@@ -408,79 +410,217 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
+  // Widget _buildTabButton(int index) {
+  //   bool isActive = _tabController.index == index;
 
-    return BlocBuilder<DealBloc, DealState>(
-      builder: (context, state) {
-        int dealCount = 0;
+  //   return BlocBuilder<DealBloc, DealState>(
+  //     builder: (context, state) {
+  //       int dealCount = 0;
 
-        if (state is DealLoaded) {
-          final statusId = _tabTitles[index]['id'];
-          final dealStatus = state.dealStatuses.firstWhere(
-            (status) => status.id == statusId,
-            // orElse: () => null,
-          );
-          dealCount = dealStatus?.dealsCount ?? 0; // Берём количество сделок
-        }
+  //       if (state is DealLoaded) {
+  //         final statusId = _tabTitles[index]['id'];
+  //         final dealStatus = state.dealStatuses.firstWhere(
+  //           (status) => status.id == statusId,
+  //           // orElse: () => null,
+  //         );
+  //         dealCount = dealStatus?.dealsCount ?? 0; // Берём количество сделок
+  //       }
 
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-          },
-          onLongPress: () {
-            if (_canDeleteDealStatus) {
-              _showDeleteDialog(index);
-            }
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive
-                            ? const Color(0xff1E2E52)
-                            : const Color(0xff99A4BA),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      dealCount.toString(),
-                      style: TextStyle(
-                        color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                )
-              ],
+  //       return GestureDetector(
+  //         key: _tabKeys[index],
+  //         onTap: () {
+  //           _tabController.animateTo(index);
+  //         },
+  //         onLongPress: () {
+  //           if (_canDeleteDealStatus) {
+  //             _showDeleteDialog(index);
+  //           }
+  //         },
+  //         child: Container(
+  //           decoration: TaskStyles.tabButtonDecoration(isActive),
+  //           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+  //           child: Row(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text(
+  //                 _tabTitles[index]['title'],
+  //                 style: TaskStyles.tabTextStyle.copyWith(
+  //                   color: isActive
+  //                       ? TaskStyles.activeColor
+  //                       : TaskStyles.inactiveColor,
+  //                 ),
+  //               ),
+  //               Transform.translate(
+  //                 offset: const Offset(12, 0),
+  //                 child: Container(
+  //                   padding:
+  //                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.white,
+  //                     borderRadius: BorderRadius.circular(12),
+  //                     border: Border.all(
+  //                       color: isActive
+  //                           ? const Color(0xff1E2E52)
+  //                           : const Color(0xff99A4BA),
+  //                       width: 1,
+  //                     ),
+  //                   ),
+  //                   child: Text(
+  //                     dealCount.toString(),
+  //                     style: TextStyle(
+  //                       color:
+  //                           isActive ? Colors.black : const Color(0xff99A4BA),
+  //                       fontSize: 12,
+  //                       fontWeight: FontWeight.w500,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               )
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+void _showStatusOptions(BuildContext context, int index) {
+  final RenderBox renderBox = _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+  final Offset position = renderBox.localToGlobal(Offset.zero);
+
+  showMenu(
+    context: context,
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy + renderBox.size.height,
+      position.dx + renderBox.size.width,
+      position.dy + renderBox.size.height * 2,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 4,
+    color: Colors.white,
+    items: [
+      PopupMenuItem(
+        value: 'edit',
+        child: ListTile(
+          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+          title: Text(
+            'Изменить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
             ),
           ),
+        ),
+      ),
+      PopupMenuItem(
+        value: 'delete',
+        child: ListTile(
+          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+          title: Text(
+            'Удалить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ),
+    ],
+  ).then((value) {
+    if (value == 'edit') {
+      _showEditDealStatusDialog(index);
+    } else if (value == 'delete') {
+      _showDeleteDialog(index);
+    }
+  });
+}
+Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
+
+  return BlocBuilder<DealBloc, DealState>(
+    builder: (context, state) {
+      int dealCount = 0;
+
+      if (state is DealLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        final dealStatus = state.dealStatuses.firstWhere(
+          (status) => status.id == statusId,
         );
-      },
-    );
-  }
+        dealCount = dealStatus.dealsCount;
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _showStatusOptions(context, index);
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    dealCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// 2. Новый метод для показа диалога редактирования
+void _showEditDealStatusDialog(int index) {
+  final dealStatus = _tabTitles[index];
+  
+  showDialog(
+    context: context,
+    builder: (context) => EditDealStatusScreen(
+      initialTitle: dealStatus['title'],
+      dealStatusId: dealStatus['id'],
+      isSuccess: dealStatus['isSuccess'] ?? false,
+      isFailure: dealStatus['isFailure'] ?? false,
+    ),
+  );
+}
 
   void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];

@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
+import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
@@ -415,7 +416,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           },
           onLongPress: () {
             if (_canDeleteLeadStatus) {
-              _showDeleteDialog(index);
+              _showOptionsModal(index);
             }
           },
           child: Container(
@@ -465,39 +466,109 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       },
     );
   }
-
-  void _showDeleteDialog(int index) async {
-    final leadStatusId = _tabTitles[index]['id'];
-
-    final result = await showDialog(
+  void _showOptionsModal(int index) {
+    showModalBottomSheet(
       context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      backgroundColor: Colors.white,
       builder: (BuildContext context) {
-        return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Закрываем модальное окно
+                  _editLeadStatus(index); // Вызов функции изменения
+                },
+                child: Text(
+                  "Изменения статуса",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: Colors.grey[300]),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Закрываем модальное окно
+                  _deleteLeadStatus(index); // Вызов функции удаления
+                },
+                child: Text(
+                  "Удаление статуса",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
-
-    if (result != null && result) {
-      setState(() {
-        _deletedIndex = _currentTabIndex;
-        navigateAfterDelete = true;
-
-        _tabTitles.removeAt(index);
-        _tabKeys.removeAt(index);
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
-
-        _currentTabIndex = 0;
-        _isSearching = false;
-        _searchController.clear();
-
-        context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
-      });
-
-      context
-          .read<LeadBloc>()
-          .add(FetchLeadStatuses()); // Pass forceRefresh flag
-    }
+  }
+  void _deleteLeadStatus(int index) {
+    // Вызываем вашу существующую логику удаления
+    _showDeleteDialog(index);
   }
 
+    void _showDeleteDialog(int index) async {
+      final leadStatusId = _tabTitles[index]['id'];
+
+      final result = await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
+        },
+      );
+
+      if (result != null && result) {
+        setState(() {
+          _deletedIndex = _currentTabIndex;
+          navigateAfterDelete = true;
+
+          _tabTitles.removeAt(index);
+          _tabKeys.removeAt(index);
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
+
+          _currentTabIndex = 0;
+          _isSearching = false;
+          _searchController.clear();
+
+          context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+        });
+
+        context
+            .read<LeadBloc>()
+            .add(FetchLeadStatuses()); // Pass forceRefresh flag
+      }
+    }
+  void _editLeadStatus(int index) {
+    // Extract lead status data if needed for editing
+    final leadStatus = _tabTitles[index];  // Assuming _tabTitles holds the relevant data for the lead
+
+    // Show the Edit Lead Status Screen as a modal dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EditLeadStatusScreen(
+          initialTitle: leadStatus['title'] ?? '',  // Ensure the title exists
+          leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
+          isSuccess: leadStatus['isSuccess'] ?? false, // Example of a lead's status
+          isFailure: leadStatus['isFailure'] ?? false, // Example of a lead's failure status
+        );
+      },
+    );
+  }
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
