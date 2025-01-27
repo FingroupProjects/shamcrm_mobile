@@ -22,8 +22,17 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
     on<UpdateLeadStatusEdit>(_updateLeadStatusEdit);
+    on<FetchLeadStatus>(_fetchLeadStatus);
   }
-
+Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+    try {
+      final leadStatus = await apiService.getLeadStatus(event.leadStatusId);
+      emit(LeadStatusLoaded(leadStatus));
+    } catch (e) {
+      emit(LeadError('Failed to fetch deal status: ${e.toString()}'));
+    }
+  }
   // Метод для загрузки лидов с учётом кэша
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());

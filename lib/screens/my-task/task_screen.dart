@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_status_edit.dart';
 import 'package:crm_task_manager/screens/my-task/task_cache.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_card.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_column.dart';
@@ -31,6 +32,7 @@ class MyTaskScreen extends StatefulWidget {
 class _MyTaskScreenState extends State<MyTaskScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  
   late ScrollController _scrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
@@ -38,6 +40,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
+  bool _canDeleteMyTaskStatus = false;
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
@@ -210,6 +213,79 @@ Widget build(BuildContext context) {
   );
 }
 
+void _showStatusOptions(BuildContext context, int index) {
+  final RenderBox renderBox =
+      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+  final Offset position = renderBox.localToGlobal(Offset.zero);
+
+  showMenu(
+    context: context,
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy + renderBox.size.height,
+      position.dx + renderBox.size.width,
+      position.dy + renderBox.size.height * 2,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 4,
+    color: Colors.white,
+    items: [
+      PopupMenuItem(
+        value: 'edit',
+        child: ListTile(
+          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+          title: Text(
+            'Изменить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ),
+      PopupMenuItem(
+        value: 'delete',
+        child: ListTile(
+          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+          title: Text(
+            'Удалить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ),
+    ],
+  ).then((value) {
+    if (value == 'edit') {
+      _editMyTaskStatus(index);
+    } else if (value == 'delete') {
+      _showDeleteDialog(index);
+    }
+  });
+}
+ void _editMyTaskStatus(int index) {
+    // Extract lead status data if needed for editing
+    final myTaskStatus = _tabTitles[
+        index]; // Assuming _tabTitles holds the relevant data for the lead
+
+    // Show the Edit Lead Status Screen as a modal dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EditMyTaskStatusScreen(
+          myTaskStatusId: myTaskStatus['id'], // Pass the lead status ID for editing
+        );
+      },
+    );
+  }
 
   Widget searchWidget(List<MyTask> tasks) {
     if (_isSearching && tasks.isEmpty) {
@@ -367,11 +443,11 @@ Widget build(BuildContext context) {
           onTap: () {
             _tabController.animateTo(index);
           },
-          onLongPress: () {
-            {
-              _showDeleteDialog(index);
-            }
-          },
+           onLongPress: () {
+           {
+            _showStatusOptions(context, index);
+          }
+        },
           child: Container(
             decoration: TaskStyles.tabButtonDecoration(isActive),
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),

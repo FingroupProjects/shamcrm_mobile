@@ -22,7 +22,21 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<UpdateTask>(_updateTask);
     on<DeleteTask>(_deleteTask);
     on<DeleteTaskStatuses>(_deleteTaskStatuses);
+    on<FetchTaskStatus>(_fetchTaskStatus);
+    on<UpdateTaskStatusEdit>(_updateTaskStatusEdit);
   }
+
+  Future<void> _fetchTaskStatus(
+      FetchTaskStatus event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
+    try {
+      final taskStatus = await apiService.getTaskStatus(event.taskStatusId);
+      emit(TaskStatusLoaded(taskStatus));
+    } catch (e) {
+      emit(TaskError('Failed to fetch deal status: ${e.toString()}'));
+    }
+  }
+
 // Метод для загрузки статусов задач с учётом кэша
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
@@ -168,40 +182,39 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
-  emit(TaskLoading());
+  Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
 
-  if (!await _checkInternetConnection()) {
-    emit(TaskError(event.localizations.translate('no_internet_connection')));
-    return;
-  }
-
-  try {
-    final result = await apiService.createTask(
-      name: event.name,
-      statusId: event.statusId,
-      taskStatusId: event.taskStatusId,
-      priority: event.priority,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      projectId: event.projectId,
-      userId: event.userId,
-      description: event.description,
-      customFields: event.customFields,
-      filePath: event.filePath,
-    );
-
-    if (result['success']) {
-      emit(TaskSuccess(event.localizations.translate('task_create_successfully')));
-    } else {
-      emit(TaskError(result['message']));
+    if (!await _checkInternetConnection()) {
+      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      return;
     }
-  } catch (e) {
-    emit(TaskError(event.localizations.translate('task_creation_error')));
+
+    try {
+      final result = await apiService.createTask(
+        name: event.name,
+        statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
+        priority: event.priority,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        projectId: event.projectId,
+        userId: event.userId,
+        description: event.description,
+        customFields: event.customFields,
+        filePath: event.filePath,
+      );
+
+      if (result['success']) {
+        emit(TaskSuccess(
+            event.localizations.translate('task_create_successfully')));
+      } else {
+        emit(TaskError(result['message']));
+      }
+    } catch (e) {
+      emit(TaskError(event.localizations.translate('task_creation_error')));
+    }
   }
-}
-
-
 
   Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
@@ -228,13 +241,15 @@ Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
       );
 
       if (result['success']) {
-        emit(TaskSuccess(event.localizations!.translate('task_update_successfully')));
+        emit(TaskSuccess(
+            event.localizations!.translate('task_update_successfully')));
         // add(FetchTasks(event.statusId));
       } else {
         emit(TaskError(result['message']));
       }
     } catch (e) {
-    emit(TaskError(event.localizations.translate('error_task_update_successfully')));
+      emit(TaskError(
+          event.localizations.translate('error_task_update_successfully')));
     }
   }
 
@@ -253,7 +268,8 @@ Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     try {
       final response = await apiService.deleteTask(event.taskId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted(event.localizations.translate('task_deleted_successfully')));
+        emit(TaskDeleted(
+            event.localizations.translate('task_deleted_successfully')));
       } else {
         emit(TaskError(event.localizations.translate('error_delete_task')));
       }
@@ -269,12 +285,40 @@ Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     try {
       final response = await apiService.deleteTaskStatuses(event.taskStatusId);
       if (response['result'] == 'Success') {
-        emit(TaskDeleted(event.localizations.translate('task_create_successfully')));
+        emit(TaskDeleted(
+            event.localizations.translate('task_create_successfully')));
       } else {
-        emit(TaskError(event.localizations.translate('error_delete_task_status')));
+        emit(TaskError(
+            event.localizations.translate('error_delete_task_status')));
       }
     } catch (e) {
-      emit(TaskError(event.localizations.translate('error_delete_task_status')));
+      emit(
+          TaskError(event.localizations.translate('error_delete_task_status')));
     }
   }
+
+Future<void> _updateTaskStatusEdit(
+    UpdateTaskStatusEdit event, Emitter<TaskState> emit) async {
+  emit(TaskLoading());
+
+  try {
+    final response = await apiService.updateTaskStatusEdit(
+      taskStatusId: event.taskStatusId,
+      name: event.name,
+      needsPermission: event.needsPermission,
+      finalStep: event.finalStep,
+      checkingStep: event.checkingStep,
+      roleIds: event.roleIds,
+    );
+
+    if (response['result'] == 'Success') {
+      emit(TaskStatusUpdatedEdit(
+          event.localizations.translate('status_updated_successfully')));
+    } else {
+      emit(TaskError(event.localizations.translate('error_update_status')));
+    }
+  } catch (e) {
+    emit(TaskError(event.localizations.translate('error_update_status')));
+  }
+}
 }

@@ -73,3 +73,15 @@ class MyTaskStatusDeleted extends MyTaskState {
   MyTaskStatusDeleted(this.message);
 }
 
+class MyTaskStatusLoaded extends MyTaskState {
+  final MyTaskStatus myTaskStatus;
+  MyTaskStatusLoaded(this.myTaskStatus);
+}
+
+
+// State для успешного обновления статуса лида
+class MyTaskStatusUpdatedEdit extends MyTaskState {
+  final String message;
+
+  MyTaskStatusUpdatedEdit(this.message);
+}

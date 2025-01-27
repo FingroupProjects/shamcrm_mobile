@@ -21,7 +21,41 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
     on<UpdateMyTask>(_updateMyTask);
     on<DeleteMyTask>(_deleteMyTask);
     on<DeleteMyTaskStatuses>(_deleteMyTaskStatuses);
+    on<UpdateMyTaskStatusEdit>(_updateMyTaskStatusEdit);
+    on<FetchMyTaskStatus>(_fetchMyTaskStatus);
   }
+  Future<void> _fetchMyTaskStatus(FetchMyTaskStatus event, Emitter<MyTaskState> emit) async {
+    emit(MyTaskLoading());
+    try {
+      final myTaskStatus = await apiService.getMyTaskStatus(event.myTaskStatusId);
+      emit(MyTaskStatusLoaded(myTaskStatus));
+    } catch (e) {
+      emit(MyTaskError('Failed to fetch deal status: ${e.toString()}'));
+    }
+  }
+  
+   Future<void> _updateMyTaskStatusEdit(
+      UpdateMyTaskStatusEdit event, Emitter<MyTaskState> emit) async {
+    emit(MyTaskLoading());
+
+    try {
+      final response = await apiService.updateMyTaskStatusEdit(
+        event.myTaskStatusId,
+        event.title,
+        event.localizations,
+      );
+
+      if (response['result'] == 'Success') {
+        emit(MyTaskStatusUpdatedEdit(
+            event.localizations.translate('status_updated_successfully')));
+      } else {
+        emit(MyTaskError(event.localizations.translate('error_update_status')));
+      }
+    } catch (e) {
+      emit(MyTaskError(event.localizations.translate('error_update_status')));
+    }
+  }
+
 // Метод для загрузки статусов задач с учётом кэша
   Future<void> _fetchMyTaskStatuses(
       FetchMyTaskStatuses event, Emitter<MyTaskState> emit) async {

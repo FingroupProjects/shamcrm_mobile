@@ -66,7 +66,8 @@ class Deal {
       'manager': manager?.toJson(),
       'lead': lead?.toJson(),
       'deal_status': dealStatus?.toJson(),
-      'deal_custom_fields': dealCustomFields.map((field) => field.toJson()).toList(),
+      'deal_custom_fields':
+          dealCustomFields.map((field) => field.toJson()).toList(),
     };
   }
 }
@@ -103,29 +104,43 @@ class DealStatus {
   final int id;
   final String title;
   final String color;
-  final String? createdAt;
-  final String? updatedAt;
+  final int organizationId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int day;
+  final bool isSuccess;
+  final int position;
+  final bool isFailure;
   final int dealsCount;
-  final int? day;
 
   DealStatus({
     required this.id,
     required this.title,
     required this.color,
-    this.createdAt,
-    this.updatedAt,
+    required this.organizationId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.day,
+    required this.isSuccess,
+    required this.position,
+    required this.isFailure,
     required this.dealsCount,
-    this.day,
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
     return DealStatus(
-      id: json['id'] is int ? json['id'] : 0,
-      title: json['title'] is String ? json['title'] : 'Без имени',
-      color: json['color'] is String ? json['color'] : '#000',
-      createdAt: json['created_at'] is String ? json['created_at'] : null,
-      updatedAt: json['updated_at'] is String ? json['updated_at'] : null,
-      day: json['day'] is int ? json['day'] : null,
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      color: json['color'] ?? '#000',
+      organizationId: json['organization_id'] ?? 0,
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updated_at'] ?? DateTime.now().toIso8601String()),
+      day: json['day'] ?? 0,
+      isSuccess: json['is_success'] == true || json['is_success'] == 1,
+      position: json['position'] ?? 0,
+      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
       dealsCount: json['deals_count'] ?? 0,
     );
   }
@@ -135,10 +150,14 @@ class DealStatus {
       'id': id,
       'title': title,
       'color': color,
-      'created_at': createdAt,
-      'updated_at': updatedAt,
-      'deals_count': dealsCount,
+      'organization_id': organizationId,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
       'day': day,
+      'is_success': isSuccess,
+      'position': position,
+      'is_failure': isFailure,
+      'deals_count': dealsCount,
     };
   }
 }
