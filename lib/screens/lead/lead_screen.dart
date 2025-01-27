@@ -498,8 +498,13 @@ void _showStatusOptions(BuildContext context, int index) {
 }
 
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
-Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
+ Widget _buildTabButton(int index) {
+    bool isActive = _tabController.index == index;
+
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        int leadCount = 0;
+
         if (state is LeadLoaded) {
           final statusId = _tabTitles[index]['id'];
           final leadStatus = state.leadStatuses.firstWhere(
@@ -508,15 +513,6 @@ Widget _buildTabButton(int index) {
           );
           leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
-
-
-      if (state is LeadLoaded) {
-        final statusId = _tabTitles[index]['id'];
-        final leadStatus = state.leadStatuses.firstWhere(
-          (status) => status.id == statusId,
-        );
-        leadCount = leadStatus.leadsCount;
-      }
 
       return GestureDetector(
         key: _tabKeys[index],

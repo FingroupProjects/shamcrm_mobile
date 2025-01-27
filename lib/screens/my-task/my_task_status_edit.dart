@@ -106,7 +106,27 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
           });
         } else if (state is MyTaskStatusUpdatedEdit) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            SnackBar(
+                          content: Text(
+                            "Статус успешно обновлен!",
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.green,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
+                        ),
           );
           final taskBloc = BlocProvider.of<MyTaskBloc>(context, listen: false);
           taskBloc.add(FetchMyTaskStatuses());
@@ -114,7 +134,27 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
           Navigator.of(context).pop();
         } else if (state is MyTaskError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            SnackBar(
+                          content: Text(
+                            "Ошибка обновления статуса!",
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.red,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
+                        ),
           );
         }
       },
