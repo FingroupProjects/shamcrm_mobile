@@ -1,82 +1,76 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
+
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 
-class EditLeadStatusScreen extends StatefulWidget {
-  final int leadStatusId;
+class EditMyTaskStatusScreen extends StatefulWidget {
+  final int myTaskStatusId;
 
-  const EditLeadStatusScreen({
+  const EditMyTaskStatusScreen({
     Key? key,
-    required this.leadStatusId,
+    required this.myTaskStatusId,
   }) : super(key: key);
 
   @override
-  _EditLeadStatusScreenState createState() => _EditLeadStatusScreenState();
+  _EditMyTaskStatusScreenState createState() => _EditMyTaskStatusScreenState();
 }
 
-class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
+class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
   late TextEditingController _titleController;
-  bool _isSuccess = false;
-  bool _isFailure = false;
-  late LeadBloc _leadBloc;
+  bool _needsPermission = false;
+  late MyTaskBloc _myTaskBloc;
   bool _dataLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController();
-    _leadBloc = LeadBloc(ApiService());
-    _loadLeadStatus();
+    _myTaskBloc = MyTaskBloc(ApiService());
+    _loadMyTaskStatus();
   }
 
-  void _loadLeadStatus() {
-    _leadBloc.add(FetchLeadStatus(widget.leadStatusId));
+  void _loadMyTaskStatus() {
+    _myTaskBloc.add(FetchMyTaskStatus(widget.myTaskStatusId));
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _leadBloc.close();
+    _myTaskBloc.close();
     super.dispose();
   }
 
   void _saveChanges() {
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses());
+    final myTaskBloc = BlocProvider.of<MyTaskBloc>(context);
+    myTaskBloc.add(FetchMyTaskStatuses());
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
-      _leadBloc.add(
-        UpdateLeadStatusEdit(
-          widget.leadStatusId,
+      _myTaskBloc.add(
+        UpdateMyTaskStatusEdit(
+          widget.myTaskStatusId,
           _titleController.text,
-          _isSuccess,
-          _isFailure,
           localizations,
         ),
       );
     }
   }
 
-  // Метод для показа диалога редактирования
-  static Future<void> show(BuildContext context, int leadStatusId) {
+  static Future<void> show(BuildContext context, int myTaskStatusId) {
     return showDialog(
       context: context,
-      builder: (context) => EditLeadStatusScreen(
-        leadStatusId: leadStatusId,
+      builder: (context) => EditMyTaskStatusScreen(
+        myTaskStatusId: myTaskStatusId,
       ),
     ).then((_) {
-      // После закрытия диалога обновляем данные
-      final dealBloc = BlocProvider.of<LeadBloc>(context, listen: false);
-      // Обновляем список статусов
-      dealBloc.add(FetchLeadStatuses());
-      // Обновляем сделки для текущего статуса
-      dealBloc.add(FetchLeads(leadStatusId));
+      final taskBloc = BlocProvider.of<MyTaskBloc>(context, listen: false);
+      taskBloc.add(FetchMyTaskStatuses());
+      taskBloc.add(FetchMyTasks(myTaskStatusId));
     });
   }
 
@@ -101,29 +95,24 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<LeadBloc, LeadState>(
-      bloc: _leadBloc,
+    return BlocConsumer<MyTaskBloc, MyTaskState>(
+      bloc: _myTaskBloc,
       listener: (context, state) {
-        if (state is LeadStatusLoaded && !_dataLoaded) {
+        if (state is MyTaskStatusLoaded && !_dataLoaded) {
           setState(() {
-            _titleController.text = state.leadStatus.title;
-            _isSuccess = state.leadStatus.isSuccess;
-            _isFailure = state.leadStatus.isFailure;
+            _titleController.text = state.myTaskStatus.title;
+            // _needsPermission = state.myTaskStatus.needsPermission!;
             _dataLoaded = true;
           });
-        } else if (state is LeadStatusUpdatedEdit) {
+        } else if (state is MyTaskStatusUpdatedEdit) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message)),
           );
-            // После успешного обновления статуса
-          final dealBloc = BlocProvider.of<LeadBloc>(context, listen: false);
-          // Обновляем список статусов
-          dealBloc.add(FetchLeadStatuses());
-          // Обновляем сделки для текущего статуса
-          dealBloc.add(FetchLeads(widget.leadStatusId));
-          
+          final taskBloc = BlocProvider.of<MyTaskBloc>(context, listen: false);
+          taskBloc.add(FetchMyTaskStatuses());
+          taskBloc.add(FetchMyTasks(widget.myTaskStatusId));
           Navigator.of(context).pop();
-        } else if (state is LeadError) {
+        } else if (state is MyTaskError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message)),
           );
@@ -137,7 +126,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: 320, // Уменьшили высоту с 450 до 300
+            height: 350,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -171,7 +160,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                   ),
                   const SizedBox(height: 20),
                   Expanded(
-                    child: state is LeadLoading
+                    child: state is MyTaskLoading
                         ? const Center(
                             child: CircularProgressIndicator(
                                 color: Color(0xff1E2E52)))
@@ -185,41 +174,16 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                                   isRequired: true,
                                 ),
                                 const SizedBox(height: 20),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: _buildCheckbox(
-                                        'Успешно',
-                                        _isSuccess,
-                                        (v) {
-                                          if (v != null) {
-                                            setState(() {
-                                              _isSuccess = v;
-                                              if (_isSuccess)
-                                                _isFailure = false;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    Expanded(
-                                      child: _buildCheckbox(
-                                        'Не успешно',
-                                        _isFailure,
-                                        (v) {
-                                          if (v != null) {
-                                            setState(() {
-                                              _isFailure = v;
-                                              if (_isFailure)
-                                                _isSuccess = false;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ],
+                                _buildCheckbox(
+                                  'Завершающий этап',
+                                  _needsPermission,
+                                  (v) {
+                                    if (v != null) {
+                                      setState(() {
+                                        _needsPermission = v;
+                                      });
+                                    }
+                                  },
                                 ),
                               ],
                             ),

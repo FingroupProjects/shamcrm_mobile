@@ -15,6 +15,10 @@ class FetchDeals extends DealEvent {
     this.managerIds, 
   });
 }
+class FetchDealStatus extends DealEvent {
+  final int dealStatusId;
+  FetchDealStatus(this.dealStatusId);
+}
 
 class FetchMoreDeals extends DealEvent {
   final int statusId;

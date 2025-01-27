@@ -24,8 +24,17 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<DeleteDeal>(_deleteDeal);
     on<DeleteDealStatuses>(_deleteDealStatuses);
     on<UpdateDealStatusEdit>(_updateDealStatusEdit);
+    on<FetchDealStatus>(_fetchDealStatus);
   }
-
+Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+    try {
+      final dealStatus = await apiService.getDealStatus(event.dealStatusId);
+      emit(DealStatusLoaded(dealStatus));
+    } catch (e) {
+      emit(DealError('Failed to fetch deal status: ${e.toString()}'));
+    }
+  }
   // Метод для загрузки сделок с учётом кэша
   Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
     emit(DealLoading());
@@ -289,7 +298,8 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           DealError(event.localizations.translate('error_status_deal_delete')));
     }
   }
- Future<void> _updateDealStatusEdit(
+
+  Future<void> _updateDealStatusEdit(
       UpdateDealStatusEdit event, Emitter<DealState> emit) async {
     emit(DealLoading());
 

@@ -55,6 +55,7 @@ import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -1543,6 +1544,25 @@ class ApiService {
       throw Exception('Ошибка ${response.statusCode}!');
     }
   }
+
+  Future<LeadStatus> getLeadStatus(int leadStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return LeadStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -1963,6 +1983,25 @@ class ApiService {
       throw Exception('Failed to update leadStatus!');
     }
   }
+
+  Future<DealStatus> getDealStatus(int dealStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return DealStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
@@ -2975,6 +3014,58 @@ class ApiService {
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<TaskStatus> getTaskStatus(int taskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return TaskStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateTaskStatusEdit({
+    required int taskStatusId,
+    required String name,
+    required bool needsPermission,
+    required bool finalStep,
+    required bool checkingStep,
+    required List<int> roleIds,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
+
+    final payload = {
+      "task_status_name_id": taskStatusId,
+      "needs_permission": needsPermission ? 1 : 0,
+      "final_step": finalStep ? 1 : 0,
+      "checking_step": checkingStep ? 1 : 0,
+      "roles": roles,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload,
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update task status!');
     }
   }
 
@@ -4888,6 +4979,47 @@ class ApiService {
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<MyTaskStatus> getMyTaskStatus(int myTaskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return MyTaskStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateMyTaskStatusEdit(
+      int myTaskStatusId, String title, AppLocalizations localizations) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "organization_id": organizationId,
+      "color": "#000",
+    };
+
+    final response = await _patchRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
     }
   }
 

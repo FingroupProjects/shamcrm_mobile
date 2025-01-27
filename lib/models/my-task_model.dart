@@ -134,6 +134,7 @@ class MyTaskStatus {
   final int? organizationId;
   final int position;
   final int tasksCount;
+  final int? authorId;
 
   MyTaskStatus({
     required this.id,
@@ -142,6 +143,7 @@ class MyTaskStatus {
     this.organizationId,
     required this.position,
     required this.tasksCount,
+    this.authorId,
   });
 
   factory MyTaskStatus.fromJson(Map<String, dynamic> json) {
@@ -151,6 +153,7 @@ class MyTaskStatus {
       color: json['color'] ?? '#FFFFFF',
       organizationId: json['organization_id'] as int?,
       position: json['position'] ?? 0,
+      authorId: json['author_id'] ?? 0,
       tasksCount: json['tasks_count'] ?? 0,
     );
   }
@@ -162,6 +165,7 @@ class MyTaskStatus {
       'color': color,
       'organization_id': organizationId,
       'position': position,
+      'author_id': authorId,
       'tasks_count': tasksCount,
     };
   }

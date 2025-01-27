@@ -72,6 +72,10 @@ class DealDeleted extends DealState {
 
   DealDeleted(this.message);
 }
+class DealStatusLoaded extends DealState {
+  final DealStatus dealStatus;
+  DealStatusLoaded(this.dealStatus);
+}
 
 class DealStatusDeleted extends DealState {
   final String message;

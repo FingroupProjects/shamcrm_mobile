@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateStatusDialog extends StatefulWidget {
+  
   const CreateStatusDialog({Key? key}) : super(key: key);
 
   @override

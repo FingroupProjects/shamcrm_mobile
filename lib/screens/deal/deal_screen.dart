@@ -48,6 +48,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   int? _deletedIndex;
   List<int>? _selectedManagerIds; // Add this field
   int? _selectedManagerId; // ID выбранного менеджера.
+  late final DealBloc _dealBloc;
 
   bool _showCustomTabBar = true;
 
@@ -246,36 +247,99 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             ),
     );
   }
-Widget searchWidget(List<Deal> deals) {
-  print('_isSearching: $_isSearching, _isManager: $_isManager, deals.isEmpty: ${deals.isEmpty}, deals.length: ${deals.length}');
 
-  // Показать анимацию загрузки, если идет поиск
-  if (_isSearching) {
-    print('Показывается анимация загрузки при поиске');
-    return const Center(
-      child: PlayStoreImageLoading(
-        size: 80.0,
-        duration: Duration(milliseconds: 1000),
-      ),
-    );
-  }
+  Widget searchWidget(List<Deal> deals) {
+    print(
+        '_isSearching: $_isSearching, _isManager: $_isManager, deals.isEmpty: ${deals.isEmpty}, deals.length: ${deals.length}');
 
-  // Показать анимацию загрузки, если это менеджер и данные ещё загружаются
-  if (_isManager && deals.isEmpty) {
-    print('Показывается анимация загрузки для менеджера');
-    return const Center(
-      child: PlayStoreImageLoading(
-        size: 80.0,
-        duration: Duration(milliseconds: 1000),
-      ),
-    );
-  }
-  // Если идёт поиск и ничего не найдено
-  if (_isSearching && deals.isEmpty) {
-    print('Показывается сообщение: Ничего не найдено');
+    // Показать анимацию загрузки, если идет поиск
+    if (_isSearching) {
+      print('Показывается анимация загрузки при поиске');
+      return const Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: Duration(milliseconds: 1000),
+        ),
+      );
+    }
+
+    // Показать анимацию загрузки, если это менеджер и данные ещё загружаются
+    if (_isManager && deals.isEmpty) {
+      print('Показывается анимация загрузки для менеджера');
+      return const Center(
+        child: PlayStoreImageLoading(
+          size: 80.0,
+          duration: Duration(milliseconds: 1000),
+        ),
+      );
+    }
+
+    // Если идёт поиск и ничего не найдено
+    if (_isSearching && deals.isEmpty) {
+      print('Показывается сообщение: Ничего не найдено');
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('nothing_found'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+
+    // Если это менеджер и список сделок пуст после загрузки
+    else if (_isManager && deals.isEmpty) {
+      print('Показывается сообщение: У выбранного менеджера нет сделок');
+      return Center(
+        child: Text(
+          'У выбранного менеджера нет сделок',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+
+    // Если сделки существуют, отображаем их список
+    if (deals.isNotEmpty) {
+      print('Показывается список сделок с количеством: ${deals.length}');
+      return Flexible(
+        child: ListView.builder(
+          controller: _scrollController,
+          itemCount: deals.length,
+          itemBuilder: (context, index) {
+            final deal = deals[index];
+            print('Отображение сделки: $deal');
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: DealCard(
+                deal: deal,
+                title: deal.dealStatus?.title ?? "",
+                statusId: deal.statusId,
+                onStatusUpdated: () {
+                  print('Статус сделки обновлён');
+                },
+                onStatusId: (StatusDealId) {
+                  print('onStatusId вызван с id: $StatusDealId');
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Если список сделок пуст, но это не поиск и не менеджер
+    print('Показывается сообщение: Нет доступных сделок');
     return Center(
       child: Text(
-        AppLocalizations.of(context)!.translate('nothing_found'),
+        AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),
         style: const TextStyle(
           fontSize: 18,
           fontFamily: 'Gilroy',
@@ -285,67 +349,6 @@ Widget searchWidget(List<Deal> deals) {
       ),
     );
   }
-
-  // Если это менеджер и список сделок пуст после загрузки
-  else if (_isManager && deals.isEmpty) {
-    print('Показывается сообщение: У выбранного менеджера нет сделок');
-    return Center(
-      child: Text(
-        'У выбранного менеджера нет сделок',
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  }
-
-  // Если сделки существуют, отображаем их список
-  if (deals.isNotEmpty) {
-    print('Показывается список сделок с количеством: ${deals.length}');
-    return Flexible(
-      child: ListView.builder(
-        controller: _scrollController,
-        itemCount: deals.length,
-        itemBuilder: (context, index) {
-          final deal = deals[index];
-          print('Отображение сделки: $deal');
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: DealCard(
-              deal: deal,
-              title: deal.dealStatus?.title ?? "",
-              statusId: deal.statusId,
-              onStatusUpdated: () {
-                print('Статус сделки обновлён');
-              },
-              onStatusId: (StatusDealId) {
-                print('onStatusId вызван с id: $StatusDealId');
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // Если список сделок пуст, но это не поиск и не менеджер
-  print('Показывается сообщение: Нет доступных сделок');
-  return Center(
-    child: Text(
-      AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),
-      style: const TextStyle(
-        fontSize: 18,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff99A4BA),
-      ),
-    ),
-  );
-}
-
 
   Widget _buildManagerView() {
     return BlocBuilder<DealBloc, DealState>(
@@ -629,6 +632,9 @@ Widget searchWidget(List<Deal> deals) {
         return GestureDetector(
           key: _tabKeys[index],
           onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
             _showStatusOptions(context, index);
           },
           child: Container(
@@ -686,11 +692,15 @@ Widget searchWidget(List<Deal> deals) {
     showDialog(
       context: context,
       builder: (context) => EditDealStatusScreen(
-        initialTitle: dealStatus['title'],
         dealStatusId: dealStatus['id'],
-        isSuccess: dealStatus['isSuccess'] ?? false,
-        isFailure: dealStatus['isFailure'] ?? false,
       ),
+    ).then((_) =>
+      // final leadBloc = BlocProvider.of<DealBloc>(context);
+      // leadBloc.add(FetchDealStatuses());
+
+          _dealBloc.add(FetchDeals(dealStatus['id']))
+        
+      
     );
   }
 

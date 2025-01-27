@@ -25,6 +25,10 @@ class TaskLoaded extends TaskState {
     );
   }
 }
+class TaskStatusLoaded extends TaskState {
+  final TaskStatus taskStatus;
+  TaskStatusLoaded(this.taskStatus);
+}
 
 class TaskDataLoaded extends TaskState {
   final List<Task> tasks;
@@ -76,3 +80,9 @@ class TaskStatusDeleted extends TaskState {
   TaskStatusDeleted(this.message);
 }
 
+// State для успешного обновления статуса лида
+class TaskStatusUpdatedEdit extends TaskState {
+  final String message;
+
+  TaskStatusUpdatedEdit(this.message);
+}

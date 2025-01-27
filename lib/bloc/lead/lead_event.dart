@@ -17,6 +17,10 @@ class FetchLeads extends LeadEvent {
   });
 }
 
+class FetchLeadStatus extends LeadEvent {
+  final int leadStatusId;
+  FetchLeadStatus(this.leadStatusId);
+}
 
 class FetchMoreLeads extends LeadEvent {
   final int statusId;

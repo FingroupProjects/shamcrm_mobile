@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Task {
@@ -37,7 +38,7 @@ class Task {
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
-        final rawPriority = json['priority_level'];
+    final rawPriority = json['priority_level'];
     final int priorityLevel;
     if (rawPriority is int) {
       priorityLevel = rawPriority;
@@ -48,14 +49,13 @@ class Task {
     }
     try {
       return Task(
-
         id: json['id'] is int ? json['id'] : 0,
         name: json['name'] is String ? json['name'] : 'Без имени',
         startDate: json['from'] is String ? json['from'] : null,
         endDate: json['to'] is String ? json['to'] : null,
         description: json['description'] is String ? json['description'] : '',
         statusId: taskStatusId,
-        priority:priorityLevel,
+        priority: priorityLevel,
         overdue: json['overdue'] is int ? json['overdue'] : 0,
         taskStatus: json['taskStatus'] != null &&
                 json['taskStatus'] is Map<String, dynamic>
@@ -223,23 +223,39 @@ class TaskStatus {
   final TaskStatusName? taskStatus;
   final String color;
   final String tasksCount; // Changed to String
+  final bool needsPermission;
+  final bool finalStep;
+  final bool checkingStep;
+  final List<String> roles; // Added roles field
 
   TaskStatus({
     required this.id,
     this.taskStatus,
     required this.color,
     required this.tasksCount,
+    required this.needsPermission,
+    required this.finalStep,
+    required this.checkingStep,
+    required this.roles, // Initialize roles
   });
 
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
     return TaskStatus(
       id: json['id'] as int,
+      needsPermission:
+          json['needs_permission'] == true || json['needs_permission'] == 1,
+      finalStep: json['final_step'] == true || json['final_step'] == 1,
+      checkingStep: json['checking_step'] == true || json['checking_step'] == 1,
       taskStatus: json['taskStatus'] != null &&
               json['taskStatus'] is Map<String, dynamic>
           ? TaskStatusName.fromJson(json['taskStatus'])
           : null,
       color: json['color'] is String ? json['color'] : 'Неизвестный цвет',
-      tasksCount: json['tasks_amount']?.toString() ?? '0', // Convert to string, with '0' as default
+      tasksCount: json['tasks_amount']?.toString() ?? '0',
+      roles: (json['roles'] as List<dynamic>?)
+              ?.map((role) => role.toString())
+              .toList() ??
+          [], // Parse roles as a list of strings
     );
   }
 
@@ -249,9 +265,14 @@ class TaskStatus {
       'taskStatus': taskStatus?.toJson(),
       'color': color,
       'tasks_amount': tasksCount,
+      'needs_permission': needsPermission,
+      'final_step': finalStep,
+      'checking_step': checkingStep,
+      'roles': roles, // Include roles in toJson
     };
   }
 }
+
 class TaskStatusName {
   final int id;
   final String name;

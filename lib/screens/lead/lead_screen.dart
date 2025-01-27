@@ -436,131 +436,136 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
+void _showStatusOptions(BuildContext context, int index) {
+  final RenderBox renderBox =
+      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+  final Offset position = renderBox.localToGlobal(Offset.zero);
 
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        int leadCount = 0;
-
-        if (state is LeadLoaded) {
-          print("----------1==1=1=1==11=1=1=1=1=1=1==1=1=1----$leadCount");
-          final statusId = _tabTitles[index]['id'];
-          final leadStatus = state.leadStatuses.firstWhere(
-            (status) => status.id == statusId,
-            // orElse: () => 1,
-          );
-          leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
-        }
-
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-          },
-          onLongPress: () {
-            if (_canDeleteLeadStatus) {
-              _showOptionsModal(index);
-            }
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive
-                            ? const Color(0xff1E2E52)
-                            : const Color(0xff99A4BA),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      leadCount.toString(),
-                      style: TextStyle(
-                        color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+  showMenu(
+    context: context,
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy + renderBox.size.height,
+      position.dx + renderBox.size.width,
+      position.dy + renderBox.size.height * 2,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 4,
+    color: Colors.white,
+    items: [
+      PopupMenuItem(
+        value: 'edit',
+        child: ListTile(
+          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+          title: Text(
+            'Изменить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showOptionsModal(int index) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
       ),
-      backgroundColor: Colors.white,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          child: Column(
+      PopupMenuItem(
+        value: 'delete',
+        child: ListTile(
+          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+          title: Text(
+            'Удалить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ),
+    ],
+  ).then((value) {
+    if (value == 'edit') {
+      _editLeadStatus(index);
+    } else if (value == 'delete') {
+      _showDeleteDialog(index);
+    }
+  });
+}
+
+// Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
+Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
+
+  return BlocBuilder<LeadBloc, LeadState>(
+    builder: (context, state) {
+      int leadCount = 0;
+
+      if (state is LeadLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        final leadStatus = state.leadStatuses.firstWhere(
+          (status) => status.id == statusId,
+        );
+        leadCount = leadStatus.leadsCount;
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+        },
+        onLongPress: () {
+          if (_canDeleteLeadStatus) {
+            _showStatusOptions(context, index);
+          }
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Закрываем модальное окно
-                  _editLeadStatus(index); // Вызов функции изменения
-                },
-                child: Text(
-                  "Изменения статуса",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.blue,
-                  ),
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
                 ),
               ),
-              Divider(height: 1, color: Colors.grey[300]),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Закрываем модальное окно
-                  _deleteLeadStatus(index); // Вызов функции удаления
-                },
-                child: Text(
-                  "Удаление статуса",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.red,
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    leadCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   void _deleteLeadStatus(int index) {
     // Вызываем вашу существующую логику удаления
@@ -609,12 +614,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       context: context,
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
-          initialTitle: leadStatus['title'] ?? '', // Ensure the title exists
           leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
-          isSuccess:
-              leadStatus['isSuccess'] ?? false, // Example of a lead's status
-          isFailure: leadStatus['isFailure'] ??
-              false, // Example of a lead's failure status
+
+    
         );
       },
     );
