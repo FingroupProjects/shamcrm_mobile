@@ -17,6 +17,10 @@ class FetchLeads extends LeadEvent {
   });
 }
 
+class FetchLeadStatus extends LeadEvent {
+  final int leadStatusId;
+  FetchLeadStatus(this.leadStatusId);
+}
 
 class FetchMoreLeads extends LeadEvent {
   final int statusId;
@@ -148,4 +152,20 @@ class DeleteLeadStatuses extends LeadEvent {
     this.localizations,  
 
 );
+}
+// Event для изменения статуса лида
+class UpdateLeadStatusEdit extends LeadEvent {
+  final int leadStatusId;
+  final String title;
+  final bool isSuccess;
+  final bool isFailure;
+  final AppLocalizations localizations;
+
+  UpdateLeadStatusEdit(
+    this.leadStatusId,
+    this.title,
+    this.isSuccess,
+    this.isFailure,
+    this.localizations,
+  );
 }

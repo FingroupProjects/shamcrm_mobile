@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
+import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
@@ -34,6 +35,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
+  bool _isManager = false;
   bool _isFiltr = false;
   final TextEditingController _searchController = TextEditingController();
   bool _canReadLeadStatus = false;
@@ -43,7 +45,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
-  
+
   bool _showCustomTabBar = true;
 
   int? _selectedManagerId; // ID выбранного менеджера.
@@ -119,7 +121,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   void _handleManagerSelected(List<dynamic> managers) {
     print('Selected managers: $managers');
     setState(() {
-          _showCustomTabBar = false;
+      _showCustomTabBar = false;
 
       _selectedManagerIds = managers
           .map((manager) {
@@ -234,27 +236,33 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           },
         ),
       ),
-     body: isClickAvatarIcon
-    ? ProfileScreen()
-    : Column(
-        children: [
-          const SizedBox(height: 15),
-          // Условие для отображения табов с использованием флага
-          if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
-            _buildCustomTabBar(),
-          Expanded(
-            child: _isSearching || _selectedManagerId != null
-                ? _buildManagerView()
-                : _buildTabBarView(),
-          ),
-        ],
-      ),
-
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                // Условие для отображения табов с использованием флага
+                if (!_isSearching &&
+                    _selectedManagerId == null &&
+                    _showCustomTabBar)
+                  _buildCustomTabBar(),
+                Expanded(
+                  child: _isSearching || _selectedManagerId != null
+                      ? _buildManagerView()
+                      : _buildTabBarView(),
+                ),
+              ],
+            ),
     );
   }
 
   Widget searchWidget(List<Lead> leads) {
+    print(
+        '_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
+
+    // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
+      print('Показывается сообщение: Ничего не найдено');
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
@@ -267,21 +275,58 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ),
       );
     }
+    // Если это менеджер и список лидов пуст
+    else if (_isManager && leads.isEmpty) {
+      print('Показывается сообщение: У выбранного менеджера нет лидов');
+      return Center(
+        child: Text(
+          'У выбранного менеджера нет лидов',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+    // Если лидов вообще нет
+    else if (leads.isEmpty) {
+      print('Показывается сообщение: Нет доступных лидов');
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
 
+    // Если лиды есть, показываем список
+    print('Показывается список лидов с количеством: ${leads.length}');
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
         itemCount: leads.length,
         itemBuilder: (context, index) {
           final lead = leads[index];
+          print('Отображение лида: $lead');
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: LeadCard(
               lead: lead,
               title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
-              onStatusUpdated: () {},
-              onStatusId: (StatusLeadId) {},
+              onStatusUpdated: () {
+                print('Статус лида обновлён');
+              },
+              onStatusId: (StatusLeadId) {
+                print('onStatusId вызван с id: $StatusLeadId');
+              },
             ),
           );
         },
@@ -393,13 +438,68 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
+void _showStatusOptions(BuildContext context, int index) {
+  final RenderBox renderBox =
+      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+  final Offset position = renderBox.localToGlobal(Offset.zero);
 
-    return BlocBuilder<LeadBloc, LeadState>(
-      builder: (context, state) {
-        int leadCount = 0;
+  showMenu(
+    context: context,
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy + renderBox.size.height,
+      position.dx + renderBox.size.width,
+      position.dy + renderBox.size.height * 2,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 4,
+    color: Colors.white,
+    items: [
+      PopupMenuItem(
+        value: 'edit',
+        child: ListTile(
+          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+          title: Text(
+            'Изменить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ),
+      PopupMenuItem(
+        value: 'delete',
+        child: ListTile(
+          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+          title: Text(
+            'Удалить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
+      ),
+    ],
+  ).then((value) {
+    if (value == 'edit') {
+      _editLeadStatus(index);
+    } else if (value == 'delete') {
+      _showDeleteDialog(index);
+    }
+  });
+}
 
+// Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
+Widget _buildTabButton(int index) {
+  bool isActive = _tabController.index == index;
         if (state is LeadLoaded) {
           final statusId = _tabTitles[index]['id'];
           final leadStatus = state.leadStatuses.firstWhere(
@@ -409,62 +509,74 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
 
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-          },
-          onLongPress: () {
-            if (_canDeleteLeadStatus) {
-              _showDeleteDialog(index);
-            }
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive
-                            ? const Color(0xff1E2E52)
-                            : const Color(0xff99A4BA),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      leadCount.toString(),
-                      style: TextStyle(
-                        color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+
+      if (state is LeadLoaded) {
+        final statusId = _tabTitles[index]['id'];
+        final leadStatus = state.leadStatuses.firstWhere(
+          (status) => status.id == statusId,
         );
-      },
-    );
+        leadCount = leadStatus.leadsCount;
+      }
+
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+        },
+        onLongPress: () {
+          if (_canDeleteLeadStatus) {
+            _showStatusOptions(context, index);
+          }
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    leadCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+  void _deleteLeadStatus(int index) {
+    // Вызываем вашу существующую логику удаления
+    _showDeleteDialog(index);
   }
 
   void _showDeleteDialog(int index) async {
@@ -495,6 +607,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
       context.read<LeadBloc>().add(FetchLeadStatuses());
     }
+  }
+
+  void _editLeadStatus(int index) {
+    // Extract lead status data if needed for editing
+    final leadStatus = _tabTitles[
+        index]; // Assuming _tabTitles holds the relevant data for the lead
+
+    // Show the Edit Lead Status Screen as a modal dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EditLeadStatusScreen(
+          leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
+
+    
+        );
+      },
+    );
   }
 
   Widget _buildTabBarView() {

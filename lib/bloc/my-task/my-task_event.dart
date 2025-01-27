@@ -106,3 +106,21 @@ class DeleteMyTaskStatuses extends MyTaskEvent {
     this.localizations,
     );
 }
+
+class FetchMyTaskStatus extends MyTaskEvent {
+  final int myTaskStatusId;
+  FetchMyTaskStatus(this.myTaskStatusId);
+}
+
+// Event для изменения статуса лида
+class UpdateMyTaskStatusEdit extends MyTaskEvent {
+  final int myTaskStatusId;
+  final String title;
+  final AppLocalizations localizations;
+
+  UpdateMyTaskStatusEdit(
+    this.myTaskStatusId,
+    this.title,
+    this.localizations,
+  );
+}

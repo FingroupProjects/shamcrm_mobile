@@ -21,8 +21,18 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<FetchAllLeads>(_fetchAllLeads);
     on<DeleteLead>(_deleteLead);
     on<DeleteLeadStatuses>(_deleteLeadStatuses);
+    on<UpdateLeadStatusEdit>(_updateLeadStatusEdit);
+    on<FetchLeadStatus>(_fetchLeadStatus);
   }
-
+Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+    try {
+      final leadStatus = await apiService.getLeadStatus(event.leadStatusId);
+      emit(LeadStatusLoaded(leadStatus));
+    } catch (e) {
+      emit(LeadError('Failed to fetch deal status: ${e.toString()}'));
+    }
+  }
   // Метод для загрузки лидов с учётом кэша
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
@@ -82,10 +92,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       emit(LeadLoaded(
         cachedStatuses.map((status) => LeadStatus.fromJson(status)).toList(),
         leadCounts: Map.from(_leadCounts),
-        
       ));
-    }    print("Updated leass counts: $_leadCounts");
-
+    }
+    print("Updated leass counts: $_leadCounts");
 
     // Then fetch from API
     if (!await _checkInternetConnection()) {
@@ -99,7 +108,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError('Нет статусов'));
         return;
       }
-    print("Updated lead counts: $_leadCounts");
+      print("Updated lead counts: $_leadCounts");
 
       // Cache the statuses
       await LeadCache.cacheLeadStatuses(response
@@ -198,7 +207,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess(event.localizations.translate('lead_created_successfully')));
+        emit(LeadSuccess(
+            event.localizations.translate('lead_created_successfully')));
         // Передаем статус лида (event.leadStatusId) в событие FetchLeads
         // add(FetchLeads(event.leadStatusId));
       } else {
@@ -251,7 +261,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Если успешно, то обновляем состояние
       if (result['success']) {
-        emit(LeadSuccess(event.localizations.translate('lead_updated_successfully')));
+        emit(LeadSuccess(
+            event.localizations.translate('lead_updated_successfully')));
         // add(FetchLeads(event.leadStatusId)); // Обновляем список лидов
       } else {
         emit(LeadError(result['message']));
@@ -281,7 +292,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         emit(LeadError(result['message']));
       }
     } catch (e) {
-      emit(LeadError(event.localizations.translate('error_create_status_lead')));
+      emit(
+          LeadError(event.localizations.translate('error_create_status_lead')));
     }
   }
 
@@ -291,7 +303,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     try {
       final response = await apiService.deleteLead(event.leadId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted(event.localizations.translate('lead_deleted_successfully')));
+        emit(LeadDeleted(
+            event.localizations.translate('lead_deleted_successfully')));
       } else {
         emit(LeadError(event.localizations.translate('error_delete_lead')));
       }
@@ -307,12 +320,38 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     try {
       final response = await apiService.deleteLeadStatuses(event.leadStatusId);
       if (response['result'] == 'Success') {
-        emit(LeadDeleted(event.localizations.translate('delete_status_lead_successfully')));
+        emit(LeadDeleted(
+            event.localizations.translate('delete_status_lead_successfully')));
       } else {
-        emit(LeadError(event.localizations.translate('error_delete_status_lead')));
+        emit(LeadError(
+            event.localizations.translate('error_delete_status_lead')));
       }
     } catch (e) {
-      emit(LeadError(event.localizations.translate('error_delete_status_lead')));
+      emit(
+          LeadError(event.localizations.translate('error_delete_status_lead')));
+    }
+  }
+
+  Future<void> _updateLeadStatusEdit(
+      UpdateLeadStatusEdit event, Emitter<LeadState> emit) async {
+    emit(LeadLoading());
+
+    try {
+      final response = await apiService.updateLeadStatusEdit(
+        event.leadStatusId,
+        event.title,
+        event.isSuccess,
+        event.isFailure,
+      );
+
+      if (response['result'] == 'Success') {
+        emit(LeadStatusUpdatedEdit(
+            event.localizations.translate('status_updated_successfully')));
+      } else {
+        emit(LeadError(event.localizations.translate('error_update_status')));
+      }
+    } catch (e) {
+      emit(LeadError(event.localizations.translate('error_update_status')));
     }
   }
 }

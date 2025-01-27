@@ -16,6 +16,10 @@ class FetchTasks extends TaskEvent {
     this.userIds, // Добавляем в конструктор
   });
 }
+class FetchTaskStatus extends TaskEvent {
+  final int taskStatusId;
+  FetchTaskStatus(this.taskStatusId);
+}
 
 class FetchMoreTasks extends TaskEvent {
   final int statusId;
@@ -131,4 +135,24 @@ class DeleteTaskStatuses extends TaskEvent {
     this.taskStatusId,    
      this.localizations,  // Add this to constructor
 );
+}
+// Event
+class UpdateTaskStatusEdit extends TaskEvent {
+  final int taskStatusId;
+  final String name;
+  final bool needsPermission;
+  final bool finalStep;
+  final bool checkingStep;
+  final List<int> roleIds;
+  final AppLocalizations localizations;
+
+  UpdateTaskStatusEdit({
+    required this.taskStatusId,
+    required this.name,
+    required this.needsPermission,
+    required this.finalStep,
+    required this.checkingStep,
+    required this.roleIds,
+    required this.localizations,
+  });
 }

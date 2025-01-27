@@ -10,20 +10,17 @@
   "exit": "Exit",
   "error_text": "Error",
   "change_pin_code": "Change PIN-CODE",
-
   "COMMENT_TITLE_SCREEN_Organizations": "----------------------------Тексты для экрана Organizations----------------------------",
   "loading": "Loading...",
   "organizations": "Organization",
   "no_organizations": "No organizations",
   "select_organizations": "Select organization",
-
   "COMMENT_TITLE_SCREEN_Button_1C": "----------------------------Тексты для экрана BUTTON-1C----------------------------",
   "update_1c_data": "Update 1C data",
   "last_update_1c": "Last 1C update",
   "data_updated_successfully": "1C data updated successfully",
   "data_update_failed": "Failed to update 1C data",
   "last_update": "Last update",
-
   "COMMENT_TITLE_SCREEN_Profile_Edit": "----------------------------Тексты для экрана PROFILE-EDIT----------------------------",
   "file_too_large": "The selected file is too large.",
   "image_selected_successfully": "Image selected successfully!",
@@ -56,7 +53,6 @@
   "invalid_email": "Please enter a valid email address",
   "profile_update_error": "An error occurred while updating the profile",
   "save": "Save",
-
   "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Domain----------------------------",
   "enter your subdomain": "Enter your subdomain",
   "enter_subdomain": "Enter your subdomain",
@@ -65,7 +61,6 @@
   "login_button": "Login",
   "invalid_subdomain": "Invalid subdomain",
   "enter_subdomain_error": "Please enter subdomain",
-
   "COMMENT_TITLE_SCREEN_Login": "----------------------------Тексты для экрана Login----------------------------",
   "login_title": "Login",
   "login_subtitle": "Enter your login and password to sign in",
@@ -74,12 +69,10 @@
   "login_password_hint": "Enter password",
   "login_password_label": "Password",
   "login_empty_fields_error": "Please fill in all fields",
-
   "COMMENT_TITLE_SCREEN_Pin_Setup": "----------------------------Тексты для экрана PIN SETUP----------------------------",
   "set_pin_title": "Set PIN",
   "confirm_pin_title": "Confirm PIN",
   "pins_do_not_match_error": "PINs do not match",
-
   "COMMENT_TITLE_SCREEN_Pin": "----------------------------Тексты для экрана PIN----------------------------",
   "enter_pin": "Enter your PIN",
   "wrong_pin": "Wrong password",
@@ -90,7 +83,6 @@
   "forgot_pin": "Forgot PIN?",
   "biometric_unavailable": "Biometric authentication is unavailable",
   "confirm_identity": "Confirm your identity",
-
   "COMMENT_TITLE_SCREEN_Forgot_Pin": "----------------------------Тексты для экрана FORGOT-PIN----------------------------",
   "forgot_pin_title": "Forgot PIN?",
   "enter_login": "Enter login",
@@ -104,7 +96,6 @@
   "did_not_receive_code": "Did not receive the code?",
   "confirm_code": "Confirm code",
   "wrong_confirmation_code": "Wrong confirmation code!",
-
   "COMMENT_TITLE_SCREEN_Dashboard": "----------------------------Тексты для экрана APP-DASHBOARD----------------------------",
   "appbar_dashboard": "Dashboard",
   "appbar_tasks": "Tasks",
@@ -112,7 +103,6 @@
   "appbar_chats": "Chats",
   "appbar_deals": "Deals",
   "appbar_settings": "Settings",
-
   "COMMENT_TITLE_SCREEN_Dashboard_Lead_Conversion": "----------------------------Тексты для экрана DASHBOARD-LEAD-CONVERSION----------------------------",
   "lead_conversion": "Lead Conversion",
   "no_data_to_display": "No data to display",
@@ -130,7 +120,6 @@
   "december": "December",
   "COMMENT_TITLE_SCREEN_Dashboard_User_Chart": "----------------------------Тексты для экрана DASHBOARD-USER-CHART----------------------------",
   "achieving_goals": "Achieving goals",
-
   "COMMENT_TITLE_SCREEN_Dashboard_Task_Chart": "----------------------------Тексты для экрана DASHBOARD-TASK-CHART----------------------------",
   "tasks": "Tasks",
   "total_tasks": "Total tasks",
@@ -138,7 +127,6 @@
   "overdue_tasks": "Overdue",
   "completed_tasks": "Completed",
   "data_loading_error": "Data loading error",
-
   "COMMENT_TITLE_SCREEN_Dashboard_Graphic_Клиенты": "----------------------------Тексты для экрана DASHBOARD-GRAPHIC-DASHBOARD-КЛИЕНТЫ----------------------------",
   "clients": "Clients",
   "statuses": "Statuses:",
@@ -154,10 +142,8 @@
   "oct": "Oct",
   "nov": "Nov",
   "dec": "Dec",
-
   "COMMENT_TITLE_SCREEN_Dashboard_Procces_Speed": "----------------------------Тексты для экрана DASHBOARD-PROCCE-SPEED-СКОРОСЬ ОБРАБОТКИ---------------------------",
   "process_speed": "Processing speed",
-
   "COMMENT_TITLE_SCREEN_Dashboard_Deal_Stats": "----------------------------Тексты для экрана DASHBOARD-DEAL-STATS-СТАТИСТИКА СДЕЛОК---------------------------",
   "billion": "B",
   "million": "M",
@@ -166,7 +152,6 @@
   "deal_stats": "Deal Statistics",
   "total_amount": "Total Amount",
   "successful": "Successful",
-
   "COMMENT_TITLE_SCREEN_TASK_SCREEN": "----------------------------Тексты для экрана TASK SCREEN---------------------------",
   "nothing_found": "Nothing found for the query",
   "no_tasks_for_user": "The selected user has no tasks",
@@ -261,7 +246,6 @@
   "assignees_list": "Assignees",
   "select_assignees_list": "Select assignees",
   "selected_assignees_list": "Selected assignees:",
-
   "COMMENT_TITLE_SCREEN_LEAD_SCREEN": "----------------------------Texts for TASK SCREEN---------------------------",
   "selected_manager_has_any_lead": "The selected manager has no leads",
   "new_lead": "New Lead",
@@ -359,7 +343,6 @@
   "yes": "Yes",
   "delete_lead_status": "Delete lead status",
   "confrim_delete_lead_status": "Are you sure you want to delete this lead status?",
-
   "COMMENT_TITLE_SCREEN_API_SERVICE": "----------------------------Тексты для экрана API SERVICE---------------------------",
   "lead_created_successfully": "Lead created successfully",
   "lead_updated_successfully": "Lead updated successfully",
@@ -398,7 +381,6 @@
   "error_validation": "Validation errors!",
   "error_validation_data": "Data validation error. Please check the entered data.",
   "error_update_profile": "Error updating the profile!",
-
   "COMMENT_TITLE_SCREEN_CUSTOM_TEXTFIELD_DATE": "----------------------------Texts for CUSTOM TEXTFIELD SCREEN---------------------------",
   "ddmmyyyy": "dd/MM/yyyy",
   "ok": "OK",
@@ -413,7 +395,6 @@
   "enter_phone_number": "Enter phone number",
   "error_phone_number": "Invalid phone number!",
   "enter_textfield_text": "Enter field value!",
-
   "COMMENT_TITLE_SCREEN_NOTIFICATION": "----------------------------Тексты для экрана NOTIFICATION---------------------------",
   "all_notifications_deleted_successfully": "All notifications successfully deleted!",
   "notifications": "Notifications",
@@ -425,7 +406,6 @@
   "task_closed": "Task Closed",
   "task_deadline_reminder": "Task Deadline Reminder",
   "assigned_as_lead_manager": "You have been assigned as the lead manager.",
-
   "COMMENT_TITLE_SCREEN_DEAL": "----------------------------Тексты для экрана DEAL---------------------------",
   "delete_deal_status": "Delete Deal Status",
   "confirm_delete_status_deal": "Are you sure you want to delete this deal status?",
@@ -453,7 +433,6 @@
   "end_date_history": "End Date: ",
   "summa_history": "Amount:",
   "date_update_status_history": "Status Update Date: ",
-
   "COMMENT_TITLE_SCREEN_CHAT": "----------------------------Тексты для экрана CHAT---------------------------",
   "delete_chat": "Delete Chat",
   "delete_chat_group": "Delete Group",
@@ -503,7 +482,6 @@
   "user_delete_successfully": "User successfully removed from the group",
   "cannot_delete_user": "Cannot delete member",
   "error_delete_user": "Error deleting user!",
-
   "COMMENT_TITLE_SCREEN_CHAT_MODEL": "----------------------------Тексты для экрана CHAT-MODEL---------------------------",
   "text_message": "Text message",
   "sent_voice_message": "Sent a voice message",
@@ -513,21 +491,18 @@
   "video_message": "You received a video message",
   "location_message": "You received a location: {location}",
   "sticker_message": "You received a sticker",
-
   "COMMENT_TITLE_SCREEN_MY_TASK_SCREEN": "----------------------------Тексты для экрана Мои задачи---------------------------",
   "set_push_notification": "Send Push Notification",
   "date_not": "Date not specified",
   "Invalid_date_format": "Invalid date format",
   "enter_status_namer": "Enter status name",
   "appbar_my_tasks": "My tasks",
-
   "COMMENT_TITLE_SCREEN_LEAD_PROFILE_SCREEN": "----------------------------Texts for Lead Profile---------------------------",
   "lead_profile": "Lead Profile",
   "whatsApp": "WhatsApp",
   "creation_date_lead": "Creation Date",
   "status_lead_profile": "Status",
   "download_data": "Download Data",
-  
   "COMMENT_TITLE_SCREEN_TASK_PROFILE_SCREEN": "----------------------------Texts for Task Profile---------------------------",
   "about_task": "About Task",
   "task_name_profile": "Task Name",
@@ -543,7 +518,6 @@
   "deleted_account": "Deleted Account",
   "owner": "Owner",
   "you": "You",
-  
   "COMMENT_TITLE_SCREEN_USER_PROFILE_SCREEN": "----------------------------Texts for User Profile---------------------------",
   "user_profile": "User Profile",
   "user_name": "User Name",
@@ -555,8 +529,7 @@
   "no_any_managers": "No available managers",
   "notification": "Notification",
   "filtr": "Filter",
-  "clear":"Clear",
-  
+  "clear": "Clear",
   "COMMENT_TITLE_SCREEN_BLOC": "----------------------------Texts for the BLOC Screen---------------------------",
   "no_status_task": "No task statuses!",
   "status_task_delete_successfully": "Task status successfully deleted!",
@@ -571,8 +544,11 @@
   "deal_delete_successfully": "Deal successfully deleted!",
   "error_delete_deal": "Error deleting deal!",
   "status_deal_delete_successfully": "Deal status successfully deleted!",
-  "error_status_deal_delete": "Error deleting deal status!"
+  "error_status_deal_delete": "Error deleting deal status!",
+  "nothing_deal_for_manager": "No deals to display",
+  "nothing_lead_for_manager": "No leads to display",
+  "nothing_task_for_manager": "No tasks to display",
+  "status_updated_successfully": "Status updated successfully"
 
-
-
+  
 }

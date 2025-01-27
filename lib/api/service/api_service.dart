@@ -55,6 +55,7 @@ import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -73,7 +74,8 @@ import '../../models/login_model.dart';
 class ApiService {
   String? baseUrl;
   String? baseUrlSocket;
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   ApiService() {
     _initializeIfDomainExists();
@@ -97,28 +99,30 @@ class ApiService {
     baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
     print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('domain', domain);
-  await prefs.setString('mainDomain', mainDomain);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('domain', domain);
+    await prefs.setString('mainDomain', mainDomain);
   }
 
   Future<String> getDynamicBaseUrl() async {
-  Map<String, String?> domains = await getEnteredDomain();
-  String? mainDomain = domains['enteredMainDomain']; // Извлекаем значение по ключу
-  String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+    Map<String, String?> domains = await getEnteredDomain();
+    String? mainDomain =
+        domains['enteredMainDomain']; // Извлекаем значение по ключу
+    String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
 
-  if (domain != null && domain.isNotEmpty) {
-    return 'https://$domain-back.$mainDomain/api';
-  } else {
-    throw Exception('Домен не установлен в SharedPreferences');
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.$mainDomain/api';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
   }
-}
 
   Future<String> getSocketBaseUrl() async {
-  Map<String, String?> domains = await getEnteredDomain();
-  String? mainDomain = domains['enteredMainDomain']; // Извлекаем значение по ключу
-  String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
-      if (domain != null && domain.isNotEmpty) {
+    Map<String, String?> domains = await getEnteredDomain();
+    String? mainDomain =
+        domains['enteredMainDomain']; // Извлекаем значение по ключу
+    String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+    if (domain != null && domain.isNotEmpty) {
       return 'https://$domain-back.$mainDomain/broadcasting/auth';
     } else {
       throw Exception('Домен не установлен в SharedPreferences');
@@ -150,6 +154,7 @@ class ApiService {
     baseUrlSocket = null;
     print('API сброшено');
   }
+
   // Метод для получения токена из SharedPreferences
   Future<String?> getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -181,7 +186,6 @@ class ApiService {
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-  
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
     // bool isCleared = await prefs.clear();
@@ -359,8 +363,8 @@ class ApiService {
   //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
   // Метод для сохранения данных из QR-кода
-  Future<void> saveQrData(String mainDomain,String domain, String login, String token,
-      String userId, String organizationId) async {
+  Future<void> saveQrData(String mainDomain, String domain, String login,
+      String token, String userId, String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем данные из QR-кода
@@ -370,16 +374,16 @@ class ApiService {
     print(prefs.getString('mainDomain'));
     await prefs.setString('userLogin', login ?? '');
     print(prefs.getString('userLogin'));
-    await prefs.setString('token', token); 
+    await prefs.setString('token', token);
     print(prefs.getString('token'));
-    await prefs.setString('userID', userId ?? ''); 
+    await prefs.setString('userID', userId ?? '');
     print(prefs.getString('userID'));
     await prefs.setString('selectedOrganization', organizationId ?? '');
     print(prefs.getString('selectedOrganization'));
 
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
-    await saveDomain(mainDomain,domain);
+    await saveDomain(mainDomain, domain);
   }
 
   // Метод для получения данных из QR-кода
@@ -405,49 +409,52 @@ class ApiService {
 
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
-
   // Метод для выполнения POST-запросов
 // Метод для выполнения POST-запросов
-Future<http.Response> _postRequestDomain(String path, Map<String, dynamic> body) async {
-  final enteredDomainMap = await ApiService().getEnteredDomain();
-  String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+  Future<http.Response> _postRequestDomain(
+      String path, Map<String, dynamic> body) async {
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
 
-  final String DomainUrl = 'https://$enteredMainDomain/api';
-  
-  // Выводим URL домена перед отправкой запроса
-  print("-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
-  print(DomainUrl);
+    final String DomainUrl = 'https://$enteredMainDomain/api';
 
-  final token = await getToken(); // Получаем токен перед запросом
-  
-  // Выводим статус и тело запроса перед отправкой
-  print('Отправка запроса на проверку домена...');
-  
-  final response = await http.post(
-    Uri.parse('$DomainUrl$path'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null)
-      'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-      'Device': 'mobile'
-    },
-    body: json.encode(body),
-  );
+    // Выводим URL домена перед отправкой запроса
+    print(
+        "-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
+    print(DomainUrl);
 
-  // Выводим статус и тело ответа после получения ответа
-  print('Статус ответа: ${response.statusCode}');
-  print('Тело ответа: ${response.body}');
+    final token = await getToken(); // Получаем токен перед запросом
 
-  return response;
-}
+    // Выводим статус и тело запроса перед отправкой
+    print('Отправка запроса на проверку домена...');
+
+    final response = await http.post(
+      Uri.parse('$DomainUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device': 'mobile'
+      },
+      body: json.encode(body),
+    );
+
+    // Выводим статус и тело ответа после получения ответа
+    print('Статус ответа: ${response.statusCode}');
+    print('Тело ответа: ${response.body}');
+
+    return response;
+  }
 
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
-    print('-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
+    print(
+        '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
     print(domain);
     final organizationId = await getSelectedOrganization();
-    final response = await _postRequestDomain('/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    final response = await _postRequestDomain(
+        '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {'domain': domain});
 
     if (response.statusCode == 200) {
@@ -460,13 +467,15 @@ Future<http.Response> _postRequestDomain(String path, Map<String, dynamic> body)
   // Метод для сохранения домена
   Future<void> saveDomainChecked(bool value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('domainChecked', value); // Сохраняем статус проверки домена
+    await prefs.setBool(
+        'domainChecked', value); // Сохраняем статус проверки домена
   }
 
   // Метод для проверки домена из SharedPreferences
   Future<bool> isDomainChecked() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('domainChecked') ?? false; // Проверяем статус или возвращаем false
+    return prefs.getBool('domainChecked') ??
+        false; // Проверяем статус или возвращаем false
   }
 
   // Метод для сохранения введенного домена
@@ -481,22 +490,22 @@ Future<http.Response> _postRequestDomain(String path, Map<String, dynamic> body)
   }
 
 // Метод для получения введенного домена
-Future<Map<String, String?>> getEnteredDomain() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? mainDomain = prefs.getString('enteredMainDomain');
-  String? domain = prefs.getString('enteredDomain');
-  
-  return {
-    'enteredMainDomain': mainDomain,
-    'enteredDomain': domain,
-  };
-}
+  Future<Map<String, String?>> getEnteredDomain() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? mainDomain = prefs.getString('enteredMainDomain');
+    String? domain = prefs.getString('enteredDomain');
+
+    return {
+      'enteredMainDomain': mainDomain,
+      'enteredDomain': domain,
+    };
+  }
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
   //_________________________________ START___API__LOGIN____________________________________________//
 
   // Метод для проверки логина и пароля
- Future<LoginResponse> login(LoginModel loginModel) async {
+  Future<LoginResponse> login(LoginModel loginModel) async {
     final organizationId = await getSelectedOrganization();
     print("------------------------ $organizationId");
     final response = await _postRequest(
@@ -556,8 +565,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception(
-            'Ошибка при получении прав доступа!!');
+        throw Exception('Ошибка при получении прав доступа!!');
       }
     } catch (e) {
       print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
@@ -726,8 +734,9 @@ Future<Map<String, String?>> getEnteredDomain() async {
       final response = await _getRequest(
           '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-              print('=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
-    print('Отправка запроса на API с путём: ${response.body}');
+      print(
+          '=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+      print('Отправка запроса на API с путём: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -775,7 +784,8 @@ Future<Map<String, String?>> getEnteredDomain() async {
             .toList();
         return cachedList;
       } else {
-        throw Exception('Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
+        throw Exception(
+            'Ошибка загрузки статусов лидов и отсутствуют кэшированные данные!');
       }
     }
   }
@@ -809,10 +819,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Статус лида создан успешно'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания статуса лида!'
-      };
+      return {'success': false, 'message': 'Ошибка создания статуса лида!'};
     }
   }
 
@@ -905,25 +912,16 @@ Future<Map<String, String?>> getEnteredDomain() async {
       return {'success': true, 'message': 'note_created_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {
-          'success': false,
-          'message': 'error_field_is_not_empty'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('body')) {
-        return {
-          'success': false,
-          'message': 'error_field_is_not_empty'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'error_valid_date'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'error_create_note'
-      };
+      return {'success': false, 'message': 'error_create_note'};
     }
   }
 
@@ -951,25 +949,16 @@ Future<Map<String, String?>> getEnteredDomain() async {
       return {'success': true, 'message': 'Заметка успешно обновлена'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {
-          'success': false,
-          'message': 'error_field_is_not_empty'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('body')) {
-        return {
-          'success': false,
-          'message': 'error_field_is_not_empty'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('date')) {
         return {'success': false, 'message': 'error_valid_date'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'error_update_note'
-      };
+      return {'success': false, 'message': 'error_update_note'};
     }
   }
 
@@ -1059,63 +1048,36 @@ Future<Map<String, String?>> getEnteredDomain() async {
     } else if (response.statusCode == 422) {
       // Обработка ошибки дублирования номера телефона
       if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'phone_already_exists'
-        };
+        return {'success': false, 'message': 'phone_already_exists'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':'invalid_phone_format'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
-        return {
-          'success': false,
-          'message': 'error_enter_email'
-        };
+        return {'success': false, 'message': 'error_enter_email'};
       }
       if (response.body.contains('name')) {
         return {'success': false, 'message': 'invalid_name_length'};
       }
       // Обработка ошибки дублирования логина Instagram
       else if (response.body.contains('insta_login')) {
-        return {
-          'success': false,
-          'message': 'instagram_login_exists'
-        };
+        return {'success': false, 'message': 'instagram_login_exists'};
       } else if (response.body.contains('facebook_login')) {
-        return {
-          'success': false,
-          'message': 'facebook_login_exists'
-        };
+        return {'success': false, 'message': 'facebook_login_exists'};
       } else if (response.body.contains('tg_nick')) {
-        return {
-          'success': false,
-          'message': 'telegram_nick_exists'
-        };
+        return {'success': false, 'message': 'telegram_nick_exists'};
       } else if (response.body.contains('birthday')) {
         return {'success': false, 'message': 'invalid_birthday'};
       } else if (response.body.contains('wa_phone')) {
-        return {
-          'success': false,
-          'message': 'whatsapp_number_exists'
-        };
+        return {'success': false, 'message': 'whatsapp_number_exists'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'error_server_text'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'lead_creation_error'
-      };
+      return {'success': false, 'message': 'lead_creation_error'};
     }
   }
 
@@ -1184,23 +1146,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
-        return {
-          'success': false,
-          'message': 'error_enter_email'
-        };
+        return {'success': false, 'message': 'error_enter_email'};
       }
       // Другие проверки на ошибки...
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'error_server_text'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'lead_creation_error'
-      };
+      return {'success': false, 'message': 'lead_creation_error'};
     }
   }
 
@@ -1303,6 +1256,30 @@ Future<Map<String, String?>> getEnteredDomain() async {
     }
   }
 
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateLeadStatusEdit(
+      int leadStatusId, String title, bool isSuccess, bool isFailure) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
+    }
+  }
+
 // Метод для Удаления Лида
   Future<Map<String, dynamic>> deleteLead(int leadId) async {
     final organizationId = await getSelectedOrganization();
@@ -1359,26 +1336,17 @@ Future<Map<String, String?>> getEnteredDomain() async {
         return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'phone_already_exists'
-        };
+        return {'success': false, 'message': 'phone_already_exists'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message': 'invalid_phone_format'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'field_is_not_empty'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'error_contact_create'
-      };
+      return {'success': false, 'message': 'error_contact_create'};
     }
   }
 
@@ -1408,26 +1376,17 @@ Future<Map<String, String?>> getEnteredDomain() async {
         return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'phone_already_exists'
-        };
+        return {'success': false, 'message': 'phone_already_exists'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':'invalid_phone_format'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       } else if (response.body.contains('position')) {
         return {'success': false, 'message': 'field_is_not_empty'};
       } else {
         return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'error_contact_update_successfully'
-      };
+      return {'success': false, 'message': 'error_contact_update_successfully'};
     }
   }
 
@@ -1572,6 +1531,25 @@ Future<Map<String, String?>> getEnteredDomain() async {
       throw Exception('Ошибка ${response.statusCode}!');
     }
   }
+
+  Future<LeadStatus> getLeadStatus(int leadStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return LeadStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -1742,10 +1720,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Статус сделки успешно создан'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания статуса сделки!'
-      };
+      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
     }
   }
 
@@ -1764,8 +1739,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
         return jsonList.map((json) => DealHistory.fromJson(json)).toList();
       } else {
         print('Failed to load deal history!');
-        throw Exception(
-            'Ошибка загрузки истории сделки!');
+        throw Exception('Ошибка загрузки истории сделки!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -1863,15 +1837,9 @@ Future<Map<String, String?>> getEnteredDomain() async {
       // Другие проверки на ошибки...
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'error_server_text'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'error_deal_create_successfully'
-      };
+      return {'success': false, 'message': 'error_deal_create_successfully'};
     }
   }
 
@@ -1917,23 +1885,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
       return {'success': true, 'message': 'deal_update_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('"name"')) {
-        return {
-          'success': false,
-          'message': 'invalid_name_length'
-        };
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
       return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'error_server_text'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'error_deal_update_successfully'
-      };
+      return {'success': false, 'message': 'error_deal_update_successfully'};
     }
   }
 
@@ -1986,6 +1945,50 @@ Future<Map<String, String?>> getEnteredDomain() async {
     }
   }
 
+// Метод для изменения статуса deal в ApiService
+  Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
+      String title, int day, bool isSuccess, bool isFailure) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "day": day,
+      "color": "#000",
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
+    }
+  }
+
+  Future<DealStatus> getDealStatus(int dealStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return DealStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__DEAL____________________________________________//
   //_________________________________ START___API__SCREEN__TASK____________________________________________//
 
@@ -2019,7 +2022,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
     }
   }
 
-   Future<List<Task>> getTasks(
+  Future<List<Task>> getTasks(
     int? taskStatusId, {
     int page = 1,
     int perPage = 20,
@@ -2069,7 +2072,6 @@ Future<Map<String, String?>> getEnteredDomain() async {
       throw Exception('Ошибка загрузки задач!');
     }
   }
-
 
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -2236,11 +2238,9 @@ Future<Map<String, String?>> getEnteredDomain() async {
     try {
       final data = json.decode(response.body);
       final errorMessage = data['errors'] ?? data['message'] ?? response.body;
-      return Exception(
-          'Ошибка ${operation}! - $errorMessage');
+      return Exception('Ошибка ${operation}! - $errorMessage');
     } catch (e) {
-      return Exception(
-          'Ошибка ${operation}! - ${response.body}');
+      return Exception('Ошибка ${operation}! - ${response.body}');
     }
   }
 
@@ -2425,10 +2425,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
           };
         }
         if (response.statusCode == 500) {
-          return {
-            'success': false,
-            'message': 'error_server_text'
-          };
+          return {'success': false, 'message': 'error_server_text'};
         }
         if (response.body.contains('from')) {
           return {
@@ -2770,8 +2767,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
         return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
       } else {
         print('Failed to load task history!');
-        throw Exception(
-            'Ошибка загрузки истории задач!');
+        throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -2983,10 +2979,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
         'message': 'Этот проект не имеет завершающий этап!'
       };
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка завершения задачи!'
-      };
+      return {'success': false, 'message': 'Ошибка завершения задачи!'};
     }
   }
 
@@ -3008,6 +3001,58 @@ Future<Map<String, String?>> getEnteredDomain() async {
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<TaskStatus> getTaskStatus(int taskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return TaskStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateTaskStatusEdit({
+    required int taskStatusId,
+    required String name,
+    required bool needsPermission,
+    required bool finalStep,
+    required bool checkingStep,
+    required List<int> roleIds,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
+
+    final payload = {
+      "task_status_name_id": taskStatusId,
+      "needs_permission": needsPermission ? 1 : 0,
+      "final_step": finalStep ? 1 : 0,
+      "checking_step": checkingStep ? 1 : 0,
+      "roles": roles,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload,
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update task status!');
     }
   }
 
@@ -3163,8 +3208,8 @@ Future<Map<String, String?>> getEnteredDomain() async {
 
   Future<ProcessSpeed> getProcessSpeedData() async {
     final organizationId = await getSelectedOrganization();
-      final enteredDomainMap = await ApiService().getEnteredDomain();
-  // Извлекаем значения из Map
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    // Извлекаем значения из Map
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
@@ -3365,7 +3410,6 @@ Future<Map<String, String?>> getEnteredDomain() async {
   //_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
 
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
-
 
   Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
@@ -4066,8 +4110,7 @@ Future<Map<String, String?>> getEnteredDomain() async {
         '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       );
 
-      print(
-          'Response status code!'); // Логируем статус ответа
+      print('Response status code!'); // Логируем статус ответа
       print('Response body!'); // Логируем тело ответа
 
       if (response.statusCode == 200) {
@@ -4305,27 +4348,14 @@ Future<Map<String, String?>> getEnteredDomain() async {
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'profile_updated_successfully'};
       } else if (response.statusCode == 422) {
-        return {
-          'success': false,
-          'message': 'error_validation_data'
-        };
+        return {'success': false, 'message': 'error_validation_data'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':
-              'invalid_phone_format'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'error_server_text'
-        };
+        return {'success': false, 'message': 'error_server_text'};
       } else {
-        return {
-          'success': false,
-          'message': 'error_update_profile'
-        };
+        return {'success': false, 'message': 'error_update_profile'};
       }
     } catch (e) {
       return {
@@ -4643,176 +4673,178 @@ Future<Map<String, String?>> getEnteredDomain() async {
         return 'Произошла ошибка при создании статуса (код: $statusCode)';
     }
   }
+
 // Метод для создания задачи
-Future<Map<String, dynamic>> createMyTask({
-  required String name,
-  required int? statusId,
-  required int? taskStatusId,
-  DateTime? startDate,
-  DateTime? endDate,
-  String? description,
-  String? filePath,
-  int position = 1,
-  required bool setPush,
-}) async {
-  try {
-    // Формируем данные для запроса
-    final Map<String, dynamic> data = {
-      'name': name,
-      'status_id': statusId,
-      'task_status_id': taskStatusId,
-      'position': position,
-      'send_notification': setPush, // Передаем как true/false для boolean
-      if (startDate != null) 'from': startDate.toIso8601String(),
-      if (endDate != null) 'to': endDate.toIso8601String(),
-      if (description != null) 'description': description,
-    };
-
-    // Получаем идентификатор организации
-    final organizationIdProfile = await getSelectedOrganization();
-
-    // Выполняем запрос
-    final response = await _postRequest(
-      '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}',
-      data,
-    );
-
-    // Проверяем статус ответа
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final responseData = json.decode(response.body);
-      return {
-        'success': true,
-        'message': 'Задача успешно создана',
-        'data': responseData,
+  Future<Map<String, dynamic>> createMyTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+    String? filePath,
+    int position = 1,
+    required bool setPush,
+  }) async {
+    try {
+      // Формируем данные для запроса
+      final Map<String, dynamic> data = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'position': position,
+        'send_notification': setPush, // Передаем как true/false для boolean
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (description != null) 'description': description,
       };
-    }
 
-    // Обрабатываем различные коды ошибок
-    String errorMessage;
-    switch (response.statusCode) {
-      case 400:
-        errorMessage = 'Неверные данные запроса';
-        break;
-      case 401:
-        errorMessage = 'Необходима авторизация';
-        break;
-      case 403:
-        errorMessage = 'Недостаточно прав для создания задачи';
-        break;
-      case 404:
-        errorMessage = 'Ресурс не найден';
-        break;
-      case 409:
-        errorMessage = 'Конфликт при создании задачи';
-        break;
-      case 500:
-        errorMessage = 'Внутренняя ошибка сервера';
-        break;
-      default:
-        errorMessage = 'Произошла ошибка при создании задачи';
-    }
+      // Получаем идентификатор организации
+      final organizationIdProfile = await getSelectedOrganization();
 
-    return {
-      'success': false,
-      'message': '$errorMessage!',
-      'statusCode': response.statusCode,
-    };
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при выполнении запроса!',
-      'error': e.toString(),
-    };
-  }
-}
+      // Выполняем запрос
+      final response = await _postRequest(
+        '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}',
+        data,
+      );
 
-Future<Map<String, dynamic>> updateMyTask({
-  required int taskId,
-  required String name,
-  required int? taskStatusId,
-  DateTime? startDate,
-  DateTime? endDate,
-  String? description,
-  String? filePath,
-  required bool setPush,
-}) async {
-  try {
-    // Формируем данные для запроса
-    final Map<String, dynamic> data = {
-      'name': name,
-      'task_status_id': taskStatusId,
-      'send_notification': setPush, // Передаем как true/false для boolean
-      if (startDate != null) 'from': startDate.toIso8601String(),
-      if (endDate != null) 'to': endDate.toIso8601String(),
-      if (description != null) 'description': description,
-    };
-
-    // Добавляем файл, если он есть
-    if (filePath != null) {
-      final file = File(filePath);
-      if (await file.exists()) {
-        final fileBytes = await file.readAsBytes();
-        data['file'] = base64Encode(fileBytes); // Кодируем файл в base64 для передачи
+      // Проверяем статус ответа
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Задача успешно создана',
+          'data': responseData,
+        };
       }
-    }
 
-    // Получаем идентификатор организации
-    final organizationId = await getSelectedOrganization();
+      // Обрабатываем различные коды ошибок
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для создания задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при создании задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при создании задачи';
+      }
 
-    // Выполняем запрос
-    final response = await _postRequest(
-      '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      data,
-    );
-
-    // Проверяем статус ответа
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final responseData = json.decode(response.body);
       return {
-        'success': true,
-        'message': 'Задача успешно обновлена',
-        'data': responseData,
+        'success': false,
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при выполнении запроса!',
+        'error': e.toString(),
       };
     }
-
-    // Обрабатываем различные коды ошибок
-    String errorMessage;
-    switch (response.statusCode) {
-      case 400:
-        errorMessage = 'Неверные данные запроса';
-        break;
-      case 401:
-        errorMessage = 'Необходима авторизация';
-        break;
-      case 403:
-        errorMessage = 'Недостаточно прав для обновления задачи';
-        break;
-      case 404:
-        errorMessage = 'Ресурс не найден';
-        break;
-      case 409:
-        errorMessage = 'Конфликт при обновлении задачи';
-        break;
-      case 500:
-        errorMessage = 'Внутренняя ошибка сервера';
-        break;
-      default:
-        errorMessage = 'Произошла ошибка при обновлении задачи';
-    }
-
-    return {
-      'success': false,
-      'message': '$errorMessage!',
-      'statusCode': response.statusCode,
-    };
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Ошибка при выполнении запроса!',
-      'error': e.toString(),
-    };
   }
-}
+
+  Future<Map<String, dynamic>> updateMyTask({
+    required int taskId,
+    required String name,
+    required int? taskStatusId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+    String? filePath,
+    required bool setPush,
+  }) async {
+    try {
+      // Формируем данные для запроса
+      final Map<String, dynamic> data = {
+        'name': name,
+        'task_status_id': taskStatusId,
+        'send_notification': setPush, // Передаем как true/false для boolean
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (description != null) 'description': description,
+      };
+
+      // Добавляем файл, если он есть
+      if (filePath != null) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          final fileBytes = await file.readAsBytes();
+          data['file'] =
+              base64Encode(fileBytes); // Кодируем файл в base64 для передачи
+        }
+      }
+
+      // Получаем идентификатор организации
+      final organizationId = await getSelectedOrganization();
+
+      // Выполняем запрос
+      final response = await _postRequest(
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        data,
+      );
+
+      // Проверяем статус ответа
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Задача успешно обновлена',
+          'data': responseData,
+        };
+      }
+
+      // Обрабатываем различные коды ошибок
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для обновления задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при обновлении задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при обновлении задачи';
+      }
+
+      return {
+        'success': false,
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при выполнении запроса!',
+        'error': e.toString(),
+      };
+    }
+  }
 
 // Метод для получения Истории Задачи
   Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
@@ -4829,8 +4861,7 @@ Future<Map<String, dynamic>> updateMyTask({
         return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
       } else {
         print('Failed to load task history!');
-        throw Exception(
-            'Ошибка загрузки истории задач!');
+        throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -4913,10 +4944,7 @@ Future<Map<String, dynamic>> updateMyTask({
         'message': 'Этот проект не имеет завершающий этап!'
       };
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка завершения задачи!'
-      };
+      return {'success': false, 'message': 'Ошибка завершения задачи!'};
     }
   }
 
@@ -4938,6 +4966,47 @@ Future<Map<String, dynamic>> updateMyTask({
       }
     } else {
       throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<MyTaskStatus> getMyTaskStatus(int myTaskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return MyTaskStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateMyTaskStatusEdit(
+      int myTaskStatusId, String title, AppLocalizations localizations) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "organization_id": organizationId,
+      "color": "#000",
+    };
+
+    final response = await _patchRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
     }
   }
 
