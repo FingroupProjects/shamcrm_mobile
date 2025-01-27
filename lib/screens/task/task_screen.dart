@@ -48,6 +48,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<String> userRoles = [];
   bool showFilter = false;
   List<int> _selectedUserIds = [];
+  bool _showCustomTabBar = true;
+
 
   @override
   void initState() {
@@ -147,6 +149,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void _handleUserSelected(List<dynamic> users) {
     print('Raw selected users: $users');
     setState(() {
+      _showCustomTabBar = false;
       _selectedUserIds = users
           .map((user) {
             if (user is UserTask) {
@@ -249,6 +252,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               setState(() {
                 _isSearching = false;
                 _selectedUserId = null;
+                _showCustomTabBar = true;
               });
             }
           }, clearButtonClickFiltr: (bool ) {  },
@@ -259,8 +263,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           : Column(
               children: [
                 const SizedBox(height: 15),
-                if (!_isSearching && _selectedUserId == null)
-                  _buildCustomTabBar(),
+          if (!_isSearching && _selectedUserId == null && _showCustomTabBar)
+            _buildCustomTabBar(),
                 Expanded(
                   child: _selectedUserId != null
                       ? _buildUserView()
