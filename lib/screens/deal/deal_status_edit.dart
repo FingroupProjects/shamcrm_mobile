@@ -82,8 +82,8 @@ void _saveChanges() {
         child: Checkbox(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.blue[600],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            activeColor: const Color(0xff1E2E52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
       );
 
@@ -229,7 +229,7 @@ void _saveChanges() {
   );
 }
   TextStyle _textStyle() => TextStyle(
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Gilroy',
     fontWeight: FontWeight.w500,
     color: const Color.fromARGB(255, 0, 0, 0),
