@@ -90,8 +90,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            AppLocalizations.of(context)!
-                                .translate('remove_cards_first'),
+                            AppLocalizations.of(context)!.translate('remove_cards_first'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -107,8 +106,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
                           ),
                           backgroundColor: Colors.red,
                           elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                           duration: Duration(seconds: 3),
                         ),
                       );

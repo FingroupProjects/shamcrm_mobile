@@ -72,7 +72,6 @@ factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
       'deal_custom_fields': dealCustomFields.map((field) => field.toJson()).toList(),
       'out_dated': outDated,
 
-
     };
   }
 }
@@ -109,30 +108,19 @@ class DealStatus {
   final int id;
   final String title;
   final String color;
-  final int organizationId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final int day;
-  final bool isSuccess;
-  final int position;
-  final bool isFailure;
+  final String? createdAt;
+  final String? updatedAt;
   final int dealsCount;
   final int? day;
   final bool isSuccess;
   final bool isFailure;
 
-
   DealStatus({
     required this.id,
     required this.title,
     required this.color,
-    required this.organizationId,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.day,
-    required this.isSuccess,
-    required this.position,
-    required this.isFailure,
+    this.createdAt,
+    this.updatedAt,
     required this.dealsCount,
     this.day,
     required this.isSuccess,
@@ -154,21 +142,18 @@ factory DealStatus.fromJson(Map<String, dynamic> json) {
   );
 }
 
-  });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
       'color': color,
-      'organization_id': organizationId,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'deals_count': dealsCount,
       'day': day,
       'is_success': isSuccess,
       'is_failure': isFailure,
-      'position': position,
-      'deals_count': dealsCount,
     };
   }
 }
