@@ -479,7 +479,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                   }
                                   final leadBloc = context.read<LeadBloc>();
                                   context.read<LeadBloc>().add(FetchLeadStatuses());
-  final localizations = AppLocalizations.of(context)!;
+                            final localizations = AppLocalizations.of(context)!;
 
 
                                   leadBloc.add(UpdateLead(
