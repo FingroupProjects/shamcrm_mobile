@@ -29,6 +29,10 @@ class _DealCardState extends State<DealCard> {
   late String dropdownValue;
   late int statusId;
 
+  late final bool isSuccess=widget.deal.dealStatus!.isSuccess;
+  late final bool isFailure=widget.deal.dealStatus!.isFailure;
+  late final bool outDated=widget.deal.outDated;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +62,16 @@ class _DealCardState extends State<DealCard> {
 
   @override
   Widget build(BuildContext context) {
+        Color borderColor;
+      if (widget.deal.dealStatus?.isSuccess == true && widget.deal.dealStatus?.isFailure == false && widget.deal.outDated == false) {
+        borderColor = Colors.green;
+      } else if (widget.deal.dealStatus?.isSuccess == false && widget.deal.dealStatus?.isFailure == true) {
+        borderColor = Colors.red;
+      } else if (widget.deal.dealStatus?.isSuccess == true && widget.deal.dealStatus?.isFailure == false && widget.deal.outDated == true) {
+        borderColor = Colors.red; 
+      } else {
+        borderColor = Colors.yellow; 
+      }
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -81,8 +95,12 @@ class _DealCardState extends State<DealCard> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: TaskCardStyles.taskCardDecoration,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: borderColor, width: 2),
+        borderRadius: BorderRadius.circular(12),
+        color: Color(0xffF4F7FD),
+      ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -92,15 +110,31 @@ class _DealCardState extends State<DealCard> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis, 
             ),
-            Text(
-              '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}', 
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xfff99A4BA),
-              ),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+              children: [
+                Text(
+                  '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}', 
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xfff99A4BA),
+                  ),
+                ),
+                Text(
+                  widget.deal.lead?.phone ?? "", 
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xfff99A4BA),
+                  ),
+                ),
+              ],
             ),
+
             const SizedBox(height: 5),
             Row(
               children: [
@@ -169,10 +203,10 @@ class _DealCardState extends State<DealCard> {
                 const SizedBox(width: 8),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
             Column(
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

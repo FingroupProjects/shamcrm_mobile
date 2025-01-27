@@ -58,9 +58,7 @@ class _LeadColumnState extends State<LeadColumn> {
   Future<void> _onRefresh() async {
     BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
-    _leadBloc.add(FetchLeads(
-      widget.statusId,
-      managerIds: widget.managerId != null ? [widget.managerId!] : null,
+    _leadBloc.add(FetchLeads( widget.statusId, managerIds: widget.managerId != null ? [widget.managerId!] : null,
     ));
 
     return Future.delayed(Duration(milliseconds: 1));

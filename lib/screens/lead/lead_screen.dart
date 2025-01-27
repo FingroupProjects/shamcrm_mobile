@@ -58,7 +58,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
-        setState(() {
+        setState(() {    final leadBloc = BlocProvider.of<LeadBloc>(context);
+        leadBloc.add(FetchLeadStatuses());
+
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
@@ -498,10 +500,15 @@ void _showStatusOptions(BuildContext context, int index) {
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
 Widget _buildTabButton(int index) {
   bool isActive = _tabController.index == index;
+        if (state is LeadLoaded) {
+          final statusId = _tabTitles[index]['id'];
+          final leadStatus = state.leadStatuses.firstWhere(
+            (status) => status.id == statusId,
+            // orElse: () => 1,
+          );
+          leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
+        }
 
-  return BlocBuilder<LeadBloc, LeadState>(
-    builder: (context, state) {
-      int leadCount = 0;
 
       if (state is LeadLoaded) {
         final statusId = _tabTitles[index]['id'];
@@ -598,9 +605,7 @@ Widget _buildTabButton(int index) {
         context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
       });
 
-      context
-          .read<LeadBloc>()
-          .add(FetchLeadStatuses()); // Pass forceRefresh flag
+      context.read<LeadBloc>().add(FetchLeadStatuses());
     }
   }
 
@@ -626,12 +631,8 @@ Widget _buildTabButton(int index) {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
-          // Perform async work first
-          await LeadCache.cacheLeadStatuses(state.leadStatuses
-              .map((status) => {'id': status.id, 'title': status.title})
-              .toList());
 
-          // Now, update the state synchronously
+          await LeadCache.cacheLeadStatuses(state.leadStatuses .map((status) => {'id': status.id, 'title': status.title}).toList());
           setState(() {
             _tabTitles = state.leadStatuses
                 .where((status) => _canReadLeadStatus)

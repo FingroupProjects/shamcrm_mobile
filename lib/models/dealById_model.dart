@@ -14,6 +14,8 @@ class DealById {
   final Lead? lead;
   final AuthorDeal? author;
   final List<DealCustomFieldsById> dealCustomFields;
+  final DealStatusById? dealStatus;
+
 
   DealById({
     required this.id,
@@ -28,6 +30,8 @@ class DealById {
     this.lead,
     this.author,
     required this.dealCustomFields,
+    this.dealStatus,
+
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
@@ -48,8 +52,10 @@ class DealById {
           : null,
       dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
               ?.map((field) => DealCustomFieldsById.fromJson(field))
-              .toList() ??
-          [],
+              .toList() ??  [],
+      dealStatus: json['deal_status'] != null
+        ? DealStatusById.fromJson(json['deal_status'])
+        : null,
     );
   }
 }

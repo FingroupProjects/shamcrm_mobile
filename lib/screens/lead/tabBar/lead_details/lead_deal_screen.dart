@@ -1,4 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
@@ -246,6 +248,9 @@ class _DealsWidgetState extends State<DealsWidget> {
       ),
     ).then((_) {
       context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+      
+          final dealBloc = BlocProvider.of<LeadBloc>(context, listen: false);
+          dealBloc.add(FetchLeadStatuses());
     });
   }
 
@@ -269,10 +274,8 @@ class _DealsWidgetState extends State<DealsWidget> {
                       LeadDealAddScreen(leadId: widget.leadId),
                 ),
               ).then((_) {
-                context
-                    .read<LeadDealsBloc>()
-                    .add(FetchLeadDeals(widget.leadId));
-              });
+                      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+                      });
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,

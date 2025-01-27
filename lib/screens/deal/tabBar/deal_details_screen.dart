@@ -157,6 +157,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': deal.description ?? ''},
       {'label': AppLocalizations.of(context)!.translate('author_details'), 'value': deal.author?.name ?? ''},
       {'label': AppLocalizations.of(context)!.translate('creation_date_details'), 'value': formatDate(deal.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('status_history'), 'value': deal.dealStatus?.title ?? ''},
     ];
 
     for (var field in deal.dealCustomFields) {
@@ -209,7 +210,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message), 
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,

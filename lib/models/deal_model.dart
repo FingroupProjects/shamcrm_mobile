@@ -13,6 +13,7 @@ class Deal {
   final Lead? lead;
   final DealStatus? dealStatus;
   final List<DealCustomField> dealCustomFields;
+  final bool outDated;
 
   Deal({
     required this.id,
@@ -26,32 +27,34 @@ class Deal {
     this.lead,
     this.dealStatus,
     required this.dealCustomFields,
+    required this.outDated,
   });
 
-  factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
-    return Deal(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Без имени',
-      startDate: json['start_date'],
-      endDate: json['end_date'],
-      description: json['description'] ?? '',
-      sum: json['sum'] ?? '0.00',
-      statusId: dealStatusId,
-      dealStatus: json['deal_status'] != null
-          ? DealStatus.fromJson(json['deal_status'])
-          : null,
-      manager: json['manager'] != null
-          ? ManagerData.fromJson(json['manager'])
-          : null,
-      lead: json['lead'] != null
-          ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0)
-          : null,
-      dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
-              ?.map((field) => DealCustomField.fromJson(field))
-              .toList() ??
-          [],
-    );
-  }
+factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
+  return Deal(
+    id: json['id'] ?? 0,
+    name: json['name'] ?? 'Без имени',
+    startDate: json['start_date'],
+    endDate: json['end_date'],
+    description: json['description'] ?? '',
+    sum: json['sum'] ?? '0.00',
+    statusId: dealStatusId,
+    dealStatus: json['deal_status'] != null
+        ? DealStatus.fromJson(json['deal_status'])
+        : null,
+    manager: json['manager'] != null
+        ? ManagerData.fromJson(json['manager'])
+        : null,
+    lead: json['lead'] != null
+        ? Lead.fromJson(json['lead'], json['lead']['status_id'] ?? 0)
+        : null,
+    dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
+            ?.map((field) => DealCustomField.fromJson(field))
+            .toList() ?? [],
+    outDated: json['out_dated'] ?? false
+  );
+}
+
 
   // Method to convert Deal object to JSON
   Map<String, dynamic> toJson() {
@@ -66,8 +69,10 @@ class Deal {
       'manager': manager?.toJson(),
       'lead': lead?.toJson(),
       'deal_status': dealStatus?.toJson(),
-      'deal_custom_fields':
-          dealCustomFields.map((field) => field.toJson()).toList(),
+      'deal_custom_fields': dealCustomFields.map((field) => field.toJson()).toList(),
+      'out_dated': outDated,
+
+
     };
   }
 }
@@ -112,6 +117,10 @@ class DealStatus {
   final int position;
   final bool isFailure;
   final int dealsCount;
+  final int? day;
+  final bool isSuccess;
+  final bool isFailure;
+
 
   DealStatus({
     required this.id,
@@ -125,25 +134,27 @@ class DealStatus {
     required this.position,
     required this.isFailure,
     required this.dealsCount,
+    this.day,
+    required this.isSuccess,
+    required this.isFailure,
   });
 
-  factory DealStatus.fromJson(Map<String, dynamic> json) {
-    return DealStatus(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? '',
-      color: json['color'] ?? '#000',
-      organizationId: json['organization_id'] ?? 0,
-      createdAt: DateTime.parse(
-          json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(
-          json['updated_at'] ?? DateTime.now().toIso8601String()),
-      day: json['day'] ?? 0,
-      isSuccess: json['is_success'] == true || json['is_success'] == 1,
-      position: json['position'] ?? 0,
-      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
-      dealsCount: json['deals_count'] ?? 0,
-    );
-  }
+factory DealStatus.fromJson(Map<String, dynamic> json) {
+
+  return DealStatus(
+    id: json['id'] as int? ?? 0,
+    title: json['title'] as String? ?? 'Без имени',
+    color: json['color'] as String? ?? '#000',
+    createdAt: json['created_at'] as String?,
+    updatedAt: json['updated_at'] as String?,
+    day: json['day'] as int?,
+    dealsCount: json['deals_count'] as int? ?? 0,
+    isSuccess: json['is_success'] as bool? ?? false,
+    isFailure: json['is_failure'] as bool? ?? false,
+  );
+}
+
+  });
 
   Map<String, dynamic> toJson() {
     return {
@@ -155,8 +166,8 @@ class DealStatus {
       'updated_at': updatedAt.toIso8601String(),
       'day': day,
       'is_success': isSuccess,
-      'position': position,
       'is_failure': isFailure,
+      'position': position,
       'deals_count': dealsCount,
     };
   }

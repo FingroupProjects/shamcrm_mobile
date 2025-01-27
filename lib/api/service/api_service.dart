@@ -227,19 +227,6 @@ class ApiService {
 // Метод для выполнения GET-запросов
   Future<http.Response> _getRequest(String path) async {
     final token = await getToken(); // Получаем токен перед запросом
-
-    print(
-        "-=--=-=-=-=-==--=-=-=-GET REQUEST START==-=---==-=-=-=-=--==-=-=-=-=-");
-    print(baseUrl);
-    print(
-        "-=--=-=-=-=-==--=-=-=-GET REQUEST END==-=---==-=-=-=-=--==-=-=-=-=-");
-
-    print(
-        "-=--=-=-=-=-==--=-=-=-GET REQUEST PATH START==-=---==-=-=-=-=--==-=-=-=-=-");
-    print(path);
-    print(
-        "-=--=-=-=-=-==--=-=-=-GET REQUEST PATH END==-=---==-=-=-=-=--==-=-=-=-=-");
-
     final response = await http.get(
       Uri.parse('$baseUrl$path'),
       headers: {
@@ -250,8 +237,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа! ${response.statusCode}');
-    print('Тело ответа!${response.body}');
+    // print('Статус ответа! ${response.statusCode}');
+    // print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }

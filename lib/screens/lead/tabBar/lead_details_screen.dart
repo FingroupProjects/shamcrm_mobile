@@ -428,9 +428,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           width: 24,
           height: 24,
         ),
-        onPressed: () {
-          Navigator.pop(context, widget.statusId);
-        },
+        onPressed: () async {
+             Navigator.pop(context, widget.statusId);
+           },
       ),
       title: Text(
         title,

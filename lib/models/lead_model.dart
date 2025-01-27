@@ -13,6 +13,11 @@ class Lead {
   final SourceLead? sourceLead;
   final LeadStatus? leadStatus;
   final Organization? organization;
+  final String? phone;
+  final int? inProgressDealsCount;
+  final int? successefullyDealsCount;
+  final int? failedDealsCount;
+  final int? lastUpdate;
 
   Lead({
     required this.id,
@@ -25,6 +30,11 @@ class Lead {
     this.sourceLead,
     this.leadStatus,
     this.organization,
+    this.phone,
+    this.inProgressDealsCount,
+    this.successefullyDealsCount,
+    this.failedDealsCount,
+    this.lastUpdate,
   });
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
@@ -37,25 +47,28 @@ class Lead {
       messageAmount: json['message_amount'] is int ? json['message_amount'] : 0,
       createdAt: json['created_at'] is String ? json['created_at'] : null,
       statusId: leadStatusId,
-      manager:
-          json['manager'] != null && json['manager'] is Map<String, dynamic>
+      manager: json['manager'] != null && json['manager'] is Map<String, dynamic>
               ? ManagerData.fromJson(json['manager'])
               : null,
-      sourceLead:
-          json['source'] != null && json['source'] is Map<String, dynamic>
+      sourceLead: json['source'] != null && json['source'] is Map<String, dynamic>
               ? SourceLead.fromJson(json['source'])
               : null,
-      organization: json['organization'] != null &&
-              json['organization'] is Map<String, dynamic>
+      organization: json['organization'] != null && json['organization'] is Map<String, dynamic>
           ? Organization.fromJson(json['organization'])
           : null,
       leadStatus: json['leadStatus'] != null
           ? LeadStatus.fromJson(json['leadStatus'])
           : null,
+      phone: json['phone'] is String ? json['phone'] : '',
+      inProgressDealsCount: json['in_progress_deals_count'] is int? ? json['in_progress_deals_count'] : 0,
+      successefullyDealsCount: json['successful_deals_count'] is int? ? json['successful_deals_count'] : 0,
+      failedDealsCount: json['failed_deals_count'] is int? ? json['failed_deals_count'] : 0,
+      lastUpdate: json['last_update'] is int? ? json['last_update'] : 0,
+
+
     );
   }
 
-  // Method to convert Lead object to JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -68,6 +81,11 @@ class Lead {
       'sourceLead': sourceLead?.toJson(),
       'organization': organization?.toJson(),
       'leadStatus': leadStatus?.toJson(),
+      'phone': phone,
+      'in_progress_deals_count': inProgressDealsCount,
+      'successful_deals_count': successefullyDealsCount,
+      'failed_deals_count': failedDealsCount,
+      'last_update': lastUpdate,
     };
   }
 }
