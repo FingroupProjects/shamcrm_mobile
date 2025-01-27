@@ -36,6 +36,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
+  bool _isUser = false;
+
   final TextEditingController _searchController = TextEditingController();
   bool _canReadTaskStatus = false;
   bool _canCreateTaskStatus = false;
@@ -49,7 +51,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool showFilter = false;
   List<int> _selectedUserIds = [];
   bool _showCustomTabBar = true;
-
 
   @override
   void initState() {
@@ -211,7 +212,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   bool isClickAvatarIcon = false;
 
-  
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -255,7 +255,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 _showCustomTabBar = true;
               });
             }
-          }, clearButtonClickFiltr: (bool ) {  },
+          },
+          clearButtonClickFiltr: (bool) {},
         ),
       ),
       body: isClickAvatarIcon
@@ -263,8 +264,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           : Column(
               children: [
                 const SizedBox(height: 15),
-          if (!_isSearching && _selectedUserId == null && _showCustomTabBar)
-            _buildCustomTabBar(),
+                if (!_isSearching &&
+                    _selectedUserId == null &&
+                    _showCustomTabBar)
+                  _buildCustomTabBar(),
                 Expanded(
                   child: _selectedUserId != null
                       ? _buildUserView()
@@ -275,7 +278,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
   }
 Widget searchWidget(List<Task> tasks) {
+  print('_isSearching: $_isSearching, tasks.isEmpty: ${tasks.isEmpty}, tasks.length: ${tasks.length}');
+
+  // Если идёт поиск и ничего не найдено
   if (_isSearching && tasks.isEmpty) {
+    print('Показывается сообщение: Ничего не найдено');
     return Center(
       child: Text(
         AppLocalizations.of(context)!.translate('nothing_found'),
@@ -288,20 +295,60 @@ Widget searchWidget(List<Task> tasks) {
       ),
     );
   }
+  // Если пользователь выбран, но задач нет
+  else if (_isUser && tasks.isEmpty) {
+    print('Показывается сообщение: У выбранного менеджера нет лидов');
+    return Center(
+      child: Text(
+        _selectedUserId != null
+            ? 'У выбранного менеджера нет лидов'
+            : 'По запросу ничего не найдено',
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  }
+  // Если задачи пусты, но поиск не активен
+  else if (tasks.isEmpty) {
+    print('Показывается сообщение: Нет доступных задач');
+    return Center(
+      child: Text(
+          AppLocalizations.of(context)!.translate('nothing_task_for_manager'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  }
+
+  // Если задачи есть, показываем список
+  print('Показывается список задач с количеством: ${tasks.length}');
   return Flexible(
     child: ListView.builder(
       controller: _scrollController,
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
+        print('Отображение задачи: $task');
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-           child: TaskCard(
-                  task: task,
-                  name: task.taskStatus?.taskStatus?.name ?? "",
-                  statusId: task.statusId,
-                  onStatusUpdated: () {},
-                  onStatusId: (StatusLeadId) {},
+          child: TaskCard(
+            task: task,
+            name: task.taskStatus?.taskStatus?.name ?? "",
+            statusId: task.statusId,
+            onStatusUpdated: () {
+              print('Статус задачи обновлён');
+            },
+            onStatusId: (StatusLeadId) {
+              print('onStatusId вызван с id: $StatusLeadId');
+            },
           ),
         );
       },
@@ -312,9 +359,33 @@ Widget searchWidget(List<Task> tasks) {
 Widget _buildUserView() {
   return BlocBuilder<TaskBloc, TaskState>(
     builder: (context, state) {
+      // Вывод текущего состояния в консоль
+      debugPrint('Current state: $state');
+      debugPrint('Is Searching: $_isSearching');
+      debugPrint('Is User: $_isUser');
+
       if (state is TaskDataLoaded) {
         final List<Task> tasks = state.tasks;
-        if (tasks.isEmpty) {
+
+        debugPrint('Tasks length: ${tasks.length}');
+
+        // Если включён поиск и список задач пуст
+        if (_isSearching && tasks.isEmpty) {
+          return Center(
+            child: Text(
+              AppLocalizations.of(context)!.translate('nothing_found'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff99A4BA),
+              ),
+            ),
+          );
+        }
+
+        // Если показывается список пользователя и он пуст
+        if (_isUser && tasks.isEmpty) {
           return Center(
             child: Text(
               _selectedUserId != null
@@ -329,27 +400,34 @@ Widget _buildUserView() {
             ),
           );
         }
-        return Flexible(
-          child: ListView.builder(
-            controller: _scrollController,
-            itemCount: tasks.length,
-            itemBuilder: (context, index) {
-              final task = tasks[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-               child: TaskCard(
-                  task: task,
-                  name: task.taskStatus?.taskStatus?.name ?? "",
-                  statusId: task.statusId,
-                  onStatusUpdated: () {},
-                  onStatusId: (StatusLeadId) {},
-                ),
-              );
-            },
-          ),
-        );
+
+        // Если есть задачи, отображаем их
+        if (tasks.isNotEmpty) {
+          return Flexible(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: TaskCard(
+                    task: task,
+                    name: task.taskStatus?.taskStatus?.name ?? "",
+                    statusId: task.statusId,
+                    onStatusUpdated: () {},
+                    onStatusId: (StatusLeadId) {},
+                  ),
+                );
+              },
+            ),
+          );
+        }
       }
+
+      // Если задачи загружаются
       if (state is TaskLoading) {
+        debugPrint('Loading tasks...');
         return const Center(
           child: PlayStoreImageLoading(
             size: 80.0,
@@ -357,10 +435,25 @@ Widget _buildUserView() {
           ),
         );
       }
-      return const SizedBox();
+
+      // Если состояние неизвестное или пустое
+      debugPrint('Unknown state or no data');
+      return Center(
+        child: Text(
+          'Нет данных',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
     },
   );
 }
+
+
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -589,7 +682,8 @@ Widget _buildUserView() {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

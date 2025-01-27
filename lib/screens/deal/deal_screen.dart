@@ -36,6 +36,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
+  bool _isManager = false;
+
   final TextEditingController _searchController = TextEditingController();
   bool _canReadDealStatus = false;
   bool _canCreateDealStatus = false;
@@ -47,8 +49,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   List<int>? _selectedManagerIds; // Add this field
   int? _selectedManagerId; // ID выбранного менеджера.
 
-    bool _showCustomTabBar = true;
-
+  bool _showCustomTabBar = true;
 
   @override
   void initState() {
@@ -114,7 +115,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     print('Selected managers: $managers');
 
     setState(() {
-          _showCustomTabBar = false;
+      _showCustomTabBar = false;
 
       _selectedManagerIds = managers
           .map((manager) {
@@ -143,7 +144,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   void _onManagerSelected(List<int> managerIds) {
     setState(() {
-                      _showCustomTabBar = false;
+      _showCustomTabBar = false;
 
       _selectedManagerIds = managerIds;
     });
@@ -188,7 +189,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_deals'),
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_deals'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -218,66 +221,131 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 _isSearching = false;
                 _selectedManagerId = null;
                 _showCustomTabBar = true;
-
               });
             }
-          }, clearButtonClickFiltr: (bool ) {  },
+          },
+          clearButtonClickFiltr: (bool) {},
         ),
       ),
-     body: isClickAvatarIcon
-    ? ProfileScreen()
-    : Column(
-        children: [
-          const SizedBox(height: 15),
-          // Условие для отображения табов с использованием флага
-          if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
-            _buildCustomTabBar(),
-          Expanded(
-            child: _isSearching || _selectedManagerId != null
-                ? _buildManagerView()
-                : _buildTabBarView(),
-          ),
-        ],
-      ),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                // Условие для отображения табов с использованием флага
+                if (!_isSearching &&
+                    _selectedManagerId == null &&
+                    _showCustomTabBar)
+                  _buildCustomTabBar(),
+                Expanded(
+                  child: _isSearching || _selectedManagerId != null
+                      ? _buildManagerView()
+                      : _buildTabBarView(),
+                ),
+              ],
+            ),
+    );
+  }
+Widget searchWidget(List<Deal> deals) {
+  print('_isSearching: $_isSearching, _isManager: $_isManager, deals.isEmpty: ${deals.isEmpty}, deals.length: ${deals.length}');
 
+  // Показать анимацию загрузки, если идет поиск
+  if (_isSearching) {
+    print('Показывается анимация загрузки при поиске');
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80.0,
+        duration: Duration(milliseconds: 1000),
+      ),
     );
   }
 
-  Widget searchWidget(List<Deal> deals) {
-    if (_isSearching && deals.isEmpty) {
-      return Center(
-        child: Text(
-         AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
+  // Показать анимацию загрузки, если это менеджер и данные ещё загружаются
+  if (_isManager && deals.isEmpty) {
+    print('Показывается анимация загрузки для менеджера');
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80.0,
+        duration: Duration(milliseconds: 1000),
+      ),
+    );
+  }
+  // Если идёт поиск и ничего не найдено
+  if (_isSearching && deals.isEmpty) {
+    print('Показывается сообщение: Ничего не найдено');
+    return Center(
+      child: Text(
+        AppLocalizations.of(context)!.translate('nothing_found'),
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  // Если это менеджер и список сделок пуст после загрузки
+  else if (_isManager && deals.isEmpty) {
+    print('Показывается сообщение: У выбранного менеджера нет сделок');
+    return Center(
+      child: Text(
+        'У выбранного менеджера нет сделок',
+        style: const TextStyle(
+          fontSize: 18,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff99A4BA),
+        ),
+      ),
+    );
+  }
+
+  // Если сделки существуют, отображаем их список
+  if (deals.isNotEmpty) {
+    print('Показывается список сделок с количеством: ${deals.length}');
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
         itemCount: deals.length,
         itemBuilder: (context, index) {
           final deal = deals[index];
+          print('Отображение сделки: $deal');
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: DealCard(
               deal: deal,
               title: deal.dealStatus?.title ?? "",
               statusId: deal.statusId,
-              onStatusUpdated: () {},
-              onStatusId: (StatusDealId) {},
+              onStatusUpdated: () {
+                print('Статус сделки обновлён');
+              },
+              onStatusId: (StatusDealId) {
+                print('onStatusId вызван с id: $StatusDealId');
+              },
             ),
           );
         },
       ),
     );
   }
+
+  // Если список сделок пуст, но это не поиск и не менеджер
+  print('Показывается сообщение: Нет доступных сделок');
+  return Center(
+    child: Text(
+      AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),
+      style: const TextStyle(
+        fontSize: 18,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: Color(0xff99A4BA),
+      ),
+    ),
+  );
+}
+
 
   Widget _buildManagerView() {
     return BlocBuilder<DealBloc, DealState>(
@@ -288,7 +356,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             return Center(
               child: Text(
                 _selectedManagerIds?.isNotEmpty == true
-                    ? AppLocalizations.of(context)!.translate('no_manager_in_deal')
+                    ? AppLocalizations.of(context)!
+                        .translate('no_manager_in_deal')
                     : AppLocalizations.of(context)!.translate('nothing_found'),
                 style: const TextStyle(
                   fontSize: 18,
@@ -483,144 +552,147 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   //     },
   //   );
   // }
-void _showStatusOptions(BuildContext context, int index) {
-  final RenderBox renderBox = _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
-  final Offset position = renderBox.localToGlobal(Offset.zero);
+  void _showStatusOptions(BuildContext context, int index) {
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final Offset position = renderBox.localToGlobal(Offset.zero);
 
-  showMenu(
-    context: context,
-    position: RelativeRect.fromLTRB(
-      position.dx,
-      position.dy + renderBox.size.height,
-      position.dx + renderBox.size.width,
-      position.dy + renderBox.size.height * 2,
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-    elevation: 4,
-    color: Colors.white,
-    items: [
-      PopupMenuItem(
-        value: 'edit',
-        child: ListTile(
-          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
-          title: Text(
-            'Изменить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + renderBox.size.height,
+        position.dx + renderBox.size.width,
+        position.dy + renderBox.size.height * 2,
       ),
-      PopupMenuItem(
-        value: 'delete',
-        child: ListTile(
-          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
-          title: Text(
-            'Удалить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
       ),
-    ],
-  ).then((value) {
-    if (value == 'edit') {
-      _showEditDealStatusDialog(index);
-    } else if (value == 'delete') {
-      _showDeleteDialog(index);
-    }
-  });
-}
-Widget _buildTabButton(int index) {
-  bool isActive = _tabController.index == index;
-
-  return BlocBuilder<DealBloc, DealState>(
-    builder: (context, state) {
-      int dealCount = 0;
-
-      if (state is DealLoaded) {
-        final statusId = _tabTitles[index]['id'];
-        final dealStatus = state.dealStatuses.firstWhere(
-          (status) => status.id == statusId,
-        );
-        dealCount = dealStatus.dealsCount;
-      }
-
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _showStatusOptions(context, index);
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive
-                      ? TaskStyles.activeColor
-                      : TaskStyles.inactiveColor,
-                ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+            title: Text(
+              'Изменить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
               ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    dealCount.toString(),
-                    style: TextStyle(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              )
-            ],
+            ),
           ),
         ),
-      );
-    },
-  );
-}
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+            title: Text(
+              'Удалить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'edit') {
+        _showEditDealStatusDialog(index);
+      } else if (value == 'delete') {
+        _showDeleteDialog(index);
+      }
+    });
+  }
+
+  Widget _buildTabButton(int index) {
+    bool isActive = _tabController.index == index;
+
+    return BlocBuilder<DealBloc, DealState>(
+      builder: (context, state) {
+        int dealCount = 0;
+
+        if (state is DealLoaded) {
+          final statusId = _tabTitles[index]['id'];
+          final dealStatus = state.dealStatuses.firstWhere(
+            (status) => status.id == statusId,
+          );
+          dealCount = dealStatus.dealsCount;
+        }
+
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _showStatusOptions(context, index);
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
+                  ),
+                ),
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      dealCount.toString(),
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
 // 2. Новый метод для показа диалога редактирования
-void _showEditDealStatusDialog(int index) {
-  final dealStatus = _tabTitles[index];
-  
-  showDialog(
-    context: context,
-    builder: (context) => EditDealStatusScreen(
-      initialTitle: dealStatus['title'],
-      dealStatusId: dealStatus['id'],
-      isSuccess: dealStatus['isSuccess'] ?? false,
-      isFailure: dealStatus['isFailure'] ?? false,
-    ),
-  );
-}
+  void _showEditDealStatusDialog(int index) {
+    final dealStatus = _tabTitles[index];
+
+    showDialog(
+      context: context,
+      builder: (context) => EditDealStatusScreen(
+        initialTitle: dealStatus['title'],
+        dealStatusId: dealStatus['id'],
+        isSuccess: dealStatus['isSuccess'] ?? false,
+        isFailure: dealStatus['isFailure'] ?? false,
+      ),
+    );
+  }
 
   void _showDeleteDialog(int index) async {
     final dealStatusId = _tabTitles[index]['id'];
@@ -717,7 +789,8 @@ void _showEditDealStatusDialog(int index) {
             }
           });
         } else if (state is DealError) {
-          if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
+          if (state.message.contains(
+              AppLocalizations.of(context)!.translate('unauthorized_access'))) {
             ApiService apiService = ApiService();
             await apiService.logout();
             Navigator.pushAndRemoveUntil(
@@ -725,7 +798,8 @@ void _showEditDealStatusDialog(int index) {
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (Route<dynamic> route) => false,
             );
-          } else if (state.message.contains(AppLocalizations.of(context)!.translate('unauthorized_access'))) {
+          } else if (state.message.contains(
+              AppLocalizations.of(context)!.translate('unauthorized_access'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

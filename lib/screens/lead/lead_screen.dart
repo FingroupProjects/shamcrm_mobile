@@ -35,6 +35,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
+  bool _isManager = false;
   bool _isFiltr = false;
   final TextEditingController _searchController = TextEditingController();
   bool _canReadLeadStatus = false;
@@ -44,7 +45,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
-  
+
   bool _showCustomTabBar = true;
 
   int? _selectedManagerId; // ID выбранного менеджера.
@@ -118,7 +119,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   void _handleManagerSelected(List<dynamic> managers) {
     print('Selected managers: $managers');
     setState(() {
-          _showCustomTabBar = false;
+      _showCustomTabBar = false;
 
       _selectedManagerIds = managers
           .map((manager) {
@@ -233,27 +234,33 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           },
         ),
       ),
-     body: isClickAvatarIcon
-    ? ProfileScreen()
-    : Column(
-        children: [
-          const SizedBox(height: 15),
-          // Условие для отображения табов с использованием флага
-          if (!_isSearching && _selectedManagerId == null && _showCustomTabBar)
-            _buildCustomTabBar(),
-          Expanded(
-            child: _isSearching || _selectedManagerId != null
-                ? _buildManagerView()
-                : _buildTabBarView(),
-          ),
-        ],
-      ),
-
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                // Условие для отображения табов с использованием флага
+                if (!_isSearching &&
+                    _selectedManagerId == null &&
+                    _showCustomTabBar)
+                  _buildCustomTabBar(),
+                Expanded(
+                  child: _isSearching || _selectedManagerId != null
+                      ? _buildManagerView()
+                      : _buildTabBarView(),
+                ),
+              ],
+            ),
     );
   }
 
   Widget searchWidget(List<Lead> leads) {
+    print(
+        '_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
+
+    // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
+      print('Показывается сообщение: Ничего не найдено');
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
@@ -266,21 +273,58 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ),
       );
     }
+    // Если это менеджер и список лидов пуст
+    else if (_isManager && leads.isEmpty) {
+      print('Показывается сообщение: У выбранного менеджера нет лидов');
+      return Center(
+        child: Text(
+          'У выбранного менеджера нет лидов',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+    // Если лидов вообще нет
+    else if (leads.isEmpty) {
+      print('Показывается сообщение: Нет доступных лидов');
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
 
+    // Если лиды есть, показываем список
+    print('Показывается список лидов с количеством: ${leads.length}');
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
         itemCount: leads.length,
         itemBuilder: (context, index) {
           final lead = leads[index];
+          print('Отображение лида: $lead');
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: LeadCard(
               lead: lead,
               title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
-              onStatusUpdated: () {},
-              onStatusId: (StatusLeadId) {},
+              onStatusUpdated: () {
+                print('Статус лида обновлён');
+              },
+              onStatusId: (StatusLeadId) {
+                print('onStatusId вызван с id: $StatusLeadId');
+              },
             ),
           );
         },
@@ -466,6 +510,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       },
     );
   }
+
   void _showOptionsModal(int index) {
     showModalBottomSheet(
       context: context,
@@ -516,59 +561,65 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       },
     );
   }
+
   void _deleteLeadStatus(int index) {
     // Вызываем вашу существующую логику удаления
     _showDeleteDialog(index);
   }
 
-    void _showDeleteDialog(int index) async {
-      final leadStatusId = _tabTitles[index]['id'];
+  void _showDeleteDialog(int index) async {
+    final leadStatusId = _tabTitles[index]['id'];
 
-      final result = await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
-        },
-      );
+    final result = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteLeadStatusDialog(leadStatusId: leadStatusId);
+      },
+    );
 
-      if (result != null && result) {
-        setState(() {
-          _deletedIndex = _currentTabIndex;
-          navigateAfterDelete = true;
+    if (result != null && result) {
+      setState(() {
+        _deletedIndex = _currentTabIndex;
+        navigateAfterDelete = true;
 
-          _tabTitles.removeAt(index);
-          _tabKeys.removeAt(index);
-          _tabController = TabController(length: _tabTitles.length, vsync: this);
+        _tabTitles.removeAt(index);
+        _tabKeys.removeAt(index);
+        _tabController = TabController(length: _tabTitles.length, vsync: this);
 
-          _currentTabIndex = 0;
-          _isSearching = false;
-          _searchController.clear();
+        _currentTabIndex = 0;
+        _isSearching = false;
+        _searchController.clear();
 
-          context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
-        });
+        context.read<LeadBloc>().add(FetchLeads(_currentTabIndex));
+      });
 
-        context
-            .read<LeadBloc>()
-            .add(FetchLeadStatuses()); // Pass forceRefresh flag
-      }
+      context
+          .read<LeadBloc>()
+          .add(FetchLeadStatuses()); // Pass forceRefresh flag
     }
+  }
+
   void _editLeadStatus(int index) {
     // Extract lead status data if needed for editing
-    final leadStatus = _tabTitles[index];  // Assuming _tabTitles holds the relevant data for the lead
+    final leadStatus = _tabTitles[
+        index]; // Assuming _tabTitles holds the relevant data for the lead
 
     // Show the Edit Lead Status Screen as a modal dialog
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
-          initialTitle: leadStatus['title'] ?? '',  // Ensure the title exists
+          initialTitle: leadStatus['title'] ?? '', // Ensure the title exists
           leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
-          isSuccess: leadStatus['isSuccess'] ?? false, // Example of a lead's status
-          isFailure: leadStatus['isFailure'] ?? false, // Example of a lead's failure status
+          isSuccess:
+              leadStatus['isSuccess'] ?? false, // Example of a lead's status
+          isFailure: leadStatus['isFailure'] ??
+              false, // Example of a lead's failure status
         );
       },
     );
   }
+
   Widget _buildTabBarView() {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {

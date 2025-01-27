@@ -53,36 +53,37 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   }
 
 // В методе сохранения
-void _saveChanges() {
-  final localizations = AppLocalizations.of(context);
-  if (localizations != null) {
-    _dealBloc.add(
-      UpdateDealStatusEdit(
-        widget.dealStatusId,
-        _titleController.text,
-        _daysController.text.isNotEmpty 
-            ? int.tryParse(_daysController.text) ?? 0 // Всегда возвращает int
-            : 0, // Значение по умолчанию
-        _isSuccess,
-        _isFailure,
-        localizations,
-      ),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ошибка локализации: не удалось загрузить переводы.'),
-      ),
-    );
+  void _saveChanges() {
+    final localizations = AppLocalizations.of(context);
+    if (localizations != null) {
+      _dealBloc.add(
+        UpdateDealStatusEdit(
+          widget.dealStatusId,
+          _titleController.text,
+          _daysController.text.isNotEmpty
+              ? int.tryParse(_daysController.text) ?? 0 // Всегда возвращает int
+              : 0, // Значение по умолчанию
+          _isSuccess,
+          _isFailure,
+          localizations,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка локализации: не удалось загрузить переводы.'),
+        ),
+      );
+    }
   }
-}
+
   Widget _buildCheckbox(bool value, Function(bool?) onChanged) =>
       Transform.scale(
         scale: 0.9,
         child: Checkbox(
           value: value,
           onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+          activeColor: const Color(0xff1E2E52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
       );
@@ -144,7 +145,8 @@ void _saveChanges() {
               ),
               SizedBox(height: 20),
               _buildTextFieldWithLabel(
-                label: 'Укажите сколько дней может находиться сделка в этом статусе',
+                label:
+                    'Укажите сколько дней может...',
                 controller: _daysController,
                 isRequired: false,
                 keyboardType: TextInputType.number,
@@ -179,12 +181,13 @@ void _saveChanges() {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                  color: Color(0xff1E2E52),
+                    color: Color(0xff1E2E52),
                   ),
                   child: TextButton(
                     onPressed: _saveChanges,
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     ),
                     child: Text(
                       'Сохранить',
@@ -203,7 +206,9 @@ void _saveChanges() {
         ),
       ),
     );
-  }Widget _buildTextFieldWithLabel({
+  }
+
+ Widget _buildTextFieldWithLabel({
   required String label,
   required TextEditingController controller,
   bool isRequired = true,
@@ -214,7 +219,6 @@ void _saveChanges() {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      // УДАЛИТЕ RichText, если CustomTextField уже отображает label
       CustomTextField(
         controller: controller,
         hintText: hintText ?? '',
@@ -228,10 +232,12 @@ void _saveChanges() {
     ],
   );
 }
+
   TextStyle _textStyle() => TextStyle(
-    fontSize: 16,
-    fontFamily: 'Gilroy',
-    fontWeight: FontWeight.w500,
-    color: const Color.fromARGB(255, 0, 0, 0),
-  );
+        fontSize: 16,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w500,
+        color: const Color.fromARGB(255, 0, 0, 0),
+        overflow: TextOverflow.ellipsis,
+      );
 }
