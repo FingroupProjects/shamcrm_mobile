@@ -66,3 +66,9 @@ class LeadStatusDeleted extends LeadState {
 
   LeadStatusDeleted(this.message);
 }
+// State для успешного обновления статуса лида
+class LeadStatusUpdatedEdit extends LeadState {
+  final String message;
+
+  LeadStatusUpdatedEdit(this.message);
+}

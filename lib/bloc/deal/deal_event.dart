@@ -114,3 +114,21 @@ class DeleteDealStatuses extends DealEvent {
     this.localizations,
     );
 }
+// Event для изменения статуса лида
+class UpdateDealStatusEdit extends DealEvent {
+  final int dealStatusId;
+  final String title;
+  final int day;
+  final bool isSuccess;
+  final bool isFailure;
+  final AppLocalizations localizations;
+
+  UpdateDealStatusEdit(
+    this.dealStatusId,
+    this.title,
+    this.day,
+    this.isSuccess,
+    this.isFailure,
+    this.localizations,
+  );
+}

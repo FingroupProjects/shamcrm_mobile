@@ -149,3 +149,19 @@ class DeleteLeadStatuses extends LeadEvent {
 
 );
 }
+// Event для изменения статуса лида
+class UpdateLeadStatusEdit extends LeadEvent {
+  final int leadStatusId;
+  final String title;
+  final bool isSuccess;
+  final bool isFailure;
+  final AppLocalizations localizations;
+
+  UpdateLeadStatusEdit(
+    this.leadStatusId,
+    this.title,
+    this.isSuccess,
+    this.isFailure,
+    this.localizations,
+  );
+}

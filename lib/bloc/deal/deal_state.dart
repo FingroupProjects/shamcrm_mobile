@@ -78,3 +78,9 @@ class DealStatusDeleted extends DealState {
 
   DealStatusDeleted(this.message);
 }
+// State для успешного обновления статуса лида
+class DealStatusUpdatedEdit extends DealState {
+  final String message;
+
+  DealStatusUpdatedEdit(this.message);
+}
