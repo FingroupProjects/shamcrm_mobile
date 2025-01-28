@@ -20,3 +20,16 @@ final class MessagesErrorState extends MessagingState {
   final String error;
   const MessagesErrorState({required this.error});
 }
+
+final class ReplyingToMessageState extends MessagingState {
+  final Message replyingMessage;
+  final List<Message> messages; // Добавлено поле для сообщений
+
+  const ReplyingToMessageState({
+    required this.replyingMessage,
+    required this.messages,
+  });
+
+  @override
+  List<Object> get props => [replyingMessage, messages];
+}

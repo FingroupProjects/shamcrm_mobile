@@ -234,13 +234,14 @@ Widget _buildDealCount(String label, int? count) {
                               height: 18,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Color(0xff99A4BA),                            
+                                // color: Color(0xff99A4BA),
+                                color: widget.lead.lastUpdate! > 5 ? Colors.red : Color(0xff99A4BA),                        
                                 ),
                               child: Center(
                                 child: Icon(
                                   Icons.hourglass_empty,
                                   size: 14,
-                                  color: widget.lead.lastUpdate! > 5 ? Colors.red : Colors.white, 
+                                  color: Colors.white, 
                                 ),
                               ),
                             ),

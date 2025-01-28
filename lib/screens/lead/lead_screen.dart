@@ -102,6 +102,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
+
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     if (query.isEmpty) {
       leadBloc.add(FetchLeads(
@@ -116,11 +117,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       ));
     }
   }
+}
 
 // Добавляем метод для обработки выбора менеджера
-  void _handleManagerSelected(List<dynamic> managers) {
-    print('Selected managers: $managers');
+
+  Future<void> _handleManagerSelected(List<dynamic> managers) async {
+    await LeadCache.clearAllLeads();
+
     setState(() {
+      
       _showCustomTabBar = false;
 
       _selectedManagerIds = managers
@@ -259,12 +264,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget searchWidget(List<Lead> leads) {
-    print(
-        '_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
+    print('_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
 
     // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
-      print('Показывается сообщение: Ничего не найдено');
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
@@ -279,7 +282,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
     // Если это менеджер и список лидов пуст
     else if (_isManager && leads.isEmpty) {
-      print('Показывается сообщение: У выбранного менеджера нет лидов');
       return Center(
         child: Text(
           'У выбранного менеджера нет лидов',
@@ -294,7 +296,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
     // Если лидов вообще нет
     else if (leads.isEmpty) {
-      print('Показывается сообщение: Нет доступных лидов');
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
@@ -307,9 +308,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ),
       );
     }
-
     // Если лиды есть, показываем список
-    print('Показывается список лидов с количеством: ${leads.length}');
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,

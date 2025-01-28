@@ -1,4 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
@@ -8,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_lead_deal.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -273,9 +276,12 @@ class _DealsWidgetState extends State<DealsWidget> {
                   builder: (context) =>
                       LeadDealAddScreen(leadId: widget.leadId),
                 ),
-              ).then((_) {
-                      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-                      });
+              ).then((_) async {
+                await LeadCache.clearLeadStatuses();
+                await LeadCache.clearAllLeads();
+                BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+                BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+              });
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,

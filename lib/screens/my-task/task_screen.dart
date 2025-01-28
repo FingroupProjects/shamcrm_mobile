@@ -134,6 +134,8 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     if (query.isEmpty) {
       taskBloc.add(FetchMyTasks(currentStatusId));
     } else {
+      await MyTaskCache.clearAllMyTasks();
+
       taskBloc.add(FetchMyTasks(
         currentStatusId,
         query: query,

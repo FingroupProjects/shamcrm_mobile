@@ -245,7 +245,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         focusNode.unfocus();
       }
     });
-    widget.clearButtonClick(_isFiltering);
+    widget.clearButtonClickFiltr(_isFiltering);
   }
 
   void _toggleEvent() {
