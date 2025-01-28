@@ -500,7 +500,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
-  Widget _buildTabButton(int index) {
+
+ Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
 
     return BlocBuilder<LeadBloc, LeadState>(

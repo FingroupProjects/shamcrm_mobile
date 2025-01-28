@@ -145,7 +145,27 @@ Widget build(BuildContext context) {
         });
       } else if (state is DealStatusUpdatedEdit) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.message)),
+          SnackBar(
+                          content: Text(
+                            "Статус успешно обновлен!",
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.green,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
+                        ),
         );
         final dealBloc = BlocProvider.of<DealBloc>(context, listen: false);
         dealBloc.add(FetchDealStatuses());
@@ -153,7 +173,27 @@ Widget build(BuildContext context) {
         Navigator.of(context).pop();
       } else if (state is DealError) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.message)),
+          SnackBar(
+                          content: Text(
+                            "Ошибка обновления статуса!",
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.red,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
+                        ),
         );
       }
     },
