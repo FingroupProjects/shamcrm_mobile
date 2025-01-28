@@ -32,7 +32,7 @@ class MyTaskScreen extends StatefulWidget {
 class _MyTaskScreenState extends State<MyTaskScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  
+
   late ScrollController _scrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
@@ -154,126 +154,128 @@ class _MyTaskScreenState extends State<MyTaskScreen>
 
   bool isClickAvatarIcon = false;
 
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
 
-@override
-Widget build(BuildContext context) {
-  final localizations = AppLocalizations.of(context);
-
-  return Scaffold(
-    backgroundColor: Colors.white,
-    appBar: AppBar(
-      forceMaterialTransparency: true,
-      title: CustomAppBar(
-        title: isClickAvatarIcon
-            ? localizations!.translate('appbar_settings')
-            : localizations!.translate('appbar_my_tasks'),
-        onClickProfileAvatar: () {
-          setState(() {
-            isClickAvatarIcon = !isClickAvatarIcon;
-          });
-        },
-        onChangedSearchInput: (String value) {
-          if (value.isNotEmpty) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: CustomAppBar(
+          title: isClickAvatarIcon
+              ? localizations!.translate('appbar_settings')
+              : localizations!.translate('appbar_my_tasks'),
+          onClickProfileAvatar: () {
             setState(() {
-              _isSearching = true;
+              isClickAvatarIcon = !isClickAvatarIcon;
             });
-          }
-          _onSearch(value);
-        },
-        textEditingController: textEditingController,
-        focusNode: focusNode,
-        showFilterIcon: false,
-        showFilterTaskIcon: false,
-        clearButtonClick: (value) {
-          if (value == false) {
-            final taskBloc = BlocProvider.of<MyTaskBloc>(context);
-            taskBloc.add(FetchMyTaskStatuses());
+          },
+          onChangedSearchInput: (String value) {
+            if (value.isNotEmpty) {
+              setState(() {
+                _isSearching = true;
+              });
+            }
+            _onSearch(value);
+          },
+          textEditingController: textEditingController,
+          focusNode: focusNode,
+          showFilterIcon: false,
+          showFilterTaskIcon: false,
+          showEvent: false,
+          clearButtonClick: (value) {
+            if (value == false) {
+              final taskBloc = BlocProvider.of<MyTaskBloc>(context);
+              taskBloc.add(FetchMyTaskStatuses());
 
-            setState(() {
-              _isSearching = false;
-              _selectedUserId = null;
-            });
-          }
-        }, clearButtonClickFiltr: (bool ) {  },
+              setState(() {
+                _isSearching = false;
+                _selectedUserId = null;
+              });
+            }
+          },
+          clearButtonClickFiltr: (bool) {},
+        ),
       ),
-    ),
-    body: isClickAvatarIcon
-        ? ProfileScreen()
-        : Column(
-            children: [
-              const SizedBox(height: 15),
-              if (!_isSearching && _selectedUserId == null)
-                _buildCustomTabBar(),
-              // Оборачиваем TabBarView в Expanded
-              Expanded(
-                child: _selectedUserId != null
-                    ? _buildUserView()
-                    : _buildTabBarView(),
+      body: isClickAvatarIcon
+          ? ProfileScreen()
+          : Column(
+              children: [
+                const SizedBox(height: 15),
+                if (!_isSearching && _selectedUserId == null)
+                  _buildCustomTabBar(),
+                // Оборачиваем TabBarView в Expanded
+                Expanded(
+                  child: _selectedUserId != null
+                      ? _buildUserView()
+                      : _buildTabBarView(),
+                ),
+              ],
+            ),
+    );
+  }
+
+  void _showStatusOptions(BuildContext context, int index) {
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final Offset position = renderBox.localToGlobal(Offset.zero);
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + renderBox.size.height,
+        position.dx + renderBox.size.width,
+        position.dy + renderBox.size.height * 2,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+            title: Text(
+              'Изменить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
               ),
-            ],
-          ),
-  );
-}
-
-void _showStatusOptions(BuildContext context, int index) {
-  final RenderBox renderBox =
-      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
-  final Offset position = renderBox.localToGlobal(Offset.zero);
-
-  showMenu(
-    context: context,
-    position: RelativeRect.fromLTRB(
-      position.dx,
-      position.dy + renderBox.size.height,
-      position.dx + renderBox.size.width,
-      position.dy + renderBox.size.height * 2,
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-    elevation: 4,
-    color: Colors.white,
-    items: [
-      PopupMenuItem(
-        value: 'edit',
-        child: ListTile(
-          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
-          title: Text(
-            'Изменить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
             ),
           ),
         ),
-      ),
-      PopupMenuItem(
-        value: 'delete',
-        child: ListTile(
-          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
-          title: Text(
-            'Удалить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+            title: Text(
+              'Удалить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
             ),
           ),
         ),
-      ),
-    ],
-  ).then((value) {
-    if (value == 'edit') {
-      _editMyTaskStatus(index);
-    } else if (value == 'delete') {
-      _showDeleteDialog(index);
-    }
-  });
-}
- void _editMyTaskStatus(int index) {
+      ],
+    ).then((value) {
+      if (value == 'edit') {
+        _editMyTaskStatus(index);
+      } else if (value == 'delete') {
+        _showDeleteDialog(index);
+      }
+    });
+  }
+
+  void _editMyTaskStatus(int index) {
     // Extract lead status data if needed for editing
     final myTaskStatus = _tabTitles[
         index]; // Assuming _tabTitles holds the relevant data for the lead
@@ -283,7 +285,8 @@ void _showStatusOptions(BuildContext context, int index) {
       context: context,
       builder: (BuildContext context) {
         return EditMyTaskStatusScreen(
-          myTaskStatusId: myTaskStatus['id'], // Pass the lead status ID for editing
+          myTaskStatusId:
+              myTaskStatus['id'], // Pass the lead status ID for editing
         );
       },
     );
@@ -445,11 +448,11 @@ void _showStatusOptions(BuildContext context, int index) {
           onTap: () {
             _tabController.animateTo(index);
           },
-           onLongPress: () {
-           {
-            _showStatusOptions(context, index);
-          }
-        },
+          onLongPress: () {
+            {
+              _showStatusOptions(context, index);
+            }
+          },
           child: Container(
             decoration: TaskStyles.tabButtonDecoration(isActive),
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -512,10 +515,9 @@ void _showStatusOptions(BuildContext context, int index) {
     if (result != null && result) {
       // Удаляем статус
 
-        setState(() {
-          _deletedIndex = _currentTabIndex;
-          navigateAfterDelete = true;
-      
+      setState(() {
+        _deletedIndex = _currentTabIndex;
+        navigateAfterDelete = true;
 
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);

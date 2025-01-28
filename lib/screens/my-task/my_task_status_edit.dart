@@ -106,6 +106,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
           });
         } else if (state is MyTaskStatusUpdatedEdit) {
           ScaffoldMessenger.of(context).showSnackBar(
+
             SnackBar(
                           content: Text(
                             "Статус успешно обновлен!",

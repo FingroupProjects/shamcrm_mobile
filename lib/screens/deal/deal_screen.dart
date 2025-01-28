@@ -214,7 +214,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: false, // Выключаем иконку My Tasks
+          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showEvent: false,
 
 clearButtonClick: (value) {
   if (value == false) {
@@ -758,13 +759,10 @@ clearButtonClickFiltr: (value) {
         dealStatusId: dealStatus['id'],
       ),
     ).then((_) =>
-      // final leadBloc = BlocProvider.of<DealBloc>(context);
-      // leadBloc.add(FetchDealStatuses());
+        // final leadBloc = BlocProvider.of<DealBloc>(context);
+        // leadBloc.add(FetchDealStatuses());
 
-          _dealBloc.add(FetchDeals(dealStatus['id']))
-        
-      
-    );
+        _dealBloc.add(FetchDeals(dealStatus['id'])));
   }
 
   void _showDeleteDialog(int index) async {

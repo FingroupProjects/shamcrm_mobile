@@ -547,5 +547,7 @@
   "nothing_deal_for_manager": "Ko'rsatish uchun kelishuvlar yo'q",
   "nothing_lead_for_manager": "Ko'rsatish uchun liderlar yo'q",
   "nothing_task_for_manager": "Ko'rsatish uchun vazifalar yo'q",
-  "status_updated_successfully": "Status muvaffaqiyatli yangilandi"
+  "status_updated_successfully": "Status muvaffaqiyatli yangilandi",
+  "events": "Voqealar"
+  
 }

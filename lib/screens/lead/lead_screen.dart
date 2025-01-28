@@ -58,8 +58,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
-        setState(() {    final leadBloc = BlocProvider.of<LeadBloc>(context);
-        leadBloc.add(FetchLeadStatuses());
+        setState(() {
+          final leadBloc = BlocProvider.of<LeadBloc>(context);
+          leadBloc.add(FetchLeadStatuses());
 
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
@@ -101,20 +102,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
-  final leadBloc = BlocProvider.of<LeadBloc>(context);
-  if (query.isEmpty) {
-    leadBloc.add(FetchLeads(
-      currentStatusId, // status_id передается
-      managerIds: _selectedManagerIds, // менеджеры передаются
-    ));
-  } else {
-        await LeadCache.clearAllLeads();
 
-    leadBloc.add(FetchLeads(
-      currentStatusId, // status_id передается
-      query: query, // поисковый запрос передается
-      managerIds: _selectedManagerIds, // менеджеры передаются
-    ));
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    if (query.isEmpty) {
+      leadBloc.add(FetchLeads(
+        currentStatusId, // status_id передается
+        managerIds: _selectedManagerIds, // менеджеры передаются
+      ));
+    } else {
+      leadBloc.add(FetchLeads(
+        currentStatusId, // status_id передается
+        query: query, // поисковый запрос передается
+        managerIds: _selectedManagerIds, // менеджеры передаются
+      ));
+    }
   }
 }
 
@@ -214,7 +215,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: false, // Выключаем иконку My Tasks
+          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showEvent: false,
+
           clearButtonClick: (value) {
             if (value == false) {
               // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
@@ -436,66 +439,67 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 
-void _showStatusOptions(BuildContext context, int index) {
-  final RenderBox renderBox =
-      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
-  final Offset position = renderBox.localToGlobal(Offset.zero);
+  void _showStatusOptions(BuildContext context, int index) {
+    final RenderBox renderBox =
+        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+    final Offset position = renderBox.localToGlobal(Offset.zero);
 
-  showMenu(
-    context: context,
-    position: RelativeRect.fromLTRB(
-      position.dx,
-      position.dy + renderBox.size.height,
-      position.dx + renderBox.size.width,
-      position.dy + renderBox.size.height * 2,
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-    elevation: 4,
-    color: Colors.white,
-    items: [
-      PopupMenuItem(
-        value: 'edit',
-        child: ListTile(
-          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
-          title: Text(
-            'Изменить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + renderBox.size.height,
+        position.dx + renderBox.size.width,
+        position.dy + renderBox.size.height * 2,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+            title: Text(
+              'Изменить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
             ),
           ),
         ),
-      ),
-      PopupMenuItem(
-        value: 'delete',
-        child: ListTile(
-          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
-          title: Text(
-            'Удалить',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+            title: Text(
+              'Удалить',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: Color(0xff1E2E52),
+              ),
             ),
           ),
         ),
-      ),
-    ],
-  ).then((value) {
-    if (value == 'edit') {
-      _editLeadStatus(index);
-    } else if (value == 'delete') {
-      _showDeleteDialog(index);
-    }
-  });
-}
+      ],
+    ).then((value) {
+      if (value == 'edit') {
+        _editLeadStatus(index);
+      } else if (value == 'delete') {
+        _showDeleteDialog(index);
+      }
+    });
+  }
 
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
+
  Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
 
@@ -512,61 +516,63 @@ void _showStatusOptions(BuildContext context, int index) {
           leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
 
-      return GestureDetector(
-        key: _tabKeys[index],
-        onTap: () {
-          _tabController.animateTo(index);
-        },
-        onLongPress: () {
-          if (_canDeleteLeadStatus) {
-            _showStatusOptions(context, index);
-          }
-        },
-        child: Container(
-          decoration: TaskStyles.tabButtonDecoration(isActive),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _tabTitles[index]['title'],
-                style: TaskStyles.tabTextStyle.copyWith(
-                  color: isActive
-                      ? TaskStyles.activeColor
-                      : TaskStyles.inactiveColor,
-                ),
-              ),
-              Transform.translate(
-                offset: const Offset(12, 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    leadCount.toString(),
-                    style: TextStyle(
-                      color: isActive ? Colors.black : const Color(0xff99A4BA),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+        return GestureDetector(
+          key: _tabKeys[index],
+          onTap: () {
+            _tabController.animateTo(index);
+          },
+          onLongPress: () {
+            if (_canDeleteLeadStatus) {
+              _showStatusOptions(context, index);
+            }
+          },
+          child: Container(
+            decoration: TaskStyles.tabButtonDecoration(isActive),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _tabTitles[index]['title'],
+                  style: TaskStyles.tabTextStyle.copyWith(
+                    color: isActive
+                        ? TaskStyles.activeColor
+                        : TaskStyles.inactiveColor,
                   ),
                 ),
-              ),
-            ],
+                Transform.translate(
+                  offset: const Offset(12, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xff1E2E52)
+                            : const Color(0xff99A4BA),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      leadCount.toString(),
+                      style: TextStyle(
+                        color:
+                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   void _deleteLeadStatus(int index) {
     // Вызываем вашу существующую логику удаления
@@ -614,8 +620,6 @@ void _showStatusOptions(BuildContext context, int index) {
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
           leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
-
-    
         );
       },
     );
@@ -625,8 +629,9 @@ void _showStatusOptions(BuildContext context, int index) {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
-
-          await LeadCache.cacheLeadStatuses(state.leadStatuses .map((status) => {'id': status.id, 'title': status.title}).toList());
+          await LeadCache.cacheLeadStatuses(state.leadStatuses
+              .map((status) => {'id': status.id, 'title': status.title})
+              .toList());
           setState(() {
             _tabTitles = state.leadStatuses
                 .where((status) => _canReadLeadStatus)

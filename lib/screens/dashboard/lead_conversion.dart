@@ -16,23 +16,23 @@ class LeadConversionChart extends StatefulWidget {
 }
 
 class _LeadConversionChartState extends State<LeadConversionChart> {
-List<String> getMonths(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  return [
-    localizations.translate('january'),
-    localizations.translate('february'),
-    localizations.translate('march'),
-    localizations.translate('april'),
-    localizations.translate('may'),
-    localizations.translate('june'),
-    localizations.translate('july'),
-    localizations.translate('august'),
-    localizations.translate('september'),
-    localizations.translate('october'),
-    localizations.translate('november'),
-    localizations.translate('december'),
-  ];
-}
+  List<String> getMonths(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('january'),
+      localizations.translate('february'),
+      localizations.translate('march'),
+      localizations.translate('april'),
+      localizations.translate('may'),
+      localizations.translate('june'),
+      localizations.translate('july'),
+      localizations.translate('august'),
+      localizations.translate('september'),
+      localizations.translate('october'),
+      localizations.translate('november'),
+      localizations.translate('december'),
+    ];
+  }
 
   @override
   void initState() {
@@ -56,8 +56,8 @@ List<String> getMonths(BuildContext context) {
 
   @override
   Widget build(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  final months = getMonths(context);
+    final localizations = AppLocalizations.of(context)!;
+    final months = getMonths(context);
 
     return BlocBuilder<DashboardConversionBloc, DashboardConversionState>(
       builder: (context, state) {
@@ -109,7 +109,7 @@ List<String> getMonths(BuildContext context) {
                 Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                  localizations.translate('lead_conversion'),
+                    localizations.translate('lead_conversion'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,
@@ -220,7 +220,7 @@ List<String> getMonths(BuildContext context) {
                       ),
                     ),
                     Text(
-                    localizations.translate('no_data_to_display'),
+                      localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -243,7 +243,7 @@ List<String> getMonths(BuildContext context) {
               Padding(
                 padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
-                localizations.translate('lead_conversion'),
+                  localizations.translate('lead_conversion'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
@@ -258,7 +258,7 @@ List<String> getMonths(BuildContext context) {
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
-                    maxY: maxY,
+                    maxY: 100, // Максимум всегда 100
                     minY: 0,
                     groupsSpace: 12,
                     backgroundColor: Colors.white,
@@ -356,7 +356,7 @@ List<String> getMonths(BuildContext context) {
                       show: true,
                       drawHorizontalLine: true,
                       drawVerticalLine: true,
-                      horizontalInterval: maxY / 5,
+                      horizontalInterval: 20, // Интервалы сетки
                       verticalInterval: 1,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
@@ -384,9 +384,8 @@ List<String> getMonths(BuildContext context) {
                         x: index,
                         barRods: [
                           BarChartRodData(
-                            toY: monthlyData[index] > 0
-                                ? monthlyData[index]
-                                : 0.0009,
+                            toY: monthlyData[index] *
+                                1, // Данные преобразуем в проценты
                             color: const Color(0xFF3935E7),
                             width: 20,
                             borderRadius: const BorderRadius.only(
