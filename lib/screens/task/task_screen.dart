@@ -101,6 +101,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         setState(() {
           userRoles = ['No user ID found'];
           showFilter = false;
+          
+
         });
         return;
       }
@@ -240,7 +242,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
-          showMyTaskIcon: false, // Выключаем иконку My Tasks
+          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showEvent: false,
+
           showFilterTaskIcon: showFilter,
           clearButtonClick: (value) {
             if (value == false) {

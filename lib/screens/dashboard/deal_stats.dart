@@ -17,23 +17,23 @@ class DealStatsChart extends StatefulWidget {
 }
 
 class _DealStatsChartState extends State<DealStatsChart> {
-List<String> getMonths(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  return [
-    localizations.translate('january'),
-    localizations.translate('february'),
-    localizations.translate('march'),
-    localizations.translate('april'),
-    localizations.translate('may'),
-    localizations.translate('june'),
-    localizations.translate('july'),
-    localizations.translate('august'),
-    localizations.translate('september'),
-    localizations.translate('october'),
-    localizations.translate('november'),
-    localizations.translate('december'),
-  ];
-}
+  List<String> getMonths(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('january'),
+      localizations.translate('february'),
+      localizations.translate('march'),
+      localizations.translate('april'),
+      localizations.translate('may'),
+      localizations.translate('june'),
+      localizations.translate('july'),
+      localizations.translate('august'),
+      localizations.translate('september'),
+      localizations.translate('october'),
+      localizations.translate('november'),
+      localizations.translate('december'),
+    ];
+  }
 
   @override
   void initState() {
@@ -41,24 +41,24 @@ List<String> getMonths(BuildContext context) {
     context.read<DealStatsBloc>().add(LoadDealStatsData());
   }
 
-String formatNumber(double value, BuildContext context) {
-  final localizations = AppLocalizations.of(context)!; 
+  String formatNumber(double value, BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
 
-  if (value >= 1e9) {
-    return '${(value / 1e9).toStringAsFixed(1)}${localizations.translate('billion')}'; 
-  } else if (value >= 1e6) {
-    return '${(value / 1e6).toStringAsFixed(1)}${localizations.translate('million')}'; 
-  } else if (value >= 1e3) {
-    return '${(value / 1e3).toStringAsFixed(1)}${localizations.translate('thousand')}'; 
-  } else {
-    return value.toStringAsFixed(0); 
+    if (value >= 1e9) {
+      return '${(value / 1e9).toStringAsFixed(1)}${localizations.translate('billion')}';
+    } else if (value >= 1e6) {
+      return '${(value / 1e6).toStringAsFixed(1)}${localizations.translate('million')}';
+    } else if (value >= 1e3) {
+      return '${(value / 1e3).toStringAsFixed(1)}${localizations.translate('thousand')}';
+    } else {
+      return value.toStringAsFixed(0);
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  final months = getMonths(context);
+    final localizations = AppLocalizations.of(context)!;
+    final months = getMonths(context);
 
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
@@ -79,7 +79,7 @@ String formatNumber(double value, BuildContext context) {
         //       ),
         //     );
         //   }
-        // } else 
+        // } else
         if (state is DealStatsLoaded) {
           final data = state.dealStatsData.data;
 
@@ -230,7 +230,7 @@ String formatNumber(double value, BuildContext context) {
                       ),
                     ),
                     Text(
-                    localizations.translate('no_data_to_display'),
+                      localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -275,8 +275,9 @@ String formatNumber(double value, BuildContext context) {
                         fitInsideVertically: true,
                         fitInsideHorizontally: true,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                          String label =
-                              rodIndex == 0 ? localizations.translate('total_amount') : localizations.translate('successful');
+                          String label = rodIndex == 0
+                              ? localizations.translate('total_amount')
+                              : localizations.translate('successful');
                           double value = rod.toY;
                           return BarTooltipItem(
                             '${months[groupIndex]}\n$label\n',
@@ -334,21 +335,32 @@ String formatNumber(double value, BuildContext context) {
                         sideTitles: SideTitles(
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
-                            return SizedBox(
-                              width: 60,
-                              child: Text(
-                                formatNumber(value.toDouble(), context), 
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 4.0), // Уменьшен отступ
+                              child: SizedBox(
+                                width: 50, // Уменьшена ширина
+                                child: Text(
+                                  formatNumber(value.toDouble(), context),
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 12, // Уменьшен размер шрифта
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                    height: 1, // Оптимизированная высота строки
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow
+                                      .ellipsis, // Если число слишком длинное
                                 ),
                               ),
                             );
                           },
-                          reservedSize: 42,
+                          reservedSize:
+                              40, // Уменьшено для более компактного вида
+                          interval: maxY /
+                              8, // Уменьшен шаг, чтобы числа не дублировались
                         ),
                       ),
                       rightTitles: AxisTitles(
@@ -363,7 +375,7 @@ String formatNumber(double value, BuildContext context) {
                       drawHorizontalLine: true,
                       drawVerticalLine: true,
                       horizontalInterval: maxY / 5,
-                      verticalInterval: 1,
+                      verticalInterval: 0.1,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
                           color: Colors.grey.withOpacity(0.2),
@@ -407,7 +419,7 @@ String formatNumber(double value, BuildContext context) {
                             ),
                           ),
                           BarChartRodData(
-                            toY: successfulSum > 0 ? successfulSum : 0.1,
+                            toY: successfulSum > 0 ? successfulSum : 0,
                             color: Colors.green,
                             width: 8,
                             borderRadius: const BorderRadius.only(

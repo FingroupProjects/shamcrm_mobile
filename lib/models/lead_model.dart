@@ -39,33 +39,21 @@ class Lead {
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
     return Lead(
-      id: json['id'] is int ? json['id'] : 0,
-      name: json['name'] is String ? json['name'] : 'Без имени',
-      source: json['source'] != null && json['source'] is Map<String, dynamic>
-          ? Source.fromJson(json['source'])
-          : null,
-      messageAmount: json['message_amount'] is int ? json['message_amount'] : 0,
-      createdAt: json['created_at'] is String ? json['created_at'] : null,
+      id: json['id'] ?? 0,
+      name: json['name']?.toString() ?? 'Без имени',
+      source: json['source'] != null ? Source.fromJson(json['source']) : null,
+      messageAmount: json['message_amount'] ?? 0,
+      createdAt: json['created_at']?.toString(),
       statusId: leadStatusId,
-      manager: json['manager'] != null && json['manager'] is Map<String, dynamic>
-              ? ManagerData.fromJson(json['manager'])
-              : null,
-      sourceLead: json['source'] != null && json['source'] is Map<String, dynamic>
-              ? SourceLead.fromJson(json['source'])
-              : null,
-      organization: json['organization'] != null && json['organization'] is Map<String, dynamic>
-          ? Organization.fromJson(json['organization'])
-          : null,
-      leadStatus: json['leadStatus'] != null
-          ? LeadStatus.fromJson(json['leadStatus'])
-          : null,
-      phone: json['phone'] is String ? json['phone'] : '',
-      inProgressDealsCount: json['in_progress_deals_count'] is int? ? json['in_progress_deals_count'] : 0,
-      successefullyDealsCount: json['successful_deals_count'] is int? ? json['successful_deals_count'] : 0,
-      failedDealsCount: json['failed_deals_count'] is int? ? json['failed_deals_count'] : 0,
-      lastUpdate: json['last_update'] is int? ? json['last_update'] : 0,
-
-
+      manager: json['manager'] != null ? ManagerData.fromJson(json['manager']) : null,
+      sourceLead: json['source'] != null ? SourceLead.fromJson(json['source']) : null,
+      organization: json['organization'] != null ? Organization.fromJson(json['organization']) : null,
+      leadStatus: json['leadStatus'] != null ? LeadStatus.fromJson(json['leadStatus']) : null,
+      phone: json['phone']?.toString() ?? '',
+      inProgressDealsCount: json['in_progress_deals_count'],
+      successefullyDealsCount: json['successful_deals_count'],
+      failedDealsCount: json['failed_deals_count'],
+      lastUpdate: json['last_update'],
     );
   }
 
@@ -89,28 +77,53 @@ class Lead {
     };
   }
 }
-
 class Author {
   final int id;
   final String name;
+  final String? lastname;
+  final String? login;
+  final String? email;
+  final String? phone;
+  final dynamic image;  // Changed from String? to dynamic to handle both string and map
+  final String? lastSeen;
+  final String? deletedAt;
+  final String? telegramUserId;
+  final String? jobTitle;
+  final bool? online;
+  final String? fullName;
 
   Author({
     required this.id,
     required this.name,
+    this.lastname,
+    this.login,
+    this.email,
+    this.phone,
+    this.image,
+    this.lastSeen,
+    this.deletedAt,
+    this.telegramUserId,
+    this.jobTitle,
+    this.online,
+    this.fullName,
   });
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано',
+      name: json['name'] ?? '',
+      lastname: json['lastname'],
+      login: json['login'],
+      email: json['email'],
+      phone: json['phone'],
+      image: json['image'],  // Accept image as-is without type conversion
+      lastSeen: json['last_seen'],
+      deletedAt: json['deleted_at'],
+      telegramUserId: json['telegram_user_id']?.toString(),
+      jobTitle: json['job_title'],
+      online: json['online'],
+      fullName: json['full_name'],
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
   }
 }
 

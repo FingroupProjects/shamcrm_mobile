@@ -594,5 +594,7 @@
     "nothing_deal_for_manager":"Нет сделок для отображения",
     "nothing_lead_for_manager":"Нет лидов для отображения",
     "nothing_task_for_manager":"Нет задач для отображения",
-    "status_updated_successfully":"Статус обновлен успешно"
+    "status_updated_successfully":"Статус обновлен успешно",
+    "events":"События",
+    "appbar_events":"События"
   }
