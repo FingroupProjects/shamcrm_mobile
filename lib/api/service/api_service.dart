@@ -18,6 +18,8 @@ import 'package:crm_task_manager/models/dashboard_charts_models_manager/process_
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/task_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_task_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/event_by_Id_model.dart';
+import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -5011,4 +5013,60 @@ class ApiService {
   }
 
   //_________________________________ END_____API_SCREEN__MY-TASK____________________________________________//a
+
+
+
+    //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
+
+   // In api_service.dart, modify the getEvents method:
+Future<List<NoticeEvent>> getEvents() async {
+  try {
+    final organizationId = await getSelectedOrganization();
+    final response = await _getRequest(
+      '/notices${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null && data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => NoticeEvent.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Нет данных о событиях в ответе');
+      }
+    } else {
+      throw Exception('Ошибка загрузки событий!');
+    }
+  } catch (e) {
+    throw Exception('Ошибка загрузки событий: $e');
+  }
+}
+
+Future<Notice> getNoticeById(int noticeId) async {
+  try {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+        '/notices/show/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? jsonNotice = decodedJson['result'];
+
+      if (jsonNotice == null) {
+        throw Exception('Некорректные данные от API');
+      }
+
+      return Notice.fromJson(jsonNotice);
+    } else {
+      throw Exception('Ошибка загрузки notice ID!');
+    }
+  } catch (e) {
+    throw Exception('Ошибка загрузки notice ID!');
+  }
+}
+
+  //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
+
 }

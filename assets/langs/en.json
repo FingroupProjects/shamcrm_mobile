@@ -548,7 +548,6 @@
   "nothing_deal_for_manager": "No deals to display",
   "nothing_lead_for_manager": "No leads to display",
   "nothing_task_for_manager": "No tasks to display",
-  "status_updated_successfully": "Status updated successfully"
-
-  
+  "status_updated_successfully": "Status updated successfully",
+  "events": "Events"
 }

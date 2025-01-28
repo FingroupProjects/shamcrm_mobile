@@ -22,7 +22,7 @@ class User {
 
   User copyWith({
     int? id,
-    String? name,
+    String? name, 
     String? login,
     String? email,
     String? phone,

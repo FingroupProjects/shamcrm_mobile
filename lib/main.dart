@@ -20,6 +20,8 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/data_1c/data_1c_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
+import 'package:crm_task_manager/bloc/event/event_bloc.dart';
+import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
@@ -241,6 +243,9 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
           BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
           BlocProvider(create: (context) =>TaskAddFromDealBloc(apiService: ApiService())),
+          BlocProvider(create: (context) => EventBloc(widget.apiService)),
+          BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
+
           ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'), 
