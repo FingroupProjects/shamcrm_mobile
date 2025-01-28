@@ -1,9 +1,12 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart'; // Путь к bloc для сделок
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -109,8 +112,15 @@ class DeleteDealDialog extends StatelessWidget {
                      duration: Duration(seconds: 3),
                    ),
                 );
-                        Future.delayed(Duration(milliseconds: 300), () {
+                        Future.delayed(Duration(milliseconds: 300), () async {
                         context.read<LeadDealsBloc>().add(FetchLeadDeals(leadId));
+
+                         await LeadCache.clearLeadStatuses();
+                         await LeadCache.clearAllLeads();
+                         BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+                        BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+
+
                         Navigator.of(context).pop(true); 
                       });
 

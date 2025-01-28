@@ -40,8 +40,6 @@ class LeadDataLoaded extends LeadState {
   LeadDataLoaded(this.leads, {this.currentPage = 1, required this.leadCounts});
 
   LeadDataLoaded merge(List<Lead> newLeads) {
-    print(leadCounts);
-    print("-------------------------TaskLoaded------------------");
     return LeadDataLoaded([...leads, ...newLeads],
         currentPage: currentPage + 1, leadCounts: leadCounts);
   }

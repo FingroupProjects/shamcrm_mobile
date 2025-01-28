@@ -70,8 +70,6 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
-    bool _showCustomTabBar = true;
-
 
   @override
   void initState() {
@@ -236,7 +234,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         focusNode.unfocus();
       }
     });
-    widget.clearButtonClick(_isFiltering);
+    widget.clearButtonClickFiltr(_isFiltering);
   }
 
   void _toggleTaskFilter() {

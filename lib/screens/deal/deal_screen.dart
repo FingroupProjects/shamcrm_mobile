@@ -91,6 +91,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     _checkPermissions();
   }
 
+  // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('dealStatus.read');
+    final canCreate = await _apiService.hasPermission('dealStatus.create');
+    final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    // final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    setState(() {
+      _canReadDealStatus = canRead;
+      _canCreateDealStatus = canCreate;
+      _canDeleteDealStatus = canDelete;
+    });
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -105,6 +118,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     if (query.isEmpty) {
       dealBloc.add(FetchDeals(currentStatusId));
     } else {
+       await DealCache.clearAllDeals();
+
       dealBloc.add(FetchDeals(
         currentStatusId, query: query,
         managerIds: _selectedManagerIds, // Передаем список ID менеджеров
@@ -112,8 +127,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _handleManagerSelected(List<dynamic> managers) {
-    print('Selected managers: $managers');
+  Future<void> _handleManagerSelected(List<dynamic> managers) async {
+    await DealCache.clearAllDeals();
 
     setState(() {
       _showCustomTabBar = false;
@@ -164,18 +179,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     _searchDeals(query, currentStatusId);
   }
 
-  // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('dealStatus.read');
-    final canCreate = await _apiService.hasPermission('dealStatus.create');
-    final canDelete = await _apiService.hasPermission('dealStatus.delete');
-    // final canDelete = await _apiService.hasPermission('dealStatus.delete');
-    setState(() {
-      _canReadDealStatus = canRead;
-      _canCreateDealStatus = canCreate;
-      _canDeleteDealStatus = canDelete;
-    });
-  }
+
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -212,21 +216,87 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           showFilterTaskIcon: false,
           showMyTaskIcon: false, // Выключаем иконку My Tasks
 
-          clearButtonClick: (value) {
-            if (value == false) {
-              // BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+clearButtonClick: (value) {
+  if (value == false) {
+    // Сброс поиска
+    setState(() {
+      _isSearching = false;
+      _searchController.clear(); // Очищаем поле поиска
+    });
 
-              final dealBloc = BlocProvider.of<DealBloc>(context);
-              dealBloc.add(FetchDealStatuses());
-              setState(() {
-                _isSearching = false;
-                _selectedManagerId = null;
-                _showCustomTabBar = true;
-              });
-            }
-          },
-          clearButtonClickFiltr: (bool) {},
-        ),
+    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
+                  print('- IF---------------SEArCH-----------------------');
+
+      final dealBloc = BlocProvider.of<DealBloc>(context);
+      dealBloc.add(FetchDeals(_tabTitles[_currentTabIndex]['id'])); // Перезапрашиваем все сделки
+      setState(() {
+        _showCustomTabBar = true; // Показываем кастомные табы
+             final leadBloc = BlocProvider.of<DealBloc>(context);
+              leadBloc.add(FetchDealStatuses());
+      });
+    } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
+            print('ELSE- IF---------------SEArCH-----------------------');
+
+      // Если фильтр активен, показываем результаты фильтрации
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      final dealBloc = BlocProvider.of<DealBloc>(context);
+      dealBloc.add(FetchDeals(
+        currentStatusId,
+        managerIds: _selectedManagerIds,
+        query: _searchController.text.isNotEmpty ? _searchController.text : null,
+      ));
+      
+    } else {
+            print('ELSE-----SEARCH----------------------------------');
+
+      // Если поиск активен, показываем результаты поиска
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      final dealBloc = BlocProvider.of<DealBloc>(context);
+      dealBloc.add(FetchDeals(currentStatusId, query: _searchController.text));
+    }
+  }
+},
+
+clearButtonClickFiltr: (value) {
+  if (value == false) {
+    // Сброс фильтра
+    setState(() {
+      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
+    });
+
+    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
+      print('- IF-----------------FILTR---------------------');
+
+      setState(() {
+        _showCustomTabBar = true; // Показываем кастомные табы
+      });
+    final leadBloc = BlocProvider.of<DealBloc>(context);
+          leadBloc.add(FetchDealStatuses());
+    } else if (_searchController.text.isNotEmpty) {
+      print('ELSE- IF---------------FILTR-----------------------');
+
+      // Если поиск активен, показываем результаты поиска
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      final dealBloc = BlocProvider.of<DealBloc>(context);
+      dealBloc.add(FetchDeals(
+        currentStatusId,
+        query: _searchController.text,
+      ));
+    } else {
+      print('ELSE---------------FILTR------------------------');
+      // Если поиск не активен, показыва //ем все сделки
+       setState(() {
+        _showCustomTabBar = true; // Показываем кастомные табы
+      });
+        final leadBloc = BlocProvider.of<DealBloc>(context);
+              leadBloc.add(FetchDealStatuses());
+    }
+  }
+},
+
+  ),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
@@ -249,12 +319,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Widget searchWidget(List<Deal> deals) {
-    print(
-        '_isSearching: $_isSearching, _isManager: $_isManager, deals.isEmpty: ${deals.isEmpty}, deals.length: ${deals.length}');
-
     // Показать анимацию загрузки, если идет поиск
     if (_isSearching) {
-      print('Показывается анимация загрузки при поиске');
       return const Center(
         child: PlayStoreImageLoading(
           size: 80.0,
@@ -265,7 +331,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     // Показать анимацию загрузки, если это менеджер и данные ещё загружаются
     if (_isManager && deals.isEmpty) {
-      print('Показывается анимация загрузки для менеджера');
       return const Center(
         child: PlayStoreImageLoading(
           size: 80.0,
@@ -276,7 +341,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     // Если идёт поиск и ничего не найдено
     if (_isSearching && deals.isEmpty) {
-      print('Показывается сообщение: Ничего не найдено');
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
@@ -292,7 +356,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     // Если это менеджер и список сделок пуст после загрузки
     else if (_isManager && deals.isEmpty) {
-      print('Показывается сообщение: У выбранного менеджера нет сделок');
       return Center(
         child: Text(
           'У выбранного менеджера нет сделок',

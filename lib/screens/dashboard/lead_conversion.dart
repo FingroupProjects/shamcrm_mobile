@@ -62,17 +62,29 @@ List<String> getMonths(BuildContext context) {
     return BlocBuilder<DashboardConversionBloc, DashboardConversionState>(
       builder: (context, state) {
         if (state is DashboardConversionError) {
-          return Center(
-            child: Text(
-              '${state.message}',
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          );
+          print('===================================SMS INTERNET DASHBAORD===============================');
+          print(state.message);
+          print('===================================SMS INTERNET DASHBAORD===============================');
+
+        ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          state.message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
         } else if (state is DashboardConversionLoaded) {
           List<double> monthlyData = state.leadConversionData.monthlyData;
           if (monthlyData.every((value) => value == 0)) {

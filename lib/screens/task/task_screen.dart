@@ -139,6 +139,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     if (query.isEmpty) {
       taskBloc.add(FetchTasks(currentStatusId));
     } else {
+          await TaskCache.clearAllTasks();
+
       taskBloc.add(FetchTasks(
         currentStatusId,
         query: query,
@@ -147,14 +149,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _handleUserSelected(List<dynamic> users) {
-    print('Raw selected users: $users');
+  Future<void> _handleUserSelected(List<dynamic> users) async {
+    await TaskCache.clearAllTasks();
+
     setState(() {
       _showCustomTabBar = false;
       _selectedUserIds = users
           .map((user) {
             if (user is UserTask) {
-              return user.id; // Assuming UserTask has an id property
+              return user.id;
             }
             return null;
           })
@@ -162,7 +165,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           .cast<int>()
           .toList();
 
-      print('Converted user IDs: $_selectedUserIds'); // Debug print
     });
     _refreshCurrentTab();
 
