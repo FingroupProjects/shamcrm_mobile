@@ -4,10 +4,12 @@ import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_delete.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_edit_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -364,8 +366,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   id: notice.id,
                                   title: notice.title,
                                   body: notice.body,
-                                  lead: notice.lead ??
-                                      null, // or just `notice.lead`
+                                  lead: notice.lead ??null, // or just `notice.lead`
                                   date: notice.date!,
                                   isFinished: notice.isFinished,
                                   users: notice.users,
@@ -380,9 +381,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           );
 
                           if (shouldUpdate == true) {
-                            context
-                                .read<NoticeBloc>()
-                                .add(FetchNoticeEvent(noticeId: notice.id));
+                            context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: notice.id));
                             context.read<EventBloc>().add(FetchEvents());
                           }
                         },
@@ -422,57 +421,59 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildDetailsList(Notice notice) {
-    final List<Map<String, String>> details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('title'),
-        'value': notice.title
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('body'),
-        'value': notice.body
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('author'),
-        'value': notice.author?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at'),
-        'value': formatDate(notice.createdAt.toString())
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('is_finished'),
-        'value': notice.isFinished ? 'Yes' : 'No'
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_name'),
-        'value': notice.lead!.name
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('date'),
-        'value': formatDate(notice.date.toString())
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('assignee'),
-        'value': notice.users.map((user) => user.name).join(', '),
-      },
-    ];
+Widget _buildDetailsList(Notice notice) {
+ late final int leadId = notice.lead!.id; // Получаем leadId
+  final List<Map<String, String>> details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('title'),
+      'value': notice.title
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('body'),
+      'value': notice.body
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('author'),
+      'value': notice.author?.name ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('created_at'),
+      'value': formatDate(notice.createdAt.toString())
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('is_finished'),
+      'value': notice.isFinished ? 'Yes' : 'No'
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('lead_name'),
+      'value': notice.lead!.name
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('date'),
+      'value': formatDate(notice.date.toString())
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('assignee'),
+      'value': notice.users.map((user) => user.name).join(', '),
+    },
+  ];
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: details.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            details[index]['label']!,
-            details[index]['value']!,
-          ),
-        );
-      },
-    );
-  }
+  return ListView.builder(
+    shrinkWrap: true,
+    physics: NeverScrollableScrollPhysics(),
+    itemCount: details.length,
+    itemBuilder: (context, index) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: _buildDetailItem(
+          details[index]['label']!,
+          details[index]['value']!,
+          leadId,  // Передаем leadId
+        ),
+      );
+    },
+  );
+}
 
   void _showUsersDialog(String users) {
     List<String> userList =
@@ -536,55 +537,93 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        if (label == AppLocalizations.of(context)!.translate('assignee') &&
-            value.contains(',')) {
-          label = AppLocalizations.of(context)!.translate('assignees');
-        }
+Widget _buildDetailItem(String label, String value, int leadId) {
+  return LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints constraints) {
+      if (label == AppLocalizations.of(context)!.translate('assignee') &&
+          value.contains(',')) {
+        label = AppLocalizations.of(context)!.translate('assignees');
+      }
 
-        if (label == AppLocalizations.of(context)!.translate('assignees')) {
-          return GestureDetector(
-            onTap: () => _showUsersDialog(value),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel(label),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    value.split(',').take(3).join(', ') +
-                        (value.split(',').length > 3
-                            ? ' и еще ${value.split(',').length - 3}...'
-                            : ''),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                    overflow: TextOverflow.ellipsis,
+      if (label == AppLocalizations.of(context)!.translate('assignees')) {
+        return GestureDetector(
+          onTap: () => _showUsersDialog(value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value.split(',').take(3).join(', ') +
+                      (value.split(',').length > 3
+                          ? ' и еще ${value.split(',').length - 3}...'
+                          : ''),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Добавим переход на экран для 'title'
+      if (label == AppLocalizations.of(context)!.translate('title')) {
+        return GestureDetector(
+          onTap: () {
+              print('LEAD ID ENTER------');
+  print(leadId);
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => LeadDetailsScreen(
+                  leadId: leadId.toString(),  // передаем leadId
+                  leadName: value,  // Можно передать value, если это название лида
+                  leadStatus: "",   // Здесь можно указать статус лида, если есть
+                  statusId: 1,      // Пример статуса
+                ),
+              ),
+            );
+          },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
                   ),
                 ),
-              ],
-            ),
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: _buildValue(value),
-            ),
-          ],
+              ),
+            ],
+          ),
         );
-      },
-    );
-  }
+      }
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(width: 8),
+          Expanded(
+            child: _buildValue(value),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildLabel(String label) {
     return Text(
