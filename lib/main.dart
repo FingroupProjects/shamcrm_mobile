@@ -88,7 +88,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
   await initializeApp(); 
 }
-
+  
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();

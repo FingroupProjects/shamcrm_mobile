@@ -211,7 +211,7 @@ void _onSearch(String query) {
           focusNode: focusNode,
           showFilterTaskIcon: false,
           showMyTaskIcon: true, 
-          showEvent: false,
+          showEvent: true,
 
 clearButtonClick: (value) {
   if (value == false) {
@@ -275,9 +275,6 @@ clearButtonClickFiltr: (value) {
   }
 }
 
-
-  ),
-      ),
       body: isClickAvatarIcon
           ? ProfileScreen()
           : Column(

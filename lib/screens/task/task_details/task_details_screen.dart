@@ -904,12 +904,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     AppLocalizations.of(context)!.translate('important'): Color(0xFFFFF3E0), // Важный
     AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), // Обычный
   };
-  print('================================================================================');
-  print('====================================_GetPriorityBackgroundColor COLOR START ============================================');
-  print(priorityColors[priority]);
-   print('================================================================================');
-  print('====================================PRIORITY COLOR END ============================================');
-  
   // Возвращаем цвет из Map, либо цвет по умолчанию
   return priorityColors[priority] ?? Color(0xFFE8F5E9);
 }
@@ -921,13 +915,6 @@ Color _getPriorityBorderColor(String priority) {
     AppLocalizations.of(context)!.translate('important'): Colors.orange, // Важный
     AppLocalizations.of(context)!.translate('normal'): Colors.green, // Обычный
   };
-  
-  print('================================================================================');
-  print('====================================PriorityBorderColors COLOR START ============================================');
-  print(priorityBorderColors[priority]);
-   print('================================================================================');
-  print('====================================PRIORITY COLOR END ============================================');
-  
   // Возвращаем цвет из Map, либо цвет по умолчанию
   return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
 }
@@ -939,58 +926,9 @@ Color _getPriorityColor(String priority) {
     AppLocalizations.of(context)!.translate('important'): Color(0xFFEF6C00), // Важный
     AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32), // Обычный
   };
-  
-  print('================================================================================');
-  print('====================================PRIORITY COLOR START ============================================');
-  print(priorityColors[priority]);
-   print('================================================================================');
-  print('====================================PRIORITY COLOR END ============================================');
-  
-
   // Возвращаем цвет из Map, либо цвет по умолчанию
   return priorityColors[priority] ?? Color(0xFF2E7D32);
 }
-
-
-  // Color _getPriorityBackgroundColor(String priority) {
-  //   switch (priority) {
-  //     case 'Срочный':
-  //       return Color(0xFFFFEBEE);
-  //     case 'Важный':
-  //       return Color(0xFFFFF3E0);
-  //     case 'Обычный':
-  //       return Color(0xFFE8F5E9);
-  //     default:
-  //       return Color(0xFFE8F5E9);
-  //   }
-  // }
-
-  // Color _getPriorityBorderColor(String priority) {
-  //   switch (priority) {
-  //     case 'Срочный':
-  //       return Colors.red;
-  //     case 'Важный':
-  //       return Colors.orange;
-  //     case 'Обычный':
-  //       return Colors.green;
-  //     default:
-  //       return Color(0xFF2E7D32);
-  //   }
-  // }
-
-  // Color _getPriorityColor(String priority) {
-  //   switch (priority) {
-  //     case 'Срочный':
-  //       return Color(0xFFC62828);
-  //     case 'Важный':
-  //       return Color(0xFFEF6C00);
-  //     case 'Обычный':
-  //       return Color(0xFF2E7D32);
-  //     default:
-  //       return Color(0xFF2E7D32);
-  //   }
-  // }
-
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
