@@ -60,9 +60,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
-        setState(() {    final leadBloc = BlocProvider.of<LeadBloc>(context);
-        leadBloc.add(FetchLeadStatuses());
-
+        setState(() {    
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
@@ -103,7 +101,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
-
   final leadBloc = BlocProvider.of<LeadBloc>(context);
   if (query.isEmpty) {
     if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
@@ -124,6 +121,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       managerIds: _selectedManagerIds,
     ));
   }
+}
 
 // Добавляем метод для обработки выбора менеджера
 
@@ -131,6 +129,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     await LeadCache.clearAllLeads();
 
     setState(() {
+      
       _showCustomTabBar = false;
 
       _selectedManagerIds = managers
@@ -207,9 +206,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showMyTaskIcon: false, // Выключаем иконку My Tasks
           showEvent: true,
-
           clearButtonClick: (value) {
             if (value == false) {
                   // Сброс поиска
@@ -293,8 +291,7 @@ if (value == false) {
   }
 
   Widget searchWidget(List<Lead> leads) {
-    print(
-        '_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
+    print('_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
 
     // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
@@ -529,7 +526,7 @@ void _showStatusOptions(BuildContext context, int index) {
 }
 
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
-  Widget _buildTabButton(int index) {
+ Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
 
     return BlocBuilder<LeadBloc, LeadState>(
@@ -790,7 +787,6 @@ void _showStatusOptions(BuildContext context, int index) {
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 
-                    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
                     if (index != -1) {
                       _tabController.animateTo(index);
