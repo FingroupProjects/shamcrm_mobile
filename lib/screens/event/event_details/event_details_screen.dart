@@ -45,7 +45,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
- 
   void _showFinishDialog(int noticeId) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
@@ -58,7 +57,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             title: Text(
-              AppLocalizations.of(context)!.translate('finish_event_confirmation'),
+              AppLocalizations.of(context)!
+                  .translate('finish_event_confirmation'),
               style: const TextStyle(
                 color: Color(0xff1E2E52),
                 fontSize: 18,
@@ -75,27 +75,38 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
+                    child: CustomButton(
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('cancel'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      buttonColor: Colors.red,
+                      textColor: Colors.white,
+                    ),
+                  ),
+                  Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
+                      padding: const EdgeInsets.only(left: 8.0),
                       child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('yes'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('confirm'),
                         onPressed: () {
                           // Close the confirmation dialog
                           Navigator.of(context).pop();
-                          
+
                           // Add the finish event
                           context.read<EventBloc>().add(
-                            FinishNotice(
-                              noticeId,
-                              AppLocalizations.of(context)!,
-                            ),
-                          );
-                          
+                                FinishNotice(
+                                  noticeId,
+                                  AppLocalizations.of(context)!,
+                                ),
+                              );
+
                           // Show success snackbar
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                AppLocalizations.of(context)!.translate('event_completed_successfully'),
+                                AppLocalizations.of(context)!
+                                    .translate('event_completed_successfully'),
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 16,
@@ -104,13 +115,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 ),
                               ),
                               behavior: SnackBarBehavior.floating,
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               backgroundColor: Colors.green,
                               elevation: 3,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -130,14 +143,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('no'),
-                      onPressed: () => Navigator.of(context).pop(),
-                      buttonColor: Colors.grey,
-                      textColor: Colors.white,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -146,21 +151,23 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
     });
   }
-Widget _buildFinishButton(Notice notice) {
-  if (notice.isFinished) {
-    return const SizedBox.shrink();
+
+  Widget _buildFinishButton(Notice notice) {
+    if (notice.isFinished) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: CustomButton(
+        buttonText: AppLocalizations.of(context)!.translate('finish_event'),
+        onPressed: () => _showFinishDialog(notice.id),
+        buttonColor: const Color(0xff1E2E52),
+        textColor: Colors.white,
+      ),
+    );
   }
-  
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16.0),
-    child: CustomButton(
-      buttonText: AppLocalizations.of(context)!.translate('finish_event'),
-      onPressed: () => _showFinishDialog(notice.id),
-      buttonColor: const Color(0xff1E2E52),
-      textColor: Colors.white,
-    ),
-  );
-}
+
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
@@ -349,7 +356,6 @@ Widget _buildFinishButton(Notice notice) {
                               ? DateFormat('dd/MM/yyyy HH:mm')
                                   .format(notice.date!)
                               : null;
-
                           final shouldUpdate = await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -572,12 +578,7 @@ Widget _buildFinishButton(Notice notice) {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains(
-                          AppLocalizations.of(context)!.translate('title')) ||
-                      label.contains(
-                          AppLocalizations.of(context)!.translate('body')))
-                  ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value),
+              child: _buildValue(value),
             ),
           ],
         );

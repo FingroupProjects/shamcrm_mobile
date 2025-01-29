@@ -275,6 +275,9 @@ clearButtonClickFiltr: (value) {
   }
 }
 
+
+  ),
+      ),
       body: isClickAvatarIcon
           ? ProfileScreen()
           : Column(
