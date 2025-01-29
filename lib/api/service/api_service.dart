@@ -2853,18 +2853,14 @@ class ApiService {
               .map((user) => UserTask.fromJson(user))
               .toList();
 
-          print('Получено пользователей: ${usersList.length}');
           return usersList;
         } else {
-          print('Структура данных неверна: $data');
           throw Exception('Неверная структура данных пользователей');
         }
       } else {
-        print('Ошибка HTTP!');
         throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      print('Ошибка при получении пользователей!');
       rethrow;
     }
   }

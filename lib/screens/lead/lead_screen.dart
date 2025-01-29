@@ -47,9 +47,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _deletedIndex;
 
   bool _showCustomTabBar = true;
+  String _lastSearchQuery = "";
+
 
   int? _selectedManagerId; // ID выбранного менеджера.
-  List<int> _selectedManagerIds = [];
+    List<int>? _selectedManagerIds;
 
   @override
   void initState() {
@@ -58,9 +60,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
-        setState(() {
-          final leadBloc = BlocProvider.of<LeadBloc>(context);
-          leadBloc.add(FetchLeadStatuses());
+        setState(() {    final leadBloc = BlocProvider.of<LeadBloc>(context);
+        leadBloc.add(FetchLeadStatuses());
 
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
@@ -102,21 +103,26 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    if (query.isEmpty) {
-      leadBloc.add(FetchLeads(
-        currentStatusId, // status_id передается
-        managerIds: _selectedManagerIds, // менеджеры передаются
-      ));
-    } else {
-      await LeadCache.clearAllLeads();
 
-      leadBloc.add(FetchLeads(
-        currentStatusId, // status_id передается
-        query: query, // поисковый запрос передается
-        managerIds: _selectedManagerIds, // менеджеры передаются
-      ));
+  final leadBloc = BlocProvider.of<LeadBloc>(context);
+  if (query.isEmpty) {
+    if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+    print('Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
+    leadBloc.add(FetchLeads(
+      currentStatusId, 
+      managerIds: _selectedManagerIds, 
+    ));
+     } else {
+      print('Очистка поиска и фильтра — загружаем все лиди');
+      leadBloc.add(FetchLeads(currentStatusId,query: " "));
     }
+  } else {
+    await LeadCache.clearAllLeads();
+    leadBloc.add(FetchLeads(
+      currentStatusId, 
+      query: query, 
+      managerIds: _selectedManagerIds,
+    ));
   }
 
 // Добавляем метод для обработки выбора менеджера
@@ -140,31 +146,18 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           .cast<int>()
           .toList();
     });
-    _refreshCurrentTab();
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeads(
-      currentStatusId,
-      managerIds: _selectedManagerIds.isNotEmpty ? _selectedManagerIds : null,
-      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+    currentStatusId,
+    managerIds: _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
     ));
   }
 
-  void _refreshCurrentTab() {
-    if (_tabTitles.isNotEmpty) {
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final leadBloc = BlocProvider.of<LeadBloc>(context);
-      leadBloc.add(FetchLeads(
-        currentStatusId,
-        managerIds: _selectedManagerIds.isNotEmpty ? _selectedManagerIds : null,
-        query:
-            _searchController.text.isNotEmpty ? _searchController.text : null,
-      ));
-    }
-  }
-
   void _onSearch(String query) {
+    _lastSearchQuery = query;
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchLeads(query, currentStatusId);
   }
@@ -219,26 +212,63 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
           clearButtonClick: (value) {
             if (value == false) {
-              // BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-
-              final leadBloc = BlocProvider.of<LeadBloc>(context);
-              leadBloc.add(FetchLeadStatuses());
-              setState(() {
-                _isSearching = false;
-                _showCustomTabBar = true;
-                _selectedManagerId = null;
-              });
+                  // Сброс поиска
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear(); 
+                  _lastSearchQuery = ''; 
+                });
+          if (_searchController.text.isEmpty && _selectedManagerIds == null) {
+                setState(() {
+                  _showCustomTabBar = true; 
+                });
+                final leadBloc = BlocProvider.of<LeadBloc>(context);
+                leadBloc.add(FetchLeadStatuses());
+               } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
+                // Если фильтр активен, показываем результаты фильтрации
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                final dealBloc = BlocProvider.of<LeadBloc>(context);
+                dealBloc.add(FetchLeads(
+                  currentStatusId,
+                  managerIds: _selectedManagerIds,
+                  query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                ));
+              } 
             }
           },
           clearButtonClickFiltr: (value) {
-            if (value == false) {
-              final leadBloc = BlocProvider.of<LeadBloc>(context);
-              leadBloc.add(FetchLeadStatuses());
-              setState(() {
-                _isFiltr = false;
-                _selectedManagerId = null;
-              });
-            }
+if (value == false) {
+    // Сброс фильтра
+    setState(() {
+      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
+    });
+    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
+      setState(() {
+        _showCustomTabBar = true; // Показываем кастомные табы
+      });
+      // Проверка на наличие предыдущего запроса поиска
+      if (_lastSearchQuery.isNotEmpty) {
+        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        final dealBloc = BlocProvider.of<LeadBloc>(context);
+        print('Возвращаем поиск после сброса фильтра');
+        dealBloc.add(FetchLeads(currentStatusId, query: _lastSearchQuery));
+      } else  {
+        // Если и поиск, и фильтр пусты, показываем все сделки
+        final leadBloc = BlocProvider.of<LeadBloc>(context);
+        print('Сброс и поиск пуст, возвращаем все сделки');
+        leadBloc.add(FetchLeadStatuses());
+      }
+    } else if (_searchController.text.isNotEmpty) {
+      // Если поиск активен, показываем результаты поиска
+      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+      final dealBloc = BlocProvider.of<LeadBloc>(context);
+      dealBloc.add(FetchLeads(
+        currentStatusId,
+        query: _searchController.text,
+      ));
+    }
+  }
           },
         ),
       ),
@@ -439,64 +469,64 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showStatusOptions(BuildContext context, int index) {
-    final RenderBox renderBox =
-        _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
-    final Offset position = renderBox.localToGlobal(Offset.zero);
+void _showStatusOptions(BuildContext context, int index) {
+  final RenderBox renderBox =
+      _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
+  final Offset position = renderBox.localToGlobal(Offset.zero);
 
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy + renderBox.size.height,
-        position.dx + renderBox.size.width,
-        position.dy + renderBox.size.height * 2,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      elevation: 4,
-      color: Colors.white,
-      items: [
-        PopupMenuItem(
-          value: 'edit',
-          child: ListTile(
-            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
-            title: Text(
-              'Изменить',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
+  showMenu(
+    context: context,
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy + renderBox.size.height,
+      position.dx + renderBox.size.width,
+      position.dy + renderBox.size.height * 2,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 4,
+    color: Colors.white,
+    items: [
+      PopupMenuItem(
+        value: 'edit',
+        child: ListTile(
+          leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+          title: Text(
+            'Изменить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
             ),
           ),
         ),
-        PopupMenuItem(
-          value: 'delete',
-          child: ListTile(
-            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
-            title: Text(
-              'Удалить',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
+      ),
+      PopupMenuItem(
+        value: 'delete',
+        child: ListTile(
+          leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+          title: Text(
+            'Удалить',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff1E2E52),
             ),
           ),
         ),
-      ],
-    ).then((value) {
-      if (value == 'edit') {
-        _editLeadStatus(index);
-      } else if (value == 'delete') {
-        _showDeleteDialog(index);
-      }
-    });
-  }
+      ),
+    ],
+  ).then((value) {
+    if (value == 'edit') {
+      _editLeadStatus(index);
+    } else if (value == 'delete') {
+      _showDeleteDialog(index);
+    }
+  });
+}
 
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
   Widget _buildTabButton(int index) {
@@ -515,63 +545,61 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           leadCount = leadStatus?.leadsCount ?? 0; // Используем leadsCount
         }
 
-        return GestureDetector(
-          key: _tabKeys[index],
-          onTap: () {
-            _tabController.animateTo(index);
-          },
-          onLongPress: () {
-            if (_canDeleteLeadStatus) {
-              _showStatusOptions(context, index);
-            }
-          },
-          child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
-                    color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
-                  ),
+      return GestureDetector(
+        key: _tabKeys[index],
+        onTap: () {
+          _tabController.animateTo(index);
+        },
+        onLongPress: () {
+          if (_canDeleteLeadStatus) {
+            _showStatusOptions(context, index);
+          }
+        },
+        child: Container(
+          decoration: TaskStyles.tabButtonDecoration(isActive),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tabTitles[index]['title'],
+                style: TaskStyles.tabTextStyle.copyWith(
+                  color: isActive
+                      ? TaskStyles.activeColor
+                      : TaskStyles.inactiveColor,
                 ),
-                Transform.translate(
-                  offset: const Offset(12, 0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isActive
-                            ? const Color(0xff1E2E52)
-                            : const Color(0xff99A4BA),
-                        width: 1,
-                      ),
+              ),
+              Transform.translate(
+                offset: const Offset(12, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isActive
+                          ? const Color(0xff1E2E52)
+                          : const Color(0xff99A4BA),
+                      width: 1,
                     ),
-                    child: Text(
-                      leadCount.toString(),
-                      style: TextStyle(
-                        color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  child: Text(
+                    leadCount.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.black : const Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   void _deleteLeadStatus(int index) {
     // Вызываем вашу существующую логику удаления
@@ -619,6 +647,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       builder: (BuildContext context) {
         return EditLeadStatusScreen(
           leadStatusId: leadStatus['id'], // Pass the lead status ID for editing
+
+    
         );
       },
     );
@@ -628,9 +658,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     return BlocListener<LeadBloc, LeadState>(
       listener: (context, state) async {
         if (state is LeadLoaded) {
-          await LeadCache.cacheLeadStatuses(state.leadStatuses
-              .map((status) => {'id': status.id, 'title': status.title})
-              .toList());
+
+          await LeadCache.cacheLeadStatuses(state.leadStatuses .map((status) => {'id': status.id, 'title': status.title}).toList());
           setState(() {
             _tabTitles = state.leadStatuses
                 .where((status) => _canReadLeadStatus)
