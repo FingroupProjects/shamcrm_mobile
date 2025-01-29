@@ -548,6 +548,14 @@
   "nothing_lead_for_manager": "Ko'rsatish uchun liderlar yo'q",
   "nothing_task_for_manager": "Ko'rsatish uchun vazifalar yo'q",
   "status_updated_successfully": "Status muvaffaqiyatli yangilandi",
-  "events": "Voqealar"
-  
+  "events": "Voqealar",
+    "Тематика": "Mavzu:",
+    "Описание": "Tavsif:",
+    "Автор": "Muallif:",
+    "Дата создание": "Yaratilgan sana:",
+    "Статус": "Holat:",
+    "Завершено": "Tugatildi:",
+    "В процессе": "Jarayonda:",
+    "Лид": "Lid:",
+    "Напоминание": "Eslatma:"
 }
