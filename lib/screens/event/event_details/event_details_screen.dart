@@ -425,31 +425,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildDetailsList(Notice notice) {
     final List<Map<String, String>> details = [
       {
-        'label': AppLocalizations.of(context)!.translate('title'),
+        'label': AppLocalizations.of(context)!.translate('Тематика'),
         'value': notice.title
       },
       {
-        'label': AppLocalizations.of(context)!.translate('body'),
+        'label': AppLocalizations.of(context)!.translate('Описание'),
         'value': notice.body
       },
       {
-        'label': AppLocalizations.of(context)!.translate('author'),
+        'label': AppLocalizations.of(context)!.translate('Автор'),
         'value': notice.author?.name ?? ''
       },
       {
-        'label': AppLocalizations.of(context)!.translate('created_at'),
+        'label': AppLocalizations.of(context)!.translate('Дата создание'),
         'value': formatDate(notice.createdAt.toString())
       },
       {
-        'label': AppLocalizations.of(context)!.translate('is_finished'),
-        'value': notice.isFinished ? 'Yes' : 'No'
+        'label': AppLocalizations.of(context)!.translate('Статус'),
+        'value': notice.isFinished ? 'Завершено' : 'В процессе'
       },
       {
-        'label': AppLocalizations.of(context)!.translate('lead_name'),
+        'label': AppLocalizations.of(context)!.translate('Лид'),
         'value': notice.lead!.name
       },
       {
-        'label': AppLocalizations.of(context)!.translate('date'),
+        'label': AppLocalizations.of(context)!.translate('Напоминание'),
         'value': formatDate(notice.date.toString())
       },
       {

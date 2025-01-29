@@ -5014,12 +5014,31 @@ class ApiService {
     //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
 
    // In api_service.dart, modify the getEvents method:
-Future<List<NoticeEvent>> getEvents({int page = 1, int perPage = 20}) async {
+Future<List<NoticeEvent>> getEvents({
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? managers,
+}) async {
   try {
     final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-      '/notices?page=$page&per_page=$perPage${organizationId != null ? '&organization_id=$organizationId' : ''}',
-    );
+    String path = '/notices?page=$page&per_page=$perPage';
+
+    if (organizationId != null) {
+      path += '&organization_id=$organizationId';
+    }
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+
+    final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -5143,7 +5162,7 @@ Future<Map<String, dynamic>> finishNotice(int noticeId) async {
   
   final response = await _patchRequest(
     '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',{
-      
+
         }
   );
 

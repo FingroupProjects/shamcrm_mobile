@@ -4,8 +4,17 @@ abstract class EventEvent {}
 
 class FetchEvents extends EventEvent {
   final bool refresh;
-  FetchEvents({this.refresh = false});
+  final String? query;
+  final List<int>? managerIds;
+  final int? statusId;
+  FetchEvents({
+    this.statusId,
+    this.refresh = false,
+    this.query,
+    this.managerIds,
+  });
 }
+
 
 class FetchMoreEvents extends EventEvent {
   FetchMoreEvents(int currentPage);
