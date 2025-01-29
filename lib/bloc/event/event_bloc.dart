@@ -18,14 +18,19 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     on<FinishNotice>(_finishNotice);
   }
 
-  Future<void> _onFetchEvents(
+ Future<void> _onFetchEvents(
     FetchEvents event,
     Emitter<EventState> emit,
   ) async {
     try {
       emit(EventLoading(isFirstFetch: true));
 
-      final events = await apiService.getEvents(page: 1, perPage: _perPage);
+      final events = await apiService.getEvents(
+        page: 1, 
+        perPage: _perPage,
+        search: event.query,
+        managers: event.managerIds,
+      );
 
       emit(EventDataLoaded(
         events: events,

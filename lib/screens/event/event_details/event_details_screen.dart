@@ -458,6 +458,7 @@ Widget _buildDetailsList(Notice notice) {
     },
   ];
 
+
   return ListView.builder(
     shrinkWrap: true,
     physics: NeverScrollableScrollPhysics(),

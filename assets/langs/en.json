@@ -549,5 +549,14 @@
   "nothing_lead_for_manager": "No leads to display",
   "nothing_task_for_manager": "No tasks to display",
   "status_updated_successfully": "Status updated successfully",
-  "events": "Events"
+  "events": "Events",
+    "Тематика": "Topic",
+    "Описание": "Description",
+    "Автор": "Author",
+    "Дата создание": "Creation Date",
+    "Статус": "Status",
+    "Завершено": "Completed",
+    "В процессе": "In progress",
+    "Лид": "Lead",
+    "Напоминание": "Reminder"
 }
