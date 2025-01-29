@@ -60,9 +60,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
-        setState(() {    final leadBloc = BlocProvider.of<LeadBloc>(context);
-        leadBloc.add(FetchLeadStatuses());
-
+        setState(() {    
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
@@ -788,7 +786,6 @@ void _showStatusOptions(BuildContext context, int index) {
                     final index = _tabTitles
                         .indexWhere((status) => status['id'] == newStatusId);
 
-                    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
                     if (index != -1) {
                       _tabController.animateTo(index);
