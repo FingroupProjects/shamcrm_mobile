@@ -5014,11 +5014,11 @@ class ApiService {
     //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
 
    // In api_service.dart, modify the getEvents method:
-Future<List<NoticeEvent>> getEvents() async {
+Future<List<NoticeEvent>> getEvents({int page = 1, int perPage = 20}) async {
   try {
     final organizationId = await getSelectedOrganization();
     final response = await _getRequest(
-      '/notices${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      '/notices?page=$page&per_page=$perPage${organizationId != null ? '&organization_id=$organizationId' : ''}',
     );
 
     if (response.statusCode == 200) {
@@ -5037,7 +5037,6 @@ Future<List<NoticeEvent>> getEvents() async {
     throw Exception('Ошибка загрузки событий: $e');
   }
 }
-
 Future<Notice> getNoticeById(int noticeId) async {
   try {
     final organizationId = await getSelectedOrganization();
@@ -5061,7 +5060,99 @@ Future<Notice> getNoticeById(int noticeId) async {
     throw Exception('Ошибка загрузки notice ID!');
   }
 }
+Future<Map<String, dynamic>> createNotice({
+  required String title,
+  required String body,
+  required int leadId,
+  required DateTime date,
+  required int sendNotification,
+  required List<int> users,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  
+  final requestBody = {
+    'title': title,
+    'body': body,
+    'lead_id': leadId,
+    'date': date.toIso8601String(),
+    'send_notification': sendNotification,
+    'users': users,
+    'organization_id': organizationId ?? '2'
+  };
 
+  final response = await _postRequest('/notices?organization_id=${organizationId ?? "2"}', requestBody);
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return {'success': true, 'message': 'notice_create_successfully'};
+  } else if (response.statusCode == 422) {
+    return {'success': false, 'message': 'validation_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_notice_create'};
+  }
+}
+Future<Map<String, dynamic>> updateNotice({
+  required int noticeId,
+  required String title,
+  required String body,
+  required int leadId,
+  required DateTime date,
+  required int sendNotification,
+  required List<int> users,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  
+  final requestBody = {
+    'title': title,
+    'body': body,
+    'lead_id': leadId,
+    'date': date.toIso8601String(),
+    'send_notification': sendNotification,
+    'users': users,
+    'organization_id': organizationId ?? '2'
+  };
+
+  final response = await _patchRequest('/notices/$noticeId?organization_id=${organizationId ?? "2"}', requestBody);
+
+  if (response.statusCode == 200) {
+    return {'success': true, 'message': 'notice_update_successfully'};
+  } else if (response.statusCode == 422) {
+    return {'success': false, 'message': 'validation_error'};
+  } else if (response.statusCode == 500) {
+    return {'success': false, 'message': 'error_server_text'};
+  } else {
+    return {'success': false, 'message': 'error_notice_update'};
+  }
+}
+Future<Map<String, dynamic>> deleteNotice(int noticeId) async {
+  final organizationId = await getSelectedOrganization();
+  
+  final response = await _deleteRequest(
+    '/notices/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+  );
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to delete notice!');
+  }
+}
+Future<Map<String, dynamic>> finishNotice(int noticeId) async {
+  final organizationId = await getSelectedOrganization();
+  
+  final response = await _patchRequest(
+    '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',{
+      
+        }
+  );
+
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to finish notice!');
+  }
+}
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 
 }

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
 import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/screens/event/event_details/event_add_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
@@ -15,7 +16,8 @@ class EventScreen extends StatefulWidget {
   _EventScreenState createState() => _EventScreenState();
 }
 
-class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin {
+class _EventScreenState extends State<EventScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
   final List<Map<String, dynamic>> _tabTitles = [
@@ -28,7 +30,8 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
   bool isClickAvatarIcon = false;
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
-  
+  late final EventBloc _eventBloc;
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +52,14 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
 
     // Начальная загрузка событий
     _loadEvents();
+     // Добавляем слушатель для ScrollController
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels ==
+              _scrollController.position.maxScrollExtent &&
+          !_eventBloc.allEventsFetched) {
+        _eventBloc.add(FetchMoreEvents(_currentTabIndex + 1));
+      }
+    });
   }
 
   void _loadEvents() {
@@ -63,7 +74,7 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
 
   Widget _buildEventsList(List<NoticeEvent> events) {
     final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
-    
+
     if (filteredEvents.isEmpty) {
       return Center(
         child: Text(
@@ -76,6 +87,15 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
         ),
       );
     }
+//  final ScrollController _scrollController = ScrollController();
+//               _scrollController.addListener(() {
+//                 if (_scrollController.position.pixels ==
+//                         _scrollController.position.maxScrollExtent &&
+//                     !_eventBloc.allEventsFetched) {
+//                   _eventBloc
+//                       .add(FetchMoreEvents(widget. state.currentPage));
+//                 }
+//               });
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -95,6 +115,7 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
       },
     );
   }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -163,12 +184,16 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset + position.dx - 
-            (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+      if (position.dx < 0 ||
+          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (MediaQuery.of(context).size.width / 2) +
+            (tabWidth / 2);
 
         if (targetOffset != _scrollController.offset) {
           _scrollController.animateTo(
@@ -221,6 +246,22 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
           },
           clearButtonClickFiltr: (bool) {},
         ),
+      ), // Add this floatingActionButton
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NoticeAddScreen(),
+            ),
+          ).then((_) => _loadEvents()); // Reload events after returning
+        },
+        backgroundColor: Color(0xff1E2E52),
+        child: Image.asset(
+          'assets/icons/tabBar/add.png',
+          width: 24,
+          height: 24,
+        ),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
@@ -248,7 +289,7 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
                                 ),
                               );
                             }
-                            if (state is EventLoaded) {
+                            if (state is EventDataLoaded) {
                               return _buildEventsList(state.events);
                             }
                             if (state is EventError) {

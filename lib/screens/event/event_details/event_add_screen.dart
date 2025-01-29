@@ -1,482 +1,273 @@
-// import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
-// import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
-// import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
-// import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
-// import 'package:crm_task_manager/models/my-task_model.dart';
-// import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-// import 'package:file_picker/file_picker.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:crm_task_manager/custom_widget/custom_button.dart';
-// import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-// import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-// import 'package:intl/intl.dart';
+import 'package:crm_task_manager/bloc/event/event_bloc.dart';
+import 'package:crm_task_manager/bloc/event/event_event.dart';
+import 'package:crm_task_manager/bloc/event/event_state.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
-// class MyTaskAddScreen extends StatefulWidget {
-//   final int statusId;
+class NoticeAddScreen extends StatefulWidget {
+  @override
+  _NoticeAddScreenState createState() => _NoticeAddScreenState();
+}
 
-//   const MyTaskAddScreen({Key? key, required this.statusId}) : super(key: key);
+class _NoticeAddScreenState extends State<NoticeAddScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController bodyController = TextEditingController();
+  final TextEditingController dateController = TextEditingController();
 
-//   @override
-//   _MyTaskAddScreenState createState() => _MyTaskAddScreenState();
-// }
+  String? selectedLead;
+  List<int> selectedManagers = [];
+  bool sendNotification = false;
 
-// class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
-//   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-//   final TextEditingController nameController = TextEditingController();
-//   final TextEditingController startDateController = TextEditingController();
-//   final TextEditingController endDateController = TextEditingController();
-//   final TextEditingController descriptionController = TextEditingController();
-//   // Переменные для файла
-//   String? selectedFile;
-//   String? fileName;
-//   String? fileSize;
-//   bool isEndDateInvalid = false;
-//   bool setPush = false;
+  @override
+  void initState() {
+    super.initState();
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+  }
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-//     // Устанавливаем значения по умолчанию
-//     _setDefaultValues();
-//     // Подписываемся на изменения в блоках
-//   }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          AppLocalizations.of(context)!.translate('new_notice'),
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
+        ),
+      ),
+      body: BlocListener<EventBloc, EventState>(
+        listener: (context, state) {
+          if (state is EventError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          } else if (state is EventSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+            Navigator.pop(context);
+          }
+        },
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomTextField(
+                        controller: titleController,
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_notice_title'),
+                        label: AppLocalizations.of(context)!
+                            .translate('notice_title'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      LeadRadioGroupWidget(
+                        selectedLead: selectedLead,
+                        onSelectLead: (LeadData selectedLeadData) {
+                          setState(() {
+                            selectedLead = selectedLeadData.id.toString();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: bodyController,
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description'),
+                        maxLines: 5,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: dateController,
+                        label: AppLocalizations.of(context)!
+                            .translate('reminder_date'),
+                        withTime: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      ManagerMultiSelectWidget(
+                        selectedManagers:
+                            selectedManagers, // Your list of selected manager IDs
+                        onSelectManagers: (List<int> managers) {
+                          setState(() {
+                            selectedManagers = managers;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        buttonColor: Color(0xffF4F7FD),
+                        textColor: Colors.black,
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: BlocBuilder<EventBloc, EventState>(
+                        builder: (context, state) {
+                          if (state is EventLoading) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52),
+                              ),
+                            );
+                          }
+                          return CustomButton(
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('add'),
+                            buttonColor: Color(0xff4759FF),
+                            textColor: Colors.white,
+                            onPressed: _submitForm,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-//   void _setDefaultValues() {
-//     // Устанавливаем приоритет по умолчанию (Обычный)
-//     // Устанавливаем текущую дату в поле "От"
-//     final now = DateTime.now();
-//     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
-//   }
+  void _submitForm() {
+    if (_formKey.currentState!.validate() &&
+        selectedLead != null &&
+        selectedManagers.isNotEmpty) {
+      final DateTime date =
+          DateFormat('dd/MM/yyyy HH:mm').parse(dateController.text);
 
-//   // Функция выбора файла
-//   Future<void> _pickFile() async {
-//     try {
-//       FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-//       if (result != null) {
-//         setState(() {
-//           selectedFile = result.files.single.path!;
-//           fileName = result.files.single.name;
-//           // Конвертируем размер в КБ
-//           fileSize =
-//               '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
-//         });
-//       }
-//     } catch (e) {
-//       print('Ошибка при выборе файла!');
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text(
-//               AppLocalizations.of(context)!.translate('file_selection_error')),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//     }
-//   }
-
-//   Widget _buildPushNotificationCheckbox() {
-//     return Padding(
-//       padding: const EdgeInsets.only(top: 8),
-//       child: Row(
-//         children: [
-//           Checkbox(
-//             value: setPush,
-//             onChanged: (bool? value) {
-//               setState(() {
-//                 setPush = value ?? true;
-//               });
-//             },
-//             activeColor: const Color(0xff1E2E52),
-//           ),
-//           Text(
-//             AppLocalizations.of(context)!.translate('set_push_notification'),
-//             style: TextStyle(
-//               fontSize: 16,
-//               fontWeight: FontWeight.w500,
-//               fontFamily: 'Gilroy',
-//               color: Color(0xff1E2E52),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   // Виджет выбора файла
-//   Widget _buildFileSelection() {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Text(
-//           AppLocalizations.of(context)!.translate('file'),
-//           style: TextStyle(
-//             fontSize: 16,
-//             fontWeight: FontWeight.w500,
-//             fontFamily: 'Gilroy',
-//             color: Color(0xff1E2E52),
-//           ),
-//         ),
-//         const SizedBox(height: 4),
-//         GestureDetector(
-//           onTap: _pickFile,
-//           child: Container(
-//             padding: const EdgeInsets.all(16),
-//             decoration: BoxDecoration(
-//               color: const Color(0xFFF4F7FD),
-//               borderRadius: BorderRadius.circular(8),
-//               border: Border.all(color: const Color(0xFFF4F7FD)),
-//             ),
-//             child: Row(
-//               children: [
-//                 Expanded(
-//                   child: Text(
-//                     fileName ??
-//                         AppLocalizations.of(context)!.translate('select_file'),
-//                     style: TextStyle(
-//                       color: fileName != null
-//                           ? const Color(0xff1E2E52)
-//                           : const Color(0xff99A4BA),
-//                     ),
-//                   ),
-//                 ),
-//                 Icon(
-//                   Icons.attach_file,
-//                   color: const Color(0xff99A4BA),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//         if (fileName != null) ...[
-//           const SizedBox(height: 8),
-//           Row(
-//             children: [],
-//           ),
-//         ],
-//       ],
-//     );
-//   }
-
-//   // Стиль для полей ввода
-//   InputDecoration _inputDecoration() {
-//     return InputDecoration(
-//       border: OutlineInputBorder(
-//         borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//       enabledBorder: OutlineInputBorder(
-//         borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//       focusedBorder: OutlineInputBorder(
-//         borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       appBar: AppBar(
-//         leading: IconButton(
-//             icon: Image.asset(
-//               'assets/icons/arrow-left.png',
-//               width: 24,
-//               height: 24,
-//             ),
-//             onPressed: () {
-//               Navigator.pop(context, widget.statusId);
-//               context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
-//             }),
-//         title: Text(
-//           AppLocalizations.of(context)!.translate('new_task'),
-//           style: TextStyle(
-//             fontSize: 18,
-//             fontFamily: 'Gilroy',
-//             fontWeight: FontWeight.w600,
-//             color: Color(0xff1E2E52),
-//           ),
-//         ),
-//         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-//         // elevation: 5,
-//         centerTitle: false,
-//       ),
-//       body: BlocListener<MyTaskBloc, MyTaskState>(
-//         listener: (context, state) {
-//           if (state is MyTaskError) {
-//             ScaffoldMessenger.of(context).showSnackBar(
-//               SnackBar(
-//                 content: Text(
-//                   '${state.message}',
-//                   style: TextStyle(
-//                     fontFamily: 'Gilroy',
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.w500,
-//                     color: Colors.white,
-//                   ),
-//                 ),
-//                 behavior: SnackBarBehavior.floating,
-//                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                 ),
-//                 backgroundColor: Colors.red,
-//                 elevation: 3,
-//                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//                 duration: Duration(seconds: 3),
-//               ),
-//             );
-//           } else if (state is MyTaskSuccess) {
-//             ScaffoldMessenger.of(context).showSnackBar(
-//               SnackBar(
-//                 content: Text(
-//                   '${state.message}',
-//                   style: TextStyle(
-//                     fontFamily: 'Gilroy',
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.w500,
-//                     color: Colors.white,
-//                   ),
-//                 ),
-//                 behavior: SnackBarBehavior.floating,
-//                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//                 shape: RoundedRectangleBorder(
-//                   borderRadius: BorderRadius.circular(12),
-//                 ),
-//                 backgroundColor: Colors.green,
-//                 elevation: 3,
-//                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//                 duration: Duration(seconds: 3),
-//               ),
-//             );
-//             Navigator.pop(context, widget.statusId);
-//             context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
-//           }
-//         },
-//         child: Form(
-//           key: _formKey,
-//           child: Column(
-//             children: [
-//               Expanded(
-//                 child: SingleChildScrollView(
-//                   padding: const EdgeInsets.all(16),
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       CustomTextField(
-//                         controller: nameController,
-//                         hintText: AppLocalizations.of(context)!
-//                             .translate('enter_name_list'),
-//                         label: AppLocalizations.of(context)!
-//                             .translate('name_list'),
-//                         validator: (value) {
-//                           if (value == null || value.isEmpty) {
-//                             return AppLocalizations.of(context)!
-//                                 .translate('field_required');
-//                           }
-//                           return null;
-//                         },
-//                       ),
-//                       const SizedBox(height: 8),
-//                       CustomTextFieldDate(
-//                         controller: startDateController,
-//                         label: AppLocalizations.of(context)!
-//                             .translate('from_list'),
-//                         // validator: (value) {
-//                         //   if (value == null || value.isEmpty) {
-//                         //     return AppLocalizations.of(context)!
-//                         //         .translate('field_required');
-//                         //   }
-//                         //   return null;
-//                         // },
-//                       ),
-//                       const SizedBox(height: 8),
-//                       CustomTextFieldDate(
-//                         controller: endDateController,
-//                         label:
-//                             AppLocalizations.of(context)!.translate('to_list'),
-//                         hasError: isEndDateInvalid,
-//                         // validator: (value) {
-//                         //   if (value == null || value.isEmpty) {
-//                         //     return AppLocalizations.of(context)!
-//                         //         .translate('field_required');
-//                         //   }
-//                         //   return null;
-//                         // },
-//                       ),
-//                       const SizedBox(height: 8),
-//                       CustomTextField(
-//                         controller: descriptionController,
-//                         hintText: AppLocalizations.of(context)!
-//                             .translate('enter_description'),
-//                         label: AppLocalizations.of(context)!
-//                             .translate('description_list'),
-//                         maxLines: 5,
-//                       ),
-//                       const SizedBox(height: 16),
-//                       _buildFileSelection(), // Добавляем виджет выбора файла
-//                       _buildPushNotificationCheckbox(), // Add this line
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//               _buildActionButtons(context),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   // Кнопки действий
-//   Widget _buildActionButtons(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-//       child: Row(
-//         children: [
-//           Expanded(
-//             child: CustomButton(
-//               buttonText: AppLocalizations.of(context)!.translate('cancel'),
-//               buttonColor: const Color(0xffF4F7FD),
-//               textColor: Colors.black,
-//               onPressed: () => Navigator.pop(context),
-//             ),
-//           ),
-//           const SizedBox(width: 16),
-//           Expanded(
-//             child: BlocBuilder<MyTaskBloc, MyTaskState>(
-//               builder: (context, state) {
-//                 if (state is MyTaskLoading) {
-//                   return Center(
-//                     child: CircularProgressIndicator(
-//                       color: const Color(0xff1E2E52),
-//                     ),
-//                   );
-//                 } else {
-//                   return CustomButton(
-//                     buttonText: AppLocalizations.of(context)!.translate('add'),
-//                     buttonColor: const Color(0xff4759FF),
-//                     textColor: Colors.white,
-//                     onPressed: _submitForm,
-//                   );
-//                 }
-//               },
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   void _submitForm() {
-//     if (_formKey.currentState!.validate()) {
-//       _createMyTask();
-//     } else {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text(
-//             AppLocalizations.of(context)!.translate('fill_required_fields'),
-//             style: TextStyle(
-//               fontFamily: 'Gilroy',
-//               fontSize: 16,
-//               fontWeight: FontWeight.w500,
-//               color: Colors.white,
-//             ),
-//           ),
-//           behavior: SnackBarBehavior.floating,
-//           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(12),
-//           ),
-//           backgroundColor: Colors.red,
-//           elevation: 3,
-//           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//           duration: Duration(seconds: 3),
-//         ),
-//       );
-//     }
-//   }
-
-//   void _createMyTask() {
-//     final String name = nameController.text;
-//     final String? startDateString =
-//         startDateController.text.isEmpty ? null : startDateController.text;
-//     final String? endDateString =
-//         endDateController.text.isEmpty ? null : endDateController.text;
-//     final String? description =
-//         descriptionController.text.isEmpty ? null : descriptionController.text;
-
-//     DateTime? startDate;
-//     if (startDateString != null && startDateString.isNotEmpty) {
-//       try {
-//         startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
-//       } catch (e) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//               content: Text(
-//             AppLocalizations.of(context)!.translate('fill_required_fields'),
-//           )),
-//         );
-//         return;
-//       }
-//     }
-
-//     DateTime? endDate;
-//     if (endDateString != null && endDateString.isNotEmpty) {
-//       try {
-//         endDate = DateFormat('dd/MM/yyyy').parse(endDateString);
-//       } catch (e) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//               content: Text(
-//             AppLocalizations.of(context)!.translate('enter_valid_date'),
-//           )),
-//         );
-//         return;
-//       }
-//     }
-//     if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-//       setState(() {
-//         isEndDateInvalid = true;
-//       });
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text(
-//             AppLocalizations.of(context)!
-//                 .translate('start_date_after_end_date'),
-//             style: TextStyle(
-//               color: Colors.white,
-//             ),
-//           ),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//       return;
-//     }
-//     MyTaskFile? fileData;
-//     if (selectedFile != null) {
-//       fileData = MyTaskFile(
-//         name: fileName ?? "unknown",
-//         size: fileSize ?? "0KB",
-//       );
-//     }
-//       final localizations = AppLocalizations.of(context)!;
-
-
-//     context.read<MyTaskBloc>().add(CreateMyTask(
-//           name: name,
-//           statusId: widget.statusId,
-//           taskStatusId: widget.statusId,
-//           startDate: startDate,
-//           endDate: endDate,
-//           description: description,
-//           filePath: selectedFile, // Передаем путь к файлу
-//           setPush: setPush, // Add this line
-//           localizations: localizations,
-//         ));
-//   }
-// }
+      context.read<EventBloc>().add(
+            CreateNotice(
+              title: titleController.text,
+              body: bodyController.text,
+              leadId: int.parse(selectedLead!),
+              date: date,
+              sendNotification: sendNotification ? 1 : 0,
+              users: selectedManagers,
+              localizations: AppLocalizations.of(context)!,
+            ),
+          );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('fill_required_fields'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+}
