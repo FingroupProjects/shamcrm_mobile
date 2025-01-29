@@ -248,18 +248,6 @@ class _CustomAppBarState extends State<CustomAppBar>
     widget.clearButtonClickFiltr(_isFiltering);
   }
 
-  void _toggleEvent() {
-    setState(() {
-      _isEvent = !_isEvent;
-      if (_isEvent) {
-        FocusScope.of(context).requestFocus(focusNode);
-      } else {
-        focusNode.unfocus();
-      }
-    });
-    widget.clearButtonClick(_isEvent);
-  }
-
   void _toggleTaskFilter() {
     setState(() {
       _isTaskFiltering = !_isTaskFiltering;
@@ -269,7 +257,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         focusNode.unfocus();
       }
     });
-    widget.clearButtonClick(_isTaskFiltering);
+    widget.clearButtonClickFiltr(_isTaskFiltering);
   }
 
   @override
@@ -470,22 +458,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                             height: 24,
                           ),
                     onPressed: () {
-                      if (_isTaskFiltering || _isTaskFiltering) {
-                        setState(() {
-                          _isSearching = !_isSearching;
-                        });
-                      } else {
-                        _toggleSearch();
-                        widget.clearButtonClick(_isSearching);
-                        if (_isSearching) {
-                          print("Requesting focus...");
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            FocusScope.of(context).requestFocus(focusNode);
-                            print("Focus requested.");
-                          });
-                        }
-                      }
+                    _toggleSearch();
+                    widget.clearButtonClick(_isSearching);
+                    if (_isSearching) {
+                      FocusScope.of(context).requestFocus(focusNode);
+                    
+                  }
                     },
                   ),
                 ),
@@ -561,8 +539,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                             _isTaskFiltering = !_isTaskFiltering;
                           });
                         } else {
-                          _toggleTaskFilter();
-                          if (_isTaskFiltering) {
+                   _toggleTaskFilter();
+                           widget.clearButtonClickFiltr(_isTaskFiltering);
+                    if (_isTaskFiltering) {
+                      FocusScope.of(context).requestFocus(focusNode);
                             context.read<UserTaskBloc>().add(FetchUsers());
                             final RenderBox button =
                                 context.findRenderObject() as RenderBox;

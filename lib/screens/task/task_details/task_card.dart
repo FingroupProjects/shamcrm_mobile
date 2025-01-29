@@ -100,10 +100,6 @@ class _TaskCardState extends State<TaskCard> {
 
   /// Получение текстового представления приоритета
 String _getPriorityText(int? priority, BuildContext context) {
-  print('========================================================================');
-  print('====================================================================================');
-  print(priority);
-  
   switch (priority) {
     case 1:
       return AppLocalizations.of(context)!.translate('normal'); 

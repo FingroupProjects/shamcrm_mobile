@@ -51,6 +51,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   late final DealBloc _dealBloc;
 
   bool _showCustomTabBar = true;
+  String _lastSearchQuery = "";
+
 
   @override
   void initState() {
@@ -113,26 +115,37 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchDeals(String query, int currentStatusId) async {
-    final dealBloc = BlocProvider.of<DealBloc>(context);
+  final dealBloc = BlocProvider.of<DealBloc>(context);
 
-    if (query.isEmpty) {
-      dealBloc.add(FetchDeals(currentStatusId));
-    } else {
-       await DealCache.clearAllDeals();
-
+  if (query.isEmpty) {
+    // Если фильтр активен, выполняем запрос только с фильтром
+    if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+      print('Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
       dealBloc.add(FetchDeals(
-        currentStatusId, query: query,
-        managerIds: _selectedManagerIds, // Передаем список ID менеджеров
+        currentStatusId,
+        managerIds: _selectedManagerIds,
       ));
+    } else {
+      print('Очистка поиска и фильтра — загружаем все сделки');
+      dealBloc.add(FetchDeals(currentStatusId,query: " "));
     }
+  } else {
+    await DealCache.clearAllDeals();
+
+    dealBloc.add(FetchDeals(
+      currentStatusId,
+      query: query,
+      managerIds: _selectedManagerIds, // Передаем список ID менеджеров
+    ));
   }
+}
+
 
   Future<void> _handleManagerSelected(List<dynamic> managers) async {
     await DealCache.clearAllDeals();
 
     setState(() {
       _showCustomTabBar = false;
-
       _selectedManagerIds = managers
           .map((manager) {
             if (manager is String) {
@@ -151,35 +164,18 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     final dealBloc = BlocProvider.of<DealBloc>(context);
 
     dealBloc.add(FetchDeals(
-      currentStatusId,
-      managerIds:
-          _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
-      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+    currentStatusId,
+    managerIds: _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, // Учитываем последний поиск
+
     ));
   }
 
-  void _onManagerSelected(List<int> managerIds) {
-    setState(() {
-      _showCustomTabBar = false;
-
-      _selectedManagerIds = managerIds;
-    });
-    // Запрашиваем обновленные данные с учетом выбранного менеджера
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    final leadBloc = BlocProvider.of<DealBloc>(context);
-    leadBloc.add(FetchDeals(
-      currentStatusId,
-      managerIds: _selectedManagerIds, // Передаем список ID менеджеров
-      query: _searchController.text.isNotEmpty ? _searchController.text : null,
-    ));
-  }
-
-  void _onSearch(String query) {
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    _searchDeals(query, currentStatusId);
-  }
-
-
+void _onSearch(String query) {
+  _lastSearchQuery = query; // Сохраняем последний поисковый запрос
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  _searchDeals(query, currentStatusId);
+}
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -214,7 +210,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showMyTaskIcon: true, 
           showEvent: false,
 
 clearButtonClick: (value) {
@@ -222,23 +218,17 @@ clearButtonClick: (value) {
     // Сброс поиска
     setState(() {
       _isSearching = false;
-      _searchController.clear(); // Очищаем поле поиска
+      _searchController.clear(); 
+      _lastSearchQuery = ''; 
     });
-
     // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
     if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-                  print('- IF---------------SEArCH-----------------------');
-
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(_tabTitles[_currentTabIndex]['id'])); // Перезапрашиваем все сделки
       setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-             final leadBloc = BlocProvider.of<DealBloc>(context);
-              leadBloc.add(FetchDealStatuses());
+        _showCustomTabBar = true; 
       });
+      final leadBloc = BlocProvider.of<DealBloc>(context);
+      leadBloc.add(FetchDealStatuses());
     } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
-            print('ELSE- IF---------------SEArCH-----------------------');
-
       // Если фильтр активен, показываем результаты фильтрации
       final currentStatusId = _tabTitles[_currentTabIndex]['id'];
       final dealBloc = BlocProvider.of<DealBloc>(context);
@@ -247,37 +237,33 @@ clearButtonClick: (value) {
         managerIds: _selectedManagerIds,
         query: _searchController.text.isNotEmpty ? _searchController.text : null,
       ));
-      
-    } else {
-            print('ELSE-----SEARCH----------------------------------');
-
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(currentStatusId, query: _searchController.text));
-    }
+    } 
   }
 },
-
 clearButtonClickFiltr: (value) {
   if (value == false) {
     // Сброс фильтра
     setState(() {
       _selectedManagerIds = null; // Обнуляем выбранных менеджеров
     });
-
     // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
     if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      print('- IF-----------------FILTR---------------------');
-
       setState(() {
         _showCustomTabBar = true; // Показываем кастомные табы
       });
-    final leadBloc = BlocProvider.of<DealBloc>(context);
-          leadBloc.add(FetchDealStatuses());
+      // Проверка на наличие предыдущего запроса поиска
+      if (_lastSearchQuery.isNotEmpty) {
+        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+        final dealBloc = BlocProvider.of<DealBloc>(context);
+        print('Возвращаем поиск после сброса фильтра');
+        dealBloc.add(FetchDeals(currentStatusId, query: _lastSearchQuery));
+      } else  {
+        // Если и поиск, и фильтр пусты, показываем все сделки
+        final leadBloc = BlocProvider.of<DealBloc>(context);
+        print('Сброс и поиск пуст, возвращаем все сделки');
+        leadBloc.add(FetchDealStatuses());
+      }
     } else if (_searchController.text.isNotEmpty) {
-      print('ELSE- IF---------------FILTR-----------------------');
-
       // Если поиск активен, показываем результаты поиска
       final currentStatusId = _tabTitles[_currentTabIndex]['id'];
       final dealBloc = BlocProvider.of<DealBloc>(context);
@@ -285,17 +271,10 @@ clearButtonClickFiltr: (value) {
         currentStatusId,
         query: _searchController.text,
       ));
-    } else {
-      print('ELSE---------------FILTR------------------------');
-      // Если поиск не активен, показыва //ем все сделки
-       setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-        final leadBloc = BlocProvider.of<DealBloc>(context);
-              leadBloc.add(FetchDealStatuses());
     }
   }
-},
+}
+
 
   ),
       ),
@@ -372,7 +351,6 @@ clearButtonClickFiltr: (value) {
 
     // Если сделки существуют, отображаем их список
     if (deals.isNotEmpty) {
-      print('Показывается список сделок с количеством: ${deals.length}');
       return Flexible(
         child: ListView.builder(
           controller: _scrollController,
@@ -400,7 +378,6 @@ clearButtonClickFiltr: (value) {
     }
 
     // Если список сделок пуст, но это не поиск и не менеджер
-    print('Показывается сообщение: Нет доступных сделок');
     return Center(
       child: Text(
         AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),

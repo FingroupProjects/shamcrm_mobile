@@ -49,8 +49,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   int? _selectedUserId;
   List<String> userRoles = [];
   bool showFilter = false;
-  List<int> _selectedUserIds = [];
+  List<int>? _selectedUserIds;
   bool _showCustomTabBar = true;
+  
+  String _lastSearchQuery = "";
+
 
   @override
   void initState() {
@@ -139,11 +142,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
 
     if (query.isEmpty) {
-      taskBloc.add(FetchTasks(currentStatusId));
-    } else {
-          await TaskCache.clearAllTasks();
-
+     if (_selectedUserIds != null && _selectedUserIds!.isNotEmpty) {
+      print('Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
       taskBloc.add(FetchTasks(
+        currentStatusId,
+        userIds: _selectedUserIds,
+      ));
+    } else {
+      print('Очистка поиска и фильтра — загружаем все задачи');
+      taskBloc.add(FetchTasks(currentStatusId,query: " "));
+    }
+  } else {
+    await TaskCache.clearAllTasks();
+    taskBloc.add(FetchTasks(
         currentStatusId,
         query: query,
         userIds: _selectedUserIds,
@@ -168,32 +179,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           .toList();
 
     });
-    _refreshCurrentTab();
 
     // Запрашиваем обновленные данные с учетом выбранного пользователя
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     taskBloc.add(FetchTasks(
       currentStatusId,
-      userIds: _selectedUserIds.isNotEmpty ? _selectedUserIds : null,
-      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+      userIds:  _selectedUserIds?.isNotEmpty == true ? _selectedUserIds : null,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ));
   }
 
-  void _refreshCurrentTab() {
-    if (_tabTitles.isNotEmpty) {
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final taskBloc = BlocProvider.of<TaskBloc>(context);
-      taskBloc.add(FetchTasks(
-        currentStatusId,
-        userIds: _selectedUserIds.isNotEmpty ? _selectedUserIds : null,
-        query:
-            _searchController.text.isNotEmpty ? _searchController.text : null,
-      ));
-    }
-  }
 
   void _onSearch(String query) {
+    _lastSearchQuery = query;
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchTasks(query, currentStatusId);
   }
@@ -244,25 +243,66 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
-          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showMyTaskIcon: true,
           showEvent: false,
-
           showFilterTaskIcon: showFilter,
           clearButtonClick: (value) {
             if (value == false) {
-              final taskBloc = BlocProvider.of<TaskBloc>(context);
-              taskBloc.add(FetchTaskStatuses());
-
-              //  BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-
               setState(() {
                 _isSearching = false;
-                _selectedUserId = null;
-                _showCustomTabBar = true;
+                _searchController.clear();
+                _lastSearchQuery = ''; 
               });
+              if (_searchController.text.isEmpty && _selectedUserIds == null) {
+                setState(() {
+                  _showCustomTabBar = true;
+                });
+                final taskBloc = BlocProvider.of<TaskBloc>(context);
+                taskBloc.add(FetchTaskStatuses()); 
+              } else if (_selectedUserIds != null && _selectedUserIds!.isNotEmpty) {
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                final taskBloc = BlocProvider.of<TaskBloc>(context);
+                taskBloc.add(FetchTasks(
+                  currentStatusId,
+                  userIds: _selectedUserIds,
+                  query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                ));
+              }
             }
           },
-          clearButtonClickFiltr: (bool) {},
+           clearButtonClickFiltr: (value) {
+            if (value == false) {
+              // Сброс фильтра
+              setState(() {
+                _selectedUserIds = null; 
+              });
+              if (_searchController.text.isEmpty && _selectedUserIds == null) {
+                setState(() {
+                  _showCustomTabBar = true; 
+                });
+                if (_lastSearchQuery.isNotEmpty) {
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final dealBloc = BlocProvider.of<TaskBloc>(context);
+                  print('Возвращаем поиск после сброса фильтра');
+                  dealBloc.add(FetchTasks(currentStatusId, query: _lastSearchQuery));
+                } else  {
+                      setState(() {
+                  _showCustomTabBar = true;
+                });
+                  final leadBloc = BlocProvider.of<TaskBloc>(context);
+                  print('Сброс и поиск пуст, возвращаем все сделки');
+                  leadBloc.add(FetchTaskStatuses());
+                }
+              } else if (_searchController.text.isNotEmpty) {
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                final dealBloc = BlocProvider.of<TaskBloc>(context);
+                dealBloc.add(FetchTasks(
+                  currentStatusId,
+                  query: _searchController.text,
+                ));
+              }
+            }
+          }
         ),
       ),
       body: isClickAvatarIcon
@@ -284,11 +324,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
   }
 Widget searchWidget(List<Task> tasks) {
-  print('_isSearching: $_isSearching, tasks.isEmpty: ${tasks.isEmpty}, tasks.length: ${tasks.length}');
-
   // Если идёт поиск и ничего не найдено
   if (_isSearching && tasks.isEmpty) {
-    print('Показывается сообщение: Ничего не найдено');
     return Center(
       child: Text(
         AppLocalizations.of(context)!.translate('nothing_found'),
@@ -303,7 +340,6 @@ Widget searchWidget(List<Task> tasks) {
   }
   // Если пользователь выбран, но задач нет
   else if (_isUser && tasks.isEmpty) {
-    print('Показывается сообщение: У выбранного менеджера нет лидов');
     return Center(
       child: Text(
         _selectedUserId != null
@@ -320,7 +356,6 @@ Widget searchWidget(List<Task> tasks) {
   }
   // Если задачи пусты, но поиск не активен
   else if (tasks.isEmpty) {
-    print('Показывается сообщение: Нет доступных задач');
     return Center(
       child: Text(
           AppLocalizations.of(context)!.translate('nothing_task_for_manager'),
@@ -335,14 +370,12 @@ Widget searchWidget(List<Task> tasks) {
   }
 
   // Если задачи есть, показываем список
-  print('Показывается список задач с количеством: ${tasks.length}');
   return Flexible(
     child: ListView.builder(
       controller: _scrollController,
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
-        print('Отображение задачи: $task');
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: TaskCard(
@@ -365,16 +398,8 @@ Widget searchWidget(List<Task> tasks) {
 Widget _buildUserView() {
   return BlocBuilder<TaskBloc, TaskState>(
     builder: (context, state) {
-      // Вывод текущего состояния в консоль
-      debugPrint('Current state: $state');
-      debugPrint('Is Searching: $_isSearching');
-      debugPrint('Is User: $_isUser');
-
       if (state is TaskDataLoaded) {
         final List<Task> tasks = state.tasks;
-
-        debugPrint('Tasks length: ${tasks.length}');
-
         // Если включён поиск и список задач пуст
         if (_isSearching && tasks.isEmpty) {
           return Center(
