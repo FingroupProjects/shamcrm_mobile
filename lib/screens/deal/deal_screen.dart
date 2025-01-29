@@ -118,7 +118,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     if (query.isEmpty) {
       dealBloc.add(FetchDeals(currentStatusId));
     } else {
-       await DealCache.clearAllDeals();
+      await DealCache.clearAllDeals();
 
       dealBloc.add(FetchDeals(
         currentStatusId, query: query,
@@ -179,8 +179,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     _searchDeals(query, currentStatusId);
   }
 
-
-
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
   ValueChanged<String>? onChangedSearchInput;
@@ -215,89 +213,94 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           focusNode: focusNode,
           showFilterTaskIcon: false,
           showMyTaskIcon: true, // Выключаем иконку My Tasks
-          showEvent: false,
+          showEvent: true,
 
-clearButtonClick: (value) {
-  if (value == false) {
-    // Сброс поиска
-    setState(() {
-      _isSearching = false;
-      _searchController.clear(); // Очищаем поле поиска
-    });
+          clearButtonClick: (value) {
+            if (value == false) {
+              // Сброс поиска
+              setState(() {
+                _isSearching = false;
+                _searchController.clear(); // Очищаем поле поиска
+              });
 
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-                  print('- IF---------------SEArCH-----------------------');
+              // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+              if (_searchController.text.isEmpty &&
+                  _selectedManagerIds == null) {
+                print('- IF---------------SEArCH-----------------------');
 
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(_tabTitles[_currentTabIndex]['id'])); // Перезапрашиваем все сделки
-      setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-             final leadBloc = BlocProvider.of<DealBloc>(context);
-              leadBloc.add(FetchDealStatuses());
-      });
-    } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
-            print('ELSE- IF---------------SEArCH-----------------------');
+                final dealBloc = BlocProvider.of<DealBloc>(context);
+                dealBloc.add(FetchDeals(_tabTitles[_currentTabIndex]
+                    ['id'])); // Перезапрашиваем все сделки
+                setState(() {
+                  _showCustomTabBar = true; // Показываем кастомные табы
+                  final leadBloc = BlocProvider.of<DealBloc>(context);
+                  leadBloc.add(FetchDealStatuses());
+                });
+              } else if (_selectedManagerIds != null ||
+                  _selectedManagerIds!.isNotEmpty) {
+                print('ELSE- IF---------------SEArCH-----------------------');
 
-      // Если фильтр активен, показываем результаты фильтрации
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(
-        currentStatusId,
-        managerIds: _selectedManagerIds,
-        query: _searchController.text.isNotEmpty ? _searchController.text : null,
-      ));
-      
-    } else {
-            print('ELSE-----SEARCH----------------------------------');
+                // Если фильтр активен, показываем результаты фильтрации
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                final dealBloc = BlocProvider.of<DealBloc>(context);
+                dealBloc.add(FetchDeals(
+                  currentStatusId,
+                  managerIds: _selectedManagerIds,
+                  query: _searchController.text.isNotEmpty
+                      ? _searchController.text
+                      : null,
+                ));
+              } else {
+                print('ELSE-----SEARCH----------------------------------');
 
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(currentStatusId, query: _searchController.text));
-    }
-  }
-},
+                // Если поиск активен, показываем результаты поиска
+                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                final dealBloc = BlocProvider.of<DealBloc>(context);
+                dealBloc.add(
+                    FetchDeals(currentStatusId, query: _searchController.text));
+              }
+            }
+          },
 
-clearButtonClickFiltr: (value) {
-  if (value == false) {
-    // Сброс фильтра
-    setState(() {
-      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
-    });
+          clearButtonClickFiltr: (value) {
+          //   if (value == false) {
+          //     // Сброс фильтра
+          //     setState(() {
+          //       _selectedManagerIds = null; // Обнуляем выбранных менеджеров
+          //     });
 
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      print('- IF-----------------FILTR---------------------');
+          //     // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+          //     if (_searchController.text.isEmpty &&
+          //         _selectedManagerIds == null) {
+          //       print('- IF-----------------FILTR---------------------');
 
-      setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-    final leadBloc = BlocProvider.of<DealBloc>(context);
-          leadBloc.add(FetchDealStatuses());
-    } else if (_searchController.text.isNotEmpty) {
-      print('ELSE- IF---------------FILTR-----------------------');
+          //       setState(() {
+          //         _showCustomTabBar = true; // Показываем кастомные табы
+          //       });
+          //       final leadBloc = BlocProvider.of<DealBloc>(context);
+          //       leadBloc.add(FetchDealStatuses());
+          //     } else if (_searchController.text.isNotEmpty) {
+          //       print('ELSE- IF---------------FILTR-----------------------');
 
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(
-        currentStatusId,
-        query: _searchController.text,
-      ));
-    } else {
-      print('ELSE---------------FILTR------------------------');
-      // Если поиск не активен, показыва //ем все сделки
-       setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-        final leadBloc = BlocProvider.of<DealBloc>(context);
-              leadBloc.add(FetchDealStatuses());
-    }
-  }
-},
-
-  ),
+          //       // Если поиск активен, показываем результаты поиска
+          //       final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+          //       final dealBloc = BlocProvider.of<DealBloc>(context);
+          //       dealBloc.add(FetchDeals(
+          //         currentStatusId,
+          //         query: _searchController.text,
+          //       ));
+          //     } else {
+          //       print('ELSE---------------FILTR------------------------');
+          //       // Если поиск не активен, показыва //ем все сделки
+          //       setState(() {
+          //         _showCustomTabBar = true; // Показываем кастомные табы
+          //       });
+          //       final leadBloc = BlocProvider.of<DealBloc>(context);
+          //       leadBloc.add(FetchDealStatuses());
+          //     }
+          //   }
+          },
+        ),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()

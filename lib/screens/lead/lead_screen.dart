@@ -102,7 +102,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchLeads(String query, int currentStatusId) async {
-
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     if (query.isEmpty) {
       leadBloc.add(FetchLeads(
@@ -110,6 +109,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         managerIds: _selectedManagerIds, // менеджеры передаются
       ));
     } else {
+      await LeadCache.clearAllLeads();
+
       leadBloc.add(FetchLeads(
         currentStatusId, // status_id передается
         query: query, // поисковый запрос передается
@@ -117,7 +118,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       ));
     }
   }
-}
 
 // Добавляем метод для обработки выбора менеджера
 
@@ -125,7 +125,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     await LeadCache.clearAllLeads();
 
     setState(() {
-      
       _showCustomTabBar = false;
 
       _selectedManagerIds = managers
@@ -216,7 +215,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           focusNode: focusNode,
           showFilterTaskIcon: false,
           showMyTaskIcon: true, // Выключаем иконку My Tasks
-          showEvent: false,
+          showEvent: true,
 
           clearButtonClick: (value) {
             if (value == false) {
@@ -264,7 +263,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget searchWidget(List<Lead> leads) {
-    print('_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
+    print(
+        '_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
 
     // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
@@ -499,8 +499,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
 // Update the GestureDetector in _buildTabButton to use the new _showStatusOptions
-
- Widget _buildTabButton(int index) {
+  Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
 
     return BlocBuilder<LeadBloc, LeadState>(

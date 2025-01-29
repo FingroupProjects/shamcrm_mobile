@@ -713,10 +713,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                         value: 'events',
                         child: Row(
                           children: [
-                            _isEvent?
-                            Icon(Icons
-                                .event): // Встроенная иконка календаря из Material Icons
-                            SizedBox(width: 8),
+                            Icon(Icons.event), // Иконка всегда отображается
+                            SizedBox(
+                                width: 8), // Отступ между иконкой и текстом
                             Text(AppLocalizations.of(context)!
                                 .translate('events')),
                           ],
