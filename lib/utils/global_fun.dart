@@ -35,9 +35,9 @@ Future<void> uploadFile(File file, String uploadUrl) async {
 }
 
 String time(String dateAndTime) {
-  print('------- time 1');
-  print(DateTime.now().timeZoneOffset.inMinutes);
-  print('------- time 2');
+  // print('------- time 1');
+  // print(DateTime.now().timeZoneOffset.inMinutes);
+  // print('------- time 2');
   if(DateTime.now().timeZoneOffset.inMinutes > 0) {
     if(dateAndTime.isEmpty) dateAndTime = DateTime.now().subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes)).toString();
   } else {
@@ -54,7 +54,7 @@ String time(String dateAndTime) {
         (DateTime.now().timeZoneOffset.inMinutes > 0)  ? dateTime.add(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),) :  dateTime.add(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes),),
     );
 
-    print(time); // Natija: 11:22:22
+    // print(time); // Natija: 11:22:22
   } catch (e) {
     str = dateAndTime;
   }

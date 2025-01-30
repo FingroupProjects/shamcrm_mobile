@@ -34,9 +34,11 @@ final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMes
     ? (context.read<MessagingCubit>().state as ReplyingToMessageState).replyingMessage
     : null;
 
+    final String? replyMsgId=replyingToMessage?.id.toString();
+    
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 10, bottom: 20),
       child: Column(
         children: [
           // Виджет отображения режима ответа
@@ -46,7 +48,7 @@ final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMes
                 color: const Color(0xfff4f4f4),
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.only(left: 12, right: 6, top: 6, bottom: 6),
               margin: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
@@ -58,10 +60,11 @@ final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMes
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.black,
+                          fontStyle: FontStyle.italic,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
                         ),
-                        maxLines: 3,
+                        maxLines: 5,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -182,14 +185,13 @@ final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMes
                           height: 20,
                         ),
                       ),
-                      onPressed: () {
-                        if (messageController.text.isNotEmpty) {
-                          onSend();
-                          // Убедитесь, что после отправки текста очищается состояние ответа
-                          context.read<MessagingCubit>().clearReplyMessage();
-                        }
-                      },
-                    ),
+                    onPressed: () {
+                      if (messageController.text.isNotEmpty) {
+                        onSend(messageController.text, replyMsgId);
+                        context.read<MessagingCubit>().clearReplyMessage(); 
+                      }
+                    },
+                ),
             ],
           ),
         ],

@@ -328,8 +328,7 @@ void initState() {
         title: CustomAppBar(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
-              : localizations!
-                  .translate('events'), // Changed from 'Событие' to 'events'
+              : localizations!.translate('events'), // Changed from 'Событие' to 'events'
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;

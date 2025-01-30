@@ -3511,26 +3511,20 @@ class ApiService {
   }
 
 // Метод для отправки текстового сообщения
-  Future<void> sendMessage(int chatId, String message) async {
-    final organizationId = await getSelectedOrganization();
+Future<void> sendMessage(int chatId, String message, {String? replyMessageId}) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'message': message,
+      if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
+    });
 
-    final response = await _postRequest(
-        '/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-          'message': message,
-        });
-
-    if (kDebugMode) {
-      print('Response from sendMessage!');
-    } // Добавлено для отладки
-
-    if (response.statusCode != 200) {
-      if (kDebugMode) {
-        print('Ошибка отправки сообщения!');
-      } // Отладка ошибок
-      throw Exception('Ошибка отправки сообщения!');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка отправки сообщения!');
   }
+}
+
 
   // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {

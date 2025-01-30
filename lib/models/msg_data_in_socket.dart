@@ -39,6 +39,7 @@ class MessageSocket {
   bool? isMyMessage;
   String? createdAt;
   String? voiceDuration;
+  Map<String, dynamic>? forwardedMessage; // Добавляем сюда поле для forwardedMessage
 
   MessageSocket({
     this.id,
@@ -49,26 +50,29 @@ class MessageSocket {
     this.sender,
     this.isMyMessage,
     this.createdAt,
-    this.voiceDuration
+    this.voiceDuration,
+    this.forwardedMessage, // Добавляем сюда
   });
 
-
-  @override
+    @override
   String toString() {
-    return 'MessageSocket{id: $id, text: $text, type: $type, filePath: $filePath, isLeadMessage: $isLeadMessage, sender: $sender, isMyMessage: $isMyMessage, createdAt: $createdAt, voiceDuration: $voiceDuration}';
+    return 'MessageSocket{id: $id, text: $text, type: $type, filePath: $filePath, isLeadMessage: $isLeadMessage, sender: $sender, isMyMessage: $isMyMessage, createdAt: $createdAt, voiceDuration: $voiceDuration,forwardedMessage: $forwardedMessage}';
   }
 
-  factory MessageSocket.fromJson(Map<String, dynamic> json) => MessageSocket(
-    id: json["id"],
-    text: json["text"],
-    type: json["type"],
-    createdAt: json["created_at"] ?? '',
-    filePath: json["file_path"],
-    isLeadMessage: json["is_lead_message"],
-    sender: json["sender"] == null ? null : Sender.fromJson(json["sender"]),
-    isMyMessage: json["is_my_message"],
-    voiceDuration: json["voice_duration"],
-  );
+  factory MessageSocket.fromJson(Map<String, dynamic> json) {
+    return MessageSocket(
+      id: json["id"],
+      text: json["text"],
+      type: json["type"],
+      createdAt: json["created_at"] ?? '',
+      filePath: json["file_path"],
+      isLeadMessage: json["is_lead_message"],
+      sender: json["sender"] == null ? null : Sender.fromJson(json["sender"]),
+      isMyMessage: json["is_my_message"],
+      voiceDuration: json["voice_duration"],
+      forwardedMessage: json['forwarded_message'], // Получаем forwardedMessage
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "id": id,
@@ -78,8 +82,62 @@ class MessageSocket {
     "is_lead_message": isLeadMessage,
     "sender": sender?.toJson(),
     "is_my_message": isMyMessage,
+    "forwarded_message": forwardedMessage, // Отправляем forwardedMessage
   };
 }
+
+
+// class MessageSocket {
+//   int? id;
+//   String? text;
+//   String? type;
+//   dynamic filePath;
+//   bool? isLeadMessage;
+//   Sender? sender;
+//   bool? isMyMessage;
+//   String? createdAt;
+//   String? voiceDuration;
+
+//   MessageSocket({
+//     this.id,
+//     this.text,
+//     this.type,
+//     this.filePath,
+//     this.isLeadMessage,
+//     this.sender,
+//     this.isMyMessage,
+//     this.createdAt,
+//     this.voiceDuration
+//   });
+
+
+//   @override
+//   String toString() {
+//     return 'MessageSocket{id: $id, text: $text, type: $type, filePath: $filePath, isLeadMessage: $isLeadMessage, sender: $sender, isMyMessage: $isMyMessage, createdAt: $createdAt, voiceDuration: $voiceDuration}';
+//   }
+
+//   factory MessageSocket.fromJson(Map<String, dynamic> json) => MessageSocket(
+//     id: json["id"],
+//     text: json["text"],
+//     type: json["type"],
+//     createdAt: json["created_at"] ?? '',
+//     filePath: json["file_path"],
+//     isLeadMessage: json["is_lead_message"],
+//     sender: json["sender"] == null ? null : Sender.fromJson(json["sender"]),
+//     isMyMessage: json["is_my_message"],
+//     voiceDuration: json["voice_duration"],
+//   );
+
+//   Map<String, dynamic> toJson() => {
+//     "id": id,
+//     "text": text,
+//     "type": type,
+//     "file_path": filePath,
+//     "is_lead_message": isLeadMessage,
+//     "sender": sender?.toJson(),
+//     "is_my_message": isMyMessage,
+//   };
+// }
 
 class Sender {
   int? id;

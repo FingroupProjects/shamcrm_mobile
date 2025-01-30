@@ -7,6 +7,7 @@ class VoiceMessageBubble extends StatelessWidget {
   final String filePath;
   final String fileName;
   final String senderName;
+  final String? replyMessage;
   final Function onTap;
 
   const VoiceMessageBubble({
@@ -17,6 +18,7 @@ class VoiceMessageBubble extends StatelessWidget {
     required this.fileName,
     required this.onTap,
     required this.senderName,
+    this.replyMessage,
   }) : super(key: key);
 
   @override

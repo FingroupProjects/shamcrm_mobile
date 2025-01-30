@@ -274,6 +274,7 @@ class Message {
   bool isPause;
   Duration duration;
   Duration position;
+  final ForwardedMessage? forwardedMessage; // Новое поле для forwarded_message_id
 
   Message({
     required this.id,
@@ -287,6 +288,7 @@ class Message {
     this.isPause = false,
     this.duration = const Duration(),
     this.position = const Duration(),
+    this.forwardedMessage, // Добавление поля в конструктор
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -299,9 +301,15 @@ class Message {
       text = json['text'] ?? '';
     }
 
+    // Извлечение forwarded_message_id
+    ForwardedMessage? forwardedMessage;
+    if (json['forwarded_message'] != null) {
+      forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
+    }
+
     return Message(
       id: json['id'],
-      text: text, // Убедитесь, что именно text используется
+      text: text,
       type: json['type'],
       senderName: json['sender'] == null
           ? 'Без имени'
@@ -309,13 +317,45 @@ class Message {
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isMyMessage: json['is_my_message'] ?? false,
+      forwardedMessage: forwardedMessage, // Установка значения forwardedMessage
     );
   }
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage}';
   }
 }
 
-// var audioUrl;
+
+class ForwardedMessage {
+  final int id;
+  final String text;
+  final String type;
+  final String? senderName;
+
+  ForwardedMessage({
+    required this.id,
+    required this.text,
+    required this.type,
+    this.senderName,
+  });
+
+  factory ForwardedMessage.fromJson(Map<String, dynamic> json) {
+    return ForwardedMessage(
+      id: json['id'],
+      text: json['text'] ?? '',
+      type: json['type'],
+      senderName: json['sender']?['name'] ?? 'Без имени',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'ForwardedMessage{id: $id, text: $text, type: $type, senderName: $senderName}';
+  }
+}
+
+
+
+

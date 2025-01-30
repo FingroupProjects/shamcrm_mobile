@@ -70,6 +70,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   late String baseUrl;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
+  int? _highlightedMessageId;
+
+  void _highlightMessage(int messageId) {
+    setState(() {
+      _highlightedMessageId = messageId;
+    });
+
+    Future.delayed(const Duration(seconds: 3), () {
+      setState(() {
+        _highlightedMessageId = null;
+      });
+    });
+  }
+
 
   Future<void> _checkPermissions() async {
     if (widget.endPointInTab == 'lead') {
@@ -223,6 +237,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         }
       }
     }
+  }
+  
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  String formatDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
   }
 
   Widget _buildAvatar(String avatar) {
@@ -484,6 +508,34 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       ),
     );
   }
+  
+// Исправленный метод для прокрутки к сообщению
+void _scrollToMessageReply(int messageId) {
+  if (_scrollController.hasClients) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState) {
+      final messages = state.messages;
+
+      final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+      if (messageIndex != -1) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        final itemHeight = screenHeight / 9;
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        final targetPosition = (messageIndex * itemHeight).clamp(0.0, maxScroll);
+
+        _scrollController.animateTo(
+          targetPosition,
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.easeInOut,
+        );
+
+        _highlightMessage(messageId);  // Выделяем сообщение
+      }
+    }
+  }
+}
+
+
 
 Widget messageListUi() {
   return BlocBuilder<MessagingCubit, MessagingState>(
@@ -545,16 +597,18 @@ Widget messageListUi() {
             currentDate = messageDate;
           }
 
-          currentGroup.add(
-            MessageItemWidget(
-              message: message,
-              chatId: widget.chatId,
-              endPointInTab: widget.endPointInTab,
-              apiServiceDownload: widget.apiServiceDownload,
-              baseUrl: baseUrl,
-            ),
-          );
-        }
+         currentGroup.add(
+          MessageItemWidget(
+            message: message,
+            chatId: widget.chatId,
+            endPointInTab: widget.endPointInTab,
+            apiServiceDownload: widget.apiServiceDownload,
+            baseUrl: baseUrl,
+            onReplyTap: _scrollToMessageReply,
+            highlightedMessageId: _highlightedMessageId, 
+          ),
+        );
+      }
 
         if (currentGroup.isNotEmpty) {
           messageWidgets.addAll(currentGroup);
@@ -576,15 +630,6 @@ Widget messageListUi() {
   );
 }
 
-  bool isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
-
-  String formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
-  }
 
 
   Widget inputWidget() {
@@ -669,12 +714,17 @@ Widget messageListUi() {
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
+      chatSubscribtion =myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
+        print('=====================================');
+        print('==================EVENT DATA======START=============');
+        print(event.data);
+        print('==================EVENT DATA======END=============');
+
         print('----sender');
         print(mm.message?.text ?? 'No text');
         print(mm.message?.sender?.name ?? 'Unknown sender');
+
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String UUID = prefs.getString('userID') ?? '';
@@ -685,6 +735,12 @@ Widget messageListUi() {
             mm.message?.type == 'file' ||
             mm.message?.type == 'image' ||
             mm.message?.type == 'document') {
+            
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
+
           msg = Message(
             id: mm.message?.id ?? 0,
             filePath: mm.message?.filePath.toString() ?? '',
@@ -698,8 +754,13 @@ Widget messageListUi() {
                     ? double.parse(mm.message!.voiceDuration.toString()).round()
                     : 20),
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage,
           );
         } else {
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
           msg = Message(
             id: mm.message?.id ?? 0,
             text: mm.message?.text ?? mm.message?.type ?? '',
@@ -708,6 +769,7 @@ Widget messageListUi() {
             isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
                 mm.message?.sender?.type == 'user'),
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage, // добавляем forwardedMessage
           );
         }
 
@@ -737,27 +799,26 @@ Widget messageListUi() {
     }
   }
 
-  Future<void> _onSendInButton() async {
-    context.read<ListenSenderTextCubit>().updateValue(true);
-    if (kDebugMode) {
-      print('9. Начало отправки сообщения');
-    }
+Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
+  context.read<ListenSenderTextCubit>().updateValue(true);
 
-    final messageText = _messageController.text.trim();
-
-    if (messageText.isNotEmpty) {
-      try {
-        debugPrint('9.2. Отправка сообщения через API');
-        _messageController.clear();
-        await widget.apiService.sendMessage(widget.chatId, messageText);
-        context.read<ListenSenderTextCubit>().updateValue(false);
-      } catch (e) {
-        debugPrint('9.4. Ошибка отправки сообщения через API!');
-      }
-    } else {
-      debugPrint('9.5. Сообщение пустое, отправка не выполнена');
+  if (messageText.trim().isNotEmpty) {
+    try {
+      _messageController.clear();
+      await widget.apiService.sendMessage(
+        widget.chatId, 
+        messageText.trim(),
+        replyMessageId: replyMessageId,
+      );
+      context.read<ListenSenderTextCubit>().updateValue(false);
+    } catch (e) {
+      debugPrint('Ошибка отправки сообщения через API!');
     }
+  } else {
+    debugPrint('Сообщение пустое, отправка не выполнена');
   }
+}
+
 
   void _onPickFilePressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -799,9 +860,9 @@ Widget messageListUi() {
   @override
   void dispose() {
     chatSubscribtion.cancel();
-    // _scrollController.dispose();
+    _scrollController.dispose();
 
-    // _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_onScroll);
     _messageController.dispose();
     socketClient.dispose();
     _webSocket?.close();
@@ -823,6 +884,8 @@ class MessageItemWidget extends StatelessWidget {
   final String endPointInTab;
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
+  final void Function(int)? onReplyTap;
+  final int? highlightedMessageId; 
 
   const MessageItemWidget({
     super.key,
@@ -831,35 +894,29 @@ class MessageItemWidget extends StatelessWidget {
     required this.chatId,
     required this.apiServiceDownload,
     required this.baseUrl,
+    this.onReplyTap,
+    this.highlightedMessageId, 
   });
 
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-  key: Key(message.id.toString()),
-  direction: DismissDirection.endToStart,
+      key: Key(message.id.toString()),
+      direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         context.read<MessagingCubit>().setReplyMessage(message);
         return false;
       },
-      // background: Container(
-      //   color: Color(0xfff4F40EC),
-      //   alignment: Alignment.centerRight,
-      //   child: const Icon(Icons.reply, color: Colors.white),
-      // ),
-    child: GestureDetector(
-    onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),
-    child: Container(
-      width: double.infinity, 
-      padding: EdgeInsets.all(2), 
-      child: _buildMessageContent(context),
-    ),
-  ),
-);
-
+      child: GestureDetector(
+        onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(2),
+          child: _buildMessageContent(context),
+        ),
+      ),
+    );
   }
-
-
 
   Widget _buildMessageContent(BuildContext context) {
     switch (message.type) {
@@ -874,6 +931,7 @@ class MessageItemWidget extends StatelessWidget {
           isSender: message.isMyMessage,
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
+          isHighlighted: highlightedMessageId == message.id,  
           onTap: (path) async {
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
@@ -899,11 +957,24 @@ class MessageItemWidget extends StatelessWidget {
   }
 
   Widget textState() {
+    String? replyMessageText;
+    if (message.forwardedMessage != null && message.forwardedMessage!.type == 'voice') {
+      replyMessageText = "Голосовое сообщение";
+    } else {
+      replyMessageText = message.forwardedMessage?.text;
+    }
+
     return MessageBubble(
       message: message.text,
       time: time(message.createMessateTime),
       isSender: message.isMyMessage,
       senderName: message.senderName.toString(),
+      replyMessage: replyMessageText,
+      replyMessageId: message.forwardedMessage?.id,
+      onReplyTap: (int replyMessageId) {
+        onReplyTap?.call(replyMessageId); 
+      },
+      isHighlighted: highlightedMessageId == message.id,  
     );
   }
 
@@ -915,8 +986,13 @@ class MessageItemWidget extends StatelessWidget {
       fileName: message.text,
       message: message,
       senderName: message.senderName,
+      replyMessage: message.forwardedMessage?.text,
+      isHighlighted: highlightedMessageId == message.id,  
+
     );
   }
+
+
 
   Widget voiceState() {
     String audioUrl = '${baseUrl.replaceAll(
