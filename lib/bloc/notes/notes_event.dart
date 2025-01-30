@@ -18,12 +18,14 @@ class CreateNotes extends NotesEvent {
   final String body;
   final int leadId;
   final DateTime? date;
+  final List<int> users;
 
   CreateNotes({
     required this.title,
     required this.body,
     required this.leadId,
     this.date,
+    required this.users,
   });
 }
 

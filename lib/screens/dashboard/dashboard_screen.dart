@@ -211,6 +211,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           showFilterIcon: false,
           showMyTaskIcon: true,
           showEvent: false,
+          showSeparateMyTasks: true,
+          showMenuIcon: false,
           clearButtonClickFiltr: (bool) {},
         ),
       ),

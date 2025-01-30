@@ -6,7 +6,7 @@ class Notice {
   final bool isFinished;
   final String title;
   final String body;
-  final DateTime? date;
+  final DateTime? date; // Поле может быть null
   final NoticeLead? lead;
   final NoticeAuthor? author;  // Изменено на nullable
   final List<UserEvent> users;

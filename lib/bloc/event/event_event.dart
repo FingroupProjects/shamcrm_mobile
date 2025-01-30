@@ -17,14 +17,17 @@ class FetchEvents extends EventEvent {
 
 
 class FetchMoreEvents extends EventEvent {
-  FetchMoreEvents(int currentPage);
-}
+  final int currentPage;
+  final String? query;
+  final List<int>? managerIds;
 
+  FetchMoreEvents(this.currentPage, {this.query, this.managerIds});
+}
 class CreateNotice extends EventEvent {
   final String title;
   final String body;
   final int leadId;
-  final DateTime date;
+  final DateTime? date;
   final int sendNotification;
   final List<int> users;
   final AppLocalizations localizations;
@@ -33,7 +36,7 @@ class CreateNotice extends EventEvent {
     required this.title,
     required this.body,
     required this.leadId,
-    required this.date,
+   this.date,
     required this.sendNotification,
     required this.users,
     required this.localizations,
@@ -45,7 +48,7 @@ class UpdateNotice extends EventEvent {
   final String title;
   final String body;
   final int leadId;
-  final DateTime date;
+  final DateTime? date;
   final int sendNotification;
   final List<int> users;
   final AppLocalizations localizations;
@@ -55,7 +58,7 @@ class UpdateNotice extends EventEvent {
     required this.title,
     required this.body,
     required this.leadId,
-    required this.date,
+   this.date,
     required this.sendNotification,
     required this.users,
     required this.localizations,

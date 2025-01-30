@@ -1,4 +1,3 @@
-// event_screen.dart
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
@@ -20,11 +19,9 @@ class EventScreen extends StatefulWidget {
 class _EventScreenState extends State<EventScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController _scrollController;
-  final List<Map<String, dynamic>> _tabTitles = [
-    {'id': 1, 'title': 'В процессе'},
-    {'id': 2, 'title': 'Завершено'},
-  ];
+  late ScrollController _tabScrollController; // Для вкладок
+  late ScrollController _listScrollController; // Для списка событий
+  late final List<Map<String, dynamic>> _tabTitles;
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
@@ -33,59 +30,89 @@ class _EventScreenState extends State<EventScreen>
   TextEditingController textEditingController = TextEditingController();
   late final EventBloc _eventBloc;
   String _lastSearchQuery = "";
-  List<int>? _selectedManagerIds; // Add this field
-  int? _selectedManagerId; // ID выбранного менеджера.
-    bool _showCustomTabBar = true;
+  List<int>? _selectedManagerIds;
+  int? _selectedManagerId;
+  bool _showCustomTabBar = true;
   final TextEditingController _searchController = TextEditingController();
+  double _scrollPosition = 0.0;
+
+ @override
+void initState() {
+  super.initState();
+  _eventBloc = context.read<EventBloc>();
+
+  _tabScrollController = ScrollController();
+  _listScrollController = ScrollController();
+  _tabKeys = List.generate(2, (_) => GlobalKey());
+  _tabController = TabController(length: 2, vsync: this);
+
+  _tabController.addListener(() {
+    setState(() {
+      _currentTabIndex = _tabController.index;
+    });
+    if (_tabScrollController.hasClients) {
+      _scrollToActiveTab();
+    }
+    _loadEvents();
+  });
+
+  _listScrollController.addListener(() {
+    if (_listScrollController.position.pixels >=
+        _listScrollController.position.maxScrollExtent - 100) {
+      if (!_eventBloc.allEventsFetched) {
+        _eventBloc.add(FetchMoreEvents(
+          _currentTabIndex + 1,
+          query: _lastSearchQuery,
+          managerIds: _selectedManagerIds,
+        ));
+      }
+    }
+  });
+}
 
   @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    _tabController = TabController(length: _tabTitles.length, vsync: this);
-    _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final localizations = AppLocalizations.of(context);
+    _tabTitles = [
+      {
+        'id': 1,
+        'title': localizations?.translate('in_progress') ?? 'В работе',
+      },
+      {
+        'id': 2,
+        'title': localizations?.translate('finished') ?? 'Завершенные',
+      },
+    ];
 
-    _tabController.addListener(() {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
-      if (_scrollController.hasClients) {
-        _scrollToActiveTab();
-      }
-      // Загружаем события при смене таба
-      _loadEvents();
-    });
+    if (_tabController.length != _tabTitles.length) {
+      _tabController.dispose();
+      _tabController = TabController(length: _tabTitles.length, vsync: this);
+      _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
+    }
 
-    // Начальная загрузка событий
     _loadEvents();
-     // Добавляем слушатель для ScrollController
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels ==
-              _scrollController.position.maxScrollExtent &&
-          !_eventBloc.allEventsFetched) {
-        _eventBloc.add(FetchMoreEvents(_currentTabIndex + 1));
-      }
-    });
   }
 
   void _loadEvents() {
     final bool isCompleted = _currentTabIndex == 1;
     context.read<EventBloc>().add(FetchEvents());
   }
-Future<void> _searchEvents(String query, int currentStatusId) async {
+
+  Future<void> _searchEvents(String query, int currentStatusId) async {
     if (query.isEmpty) {
       if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
         context.read<EventBloc>().add(FetchEvents(
-          managerIds: _selectedManagerIds,
-        ));
+              managerIds: _selectedManagerIds,
+            ));
       } else {
         context.read<EventBloc>().add(FetchEvents(query: " "));
       }
     } else {
       context.read<EventBloc>().add(FetchEvents(
-        query: query,
-        managerIds: _selectedManagerIds,
-      ));
+            query: query,
+            managerIds: _selectedManagerIds,
+          ));
     }
   }
 
@@ -107,9 +134,11 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
     });
 
     context.read<EventBloc>().add(FetchEvents(
-      managerIds: _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
+          managerIds: _selectedManagerIds?.isNotEmpty == true
+              ? _selectedManagerIds
+              : null,
+          query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+        ));
   }
 
   void _onSearch(String query) {
@@ -118,18 +147,54 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
     _searchEvents(query, currentStatusId);
   }
 
-  // Фильтрация событий по статусу
   List<NoticeEvent> _filterEvents(List<NoticeEvent> events, bool isCompleted) {
     return events.where((event) => event.isFinished == isCompleted).toList();
   }
 
   Widget _buildEventsList(List<NoticeEvent> events) {
+    final localizations = AppLocalizations.of(context);
+
+    if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+      if (events.isEmpty) {
+        return Center(
+          child: Text(
+            localizations?.translate('no_events') ?? 'Нет событий',
+            style: TextStyle(
+              color: Color(0xff99A4BA),
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+        );
+      }
+
+      return ListView.builder(
+        controller: _tabScrollController, // Используем отдельный контроллер
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: EventCard(
+              event: events[index],
+              onStatusUpdated: () {
+                _loadEvents();
+              },
+            ),
+          );
+        },
+      );
+    }
+
     final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
 
     if (filteredEvents.isEmpty) {
       return Center(
         child: Text(
-          'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
+          localizations?.translate('no_events_in_section')?.replaceAll(
+                  '{section}', _tabTitles[_currentTabIndex]['title']) ??
+              'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
           style: TextStyle(
             color: Color(0xff99A4BA),
             fontSize: 14,
@@ -138,17 +203,9 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
         ),
       );
     }
-//  final ScrollController _scrollController = ScrollController();
-//               _scrollController.addListener(() {
-//                 if (_scrollController.position.pixels ==
-//                         _scrollController.position.maxScrollExtent &&
-//                     !_eventBloc.allEventsFetched) {
-//                   _eventBloc
-//                       .add(FetchMoreEvents(widget. state.currentPage));
-//                 }
-//               });
 
     return ListView.builder(
+      controller: _listScrollController, // Используем отдельный контроллер
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: filteredEvents.length,
@@ -158,7 +215,6 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
           child: EventCard(
             event: filteredEvents[index],
             onStatusUpdated: () {
-              // Обновляем список событий при изменении статуса
               _loadEvents();
             },
           ),
@@ -169,8 +225,12 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _tabScrollController.dispose(); // Не забудьте освободить ресурсы
+    _listScrollController.dispose();
     _tabController.dispose();
+    _searchController.dispose();
+    textEditingController.dispose();
+    focusNode.dispose();
     super.dispose();
   }
 
@@ -178,7 +238,7 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
     return Container(
       height: 45,
       child: SingleChildScrollView(
-        controller: _scrollController,
+        controller: _tabScrollController, // Используем отдельный контроллер
         scrollDirection: Axis.horizontal,
         child: Row(
           children: List.generate(_tabTitles.length, (index) {
@@ -241,13 +301,13 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
 
       if (position.dx < 0 ||
           (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _scrollController.offset +
+        double targetOffset = _tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +
             (tabWidth / 2);
 
-        if (targetOffset != _scrollController.offset) {
-          _scrollController.animateTo(
+        if (targetOffset != _tabScrollController.offset) {
+          _tabScrollController.animateTo(
             targetOffset,
             duration: Duration(milliseconds: 100),
             curve: Curves.linear,
@@ -268,7 +328,7 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
         title: CustomAppBar(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
-              : localizations!.translate('События'),
+              : localizations!.translate('events'), // Changed from 'Событие' to 'events'
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
@@ -286,70 +346,61 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: true, 
-          showEvent: true,
-
-clearButtonClick: (value) {
-  if (value == false) {
-    // Сброс поиска
-    setState(() {
-      _isSearching = false;
-      _searchController.clear(); 
-      _lastSearchQuery = ''; 
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; 
-      });
-      final leadBloc = BlocProvider.of<EventBloc>(context);
-    } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
-      // Если фильтр активен, показываем результаты фильтрации
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<EventBloc>(context);
-      dealBloc.add(FetchEvents(
-        managerIds: _selectedManagerIds,
-        query: _searchController.text.isNotEmpty ? _searchController.text : null,
-      ));
-    } 
-  }
-},
-clearButtonClickFiltr: (value) {
-  if (value == false) {
-    // Сброс фильтра
-    setState(() {
-      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-      // Проверка на наличие предыдущего запроса поиска
-      if (_lastSearchQuery.isNotEmpty) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        final dealBloc = BlocProvider.of<EventBloc>(context);
-        print('Возвращаем поиск после сброса фильтра');
-        dealBloc.add(FetchEvents(query: _lastSearchQuery));
-      } else  {
-        // Если и поиск, и фильтр пусты, показываем все сделки
-        final leadBloc = BlocProvider.of<EventBloc>(context);
-        print('Сброс и поиск пуст, возвращаем все сделки');
-        // leadBloc.add(FetchStatuses());
-      }
-    } else if (_searchController.text.isNotEmpty) {
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<EventBloc>(context);
-      dealBloc.add(FetchEvents(
-        query: _searchController.text,
-      ));
-    }
-  }
-}
-
+          showMyTaskIcon: false,
+          showEvent: false,
+          showMenuIcon: false,
+          showNotification: false,
+          showSeparateFilter: true,
+          clearButtonClick: (value) {
+            if (value == false) {
+              setState(() {
+                _isSearching = false;
+                _searchController.clear();
+                _lastSearchQuery = '';
+              });
+              if (_searchController.text.isEmpty &&
+                  _selectedManagerIds == null) {
+                setState(() {
+                  _showCustomTabBar = true;
+                });
+              } else if (_selectedManagerIds != null ||
+                  _selectedManagerIds!.isNotEmpty) {
+                final dealBloc = BlocProvider.of<EventBloc>(context);
+                dealBloc.add(FetchEvents(
+                  managerIds: _selectedManagerIds,
+                  query: _searchController.text.isNotEmpty
+                      ? _searchController.text
+                      : null,
+                ));
+              }
+            }
+          },
+          clearButtonClickFiltr: (value) {
+            if (value == false) {
+              setState(() {
+                _selectedManagerIds = null;
+              });
+              if (_searchController.text.isEmpty &&
+                  _selectedManagerIds == null) {
+                setState(() {
+                  _showCustomTabBar = true;
+                });
+                if (_lastSearchQuery.isNotEmpty) {
+                  final dealBloc = BlocProvider.of<EventBloc>(context);
+                  dealBloc.add(FetchEvents(query: _lastSearchQuery));
+                } else {
+                  final leadBloc = BlocProvider.of<EventBloc>(context);
+                }
+              } else if (_searchController.text.isNotEmpty) {
+                final dealBloc = BlocProvider.of<EventBloc>(context);
+                dealBloc.add(FetchEvents(
+                  query: _searchController.text,
+                ));
+              }
+            }
+          },
         ),
-      ), // Add this floatingActionButton
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -357,7 +408,7 @@ clearButtonClickFiltr: (value) {
             MaterialPageRoute(
               builder: (context) => NoticeAddScreen(),
             ),
-          ).then((_) => _loadEvents()); // Reload events after returning
+          ).then((_) => _loadEvents());
         },
         backgroundColor: Color(0xff1E2E52),
         child: Image.asset(
@@ -371,48 +422,90 @@ clearButtonClickFiltr: (value) {
           : Column(
               children: [
                 const SizedBox(height: 15),
-                if (!_isSearching) _buildCustomTabBar(),
+                if (!_isSearching &&
+                    (_selectedManagerIds == null ||
+                        _selectedManagerIds!.isEmpty))
+                  _buildCustomTabBar(),
                 Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: _tabTitles.map((status) {
-                      return RefreshIndicator(
-                        color: Color(0xff1E2E52),
-                        backgroundColor: Colors.white,
-                        onRefresh: () async {
-                          _loadEvents();
-                          return Future.delayed(Duration(milliseconds: 300));
-                        },
-                        child: BlocBuilder<EventBloc, EventState>(
-                          builder: (context, state) {
-                            if (state is EventLoading) {
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
-                                ),
-                              );
-                            }
-                            if (state is EventDataLoaded) {
-                              return _buildEventsList(state.events);
-                            }
-                            if (state is EventError) {
-                              return Center(
-                                child: Text(
-                                  state.message,
-                                  style: TextStyle(
-                                    color: Color(0xff99A4BA),
-                                    fontSize: 14,
-                                    fontFamily: 'Gilroy',
-                                  ),
-                                ),
-                              );
-                            }
-                            return Container();
+                  child: _selectedManagerIds != null &&
+                          _selectedManagerIds!.isNotEmpty
+                      ? RefreshIndicator(
+                          color: Color(0xff1E2E52),
+                          backgroundColor: Colors.white,
+                          onRefresh: () async {
+                            _loadEvents();
+                            return Future.delayed(Duration(milliseconds: 300));
                           },
+                          child: BlocBuilder<EventBloc, EventState>(
+                            builder: (context, state) {
+                              if (state is EventLoading) {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                );
+                              }
+                              if (state is EventDataLoaded) {
+                                return _buildEventsList(state.events);
+                              }
+                              if (state is EventError) {
+                                return Center(
+                                  child: Text(
+                                    state.message,
+                                    style: TextStyle(
+                                      color: Color(0xff99A4BA),
+                                      fontSize: 14,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                  ),
+                                );
+                              }
+                              return Container();
+                            },
+                          ),
+                        )
+                      // If no manager filter, show tab view as before
+                      : TabBarView(
+                          controller: _tabController,
+                          children: _tabTitles.map((status) {
+                            return RefreshIndicator(
+                              color: Color(0xff1E2E52),
+                              backgroundColor: Colors.white,
+                              onRefresh: () async {
+                                _loadEvents();
+                                return Future.delayed(
+                                    Duration(milliseconds: 300));
+                              },
+                              child: BlocBuilder<EventBloc, EventState>(
+                                builder: (context, state) {
+                                  if (state is EventLoading) {
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    );
+                                  }
+                                  if (state is EventDataLoaded) {
+                                    return _buildEventsList(state.events);
+                                  }
+                                  if (state is EventError) {
+                                    return Center(
+                                      child: Text(
+                                        state.message,
+                                        style: TextStyle(
+                                          color: Color(0xff99A4BA),
+                                          fontSize: 14,
+                                          fontFamily: 'Gilroy',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return Container();
+                                },
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }).toList(),
-                  ),
                 ),
               ],
             ),
