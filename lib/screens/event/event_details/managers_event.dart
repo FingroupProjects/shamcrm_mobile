@@ -82,7 +82,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                         return Text(
                           selectedNames?.isNotEmpty == true
                               ? selectedNames!
-                              : AppLocalizations.of(context)!.translate('select_managers'),
+                              : AppLocalizations.of(context)!.translate('select_m'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -94,7 +94,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                         );
                       }
                       return Text(
-                        AppLocalizations.of(context)!.translate('select_managers'),
+                        AppLocalizations.of(context)!.translate('select_m'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -235,7 +235,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        manager.name ?? 'Без имени',
+                                        manager.name ??             AppLocalizations.of(context)!.translate('no_name'),
+
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 14,

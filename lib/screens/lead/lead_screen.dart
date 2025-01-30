@@ -206,8 +206,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: false, // Выключаем иконку My Tasks
+          showMyTaskIcon: true, // Выключаем иконку My Tasks
           showEvent: true,
+
           clearButtonClick: (value) {
             if (value == false) {
                   // Сброс поиска

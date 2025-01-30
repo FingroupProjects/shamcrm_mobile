@@ -184,6 +184,8 @@ class _MyTaskScreenState extends State<MyTaskScreen>
           showFilterIcon: false,
           showFilterTaskIcon: false,
           showEvent: false,
+          showMenuIcon: false,
+          showNotification: false,
           clearButtonClick: (value) {
             if (value == false) {
               final taskBloc = BlocProvider.of<MyTaskBloc>(context);

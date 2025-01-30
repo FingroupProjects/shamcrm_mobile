@@ -17,12 +17,12 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     on<DeleteNotice>(_deleteNotice);
     on<FinishNotice>(_finishNotice);
   }
-
- Future<void> _onFetchEvents(
+Future<void> _onFetchEvents(
     FetchEvents event,
     Emitter<EventState> emit,
   ) async {
     try {
+      // Only show loading indicator for initial fetch
       emit(EventLoading(isFirstFetch: true));
 
       final events = await apiService.getEvents(
@@ -46,30 +46,38 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     FetchMoreEvents event,
     Emitter<EventState> emit,
   ) async {
-    final currentState = state;
-    if (currentState is EventDataLoaded) {
-      if (currentState.hasReachedEnd) return;
+    try {
+      final currentState = state;
+      if (currentState is EventDataLoaded) {
+        if (currentState.hasReachedEnd) return;
 
-      try {
-        emit(EventLoading(isFirstFetch: false));
-
+        // Keep existing events visible while loading more
         final nextPage = currentState.currentPage + 1;
         final newEvents = await apiService.getEvents(
           page: nextPage,
           perPage: _perPage,
+          search: event.query,
+          managers: event.managerIds,
         );
+
+        if (newEvents.isEmpty) {
+          emit(currentState.copyWith(hasReachedEnd: true));
+          return;
+        }
 
         emit(EventDataLoaded(
           events: [...currentState.events, ...newEvents],
           currentPage: nextPage,
           hasReachedEnd: newEvents.length < _perPage,
         ));
-      } catch (e) {
+      }
+    } catch (e) {
+      // Keep existing events visible on error
+      if (state is EventDataLoaded) {
         emit(EventError('Ошибка загрузки дополнительных событий: $e'));
       }
     }
   }
-
   Future<void> _createNotice(
       CreateNotice event, Emitter<EventState> emit) async {
     emit(EventLoading());

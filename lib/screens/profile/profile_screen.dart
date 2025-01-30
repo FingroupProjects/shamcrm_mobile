@@ -90,9 +90,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           orElse: () => state.organizations.first,
                         )
                       : state.organizations.first;
-
                   return Column(
                     children: [
+                      
                       OrganizationWidget(
                         selectedOrganization: _selectedOrganization,
                         onChanged: _onOrganizationChanged,

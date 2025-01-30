@@ -163,7 +163,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                       CustomTextField(
                         controller: bodyController,
                         hintText: AppLocalizations.of(context)!
-                            .translate('enter_description'),
+                            .translate('description_list  '),
                         label: AppLocalizations.of(context)!
                             .translate('description'),
                         maxLines: 5,
@@ -181,13 +181,13 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('reminder_date'),
                         withTime: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       ManagerMultiSelectWidget(
@@ -248,21 +248,20 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate() &&
-        selectedLead != null &&
-        selectedManagers.isNotEmpty) {
-      final DateTime date =
-          DateFormat('dd/MM/yyyy HH:mm').parse(dateController.text);
+    if (_formKey.currentState!.validate() && selectedLead != null) {
+      DateTime? date;
+      if (dateController.text.isNotEmpty) {
+        date = DateFormat('dd/MM/yyyy HH:mm').parse(dateController.text);
+      }
 
       context.read<EventBloc>().add(
-            UpdateNotice(
-              noticeId: widget.notice.id,
+            CreateNotice(
               title: titleController.text,
               body: bodyController.text,
               leadId: int.parse(selectedLead!),
-              date: date,
+              date: date, // Теперь необязательное поле
               sendNotification: sendNotification ? 1 : 0,
-              users: selectedManagers,
+              users: selectedManagers, // Может быть пустым
               localizations: AppLocalizations.of(context)!,
             ),
           );
@@ -287,5 +286,4 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
         ),
       );
     }
-  }
-}
+  }}

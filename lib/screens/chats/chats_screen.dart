@@ -39,7 +39,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   TextEditingController searchController = TextEditingController();
   FocusNode focusNode = FocusNode();
   late TabController _tabController;
-  late List<String> _tabTitles; 
+  late List<String> _tabTitles;
   // final List<String> _tabTitles = ['Лиды', 'Задачи', 'Корпоративный чат'];
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
@@ -83,11 +83,10 @@ class _ChatsScreenState extends State<ChatsScreen>
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
         setState(() {
-
-        _tabTitles = [
-            AppLocalizations.of(context)!.translate('tab_leads'), 
-            AppLocalizations.of(context)!.translate('tab_tasks'), 
-            AppLocalizations.of(context)!.translate('tab_corp_chat'), 
+          _tabTitles = [
+            AppLocalizations.of(context)!.translate('tab_leads'),
+            AppLocalizations.of(context)!.translate('tab_tasks'),
+            AppLocalizations.of(context)!.translate('tab_corp_chat'),
           ];
 
           _tabController = TabController(
@@ -170,7 +169,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+        authorizationEndpoint: Uri.parse(
+            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -232,8 +232,10 @@ class _ChatsScreenState extends State<ChatsScreen>
           forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
-            title: isClickAvatarIcon ? localizations!.translate('appbar_settings') : localizations!.translate('appbar_chats'),        
-             onClickProfileAvatar: () {
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_chats'),
+            onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
                 if (!isClickAvatarIcon) {
@@ -242,7 +244,9 @@ class _ChatsScreenState extends State<ChatsScreen>
                   } else if (selectTabIndex == 1) {
                     context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
                   } else if (selectTabIndex == 2) {
-                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                    context
+                        .read<ChatsBloc>()
+                        .add(FetchChats(endPoint: 'corporate'));
                   }
                 }
               });
@@ -252,6 +256,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             showFilterIcon: false,
             showFilterTaskIcon: false,
             showMyTaskIcon: false, // Выключаем иконку My Tasks
+            showMenuIcon: false,
             onChangedSearchInput: (String value) {
               setState(() {
                 _isSearching = value.isNotEmpty;
@@ -267,11 +272,17 @@ class _ChatsScreenState extends State<ChatsScreen>
                     final chatsBloc = context.read<ChatsBloc>();
                     chatsBloc.add(ClearChats());
                     if (selectTabIndex == 0) {
-                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
+                      context
+                          .read<ChatsBloc>()
+                          .add(FetchChats(endPoint: 'lead'));
                     } else if (selectTabIndex == 1) {
-                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
+                      context
+                          .read<ChatsBloc>()
+                          .add(FetchChats(endPoint: 'task'));
                     } else if (selectTabIndex == 2) {
-                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
+                      context
+                          .read<ChatsBloc>()
+                          .add(FetchChats(endPoint: 'corporate'));
                     }
                   });
                 }
@@ -279,7 +290,8 @@ class _ChatsScreenState extends State<ChatsScreen>
                   _isSearching = false;
                 });
               }
-            }, clearButtonClickFiltr: (bool ) {  },
+            },
+            clearButtonClickFiltr: (bool) {},
           ),
           backgroundColor: Colors.white,
         ),
@@ -300,7 +312,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                             }
                             return Padding(
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 8),
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               child: _buildTabButton(index),
                             );
                           }),
@@ -481,7 +493,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           }
         }
         if (state is ChatsError) {
-          if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
+          if (state.message.contains(AppLocalizations.of(context)!
+              .translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -516,7 +529,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('nothing_found_chat'),
+                    AppLocalizations.of(context)!
+                        .translate('nothing_found_chat'),
                     style:
                         TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                   ),
@@ -546,7 +560,6 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             );
           },
           itemBuilder: (context, item, index) {
-
             return InkWell(
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),

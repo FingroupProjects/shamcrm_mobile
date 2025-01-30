@@ -33,8 +33,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
   List<dynamic> filterManagers(List<dynamic> managers) {
     if (searchQuery.isEmpty) return managers;
     return managers.where((manager) {
-      final name = (manager.name?.toString().toLowerCase() ?? '') + 
-                   (manager.lastname?.toString().toLowerCase() ?? '');
+      final name = (manager.name?.toString().toLowerCase() ?? '') +
+          (manager.lastname?.toString().toLowerCase() ?? '');
       return name.contains(searchQuery.toLowerCase());
     }).toList();
   }
@@ -171,8 +171,9 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
                     itemCount: filteredManagers.length,
                     itemBuilder: (context, index) {
                       final manager = filteredManagers[index];
-                      final name = (manager.name ?? 'Без имени') + 
-                                   ' ' + (manager.lastname ?? '');
+                      final name = (manager.name ?? 'Без имени') +
+                          ' ' +
+                          (manager.lastname ?? '');
                       final isSelected = _selectedManagers.contains(manager);
 
                       return InkWell(
@@ -248,10 +249,12 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
             padding: EdgeInsets.all(8),
             child: ElevatedButton(
               onPressed: () {
-                if (widget.onManagersSelected != null) {
-                  widget.onManagersSelected!(_selectedManagers);
+                if (_selectedManagers.isNotEmpty) {
+                  if (widget.onManagersSelected != null) {
+                    widget.onManagersSelected!(_selectedManagers);
+                  }
+                  Navigator.pop(context);
                 }
-                Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF4339F2),

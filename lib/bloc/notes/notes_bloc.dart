@@ -73,6 +73,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
           body: event.body,
           leadId: event.leadId,
           date: event.date,
+          users: event.users
         );
 
         if (result['success']) {

@@ -4,10 +4,12 @@ import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_delete.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_edit_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -366,7 +368,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   body: notice.body,
                                   lead: notice.lead ??
                                       null, // or just `notice.lead`
-                                  date: notice.date!,
+                                  date: notice.date ?? null,
                                   isFinished: notice.isFinished,
                                   users: notice.users,
                                   author: notice.author,
@@ -423,38 +425,43 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildDetailsList(Notice notice) {
+    late final int leadId = notice.lead!.id; // Получаем leadId
     final List<Map<String, String>> details = [
       {
-        'label': AppLocalizations.of(context)!.translate('Тематика'),
+        'label': AppLocalizations.of(context)!.translate('title'),
         'value': notice.title
       },
       {
-        'label': AppLocalizations.of(context)!.translate('Описание'),
-        'value': notice.body
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('Автор'),
-        'value': notice.author?.name ?? ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('Дата создание'),
-        'value': formatDate(notice.createdAt.toString())
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('Статус'),
-        'value': notice.isFinished ? 'Завершено' : 'В процессе'
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('Лид'),
+        'label': AppLocalizations.of(context)!.translate('lead_name'),
         'value': notice.lead!.name
       },
       {
-        'label': AppLocalizations.of(context)!.translate('Напоминание'),
-        'value': formatDate(notice.date.toString())
+        'label': AppLocalizations.of(context)!.translate('date'),
+        'value': notice.date != null
+            ? formatDate(notice.date.toString())
+            : AppLocalizations.of(context)!.translate('not_specified'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': notice.users.map((user) => user.name).join(', '),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': notice.author?.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': formatDate(notice.createdAt.toString())
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('is_finished'),
+        'value': notice.isFinished
+            ? AppLocalizations.of(context)!.translate('finished')
+            : AppLocalizations.of(context)!.translate('in_progress'),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('body'),
+        'value': notice.body
       },
     ];
 
@@ -468,6 +475,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           child: _buildDetailItem(
             details[index]['label']!,
             details[index]['value']!,
+            leadId, // Передаем leadId
           ),
         );
       },
@@ -536,7 +544,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
+  Widget _buildDetailItem(String label, String value, int leadId) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (label == AppLocalizations.of(context)!.translate('assignee') &&
@@ -563,8 +571,52 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
+                      decoration:
+                          TextDecoration.underline, // Добавляем подчеркивание
                     ),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Добавим переход на экран для 'title'
+        if (label == AppLocalizations.of(context)!.translate('lead_name')) {
+          return GestureDetector(
+            onTap: () {
+              print('LEAD ID ENTER------');
+              print(leadId);
+              navigatorKey.currentState?.push(
+                MaterialPageRoute(
+                  builder: (context) => LeadDetailsScreen(
+                    leadId: leadId.toString(), // передаем leadId
+                    leadName:
+                        value, // Можно передать value, если это название лида
+                    leadStatus:
+                        "", // Здесь можно указать статус лида, если есть
+                    statusId: 1, // Пример статуса
+                  ),
+                ),
+              );
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                      decoration:
+                          TextDecoration.underline, // Добавляем подчеркивание
+                    ),
                   ),
                 ),
               ],

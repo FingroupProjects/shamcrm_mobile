@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
+import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/edit_notes.dart';
@@ -11,7 +12,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-
 class NotesWidget extends StatefulWidget {
   final int leadId;
 
@@ -70,7 +70,6 @@ class _NotesWidgetState extends State<NotesWidget> {
     return BlocBuilder<NotesBloc, NotesState>(
       builder: (context, state) {
         if (state is NotesLoading) {
-          // return const Center(child: CircularProgressIndicator());
         } else if (state is NotesLoaded) {
           notes = state.notes;
         } else if (state is NotesError) {
@@ -78,7 +77,7 @@ class _NotesWidgetState extends State<NotesWidget> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -112,27 +111,7 @@ class _NotesWidgetState extends State<NotesWidget> {
         _buildTitleRow(AppLocalizations.of(context)!.translate('notice')),
         SizedBox(height: 8),
         if (notes.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('empty'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xfff1E2E52),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
-          )
+          _buildEmptyState()
         else
           Container(
             height: 300,
@@ -148,6 +127,36 @@ class _NotesWidgetState extends State<NotesWidget> {
     );
   }
 
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        decoration: TaskCardStyles.taskCardDecoration,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Icon(Icons.note_add, size: 48, color: Color(0xff1E2E52)),
+                SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context)!.translate('empty'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNoteItem(Notes note) {
     final formattedDate = note.date != null
         ? DateFormat('dd-MM-yyyy HH:mm')
@@ -155,11 +164,7 @@ class _NotesWidgetState extends State<NotesWidget> {
         : AppLocalizations.of(context)!.translate('not_specified');
 
     return GestureDetector(
-      onTap: _canUpdateNotes
-          ? () {
-              _showEditNoteDialog(note);
-            }
-          : null,
+      onTap: _canUpdateNotes ? () => _showEditNoteDialog(note) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
@@ -196,9 +201,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                 if (_canDeleteNotes)
                   IconButton(
                     icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
-                    onPressed: () {
-                      _showDeleteNoteDialog(note);
-                    },
+                    onPressed: () => _showDeleteNoteDialog(note),
                   ),
               ],
             ),
@@ -220,9 +223,7 @@ class _NotesWidgetState extends State<NotesWidget> {
         ),
         if (_canCreateNotes)
           TextButton(
-            onPressed: () {
-              _showAddNoteDialog();
-            },
+            onPressed: _showAddNoteDialog,
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -249,7 +250,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
-      isScrollControlled: true, // Добавляем этот параметр
+      isScrollControlled: true,
       builder: (BuildContext context) {
         return Padding(
           padding:
@@ -261,19 +262,13 @@ class _NotesWidgetState extends State<NotesWidget> {
   }
 
   void _showEditNoteDialog(Notes note) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true, // Добавляем и сюда
-      builder: (BuildContext context) {
-        return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: EditNotesDialog(leadId: widget.leadId, note: note),
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EventDetailsScreen(noticeId: note.id),
+      ),
     );
-  } 
+  }
 
   void _showDeleteNoteDialog(Notes note) {
     showDialog(
