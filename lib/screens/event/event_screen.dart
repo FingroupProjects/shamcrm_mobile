@@ -35,7 +35,7 @@ class _EventScreenState extends State<EventScreen>
   String _lastSearchQuery = "";
   List<int>? _selectedManagerIds; // Add this field
   int? _selectedManagerId; // ID выбранного менеджера.
-    bool _showCustomTabBar = true;
+  bool _showCustomTabBar = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -58,7 +58,7 @@ class _EventScreenState extends State<EventScreen>
 
     // Начальная загрузка событий
     _loadEvents();
-     // Добавляем слушатель для ScrollController
+    // Добавляем слушатель для ScrollController
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
               _scrollController.position.maxScrollExtent &&
@@ -72,20 +72,21 @@ class _EventScreenState extends State<EventScreen>
     final bool isCompleted = _currentTabIndex == 1;
     context.read<EventBloc>().add(FetchEvents());
   }
-Future<void> _searchEvents(String query, int currentStatusId) async {
+
+  Future<void> _searchEvents(String query, int currentStatusId) async {
     if (query.isEmpty) {
       if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
         context.read<EventBloc>().add(FetchEvents(
-          managerIds: _selectedManagerIds,
-        ));
+              managerIds: _selectedManagerIds,
+            ));
       } else {
         context.read<EventBloc>().add(FetchEvents(query: " "));
       }
     } else {
       context.read<EventBloc>().add(FetchEvents(
-        query: query,
-        managerIds: _selectedManagerIds,
-      ));
+            query: query,
+            managerIds: _selectedManagerIds,
+          ));
     }
   }
 
@@ -107,9 +108,11 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
     });
 
     context.read<EventBloc>().add(FetchEvents(
-      managerIds: _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
+          managerIds: _selectedManagerIds?.isNotEmpty == true
+              ? _selectedManagerIds
+              : null,
+          query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+        ));
   }
 
   void _onSearch(String query) {
@@ -266,89 +269,91 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_deals'),
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (String value) {
-            if (value.isNotEmpty) {
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('Событие'),
+            onClickProfileAvatar: () {
               setState(() {
-                _isSearching = true;
+                isClickAvatarIcon = !isClickAvatarIcon;
               });
-            }
-            _onSearch(value);
-          },
-          onManagersSelected: _handleManagerSelected,
-          textEditingController: textEditingController,
-          focusNode: focusNode,
-          showFilterTaskIcon: false,
-          showMyTaskIcon: true, 
-          showEvent: true,
-
-clearButtonClick: (value) {
-  if (value == false) {
-    // Сброс поиска
-    setState(() {
-      _isSearching = false;
-      _searchController.clear(); 
-      _lastSearchQuery = ''; 
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; 
-      });
-      final leadBloc = BlocProvider.of<EventBloc>(context);
-    } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
-      // Если фильтр активен, показываем результаты фильтрации
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<EventBloc>(context);
-      dealBloc.add(FetchEvents(
-        managerIds: _selectedManagerIds,
-        query: _searchController.text.isNotEmpty ? _searchController.text : null,
-      ));
-    } 
-  }
-},
-clearButtonClickFiltr: (value) {
-  if (value == false) {
-    // Сброс фильтра
-    setState(() {
-      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-      // Проверка на наличие предыдущего запроса поиска
-      if (_lastSearchQuery.isNotEmpty) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        final dealBloc = BlocProvider.of<EventBloc>(context);
-        print('Возвращаем поиск после сброса фильтра');
-        dealBloc.add(FetchEvents(query: _lastSearchQuery));
-      } else  {
-        // Если и поиск, и фильтр пусты, показываем все сделки
-        final leadBloc = BlocProvider.of<EventBloc>(context);
-        print('Сброс и поиск пуст, возвращаем все сделки');
-        // leadBloc.add(FetchStatuses());
-      }
-    } else if (_searchController.text.isNotEmpty) {
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<EventBloc>(context);
-      dealBloc.add(FetchEvents(
-        query: _searchController.text,
-      ));
-    }
-  }
-}
-
-        ),
+            },
+            onChangedSearchInput: (String value) {
+              if (value.isNotEmpty) {
+                setState(() {
+                  _isSearching = true;
+                });
+              }
+              _onSearch(value);
+            },
+            onManagersSelected: _handleManagerSelected,
+            textEditingController: textEditingController,
+            focusNode: focusNode,
+            showFilterTaskIcon: false,
+            showMyTaskIcon: false,
+            showEvent: false,
+            clearButtonClick: (value) {
+              if (value == false) {
+                // Сброс поиска
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _lastSearchQuery = '';
+                });
+                // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+                if (_searchController.text.isEmpty &&
+                    _selectedManagerIds == null) {
+                  setState(() {
+                    _showCustomTabBar = true;
+                  });
+                  final leadBloc = BlocProvider.of<EventBloc>(context);
+                } else if (_selectedManagerIds != null ||
+                    _selectedManagerIds!.isNotEmpty) {
+                  // Если фильтр активен, показываем результаты фильтрации
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final dealBloc = BlocProvider.of<EventBloc>(context);
+                  dealBloc.add(FetchEvents(
+                    managerIds: _selectedManagerIds,
+                    query: _searchController.text.isNotEmpty
+                        ? _searchController.text
+                        : null,
+                  ));
+                }
+              }
+            },
+            clearButtonClickFiltr: (value) {
+              if (value == false) {
+                // Сброс фильтра
+                setState(() {
+                  _selectedManagerIds = null; // Обнуляем выбранных менеджеров
+                });
+                // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
+                if (_searchController.text.isEmpty &&
+                    _selectedManagerIds == null) {
+                  setState(() {
+                    _showCustomTabBar = true; // Показываем кастомные табы
+                  });
+                  // Проверка на наличие предыдущего запроса поиска
+                  if (_lastSearchQuery.isNotEmpty) {
+                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                    final dealBloc = BlocProvider.of<EventBloc>(context);
+                    print('Возвращаем поиск после сброса фильтра');
+                    dealBloc.add(FetchEvents(query: _lastSearchQuery));
+                  } else {
+                    // Если и поиск, и фильтр пусты, показываем все сделки
+                    final leadBloc = BlocProvider.of<EventBloc>(context);
+                    print('Сброс и поиск пуст, возвращаем все сделки');
+                    // leadBloc.add(FetchStatuses());
+                  }
+                } else if (_searchController.text.isNotEmpty) {
+                  // Если поиск активен, показываем результаты поиска
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final dealBloc = BlocProvider.of<EventBloc>(context);
+                  dealBloc.add(FetchEvents(
+                    query: _searchController.text,
+                  ));
+                }
+              }
+            }),
       ), // Add this floatingActionButton
       floatingActionButton: FloatingActionButton(
         onPressed: () {
