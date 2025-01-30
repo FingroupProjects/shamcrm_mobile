@@ -372,13 +372,13 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                         controller: startDateController,
                         label: AppLocalizations.of(context)!
                             .translate('from_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 16),
                       CustomTextFieldDate(
@@ -386,13 +386,13 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                         label:
                             AppLocalizations.of(context)!.translate('to_list'),
                         hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(

@@ -46,8 +46,8 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   void _setDefaultValues() {
     // Устанавливаем приоритет по умолчанию (Обычный)
     // Устанавливаем текущую дату в поле "От"
-    final now = DateTime.now();
-    startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+    // final now = DateTime.now();
+    // startDateController.text = DateFormat('dd/MM/yyyy').format(now);
   }
 
   // Функция выбора файла

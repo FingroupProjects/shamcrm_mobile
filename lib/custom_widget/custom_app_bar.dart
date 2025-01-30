@@ -85,7 +85,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
   bool _showCustomTabBar = true;
-  bool _hasOverdueTasks = true;
+  bool _hasOverdueTasks =false;
 
   @override
   void initState() {
