@@ -7,7 +7,7 @@ class NoticeLead {
   final String? tgNick;
   final String? tgId;
   final List<dynamic> channels;
-  final String? position;
+  final dynamic position;
   final String? waName;
   final String? waPhone;
   final String? address;
@@ -93,7 +93,7 @@ class NoticeAuthor {
   final dynamic image;
   final String? lastSeen;
   final String? deletedAt;
-  final String? telegramUserId;
+  final dynamic telegramUserId; // Изменено на dynamic
   final String? jobTitle;
   final bool? online;
   final String? fullName;
@@ -125,7 +125,7 @@ class NoticeAuthor {
       image: json['image'],
       lastSeen: json['last_seen'],
       deletedAt: json['deleted_at'],
-      telegramUserId: json['telegram_user_id']?.toString(),
+      telegramUserId: json['telegram_user_id']?.toString(), // Преобразуем в строку
       jobTitle: json['job_title'],
       online: json['online'],
       fullName: json['full_name'],
@@ -133,7 +133,6 @@ class NoticeAuthor {
   }
 }
 
-// notice_user.dart
 class NoticeUser {
   final int id;
   final String name;
@@ -141,10 +140,10 @@ class NoticeUser {
   final String? login;
   final String? email;
   final String? phone;
-  final dynamic image;
+  final String? image;
   final String? lastSeen;
   final String? deletedAt;
-  final String? telegramUserId;
+  final dynamic telegramUserId; // Изменено на dynamic
   final String? jobTitle;
   final bool? online;
   final String? fullName;
@@ -176,14 +175,13 @@ class NoticeUser {
       image: json['image'],
       lastSeen: json['last_seen'],
       deletedAt: json['deleted_at'],
-      telegramUserId: json['telegram_user_id']?.toString(),
+      telegramUserId: json['telegram_user_id']?.toString(), // Преобразуем в строку
       jobTitle: json['job_title'],
       online: json['online'],
       fullName: json['full_name'],
     );
   }
 }
-
 // notice_event.dart
 class NoticeEvent {
   final int id;
@@ -231,4 +229,5 @@ class NoticeEvent {
       canFinish: json['can_finish'] ?? false,
     );
   }
+  
 }
