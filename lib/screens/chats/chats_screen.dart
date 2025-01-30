@@ -251,7 +251,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             focusNode: focusNode,
             showFilterIcon: false,
             showFilterTaskIcon: false,
-            showMyTaskIcon: false, // Выключаем иконку My Tasks
+            showMyTaskIcon: true, // Выключаем иконку My Tasks
             onChangedSearchInput: (String value) {
               setState(() {
                 _isSearching = value.isNotEmpty;

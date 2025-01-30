@@ -268,7 +268,7 @@ Future<void> _searchEvents(String query, int currentStatusId) async {
         title: CustomAppBar(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_deals'),
+              : localizations!.translate('События'),
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;

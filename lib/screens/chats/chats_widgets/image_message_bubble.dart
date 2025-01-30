@@ -11,6 +11,8 @@ class ImageMessageBubble extends StatefulWidget {
   final String filePath;
   final String fileName;
   final String senderName;
+  final String? replyMessage;
+  final bool isHighlighted;  
 
   const ImageMessageBubble({
     Key? key,
@@ -19,6 +21,8 @@ class ImageMessageBubble extends StatefulWidget {
     required this.senderName,
     required this.filePath,
     required this.fileName,
+    this.replyMessage,
+    this.isHighlighted = false,  
     required Message message,
   }) : super(key: key);
 
@@ -45,8 +49,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
     } catch (error) {
       // Handle error or set a default URL
       setState(() {
-        baseUrl = 'https://shamcrm.pro/storage/';
-
+        baseUrl = 'https://shamcrm.com/storage/';
       });
     }
   }
@@ -55,86 +58,107 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
   Widget build(BuildContext context) {
     final String? fullUrl = baseUrl != null ? '$baseUrl${widget.filePath}' : null;
 
-    return Align(
-      alignment: widget.isSender ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment:
-            widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          if (!widget.isSender)
-            Text(
-              widget.senderName,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          GestureDetector(
-            onTap: fullUrl != null
-                ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FullImageScreenViewer(
-                          imagePath: fullUrl,
-                          time: widget.time,
-                          fileName: widget.fileName,
-                          senderName: (!widget.isSender) ? widget.senderName : '',
-                        ),
-                      ),
-                    );
-                  }
-                : null,
-            child: Column(
-              children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 5),
-                  decoration: BoxDecoration(
-                    border: Border.all(width: 1, color: Colors.black26),
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: fullUrl != null
-                        ? Image.network(
-                            fullUrl,
-                            width: 200,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 200,
-                                height: 200,
-                                color: Colors.grey,
-                                child: Center(
-                                  child: Text(AppLocalizations.of(context)!
-                                      .translate('error_loading')),
-                                ),
-                              );
-                            },
-                          )
-                        : Container(
-                            width: 200,
-                            height: 200,
-                            color: Colors.grey,
-                            child: Center(
-                              child: Text(AppLocalizations.of(context)!
-                                  .translate('loading')),
-                            ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        boxShadow: widget.isHighlighted
+            ? [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  blurRadius: 5,
+                  spreadRadius: 2,
+                  offset: Offset(0, -4),
+                ),
+              ]
+            : [],
+      ),
+      child: Align(
+        alignment: widget.isSender ? Alignment.centerRight : Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment:
+              widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            if (!widget.isSender)
+              Text(
+                widget.senderName,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            GestureDetector(
+              onTap: fullUrl != null
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FullImageScreenViewer(
+                            imagePath: fullUrl,
+                            time: widget.time,
+                            fileName: widget.fileName,
+                            senderName: (!widget.isSender) ? widget.senderName : '',
                           ),
+                        ),
+                      );
+                    }
+                  : null,
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    decoration: BoxDecoration(
+                      border: Border.all(width: 1, color: Colors.black26),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          offset: Offset(0, 4),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: fullUrl != null
+                          ? Image.network(
+                              fullUrl,
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 200,
+                                  height: 200,
+                                  color: Colors.grey,
+                                  child: Center(
+                                    child: Text(AppLocalizations.of(context)!
+                                        .translate('error_loading')),
+                                  ),
+                                );
+                              },
+                            )
+                          : Container(
+                              width: 200,
+                              height: 200,
+                              color: Colors.grey,
+                              child: Center(
+                                child: Text(AppLocalizations.of(context)!
+                                    .translate('loading')),
+                              ),
+                            ),
+                    ),
                   ),
-                ),
-                Text(
-                  widget.time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: ChatSmsStyles.appBarTitleColor,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
+                  Text(
+                    widget.time,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: ChatSmsStyles.appBarTitleColor,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Gilroy',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

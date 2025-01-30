@@ -575,11 +575,9 @@ Widget _buildDetailItem(String label, String value, int leadId) {
       }
 
       // Добавим переход на экран для 'title'
-      if (label == AppLocalizations.of(context)!.translate('title')) {
+      if (label == AppLocalizations.of(context)!.translate('lead_name')) {
         return GestureDetector(
           onTap: () {
-              print('LEAD ID ENTER------');
-  print(leadId);
             navigatorKey.currentState?.push(
               MaterialPageRoute(
                 builder: (context) => LeadDetailsScreen(
