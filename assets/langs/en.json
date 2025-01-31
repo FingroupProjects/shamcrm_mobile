@@ -573,5 +573,9 @@
   "select_managers": "To",
   "select_m": "Select Executor",
     "notice_created_successfully": "Event successfully created",
-    "error_notice_create": "Error creating event"
+    "error_notice_create": "Error creating event",
+    "no_events_in_section": "No notes in this status",
+    "": "Note successfully updated!",
+    "select_subject": "Enter title",
+    "subject": "Topic"
 }

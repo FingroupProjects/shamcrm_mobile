@@ -615,11 +615,14 @@
       "notice_deleted_successfully":"События успешно удален",
       "event_completed_successfully":"События успешно заврешено",
       "finish_event_confirmation":"Хотите завершить событие?",
-      "finish_event":"Выполнен",
+      "finish_event":"Выполнил",
       "view_event":"Заметка",
       "select_managers":"Кому",
       "select_m":"Выберите испольнителя",
       "notice_created_successfully":"События успешно создан",
       "error_notice_create":"Ошибка создания события",
-      "no_events_in_section":"Нет заметок в этом статусе"
+      "no_events_in_section":"Нет заметок в этом статусе",
+      "":"Заметка успешно обновлен!",
+      "select_subject":"Введите название",
+      "subject":"Тематика"
   }

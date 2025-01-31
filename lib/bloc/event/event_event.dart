@@ -24,7 +24,7 @@ class FetchMoreEvents extends EventEvent {
   FetchMoreEvents(this.currentPage, {this.query, this.managerIds});
 }
 class CreateNotice extends EventEvent {
-  final String title;
+  final String? title;
   final String body;
   final int leadId;
   final DateTime? date;
@@ -45,7 +45,7 @@ class CreateNotice extends EventEvent {
 
 class UpdateNotice extends EventEvent {
   final int noticeId;
-  final String title;
+  final String? title;
   final String body;
   final int leadId;
   final DateTime? date;
@@ -55,7 +55,7 @@ class UpdateNotice extends EventEvent {
 
   UpdateNotice({
     required this.noticeId,
-    required this.title,
+     this.title,
     required this.body,
     required this.leadId,
    this.date,
