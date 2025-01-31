@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/task_details/task_details_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
@@ -163,6 +164,11 @@ class FirebaseApi {
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'myTask', message);
         break;
+         case 'eventId':
+        print('Переход на экран лида с ID: $id');
+        screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'eventId', message);
+        break;
       default:
         print('handleMessage: Неизвестный тип: $type');
     }
@@ -191,6 +197,9 @@ class FirebaseApi {
         await navigateToLeadScreen(id, message);
         break;
       case 'myTask':
+        await navigateToMyTaskScreen(id, message);
+        break;
+ case 'eventId':
         await navigateToMyTaskScreen(id, message);
         break;
 
@@ -316,6 +325,18 @@ class FirebaseApi {
             taskName: '',
             taskStatus: '',
             statusId: 1,
+          ),
+        ),
+      );
+    }
+  }
+  Future<void> navigateToEventScreen(String id, RemoteMessage message) async {
+    final eventId = message.data['id'];
+    if (eventId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => EventDetailsScreen(
+            noticeId: eventId,
           ),
         ),
       );
