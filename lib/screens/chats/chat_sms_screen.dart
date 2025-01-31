@@ -57,6 +57,7 @@ class ChatSmsScreen extends StatefulWidget {
 }
 
 class _ChatSmsScreenState extends State<ChatSmsScreen> {
+
   final ScrollController _scrollController = ScrollController();
   String? _currentDate;
   final TextEditingController _messageController = TextEditingController();
@@ -70,6 +71,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   late String baseUrl;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
+  
+
+
 
   Future<void> _checkPermissions() async {
     if (widget.endPointInTab == 'lead') {
@@ -223,6 +227,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         }
       }
     }
+  }
+  
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  String formatDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
   }
 
   Widget _buildAvatar(String avatar) {
@@ -484,140 +498,81 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       ),
     );
   }
+  
 
-  Widget messageListUi() {
-    return BlocBuilder<MessagingCubit, MessagingState>(
-      builder: (context, state) {
-        if (state is MessagesErrorState) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        if (state is MessagesLoadingState) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        if (state is MessagesLoadedState) {
-          if (state.messages.isEmpty) {
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: AppColors.textPrimary700),
-              ),
-            );
-          }
+void _scrollToMessageReply(int messageId) {
+  if (_scrollController.hasClients) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState) {
+      final messages = state.messages;
 
-          List<Widget> messageWidgets = [];
-          DateTime? currentDate;
-          List<Widget> currentGroup = [];
+      // Находим индекс сообщения по ID
+      final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+      if (messageIndex != -1) {
 
-          for (int i = state.messages.length - 1; i >= 0; i--) {
-            final message = state.messages[i];
-            final messageDate = DateTime.parse(message.createMessateTime);
+        final screenHeight = MediaQuery.of(context).size.height;
 
-            if (currentDate == null || !isSameDay(currentDate, messageDate)) {
-              if (currentGroup.isNotEmpty) {
-                messageWidgets.addAll(currentGroup);
-                currentGroup = [];
-              }
+        final itemHeight = screenHeight / 9;
 
-              currentGroup.add(
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                  child: GestureDetector(
-                    onTap: () => _showDatePicker(context, state.messages),
-                    child: Center(
-                      child: Text(
-                        formatDate(messageDate),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: "Gilroy",
-                          fontWeight: FontWeight.w400,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-              currentDate = messageDate;
-            }
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        final targetPosition = (messageIndex * itemHeight).clamp(0.0, maxScroll);
 
-            currentGroup.add(
-              MessageItemWidget(
-                message: message,
-                chatId: widget.chatId,
-                endPointInTab: widget.endPointInTab,
-                apiServiceDownload: widget.apiServiceDownload,
-                baseUrl: baseUrl,
-              ),
-            );
-          }
+        _scrollController.animateTo(
+          targetPosition,
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+}
 
-          if (currentGroup.isNotEmpty) {
-            messageWidgets.addAll(currentGroup);
-          }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              reverse: true,
-              children: messageWidgets.reversed.toList(),
+Widget messageListUi() {
+  return BlocBuilder<MessagingCubit, MessagingState>(
+    builder: (context, state) {
+
+      if (state is MessagesErrorState) {
+        return Center(child: Text("An error occurred"));
+      }
+      if (state is MessagesLoadingState) {
+        return Center(child: CircularProgressIndicator.adaptive());
+      }
+      if (state is MessagesLoadedState || state is ReplyingToMessageState) {
+        final messages = state is MessagesLoadedState
+            ? state.messages
+            : (state as ReplyingToMessageState).messages;
+
+        if (messages.isEmpty) {
+          return Center(
+            child: Text(
+              AppLocalizations.of(context)!.translate('not_sms'),
+              style: TextStyle(color: AppColors.textPrimary700),
             ),
           );
         }
 
-        return Container();
-      },
-    );
-  }
+        // Отображаем список сообщений
+        List<Widget> messageWidgets = [];
+        DateTime? currentDate;
+        List<Widget> currentGroup = [];
 
-  bool isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
+        for (int i = messages.length - 1; i >= 0; i--) {
+          final message = messages[i];
 
-  String formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
-  }
+          final messageDate = DateTime.parse(message.createMessateTime);
 
-  Widget messageListView() {
-    return BlocBuilder<MessagingCubit, MessagingState>(
-      builder: (context, state) {
-        if (state is MessagesErrorState) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        if (state is MessagesLoadingState) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        if (state is MessagesLoadedState) {
-          if (state.messages.isEmpty) {
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: AppColors.textPrimary700),
-              ),
-            );
-          }
+          if (currentDate == null || !isSameDay(currentDate, messageDate)) {
+            if (currentGroup.isNotEmpty) {
+              messageWidgets.addAll(currentGroup);
+              currentGroup = [];
+            }
 
-          List<Widget> messageWidgets = [];
-          DateTime? currentDate;
-          List<Widget> currentGroup = [];
-          _messagePositions.clear(); // Очистка перед созданием списка
-
-          for (int i = state.messages.length - 1; i >= 0; i--) {
-            final message = state.messages[i];
-            final messageDate = DateTime.parse(message.createMessateTime);
-
-            if (currentDate == null || !isSameDay(currentDate, messageDate)) {
-              if (currentGroup.isNotEmpty) {
-                messageWidgets.addAll(currentGroup);
-                currentGroup = [];
-              }
-
-              currentGroup.add(
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+            currentGroup.add(
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                child: GestureDetector(
+                  onTap: () => _showDatePicker(context, messages),
                   child: Center(
                     child: Text(
                       formatDate(messageDate),
@@ -630,79 +585,44 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     ),
                   ),
                 ),
-              );
-              final GlobalKey key = GlobalKey();
-              currentGroup.add(
-                Padding(
-                  key: key, // Устанавливаем GlobalKey для виджета
-                  padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                  child: Center(
-                    child: Text(
-                      formatDate(messageDate),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: "Gilroy",
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-
-// Получаем BuildContext из GlobalKey
-              final renderBox =
-                  key.currentContext?.findRenderObject() as RenderBox?;
-              if (renderBox != null) {
-                final position = renderBox.localToGlobal(Offset.zero).dy;
-                _messagePositions[formatDate(messageDate)] = position;
-              }
-
-              // Сохраняем позицию для отображения
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                final context = currentGroup.last.key?.currentContext;
-                if (context != null) {
-                  final renderBox = context.findRenderObject() as RenderBox?;
-                  if (renderBox != null) {
-                    final position = renderBox.localToGlobal(Offset.zero).dy;
-                    _messagePositions[formatDate(messageDate)] = position;
-                  }
-                }
-              });
-
-              currentDate = messageDate;
-            }
-
-            currentGroup.add(
-              MessageItemWidget(
-                message: message,
-                chatId: widget.chatId,
-                endPointInTab: widget.endPointInTab,
-                apiServiceDownload: widget.apiServiceDownload,
-                baseUrl: baseUrl,
               ),
             );
+            currentDate = messageDate;
           }
 
-          if (currentGroup.isNotEmpty) {
-            messageWidgets.addAll(currentGroup);
-          }
+          currentGroup.add(
+                MessageItemWidget(
+                  message: message,
+                  chatId: widget.chatId,
+                  endPointInTab: widget.endPointInTab,
+                  apiServiceDownload: widget.apiServiceDownload,
+                  baseUrl: baseUrl,
+                  onReplyTap: _scrollToMessageReply,
+                ),
+              );
+            }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              reverse: true,
-              children: messageWidgets.reversed.toList(),
-            ),
-          );
+        if (currentGroup.isNotEmpty) {
+          messageWidgets.addAll(currentGroup);
         }
 
-        return Container();
-      },
-    );
-  }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ListView(
+            controller: _scrollController,
+            padding: EdgeInsets.zero,
+            reverse: true,
+            children: messageWidgets.reversed.toList(),
+          ),
+        );
+      }
+     return Container();
+
+    },
+  );
+}
+
+
 
   Widget inputWidget() {
     return InputField(
@@ -786,12 +706,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
+      chatSubscribtion =myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
+        print('=====================================');
+        print('==================EVENT DATA======START=============');
+        print(event.data);
+        print('==================EVENT DATA======END=============');
+
         print('----sender');
         print(mm.message?.text ?? 'No text');
         print(mm.message?.sender?.name ?? 'Unknown sender');
+
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String UUID = prefs.getString('userID') ?? '';
@@ -802,6 +727,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             mm.message?.type == 'file' ||
             mm.message?.type == 'image' ||
             mm.message?.type == 'document') {
+            
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
+
           msg = Message(
             id: mm.message?.id ?? 0,
             filePath: mm.message?.filePath.toString() ?? '',
@@ -815,8 +746,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     ? double.parse(mm.message!.voiceDuration.toString()).round()
                     : 20),
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage,
           );
         } else {
+          ForwardedMessage? forwardedMessage;
+          if (mm.message?.forwardedMessage != null) {
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+          }
           msg = Message(
             id: mm.message?.id ?? 0,
             text: mm.message?.text ?? mm.message?.type ?? '',
@@ -825,6 +761,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
                 mm.message?.sender?.type == 'user'),
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
+            forwardedMessage: forwardedMessage, // добавляем forwardedMessage
           );
         }
 
@@ -854,27 +791,26 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  Future<void> _onSendInButton() async {
-    context.read<ListenSenderTextCubit>().updateValue(true);
-    if (kDebugMode) {
-      print('9. Начало отправки сообщения');
-    }
+Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
+  context.read<ListenSenderTextCubit>().updateValue(true);
 
-    final messageText = _messageController.text.trim();
-
-    if (messageText.isNotEmpty) {
-      try {
-        debugPrint('9.2. Отправка сообщения через API');
-        _messageController.clear();
-        await widget.apiService.sendMessage(widget.chatId, messageText);
-        context.read<ListenSenderTextCubit>().updateValue(false);
-      } catch (e) {
-        debugPrint('9.4. Ошибка отправки сообщения через API!');
-      }
-    } else {
-      debugPrint('9.5. Сообщение пустое, отправка не выполнена');
+  if (messageText.trim().isNotEmpty) {
+    try {
+      _messageController.clear();
+      await widget.apiService.sendMessage(
+        widget.chatId, 
+        messageText.trim(),
+        replyMessageId: replyMessageId,
+      );
+      context.read<ListenSenderTextCubit>().updateValue(false);
+    } catch (e) {
+      debugPrint('Ошибка отправки сообщения через API!');
     }
+  } else {
+    debugPrint('Сообщение пустое, отправка не выполнена');
   }
+}
+
 
   void _onPickFilePressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -940,85 +876,42 @@ class MessageItemWidget extends StatelessWidget {
   final String endPointInTab;
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
+  final void Function(int)? onReplyTap;
 
   const MessageItemWidget({
-    super.key,
+    Key? key, // Используем super.key правильно
     required this.message,
     required this.endPointInTab,
     required this.chatId,
     required this.apiServiceDownload,
     required this.baseUrl,
-  });
+    this.onReplyTap,
+  }) : super(key: key);
 
+  @override
   Widget build(BuildContext context) {
-    if (endPointInTab == 'lead') {
-      return _buildMessageContent(context);
-    }
-
-    return GestureDetector(
-      onLongPress: () =>
-          showDeleteDialog(context, () => _deleteMessage(context)),
-      child: _buildMessageContent(context),
+    return Dismissible(
+      key: Key(message.id.toString()), // Здесь уникальный ключ для Dismissible
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        context.read<MessagingCubit>().setReplyMessage(message);
+        return false;
+      },
+      child: GestureDetector(
+        onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),
+        child: Container(
+          key: ValueKey(message.id), // Устанавливаем ключ для отслеживания
+          width: double.infinity,
+          padding: EdgeInsets.all(2),
+          child: _buildMessageContent(context),
+        ),
+      ),
     );
-  }
+  
+}
 
-  // Логика для удаления сообщения
-  void _deleteMessage(BuildContext context) {
-    // Проверка, является ли сообщение отправленным текущим пользователем
-    if (message.isMyMessage) {
-      int messageId = message.id;
 
-      // Удаление сообщения с помощью блока
-      context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
 
-      // Показ уведомления о успешном удалении
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('sms_deletes_successfully'), 
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.green,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('cannot_someone_delete_sms'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
 
   Widget _buildMessageContent(BuildContext context) {
     switch (message.type) {
@@ -1057,14 +950,28 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 
-  Widget textState() {
-    return MessageBubble(
-      message: message.text,
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      senderName: message.senderName.toString(),
-    );
+Widget textState() {
+  String? replyMessageText;
+  if (message.forwardedMessage != null && message.forwardedMessage!.type == 'voice') {
+    replyMessageText = "Голосовое сообщение";  
+  } else {
+    replyMessageText = message.forwardedMessage?.text;
   }
+
+  return MessageBubble(
+    message: message.text,
+    time: time(message.createMessateTime),
+    isSender: message.isMyMessage,
+    senderName: message.senderName.toString(),
+    replyMessage: replyMessageText,
+    replyMessageId: message.forwardedMessage?.id,
+    onReplyTap: (int replyMessageId) {
+    onReplyTap?.call(replyMessageId); // Вызываем переданную функцию
+    },
+  );
+}
+
+
 
   Widget imageState() {
     return ImageMessageBubble(
@@ -1074,6 +981,7 @@ class MessageItemWidget extends StatelessWidget {
       fileName: message.text,
       message: message,
       senderName: message.senderName,
+      replyMessage: message.forwardedMessage?.text,
     );
   }
 
@@ -1149,4 +1057,63 @@ class MessageItemWidget extends StatelessWidget {
       ),
     );
   }
+
+    // Логика для удаления сообщения
+  void _deleteMessage(BuildContext context) {
+    // Проверка, является ли сообщение отправленным текущим пользователем
+    if (message.isMyMessage) {
+      int messageId = message.id;
+
+      // Удаление сообщения с помощью блока
+      context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
+
+      // Показ уведомления о успешном удалении
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('sms_deletes_successfully'), 
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.green,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('cannot_someone_delete_sms'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 }
+

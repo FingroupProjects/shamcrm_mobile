@@ -33,3 +33,16 @@ final class ReplyingToMessageState extends MessagingState {
   @override
   List<Object> get props => [replyingMessage, messages];
 }
+
+final class PinnedMessageState extends MessagingState {
+  final Message pinnedMessage;
+  final List<Message> messages;
+
+  const PinnedMessageState({
+    required this.pinnedMessage,
+    required this.messages,
+  });
+
+  @override
+  List<Object> get props => [pinnedMessage, messages];
+}

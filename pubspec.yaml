@@ -98,6 +98,12 @@ flutter:
     - assets/icons/tabBar/
     - assets/icons/leads/
     - assets/icons/chats/
+    - assets/icons/chats/menu_icons/pin.svg
+    - assets/icons/chats/menu_icons/pin_list.svg
+    - assets/icons/chats/menu_icons/edit.svg
+    - assets/icons/chats/menu_icons/delete.svg
+    - assets/icons/chats/menu_icons/delete-red.svg
+    - assets/icons/chats/menu_icons/reply.svg
     - assets/icons/1c/
     - assets/icons/
     - assets/icons/shamCRM.jpg

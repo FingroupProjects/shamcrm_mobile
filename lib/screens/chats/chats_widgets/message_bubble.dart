@@ -12,7 +12,7 @@ class MessageBubble extends StatelessWidget {
   final void Function(int)? onReplyTap;
   final bool isHighlighted;  
 
-  const MessageBubble({
+   MessageBubble({
     Key? key,
     required this.message,
     required this.time,
