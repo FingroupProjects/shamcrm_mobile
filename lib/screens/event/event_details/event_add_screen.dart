@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +28,8 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   final TextEditingController dateController = TextEditingController();
 
   String? selectedLead;
+  String? selectedSubject;
+
   List<int> selectedManagers = [];
   bool sendNotification = false;
 
@@ -118,18 +121,14 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_notice_title'),
-                        label: AppLocalizations.of(context)!
-                            .translate('notice_title'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
+                      SubjectSelectionWidget(
+                        selectedSubject: selectedSubject,
+                        onSelectSubject: (String subject) {
+                          setState(() {
+                            selectedSubject = subject;
+                            print(
+                                'Selected subject: $selectedSubject'); // DEBUG
+                          });
                         },
                       ),
                       const SizedBox(height: 8),
@@ -147,7 +146,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                         hintText: AppLocalizations.of(context)!
                             .translate('description_list'),
                         label: AppLocalizations.of(context)!
-                            .translate('description'),
+                            .translate('description_list'),
                         maxLines: 5,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -230,16 +229,25 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
     );
   }
 
-    void _submitForm() {
+  void _submitForm() {
     if (_formKey.currentState!.validate() && selectedLead != null) {
       DateTime? date;
       if (dateController.text.isNotEmpty) {
         date = DateFormat('dd/MM/yyyy HH:mm').parse(dateController.text);
       }
+      if (selectedSubject == null || selectedSubject!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Выберите тематику!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
       context.read<EventBloc>().add(
             CreateNotice(
-              title: titleController.text,
+              title: selectedSubject!.trim(), // Используем trim() для удаления лишних пробелов
               body: bodyController.text,
               leadId: int.parse(selectedLead!),
               date: date, // Теперь необязательное поле

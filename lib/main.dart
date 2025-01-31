@@ -49,6 +49,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
@@ -221,7 +222,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
           BlocProvider(create: (context) => DashboardChartBlocManager(ApiService())),
           BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
-          BlocProvider(create: (context) =>DashboardConversionBlocManager(ApiService())),
+          BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
           BlocProvider(create: (context) => UserBlocManager(ApiService())),
           BlocProvider(create: (context) => DealStatsBloc(ApiService())),
           BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
@@ -242,9 +243,11 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => ProfileBloc(apiService: widget.apiService)),
           BlocProvider(create: (context) => ProcessSpeedBloc(widget.apiService)),
           BlocProvider(create: (context) => TaskCompletionBloc(widget.apiService)),
-          BlocProvider(create: (context) =>TaskAddFromDealBloc(apiService: ApiService())),
+          BlocProvider(create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
           BlocProvider(create: (context) => EventBloc(widget.apiService)),
           BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
+          BlocProvider(create: (context) => GetAllSubjectBloc()),
+
 
           ],
       child: MaterialApp(

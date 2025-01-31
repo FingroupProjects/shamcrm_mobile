@@ -28,6 +28,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
+import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -3511,21 +3512,22 @@ class ApiService {
   }
 
 // Метод для отправки текстового сообщения
-Future<void> sendMessage(int chatId, String message, {String? replyMessageId}) async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _postRequest(
-    '/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {
-      'message': message,
-      if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
-    });
+  Future<void> sendMessage(int chatId, String message,
+      {String? replyMessageId}) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+        '/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'message': message,
+          if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
+        });
 
-  if (response.statusCode != 200) {
-    throw Exception('Ошибка отправки сообщения!');
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка отправки сообщения!');
+    }
   }
-}
-
-Future<void> pinMessage(String messageId) async {
+  
+  Future<void> pinMessage(String messageId) async {
   final organizationId = await getSelectedOrganization();
   final response = await _postRequest(
     '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
@@ -3535,7 +3537,6 @@ Future<void> pinMessage(String messageId) async {
     throw Exception('Ошибка отправки сообщения!');
   }
 }
-
 
   // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {
@@ -4405,7 +4406,8 @@ Future<void> pinMessage(String messageId) async {
       throw Exception('Ошибка загрузки task ID: $e');
     }
   }
-Future<bool> checkOverdueTasks() async {
+
+  Future<bool> checkOverdueTasks() async {
     try {
       final organizationId = await getSelectedOrganization();
       final response = await _getRequest(
@@ -4422,6 +4424,7 @@ Future<bool> checkOverdueTasks() async {
       throw Exception('Error checking overdue tasks: $e');
     }
   }
+
   Future<List<MyTask>> getMyTasks(
     int? taskStatusId, {
     int page = 1,
@@ -5069,13 +5072,13 @@ Future<bool> checkOverdueTasks() async {
               .map((json) => NoticeEvent.fromJson(json))
               .toList();
         } else {
-          throw Exception('Нет данных о событиях в ответе');
+          throw ('Нет данных о событиях в ответе');
         }
       } else {
-        throw Exception('Ошибка загрузки событий!');
+        throw ('Ошибка загрузки событий!');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки событий: $e');
+      throw ('Ошибка загрузки событий');
     }
   }
 
@@ -5091,20 +5094,20 @@ Future<bool> checkOverdueTasks() async {
         final Map<String, dynamic>? jsonNotice = decodedJson['result'];
 
         if (jsonNotice == null) {
-          throw Exception('Некорректные данные от API');
+          throw ('Некорректные данные от API');
         }
 
         return Notice.fromJson(jsonNotice);
       } else {
-        throw Exception('Ошибка загрузки notice ID!');
+        throw ('Ошибка загрузки notice ID!');
       }
     } catch (e) {
-      throw Exception('Ошибка загрузки notice ID!');
+      throw ('Ошибка загрузки notice ID!');
     }
   }
 
   Future<Map<String, dynamic>> createNotice({
-    required String title,
+    String? title,
     required String body,
     required int leadId,
     DateTime? date,
@@ -5114,7 +5117,7 @@ Future<bool> checkOverdueTasks() async {
     final organizationId = await getSelectedOrganization();
 
     final requestBody = {
-      'title': title,
+      'title': title ?? '', // Используем пустую строку, если title == null
       'body': body,
       'lead_id': leadId,
       'date': date?.toIso8601String(),
@@ -5139,7 +5142,7 @@ Future<bool> checkOverdueTasks() async {
 
   Future<Map<String, dynamic>> updateNotice({
     required int noticeId,
-    required String title,
+    String? title,
     required String body,
     required int leadId,
     DateTime? date,
@@ -5163,7 +5166,7 @@ Future<bool> checkOverdueTasks() async {
         requestBody);
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'notice_update_successfully'};
+      return {'success': true, 'message': '111'};
     } else if (response.statusCode == 422) {
       return {'success': false, 'message': 'validation_error'};
     } else if (response.statusCode == 500) {
@@ -5182,7 +5185,7 @@ Future<bool> checkOverdueTasks() async {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete notice!');
+      throw ('Failed to delete notice!');
     }
   }
 
@@ -5196,8 +5199,23 @@ Future<bool> checkOverdueTasks() async {
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to finish notice!');
+      throw ('Failed to finish notice!');
     }
   }
+
+  Future<SubjectDataResponse> getAllSubjects() async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+        '/noteSubject${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SubjectDataResponse.fromJson(data);
+    } else {
+      throw ('Failed to load subjects');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }

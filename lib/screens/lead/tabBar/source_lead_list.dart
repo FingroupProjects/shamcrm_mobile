@@ -1,3 +1,4 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_state.dart';
@@ -17,6 +18,8 @@ class SourceLeadWidget extends StatefulWidget {
 }
 
 class _SourceLeadWidgetState extends State<SourceLeadWidget> {
+  SourceLead? selectedSourceData;
+
   @override
   void initState() {
     super.initState();
@@ -28,11 +31,10 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
     return BlocListener<SourceLeadBloc, SourceLeadState>(
       listener: (context, state) {
         if (state is SourceLeadError) {
-          // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                AppLocalizations.of(context)!.translate(state.message),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -55,149 +57,98 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
       },
       child: BlocBuilder<SourceLeadBloc, SourceLeadState>(
         builder: (context, state) {
-          List<DropdownMenuItem<String>> dropdownItems = [];
+          if (state is SourceLeadLoaded) {
+            List<SourceLead> sourcesList = state.sourceLead;
+            
+            if (widget.selectedSourceLead != null && sourcesList.isNotEmpty) {
+              try {
+                selectedSourceData = sourcesList.firstWhere(
+                  (source) => source.id.toString() == widget.selectedSourceLead,
+                );
+              } catch (e) {
+                selectedSourceData = null;
+              }
+            }
 
-          if (state is SourceLeadLoading) {
-            dropdownItems = [
-              DropdownMenuItem(
-                value: null,
-                child: Text(
-                  AppLocalizations.of(context)!.translate('loading'), 
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.translate('source'),
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
                     color: Color(0xff1E2E52),
                   ),
                 ),
-              ),
-            ];
-          } else if (state is SourceLeadLoaded) {
-            if (state.sourceLead.isEmpty) {
-              dropdownItems = [
-                DropdownMenuItem(
-                  value: null,
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('no_source'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                const SizedBox(height: 4),
+                Container(
+                  child: CustomDropdown<SourceLead>.search(
+                    closeDropDownOnClearFilterSearch: true,
+                    items: sourcesList,
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    overlayHeight: 400,
+                    decoration: CustomDropdownDecoration(
+                      closedFillColor: Color(0xffF4F7FD),
+                      expandedFillColor: Colors.white,
+                      closedBorder: Border.all(
+                        color: Color(0xffF4F7FD),
+                        width: 1,
+                      ),
+                      closedBorderRadius: BorderRadius.circular(12),
+                      expandedBorder: Border.all(
+                        color: Color(0xffF4F7FD),
+                        width: 1,
+                      ),
+                      expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                ),
-              ];
-            } else {
-              dropdownItems = state.sourceLead.map<DropdownMenuItem<String>>(
-                (SourceLead sourceLead) {
-                  return DropdownMenuItem<String>(
-                    value: sourceLead.id.toString(),
-                    child: Text(
-                      sourceLead.name,
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      return Text(item.name);
+                    },
+                    headerBuilder: (context, selectedItem, enabled) {
+                      return Text(
+                        selectedItem.name ?? AppLocalizations.of(context)!.translate('select_source'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                      );
+                    },
+                    hintBuilder: (context, hint, enabled) => Text(
+                      AppLocalizations.of(context)!.translate('select_source'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  );
-                },
-              ).toList();
-            }
+                    excludeSelected: false,
+                    initialItem: selectedSourceData,
+                    validator: (value) {
+                      if (value == null) {
+                        return AppLocalizations.of(context)!.translate('field_required_source');
+                      }
+                      return null;
+                    },
+                    onChanged: (value) {
+                      if (value != null) {
+                        widget.onChanged(value.id.toString());
+                        setState(() {
+                          selectedSourceData = value;
+                        });
+                        FocusScope.of(context).unfocus();
+                      }
+                    },
+                  ),
+                ),
+              ],
+            );
           }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-               Text(
-                AppLocalizations.of(context)!.translate('source'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                // decoration: BoxDecoration(
-                //   color: Color(0xFFF4F7FD),
-                //   borderRadius: BorderRadius.circular(12),
-                // ),
-                child: DropdownButtonFormField<String>(
-                  value: dropdownItems.any((item) => item.value == widget.selectedSourceLead)
-                      ? widget.selectedSourceLead
-                      : null,
-                  hint: Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child:  Text(
-                       AppLocalizations.of(context)!.translate('select_source'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ),
-                  items: dropdownItems,
-                  
-                  onChanged: (value) {
-                    widget.onChanged(value);
-
-                    // Hide keyboard when selecting an item
-                    FocusScope.of(context).unfocus();
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return  AppLocalizations.of(context)!.translate('field_required_source');
-                    }
-                    return null;
-                  },
-                    decoration: InputDecoration(
-                      filled: true, 
-                      fillColor: Color(0xFFF4F7FD), 
-                      labelStyle: TextStyle(color: Colors.grey),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFF4F7FD)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    errorStyle: TextStyle(
-                      fontSize: 14, 
-                      fontFamily: 'Gilroy', 
-                      fontWeight: FontWeight.w500, 
-                      color: Colors.red, 
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 1.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 1.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  dropdownColor: Colors.white,
-                  icon: Image.asset(
-                    'assets/icons/tabBar/dropdown.png',
-                    width: 16,
-                    height: 16,
-                  ),
-                ),
-              ),
-            ],
-          );
+          return SizedBox();
         },
       ),
     );

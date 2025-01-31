@@ -119,7 +119,7 @@ Future<void> _onFetchEvents(
 
       if (result['success']) {
         emit(EventUpdateSuccess(
-            event.localizations.translate('notice_updated_successfully')));
+            event.localizations.translate('')));
         add(FetchEvents());
       } else {
         emit(

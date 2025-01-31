@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,26 +35,29 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   String? selectedLead;
   List<int> selectedManagers = [];
   bool sendNotification = false;
+  bool isLoading = false; // Добавляем состояние загрузки
+  String? selectedSubject;
 
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with existing notice data
     titleController = TextEditingController(text: widget.notice.title);
     bodyController = TextEditingController(text: widget.notice.body);
     dateController = TextEditingController(
       text: widget.notice.date != null
           ? DateFormat('dd/MM/yyyy HH:mm').format(widget.notice.date!)
-          : '', // Empty string for null values
+          : '',
     );
 
     selectedLead = widget.notice.lead!.id.toString();
     selectedManagers = widget.notice.users.map((user) => user.id).toList();
+    selectedSubject = widget.notice.title;
 
-    // Fetch necessary data
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +88,9 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
       body: BlocListener<EventBloc, EventState>(
         listener: (context, state) {
           if (state is EventUpdateError) {
+            setState(() {
+              isLoading = false; // Сбрасываем состояние загрузки
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -104,6 +111,9 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
               ),
             );
           } else if (state is EventUpdateSuccess) {
+            setState(() {
+              isLoading = false; // Сбрасываем состояние загрузки
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -123,7 +133,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                 ),
               ),
             );
-            Navigator.pop(context,true);
+            Navigator.pop(
+                context, true); // Закрываем экран после успешного обновления
           }
         },
         child: Form(
@@ -136,18 +147,12 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_notice_title'),
-                        label: AppLocalizations.of(context)!
-                            .translate('notice_title'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
+                      SubjectSelectionWidget(
+                        selectedSubject: selectedSubject,
+                        onSelectSubject: (String subject) {
+                          setState(() {
+                            selectedSubject = subject;
+                          });
                         },
                       ),
                       const SizedBox(height: 8),
@@ -163,9 +168,9 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                       CustomTextField(
                         controller: bodyController,
                         hintText: AppLocalizations.of(context)!
-                            .translate('description_list  '),
+                            .translate('description_list'),
                         label: AppLocalizations.of(context)!
-                            .translate('description'),
+                            .translate('description_list'),
                         maxLines: 5,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -181,13 +186,6 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('reminder_date'),
                         withTime: true,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
                       ),
                       const SizedBox(height: 8),
                       ManagerMultiSelectWidget(
@@ -220,7 +218,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                     Expanded(
                       child: BlocBuilder<EventBloc, EventState>(
                         builder: (context, state) {
-                          if (state is EventUpdateLoading) {
+                          if (isLoading) {
                             return Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xff1E2E52),
@@ -248,20 +246,47 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate() && selectedLead != null) {
+    if (_formKey.currentState!.validate()) {
+      // // Проверяем тематику
+      // if (selectedSubject == null || selectedSubject!.trim().isEmpty) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text('Выберите тематику!'),
+      //       backgroundColor: Colors.red,
+      //     ),
+      //   );
+      //   return;
+      // }
+
+      // // Проверяем лид
+      // if (selectedLead == null) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text('Выберите лид!'),
+      //       backgroundColor: Colors.red,
+      //     ),
+      //   );
+      //   return;
+      // }
+
+      setState(() {
+        isLoading = true;
+      });
+
       DateTime? date;
       if (dateController.text.isNotEmpty) {
         date = DateFormat('dd/MM/yyyy HH:mm').parse(dateController.text);
       }
 
       context.read<EventBloc>().add(
-            CreateNotice(
-              title: titleController.text,
+            UpdateNotice(
+              noticeId: widget.notice.id,
+              title: selectedSubject!.trim(),
               body: bodyController.text,
               leadId: int.parse(selectedLead!),
-              date: date, // Теперь необязательное поле
+              date: date,
               sendNotification: sendNotification ? 1 : 0,
-              users: selectedManagers, // Может быть пустым
+              users: selectedManagers,
               localizations: AppLocalizations.of(context)!,
             ),
           );
@@ -286,4 +311,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
         ),
       );
     }
-  }}
+  }
+
+  }
+

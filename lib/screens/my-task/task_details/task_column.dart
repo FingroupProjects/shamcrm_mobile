@@ -27,7 +27,6 @@ class MyTaskColumn extends StatefulWidget {
 }
 
 class _MyTaskColumnState extends State<MyTaskColumn> {
-  bool _hasPermissionToAddMyTask = false;
   final ApiService _apiService = ApiService();
   late MyTaskBloc _taskBloc;
   final ScrollController _scrollController = ScrollController();
@@ -36,7 +35,6 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
   void initState() {
     super.initState();
     _taskBloc = MyTaskBloc(_apiService)..add(FetchMyTasks(widget.statusId));
-    _checkPermission();
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
@@ -64,19 +62,13 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
     super.dispose();
   }
 
-  Future<void> _checkPermission() async {
-    bool hasPermission = await _apiService.hasPermission('task.create');
-    setState(() {
-      _hasPermissionToAddMyTask = hasPermission;
-    });
-  }
-
-Future<void> _onRefresh() async {
+  Future<void> _onRefresh() async {
     final leadBloc = BlocProvider.of<MyTaskBloc>(context);
     leadBloc.add(FetchMyTaskStatuses());
     _taskBloc.add(FetchMyTasks(widget.statusId));
     return Future.delayed(Duration(milliseconds: 1)); // слишком короткая задержка
-}
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -183,22 +175,20 @@ Future<void> _onRefresh() async {
             return Container();
           },
         ),
-        floatingActionButton: _hasPermissionToAddMyTask
-            ? FloatingActionButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          MyTaskAddScreen(statusId: widget.statusId),
-                    ),
-                  ).then((_) => _taskBloc.add(FetchMyTasks(widget.statusId)));
-                },
-                backgroundColor: Color(0xff1E2E52),
-                child: Image.asset('assets/icons/tabBar/add.png',
-                    width: 24, height: 24),
-              )
-            : null,
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    MyTaskAddScreen(statusId: widget.statusId),
+              ),
+            ).then((_) => _taskBloc.add(FetchMyTasks(widget.statusId)));
+          },
+          backgroundColor: Color(0xff1E2E52),
+          child: Image.asset('assets/icons/tabBar/add.png',
+              width: 24, height: 24),
+        ),
       ),
     );
   }

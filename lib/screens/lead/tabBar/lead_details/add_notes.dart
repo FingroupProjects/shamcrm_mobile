@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +26,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final TextEditingController bodyController = TextEditingController();
   final TextEditingController titleController = TextEditingController();
   List<int> selectedManagers = [];
+  String? selectedSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -74,21 +76,16 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   ),
                 ),
                 SizedBox(height: 8),
-                CustomTextField(
-                  controller: titleController,
-                  hintText:
-                      AppLocalizations.of(context)!.translate('enter_title'),
-                  label: AppLocalizations.of(context)!.translate('theme'),
-                  maxLines: 1,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context)!
-                          .translate('field_required');
-                    }
-                    return null;
+                SubjectSelectionWidget(
+                  selectedSubject: selectedSubject,
+                  onSelectSubject: (String subject) {
+                    setState(() {
+                      selectedSubject = subject;
+                      print('Selected subject: $selectedSubject'); // DEBUG
+                    });
                   },
                 ),
-                 SizedBox(height: 8),
+                SizedBox(height: 8),
                 CustomTextField(
                   controller: bodyController,
                   hintText:
@@ -110,9 +107,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   label: AppLocalizations.of(context)!.translate('reminder'),
                   withTime: true,
                 ),
-                
-               
-                 const SizedBox(height: 8),
+                const SizedBox(height: 8),
                 ManagerMultiSelectWidget(
                   selectedManagers:
                       selectedManagers, // Your list of selected manager IDs
@@ -152,7 +147,8 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
 
                       context.read<NotesBloc>().add(CreateNotes(
                             leadId: widget.leadId,
-                            title: title,
+                            title: selectedSubject!
+                                .trim(), // Используем trim() для удаления лишних пробелов
                             body: body,
                             date: date,
                             users: selectedManagers,

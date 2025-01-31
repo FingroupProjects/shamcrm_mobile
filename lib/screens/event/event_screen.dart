@@ -351,54 +351,65 @@ void initState() {
           showMenuIcon: false,
           showNotification: false,
           showSeparateFilter: true,
-          clearButtonClick: (value) {
-            if (value == false) {
+           clearButtonClick: (value) {
+          if (value == false) {
+            // Reset search
+            setState(() {
+              _isSearching = false;
+              _searchController.clear();
+              _lastSearchQuery = '';
+            });
+            
+            // If both search and filter are empty, reset state completely
+            if (_searchController.text.isEmpty && _selectedManagerIds == null) {
               setState(() {
-                _isSearching = false;
-                _searchController.clear();
-                _lastSearchQuery = '';
+                _showCustomTabBar = true;
               });
-              if (_searchController.text.isEmpty &&
-                  _selectedManagerIds == null) {
-                setState(() {
-                  _showCustomTabBar = true;
-                });
-              } else if (_selectedManagerIds != null ||
-                  _selectedManagerIds!.isNotEmpty) {
-                final dealBloc = BlocProvider.of<EventBloc>(context);
-                dealBloc.add(FetchEvents(
-                  managerIds: _selectedManagerIds,
-                  query: _searchController.text.isNotEmpty
-                      ? _searchController.text
-                      : null,
-                ));
-              }
+              final eventBloc = BlocProvider.of<EventBloc>(context);
+              eventBloc.add(FetchEvents()); // Fetch all events
+            } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+              // If filter is active, show filtered results
+              final eventBloc = BlocProvider.of<EventBloc>(context);
+              eventBloc.add(FetchEvents(
+                managerIds: _selectedManagerIds,
+                query: _searchController.text.isNotEmpty ? _searchController.text : null,
+              ));
             }
-          },
-          clearButtonClickFiltr: (value) {
-            if (value == false) {
+          }
+        },
+        clearButtonClickFiltr: (value) {
+          if (value == false) {
+            // Reset filter
+            setState(() {
+              _selectedManagerIds = null;
+            });
+            
+            // If both search and filter are empty, reset state completely
+            if (_searchController.text.isEmpty && _selectedManagerIds == null) {
               setState(() {
-                _selectedManagerIds = null;
+                _showCustomTabBar = true;
               });
-              if (_searchController.text.isEmpty &&
-                  _selectedManagerIds == null) {
-                setState(() {
-                  _showCustomTabBar = true;
-                });
-                if (_lastSearchQuery.isNotEmpty) {
-                  final dealBloc = BlocProvider.of<EventBloc>(context);
-                  dealBloc.add(FetchEvents(query: _lastSearchQuery));
-                } else {
-                  final leadBloc = BlocProvider.of<EventBloc>(context);
-                }
-              } else if (_searchController.text.isNotEmpty) {
-                final dealBloc = BlocProvider.of<EventBloc>(context);
-                dealBloc.add(FetchEvents(
-                  query: _searchController.text,
-                ));
+              
+              // Check if there was a previous search query
+              if (_lastSearchQuery.isNotEmpty) {
+                final eventBloc = BlocProvider.of<EventBloc>(context);
+                print('Returning search results after filter reset');
+                eventBloc.add(FetchEvents(query: _lastSearchQuery));
+              } else {
+                // If both search and filter are empty, show all events
+                final eventBloc = BlocProvider.of<EventBloc>(context);
+                print('Reset and search empty, returning all events');
+                eventBloc.add(FetchEvents());
               }
+            } else if (_searchController.text.isNotEmpty) {
+              // If search is active, show search results
+              final eventBloc = BlocProvider.of<EventBloc>(context);
+              eventBloc.add(FetchEvents(
+                query: _searchController.text,
+              ));
             }
-          },
+          }
+        },
         ),
       ),
       floatingActionButton: FloatingActionButton(
