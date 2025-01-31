@@ -624,19 +624,47 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           );
         }
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: _buildValue(value),
-            ),
-          ],
+       // Обработка длинных текстов
+      if (label == AppLocalizations.of(context)!.translate('body')) {
+        return GestureDetector(
+          onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff1E2E52),
+                    decoration: TextDecoration.underline,
+                  ),
+                  maxLines: 7,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         );
-      },
-    );
-  }
+      }
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(width: 8),
+          Expanded(
+            child: _buildValue(value),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildLabel(String label) {
     return Text(

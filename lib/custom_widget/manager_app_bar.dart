@@ -5,10 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ManagerFilterPopup extends StatefulWidget {
   final Function(List<dynamic>)? onManagersSelected;
+  final List<dynamic> initialSelectedManagers; // Добавляем начальные выбранные менеджеры
 
   const ManagerFilterPopup({
     Key? key,
     this.onManagersSelected,
+        this.initialSelectedManagers = const [], // По умолчанию пустой список
+
   }) : super(key: key);
 
   @override
@@ -19,7 +22,12 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
   List<dynamic> _selectedManagers = [];
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
-
+@override
+  void initState() {
+    super.initState();
+    // Инициализируем список выбранных менеджеров начальными значениями
+    _selectedManagers = List.from(widget.initialSelectedManagers);
+  }
   void toggleSelectAll(List<dynamic> managers) {
     setState(() {
       if (_selectedManagers.length == managers.length) {
@@ -30,7 +38,8 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
     });
   }
 
-  List<dynamic> filterManagers(List<dynamic> managers) {
+
+ List<dynamic> filterManagers(List<dynamic> managers) {
     if (searchQuery.isEmpty) return managers;
     return managers.where((manager) {
       final name = (manager.name?.toString().toLowerCase() ?? '') +
@@ -38,6 +47,7 @@ class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
       return name.contains(searchQuery.toLowerCase());
     }).toList();
   }
+
 
   @override
   Widget build(BuildContext context) {
