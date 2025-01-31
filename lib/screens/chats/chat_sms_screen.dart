@@ -14,7 +14,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_scree
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
-import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
+import 'package:crm_task_manager/screens/chats/delete_message.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -57,6 +57,7 @@ class ChatSmsScreen extends StatefulWidget {
 }
 
 class _ChatSmsScreenState extends State<ChatSmsScreen> {
+
   final ScrollController _scrollController = ScrollController();
   String? _currentDate;
   final TextEditingController _messageController = TextEditingController();
@@ -70,20 +71,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   late String baseUrl;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
-  int? _highlightedMessageId;
-  bool _isMenuOpen = false;
+  
 
-  void _highlightMessage(int messageId) {
-    setState(() {
-      _highlightedMessageId = messageId;
-    });
 
-    Future.delayed(const Duration(seconds: 3), () {
-      setState(() {
-        _highlightedMessageId = null;
-      });
-    });
-  }
 
   Future<void> _checkPermissions() async {
     if (widget.endPointInTab == 'lead') {
@@ -155,7 +145,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.translate('go_to_date'),
+                      AppLocalizations.of(context)!.translate('go_to_date'), 
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -238,7 +228,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       }
     }
   }
-
+  
   bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
         date1.month == date2.month &&
@@ -491,10 +481,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 child: Center(
                   child: Text(
                     widget.canSendMessage
-                        ? AppLocalizations.of(context)!
-                            .translate('not_premission_to_send_sms')
-                        : AppLocalizations.of(context)!
-                            .translate('24_hour_leads'),
+                        ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
+                        : AppLocalizations.of(context)!.translate('24_hour_leads'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -510,66 +498,50 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       ),
     );
   }
+  
 
-// Исправленный метод для прокрутки к сообщению
 void _scrollToMessageReply(int messageId) {
-  final state = context.read<MessagingCubit>().state;
-  if (state is MessagesLoadedState || state is PinnedMessageState) {
-    final messages = state is MessagesLoadedState
-        ? state.messages
-        : (state as PinnedMessageState).messages;
+  if (_scrollController.hasClients) {
+    final state = context.read<MessagingCubit>().state;
+    if (state is MessagesLoadedState) {
+      final messages = state.messages;
 
-    // Находим индекс сообщения по его ID
-    final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+      // Находим индекс сообщения по ID
+      final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
+      if (messageIndex != -1) {
 
-    if (messageIndex != -1) {
-      // Получаем объект сообщения по индексу
-      final message = messages[messageIndex];
+        final screenHeight = MediaQuery.of(context).size.height;
 
-      // Теперь у вас есть доступ к message.id
-      print("Found message ID: ${message.id}");
+        final itemHeight = screenHeight / 9;
 
-      // Прокручиваем к сообщению
-      _scrollController.animateTo(
-        messageIndex * 95.0, // Высота элемента
-        duration: const Duration(milliseconds: 1),
-        curve: Curves.easeInOut,
-      );
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        final targetPosition = (messageIndex * itemHeight).clamp(0.0, maxScroll);
 
-      // Подсвечиваем сообщение
-      setState(() {
-        _highlightedMessageId = message.id;
-      });
+        _scrollController.animateTo(
+          targetPosition,
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.easeInOut,
+        );
+      }
     }
   }
 }
 
 
-
 Widget messageListUi() {
   return BlocBuilder<MessagingCubit, MessagingState>(
     builder: (context, state) {
+
       if (state is MessagesErrorState) {
         return Center(child: Text("An error occurred"));
       }
       if (state is MessagesLoadingState) {
         return Center(child: CircularProgressIndicator.adaptive());
       }
-if (state is MessagesLoadedState || state is ReplyingToMessageState || state is PinnedMessageState) {
-  final messages = state is MessagesLoadedState
-      ? state.messages
-      : state is ReplyingToMessageState
-          ? state.messages
-          : (state as PinnedMessageState).messages;
-
-  final pinnedMessage = state is PinnedMessageState ? state.pinnedMessage : null;
-        
-        String _getMessageText(Message message) {
-           if (message.type == 'voice') {
-              return 'Голосовое сообщение'; 
-            }
-            return message.text; 
-          }
+      if (state is MessagesLoadedState || state is ReplyingToMessageState) {
+        final messages = state is MessagesLoadedState
+            ? state.messages
+            : (state as ReplyingToMessageState).messages;
 
         if (messages.isEmpty) {
           return Center(
@@ -581,21 +553,21 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
         }
 
         // Отображаем список сообщений
-       List<Widget> messageWidgets = [];
+        List<Widget> messageWidgets = [];
         DateTime? currentDate;
         List<Widget> currentGroup = [];
-        
+
         for (int i = messages.length - 1; i >= 0; i--) {
           final message = messages[i];
+
           final messageDate = DateTime.parse(message.createMessateTime);
-        
-          // Логика группировки сообщений по датам
+
           if (currentDate == null || !isSameDay(currentDate, messageDate)) {
             if (currentGroup.isNotEmpty) {
               messageWidgets.addAll(currentGroup);
               currentGroup = [];
             }
-        
+
             currentGroup.add(
               Padding(
                 padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
@@ -617,74 +589,40 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
             );
             currentDate = messageDate;
           }
-        
+
           currentGroup.add(
-            MessageItemWidget(
-              message: message,
-              chatId: widget.chatId,
-              endPointInTab: widget.endPointInTab,
-              apiServiceDownload: widget.apiServiceDownload,
-              baseUrl: baseUrl,
-              onReplyTap: _scrollToMessageReply,
-              highlightedMessageId: _highlightedMessageId,
-              onMenuStateChanged: (isOpen) {
-                setState(() {
-                  _isMenuOpen = isOpen;
-                });
-              },
-            ),
-          );
-        }
-        
+                MessageItemWidget(
+                  message: message,
+                  chatId: widget.chatId,
+                  endPointInTab: widget.endPointInTab,
+                  apiServiceDownload: widget.apiServiceDownload,
+                  baseUrl: baseUrl,
+                  onReplyTap: _scrollToMessageReply,
+                ),
+              );
+            }
+
         if (currentGroup.isNotEmpty) {
           messageWidgets.addAll(currentGroup);
         }
-        
-        return Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ListView(
-                controller: _scrollController,
-                padding: EdgeInsets.zero,
-                reverse: true,
-                children: [
-                  ...messageWidgets.reversed.toList(),
-                ],
-              ),
-            ),
-            if (pinnedMessage != null)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Material(
-                  color: Colors.transparent,
-                  child: PinnedMessageWidget(
-                    message: _getMessageText(pinnedMessage),
-                    onUnpin: () {
-                      context.read<MessagingCubit>().unpinMessage();
-                    },
-              onTap: () {
-                  _scrollToMessageReply(pinnedMessage.id); 
-                },
-                  ),
-                ),
-              ),
-            if (_isMenuOpen)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.3),
-                ),
-              ),
-          ],
-        );
 
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ListView(
+            controller: _scrollController,
+            padding: EdgeInsets.zero,
+            reverse: true,
+            children: messageWidgets.reversed.toList(),
+          ),
+        );
       }
-      return Container();
+     return Container();
+
     },
   );
 }
+
+
 
   Widget inputWidget() {
     return InputField(
@@ -730,7 +668,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
-    // Извлекаем значения из Map
+  // Извлекаем значения из Map
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
@@ -753,11 +691,8 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate:EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back',
@@ -771,8 +706,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
 
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
+      chatSubscribtion =myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('=====================================');
         print('==================EVENT DATA======START=============');
@@ -783,6 +717,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
         print(mm.message?.text ?? 'No text');
         print(mm.message?.sender?.name ?? 'Unknown sender');
 
+
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String UUID = prefs.getString('userID') ?? '';
         print('userID : $UUID');
@@ -792,10 +727,10 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
             mm.message?.type == 'file' ||
             mm.message?.type == 'image' ||
             mm.message?.type == 'document') {
+            
           ForwardedMessage? forwardedMessage;
           if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
           }
 
           msg = Message(
@@ -816,8 +751,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
         } else {
           ForwardedMessage? forwardedMessage;
           if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+            forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
           }
           msg = Message(
             id: mm.message?.id ?? 0,
@@ -857,26 +791,26 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
     }
   }
 
-  Future<void> _onSendInButton(
-      String messageText, String? replyMessageId) async {
-    context.read<ListenSenderTextCubit>().updateValue(true);
+Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
+  context.read<ListenSenderTextCubit>().updateValue(true);
 
-    if (messageText.trim().isNotEmpty) {
-      try {
-        _messageController.clear();
-        await widget.apiService.sendMessage(
-          widget.chatId,
-          messageText.trim(),
-          replyMessageId: replyMessageId,
-        );
-        context.read<ListenSenderTextCubit>().updateValue(false);
-      } catch (e) {
-        debugPrint('Ошибка отправки сообщения через API!');
-      }
-    } else {
-      debugPrint('Сообщение пустое, отправка не выполнена');
+  if (messageText.trim().isNotEmpty) {
+    try {
+      _messageController.clear();
+      await widget.apiService.sendMessage(
+        widget.chatId, 
+        messageText.trim(),
+        replyMessageId: replyMessageId,
+      );
+      context.read<ListenSenderTextCubit>().updateValue(false);
+    } catch (e) {
+      debugPrint('Ошибка отправки сообщения через API!');
     }
+  } else {
+    debugPrint('Сообщение пустое, отправка не выполнена');
   }
+}
+
 
   void _onPickFilePressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -943,40 +877,39 @@ class MessageItemWidget extends StatelessWidget {
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
   final void Function(int)? onReplyTap;
-  final int? highlightedMessageId;
-  final void Function(bool)? onMenuStateChanged;
 
   const MessageItemWidget({
-    super.key,
+    Key? key, // Используем super.key правильно
     required this.message,
     required this.endPointInTab,
     required this.chatId,
     required this.apiServiceDownload,
     required this.baseUrl,
     this.onReplyTap,
-    this.highlightedMessageId,
-    this.onMenuStateChanged,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: Key(message.id.toString()),
+      key: Key(message.id.toString()), // Здесь уникальный ключ для Dismissible
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         context.read<MessagingCubit>().setReplyMessage(message);
         return false;
       },
       child: GestureDetector(
-        onLongPress: () => _showMessageContextMenu(context, message),
+        onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),
         child: Container(
+          key: ValueKey(message.id), // Устанавливаем ключ для отслеживания
           width: double.infinity,
-          padding: const EdgeInsets.all(2),
+          padding: EdgeInsets.all(2),
           child: _buildMessageContent(context),
         ),
       ),
     );
-  }
+  
+}
+
 
 
 
@@ -993,7 +926,6 @@ class MessageItemWidget extends StatelessWidget {
           isSender: message.isMyMessage,
           filePath: message.filePath ?? 'Unknown file format',
           fileName: message.text,
-          isHighlighted: highlightedMessageId == message.id,
           onTap: (path) async {
             if (message.filePath != null && message.filePath!.isNotEmpty) {
               try {
@@ -1018,28 +950,28 @@ class MessageItemWidget extends StatelessWidget {
     }
   }
 
-  Widget textState() {
-    String? replyMessageText;
-    if (message.forwardedMessage != null &&
-        message.forwardedMessage!.type == 'voice') {
-      replyMessageText = "Голосовое сообщение";
-    } else {
-      replyMessageText = message.forwardedMessage?.text;
-    }
-
-    return MessageBubble(
-      message: message.text,
-      time: time(message.createMessateTime),
-      isSender: message.isMyMessage,
-      senderName: message.senderName.toString(),
-      replyMessage: replyMessageText,
-      replyMessageId: message.forwardedMessage?.id,
-      onReplyTap: (int replyMessageId) {
-        onReplyTap?.call(replyMessageId);
-      },
-      isHighlighted: highlightedMessageId == message.id,
-    );
+Widget textState() {
+  String? replyMessageText;
+  if (message.forwardedMessage != null && message.forwardedMessage!.type == 'voice') {
+    replyMessageText = "Голосовое сообщение";  
+  } else {
+    replyMessageText = message.forwardedMessage?.text;
   }
+
+  return MessageBubble(
+    message: message.text,
+    time: time(message.createMessateTime),
+    isSender: message.isMyMessage,
+    senderName: message.senderName.toString(),
+    replyMessage: replyMessageText,
+    replyMessageId: message.forwardedMessage?.id,
+    onReplyTap: (int replyMessageId) {
+    onReplyTap?.call(replyMessageId); // Вызываем переданную функцию
+    },
+  );
+}
+
+
 
   Widget imageState() {
     return ImageMessageBubble(
@@ -1050,7 +982,6 @@ class MessageItemWidget extends StatelessWidget {
       message: message,
       senderName: message.senderName,
       replyMessage: message.forwardedMessage?.text,
-      isHighlighted: highlightedMessageId == message.id,
     );
   }
 
@@ -1127,108 +1058,7 @@ class MessageItemWidget extends StatelessWidget {
     );
   }
 
-void _showMessageContextMenu(BuildContext context, Message message) {
-  final RenderBox overlay =
-      Overlay.of(context).context.findRenderObject() as RenderBox;
-  final RenderBox messageBox = context.findRenderObject() as RenderBox;
-  final Offset position =
-      messageBox.localToGlobal(Offset.zero, ancestor: overlay);
-
-  onMenuStateChanged?.call(true);
-
-  showMenu(
-    context: context,
-    color: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    position: RelativeRect.fromLTRB(
-      position.dx + messageBox.size.width / 2.5,
-      position.dy,
-      position.dx + messageBox.size.width / 2 + 1,
-      position.dy + messageBox.size.height,
-    ),
-    items: [
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/reply.svg', 
-        text: "Ответить",
-        iconColor: Colors.black,
-        textColor: Colors.black, 
-        onTap: () {
-          Navigator.pop(context);
-          context.read<MessagingCubit>().setReplyMessage(message);
-        },
-      ),
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/pin.svg',
-        text: "Закрепить",
-        iconColor: Colors.black,
-        textColor: Colors.black,
-        onTap: () {
-          Navigator.pop(context);
-          context.read<MessagingCubit>().pinMessage(message);
-          print("Сообщение закреплено");
-        },
-      ),
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/delete-red.svg',
-        text: "Удалить",
-        iconColor: Colors.red,
-        textColor: Colors.red,
-        onTap: () {
-          Navigator.pop(context);
-          _deleteMessage(context);
-          print("Сообщение удалено");
-        },
-      ),
-    ],
-  ).then((_) {
-    onMenuStateChanged?.call(false);
-  });
-}
-
-
-PopupMenuItem _buildMenuItem({
-  required String icon, 
-  required String text,
-  required Color iconColor,
-  required Color textColor, 
-  required VoidCallback onTap,
-}) {
-  return PopupMenuItem(
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              icon, 
-              width: 24,
-              height: 24,
-              color: iconColor,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: textColor, 
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-
-
-  // Логика для удаления сообщения
+    // Логика для удаления сообщения
   void _deleteMessage(BuildContext context) {
     // Проверка, является ли сообщение отправленным текущим пользователем
     if (message.isMyMessage) {
@@ -1241,7 +1071,7 @@ PopupMenuItem _buildMenuItem({
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('sms_deletes_successfully'),
+            AppLocalizations.of(context)!.translate('sms_deletes_successfully'), 
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -1264,8 +1094,7 @@ PopupMenuItem _buildMenuItem({
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!
-                .translate('cannot_someone_delete_sms'),
+            AppLocalizations.of(context)!.translate('cannot_someone_delete_sms'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -1287,3 +1116,4 @@ PopupMenuItem _buildMenuItem({
     }
   }
 }
+
