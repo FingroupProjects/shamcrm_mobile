@@ -571,5 +571,9 @@
   "select_managers": "Kimga",
   "select_m": "Ijrochini tanlang",   
    "notice_created_successfully": "Voqea muvaffaqiyatli yaratildi",
-    "error_notice_create": "Voqeani yaratishda xatolik"
+    "error_notice_create": "Voqeani yaratishda xatolik",
+    "no_events_in_section": "Bu holatda hech qanday eslatma yo‘q",
+    "": "Eslatma muvaffaqiyatli yangilandi!",
+    "select_subject": "Sarlavhani kiriting",
+    "subject": "Mavzu"
 }

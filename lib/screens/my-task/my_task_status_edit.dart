@@ -23,7 +23,7 @@ class EditMyTaskStatusScreen extends StatefulWidget {
 
 class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
   late TextEditingController _titleController;
-  bool _needsPermission = false;
+  bool _needsPermission = true;
   late MyTaskBloc _myTaskBloc;
   bool _dataLoaded = false;
 

@@ -7,7 +7,6 @@ import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_notes.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details/edit_notes.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -137,8 +136,8 @@ class _NotesWidgetState extends State<NotesWidget> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Icon(Icons.note_add, size: 48, color: Color(0xff1E2E52)),
-                SizedBox(height: 8),
+                // Icon(Icons.note_add, size: 48, color: Color(0xff1E2E52)),
+                SizedBox(height: 0),
                 Text(
                   AppLocalizations.of(context)!.translate('empty'),
                   style: TextStyle(
