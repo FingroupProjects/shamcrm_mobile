@@ -4,6 +4,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Task {
   final int id;
+  final int? taskNumber;
   final String name;
   final String? startDate;
   final String? endDate;
@@ -21,6 +22,7 @@ class Task {
 
   Task({
     required this.id,
+   this.taskNumber,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -50,6 +52,7 @@ class Task {
     try {
       return Task(
         id: json['id'] is int ? json['id'] : 0,
+        taskNumber: json['task_number'] is int ? json['task_number'] : 0,
         name: json['name'] is String ? json['name'] : 'Без имени',
         startDate: json['from'] is String ? json['from'] : null,
         endDate: json['to'] is String ? json['to'] : null,
@@ -84,6 +87,7 @@ class Task {
       print('Error parsing Task: $e');
       return Task(
         id: 0,
+        taskNumber: 0,
         name: 'Ошибка загрузки',
         startDate: null,
         endDate: null,
@@ -218,6 +222,7 @@ class TaskFile {
     }
   }
 }
+
 class TaskStatus {
   final int id;
   final TaskStatusName? taskStatus;

@@ -207,6 +207,7 @@ Widget build(BuildContext context) {
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
                 taskId: widget.task.id.toString(), // ID задачи для детального экрана
+                taskNumber: widget.task.taskNumber,
                 taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
                 startDate: widget.task.startDate, // Дата начала задачи
                 endDate: widget.task.endDate, // Дата окончания задачи

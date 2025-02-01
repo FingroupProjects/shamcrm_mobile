@@ -40,18 +40,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   // Переменные для файла
-  // Переменные для файла
   String? selectedFile;
   String? fileName;
   String? fileSize;
   int? selectedPriority;
   String? selectedProject;
-    String? selectedStatus;
+  String? selectedStatus;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-
-
 
   @override
   void initState() {
@@ -127,7 +124,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.translate('file_selection_error')),
+          content: Text(
+              AppLocalizations.of(context)!.translate('file_selection_error')),
           backgroundColor: Colors.red,
         ),
       );
@@ -162,7 +160,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    fileName ?? AppLocalizations.of(context)!.translate('select_file'),
+                    fileName ??
+                        AppLocalizations.of(context)!.translate('select_file'),
                     style: TextStyle(
                       color: fileName != null
                           ? const Color(0xff1E2E52)
@@ -213,77 +212,25 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   // Построение выпадающего списка приоритетов
   Widget _buildPriorityDropdown() {
-
-      // Карта уровней приоритета
-final Map<int, String> priorityLevels = {
-  1: AppLocalizations.of(context)!.translate('normal'), 
-  2: AppLocalizations.of(context)!.translate('important'),
-  3: AppLocalizations.of(context)!.translate('urgent'), 
-};
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
+        Checkbox(
+          value: selectedPriority == 3,
+          onChanged: (bool? value) {
+            setState(() {
+              selectedPriority = value == true ? 3 : 1;
+            });
+          },
+          activeColor: const Color(0xff1E2E52),
+        ),
+        const SizedBox(width: 0),
         Text(
-          AppLocalizations.of(context)!.translate('priority_level'),
+          AppLocalizations.of(context)!.translate('urgent'),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
             color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              canvasColor: Colors.white,
-            ),
-            child: DropdownButtonFormField<int>(
-              value:
-                  selectedPriority ?? 1, // Устанавливаем значение по умолчанию
-              items: priorityLevels.entries.map((entry) {
-                final priorityColor = entry.key == 2
-                    ? Colors.yellow
-                    : entry.key == 3
-                        ? Colors.red
-                        : Colors.green;
-                return DropdownMenuItem(
-                  value: entry.key,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: priorityColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        entry.value,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (int? newValue) {
-                setState(() {
-                  selectedPriority = newValue;
-                });
-              },
-              decoration: _inputDecoration(),
-            ),
           ),
         ),
       ],
@@ -342,7 +289,8 @@ final Map<int, String> priorityLevels = {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -365,7 +313,8 @@ final Map<int, String> priorityLevels = {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -400,11 +349,14 @@ final Map<int, String> priorityLevels = {
                     children: [
                       CustomTextField(
                         controller: nameController,
-                        hintText:  AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label:  AppLocalizations.of(context)!.translate('name_list'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
@@ -414,10 +366,12 @@ final Map<int, String> priorityLevels = {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('from_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('from_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
@@ -425,11 +379,13 @@ final Map<int, String> priorityLevels = {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('to_list'),
+                        label:
+                            AppLocalizations.of(context)!.translate('to_list'),
                         hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
@@ -458,8 +414,10 @@ final Map<int, String> priorityLevels = {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'), 
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 16),
@@ -505,7 +463,8 @@ final Map<int, String> priorityLevels = {
                       const SizedBox(height: 8),
 
                       CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -532,7 +491,7 @@ final Map<int, String> priorityLevels = {
         children: [
           Expanded(
             child: CustomButton(
-              buttonText:  AppLocalizations.of(context)!.translate('cancel'), 
+              buttonText: AppLocalizations.of(context)!.translate('cancel'),
               buttonColor: const Color(0xffF4F7FD),
               textColor: Colors.black,
               onPressed: () => Navigator.pop(context),
@@ -550,7 +509,7 @@ final Map<int, String> priorityLevels = {
                   );
                 } else {
                   return CustomButton(
-                    buttonText:  AppLocalizations.of(context)!.translate('add'), 
+                    buttonText: AppLocalizations.of(context)!.translate('add'),
                     buttonColor: const Color(0xff4759FF),
                     textColor: Colors.white,
                     onPressed: _submitForm,
@@ -595,9 +554,12 @@ final Map<int, String> priorityLevels = {
 
   void _createTask() {
     final String name = nameController.text;
-    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
-    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
-    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+    final String? startDateString =
+        startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString =
+        endDateController.text.isEmpty ? null : endDateController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
 
     DateTime? startDate;
     if (startDateString != null && startDateString.isNotEmpty) {
@@ -606,8 +568,9 @@ final Map<int, String> priorityLevels = {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('fill_required_fields'),)
-          ),
+              content: Text(
+            AppLocalizations.of(context)!.translate('fill_required_fields'),
+          )),
         );
         return;
       }
@@ -620,8 +583,9 @@ final Map<int, String> priorityLevels = {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date'),)
-          ),
+              content: Text(
+            AppLocalizations.of(context)!.translate('enter_valid_date'),
+          )),
         );
         return;
       }
@@ -633,7 +597,8 @@ final Map<int, String> priorityLevels = {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+            AppLocalizations.of(context)!
+                .translate('start_date_after_end_date'),
             style: TextStyle(
               color: Colors.white,
             ),
@@ -660,7 +625,7 @@ final Map<int, String> priorityLevels = {
       }
     }
     print("fileData: $fileData");
-  final localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     context.read<TaskBloc>().add(CreateTask(
           name: name,
@@ -668,7 +633,8 @@ final Map<int, String> priorityLevels = {
           taskStatusId: widget.statusId,
           startDate: startDate,
           endDate: endDate,
-          projectId:selectedProject != null ? int.parse(selectedProject!) : null,
+          projectId:
+              selectedProject != null ? int.parse(selectedProject!) : null,
           userId: selectedUsers != null
               ? selectedUsers!.map((id) => int.parse(id)).toList()
               : null,
@@ -676,8 +642,7 @@ final Map<int, String> priorityLevels = {
           description: description,
           customFields: customFieldMap,
           filePath: selectedFile, // Передаем путь к файлу
-          localizations: localizations,  // Pass the localizations here
-
+          localizations: localizations, // Pass the localizations here
         ));
   }
 }

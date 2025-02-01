@@ -57,7 +57,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
-import 'package:crm_task_manager/screens/my-task/task_details/task_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
@@ -5233,3 +5233,4 @@ class ApiService {
 
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }
+

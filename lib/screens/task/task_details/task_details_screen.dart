@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
+import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
@@ -21,6 +22,7 @@ import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   final String taskId;
+  final int? taskNumber;
   final String taskName;
   final String taskStatus;
   final int statusId;
@@ -39,6 +41,7 @@ class TaskDetailsScreen extends StatefulWidget {
 
   TaskDetailsScreen({
     required this.taskId,
+    this.taskNumber,
     required this.taskName,
     required this.taskStatus,
     required this.statusId,
@@ -173,26 +176,30 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       return;
     }
 
-
     final Map<int, String> priorityLevels = {
-  1: AppLocalizations.of(context)!.translate('normal'), 
-  2: AppLocalizations.of(context)!.translate('important'),
-  3: AppLocalizations.of(context)!.translate('urgent'), 
-};
+      1: AppLocalizations.of(context)!.translate('normal'),
+      2: AppLocalizations.of(context)!.translate('important'),
+      3: AppLocalizations.of(context)!.translate('urgent'),
+    };
 
-  // // Карта уровней приоритета
-  //   final Map<int, String> priorityLevels = {
-  //     1: 'Обычный',
-  //     3: 'Критический',
-  //     2: 'Сложный'
-  //   };
-    
+    // // Карта уровней приоритета
+    //   final Map<int, String> priorityLevels = {
+    //     1: 'Обычный',
+    //     3: 'Критический',
+    //     2: 'Сложный'
+    //   };
+
     currentTask = task;
     details = [
-      {'label': AppLocalizations.of(context)!.translate('task_name'), 'value': task?.name ?? ""},
       {
-        'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-        'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
+        'label': AppLocalizations.of(context)!.translate('task_name'),
+        'value': task?.name ?? ""
+      },
+      {
+        'label':
+            AppLocalizations.of(context)!.translate('priority_level_colon'),
+        'value': priorityLevels[task.priority] ??
+            AppLocalizations.of(context)!.translate('normal'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('from_details'),
@@ -201,12 +208,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             : ''
       },
       {
-        'label':  AppLocalizations.of(context)!.translate('to_details'),
+        'label': AppLocalizations.of(context)!.translate('to_details'),
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
       },
-      {'label': AppLocalizations.of(context)!.translate('project_details'),  'value': task.project?.name ?? ''},
+      {
+        'label': AppLocalizations.of(context)!.translate('project_details'),
+        'value': task.project?.name ?? ''
+      },
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': task.user != null && task.user!.isNotEmpty
@@ -221,10 +231,20 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('status_details'),
         'value': task.taskStatus?.taskStatus.name ?? '',
       },
-      {'label': AppLocalizations.of(context)!.translate('author_details'),'value': task.author?.name ?? ''},
-      {'label':  AppLocalizations.of(context)!.translate('creation_date_details'), 'value': formatDate(task.createdAt)},
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': task.author?.name ?? ''
+      },
+      {
+        'label':
+            AppLocalizations.of(context)!.translate('creation_date_details'),
+        'value': formatDate(task.createdAt)
+      },
       if (task.taskFile != null && task.taskFile!.isNotEmpty)
-        {'label': AppLocalizations.of(context)!.translate('file_details'), 'value': AppLocalizations.of(context)!.translate('link'),},
+        {
+          'label': AppLocalizations.of(context)!.translate('file_details'),
+          'value': AppLocalizations.of(context)!.translate('link'),
+        },
     ];
 
     for (var field in task.taskCustomFields) {
@@ -237,396 +257,429 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+ @override
+Widget build(BuildContext context) {
+  return BlocBuilder<TaskBloc, TaskState>(builder: (context, state) {
+    String? tasksNumber = '1111';
+    if (state is TaskDataLoaded && state.tasks.isNotEmpty) {
+      // Ищем задачу по ID
+      final task = state.tasks.firstWhere(
+        (task) => task.id.toString() == widget.taskId,
+        // orElse: () => Task(),
+      );
+      tasksNumber = task.taskNumber?.toString() ?? '';
+    }
+  
     return Scaffold(
-        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_task'),),
-        backgroundColor: Colors.white,
-        body: BlocListener<TaskByIdBloc, TaskByIdState>(
-          listener: (context, state) {
-            if (state is TaskByIdLoaded) {
-              print("Задача Data: ${state.task.toString()}");
-            } else if (state is TaskByIdError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+      appBar: _buildAppBar(
+        context,
+        "${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber?.toString()}"
+      ),
+      backgroundColor: Colors.white,
+      body: BlocListener<TaskByIdBloc, TaskByIdState>(
+            listener: (context, state) {
+              if (state is TaskByIdLoaded) {
+                print("Задача Data: ${state.task.toString()}");
+              } else if (state is TaskByIdError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.message}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-          },
-          child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-            builder: (context, state) {
-              if (state is TaskByIdLoading) {
-                return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
                 );
-              } else if (state is TaskByIdLoaded) {
-                if (state.task == null) {
-                  return Center(child: Text(AppLocalizations.of(context)!.translate('task_data_unavailable'),));
-                }
-                TaskById task = state.task!;
-                _updateDetails(task);
+              }
+            },
+            child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+              builder: (context, state) {
+                if (state is TaskByIdLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                  );
+                } else if (state is TaskByIdLoaded) {
+                  if (state.task == null) {
+                    return Center(
+                        child: Text(
+                      AppLocalizations.of(context)!
+                          .translate('task_data_unavailable'),
+                    ));
+                  }
+                  TaskById task = state.task!;
+                  _updateDetails(task);
 
-                return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: ListView(
-                      children: [
-                        _buildDetailsList(),
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: task.isFinished == 1 ? 100 : 55,
-                              child: TaskNavigateToChat(
-                                chatId: task.chat!.id,
-                                taskName: widget.taskName,
-                                canSendMessage: task.chat!.canSendMessage,
-                              ),
-                            ),
-                            if (task.isFinished == 0) ...[
-                              SizedBox(
-                                width: 8,
-                                height: 60,
-                              ),
+                  return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
+                      child: ListView(
+                        children: [
+                          _buildDetailsList(),
+                          Row(
+                            children: [
                               Expanded(
-                                flex: 45,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) =>
-                                          AlertDialog(
-                                        contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 24, vertical: 20),
-                                        title: Text(
-                                         AppLocalizations.of(context)!.translate('confirm_task_completion'),
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w500,
+                                flex: task.isFinished == 1 ? 100 : 55,
+                                child: TaskNavigateToChat(
+                                  chatId: task.chat!.id,
+                                  taskName: widget.taskName,
+                                  canSendMessage: task.chat!.canSendMessage,
+                                ),
+                              ),
+                              if (task.isFinished == 0) ...[
+                                SizedBox(
+                                  width: 8,
+                                  height: 60,
+                                ),
+                                Expanded(
+                                  flex: 45,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) =>
+                                            AlertDialog(
+                                          contentPadding: EdgeInsets.symmetric(
+                                              horizontal: 24, vertical: 20),
+                                          title: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'confirm_task_completion'),
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                        content: Container(
-                                          width: double.maxFinite,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                child: TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(context),
-                                                  child: Text(
-                                                    AppLocalizations.of(context)!.translate('cancel'),
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontFamily: 'Gilroy',
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  style: TextButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                    minimumSize: Size(80, 48),
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                            horizontal: 16),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(width: 16),
-                                              Expanded(
-                                                child: StatefulBuilder(
-                                                  builder: (BuildContext
-                                                          context,
-                                                      StateSetter setState) {
-                                                    return TextButton(
-                                                      onPressed: _isLoading
-                                                          ? null
-                                                          : () async {
-                                                              setState(() {
-                                                                _isLoading =
-                                                                    true;
-                                                              });
-
-                                                              final taskId = int.parse(widget.taskId);
-                                                              final result =
-                                                                  await context
-                                                                      .read<
-                                                                          ApiService>()
-                                                                      .finishTask(
-                                                                          taskId);
-
-                                                              if (result[
-                                                                  'success']) {
-                                                                Navigator.pop(
-                                                                    context);
-                                                                ScaffoldMessenger.of(
-                                                                        context)
-                                                                    .showSnackBar(
-                                                                  SnackBar(
-                                                                    content:
-                                                                        Text(
-                                                                      result[
-                                                                          'message'],
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontFamily:
-                                                                            'Gilroy',
-                                                                        fontSize:
-                                                                            16,
-                                                                        fontWeight:
-                                                                            FontWeight.w500,
-                                                                        color: Colors
-                                                                            .white,
-                                                                      ),
-                                                                    ),
-                                                                    behavior:
-                                                                        SnackBarBehavior
-                                                                            .floating,
-                                                                    margin: EdgeInsets
-                                                                        .symmetric(
-                                                                      horizontal:
-                                                                          16,
-                                                                      vertical:
-                                                                          8,
-                                                                    ),
-                                                                    shape:
-                                                                        RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              12),
-                                                                    ),
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .green,
-                                                                    elevation:
-                                                                        3,
-                                                                    padding:
-                                                                        EdgeInsets
-                                                                            .symmetric(
-                                                                      vertical:
-                                                                          12,
-                                                                      horizontal:
-                                                                          16,
-                                                                    ),
-                                                                    duration: Duration(
-                                                                        seconds:
-                                                                            2),
-                                                                  ),
-                                                                );
-                                                                Navigator.pop(
-                                                                    context);
-                                                                context
-                                                                    .read<
-                                                                        TaskBloc>()
-                                                                    .add(
-                                                                        FetchTaskStatuses());
-                                                              } else {
-                                                                Navigator.pop(
-                                                                    context);
-                                                                ScaffoldMessenger.of(
-                                                                        context)
-                                                                    .showSnackBar(
-                                                                  SnackBar(
-                                                                    content:
-                                                                        Text(
-                                                                      result[
-                                                                          'message'],
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontFamily:
-                                                                            'Gilroy',
-                                                                        fontSize:
-                                                                            16,
-                                                                        fontWeight:
-                                                                            FontWeight.w500,
-                                                                        color: Colors
-                                                                            .white,
-                                                                      ),
-                                                                    ),
-                                                                    behavior:
-                                                                        SnackBarBehavior
-                                                                            .floating,
-                                                                    margin: EdgeInsets
-                                                                        .symmetric(
-                                                                      horizontal:
-                                                                          16,
-                                                                      vertical:
-                                                                          8,
-                                                                    ),
-                                                                    shape:
-                                                                        RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              12),
-                                                                    ),
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .red,
-                                                                    elevation:
-                                                                        3,
-                                                                    padding:
-                                                                        EdgeInsets
-                                                                            .symmetric(
-                                                                      vertical:
-                                                                          12,
-                                                                      horizontal:
-                                                                          16,
-                                                                    ),
-                                                                    duration: Duration(
-                                                                        seconds:
-                                                                            2),
-                                                                  ),
-                                                                );
-                                                              }
-
-                                                              setState(() {
-                                                                _isLoading =
-                                                                    false;
-                                                              });
-                                                            },
-                                                      child: _isLoading
-                                                          ? SizedBox(
-                                                              width: 20,
-                                                              height: 20,
-                                                              child:
-                                                                  CircularProgressIndicator(
-                                                                color: Colors
-                                                                    .white,
-                                                                strokeWidth: 2,
-                                                              ),
-                                                            )
-                                                          : Text(
-                                                              AppLocalizations.of(context)!.translate('confirm'),
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontFamily:
-                                                                    'Gilroy',
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                            ),
-                                                      style:
-                                                          TextButton.styleFrom(
-                                                        backgroundColor:
-                                                            Color(0xff1E2E52),
-                                                        minimumSize:
-                                                            Size(130, 48),
-                                                        padding: EdgeInsets
-                                                            .symmetric(
-                                                                horizontal: 16),
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8),
-                                                        ),
+                                          content: Container(
+                                            width: double.maxFinite,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
+                                                    child: Text(
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .translate('cancel'),
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontFamily: 'Gilroy',
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                       ),
-                                                    );
-                                                  },
+                                                    ),
+                                                    style: TextButton.styleFrom(
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      minimumSize: Size(80, 48),
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 16),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                                SizedBox(width: 16),
+                                                Expanded(
+                                                  child: StatefulBuilder(
+                                                    builder: (BuildContext
+                                                            context,
+                                                        StateSetter setState) {
+                                                      return TextButton(
+                                                        onPressed: _isLoading
+                                                            ? null
+                                                            : () async {
+                                                                setState(() {
+                                                                  _isLoading =
+                                                                      true;
+                                                                });
+
+                                                                final taskId = int
+                                                                    .parse(widget
+                                                                        .taskId);
+                                                                final result = await context
+                                                                    .read<
+                                                                        ApiService>()
+                                                                    .finishTask(
+                                                                        taskId);
+
+                                                                if (result[
+                                                                    'success']) {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content:
+                                                                          Text(
+                                                                        result[
+                                                                            'message'],
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontFamily:
+                                                                              'Gilroy',
+                                                                          fontSize:
+                                                                              16,
+                                                                          fontWeight:
+                                                                              FontWeight.w500,
+                                                                          color:
+                                                                              Colors.white,
+                                                                        ),
+                                                                      ),
+                                                                      behavior:
+                                                                          SnackBarBehavior
+                                                                              .floating,
+                                                                      margin: EdgeInsets
+                                                                          .symmetric(
+                                                                        horizontal:
+                                                                            16,
+                                                                        vertical:
+                                                                            8,
+                                                                      ),
+                                                                      shape:
+                                                                          RoundedRectangleBorder(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(12),
+                                                                      ),
+                                                                      backgroundColor:
+                                                                          Colors
+                                                                              .green,
+                                                                      elevation:
+                                                                          3,
+                                                                      padding:
+                                                                          EdgeInsets
+                                                                              .symmetric(
+                                                                        vertical:
+                                                                            12,
+                                                                        horizontal:
+                                                                            16,
+                                                                      ),
+                                                                      duration: Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                    ),
+                                                                  );
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                  context
+                                                                      .read<
+                                                                          TaskBloc>()
+                                                                      .add(
+                                                                          FetchTaskStatuses());
+                                                                } else {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content:
+                                                                          Text(
+                                                                        result[
+                                                                            'message'],
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontFamily:
+                                                                              'Gilroy',
+                                                                          fontSize:
+                                                                              16,
+                                                                          fontWeight:
+                                                                              FontWeight.w500,
+                                                                          color:
+                                                                              Colors.white,
+                                                                        ),
+                                                                      ),
+                                                                      behavior:
+                                                                          SnackBarBehavior
+                                                                              .floating,
+                                                                      margin: EdgeInsets
+                                                                          .symmetric(
+                                                                        horizontal:
+                                                                            16,
+                                                                        vertical:
+                                                                            8,
+                                                                      ),
+                                                                      shape:
+                                                                          RoundedRectangleBorder(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(12),
+                                                                      ),
+                                                                      backgroundColor:
+                                                                          Colors
+                                                                              .red,
+                                                                      elevation:
+                                                                          3,
+                                                                      padding:
+                                                                          EdgeInsets
+                                                                              .symmetric(
+                                                                        vertical:
+                                                                            12,
+                                                                        horizontal:
+                                                                            16,
+                                                                      ),
+                                                                      duration: Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                    ),
+                                                                  );
+                                                                }
+
+                                                                setState(() {
+                                                                  _isLoading =
+                                                                      false;
+                                                                });
+                                                              },
+                                                        child: _isLoading
+                                                            ? SizedBox(
+                                                                width: 20,
+                                                                height: 20,
+                                                                child:
+                                                                    CircularProgressIndicator(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  strokeWidth:
+                                                                      2,
+                                                                ),
+                                                              )
+                                                            : Text(
+                                                                AppLocalizations.of(
+                                                                        context)!
+                                                                    .translate(
+                                                                        'confirm'),
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontFamily:
+                                                                      'Gilroy',
+                                                                  fontSize: 14,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                              ),
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              Color(0xff1E2E52),
+                                                          minimumSize:
+                                                              Size(130, 48),
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      16),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          backgroundColor: Color.fromARGB(
+                                              255, 255, 255, 255),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                         ),
-                                        backgroundColor:
-                                            Color.fromARGB(255, 255, 255, 255),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      backgroundColor: Color(0xFF1E2E52),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    backgroundColor: Color(0xFF1E2E52),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  ),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.translate('for_review'),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Gilroy',
+                                    child: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('for_review'),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Gilroy',
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
+                          ),
+                          const SizedBox(height: 16),
+                          ActionHistoryWidgetTask(
+                              taskId: int.parse(widget.taskId)),
+                        ],
+                      ));
+                } else if (state is TaskByIdError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${state.message}',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        ActionHistoryWidgetTask(
-                            taskId: int.parse(widget.taskId)),
-                      ],
-                    ));
-              } else if (state is TaskByIdError) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${state.message}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                        behavior: SnackBarBehavior.floating,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        backgroundColor: Colors.red,
+                        elevation: 3,
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 3),
                       ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.red,
-                      elevation: 3,
-                      padding:
-                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                });
-              }
-              return Center(child: Text(''));
-            },
-          ),
-        ));
+                    );
+                  });
+                }
+                return Center(child: Text(''));
+              },
+            ),
+          ));
+    });
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
@@ -756,7 +809,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _buildDetailItem(String label, String value) {
     // Специальная обработка для названия и описания
-    if (label == AppLocalizations.of(context)!.translate('task_name') || label == AppLocalizations.of(context)!.translate('description_details')) {
+    if (label == AppLocalizations.of(context)!.translate('task_name') ||
+        label ==
+            AppLocalizations.of(context)!.translate('description_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -791,7 +846,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == AppLocalizations.of(context)!.translate('assignee') && value.contains(',')) {
+    if (label == AppLocalizations.of(context)!.translate('assignee') &&
+        value.contains(',')) {
       label = AppLocalizations.of(context)!.translate('assignees');
     }
 
@@ -850,8 +906,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == AppLocalizations.of(context)!.translate('priority_level_colon')) {
-
+    if (label ==
+        AppLocalizations.of(context)!.translate('priority_level_colon')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -898,52 +954,61 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Color _getPriorityBackgroundColor(String priority) {
-  // Создаем Map для сопоставления приоритетов и цветов
-  final priorityColors = {
-    AppLocalizations.of(context)!.translate('urgent'): Color(0xFFFFEBEE), // Срочный
-    AppLocalizations.of(context)!.translate('important'): Color(0xFFFFF3E0), // Важный
-    AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), // Обычный
-  };
-  // Возвращаем цвет из Map, либо цвет по умолчанию
-  return priorityColors[priority] ?? Color(0xFFE8F5E9);
-}
+    // Создаем Map для сопоставления приоритетов и цветов
+    final priorityColors = {
+      AppLocalizations.of(context)!.translate('urgent'):
+          Color(0xFFFFEBEE), // Срочный
+      AppLocalizations.of(context)!.translate('important'):
+          Color(0xFFFFF3E0), // Важный
+      AppLocalizations.of(context)!.translate('normal'):
+          Color(0xFFE8F5E9), // Обычный
+    };
+    // Возвращаем цвет из Map, либо цвет по умолчанию
+    return priorityColors[priority] ?? Color(0xFFE8F5E9);
+  }
 
-Color _getPriorityBorderColor(String priority) {
-  // Map для сопоставления приоритетов и цветов рамки
-  final priorityBorderColors = {
-    AppLocalizations.of(context)!.translate('urgent'): Colors.red, // Срочный
-    AppLocalizations.of(context)!.translate('important'): Colors.orange, // Важный
-    AppLocalizations.of(context)!.translate('normal'): Colors.green, // Обычный
-  };
-  // Возвращаем цвет из Map, либо цвет по умолчанию
-  return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
-}
+  Color _getPriorityBorderColor(String priority) {
+    // Map для сопоставления приоритетов и цветов рамки
+    final priorityBorderColors = {
+      AppLocalizations.of(context)!.translate('urgent'): Colors.red, // Срочный
+      AppLocalizations.of(context)!.translate('important'):
+          Colors.orange, // Важный
+      AppLocalizations.of(context)!.translate('normal'):
+          Colors.green, // Обычный
+    };
+    // Возвращаем цвет из Map, либо цвет по умолчанию
+    return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
+  }
 
-Color _getPriorityColor(String priority) {
-  // Map для сопоставления приоритетов и основных цветов
-  final priorityColors = {
-    AppLocalizations.of(context)!.translate('urgent'): Color(0xFFC62828), // Срочный
-    AppLocalizations.of(context)!.translate('important'): Color(0xFFEF6C00), // Важный
-    AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32), // Обычный
-  };
-  // Возвращаем цвет из Map, либо цвет по умолчанию
-  return priorityColors[priority] ?? Color(0xFF2E7D32);
-}
+  Color _getPriorityColor(String priority) {
+    // Map для сопоставления приоритетов и основных цветов
+    final priorityColors = {
+      AppLocalizations.of(context)!.translate('urgent'):
+          Color(0xFFC62828), // Срочный
+      AppLocalizations.of(context)!.translate('important'):
+          Color(0xFFEF6C00), // Важный
+      AppLocalizations.of(context)!.translate('normal'):
+          Color(0xFF2E7D32), // Обычный
+    };
+    // Возвращаем цвет из Map, либо цвет по умолчанию
+    return priorityColors[priority] ?? Color(0xFF2E7D32);
+  }
+
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
 
       // Получаем базовый домен из ApiService
       // Получаем базовый домен из ApiService
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-  // Извлекаем значения из Map
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain']; 
-         print('Полученный базовый домен: $enteredDomain');
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+      // Извлекаем значения из Map
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      print('Полученный базовый домен: $enteredDomain');
 
       // Формируем полный URL файла
-      final fullUrl =
-          Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+      final fullUrl = Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
 
       print('Сформированный полный URL: $fullUrl');
 
@@ -962,13 +1027,15 @@ Color _getPriorityColor(String priority) {
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
         print('Не удалось открыть файл: ${result.message}');
-        _showErrorSnackBar(AppLocalizations.of(context)!.translate('failed_to_open_file'));
+        _showErrorSnackBar(
+            AppLocalizations.of(context)!.translate('failed_to_open_file'));
       } else {
         print('Файл открыт успешно.');
       }
     } catch (e) {
       print('Ошибка при скачивании или открытии файла!');
-      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('file_download_or_open_error'));
     }
   }
 
