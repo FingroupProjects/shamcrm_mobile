@@ -276,6 +276,7 @@ class Message {
   Duration position;
   final ForwardedMessage? forwardedMessage; 
   bool isPinned;
+  bool isChanged;
 
   Message({
     required this.id,
@@ -291,6 +292,7 @@ class Message {
     this.position = const Duration(),
     this.forwardedMessage, 
     this.isPinned=false, 
+    this.isChanged=false, 
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -317,6 +319,7 @@ class Message {
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isPinned: json['is_pinned'],
+      isChanged: json['is_changed'],
       isMyMessage: json['is_my_message'] ?? false,
       forwardedMessage: forwardedMessage,
     );
@@ -324,7 +327,7 @@ class Message {
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged}';
   }
 }
 

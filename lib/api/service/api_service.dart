@@ -3538,6 +3538,20 @@ class ApiService {
   }
 }
 
+  Future<void> editMessage(String messageId,String message) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/chat/editMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'message': message,
+    });
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка отправки сообщения!');
+  }
+}
+
+
   // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {
     final token = await getToken(); // Получаем токен
