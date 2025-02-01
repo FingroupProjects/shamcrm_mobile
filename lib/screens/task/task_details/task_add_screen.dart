@@ -40,7 +40,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   final TextEditingController descriptionController = TextEditingController();
 
   // Переменные для файла
-  // Переменные для файла
   String? selectedFile;
   String? fileName;
   String? fileSize;
@@ -50,8 +49,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-
-
 
   @override
   void initState() {

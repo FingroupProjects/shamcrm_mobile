@@ -2,6 +2,7 @@ import 'package:crm_task_manager/models/project_model.dart';
 
 class TaskById {
   final int id;
+  final int taskNnumber;
   final String name;
   final String? startDate;
   final String? endDate;
@@ -21,6 +22,7 @@ class TaskById {
 
   TaskById({
     required this.id,
+    required this.taskNnumber,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -53,6 +55,7 @@ class TaskById {
 
     return TaskById(
       id: json['id'] is int ? json['id'] : 0,
+      taskNnumber: json['task_number'] is int ? json['task_number'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
