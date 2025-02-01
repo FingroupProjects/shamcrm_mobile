@@ -22,7 +22,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -40,6 +39,7 @@ class ChatSmsScreen extends StatefulWidget {
   final int chatId;
   final String endPointInTab;
   final bool canSendMessage;
+
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
 
@@ -65,23 +65,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   late VoiceController audioController;
   final ApiService apiService = ApiService();
-  String? _visibleDate;
+  String? _visibleDate; 
   late String baseUrl;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
 
-  Future<void> _checkPermissions() async {
-    if (widget.endPointInTab == 'lead') {
-      final canCreate = await apiService.hasPermission('chat.create');
-      setState(() {
-        _canCreateChat = canCreate;
-      });
-    } else {
-      setState(() {
-        _canCreateChat = true;
-      });
-    }
+Future<void> _checkPermissions() async {
+  if (widget.endPointInTab == 'lead') {
+    final canCreate = await apiService.hasPermission('chat.create');
+    setState(() {
+      _canCreateChat = canCreate;
+    });
+  } else {
+    setState(() {
+      _canCreateChat = true; 
+    });
   }
+}
+
 
   @override
   void initState() {
@@ -98,6 +99,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       _scrollToBottom();
       _fetchBaseUrl();
       // _markMessagesAsRead();
+
     });
   }
 
@@ -112,7 +114,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
-
+     
   // Обновляем показ календаря
   void _showDatePicker(BuildContext context, List<Message> messages) {
     showDialog(
@@ -224,265 +226,177 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     }
   }
 
-  Widget _buildAvatar(String avatar) {
-    // Проверяем, содержит ли SVG
-    if (avatar.contains('<svg')) {
-      // Проверяем, есть ли в SVG тег `<image>` с URL
-      final imageUrl = extractImageUrlFromSvg(avatar);
-      if (imageUrl != null) {
-        return Container(
-          width: ChatSmsStyles.avatarRadius * 2,
-          height: ChatSmsStyles.avatarRadius * 2,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      } else {
-        // Проверяем на наличие текста в SVG
-        final text = extractTextFromSvg(avatar);
-        final backgroundColor = extractBackgroundColorFromSvg(avatar);
+ @override
+Widget build(BuildContext context) {
+  return BlocListener<DeleteMessageBloc, DeleteMessageState>(
+    listener: (context, state) {
+      if (state is DeleteMessageSuccess) {
+        context.read<MessagingCubit>().getMessages(widget.chatId);
 
-        if (text != null && backgroundColor != null) {
-          return Container(
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: backgroundColor,
-              border: Border.all(
-                color: Colors.white,
-                width: 1,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        } else {
-          // Рендерим сам SVG
-          return SvgPicture.string(
-            avatar,
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
-            placeholderBuilder: (context) => CircularProgressIndicator(),
-          );
-        }
-      }
-    }
-
-    // Если это не SVG, предполагаем, что это локальное изображение
-    return CircleAvatar(
-      backgroundImage: AssetImage(avatar),
-      radius: ChatSmsStyles.avatarRadius,
-      backgroundColor: Colors.white,
-    );
-  }
-
-  String? extractImageUrlFromSvg(String svg) {
-    if (svg.contains('href="')) {
-      final start = svg.indexOf('href="') + 6;
-      final end = svg.indexOf('"', start);
-      return svg.substring(start, end);
-    }
-    return null;
-  }
-
-  String? extractTextFromSvg(String svg) {
-    final textMatch = RegExp(r'<text[^>]*>(.*?)</text>').firstMatch(svg);
-    return textMatch?.group(1);
-  }
-
-  Color? extractBackgroundColorFromSvg(String svg) {
-    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-    if (fillMatch != null) {
-      final colorHex = fillMatch.group(1);
-      if (colorHex != null) {
-        // Конвертируем hex в Color
-        final hex = colorHex.replaceAll('#', '');
-        return Color(int.parse('FF$hex', radix: 16));
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<DeleteMessageBloc, DeleteMessageState>(
-      listener: (context, state) {
-        if (state is DeleteMessageSuccess) {
-          context.read<MessagingCubit>().getMessages(widget.chatId);
-
-          if (widget.endPointInTab == 'task' ||
-              widget.endPointInTab == 'corporate') {
-            final chatsBloc = context.read<ChatsBloc>();
-            chatsBloc.add(ClearChats());
-            chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+        if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
+        final chatsBloc = context.read<ChatsBloc>();
+        chatsBloc.add(ClearChats());
+        chatsBloc.add(FetchChats(endPoint: widget.endPointInTab)); 
           }
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: ChatSmsStyles.appBarBackgroundColor,
-          leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+      }
+    },
+    child: Scaffold(
+      appBar: AppBar(
+        backgroundColor: ChatSmsStyles.appBarBackgroundColor,
+        leading: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
           ),
-          title: InkWell(
-            onTap: () async {
-              if (_isRequestInProgress) return; // Блокируем повторные нажатия
-              setState(() {
-                _isRequestInProgress = true;
-              });
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: InkWell(
+          onTap: () async {
+            if (_isRequestInProgress) return; // Блокируем повторные нажатия
+            setState(() {
+              _isRequestInProgress = true;
+            });
 
-              try {
-                if (widget.endPointInTab == 'lead') {
+            try {
+              if (widget.endPointInTab == 'lead') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        UserProfileScreen(chatId: widget.chatId),
+                  ),
+                );
+              } else if (widget.endPointInTab == 'task') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        TaskByIdScreen(chatId: widget.chatId),
+                  ),
+                );
+              } else if (widget.endPointInTab == 'corporate') {
+                final getChatById =
+                    await ApiService().getChatById(widget.chatId);
+                if (getChatById.chatUsers.length == 2 &&
+                    getChatById.group == null) {
+                  String userIdCheck = '';
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
+                  userIdCheck = prefs.getString('userID') ?? '';
+                  final participant = getChatById.chatUsers
+                    .firstWhere(
+                        (user) => user.participant.id.toString() != userIdCheck)
+                    .participant;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          UserProfileScreen(chatId: widget.chatId),
+                      builder: (context) => ParticipantProfileScreen(
+                        userId: participant.id.toString(),
+                        image: participant.image,
+                        name: participant.name,
+                        email: participant.email,
+                        phone: participant.phone,
+                        login: participant.login,
+                        lastSeen: participant.lastSeen.toString(),
+                        buttonChat: false,
+                      ),
                     ),
                   );
-                } else if (widget.endPointInTab == 'task') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          TaskByIdScreen(chatId: widget.chatId),
-                    ),
-                  );
-                } else if (widget.endPointInTab == 'corporate') {
-                  final getChatById =
-                      await ApiService().getChatById(widget.chatId);
-                  if (getChatById.chatUsers.length == 2 &&
-                      getChatById.group == null) {
-                    String userIdCheck = '';
-                    SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    userIdCheck = prefs.getString('userID') ?? '';
-                    final participant = getChatById.chatUsers
-                        .firstWhere((user) =>
-                            user.participant.id.toString() != userIdCheck)
-                        .participant;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ParticipantProfileScreen(
-                          userId: participant.id.toString(),
-                          image: participant.image,
-                          name: participant.name,
-                          email: participant.email,
-                          phone: participant.phone,
-                          login: participant.login,
-                          lastSeen: participant.lastSeen.toString(),
-                          buttonChat: false,
-                        ),
-                      ),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CorporateProfileScreen(
-                          chatId: widget.chatId,
-                          chatItem: widget.chatItem,
-                        ),
-                      ),
-                    );
-                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'ОШИБКА!',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CorporateProfileScreen(
+                        chatId: widget.chatId,
+                        chatItem: widget.chatItem,
                       ),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 3),
                     ),
                   );
                 }
-              } finally {
-                setState(() {
-                  _isRequestInProgress = false;
-                });
-              }
-            },
-            child: Row(
-              children: [
-                _buildAvatar(widget.chatItem.avatar), // Используем новый метод
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    widget.chatItem.name.isEmpty
-                        ? 'Без имени'
-                        : widget.chatItem.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: ChatSmsStyles.appBarTitleColor,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Gilroy',
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'ОШИБКА!',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 3),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        backgroundColor: const Color(0xffF4F7FD),
-        body: Column(
+                );
+              }
+            } finally {
+              setState(() {
+                _isRequestInProgress = false; 
+              });
+            }
+          },
+         child: Row(
           children: [
-            Expanded(child: messageListUi()),
-            if (widget.canSendMessage && _canCreateChat)
-              inputWidget()
-            else
-              Padding(
-                padding: const EdgeInsets.only(bottom: 50),
-                child: Center(
-                  child: Text(
-                    widget.canSendMessage
-                        ? 'У вас нет доступа для отправки сообщения!'
-                        : 'Прошло 24 часа как лид написал вам! Отправка сообщения будет доступна только после получения нового сообщения',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      color: AppColors.textPrimary700,
-                      fontWeight: FontWeight.w600,
-                    ),
+            CircleAvatar(
+              backgroundImage: AssetImage(widget.chatItem.avatar),
+              radius: ChatSmsStyles.avatarRadius,
+              backgroundColor: Colors.white,
+            ),
+            const SizedBox(width: 10),
+            Expanded( 
+              child: Text(
+                widget.chatItem.name.isEmpty
+                    ? 'Без имени'
+                    : widget.chatItem.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: ChatSmsStyles.appBarTitleColor,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
+                ),
+                overflow: TextOverflow.ellipsis, 
+                maxLines: 1, 
+              ),
+            ),
+          ],
+        )
+
+        ),
+      ),
+      backgroundColor: const Color(0xffF4F7FD),
+      body: Column(
+        children: [
+          Expanded(child: messageListUi()),
+          if (widget.canSendMessage && _canCreateChat)
+            inputWidget()
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 50),
+              child: Center(
+                child: Text(
+                  widget.canSendMessage
+                      ? 'У вас нет доступа для отправки сообщения!'
+                      : 'Прошло 24 часа как лид написал вам! Отправка сообщения будет доступна только после получения нового сообщения',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    color: AppColors.textPrimary700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget messageListUi() {
     return BlocBuilder<MessagingCubit, MessagingState>(
@@ -539,15 +453,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               currentDate = messageDate;
             }
 
-            currentGroup.add(
-              MessageItemWidget(
-                message: message,
-                chatId: widget.chatId,
-                endPointInTab: widget.endPointInTab,
-                apiServiceDownload: widget.apiServiceDownload,
-                baseUrl: baseUrl,
-              ),
-            );
+           currentGroup.add(
+            MessageItemWidget(
+              message: message,
+              chatId: widget.chatId,
+              endPointInTab: widget.endPointInTab,
+              apiServiceDownload: widget.apiServiceDownload,
+              baseUrl: baseUrl,
+            ),
+          );
+
           }
 
           if (currentGroup.isNotEmpty) {
@@ -673,14 +588,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             }
 
             currentGroup.add(
-              MessageItemWidget(
-                message: message,
-                chatId: widget.chatId,
-                endPointInTab: widget.endPointInTab,
-                apiServiceDownload: widget.apiServiceDownload,
-                baseUrl: baseUrl,
-              ),
-            );
+            MessageItemWidget(
+              message: message,
+              chatId: widget.chatId,
+              endPointInTab: widget.endPointInTab, 
+              apiServiceDownload: widget.apiServiceDownload,
+              baseUrl: baseUrl,
+            ),
+          );
+
           }
 
           if (currentGroup.isNotEmpty) {
@@ -934,8 +850,8 @@ final Map<String, double> _messagePositions = {};
 
 class MessageItemWidget extends StatelessWidget {
   final Message message;
-  final int chatId;
-  final String endPointInTab;
+  final int chatId; 
+  final String endPointInTab; 
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
 
@@ -944,79 +860,83 @@ class MessageItemWidget extends StatelessWidget {
     required this.message,
     required this.endPointInTab,
     required this.chatId,
+
     required this.apiServiceDownload,
     required this.baseUrl,
   });
 
-  Widget build(BuildContext context) {
-    if (endPointInTab == 'lead') {
-      return _buildMessageContent(context);
-    }
+Widget build(BuildContext context) {
+  if (endPointInTab == 'lead') {
+    return _buildMessageContent(context);  
+  }
 
-    return GestureDetector(
-      onLongPress: () =>
-          showDeleteDialog(context, () => _deleteMessage(context)),
-      child: _buildMessageContent(context),
+  return GestureDetector(
+    onLongPress: () => showDeleteDialog(context, () => _deleteMessage(context)),
+    child: _buildMessageContent(context),
+  );
+}
+
+
+   // Логика для удаления сообщения
+void _deleteMessage(BuildContext context) {
+  // Проверка, является ли сообщение отправленным текущим пользователем
+  if (message.isMyMessage) {
+    int messageId = message.id; 
+
+    // Удаление сообщения с помощью блока
+    context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
+
+    // Показ уведомления о успешном удалении
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Сообщение успешно удалено!',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.green,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Вы не можете удалить чужое сообщение!',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: Colors.red,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: Duration(seconds: 3),
+      ),
     );
   }
+}
 
-  // Логика для удаления сообщения
-  void _deleteMessage(BuildContext context) {
-    // Проверка, является ли сообщение отправленным текущим пользователем
-    if (message.isMyMessage) {
-      int messageId = message.id;
 
-      // Удаление сообщения с помощью блока
-      context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
 
-      // Показ уведомления о успешном удалении
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Сообщение успешно удалено!',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.green,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Вы не можете удалить чужое сообщение!',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
 
   Widget _buildMessageContent(BuildContext context) {
     switch (message.type) {
@@ -1054,6 +974,8 @@ class MessageItemWidget extends StatelessWidget {
         return SizedBox();
     }
   }
+
+ 
 
   Widget textState() {
     return MessageBubble(
