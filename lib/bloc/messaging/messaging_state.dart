@@ -21,17 +21,34 @@ final class MessagesErrorState extends MessagingState {
   const MessagesErrorState({required this.error});
 }
 
+final class EditingMessageState extends MessagingState {
+  final Message editingMessage;
+  final List<Message> messages;
+  final Message? pinnedMessage;
+
+  const EditingMessageState({
+    required this.editingMessage,
+    required this.messages,
+    this.pinnedMessage,
+  });
+
+  @override
+  List<Object> get props => [editingMessage, messages, if (pinnedMessage != null) pinnedMessage!];
+}
+
 final class ReplyingToMessageState extends MessagingState {
   final Message replyingMessage;
-  final List<Message> messages; // Добавлено поле для сообщений
+  final List<Message> messages;
+  final Message? pinnedMessage; 
 
   const ReplyingToMessageState({
     required this.replyingMessage,
     required this.messages,
+    this.pinnedMessage, 
   });
 
   @override
-  List<Object> get props => [replyingMessage, messages];
+  List<Object> get props => [replyingMessage, messages, if (pinnedMessage != null) pinnedMessage!];
 }
 
 final class PinnedMessageState extends MessagingState {

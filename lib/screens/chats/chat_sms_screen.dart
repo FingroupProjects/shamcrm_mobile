@@ -60,6 +60,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _currentDate;
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _focusNode = FocusNode(); 
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   late PusherChannelsClient socketClient;
@@ -72,18 +73,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isRequestInProgress = false;
   int? _highlightedMessageId;
   bool _isMenuOpen = false;
-
-  void _highlightMessage(int messageId) {
-    setState(() {
-      _highlightedMessageId = messageId;
-    });
-
-    Future.delayed(const Duration(seconds: 3), () {
-      setState(() {
-        _highlightedMessageId = null;
-      });
-    });
-  }
 
   Future<void> _checkPermissions() async {
     if (widget.endPointInTab == 'lead') {
@@ -458,7 +447,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             },
             child: Row(
               children: [
-                _buildAvatar(widget.chatItem.avatar), // Используем новый метод
+                _buildAvatar(widget.chatItem.avatar), 
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -519,19 +508,13 @@ void _scrollToMessageReply(int messageId) {
         ? state.messages
         : (state as PinnedMessageState).messages;
 
-    // Находим индекс сообщения по его ID
     final messageIndex = messages.indexWhere((msg) => msg.id == messageId);
 
     if (messageIndex != -1) {
-      // Получаем объект сообщения по индексу
       final message = messages[messageIndex];
 
-      // Теперь у вас есть доступ к message.id
-      print("Found message ID: ${message.id}");
-
-      // Прокручиваем к сообщению
       _scrollController.animateTo(
-        messageIndex * 95.0, // Высота элемента
+        messageIndex * 95.0,
         duration: const Duration(milliseconds: 1),
         curve: Curves.easeInOut,
       );
@@ -539,6 +522,14 @@ void _scrollToMessageReply(int messageId) {
       // Подсвечиваем сообщение
       setState(() {
         _highlightedMessageId = message.id;
+      });
+
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _highlightedMessageId = null;
+          });
+        }
       });
     }
   }
@@ -555,14 +546,22 @@ Widget messageListUi() {
       if (state is MessagesLoadingState) {
         return Center(child: CircularProgressIndicator.adaptive());
       }
-if (state is MessagesLoadedState || state is ReplyingToMessageState || state is PinnedMessageState) {
+ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is PinnedMessageState || state is EditingMessageState) {
   final messages = state is MessagesLoadedState
       ? state.messages
       : state is ReplyingToMessageState
           ? state.messages
-          : (state as PinnedMessageState).messages;
+          : state is PinnedMessageState
+              ? state.messages
+              : (state as EditingMessageState).messages;
 
-  final pinnedMessage = state is PinnedMessageState ? state.pinnedMessage : null;
+  final pinnedMessage = state is PinnedMessageState
+      ? state.pinnedMessage
+      : state is ReplyingToMessageState
+          ? state.pinnedMessage
+          : state is EditingMessageState
+              ? state.pinnedMessage
+              : null;
         
         String _getMessageText(Message message) {
            if (message.type == 'voice') {
@@ -632,6 +631,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
                   _isMenuOpen = isOpen;
                 });
               },
+              focusNode: _focusNode, 
             ),
           );
         }
@@ -643,7 +643,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
         return Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ListView(
                 controller: _scrollController,
                 padding: EdgeInsets.zero,
@@ -690,6 +690,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
     return InputField(
       onSend: _onSendInButton,
       onAttachFile: _onPickFilePressed,
+      focusNode: _focusNode, 
       onRecordVoice: () {
         debugPrint('Record voice triggered');
       },
@@ -770,9 +771,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
 
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
-
-      chatSubscribtion =
-          myPresenceChannel.bind('chat.message').listen((event) async {
+      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
         MessageSocketData mm = messageSocketDataFromJson(event.data);
         print('=====================================');
         print('==================EVENT DATA======START=============');
@@ -827,7 +826,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
             isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
                 mm.message?.sender?.type == 'user'),
             senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage, // добавляем forwardedMessage
+            forwardedMessage: forwardedMessage,
           );
         }
 
@@ -836,6 +835,69 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
         });
         _scrollToBottom();
       });
+    myPresenceChannel.bind('chat.messageEdited').listen((event) async {
+  print('==================MESSAGE EDITITING EVENT DATA======START=============');
+  print(event.data);
+  print('==================MESSAGE EDITITING--EVENT DATA======END=============');
+
+  try {
+    MessageSocketData mm = messageSocketDataFromJson(event.data);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UUID = prefs.getString('userID') ?? '';
+    print('userID : $UUID');
+
+    Message msg;
+    if (mm.message?.type == 'voice' ||
+        mm.message?.type == 'file' ||
+        mm.message?.type == 'image' ||
+        mm.message?.type == 'document') {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        filePath: mm.message?.filePath.toString() ?? '',
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        duration: Duration(
+            seconds: (mm.message?.voiceDuration != null)
+                ? double.parse(mm.message!.voiceDuration.toString()).round()
+                : 20),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+        isChanged: mm.message?.isChanged ?? false,
+      );
+    } else {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+        isChanged: mm.message?.isChanged ?? false, 
+      );
+    }
+
+    setState(() {
+      context.read<MessagingCubit>().updateMessageFromSocket(msg);
+    });
+  } catch (e) {
+    print('Error processing messageEdited event: $e');
+  }
+});
+
     });
 
     try {
@@ -924,6 +986,7 @@ if (state is MessagesLoadedState || state is ReplyingToMessageState || state is 
     _messageController.dispose();
     socketClient.dispose();
     _webSocket?.close();
+    _focusNode.dispose(); 
     print("ScrollController is initialized");
     super.dispose();
   }
@@ -945,6 +1008,7 @@ class MessageItemWidget extends StatelessWidget {
   final void Function(int)? onReplyTap;
   final int? highlightedMessageId;
   final void Function(bool)? onMenuStateChanged;
+  final FocusNode focusNode; 
 
   const MessageItemWidget({
     super.key,
@@ -956,6 +1020,7 @@ class MessageItemWidget extends StatelessWidget {
     this.onReplyTap,
     this.highlightedMessageId,
     this.onMenuStateChanged,
+    required this.focusNode, 
   });
 
   @override
@@ -964,11 +1029,12 @@ class MessageItemWidget extends StatelessWidget {
       key: Key(message.id.toString()),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
+        focusNode.requestFocus(); 
         context.read<MessagingCubit>().setReplyMessage(message);
         return false;
       },
       child: GestureDetector(
-        onLongPress: () => _showMessageContextMenu(context, message),
+        onLongPress: () => _showMessageContextMenu(context, message, focusNode), 
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(2),
@@ -977,6 +1043,7 @@ class MessageItemWidget extends StatelessWidget {
       ),
     );
   }
+
 
 
 
@@ -1038,6 +1105,7 @@ class MessageItemWidget extends StatelessWidget {
         onReplyTap?.call(replyMessageId);
       },
       isHighlighted: highlightedMessageId == message.id,
+      isChanged: message.isChanged,
     );
   }
 
@@ -1127,15 +1195,74 @@ class MessageItemWidget extends StatelessWidget {
     );
   }
 
-void _showMessageContextMenu(BuildContext context, Message message) {
-  final RenderBox overlay =
-      Overlay.of(context).context.findRenderObject() as RenderBox;
+void _showMessageContextMenu(BuildContext context, Message message, FocusNode focusNode) {
+  final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
   final RenderBox messageBox = context.findRenderObject() as RenderBox;
-  final Offset position =
-      messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+  final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
 
   onMenuStateChanged?.call(true);
 
+  final List<PopupMenuItem> menuItems = [];
+
+  menuItems.add(
+    _buildMenuItem(
+      icon: 'assets/icons/chats/menu_icons/reply.svg',
+      text: "Ответить",
+      iconColor: Colors.black,
+      textColor: Colors.black,
+      onTap: () {
+        Navigator.pop(context);
+        focusNode.requestFocus();
+        context.read<MessagingCubit>().setReplyMessage(message);
+      },
+    ),
+  );
+    menuItems.add(
+    _buildMenuItem(
+      icon: 'assets/icons/chats/menu_icons/pin.svg',
+      text: "Закрепить",
+      iconColor: Colors.black,
+      textColor: Colors.black,
+      onTap: () {
+        Navigator.pop(context);
+        context.read<MessagingCubit>().pinMessage(message);
+        print("Сообщение закреплено");
+      },
+    ),
+  );
+
+  if (message.isMyMessage) {
+    menuItems.add(
+      _buildMenuItem(
+        icon: 'assets/icons/chats/menu_icons/edit.svg',
+        text: "Изменить",
+        iconColor: Colors.black,
+        textColor: Colors.black,
+        onTap: () {
+          Navigator.pop(context);
+          focusNode.requestFocus();
+          context.read<MessagingCubit>().startEditingMessage(message);
+          print("Сообщение изменено");
+        },
+      ),
+    );
+
+    menuItems.add(
+      _buildMenuItem(
+        icon: 'assets/icons/chats/menu_icons/delete-red.svg',
+        text: "Удалить",
+        iconColor: Colors.red,
+        textColor: Colors.red,
+        onTap: () {
+          Navigator.pop(context);
+          _deleteMessage(context);
+          print("Сообщение удалено");
+        },
+      ),
+    );
+  }
+
+  // Показываем меню
   showMenu(
     context: context,
     color: Colors.white,
@@ -1148,45 +1275,11 @@ void _showMessageContextMenu(BuildContext context, Message message) {
       position.dx + messageBox.size.width / 2 + 1,
       position.dy + messageBox.size.height,
     ),
-    items: [
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/reply.svg', 
-        text: "Ответить",
-        iconColor: Colors.black,
-        textColor: Colors.black, 
-        onTap: () {
-          Navigator.pop(context);
-          context.read<MessagingCubit>().setReplyMessage(message);
-        },
-      ),
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/pin.svg',
-        text: "Закрепить",
-        iconColor: Colors.black,
-        textColor: Colors.black,
-        onTap: () {
-          Navigator.pop(context);
-          context.read<MessagingCubit>().pinMessage(message);
-          print("Сообщение закреплено");
-        },
-      ),
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/delete-red.svg',
-        text: "Удалить",
-        iconColor: Colors.red,
-        textColor: Colors.red,
-        onTap: () {
-          Navigator.pop(context);
-          _deleteMessage(context);
-          print("Сообщение удалено");
-        },
-      ),
-    ],
+    items: menuItems,
   ).then((_) {
     onMenuStateChanged?.call(false);
   });
 }
-
 
 PopupMenuItem _buildMenuItem({
   required String icon, 
@@ -1225,8 +1318,6 @@ PopupMenuItem _buildMenuItem({
     ),
   );
 }
-
-
 
   // Логика для удаления сообщения
   void _deleteMessage(BuildContext context) {
