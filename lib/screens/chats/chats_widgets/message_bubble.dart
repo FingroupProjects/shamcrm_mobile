@@ -10,9 +10,10 @@ class MessageBubble extends StatelessWidget {
   final String? replyMessage;
   final int? replyMessageId;
   final void Function(int)? onReplyTap;
-  final bool isHighlighted;  
+  final bool isHighlighted;
+  final bool isChanged; // Добавляем параметр isChanged
 
-  const MessageBubble({
+  MessageBubble({
     Key? key,
     required this.message,
     required this.time,
@@ -21,7 +22,8 @@ class MessageBubble extends StatelessWidget {
     this.replyMessage,
     this.replyMessageId,
     this.onReplyTap,
-    this.isHighlighted = false,  
+    this.isHighlighted = false,
+    required this.isChanged, // Обязательный параметр
   }) : super(key: key);
 
   @override
@@ -43,9 +45,9 @@ class MessageBubble extends StatelessWidget {
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           padding: const EdgeInsets.all(2),
-          
           child: Column(
-            crossAxisAlignment: isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
               if (!isSender)
@@ -90,16 +92,34 @@ class MessageBubble extends StatelessWidget {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
-                      offset: Offset(0, 4), 
+                      offset: Offset(0, 4),
                       blurRadius: 6,
                     ),
                   ],
                 ),
-                child: Text(
-                  message,
-                  style: isSender
-                      ? ChatSmsStyles.senderMessageTextStyle
-                      : ChatSmsStyles.receiverMessageTextStyle,
+                child: Column(
+                  crossAxisAlignment:
+                      isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      message,
+                      style: isSender
+                          ? ChatSmsStyles.senderMessageTextStyle
+                          : ChatSmsStyles.receiverMessageTextStyle,
+                    ),
+                    if (isChanged) 
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Изменено',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSender ? Colors.white70 : Colors.black54,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (time.isNotEmpty)

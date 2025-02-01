@@ -274,7 +274,9 @@ class Message {
   bool isPause;
   Duration duration;
   Duration position;
-  final ForwardedMessage? forwardedMessage; // Новое поле для forwarded_message_id
+  final ForwardedMessage? forwardedMessage; 
+  bool isPinned;
+  bool isChanged;
 
   Message({
     required this.id,
@@ -288,20 +290,20 @@ class Message {
     this.isPause = false,
     this.duration = const Duration(),
     this.position = const Duration(),
-    this.forwardedMessage, // Добавление поля в конструктор
+    this.forwardedMessage, 
+    this.isPinned=false, 
+    this.isChanged=false, 
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
     String text;
 
-    // Если тип сообщения 'file', используем text напрямую
     if (json['type'] == 'file') {
-      text = json['text'] ?? 'unknown_file'; // Используем text для имени файла
+      text = json['text'] ?? 'unknown_file'; 
     } else {
       text = json['text'] ?? '';
     }
 
-    // Извлечение forwarded_message_id
     ForwardedMessage? forwardedMessage;
     if (json['forwarded_message'] != null) {
       forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
@@ -316,14 +318,16 @@ class Message {
           : json['sender']['name'] ?? 'Без имени',
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
+      isPinned: json['is_pinned'],
+      isChanged: json['is_changed'],
       isMyMessage: json['is_my_message'] ?? false,
-      forwardedMessage: forwardedMessage, // Установка значения forwardedMessage
+      forwardedMessage: forwardedMessage,
     );
   }
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged}';
   }
 }
 
