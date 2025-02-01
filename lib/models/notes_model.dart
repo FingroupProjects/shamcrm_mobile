@@ -10,22 +10,38 @@ class Notes {
     required this.id,
     required this.title,
     required this.body,
-    required this.date,
+    this.date,
   });
 
-  factory Notes.fromJson(Map<String, dynamic> json) {
-    return Notes(
-      id: json['id'],
-      title: json['title'] is String ? json['title'] : 'Без заголовок',
-      body: json['body'] is String ? json['body'] : 'Без имени',
-      date: json['date'] is String ? json['date'] : 'Не указано',
-    );
+factory Notes.fromJson(Map<String, dynamic> json) {
+  return Notes(
+    id: json['id'],
+    title: json['title'] is String ? json['title'] : 'Без заголовок',
+    body: json['body'] is String ? json['body'] : 'Без имени',
+    date: (json['date'] is String && _isValidDate(json['date'])) 
+        ? json['date'] 
+        : null, // Если дата некорректная, сохраняем null
+  );
+}
+
+// Функция для проверки корректности формата даты
+static bool _isValidDate(String date) {
+  try {
+    DateTime.parse(date);
+    return true;
+  } catch (e) {
+    return false;
   }
+}
+
   String getFormattedDate() {
-    if (date != null) {
-      final dateTime = DateTime.parse(date!);
-      final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
-      return formattedDate;
+    if (date != null && date!.isNotEmpty) {
+      try {
+        final dateTime = DateTime.parse(date!);
+        return DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
+      } catch (e) {
+        return 'Не указано'; // Если дата некорректная
+      }
     } else {
       return 'Не указано';
     }

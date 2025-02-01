@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -36,30 +37,27 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
             }
 
             if (state is GetAllRegionError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w500, 
-                      color: Colors.white, 
-                    ),
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                        style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white)),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12), 
-                  ),
-                  backgroundColor: Colors.red, 
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16), 
-                      duration: Duration(seconds: 3),
-                ),
-              );
+                );
+              });
             }
             if (state is GetAllRegionSuccess) {
               regionsList = state.dataRegion.result ?? [];
@@ -77,9 +75,9 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // SizedBox(height: 8),
-                  const Text(
-                    'Регион',
-                    style: TextStyle(
+                  Text(
+                  AppLocalizations.of(context)!.translate('region'),               
+                      style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
@@ -91,7 +89,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     child: CustomDropdown<RegionData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: regionsList,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),   
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -113,7 +111,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem.name ?? 'Выберите регион',
+                          selectedItem.name ?? AppLocalizations.of(context)!.translate('select_region'),   
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -123,7 +121,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите регион',
+                          Text(AppLocalizations.of(context)!.translate('select_region'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -134,7 +132,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                       initialItem: selectedRegionData,
                       validator: (value) {
                         if (value == null) {
-                          return '   Поле обязательно для заполнения';
+                          return AppLocalizations.of(context)!.translate('field_required_project');
                         }
                         return null;
                       },

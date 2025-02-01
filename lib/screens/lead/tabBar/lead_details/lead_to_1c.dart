@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_event.dart';
@@ -112,7 +113,7 @@ class _LeadToCState extends State<LeadToC> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Отправить в 1С',
+                          AppLocalizations.of(context)!.translate('send_to_1c'), 
                           style: TextStyle(color: Colors.black, fontSize: 16),
                         ),
                         Icon(
@@ -139,7 +140,7 @@ class _LeadToCState extends State<LeadToC> {
           backgroundColor: Colors.white,
           title: Center(
             child: Text(
-              'Отправить данные',
+            AppLocalizations.of(context)!.translate('send_data'), 
               style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
@@ -149,7 +150,7 @@ class _LeadToCState extends State<LeadToC> {
             ),
           ),
           content: Text(
-            'Вы уверены, что хотите отправить данные в 1С?',
+           AppLocalizations.of(context)!.translate('confirm_send_to_1c'), 
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
@@ -163,7 +164,7 @@ class _LeadToCState extends State<LeadToC> {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText: 'Нет',
+                    buttonText: AppLocalizations.of(context)!.translate('no'), 
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -174,7 +175,7 @@ class _LeadToCState extends State<LeadToC> {
                 SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText: 'Да',
+                    buttonText: AppLocalizations.of(context)!.translate('yes'), 
                     onPressed: () {
                       context
                           .read<LeadToCBloc>()

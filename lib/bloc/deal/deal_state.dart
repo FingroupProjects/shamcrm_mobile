@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart'; // Модель для Deal
 
 abstract class DealState {}
 
@@ -24,19 +24,20 @@ class DealLoaded extends DealState {
     );
   }
 }
+
 class DealDataLoaded extends DealState {
   final List<Deal> deals;
   final int currentPage;
-  final bool allDealsFetched;
+  final Map<int, int> dealCounts;
 
-  DealDataLoaded(this.deals, {this.currentPage = 1, this.allDealsFetched = false});
+  DealDataLoaded(this.deals, {this.currentPage = 1, required this.dealCounts});
 
   // Метод для объединения с новыми сделками
-  DealDataLoaded merge(List<Deal> newDeals, {bool? allFetched}) {
+  DealDataLoaded merge(List<Deal> newDeals) {
     return DealDataLoaded(
       [...deals, ...newDeals],
       currentPage: currentPage + 1,
-      allDealsFetched: allFetched ?? this.allDealsFetched,
+      dealCounts: dealCounts,
     );
   }
 
@@ -44,16 +45,15 @@ class DealDataLoaded extends DealState {
   DealDataLoaded copyWith({
     List<Deal>? deals,
     int? currentPage,
-    bool? allDealsFetched,
+    Map<int, int>? dealCounts,
   }) {
     return DealDataLoaded(
       deals ?? this.deals,
       currentPage: currentPage ?? this.currentPage,
-      allDealsFetched: allDealsFetched ?? this.allDealsFetched,
+      dealCounts: dealCounts ?? this.dealCounts,
     );
   }
 }
-
 
 class DealError extends DealState {
   final String message;
@@ -72,9 +72,19 @@ class DealDeleted extends DealState {
 
   DealDeleted(this.message);
 }
+class DealStatusLoaded extends DealState {
+  final DealStatus dealStatus;
+  DealStatusLoaded(this.dealStatus);
+}
 
 class DealStatusDeleted extends DealState {
   final String message;
 
   DealStatusDeleted(this.message);
+}
+// State для успешного обновления статуса лида
+class DealStatusUpdatedEdit extends DealState {
+  final String message;
+
+  DealStatusUpdatedEdit(this.message);
 }

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -10,7 +11,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
   final int taskStatusId; // ID удаляемого статуса
 
   DeleteTaskStatusDialog({required this.taskStatusId});
-
+  
   @override
   Widget build(BuildContext context) {
     return BlocListener<TaskBloc, TaskState>(
@@ -20,7 +21,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16, // Размер шрифта совпадает с CustomTextField
@@ -48,7 +49,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-            'Удалить статус задачи',
+            AppLocalizations.of(context)!.translate('delete_task_status'), 
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -58,7 +59,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
           ),
         ),
         content: Text(
-          'Вы уверены, что хотите удалить этот статус задачи?',
+          AppLocalizations.of(context)!.translate('confirm_delete_task_status'),
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
@@ -72,7 +73,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
             children: [
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Отмена',
+                  buttonText: AppLocalizations.of(context)!.translate('cancel'),
                   onPressed: () {
                     Navigator.of(context).pop(); // Закрываем диалог
                   },
@@ -83,7 +84,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
   child: CustomButton(
-    buttonText: 'Удалить',
+    buttonText: AppLocalizations.of(context)!.translate('delete'),
     onPressed: () async {
       final _apiService = ApiService();
       final hasLeads = await _apiService.checkIfStatusHasTasks(taskStatusId);
@@ -92,7 +93,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Сначала уберите карточки из этого статуса!',
+              AppLocalizations.of(context)!.translate('remove_cards_first'), // Локализованный текст
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -113,11 +114,13 @@ class DeleteTaskStatusDialog extends StatelessWidget {
         );
         Navigator.of(context).pop(); 
       } else {
-        context.read<TaskBloc>().add(DeleteTaskStatuses(taskStatusId));
+          final localizations = AppLocalizations.of(context)!;
+
+        context.read<TaskBloc>().add(DeleteTaskStatuses(taskStatusId,localizations));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Статус успешно удален!',
+              AppLocalizations.of(context)!.translate('status_deleted_successfully'), 
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,

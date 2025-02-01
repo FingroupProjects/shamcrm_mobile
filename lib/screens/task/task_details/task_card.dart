@@ -1,9 +1,9 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart'; // Импорт кастомного виджета для задач в TabBar
 import 'package:crm_task_manager/models/task_model.dart'; // Импорт модели задачи
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart'; // Импорт экрана деталей задачи
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; // Импорт виджета выпадающего диалога для выбора статуса задачи
 import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
-import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart'; // Импорт для форматирования даты
 
 /// Класс виджета для отображения карточки задачи
@@ -99,18 +99,18 @@ class _TaskCardState extends State<TaskCard> {
   }
 
   /// Получение текстового представления приоритета
-  String _getPriorityText(int? priority) {
-    switch (priority) {
-      case 1:
-        return 'Обычный';
-      case 3:
-        return 'Срочный';
-      case 2:
-        return 'Важный';
-      default:
-        return 'Обычный';
-    }
+String _getPriorityText(int? priority, BuildContext context) {
+  switch (priority) {
+    case 1:
+      return AppLocalizations.of(context)!.translate('normal'); 
+    case 3:
+      return AppLocalizations.of(context)!.translate('urgent'); 
+    case 2:
+      return AppLocalizations.of(context)!.translate('important'); 
+    default:
+      return AppLocalizations.of(context)!.translate('normal');
   }
+}
 
   /// Получение инициалов пользователя из имени
   String _getUserInitials(String name) {
@@ -122,6 +122,7 @@ class _TaskCardState extends State<TaskCard> {
     }
     return '';
   }
+
 
  @override
 Widget build(BuildContext context) {
@@ -205,18 +206,15 @@ Widget build(BuildContext context) {
             context,
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
-                taskId: widget.task.id
-                    .toString(), // ID задачи для детального экрана
-                taskName: widget.task.name ?? 'Без имени', // Название задачи
+                taskId: widget.task.id.toString(), // ID задачи для детального экрана
+                taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
                 startDate: widget.task.startDate, // Дата начала задачи
                 endDate: widget.task.endDate, // Дата окончания задачи
                 taskStatus: dropdownValue, // Текущий статус задачи
                 statusId: widget.statusId, // ID статуса задачи
                 priority: widget.task.priority, // Приоритет задачи
                 description: widget.task.description, // Описание задачи
-                project: widget.task.project?.name ??
-                    widget.project ??
-                    'Без проекта',
+                project: widget.task.project?.name ?? widget.project ?? AppLocalizations.of(context)!.translate('no_project'),
                 taskCustomFields: widget.task.taskCustomFields,
               ),
             ),
@@ -226,7 +224,7 @@ Widget build(BuildContext context) {
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
           decoration:
-              TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
+          TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
           child: Stack(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -235,28 +233,22 @@ Widget build(BuildContext context) {
                   children: [
                     Expanded(
                       child: Text(
-                        widget.task.name ?? 'Без имени', // Название задачи
-                        style:
-                            TaskCardStyles.titleStyle, // Стиль заголовка задачи
-                        overflow: TextOverflow
-                            .ellipsis, // Обрезка текста, если не помещается
+                        widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
+                        style:TaskCardStyles.titleStyle, // Стиль заголовка задачи
+                        overflow: TextOverflow.ellipsis, // Обрезка текста, если не помещается
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getPriorityBackgroundColor(
-                            widget.task.priority), // Цвет фона приоритета
-                        borderRadius:
-                            BorderRadius.circular(16), // Радиус скругления
+                        color: _getPriorityBackgroundColor( widget.task.priority), // Цвет фона приоритета
+                        borderRadius: BorderRadius.circular(16), // Радиус скругления
                       ),
                       child: Text(
-                        _getPriorityText(
-                            widget.task.priority), // Текст приоритета
+                        _getPriorityText(widget.task.priority, context),// Текст приоритета
                         style: TextStyle(
-                          color: _getPriorityTextColor(
-                              widget.task.priority), // Цвет текста приоритета
+                          color: _getPriorityTextColor(widget.task.priority), // Цвет текста приоритета
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
@@ -265,9 +257,9 @@ Widget build(BuildContext context) {
                     ),
                   ],
                 ),
-                const SizedBox(height: 0), // Отступ в 12 пикселей сверху
+                const SizedBox(height: 0), 
                 Text(
-                  widget.task.project?.name ?? 'Без проекта',
+                  widget.task.project?.name ?? AppLocalizations.of(context)!.translate('no_project'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -278,8 +270,8 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 0),
                 Row(
                   children: [
-                    const Text(
-                      'Колонка: ', // Надпись "Колонка" для статуса задачи
+                    Text(
+                      AppLocalizations.of(context)!.translate('column'), 
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

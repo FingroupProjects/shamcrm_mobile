@@ -11,10 +11,10 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -116,10 +116,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             context.read<LeadBloc>().add(FetchLeadStatuses());
           },
         ),
-        title: const Row(
+        title: Row(
           children: [
             Text(
-              'Новый лид',
+              AppLocalizations.of(context)!.translate('new_lead'), 
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -136,7 +136,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -155,7 +155,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -190,11 +190,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
+                        label: AppLocalizations.of(context)!.translate('name_list'), 
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -209,11 +209,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
-                        label: 'Телефон',
+                        label: AppLocalizations.of(context)!.translate('phone'), 
                       ),
                       const SizedBox(height: 8),
                       RegionRadioGroupWidget(
@@ -245,20 +245,20 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,
-                        hintText: 'Введите логин instagram',
-                        label: 'Instagram',
+                        hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
+                        label: AppLocalizations.of(context)!.translate('instagram'),
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: facebookLoginController,
-                        hintText: 'Введите логин facebook',
-                        label: 'Facebook',
+                        hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
+                        label: AppLocalizations.of(context)!.translate('Facebook'),
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: tgNickController,
-                        hintText: 'Введите логин telegram',
-                        label: 'Telegram',
+                        hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+                        label: AppLocalizations.of(context)!.translate('telegram'),
                       ),
                       const SizedBox(height: 8),
                       CustomPhoneNumberInput(
@@ -273,21 +273,21 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: emailController,
-                        hintText: 'Введите электронную почту',
-                        label: 'Электронная почта',
+                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
+                        label: AppLocalizations.of(context)!.translate('email'),
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: birthdayController,
-                        label: 'Дата рождения',
+                        label: AppLocalizations.of(context)!.translate('birth_date'),
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 8),
@@ -308,7 +308,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: 'Добавить поле',
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -325,7 +325,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -346,7 +346,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Добавить',
+                              buttonText: AppLocalizations.of(context)!.translate('add'),
                               buttonColor: Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: _submitForm,
@@ -372,7 +372,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Пожалуйста, заполните все обязательные поля!',
+            AppLocalizations.of(context)!.translate('fill_required_fields'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -423,7 +423,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
-                Text('Введите корректную дату рождения в формате ДД/ММ/ГГГГ'),
+                Text(AppLocalizations.of(context)!.translate('enter_valid_birth_date')),
           ),
         );
         return;
@@ -438,6 +438,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         customFieldMap.add({fieldName: fieldValue});
       }
     }
+
+  final localizations = AppLocalizations.of(context)!;
 
     context.read<LeadBloc>().add(CreateLead(
           name: name,
@@ -457,6 +459,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           email: email,
           description: description,
           customFields: customFieldMap,
+          localizations: localizations,  
+
         ));
   }
 }

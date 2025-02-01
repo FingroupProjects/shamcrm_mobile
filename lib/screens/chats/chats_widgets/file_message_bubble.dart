@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 
@@ -9,6 +8,7 @@ class FileMessageBubble extends StatelessWidget {
   final String fileName;
   final String senderName;
   final Function(String) onTap;
+  final bool isHighlighted; // Add this line
 
   const FileMessageBubble({
     Key? key,
@@ -18,11 +18,11 @@ class FileMessageBubble extends StatelessWidget {
     required this.fileName,
     required this.onTap,
     required this.senderName,
+    this.isHighlighted = false, // Add this line
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-
     String fileExtension = fileName.split('.').last.toLowerCase();
     String iconPath;
 
@@ -54,55 +54,77 @@ class FileMessageBubble extends StatelessWidget {
         iconPath = 'assets/icons/chats/file.png';
     }
 
-    return Align(
-      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment:
-            isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 8),
-          if(!isSender) Text(
-            senderName,
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          GestureDetector(
-            onTap: () => onTap(filePath),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 5),
-              padding: const EdgeInsets.all(12),
-              constraints: BoxConstraints(maxWidth: 200),
-              decoration: BoxDecoration(
-                color: isSender
-                    ? ChatSmsStyles.messageBubbleSenderColor
-                    : ChatSmsStyles.messageBubbleReceiverColor,
-                borderRadius: BorderRadius.circular(10),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        boxShadow: isHighlighted
+            ? [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  blurRadius: 5,
+                  spreadRadius: 2,
+                  offset: Offset(0, -4),
+                ),
+              ]
+            : [],
+      ),
+      child: Align(
+        alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment:
+              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            if (!isSender)
+              Text(
+                senderName,
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset(iconPath, width: 32, height: 32),
-                  Flexible(
-                    child: Text(
-                      fileName,
-                      style: TextStyle(
-                          color: isSender ? Colors.white : Colors.black),
-                      overflow: TextOverflow.ellipsis,
+            GestureDetector(
+              onTap: () => onTap(filePath),
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 5),
+                padding: const EdgeInsets.all(12),
+                constraints: BoxConstraints(maxWidth: 200),
+                decoration: BoxDecoration(
+                  color: isSender
+                      ? ChatSmsStyles.messageBubbleSenderColor
+                      : ChatSmsStyles.messageBubbleReceiverColor,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      offset: Offset(0, 4),
+                      blurRadius: 6,
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Image.asset(iconPath, width: 32, height: 32),
+                    Flexible(
+                      child: Text(
+                        fileName,
+                        style: TextStyle(
+                            color: isSender ? Colors.white : Colors.black),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-         Text(
-            time,
-            style: const TextStyle(
-              fontSize: 12,
-              color: ChatSmsStyles.appBarTitleColor,
-              fontWeight: FontWeight.w400,
-              fontFamily: 'Gilroy',
+            Text(
+              time,
+              style: const TextStyle(
+                fontSize: 12,
+                color: ChatSmsStyles.appBarTitleColor,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

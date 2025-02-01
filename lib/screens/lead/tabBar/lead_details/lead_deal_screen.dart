@@ -1,4 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
@@ -6,8 +10,10 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/delete_lead_deal.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_add_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -84,7 +90,7 @@ class _DealsWidgetState extends State<DealsWidget> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -115,7 +121,8 @@ class _DealsWidgetState extends State<DealsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Сделки'),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('deal'), 
+        ),
         SizedBox(height: 8),
         if (deals.isEmpty)
           Padding(
@@ -126,7 +133,7 @@ class _DealsWidgetState extends State<DealsWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пусто',
+                    AppLocalizations.of(context)!.translate('empty'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -160,10 +167,10 @@ class _DealsWidgetState extends State<DealsWidget> {
   try {
     formattedDate = (deal.lastseen != null && deal.lastseen!.isNotEmpty)
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.lastseen!))
-        : 'Не указано';
+        : AppLocalizations.of(context)!.translate('not_specified');
   } catch (e) {
-    formattedDate = 'Не указано'; // Обработка ошибки
-  }
+    formattedDate = AppLocalizations.of(context)!.translate('not_specified'); 
+      }
 
   return GestureDetector(
     onTap: () {
@@ -244,6 +251,9 @@ class _DealsWidgetState extends State<DealsWidget> {
       ),
     ).then((_) {
       context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
+      
+          final dealBloc = BlocProvider.of<LeadBloc>(context, listen: false);
+          dealBloc.add(FetchLeadStatuses());
     });
   }
 
@@ -266,10 +276,11 @@ class _DealsWidgetState extends State<DealsWidget> {
                   builder: (context) =>
                       LeadDealAddScreen(leadId: widget.leadId),
                 ),
-              ).then((_) {
-                context
-                    .read<LeadDealsBloc>()
-                    .add(FetchLeadDeals(widget.leadId));
+              ).then((_) async {
+                await LeadCache.clearLeadStatuses();
+                await LeadCache.clearAllLeads();
+                BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+                BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
               });
             },
             style: TextButton.styleFrom(
@@ -281,7 +292,7 @@ class _DealsWidgetState extends State<DealsWidget> {
               ),
             ),
             child: Text(
-              'Добавить',
+              AppLocalizations.of(context)!.translate('add'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',

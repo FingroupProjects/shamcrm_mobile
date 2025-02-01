@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,7 @@ class LoginScreen extends StatelessWidget {
     final TextEditingController loginController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
     final apiService = context.read<ApiService>();
+    final localizations = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -25,8 +27,8 @@ class LoginScreen extends StatelessWidget {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) async {
             if (state is LoginLoaded) {
-               // Логирование успешного получения userId
-          print('Received userId: ${state.user.id}');
+              // Логирование успешного получения userId
+              print('Received userId: ${state.user.id}');
               // Сохраняем userID после успешного входа
               userID.value = state.user.id.toString();
 
@@ -35,14 +37,10 @@ class LoginScreen extends StatelessWidget {
               await prefs.setString('userName', state.user.name.toString());
               await prefs.setString('userID', state.user.id.toString());
 
-              // await prefs.setString('userPhone', state.user.phone.toString());
               await prefs.setString('userLogin', state.user.login.toString());
-              // await prefs.setString('userImage', state.user.image.toString());
-              // await prefs.setString('userEmail', state.user.email.toString());
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
               } else {
-                // Обработка ситуации, когда role пусто или null
                 await prefs.setString('userRoleName', 'No role assigned');
               }
 
@@ -51,11 +49,9 @@ class LoginScreen extends StatelessWidget {
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
-            // print("UUID1 $prefs");
 
               // Проверяем сохранённую организацию
-              final savedOrganization =
-                  await apiService.getSelectedOrganization();
+              final savedOrganization = await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
                 final organizations = await apiService.getOrganization();
                 if (organizations.isNotEmpty) {
@@ -67,39 +63,41 @@ class LoginScreen extends StatelessWidget {
               await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.message}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            });
+                );
+              });
             }
           },
           child: BlocBuilder<LoginBloc, LoginState>(
             builder: (context, state) {
+              final localizations = AppLocalizations.of(context);
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 75),
-                  const Text(
-                    'Вход',
+                  Text(
+                    localizations!.translate('login_title'), 
                     style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w600,
@@ -107,8 +105,9 @@ class LoginScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8),
-                  const Text(
-                    'Введите логин и пароль для входа',
+                  Text(
+                    localizations
+                        .translate('login_subtitle'), 
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xff99A4BA),
@@ -119,14 +118,14 @@ class LoginScreen extends StatelessWidget {
                   SizedBox(height: 16),
                   CustomTextField(
                     controller: loginController,
-                    hintText: 'Введите логин',
-                    label: 'Логин',
+                    hintText: localizations.translate('login_username_hint'),
+                    label: localizations.translate('login_username_label'),
                   ),
                   SizedBox(height: 16),
                   CustomTextField(
                     controller: passwordController,
-                    hintText: 'Введите пароль',
-                    label: 'Пароль',
+                    hintText: localizations.translate('login_password_hint'), 
+                    label: localizations.translate('login_password_label'),
                     isPassword: true,
                   ),
                   SizedBox(height: 16),
@@ -135,7 +134,7 @@ class LoginScreen extends StatelessWidget {
                           child: CircularProgressIndicator(
                               color: Color(0xff1E2E52)))
                       : CustomButton(
-                          buttonText: 'Войти',
+                          buttonText: localizations.translate('login_button'), 
                           buttonColor: Color(0xff4F40EC),
                           textColor: Colors.white,
                           onPressed: () {
@@ -144,14 +143,12 @@ class LoginScreen extends StatelessWidget {
                             if (login.isEmpty || password.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text('Пожалуйста, заполните все поля'),
+                                  content: Text(localizations.translate('login_empty_fields_error')), 
                                 ),
                               );
                               return;
                             }
-                            BlocProvider.of<LoginBloc>(context)
-                                .add(CheckLogin(login, password));
+                            BlocProvider.of<LoginBloc>(context).add(CheckLogin(login, password));
                           },
                         ),
                   SizedBox(height: 16),

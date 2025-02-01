@@ -3,12 +3,16 @@ import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
+import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,15 +32,14 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   bool _pinsDoNotMatch = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
-  int? userRoleId ;
-  bool isPermissionsLoaded = false; 
-
-
-
+  int? userRoleId;
+  bool isPermissionsLoaded = false;
 
   @override
   void initState() {
     super.initState();
+
+    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
     _animationController = AnimationController(
       vsync: this,
@@ -46,7 +49,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
-
 
   @override
   void dispose() {
@@ -79,6 +81,15 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     });
   }
 
+  void _onClear() {
+    setState(() {
+      _pin = '';
+      _confirmPin = '';
+      _pinsDoNotMatch = false; // Сбросим ошибку, если была
+      _isConfirming = false; // Сбросим процесс подтверждения
+    });
+  }
+
   void _onDelete() {
     setState(() {
       if (_isConfirming && _confirmPin.isNotEmpty) {
@@ -89,57 +100,56 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     });
   }
 
-   Future<void> _loadUserRoleId() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? '';
-    if (userId.isEmpty) {
+  Future<void> _loadUserRoleId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        setState(() {
+          userRoleId = 0;
+        });
+        return;
+      }
+
+      // Получение ИД РОЛЯ через API
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userRoleId = userProfile.role!.first.id;
+      });
+
+      await prefs.setInt('userRoleId', userRoleId!);
+      await prefs.setString('userRoleName', userProfile.role![0].name);
+
+      // Выводим данные в консоль
+      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
+      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+
+      setState(() {
+        isPermissionsLoaded = true;
+      });
+    } catch (e) {
+      print('Error loading user role!');
       setState(() {
         userRoleId = 0;
       });
-      return;
     }
-
-    // Получение ИД РОЛЯ через API
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
-    setState(() {
-      userRoleId = userProfile.role!.first.id;
-    });
-
-    await prefs.setInt('userRoleId', userRoleId!);
-    await prefs.setString('userRoleName', userProfile.role![0].name);
-
-    // Выводим данные в консоль
-    context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-
-      
-      setState(() {
-        isPermissionsLoaded = true; 
-      });
-
-  } catch (e) {
-    print('Error loading user role!');
-    setState(() {
-      userRoleId = 0;
-    });
   }
-}
-
 
   Future<void> _validatePins() async {
     if (_pin == _confirmPin) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_pin', _pin);
-    if (isPermissionsLoaded) {
+      if (isPermissionsLoaded) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
-          (Route<dynamic> route) => false, 
+          (Route<dynamic> route) => false,
         );
-    }
+      }
     } else {
       _triggerErrorEffect();
     }
@@ -175,9 +185,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
               Text(
                 _isConfirming
                     ? (_pinsDoNotMatch
-                        ? 'Пароли не совпадают'
-                        : 'Повторите PIN-код')
-                    : 'Установите PIN-код',
+                        ? AppLocalizations.of(context)!
+                            .translate('pins_do_not_match_error')
+                        : AppLocalizations.of(context)!
+                            .translate('confirm_pin_title'))
+                    : AppLocalizations.of(context)!.translate('set_pin_title'),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -189,7 +201,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 animation: _shakeAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,0), // Эффект "шатания".
+                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,
+                        0), // Эффект "шатания".
                     child: Column(
                       children: [
                         _buildPinRow(_pin),
@@ -230,6 +243,19 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   const SizedBox(), // Пустое место для сетки.
                 ],
               ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _onClear, // Очистить оба пин-кода
+                child:  Text(
+                  AppLocalizations.of(context)!.translate('clear'),
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xff1E2E52),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10.0, horizontal: 20.0),
+                ),
+              ),
             ],
           ),
         ),
@@ -259,4 +285,3 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     );
   }
 }
-

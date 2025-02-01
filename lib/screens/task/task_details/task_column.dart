@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:flutter/material.dart';
@@ -12,11 +13,14 @@ class TaskColumn extends StatefulWidget {
   final int statusId;
   final String name;
   final Function(int) onStatusId;
+    final int? userId; // Добавляем параметр managerId
+
 
   TaskColumn({
     required this.statusId,
     required this.name,
     required this.onStatusId,
+    this.userId,
   });
 
   @override
@@ -41,8 +45,7 @@ class _TaskColumnState extends State<TaskColumn> {
           _scrollController.position.maxScrollExtent) {
         final currentState = _taskBloc.state;
         if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
-          _taskBloc
-              .add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+          _taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
         }
       }
     }
@@ -71,6 +74,8 @@ class _TaskColumnState extends State<TaskColumn> {
   Future<void> _onRefresh() async {
     final leadBloc = BlocProvider.of<TaskBloc>(context);
     leadBloc.add(FetchTaskStatuses());
+
+        // BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
 
     _taskBloc.add(FetchTasks(widget.statusId));
     return Future.delayed(Duration(milliseconds: 1));
@@ -106,7 +111,7 @@ class _TaskColumnState extends State<TaskColumn> {
                     children: [
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4),
-                      Center(child: Text('Нет задач для выбранного статуса')),
+                      Center(child: Text(AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'))),
                     ],
                   ),
                 );
@@ -160,7 +165,9 @@ class _TaskColumnState extends State<TaskColumn> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${state.message}',
+                    content: 
+                    Text(
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                         style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,

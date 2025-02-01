@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/deal_task/deal_task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/task_add.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -93,7 +94,7 @@ class _TasksWidgetState extends State<TasksWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Задачи'),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('tasks')),
         SizedBox(height: 8),
         if (tasks.isEmpty)
           Padding(
@@ -104,7 +105,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пусто',
+                    AppLocalizations.of(context)!.translate('empty'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -175,14 +176,14 @@ class _TasksWidgetState extends State<TasksWidget> {
                       Row(
                         children: [
                           Text(
-                            'От: $formattedDateFrom',
+                            '${AppLocalizations.of(context)!.translate('from')}$formattedDateFrom',
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
                           ),
                           SizedBox(width: 16),
                           Text(
-                            'До: $formattedDateTo',
+                            '${AppLocalizations.of(context)!.translate('to')}$formattedDateTo',
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
@@ -248,7 +249,7 @@ class _TasksWidgetState extends State<TasksWidget> {
             ),
           ),
           child: Text(
-            'Добавить',
+            AppLocalizations.of(context)!.translate('add'), 
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

@@ -6,7 +6,9 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -29,62 +31,65 @@ class FirebaseApi {
     initPushNotification();
   }
 
-void initPushNotification() async {
-        final prefs = await SharedPreferences.getInstance();
-        final savedPin = prefs.getString('user_pin');
-        print('------------------------');
-        print('-----------------SAVEPINCODE-------');
-        print(savedPin);
+  void initPushNotification() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('user_pin');
+    print('------------------------');
+    print('-----------------SAVEPINCODE-------');
+    print(savedPin);
 
- if (savedPin == null) {
-    FirebaseMessaging.instance.getInitialMessage().then((message) {
-      print('Получено уведомление при запуске приложения: ${message?.messageId}');
-      handleMessage(message);
-      _printCustomData(message);
+    if (savedPin == null) {
+      FirebaseMessaging.instance.getInitialMessage().then((message) {
+        print(
+            'Получено уведомление при запуске приложения: ${message?.messageId}');
+        handleMessage(message);
+        _printCustomData(message);
+      });
+    } else {
+      FirebaseMessaging.instance.getInitialMessage().then((message) {
+        print(
+            'Получено уведомление при запуске приложения: ${message?.messageId}');
+        _navigateToMainScreen(message);
+      });
+    }
+
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      print('Пользователь нажал на уведомление: ${message.messageId}');
+      _navigateToMainScreen(message);
     });
-} else {
-    FirebaseMessaging.instance.getInitialMessage().then((message) {
-      print('Получено уведомление при запуске приложения: ${message?.messageId}');
-      _navigateToMainScreen(message); 
-    });
-}
 
-
-  FirebaseMessaging.onMessageOpenedApp.listen((message) {
-    print('Пользователь нажал на уведомление: ${message.messageId}');
-    _navigateToMainScreen(message);
-  });
-  
     // FirebaseMessaging.onMessageOpenedApp.listen((message) {
     //   print('Пользователь нажал на уведомление: ${message.messageId}');
     //   handleMessage(message);
     //   _printCustomData(message);
     // });
 
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Уведомление при активном приложении: ${message.notification?.title}');
-    _printCustomData(message);
-  });
-}
-
-Future<void> _navigateToMainScreen(RemoteMessage? message) async {
-  if (message != null) {
-    await _navigateToPinScreenAndHandleNotification(message);
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print(
+          'Уведомление при активном приложении: ${message.notification?.title}');
+      _printCustomData(message);
+    });
   }
-}
 
+  Future<void> _navigateToMainScreen(RemoteMessage? message) async {
+    if (message != null) {
+      await _navigateToPinScreenAndHandleNotification(message);
+    }
+  }
 
   // Функция для перехода на экран PIN и потом на основной экран
-Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) async {
-  // First, navigate to the PIN screen before handling the notification
-  navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
-    // After PIN is entered, handle the notification
-    if (message != null) {
-      await handleMessage(message);
-    }
-  });
-}
-
+  Future<void> _navigateToPinScreenAndHandleNotification(
+      RemoteMessage? message) async {
+    // First, navigate to the PIN screen before handling the notification
+    navigatorKey.currentState
+        ?.pushReplacementNamed('/pin_screen')
+        .then((_) async {
+      // After PIN is entered, handle the notification
+      if (message != null) {
+        await handleMessage(message);
+      }
+    });
+  }
 
   void _printCustomData(RemoteMessage? message) {
     if (message != null && message.data.isNotEmpty) {
@@ -97,7 +102,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
   }
 
   Future<void> handleMessage(RemoteMessage? message) async {
-      final ApiService _apiService = ApiService();
+    final ApiService _apiService = ApiService();
 
     if (message == null || message.data.isEmpty) {
       print('handleMessage: сообщение пустое или данные отсутствуют');
@@ -118,13 +123,14 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
     switch (type) {
       case 'message':
         print('Переход на экран чата с ID: $id');
-         if (await _apiService.hasPermission('deal.read') && await _apiService.hasPermission('lead.read')) {
-        screenIndex = 3;
-        await navigateToScreen(screenIndex, id, 'message', message);
+        if (await _apiService.hasPermission('deal.read') &&
+            await _apiService.hasPermission('lead.read')) {
+          screenIndex = 3;
+          await navigateToScreen(screenIndex, id, 'message', message);
         } else {
           screenIndex = 2;
-        await navigateToScreen(screenIndex, id, 'message', message);
-          }
+          await navigateToScreen(screenIndex, id, 'message', message);
+        }
         break;
 
       case 'task':
@@ -141,10 +147,11 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
         await navigateToScreen(screenIndex, id, 'lead', message);
         break;
 
-      case 'deal':
+      case 'dealDeadLineNotification':
         print('Переход на экран сделки с ID: $id');
         screenIndex = 4;
-        await navigateToScreen(screenIndex, id, 'deal', message);
+        await navigateToScreen(
+            screenIndex, id, 'dealDeadLineNotification', message);
         break;
 
       case 'lead':
@@ -152,16 +159,26 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'lead', message);
         break;
-
+      case 'myTask':
+        print('Переход на экран лида с ID: $id');
+        screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'myTask', message);
+        break;
+         case 'eventId':
+        print('Переход на экран лида с ID: $id');
+        screenIndex = 2;
+        await navigateToScreen(screenIndex, id, 'eventId', message);
+        break;
       default:
         print('handleMessage: Неизвестный тип: $type');
     }
   }
-  
 
-  Future<void> navigateToScreen(int screenIndex, String id, String type, RemoteMessage message) async {
-       SharedPreferences.getInstance().then((prefs) {
-        prefs.setBool('hasNewNotification', false);});
+  Future<void> navigateToScreen(
+      int screenIndex, String id, String type, RemoteMessage message) async {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('hasNewNotification', false);
+    });
     navigatorKey.currentState?.pushReplacementNamed(
       '/home',
       arguments: {'id': id, 'screenIndex': screenIndex},
@@ -179,8 +196,14 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
       case 'lead':
         await navigateToLeadScreen(id, message);
         break;
+      case 'myTask':
+        await navigateToMyTaskScreen(id, message);
+        break;
+ case 'eventId':
+        await navigateToMyTaskScreen(id, message);
+        break;
 
-      case 'deal':
+      case 'dealDeadLineNotification':
         await navigateToDealScreen(id, message);
         break;
 
@@ -190,72 +213,87 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
   }
 
   Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
+    final chatId = int.tryParse(id) ?? 0;
+    if (chatId != 0) {
+      try {
+        final getChatById = await ApiService().getChatById(chatId);
+        Widget screen;
+        String? chatName;
 
-  final chatId = int.tryParse(id) ?? 0;
-  if (chatId != 0) {
-    try {
-      final getChatById = await ApiService().getChatById(chatId);
-      Widget screen;
-      String? chatName;
+        switch (getChatById.type) {
+          case 'lead':
+            chatName = getChatById.name;
+            break;
+          case 'task':
+            final chatProfileTask = await ApiService().getTaskProfile(chatId);
+            chatName = chatProfileTask.name;
+            break;
+          case 'corporate':
+            final prefs = await SharedPreferences.getInstance();
+            String userId = prefs.getString('userID').toString();
 
-      switch (getChatById.type) {
-        case 'lead':
-          chatName = getChatById.name;
-          break;
-        case 'task':
-          final chatProfileTask = await ApiService().getTaskProfile(chatId);
-          chatName = chatProfileTask.name;
-          break;
-     case 'corporate':
-         final getChatById = await ApiService().getChatById(chatId);
+            final getChatById = await ApiService().getChatById(chatId);
 
-         chatName = getChatById.group != null 
-             ? getChatById.group!.name 
-             : getChatById.chatUsers.length > 1
-                 ? '${getChatById.chatUsers[0].participant.name}'
-                 : getChatById.chatUsers[0].participant.name;
-         break;
-        default:
-          print('Неизвестный тип чата');
-          return;
-      }
+            if (getChatById.group != null) {
+              chatName = getChatById.group!.name;
+            } else {
+              int userIndex = getChatById.chatUsers.indexWhere(
+                  (user) => user.participant.id.toString() == userId);
+              if (userIndex != -1) {
+                int otherUserIndex = (userIndex == 0) ? 1 : 0;
+                chatName =
+                    '${getChatById.chatUsers[otherUserIndex].participant.name}';
+              } else {
+                chatName = getChatById.chatUsers[0].participant.name;
+              }
+            }
 
-      screen = ChatSmsScreen(
-        chatItem: Chats(
-          id: chatId,
-          name: chatName ?? 'Без имени',  
+            break;
+          default:
+            print('Неизвестный тип чата');
+            return;
+        }
+
+        screen = ChatSmsScreen(
+          chatItem: Chats(
+            id: chatId,
+            name: chatName ?? 'Без имени',
+            canSendMessage: getChatById.canSendMessage,
+            image: '',
+            channel: '',
+            lastMessage: '',
+            createDate: '',
+            unredMessage: 1,
+            chatUsers: [],
+          ).toChatItem(),
+          chatId: chatId,
+          endPointInTab: getChatById.type.toString(),
           canSendMessage: getChatById.canSendMessage,
-          image: '',
-          channel: '',
-          lastMessage: '',
-          createDate: '',
-          unredMessage: 1,
-          chatUsers: [],
-        ).toChatItem(),
-        chatId: chatId,
-        endPointInTab: getChatById.type.toString(),
-        canSendMessage: getChatById.canSendMessage,
-      );
+        );
 
-      navigatorKey.currentState?.push(MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) => MessagingCubit(ApiService()), 
-          child: screen,
-        ),
-      ));
-    } catch (e) {
-      print("Ошибка загрузки данных: $e");
+        navigatorKey.currentState?.push(MaterialPageRoute(
+          builder: (context) => BlocProvider(
+            create: (context) => MessagingCubit(ApiService()),
+            child: screen,
+          ),
+        ));
+      } catch (e) {
+        print("Ошибка загрузки данных: $e");
+      }
     }
   }
-}
-
 
   Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
     final taskId = message.data['id'];
     if (taskId != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => TaskDetailsScreen(taskId: taskId, taskName: '', taskStatus: '', statusId: 1, taskCustomFields: []),
+          builder: (context) => TaskDetailsScreen(
+              taskId: taskId,
+              taskName: '',
+              taskStatus: '',
+              statusId: 1,
+              taskCustomFields: []),
         ),
       );
     }
@@ -277,6 +315,34 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
     }
   }
 
+  Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
+    final myTaskId = message.data['id'];
+    if (myTaskId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => MyTaskDetailsScreen(
+            taskId: myTaskId.toString(),
+            taskName: '',
+            taskStatus: '',
+            statusId: 1,
+          ),
+        ),
+      );
+    }
+  }
+  Future<void> navigateToEventScreen(String id, RemoteMessage message) async {
+    final eventId = message.data['id'];
+    if (eventId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => EventDetailsScreen(
+            noticeId: eventId,
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> navigateToDealScreen(String id, RemoteMessage message) async {
     final dealId = message.data['id'];
     if (dealId != null) {
@@ -288,7 +354,10 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
             sum: '',
             dealStatus: '',
             statusId: 1,
-            dealCustomFields: [DealCustomField(id: 1, key: '', value: ''), DealCustomField(id: 2, key: '', value: '')],
+            dealCustomFields: [
+              DealCustomField(id: 1, key: '', value: ''),
+              DealCustomField(id: 2, key: '', value: '')
+            ],
           ),
         ),
       );

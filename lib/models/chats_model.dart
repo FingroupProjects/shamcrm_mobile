@@ -18,6 +18,7 @@ class Chats {
   final List<ChatUser> chatUsers;
   final Group? group;
   final Task? task;
+  final ChatUser? user; // добавим поле user
 
   Chats({
     required this.id,
@@ -36,6 +37,7 @@ class Chats {
     required this.chatUsers,
     this.group,
     this.task,
+    this.user, // добавим в конструктор
   });
 
   factory Chats.fromJson(Map<String, dynamic> json) {
@@ -55,7 +57,10 @@ class Chats {
     if (json['task'] != null) {
       task = Task.fromJson(json['task'], json['task']['status_id'] ?? 0);
     }
-
+    ChatUser? user;
+    if (json['user'] != null) {
+      user = ChatUser.fromJson({'participant': json['user']});
+    }
     return Chats(
       id: json['id'] ?? 0,
       name: json['user'] != null
@@ -66,6 +71,7 @@ class Chats {
                   ? json['lead']['name'] ?? 'Без имени'
                   : '',
       image: json['image'] ?? '',
+      user: user,
       createDate: json['task'] != null
           ? json['task']['created_at'] ?? ''
           : json['lead'] != null
@@ -94,10 +100,10 @@ class Chats {
     );
   }
 
-  String get displayName {
+  String? get displayName {
     if (group != null && group!.name.isNotEmpty) {
       return group!.name;
-    } else if (task != null && task!.name.isNotEmpty) {
+    } else if (task != null && task!.name!.isNotEmpty) {
       return task!.name;
     } else {
       return name;
@@ -128,28 +134,40 @@ class Chats {
     }
   }
 
- ChatItem toChatItem() {
+   ChatItem toChatItem() {
     String avatar;
     if (group != null) {
       avatar = "assets/images/GroupChat.png";
-    } else if (chatUsers != null && chatUsers.isNotEmpty) {
-      // Используем participant.image вместо просто image
-      avatar = (chatUsers.length > 1) 
-          ? chatUsers[1].image 
-          : "assets/images/AvatarChat.png";
+    } else if (chatUsers.isNotEmpty) {
+      // Получаем ID текущего пользователя из поля user
+      int currentUserId = user?.id ?? 0;
+      print('Current user ID: $currentUserId'); // для отладки
+      
+      if (chatUsers.length > 1) {
+        if (chatUsers[1].id == currentUserId) {
+          // Если первый пользователь - это текущий пользователь,
+          // показываем аватар второго
+          avatar = chatUsers[1].image;
+        } else {
+          // Иначе показываем аватар первого
+          avatar = chatUsers[0].image;
+        }
+      } else {
+        avatar = chatUsers[0].image;
+      }
     } else {
       avatar = "assets/images/AvatarChat.png";
     }
     
     return ChatItem(
-      displayName,
+      displayName!,
       lastMessage,
       createDate,
       avatar,
       _mapChannelToIcon(channel),
       unredMessage,
     );
-}
+  }
 
   String _mapChannelToIcon(String channel) {
     const channelIconMap = {
@@ -256,6 +274,7 @@ class Message {
   bool isPause;
   Duration duration;
   Duration position;
+  final ForwardedMessage? forwardedMessage; // Новое поле для forwarded_message_id
 
   Message({
     required this.id,
@@ -269,6 +288,7 @@ class Message {
     this.isPause = false,
     this.duration = const Duration(),
     this.position = const Duration(),
+    this.forwardedMessage, // Добавление поля в конструктор
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -281,9 +301,15 @@ class Message {
       text = json['text'] ?? '';
     }
 
+    // Извлечение forwarded_message_id
+    ForwardedMessage? forwardedMessage;
+    if (json['forwarded_message'] != null) {
+      forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
+    }
+
     return Message(
       id: json['id'],
-      text: text, // Убедитесь, что именно text используется
+      text: text,
       type: json['type'],
       senderName: json['sender'] == null
           ? 'Без имени'
@@ -291,21 +317,45 @@ class Message {
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
       isMyMessage: json['is_my_message'] ?? false,
+      forwardedMessage: forwardedMessage, // Установка значения forwardedMessage
     );
   }
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage}';
+  }
+}
+
+
+class ForwardedMessage {
+  final int id;
+  final String text;
+  final String type;
+  final String? senderName;
+
+  ForwardedMessage({
+    required this.id,
+    required this.text,
+    required this.type,
+    this.senderName,
+  });
+
+  factory ForwardedMessage.fromJson(Map<String, dynamic> json) {
+    return ForwardedMessage(
+      id: json['id'],
+      text: json['text'] ?? '',
+      type: json['type'],
+      senderName: json['sender']?['name'] ?? 'Без имени',
+    );
+  }
+
+  @override
+  String toString() {
+    return 'ForwardedMessage{id: $id, text: $text, type: $type, senderName: $senderName}';
   }
 }
 
 
 
 
-
-
-
-
-
-  // var audioUrl;

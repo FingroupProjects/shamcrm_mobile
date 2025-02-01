@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -39,7 +40,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16, 
@@ -74,8 +75,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Менеджер',
+                  Text(
+                   AppLocalizations.of(context)!.translate('manager'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -88,7 +89,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     child: CustomDropdown<ManagerData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: managersList,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -118,7 +119,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem.name ?? 'Выберите менеджера',
+                          selectedItem.name ?? AppLocalizations.of(context)!.translate('select_manager'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -128,7 +129,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите менеджера',
+                          Text(AppLocalizations.of(context)!.translate('select_manager'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -139,7 +140,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       initialItem: selectedManagerData,
                       validator: (value) {
                         if (value == null) {
-                          return '   Поле обязательно для заполнения';
+                          return AppLocalizations.of(context)!.translate('field_required_project');
                         }
                         return null;
                       },
@@ -164,18 +165,3 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     );
   }
 }
-
-//  const SizedBox(height: 8),
-//     if (selectedManagerData == null) // Если данные не выбраны, отображаем ошибку
-//       Padding(
-//         padding: const EdgeInsets.only(left: 12.0),
-//         child: Text(
-//           'Поле обязательно для заполнения',
-//           style: TextStyle(
-//             color: Colors.red,
-//             fontSize: 12,
-//             fontFamily: 'Gilroy',
-//             fontWeight: FontWeight.w500,
-//           ),
-//         ),
-//       ),

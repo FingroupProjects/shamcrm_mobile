@@ -2,9 +2,15 @@ import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_bloc.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/user_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
+import 'package:crm_task_manager/screens/event/event_screen.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,10 +24,20 @@ class CustomAppBar extends StatefulWidget {
   TextEditingController textEditingController;
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
+  Function(bool) clearButtonClickFiltr;
   bool showSearchIcon;
-  final bool showFilterIcon; // Новое поле для отображения фильтра
-  final Function(dynamic)?
-      onManagerSelected; // Добавляем callback для выбора менеджера
+  final bool showFilterIcon;
+  final bool showFilterTaskIcon; // New field for task filter
+  final bool showEvent; // New field for task filter
+  final bool showSeparateTaskFilter; // New field for separate task filter icon
+  final bool showSeparateMyTasks; // New field for separate My Tasks Icon(),
+  final bool showNotification;
+  final Function(List<dynamic>)?
+      onManagersSelected; // Изменено на List<dynamic>
+  final Function(List<dynamic>)? onUsersSelected; // Изменено на List<dynamic>
+  final bool showMyTaskIcon; // Новый параметр
+  final bool showMenuIcon;
+  final bool showSeparateFilter; // New field for separate filter icon
 
   CustomAppBar({
     super.key,
@@ -31,9 +47,19 @@ class CustomAppBar extends StatefulWidget {
     required this.textEditingController,
     required this.focusNode,
     required this.clearButtonClick,
+    required this.clearButtonClickFiltr,
     this.showSearchIcon = true,
-    this.showFilterIcon = true, // Установка значения по умолчанию
-    this.onManagerSelected, // Добавляем в конструктор
+    this.showFilterIcon = true,
+    this.showFilterTaskIcon = true, // Default value for task filter
+    this.onManagersSelected,
+    this.onUsersSelected, // Add to constructor
+    this.showEvent = false, // По умолчанию выключено
+    this.showSeparateTaskFilter = false, // Default to false
+    this.showSeparateMyTasks = false, // Default to false
+    this.showMyTaskIcon = false, // По умолчанию выключено
+    this.showMenuIcon = true, // По умолчанию меню видимо
+    this.showNotification = true, // По умолчанию меню видимо
+    this.showSeparateFilter = false, // Default to false
   });
 
   @override
@@ -49,14 +75,16 @@ class _CustomAppBarState extends State<CustomAppBar>
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
-  bool _isFiltering = false; // Флаг для кнопки фильтра
-
+  bool _isFiltering = false;
+  bool _isTaskFiltering = false; // New state for task filter
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;
-
+  Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
+  bool _showCustomTabBar = true;
+  bool _hasOverdueTasks =false;
 
   @override
   void initState() {
@@ -85,11 +113,33 @@ class _CustomAppBarState extends State<CustomAppBar>
       parent: _blinkController,
       curve: Curves.easeInOut,
     );
+    _checkOverdueTasks();
+    _checkOverdueTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => _checkOverdueTasks(),
+    );
+  }
+
+  Future<void> _checkOverdueTasks() async {
+    try {
+      final apiService = ApiService();
+      final hasOverdue = await apiService.checkOverdueTasks();
+
+      if (mounted) {
+        setState(() {
+          _hasOverdueTasks = hasOverdue;
+        });
+      }
+    } catch (e) {
+      print('Error checking overdue tasks: $e');
+    }
   }
 
   @override
   void dispose() {
     _blinkController.dispose();
+    _checkOverdueTimer?.cancel();
+
     super.dispose();
   }
 
@@ -107,11 +157,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final baseUrlSocket = await ApiService().getSocketBaseUrl();
-    final enteredDomain = await ApiService().getEnteredDomain();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -128,7 +180,8 @@ class _CustomAppBarState extends State<CustomAppBar>
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse(
+            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -164,7 +217,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? 'Не найдено';
+      String UUID = prefs.getString('userID') ??
+          AppLocalizations.of(context)!.translate('not_found');
 
       UserByIdProfile userProfile =
           await ApiService().getUserById(int.parse(UUID));
@@ -212,9 +266,25 @@ class _CustomAppBarState extends State<CustomAppBar>
   void _toggleFilter() {
     setState(() {
       _isFiltering = !_isFiltering;
+      if (_isFiltering) {
+        FocusScope.of(context).requestFocus(focusNode);
+      } else {
+        focusNode.unfocus();
+      }
     });
-    widget
-        .clearButtonClick(_isFiltering); // Вызываем обработчик, если необходимо
+    widget.clearButtonClickFiltr(_isFiltering);
+  }
+
+  void _toggleTaskFilter() {
+    setState(() {
+      _isTaskFiltering = !_isTaskFiltering;
+      if (_isTaskFiltering) {
+        FocusScope.of(context).requestFocus(focusNode);
+      } else {
+        focusNode.unfocus();
+      }
+    });
+    widget.clearButtonClickFiltr(_isTaskFiltering);
   }
 
   @override
@@ -288,7 +358,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             color: backgroundColor,
             border: Border.all(
               color: Colors.white,
-              width: 1,
+              width: 0,
             ),
           ),
           child: Center(
@@ -337,68 +407,105 @@ class _CustomAppBarState extends State<CustomAppBar>
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      height: kToolbarHeight,
-      color: Colors.white,
-      padding: EdgeInsets.zero,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: _buildAvatarImage(_userImage),
-              onPressed: widget.onClickProfileAvatar,
-            ),
-          ),
-          SizedBox(width: 8),
-          if (!_isSearching)
-            Expanded(
-              child: Text(
-                widget.title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xfff1E2E52),
-                ),
-              ),
-            ),
-          if (_isSearching)
-            Expanded(
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                width: _isSearching ? 200.0 : 0.0,
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: focusNode,
-                  onChanged: widget.onChangedSearchInput,
-                  decoration: InputDecoration(
-                    hintText: 'Поиск...',
-                    border: InputBorder.none,
-                  ),
-                  style: TextStyle(fontSize: 16),
-                  autofocus: true,
-                ),
-              ),
-            ),
-          Row(
+        width: double.infinity,
+        height: kToolbarHeight,
+        color: Colors.white,
+        padding: EdgeInsets.zero,
+        child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (widget.showFilterIcon)
+              Container(
+                width: 40,
+                height: 40,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: _buildAvatarImage(_userImage),
+                  onPressed: widget.onClickProfileAvatar,
+                ),
+              ),
+              SizedBox(width: 8),
+              if (!_isSearching)
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xfff1E2E52),
+                    ),
+                  ),
+                ),
+
+              if (_isSearching)
+                Expanded(
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    width: _isSearching ? 200.0 : 0.0,
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: focusNode,
+                      onChanged: widget.onChangedSearchInput,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!
+                            .translate('search_appbar'),
+                        border: InputBorder.none,
+                      ),
+                      style: TextStyle(fontSize: 16),
+                      autofocus: true,
+                    ),
+                  ),
+                ),
+              if (widget.showSearchIcon)
+                Tooltip(
+                  message: AppLocalizations.of(context)!.translate('search'),
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
+                  child: IconButton(
+                    icon: _isSearching
+                        ? Icon(Icons.close)
+                        : Image.asset(
+                            'assets/icons/AppBar/search.png',
+                            width: 24,
+                            height: 24,
+                          ),
+                    onPressed: () {
+                      _toggleSearch();
+                      widget.clearButtonClick(_isSearching);
+                      if (_isSearching) {
+                        FocusScope.of(context).requestFocus(focusNode);
+                      }
+                    },
+                  ),
+                ),
+              // Separate Filter Icon (not task filter)
+              if (widget.showSeparateFilter)
                 IconButton(
                   icon: _isFiltering
-                      ? Icon(Icons.close) // Иконка "х" при активном фильтре
+                      ? Icon(Icons.close)
                       : Image.asset(
                           'assets/icons/AppBar/filter.png',
                           width: 24,
                           height: 24,
                         ),
                   onPressed: () {
-                    _toggleFilter(); // Переключение состояния
+                    _toggleFilter();
                     if (_isFiltering) {
                       context.read<GetAllManagerBloc>().add(GetAllManagerEv());
                       final RenderBox button =
@@ -422,75 +529,346 @@ class _CustomAppBarState extends State<CustomAppBar>
                           PopupMenuItem(
                             padding: EdgeInsets.zero,
                             child: ManagerFilterPopup(
-                              onManagerSelected: widget.onManagerSelected,
+                              onManagersSelected: widget.onManagersSelected,
                             ),
                           ),
                         ],
                       );
                     }
                   },
+                  tooltip: AppLocalizations.of(context)!.translate('filtr'),
                 ),
-              IconButton(
-                icon: Stack(
-                  children: [
-                    Image.asset(
-                      'assets/icons/AppBar/notification.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    if (_hasNewNotification)
-                      Positioned(
-                        right: 0,
-                        child: FadeTransition(
-                          opacity: _blinkAnimation,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                onPressed: () {
-                  setState(() {
-                    _hasNewNotification = false;
-                  });
-                  SharedPreferences.getInstance().then((prefs) {
-                    prefs.setBool('hasNewNotification', false);
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsScreen(),
-                    ),
-                  );
-                },
-              ),
-              if (widget.showSearchIcon)
+              if (widget.showSeparateTaskFilter)
                 IconButton(
-                  icon: _isSearching
+                  icon: _isTaskFiltering
                       ? Icon(Icons.close)
                       : Image.asset(
-                          'assets/icons/AppBar/search.png',
+                          'assets/icons/AppBar/filter.png',
                           width: 24,
                           height: 24,
                         ),
                   onPressed: () {
-                    _toggleSearch();
-                    widget.clearButtonClick(_isSearching);
-                    if (_isSearching) {
-                      FocusScope.of(context).requestFocus(focusNode);
+                    _toggleTaskFilter();
+                    widget.clearButtonClickFiltr?.call(_isTaskFiltering);
+                    if (_isTaskFiltering) {
+                      context.read<UserTaskBloc>().add(FetchUsers());
                     }
                   },
+                  tooltip: AppLocalizations.of(context)!.translate('filtr'),
                 ),
-            ],
-          ),
-        ],
-      ),
-    );
+              if (widget.showSeparateMyTasks)
+                IconButton(
+                  icon: Stack(
+                    children: [
+                      Image.asset(
+                        'assets/icons/AppBar/my-task.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      if (_hasOverdueTasks)
+                        Positioned(
+                          right: 0,
+                          child: FadeTransition(
+                            opacity: _blinkAnimation,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MyTaskScreen(),
+                      ),
+                    );
+                  },
+                  tooltip: AppLocalizations.of(context)!
+                      .translate('appbar_my_tasks'),
+                ),
+              if (widget.showNotification)
+                Tooltip(
+                  message:
+                      AppLocalizations.of(context)!.translate('notification'),
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
+                  child: IconButton(
+                    icon: Stack(
+                      children: [
+                        Image.asset(
+                          'assets/icons/AppBar/notification.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                        if (_hasNewNotification)
+                          Positioned(
+                            right: 0,
+                            child: FadeTransition(
+                              opacity: _blinkAnimation,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _hasNewNotification = false;
+                      });
+                      SharedPreferences.getInstance().then((prefs) {
+                        prefs.setBool('hasNewNotification', false);
+                      });
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              if (widget.showMenuIcon) // Условный рендеринг меню
+                PopupMenuButton<String>(
+                  icon: Stack(
+                    children: [
+                      Icon(Icons.more_vert), // Иконка "три точки"
+                      if (_hasOverdueTasks) // Если есть просроченные задачи
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: FadeTransition(
+                            opacity: _blinkAnimation,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  color: Colors.white,
+                  onSelected: (String value) {
+                    switch (value) {
+                      case 'filter_task':
+                        if (_isFiltering || _isFiltering) {
+                          setState(() {
+                            _isTaskFiltering = !_isTaskFiltering;
+                          });
+                        } else {
+                          _toggleTaskFilter();
+                          widget.clearButtonClickFiltr(_isTaskFiltering);
+                          if (_isTaskFiltering) {
+                            FocusScope.of(context).requestFocus(focusNode);
+                            context.read<UserTaskBloc>().add(FetchUsers());
+                            final RenderBox button =
+                                context.findRenderObject() as RenderBox;
+                            final position = button.localToGlobal(Offset.zero);
+
+                            showMenu(
+                              context: context,
+                              position: RelativeRect.fromLTRB(
+                                position.dx,
+                                position.dy + button.size.height,
+                                position.dx + button.size.width,
+                                position.dy + button.size.height,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              color: Colors.white,
+                              items: [
+                                PopupMenuItem(
+                                  padding: EdgeInsets.zero,
+                                  child: UserFilterPopup(
+                                    onUsersSelected: widget.onUsersSelected,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        }
+                        break;
+                      case 'events':
+                        // Переход на страницу "События"
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EventScreen(), // Переход на EventScreen
+                          ),
+                        );
+                        break;
+                      case 'my_tasks':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyTaskScreen(),
+                          ),
+                        );
+                        break;
+                      case 'filter':
+                        if (_isTaskFiltering || _isTaskFiltering) {
+                          setState(() {
+                            _isFiltering = !_isFiltering;
+                          });
+                        } else {
+                          _toggleFilter();
+                          if (_isFiltering) {
+                            context
+                                .read<GetAllManagerBloc>()
+                                .add(GetAllManagerEv());
+                            final RenderBox button =
+                                context.findRenderObject() as RenderBox;
+                            final position = button.localToGlobal(Offset.zero);
+
+                            showMenu(
+                              context: context,
+                              position: RelativeRect.fromLTRB(
+                                position.dx,
+                                position.dy + button.size.height,
+                                position.dx + button.size.width,
+                                position.dy + button.size.height,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              color: Colors.white,
+                              items: [
+                                PopupMenuItem(
+                                  padding: EdgeInsets.zero,
+                                  child: ManagerFilterPopup(
+                                    onManagersSelected:
+                                        widget.onManagersSelected,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        }
+                        break;
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    if (widget.showFilterIcon)
+                      PopupMenuItem<String>(
+                        value: 'filter',
+                        child: Row(
+                          children: [
+                            _isFiltering
+                                ? Icon(Icons.close)
+                                : Image.asset(
+                                    'assets/icons/AppBar/filter.png',
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                            SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!
+                                .translate('filtr')),
+                          ],
+                        ),
+                      ),
+                    if (widget.showEvent)
+                      PopupMenuItem<String>(
+                        value: 'events',
+                        child: Row(
+                          children: [
+                            Icon(Icons.event), // Иконка всегда отображается
+                            SizedBox(
+                                width: 8), // Отступ между иконкой и текстом
+                            Text(AppLocalizations.of(context)!
+                                .translate('events')),
+                          ],
+                        ),
+                      ),
+                    if (widget.showFilterTaskIcon)
+                      PopupMenuItem<String>(
+                        value: 'filter_task',
+                        child: Row(
+                          children: [
+                            _isTaskFiltering
+                                ? Icon(Icons.close)
+                                : Image.asset(
+                                    'assets/icons/AppBar/filter.png',
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                            SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!
+                                .translate('filtr')),
+                          ],
+                        ),
+                      ),
+                    if (widget.showMyTaskIcon)
+                      PopupMenuItem<String>(
+                        value: 'my_tasks',
+                        child: Row(
+                          children: [
+                            Stack(
+                              children: [
+                                Image.asset(
+                                  'assets/icons/AppBar/my-task.png',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                                if (_hasOverdueTasks)
+                                  Positioned(
+                                    right: 0,
+                                    child: FadeTransition(
+                                      opacity: _blinkAnimation,
+                                      child: Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!
+                                .translate('appbar_my_tasks')),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+            ]));
   }
 }

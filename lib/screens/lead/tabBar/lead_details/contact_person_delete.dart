@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,7 +21,7 @@ class DeleteContactPersonDialog extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
              SnackBar(
                content: Text(
-                 '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                  style: TextStyle(
                    fontFamily: 'Gilroy',
                    fontSize: 16, 
@@ -45,7 +46,7 @@ class DeleteContactPersonDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-        'Удалить Контактное Лицо',
+        AppLocalizations.of(context)!.translate('delete_contact'), 
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -54,7 +55,7 @@ class DeleteContactPersonDialog extends StatelessWidget {
         ),
       )),
       content: Text(
-        'Вы уверены, что хотите удалить контактное лицо?',
+        AppLocalizations.of(context)!.translate('confirm_delete_contact'),
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
@@ -68,7 +69,7 @@ class DeleteContactPersonDialog extends StatelessWidget {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -79,14 +80,14 @@ class DeleteContactPersonDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: 'Удалить',
+                buttonText: AppLocalizations.of(context)!.translate('delete'),
                 onPressed: () {
                   context.read<ContactPersonBloc>().add(DeleteContactPerson(contactPerson.id, leadId));
 
                   ScaffoldMessenger.of(context).showSnackBar(
                    SnackBar(
                      content: Text(
-                       'Контактное лицо успешно удалено!',
+                       AppLocalizations.of(context)!.translate('contact_deleted_successfully'),
                        style: TextStyle(
                          fontFamily: 'Gilroy',
                          fontSize: 16, 

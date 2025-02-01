@@ -2,8 +2,8 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
-import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,7 +55,7 @@ class _TaskStatusRadioGroupWidgetState
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      state.message,
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -99,7 +99,7 @@ class _TaskStatusRadioGroupWidgetState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Статусы задачи',
+                    AppLocalizations.of(context)!.translate('task_statuses'),
                     style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
@@ -115,7 +115,7 @@ class _TaskStatusRadioGroupWidgetState
                     child: CustomDropdown<TaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: const Color(0xffF4F7FD),
@@ -134,25 +134,25 @@ class _TaskStatusRadioGroupWidgetState
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(
-                          item.taskStatus.name,
+                          item.taskStatus?.name ?? "",
                           style: statusTextStyle,
                         );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.taskStatus.name ?? 'Выберите статус',
+                          selectedItem?.taskStatus?.name ?? AppLocalizations.of(context)!.translate('select_status'),
                           style: statusTextStyle,
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        'Выберите статус',
+                        AppLocalizations.of(context)!.translate('select_status'),
                         style: statusTextStyle.copyWith(fontSize: 14),
                       ),
                       excludeSelected: false,
                       initialItem: selectedStatusData,
                       validator: (value) {
                         if (value == null) {
-                          return 'Поле обязательно для заполнения';
+                          return AppLocalizations.of(context)!.translate('field_required');
                         }
                         return null;
                       },

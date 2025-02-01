@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -73,7 +74,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         TextFormField(
           controller: widget.controller,
           decoration: InputDecoration(
-            hintText: 'Введите номер телефона',
+            hintText: AppLocalizations.of(context)!.translate('enter_phone_number'), 
             hintStyle: const TextStyle(
               fontFamily: 'Gilroy',
               color: Color(0xff99A4BA),

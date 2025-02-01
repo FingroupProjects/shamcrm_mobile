@@ -4,10 +4,12 @@ import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ParticipantProfileScreen extends StatelessWidget {
   final String userId;
@@ -30,9 +32,9 @@ class ParticipantProfileScreen extends StatelessWidget {
     this.buttonChat,
   });
 
-  String formatDate(String? date) {
+  String formatDate(String? date, BuildContext context) {
     if (date == null || date.isEmpty) {
-      return "Неизвестно";
+      return AppLocalizations.of(context)!.translate('unknow');
     }
 
     try {
@@ -40,7 +42,28 @@ class ParticipantProfileScreen extends StatelessWidget {
           DateTime.parse(date).toUtc().add(Duration(hours: 5));
       return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
     } catch (e) {
-      return "Неизвестно";
+      return AppLocalizations.of(context)!.translate('unknow');
+    }
+  }
+
+  // Добавьте эту функцию для совершения звонка
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
     }
   }
 
@@ -167,7 +190,7 @@ class ParticipantProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xffF4F7FD),
       appBar: AppBar(
         title: Text(
-          "Профиль пользователя",
+          AppLocalizations.of(context)!.translate('user_profile'),
           style: const TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -206,15 +229,29 @@ class ParticipantProfileScreen extends StatelessWidget {
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 child: Column(
                   children: [
-                    buildInfoRow("Имя пользователя", name, Icons.person),
+                    buildInfoRow(
+                        AppLocalizations.of(context)!.translate('user_name'),
+                        name,
+                        Icons.person),
                     buildDivider(),
-                    buildInfoRow("Email", email, Icons.email),
+                    buildInfoRow(
+                        AppLocalizations.of(context)!.translate('Email'),
+                        email,
+                        Icons.email),
                     buildDivider(),
-                    buildInfoRow("Номер телефона", "$phone", Icons.phone),
+                    buildInfoRow(
+                        AppLocalizations.of(context)!.translate('number_phone'),
+                        "$phone",
+                        Icons.phone),
                     buildDivider(),
-                    buildInfoRow("Логин", login, Icons.account_circle),
+                    buildInfoRow(
+                        AppLocalizations.of(context)!.translate('login'),
+                        login,
+                        Icons.account_circle),
                     buildDivider(),
-                    buildInfoRow("Последний вход", formatDate(lastSeen),
+                    buildInfoRow(
+                        AppLocalizations.of(context)!.translate('last_login'),
+                        formatDate(lastSeen, context),
                         Icons.access_time),
                   ],
                 ),
@@ -224,7 +261,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                 listener: (context, state) {
                   if (state is CreateClientSuccess) {
                     navigatorKey.currentState?.push(
-                   MaterialPageRoute(
+                      MaterialPageRoute(
                         builder: (context) => BlocProvider(
                           create: (context) => MessagingCubit(ApiService()),
                           child: ChatSmsScreen(
@@ -299,8 +336,9 @@ class ParticipantProfileScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
-                              "Перейти в чат",
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('go_to_chat'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -339,15 +377,36 @@ class ParticipantProfileScreen extends StatelessWidget {
                   color: Color(0xff6E7C97),
                 ),
               ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
-              ),
+              // Проверяем тип поля и делаем его кликабельным если это телефон или email
+              title == "Номер телефона" || title == "Email"
+                  ? GestureDetector(
+                      onTap: () {
+                        if (title == "Номер телефона") {
+                          _makePhoneCall(value);
+                        } else if (title == "Email") {
+                          _sendEmail(value);
+                        }
+                      },
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
             ],
           ),
         ),

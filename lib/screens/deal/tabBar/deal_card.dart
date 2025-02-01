@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -28,6 +29,10 @@ class _DealCardState extends State<DealCard> {
   late String dropdownValue;
   late int statusId;
 
+  late final bool isSuccess = widget.deal.dealStatus!.isSuccess;
+  late final bool isFailure = widget.deal.dealStatus!.isFailure;
+  late final bool outDated = widget.deal.outDated;
+
   @override
   void initState() {
     super.initState();
@@ -37,13 +42,13 @@ class _DealCardState extends State<DealCard> {
 
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) {
-      return 'Неизвестно';
+      return AppLocalizations.of(context)!.translate('unknow');
     }
     try {
       DateTime dateTime = DateTime.parse(dateString);
       return DateFormat('dd-MM-yyyy').format(dateTime);
     } catch (e) {
-      return 'Неизвестно'; // Fallback for invalid dates
+      return AppLocalizations.of(context)!.translate('unknow');
     }
   }
 
@@ -57,6 +62,21 @@ class _DealCardState extends State<DealCard> {
 
   @override
   Widget build(BuildContext context) {
+    Color borderColor;
+    if (widget.deal.dealStatus?.isSuccess == true &&
+        widget.deal.dealStatus?.isFailure == false &&
+        widget.deal.outDated == false) {
+      borderColor = Colors.green;
+    } else if (widget.deal.dealStatus?.isSuccess == false &&
+        widget.deal.dealStatus?.isFailure == true) {
+      borderColor = Colors.red;
+    } else if (widget.deal.dealStatus?.isSuccess == true &&
+        widget.deal.dealStatus?.isFailure == false &&
+        widget.deal.outDated == true) {
+      borderColor = Colors.red;
+    } else {
+      borderColor = Colors.yellow;
+    }
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -64,7 +84,8 @@ class _DealCardState extends State<DealCard> {
           MaterialPageRoute(
             builder: (context) => DealDetailsScreen(
               dealId: widget.deal.id.toString(),
-              dealName: widget.deal.name ?? 'Без имени',
+              dealName: widget.deal.name ??
+                  AppLocalizations.of(context)!.translate('no_name'),
               startDate: widget.deal.startDate,
               endDate: widget.deal.endDate,
               sum: widget.deal.sum,
@@ -81,30 +102,56 @@ class _DealCardState extends State<DealCard> {
       },
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: TaskCardStyles.taskCardDecoration,
+        decoration: BoxDecoration(
+          border: Border.all(color: borderColor, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          color: Color(0xffF4F7FD),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.deal.name ?? 'Без имени',
+              widget.deal.name ??
+                  AppLocalizations.of(context)!.translate('no_name'),
               style: TaskCardStyles.titleStyle,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis, 
+              overflow: TextOverflow.ellipsis,
             ),
-            Text(
-              'Лид: ${widget.deal.lead?.name ?? ""}', 
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xfff99A4BA),
-              ),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xfff99A4BA),
+                      overflow: TextOverflow.ellipsis, // Обрезка текста
+                    ),
+                    maxLines: 1, // Ограничение строк
+                  ),
+                ),
+                Text(
+                  widget.deal.lead?.phone ?? "",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xfff99A4BA),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  maxLines: 1,
+                ),
+              ],
             ),
             const SizedBox(height: 5),
             Row(
               children: [
-                const Text(
-                  'Колонка: ',
+                Text(
+                  AppLocalizations.of(context)!.translate('column'),
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
@@ -129,7 +176,8 @@ class _DealCardState extends State<DealCard> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -138,7 +186,8 @@ class _DealCardState extends State<DealCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
                           Container(
@@ -168,10 +217,10 @@ class _DealCardState extends State<DealCard> {
                 const SizedBox(width: 8),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
             Column(
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -184,7 +233,11 @@ class _DealCardState extends State<DealCard> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          ' ${formatDate(widget.deal.startDate ?? 'Неизвестно')}',
+                          ' ${formatDate(
+                            widget.deal.startDate ??
+                                AppLocalizations.of(context)!
+                                    .translate('unknow'),
+                          )}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',
@@ -195,7 +248,8 @@ class _DealCardState extends State<DealCard> {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Color(0xFFE9EDF5),
                         borderRadius: BorderRadius.circular(4),

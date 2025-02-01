@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
@@ -19,6 +20,7 @@ class OrganizationWidget extends StatefulWidget {
 class _OrganizationWidgetState extends State<OrganizationWidget> {
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return BlocBuilder<OrganizationBloc, OrganizationState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
@@ -28,7 +30,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
             DropdownMenuItem(
               value: null,
               child: Text(
-                'Загрузка...',
+                localizations.translate('loading'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -44,7 +46,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                  'Нет организаций',
+                localizations.translate('no_organizations'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -108,11 +110,10 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Текстовое поле "Организация"
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 0),
               child: Text(
-                'Организация',
+                localizations.translate('organizations'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -132,8 +133,8 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
               child: DropdownButtonFormField<String>(
                 value: selectedOrganization,
-                hint: const Text(
-                  'Выберите организацию',
+                hint: Text(
+                localizations.translate('select_organizations'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

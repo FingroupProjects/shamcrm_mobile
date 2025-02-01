@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -61,7 +62,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Все уведомления успешно удалены!',
+          AppLocalizations.of(context)!.translate('all_notifications_deleted_successfully'),
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
@@ -91,8 +92,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Уведомления',
+        title:  Text(
+           AppLocalizations.of(context)!.translate('notifications'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -130,29 +131,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           } else if (state is NotificationError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${state.message}',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            });
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(
+              //     content: Text(
+              //       '${state.message}',
+              //       style: TextStyle(
+              //         fontFamily: 'Gilroy',
+              //         fontSize: 16,
+              //         fontWeight: FontWeight.w500,
+              //         color: Colors.white,
+              //       ),
+              //     ),
+              //     behavior: SnackBarBehavior.floating,
+              //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //     backgroundColor: Colors.red,
+              //     elevation: 3,
+              //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              //     duration: Duration(seconds: 3),
+              //   ),
+              // );
+            }
+            );
           } else if (state is NotificationDataLoaded) {
             final notifications = state.notifications;
             return RefreshIndicator(
@@ -165,7 +167,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       children: [
                         SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4),
-                        Center(child: Text('У вас пока нет уведомлений.')),
+                        Center(child: Text(AppLocalizations.of(context)!.translate('no_notifications_yet'))),
                       ],
                     )
                   : ListView.builder(
@@ -212,9 +214,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             setState(() {
                               notifications.removeAt(index);
                             });
-
-                            notificationBloc
-                                .add(DeleteNotification(notification.id));
+                            notificationBloc.add(DeleteNotification(notification.id));
                           },
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -239,28 +239,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               ),
                               title: Text(
                                 notification.type == 'message'
-                                    ? 'Новое сообщение'
-                                    : notification.type == 'deal'
-                                        ? 'Сделка'
-                                        : notification.type ==
-                                                'dealDeadLineNotification'
-                                            ? 'Напоминание о cделки'
-                                            : notification.type == 'notice'
-                                                ? 'Напоминание о заметке'
-                                                : notification.type == 'task'
-                                                    ? 'Новая задача'
-                                                    : notification.type ==
-                                                            'taskFinished'
-                                                        ? 'Задача закрыто'
-                                                        : notification.type ==
-                                                                'taskOutDated'
-                                                            ? 'Напоминание о просроченном сроке задачи '
-                                                            : notification
-                                                                        .type ==
-                                                                    'lead'
-                                                                ? 'Вас назначили менеджером лида'
-                                                                : notification
-                                                                    .type,
+                                    ? AppLocalizations.of(context)!.translate('new_message')
+                                    : notification.type == 'dealDeadLineNotification'
+                                        ? AppLocalizations.of(context)!.translate('deal_reminder')
+                                        : notification.type == 'notice'
+                                            ? AppLocalizations.of(context)!.translate('note_reminder')
+                                            : notification.type == 'task'
+                                                ? AppLocalizations.of(context)!.translate('task_new')
+                                                : notification.type ==  'taskFinished'
+                                                    ? AppLocalizations.of(context)!.translate('task_closed')
+                                                    : notification.type =='taskOutDated'
+                                                        ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                                        : notification.type == 'lead'
+                                                            ? AppLocalizations.of(context)!.translate('assigned_as_lead_manager')
+                                                            : notification.type,
                                 style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -482,7 +474,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       );
-    } else if (type == 'deal') {
+    } else if (type == 'dealDeadLineNotification') {
       // Переход на экран сделки
       print('Переход на экран сделки с ID: $chatId');
       List<DealCustomField> defaultCustomFields = [

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'deal_event.dart';
 import 'deal_state.dart';
@@ -21,14 +23,77 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     on<UpdateDeal>(_updateDeal);
     on<DeleteDeal>(_deleteDeal);
     on<DeleteDealStatuses>(_deleteDealStatuses);
+    on<UpdateDealStatusEdit>(_updateDealStatusEdit);
+    on<FetchDealStatus>(_fetchDealStatus);
+  }
+Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+    try {
+      final dealStatus = await apiService.getDealStatus(event.dealStatusId);
+      emit(DealStatusLoaded(dealStatus));
+    } catch (e) {
+      emit(DealError('Failed to fetch deal status: ${e.toString()}'));
+    }
+  }
+  // Метод для загрузки сделок с учётом кэша
+  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+
+    if (!await _checkInternetConnection()) {
+      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
+      if (cachedDeals.isNotEmpty) {
+        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+      } else {
+        emit(DealError('Нет подключения к интернету и нет данных в кэше!'));
+      }
+      return;
+    }
+
+    try {
+      final cachedDeals = await DealCache.getDealsForStatus(event.statusId);
+      if (cachedDeals.isNotEmpty) {
+        emit(DealDataLoaded(cachedDeals, currentPage: 1, dealCounts: {}));
+      }
+
+      final deals = await apiService.getDeals(
+        event.statusId,
+        page: 1,
+        perPage: 20,
+        search: event.query,
+        managers: event.managerIds ?? [], // Pass managers list
+      );
+
+      print('Переданные менеджеры: ${event.managerIds}');
+
+      await DealCache.cacheDealsForStatus(event.statusId, deals);
+
+      final dealCounts = Map<int, int>.from(_dealCounts);
+      for (var deal in deals) {
+        dealCounts[deal.statusId] = (dealCounts[deal.statusId] ?? 0) + 1;
+      }
+
+      allDealsFetched = deals.isEmpty;
+      emit(DealDataLoaded(deals, currentPage: 1, dealCounts: dealCounts));
+    } catch (e) {
+      emit(DealError('Не удалось загрузить данные!'));
+    }
   }
 
+// Метод для загрузки статусов сделок с учётом кэша
   Future<void> _fetchDealStatuses(
       FetchDealStatuses event, Emitter<DealState> emit) async {
     emit(DealLoading());
 
-    await Future.delayed(Duration(milliseconds: 600));
+    // Сначала пробуем получить данные из кэша
+    final cachedStatuses = await DealCache.getDealStatuses();
+    if (cachedStatuses.isNotEmpty) {
+      emit(DealLoaded(
+        cachedStatuses.map((status) => DealStatus.fromJson(status)).toList(),
+        dealCounts: Map.from(_dealCounts),
+      ));
+    }
 
+    // Затем запрашиваем данные из API
     if (!await _checkInternetConnection()) {
       emit(DealError('Нет подключения к интернету'));
       return;
@@ -41,67 +106,28 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         return;
       }
 
-      // Загружаем количество сделок для каждого статуса
-      for (var status in response) {
-        try {
-          final deals = await apiService.getDeals(
-            status.id,
-            page: 1,
-            perPage: 20,
-          );
-          _dealCounts[status.id] = deals.length;
-        } catch (e) {
-          print('Error fetching deal count for status ${status.id}: $e');
-          _dealCounts[status.id] = 0;
-        }
+      // Сохраняем статусы в кэш
+      await DealCache.cacheDealStatuses(
+        response
+            .map((status) => {'id': status.id, 'title': status.title})
+            .toList(),
+      );
+
+      // Параллельно загружаем количество сделок для каждого статуса
+      final futures = response.map((status) {
+        return apiService.getDeals(status.id, page: 1, perPage: 1);
+      }).toList();
+
+      final dealCountsResults = await Future.wait(futures);
+
+      // Обновляем количество сделок
+      for (int i = 0; i < response.length; i++) {
+        _dealCounts[response[i].id] = dealCountsResults[i].length;
       }
 
       emit(DealLoaded(response, dealCounts: Map.from(_dealCounts)));
     } catch (e) {
       emit(DealError('Не удалось загрузить данные!'));
-    }
-  }
-
-  Future<void> _fetchDeals(FetchDeals event, Emitter<DealState> emit) async {
-    emit(DealLoading());
-
-    if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
-      return;
-    }
-
-    try {
-      final allDeals = await apiService.getDeals(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-      );
-
-      _dealCounts[event.statusId] = allDeals.length;
-
-      final pageDeals = await apiService.getDeals(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managerId: event.managerId, // Передаем managerId в API
-      );
-
-      allDealsFetched = pageDeals.isEmpty;
-
-      if (state is DealLoaded) {
-        final loadedState = state as DealLoaded;
-        emit(loadedState.copyWith(dealCounts: Map.from(_dealCounts)));
-      }
-
-      emit(DealDataLoaded(pageDeals, currentPage: 1));
-    } catch (e) {
-      if (e is ApiException && e.statusCode == 401) {
-        emit(DealError('Неавторизованный доступ!'));
-      } else {
-        emit(DealError('Не удалось загрузить данные!'));
-      }
     }
   }
 
@@ -136,7 +162,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+      emit(DealError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -151,14 +177,15 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания статуса Сделки!'));
+      emit(
+          DealError(event.localizations.translate('error_delete_status_deal')));
     }
   }
 
   Future<void> _createDeal(CreateDeal event, Emitter<DealState> emit) async {
     emit(DealLoading());
     if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+      emit(DealError(event.localizations.translate('no_internet_connection')));
       return;
     }
     try {
@@ -175,13 +202,15 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         customFields: event.customFields,
       );
       if (result['success']) {
-        emit(DealSuccess('Сделка успешно создана'));
+        emit(DealSuccess(
+            event.localizations.translate('deal_created_successfully')));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка создания сделки!'));
+      emit(DealError(
+          event.localizations.translate('error_deal_create_successfully')));
     }
   }
 
@@ -189,7 +218,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     emit(DealLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(DealError('Нет подключения к интернету'));
+      emit(DealError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -209,13 +238,15 @@ class DealBloc extends Bloc<DealEvent, DealState> {
       );
 
       if (result['success']) {
-        emit(DealSuccess('Сделка успешно обновлена'));
+        emit(DealSuccess(
+            event.localizations.translate('deal_update_successfully')));
         // add(FetchDeals(event.dealStatusId));
       } else {
         emit(DealError(result['message']));
       }
     } catch (e) {
-      emit(DealError('Ошибка обновления сделки!'));
+      emit(DealError(
+          event.localizations.translate('error_deal_update_successfully')));
     }
   }
 
@@ -234,12 +265,13 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     try {
       final response = await apiService.deleteDeal(event.dealId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Сделка успешно удалена'));
+        emit(DealDeleted(
+            event.localizations.translate('deal_delete_successfully')));
       } else {
-        emit(DealError('Ошибка удаления сделки'));
+        emit(DealError(event.localizations.translate('error_delete_deal')));
       }
     } catch (e) {
-      emit(DealError('Ошибка удаления сделки!'));
+      emit(DealError(event.localizations.translate('error_delete_deal')));
     }
   }
 
@@ -255,12 +287,39 @@ class DealBloc extends Bloc<DealEvent, DealState> {
 
       final response = await apiService.deleteDealStatuses(event.dealStatusId);
       if (response['result'] == 'Success') {
-        emit(DealDeleted('Статус сделки успешно удален'));
+        emit(DealDeleted(
+            event.localizations.translate('status_deal_delete_successfully')));
       } else {
-        emit(DealError('Ошибка удаления статуса сделки'));
+        emit(DealError(
+            event.localizations.translate('error_status_deal_delete')));
       }
     } catch (e) {
-      emit(DealError('Ошибка удаления статуса сделки!'));
+      emit(
+          DealError(event.localizations.translate('error_status_deal_delete')));
+    }
+  }
+
+  Future<void> _updateDealStatusEdit(
+      UpdateDealStatusEdit event, Emitter<DealState> emit) async {
+    emit(DealLoading());
+
+    try {
+      final response = await apiService.updateDealStatusEdit(
+        event.dealStatusId,
+        event.title,
+        event.day,
+        event.isSuccess,
+        event.isFailure,
+      );
+
+      if (response['result'] == 'Success') {
+        emit(DealStatusUpdatedEdit(
+            event.localizations.translate('status_updated_successfully')));
+      } else {
+        emit(DealError(event.localizations.translate('error_update_status')));
+      }
+    } catch (e) {
+      emit(DealError(event.localizations.translate('error_update_status')));
     }
   }
 }

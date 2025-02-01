@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
-import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -39,7 +39,8 @@ class _ChatsScreenState extends State<ChatsScreen>
   TextEditingController searchController = TextEditingController();
   FocusNode focusNode = FocusNode();
   late TabController _tabController;
-  final List<String> _tabTitles = ['Лиды', 'Задачи', 'Корпоративный чат'];
+  late List<String> _tabTitles;
+  // final List<String> _tabTitles = ['Лиды', 'Задачи', 'Корпоративный чат'];
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
@@ -82,6 +83,12 @@ class _ChatsScreenState extends State<ChatsScreen>
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
         setState(() {
+          _tabTitles = [
+            AppLocalizations.of(context)!.translate('tab_leads'),
+            AppLocalizations.of(context)!.translate('tab_tasks'),
+            AppLocalizations.of(context)!.translate('tab_corp_chat'),
+          ];
+
           _tabController = TabController(
             length: _tabTitles.length,
             vsync: this,
@@ -137,11 +144,13 @@ class _ChatsScreenState extends State<ChatsScreen>
     String? token = prefs.getString('token');
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
-    final enteredDomain = await apiService.getEnteredDomain();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
       uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.shamcrm.com/app/app-key'),
+          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -160,7 +169,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
               .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(baseUrlSocket),
+        authorizationEndpoint: Uri.parse(
+            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -215,17 +225,19 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Unfocuser(
       child: Scaffold(
         appBar: AppBar(
           forceMaterialTransparency: true,
           elevation: 1,
           title: CustomAppBar(
-            title: isClickAvatarIcon ? 'Настройки' : 'Чаты',
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_chats'),
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
-
                 if (!isClickAvatarIcon) {
                   if (selectTabIndex == 0) {
                     context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
@@ -242,6 +254,9 @@ class _ChatsScreenState extends State<ChatsScreen>
             textEditingController: searchController,
             focusNode: focusNode,
             showFilterIcon: false,
+            showFilterTaskIcon: false,
+            showMyTaskIcon: false, // Выключаем иконку My Tasks
+            showMenuIcon: false,
             onChangedSearchInput: (String value) {
               setState(() {
                 _isSearching = value.isNotEmpty;
@@ -276,6 +291,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                 });
               }
             },
+            clearButtonClickFiltr: (bool) {},
           ),
           backgroundColor: Colors.white,
         ),
@@ -477,7 +493,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           }
         }
         if (state is ChatsError) {
-          if (state.message.contains("Нет подключения к интернету")) {
+          if (state.message.contains(AppLocalizations.of(context)!
+              .translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -512,13 +529,14 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Ничего не найдено.",
+                    AppLocalizations.of(context)!
+                        .translate('nothing_found_chat'),
                     style:
                         TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    "Список в данный момент пуст.",
+                    AppLocalizations.of(context)!.translate('list_empty_chat'),
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
@@ -527,18 +545,18 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           },
           firstPageProgressIndicatorBuilder: (context) {
             return Center(
-               child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
             );
           },
           newPageProgressIndicatorBuilder: (context) {
             return Center(
-               child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: Duration(milliseconds: 1000),
+              ),
             );
           },
           itemBuilder: (context, item, index) {

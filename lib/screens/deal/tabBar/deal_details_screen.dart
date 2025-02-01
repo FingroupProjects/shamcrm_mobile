@@ -11,6 +11,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -111,7 +112,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'), 
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -140,22 +141,23 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
-      return 'Неверный формат';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
   void _updateDetails(DealById deal) {
     currentDeal = deal;
     details = [
-      {'label': 'Название сделки:', 'value': deal.name},
-      {'label': 'Лид:', 'value': deal.lead?.name ?? ''},
-      {'label': 'Менеджер:', 'value': deal.manager?.name ?? ''},
-      {'label': 'Дата начало:', 'value': formatDate(deal.startDate)},
-      {'label': 'Дата завершения:', 'value': formatDate(deal.endDate)},
-      {'label': 'Сумма:', 'value': deal.sum.toString()},
-      {'label': 'Описание:', 'value': deal.description ?? ''},
-      {'label': 'Автор:', 'value': deal.author?.name ?? ''},
-      {'label': 'Дата создания:', 'value': formatDate(deal.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('name_deal_details'),'value': deal.name},
+      {'label': AppLocalizations.of(context)!.translate('lead_deal_card'),'value': deal.lead?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': deal.manager?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('start_date_details'), 'value': formatDate(deal.startDate)},
+      {'label': AppLocalizations.of(context)!.translate('end_date_details'), 'value': formatDate(deal.endDate)},
+      {'label': AppLocalizations.of(context)!.translate('summa_details'), 'value': deal.sum.toString()},
+      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': deal.description ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('author_details'), 'value': deal.author?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('creation_date_details'), 'value': formatDate(deal.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('status_history'), 'value': deal.dealStatus?.title ?? ''},
     ];
 
     for (var field in deal.dealCustomFields) {
@@ -197,7 +199,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, 'Просмотр сделки'),
+      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_deal')),
       backgroundColor: Colors.white,
       body: BlocListener<DealByIdBloc, DealByIdState>(
         listener: (context, state) {
@@ -208,7 +210,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), 
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -252,7 +254,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 ),
               );
             } else if (state is DealByIdError) {
-              return Center(child: Text('Ошибка: ${state.message}'));
+              return Center(child: Text(AppLocalizations.of(context)!.translate('error_text')));
             }
             return Center(child: Text(''));
           },
@@ -401,9 +403,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains('Название') ||
-                      label.contains('Описание') ||
-                      label.contains('Лид'))
+              child: (label.contains(AppLocalizations.of(context)!.translate('name_list')) ||
+                      label.contains(AppLocalizations.of(context)!.translate('description_list')) ||
+                      label.contains(AppLocalizations.of(context)!.translate('lead')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value),
             ),

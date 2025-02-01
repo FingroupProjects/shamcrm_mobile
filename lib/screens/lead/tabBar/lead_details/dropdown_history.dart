@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_event.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_state.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -38,7 +39,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
@@ -62,7 +63,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         }
 
         return _buildExpandableActionContainer(
-          'История действий',
+          AppLocalizations.of(context)!.translate('action_history'),
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
           () {
@@ -228,15 +229,15 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
     final changes = entry.changes;
 
     String formatBirthday(String? birthdayString) {
-  if (birthdayString == null || birthdayString == "Не указано") {
-    return "Не указано";
+  if (birthdayString == null || birthdayString == AppLocalizations.of(context)!.translate('not_specified')) {
+    return AppLocalizations.of(context)!.translate('not_specified');
   }
 
   try {
     DateTime birthday = DateTime.parse(birthdayString);
     return DateFormat('dd-MM-yyyy').format(birthday);
   } catch (e) {
-    return "Не указано"; 
+    return AppLocalizations.of(context)!.translate('not_specified'); 
   }
 }
 
@@ -248,67 +249,67 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
       // Статус клиента
       if (changes.leadStatusNewValue != null || changes.leadStatusPreviousValue != null) {
         actionDetail +=
-            '\nСтатус: ${changes.leadStatusPreviousValue ?? "Не указано"} > ${changes.leadStatusNewValue ?? "Не указано"}';
+            '\n${AppLocalizations.of(context)!.translate('status_history')}${changes.leadStatusPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.leadStatusNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
       // Название
       if (changes.historyNamePreviousValue != null || changes.historyNameNewValue != null) {
         actionDetail +=
-            '\nНазвание: ${changes.historyNamePreviousValue ?? "Не указано"} > ${changes.historyNameNewValue ?? "Не указано"}';
+            '\n${AppLocalizations.of(context)!.translate('name_history')}${changes.historyNamePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.historyNameNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       
       // Email
       if (changes.emailPreviousValue != null || changes.emailNewValue != null) {
         actionDetail +=
-            '\nEmail: ${changes.emailPreviousValue ?? "Не указано"} > ${changes.emailNewValue ?? "Не указано"}';
+            '\nEmail: ${changes.emailPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.emailNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
       // Телефон
       if (changes.phonePreviousValue != null || changes.phoneNewValue != null) {
         actionDetail +=
-            '\nТелефон: ${changes.phonePreviousValue ?? "Не указано"} > ${changes.phoneNewValue ?? "Не указано"}';
+            '\n${AppLocalizations.of(context)!.translate('phone_history')}${changes.phonePreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.phoneNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
       // Регион
       if (changes.regionPreviousValue != null || changes.regionNewValue != null) {
         actionDetail +=
-            '\nРегион: ${changes.regionPreviousValue ?? "Не указано"} > ${changes.regionNewValue ?? "Не указано"}';
+            '\n${AppLocalizations.of(context)!.translate('region_history')}${changes.regionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.regionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
       // Менеджер
       if (changes.managerNewValue != null || changes.managerPreviousValue != null) {
         actionDetail +=
-            '\nМенеджер: ${changes.managerPreviousValue ?? "Не указано"} > ${changes.managerNewValue ?? "Не указано"}';
+            '\n${AppLocalizations.of(context)!.translate('manager_history')}${changes.managerPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.managerNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       
       // Дата рождения
         if (changes.birthdayNewValue != null || changes.birthdayPreviousValue != null) {
           actionDetail +=
-              '\nДата рождения: ${formatBirthday(changes.birthdayPreviousValue)} > ${formatBirthday(changes.birthdayNewValue)}';
+          '\n${AppLocalizations.of(context)!.translate('birthday_history')}${formatBirthday(changes.birthdayPreviousValue)} > ${formatBirthday(changes.birthdayNewValue)}';
         }
 
       // TG Никнейм
       if (changes.tgNickNewValue != null || changes.tgNickPreviousValue != null) {
         actionDetail +=
-          '\nТелеграм: ${changes.tgNickPreviousValue ?? "Не указано"} > ${changes.tgNickNewValue ?? "Не указано"}';
+          '\nTelegram: ${changes.tgNickPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.tgNickNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
       // Instagram логин
       if (changes.instaLoginNewValue != null || changes.instaLoginPreviousValue != null) {
         actionDetail +=
-            '\nInstagram: ${changes.instaLoginPreviousValue ?? "Не указано"} > ${changes.instaLoginNewValue ?? "Не указано"}';
+          '\nInstagram: ${changes.instaLoginPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.instaLoginNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
       // Facebook логин
       if (changes.facebookLoginNewValue != null || changes.facebookLoginPreviousValue != null) {
         actionDetail +=
-            '\nFacebook: ${changes.facebookLoginPreviousValue ?? "Не указано"} > ${changes.facebookLoginNewValue ?? "Не указано"}';
+          '\nFacebook: ${changes.facebookLoginPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.facebookLoginNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
       
       // Описание
       if (changes.descriptionNewValue != null || changes.descriptionPreviousValue != null) {
         actionDetail +=
-            '\nОписание: ${changes.descriptionPreviousValue ?? "Не указано"} > ${changes.descriptionNewValue ?? "Не указано"}';
+          '\n${AppLocalizations.of(context)!.translate('description')}${changes.descriptionPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.descriptionNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
     }
 

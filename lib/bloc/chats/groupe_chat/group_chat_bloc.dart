@@ -18,7 +18,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
     emit(GroupChatLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(GroupChatError('Нет подключения к интернету'));
+      emit(GroupChatError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -29,12 +29,12 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
       );
 
       if (result['success']) {
-        emit(GroupChatSuccess('Групповой чат успешно создан'));
+        emit(GroupChatSuccess(event.localizations.translate('group_chat_created_successfully')));
       } else {
         emit(GroupChatError(result['message']));
       }
     } catch (e) {
-      emit(GroupChatError('Ошибка создания гр. чата!'));
+      emit(GroupChatError(event.localizations.translate('error_create_group_chat')));
     }
   }
 
@@ -42,7 +42,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
     emit(AddUserToGroupLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(AddUserToGroupError('Нет подключения к интернету'));
+      emit(AddUserToGroupError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -50,16 +50,15 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
   final result = await apiService.addUserToGroup(chatId: event.chatId, userId: event.userId);
 
   if (result['success']) {
-    emit(AddUserToGroupSuccess(result['Пользователь успешно добавленв группу!']));
+    emit(AddUserToGroupSuccess(result[event.localizations.translate('user_added_successfully')]));
   } else {
-    emit(AddUserToGroupError(result['Ошибка доб поль']));
+    emit(AddUserToGroupError(result[event.localizations.translate('error_add_user')]));
   }
 } on SocketException {
-  emit(AddUserToGroupError('Проблема с интернет-соединением.'));
+  emit(AddUserToGroupError(event.localizations.translate('no_internet_connection')));
 }
  catch (e) {
-      emit(AddUserToGroupError(
-          'Ошибка добавления пользователя!'));
+      emit(AddUserToGroupError(event.localizations.translate('error_add_user')));
     }
   }
 
@@ -69,7 +68,7 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
     emit(GroupChatLoading());
 
     if (!await _checkInternetConnection()) {
-      emit(GroupChatError('Нет подключения к интернету'));
+      emit(GroupChatError(event.localizations.translate('no_internet_connection')));
       return;
     }
 
@@ -79,12 +78,12 @@ class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
         // if (result['result'] == true) {
   if (result['success']) {
           
-        emit(GroupChatDeleted('Пользователь успешно удален из группы'));
+        emit(GroupChatDeleted(event.localizations.translate('user_delete_successfully')));
       } else {
-        emit(GroupChatError(result['Нельзя удалить участника']));
+        emit(GroupChatError(result[event.localizations.translate('cannot_delete_user')]));
       }
     } catch (e) {
-      emit(GroupChatError('Ошибка удаления пользователя!'));
+      emit(GroupChatError(event.localizations.translate('error_delete_user')));
     }
   }
 

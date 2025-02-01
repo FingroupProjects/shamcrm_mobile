@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,7 +25,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
          ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16, 
@@ -47,7 +48,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       child: AlertDialog(
         backgroundColor: Colors.white,
         title: Text(
-          'Добавить статус',
+          AppLocalizations.of(context)!.translate('add_status'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -61,7 +62,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             TextFormField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: 'Введите название',
+                hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -98,7 +99,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             children: [
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Отмена',
+                  buttonText: AppLocalizations.of(context)!.translate('cancel'),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -109,7 +110,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               SizedBox(width: 8),
               Expanded(
                 child: CustomButton(
-                  buttonText: 'Добавить',
+                  buttonText: AppLocalizations.of(context)!.translate('add'),
                   onPressed: () {
                     final title = _controller.text;
                     final color = '#000'; 
@@ -118,11 +119,13 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       setState(() {
                         _errorMessage = null; 
                       });
-                      context.read<LeadBloc>().add(CreateLeadStatus(title: title, color: color));
+                        final localizations = AppLocalizations.of(context)!;
+
+                      context.read<LeadBloc>().add(CreateLeadStatus(title: title, color: color, localizations: localizations));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Статус успешно создан!',
+                            AppLocalizations.of(context)!.translate('status_created_successfully'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -144,7 +147,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       Navigator.of(context).pop(true);
                     } else {
                       setState(() {
-                        _errorMessage = 'Заполните поля';
+                        _errorMessage = AppLocalizations.of(context)!.translate('enter_field');
                       });
                     }
                   },

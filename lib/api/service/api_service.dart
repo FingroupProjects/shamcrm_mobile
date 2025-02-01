@@ -18,10 +18,17 @@ import 'package:crm_task_manager/models/dashboard_charts_models_manager/process_
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/task_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_task_model.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/event_by_Id_model.dart';
+import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
+import 'package:crm_task_manager/models/my-task_model.dart';
+import 'package:crm_task_manager/models/my-taskbyId_model.dart';
+import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -50,6 +57,8 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -60,14 +69,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
 
-// final String baseUrl = 'https://fingroup-back.sham360.com/api';
+// final String baseUrl = 'https://fingroup-back.shamcrm.com/api';
 // final String baseUrl = 'https://ede8-95-142-94-22.ngrok-free.app';
 
-// final String baseUrlSocket ='https://fingroup-back.sham360.com/broadcasting/auth';
+// final String baseUrlSocket ='https://fingroup-back.shamcrm.com/broadcasting/auth';
 
 class ApiService {
-  late final String baseUrl;
-  late final String baseUrlSocket;
+  String? baseUrl;
+  String? baseUrlSocket;
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -88,10 +97,39 @@ class ApiService {
   }
 
   // Инициализация API с доменом из QR-кода
-  Future<void> initializeWithDomain(String domain) async {
-    baseUrl = 'https://$domain-back.sham360.com/api';
-    baseUrlSocket = 'https://$domain-back.sham360.com/broadcasting/auth';
-    print('API инициализировано с доменом: $domain');
+  Future<void> initializeWithDomain(String domain, String mainDomain) async {
+    baseUrl = 'https://$domain-back.$mainDomain/api';
+    baseUrlSocket = 'https://$domain-back.$mainDomain/broadcasting/auth';
+    print('API инициализировано с поДоменом: $domain и Доменом $mainDomain');
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('domain', domain);
+    await prefs.setString('mainDomain', mainDomain);
+  }
+
+  Future<String> getDynamicBaseUrl() async {
+    Map<String, String?> domains = await getEnteredDomain();
+    String? mainDomain =
+        domains['enteredMainDomain']; // Извлекаем значение по ключу
+    String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.$mainDomain/api';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
+  }
+
+  Future<String> getSocketBaseUrl() async {
+    Map<String, String?> domains = await getEnteredDomain();
+    String? mainDomain =
+        domains['enteredMainDomain']; // Извлекаем значение по ключу
+    String? domain = domains['enteredDomain']; // Извлекаем значение по ключу
+    if (domain != null && domain.isNotEmpty) {
+      return 'https://$domain-back.$mainDomain/broadcasting/auth';
+    } else {
+      throw Exception('Домен не установлен в SharedPreferences');
+    }
   }
 
   // Общая обработка ответа от сервера 401
@@ -108,27 +146,16 @@ class ApiService {
   void _redirectToLogin() {
     final navigatorKey = GlobalKey<NavigatorState>();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      '/login',
+      '/local_auth',
       (route) => false,
     );
   }
 
-  Future<String> getDynamicBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.sham360.com/api';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
-  }
-
-  Future<String> getSocketBaseUrl() async {
-    String? domain = await getEnteredDomain();
-    if (domain != null && domain.isNotEmpty) {
-      return 'https://$domain-back.sham360.com/broadcasting/auth';
-    } else {
-      throw Exception('Домен не установлен в SharedPreferences');
-    }
+  Future<void> reset() async {
+    // Сброс значений при выходе
+    baseUrl = null;
+    baseUrlSocket = null;
+    print('API сброшено');
   }
 
   // Метод для получения токена из SharedPreferences
@@ -154,34 +181,35 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем текущие значения domainChecked и enteredDomain
-    bool? domainChecked = prefs.getBool('domainChecked');
-    String? enteredDomain = prefs.getString('enteredDomain');
+    // bool? domainChecked = prefs.getBool('domainChecked');
+    // String? enteredDomain = prefs.getString('enteredDomain');
+    // String? enteredMainDomain = prefs.getString('enteredMainDomain');
 
     // Удаляем токен, права доступа и организацию
     await _removeToken();
     await _removePermissions();
     await _removeOrganizationId();
-    await prefs.remove('cachedLeadStatuses');
-    await prefs.remove('cachedDealStatuses');
-    await prefs.remove('cachedTaskStatuses');
 
     // Очищаем все данные, кроме domainChecked и enteredDomain
-    bool isCleared = await prefs.clear();
+    // bool isCleared = await prefs.clear();
 
-    // Восстанавливаем значения domainChecked и enteredDomain
-    if (domainChecked != null) {
-      await prefs.setBool('domainChecked', domainChecked);
-    }
-    if (enteredDomain != null) {
-      await prefs.setString('enteredDomain', enteredDomain);
-    }
+    // // Восстанавливаем значения domainChecked и enteredDomain
+    // if (domainChecked != null) {
+    //   await prefs.setBool('domainChecked', domainChecked);
+    // }
+    // if (enteredDomain != null) {
+    //   await prefs.setString('enteredDomain', enteredDomain);
+    // }
+    // if (enteredMainDomain != null) {
+    //   await prefs.setString('enteredMainDomain', enteredMainDomain);
+    // }
 
-    // Проверяем успешность очистки
-    if (isCleared) {
-      print('Все данные успешно очищены, кроме domainChecked и enteredDomain.');
-    } else {
-      print('Ошибка при очистке данных.');
-    }
+    // // Проверяем успешность очистки
+    // if (isCleared) {
+    //   print('Все данные успешно очищены, кроме $domainChecked и $enteredDomain и $enteredMainDomain');
+    // } else {
+    //   print('Ошибка при очистке данных.');
+    // }
   }
 
   Future<void> _removePermissions() async {
@@ -202,7 +230,6 @@ class ApiService {
 // Метод для выполнения GET-запросов
   Future<http.Response> _getRequest(String path) async {
     final token = await getToken(); // Получаем токен перед запросом
-
     final response = await http.get(
       Uri.parse('$baseUrl$path'),
       headers: {
@@ -213,8 +240,8 @@ class ApiService {
       },
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    // print('Статус ответа! ${response.statusCode}');
+    // print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -236,8 +263,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -259,8 +286,8 @@ class ApiService {
       body: json.encode(body),
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
@@ -279,34 +306,12 @@ class ApiService {
       },
     );
 
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
+    print('Статус ответа! ${response.statusCode}');
+    print('Тело ответа!${response.body}');
 
     return _handleResponse(response);
   }
 
-  // Метод для выполнения POST-запросов
-  Future<http.Response> _postRequestDomain(
-      String path, Map<String, dynamic> body) async {
-    final String DomainUrl = 'https://sham360.com/api';
-    final token = await getToken(); // Получаем токен перед запросом
-    final response = await http.post(
-      Uri.parse('$DomainUrl$path'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
-        'Device': 'mobile'
-      },
-      body: json.encode(body),
-    );
-
-    print('Статус ответа: ${response.statusCode}');
-    print('Тело ответа: ${response.body}');
-
-    return response;
-  }
   //_________________________________ END___API__METHOD__GET__POST__PATCH__DELETE____________________________________________//
 
   //        if (!await hasPermission('deal.read')) {
@@ -339,8 +344,8 @@ class ApiService {
     if (response.statusCode == 200) {
       print('FCM-токен успешно отправлен!');
     } else {
-      print('Ошибка при отправке FCM-токена: ${response.statusCode}');
-      throw Exception('Ошибка: ${response.body}');
+      print('Ошибка при отправке FCM-токена!');
+      throw Exception('Ошибка!');
     }
   }
 
@@ -354,34 +359,34 @@ class ApiService {
     if (response.statusCode == 200) {
       return ChatsGetId.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Ошибка получения чата: ${response.body}');
+      throw Exception('Ошибка получения чата!');
     }
   }
 
   //_________________________________ END___API__METHOD__POST__DEVICE__TOKEN_________________________________________________//
 
   // Метод для сохранения данных из QR-кода
-  Future<void> saveQrData(String domain, String login, String token,
-      String userId, String organizationId) async {
+  Future<void> saveQrData(String mainDomain, String domain, String login,
+      String token, String userId, String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Сохраняем данные из QR-кода
     await prefs.setString('domain', domain ?? '');
     print(prefs.getString('domain'));
+    await prefs.setString('mainDomain', mainDomain ?? '');
+    print(prefs.getString('mainDomain'));
     await prefs.setString('userLogin', login ?? '');
     print(prefs.getString('userLogin'));
-    await prefs.setString('token', token ?? '');
+    await prefs.setString('token', token);
     print(prefs.getString('token'));
-    await prefs.setString('userID', userId ?? ''); // Чтобы избежать null
+    await prefs.setString('userID', userId ?? '');
     print(prefs.getString('userID'));
     await prefs.setString('selectedOrganization', organizationId ?? '');
     print(prefs.getString('selectedOrganization'));
-    // await prefs.setString('selectedOrganization', userRoleId?? '');
-    //  print(prefs.getString('selectedOrganization'));
 
     // После сохранения обновляем информацию
     await saveDomainChecked(true);
-    await saveDomain(domain);
+    await saveDomain(mainDomain, domain);
   }
 
   // Метод для получения данных из QR-кода
@@ -389,12 +394,15 @@ class ApiService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String? domain = prefs.getString('domain') ?? '';
+    String? mainDomain = prefs.getString('mainDomain') ?? '';
+
     String? login = prefs.getString('userLogin') ?? '';
     String? token = prefs.getString('token') ?? '';
     String userId = prefs.getString('userID') ?? '';
     String? organizationId = prefs.getString('selectedOrganization') ?? '';
     return {
       'domain': domain,
+      'mainDomain': mainDomain,
       'login': login,
       'token': token,
       'userID': userId,
@@ -404,8 +412,49 @@ class ApiService {
 
   //_________________________________ START___API__DOMAIN_CHECK____________________________________________//
 
+  // Метод для выполнения POST-запросов
+// Метод для выполнения POST-запросов
+  Future<http.Response> _postRequestDomain(
+      String path, Map<String, dynamic> body) async {
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+
+    final String DomainUrl = 'https://$enteredMainDomain/api';
+
+    // Выводим URL домена перед отправкой запроса
+    print(
+        "-=-=--=-=-=-==-=-=-=-=--=-==DOAMIN URL--==--=-=-==---=-=-=-=-=-=-=-=-=-=--=-=-=-");
+    print(DomainUrl);
+
+    final token = await getToken(); // Получаем токен перед запросом
+
+    // Выводим статус и тело запроса перед отправкой
+    print('Отправка запроса на проверку домена...');
+
+    final response = await http.post(
+      Uri.parse('$DomainUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null)
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Device': 'mobile'
+      },
+      body: json.encode(body),
+    );
+
+    // Выводим статус и тело ответа после получения ответа
+    print('Статус ответа: ${response.statusCode}');
+    print('Тело ответа: ${response.body}');
+
+    return response;
+  }
+
   // Метод для проверки домена
   Future<DomainCheck> checkDomain(String domain) async {
+    print(
+        '-=--=-=-=-=-=-=-==-=-=-=CHECK-DOMAIN-=--==-=-=--=-==--==-=-=-=-=-=-=-');
+    print(domain);
     final organizationId = await getSelectedOrganization();
     final response = await _postRequestDomain(
         '/checkDomain${organizationId != null ? '?organization_id=$organizationId' : ''}',
@@ -414,7 +463,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return DomainCheck.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Не удалось загрузить домен: ${response.body}');
+      throw Exception('Не удалось загрузить поддомен!');
     }
   }
 
@@ -433,21 +482,27 @@ class ApiService {
   }
 
   // Метод для сохранения введенного домена
-  Future<void> saveDomain(String domain) async {
+  Future<void> saveDomain(String domain, String mainDomain) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('enteredMainDomain', mainDomain);
     await prefs.setString('enteredDomain', domain);
-    print('Ввведеный домен:----------------------');
-    print('Ввведеный домен---=----:----------------------');
-    print('ДОМЕН: ${prefs.getString('enteredDomain')}');
+    print('Ввведеный Doмен:----------------------');
+    print('ДОМЕН: ${prefs.getString('enteredMainDomain')}');
+    print('Ввведеный Poddomen---=----:----------------------');
+    print('ПОДДОМЕН: ${prefs.getString('enteredDomain')}');
   }
 
 // Метод для получения введенного домена
-  Future<String?> getEnteredDomain() async {
+  Future<Map<String, String?>> getEnteredDomain() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs
-        .getString('enteredDomain'); // Возвращаем введенный домен или null
-  }
+    String? mainDomain = prefs.getString('enteredMainDomain');
+    String? domain = prefs.getString('enteredDomain');
 
+    return {
+      'enteredMainDomain': mainDomain,
+      'enteredDomain': domain,
+    };
+  }
   //_________________________________ END___API__DOMAIN_CHECK____________________________________________//
 
   //_________________________________ START___API__LOGIN____________________________________________//
@@ -460,6 +515,9 @@ class ApiService {
         '/login${organizationId != null ? '?organization_id=$organizationId' : ''}',
         loginModel.toJson());
 
+    // Выводим ответ от сервера в консоль
+    print("Response from server: ${response.body}");
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final loginResponse = LoginResponse.fromJson(data);
@@ -469,7 +527,7 @@ class ApiService {
 
       return loginResponse;
     } else {
-      throw Exception('Неправильный Логин или Пароль: ${response.body}');
+      throw Exception('Неправильный Логин или Пароль!');
     }
   }
 
@@ -510,8 +568,7 @@ class ApiService {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception(
-            'Ошибка при получении прав доступа: ${response.statusCode}: ${response.body}');
+        throw Exception('Ошибка при получении прав доступа!!');
       }
     } catch (e) {
       print('Ошибка при выполнении запроса fetchPermissionsByRoleId: $e');
@@ -591,8 +648,8 @@ class ApiService {
       else if (response.statusCode == 400) {
         throw Exception('Некорректные данные запроса.');
       } else {
-        print('Ошибка API forgotPin: ${response.statusCode}');
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        print('Ошибка API forgotPin!');
+        throw Exception('Ошибка сервера!');
       }
     } catch (e) {
       print('Ошибка в forgotPin!');
@@ -609,54 +666,53 @@ class ApiService {
 
       final response = await _getRequest(
           '/lead/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedJson = json.decode(response.body);
         final Map<String, dynamic> jsonLead = decodedJson['result'];
         return LeadById.fromJson(jsonLead, jsonLead['leadStatus']['id']);
       } else {
-        print('Failed to load lead ID!');
         throw Exception('Ошибка загрузки лида ID!');
       }
     } catch (e) {
-      print('Error occurred!');
       throw Exception('Ошибка загрузки лида ID!');
     }
   }
 
-//Метод для получения список Лидов с пагинацией
-Future<List<Lead>> getLeads(
+  // Метод для получения списка Лидов с пагинацией
+  Future<List<Lead>> getLeads(
     int? leadStatusId, {
     int page = 1,
     int perPage = 20,
     String? search,
-    int? managerId,
+    List<int>? managers, // Массив ID менеджеров
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/lead?page=$page&per_page=$perPage';
 
-    // Добавляем organization_id
     if (organizationId != null) {
       path += '&organization_id=$organizationId';
     }
 
-    // Добавляем поиск если есть
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    } else if (leadStatusId != null && managerId == null) {
+    // Если задан поиск или менеджеры, НЕ передаем lead_status_id
+    bool shouldSkipLeadStatusId = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty);
+
+    if (!shouldSkipLeadStatusId && leadStatusId != null) {
+      // Если поиск и менеджеры не заданы, передаем lead_status_id
       path += '&lead_status_id=$leadStatusId';
     }
 
-    // Добавляем manager_id если есть
-    if (managerId != null) {
-      path += '&manager_id=$managerId';
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
     }
 
-    // Log the final request path
-    print('Sending request to API with path: $path');
-
+    // Формируем массив managers с индексами
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
     final response = await _getRequest(path);
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
@@ -664,10 +720,10 @@ Future<List<Lead>> getLeads(
             .map((json) => Lead.fromJson(json, leadStatusId ?? -1))
             .toList();
       } else {
-        throw Exception('No lead data found in the response');
+        throw Exception('Данные лидов отсутствуют в ответе');
       }
     } else {
-      throw Exception('Error loading leads: ${response.body}');
+      throw Exception('Ошибка загрузки лидов!');
     }
   }
 
@@ -680,6 +736,10 @@ Future<List<Lead>> getLeads(
       // Отправляем запрос на сервер
       final response = await _getRequest(
           '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      print(
+          '=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+      print('Отправка запроса на API с путём: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -713,7 +773,7 @@ Future<List<Lead>> getLeads(
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка при получении данных: ${response.statusCode}');
+        throw Exception('Ошибка при получении данных!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов лидов. Используем кэшированные данные.');
@@ -762,10 +822,7 @@ Future<List<Lead>> getLeads(
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Статус лида создан успешно'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания статуса лида: ${response.body}'
-      };
+      return {'success': false, 'message': 'Ошибка создания статуса лида!'};
     }
   }
 
@@ -789,7 +846,7 @@ Future<List<Lead>> getLeads(
         'Вы не можете переместить задачу на этот статус',
       );
     } else {
-      throw Exception('Ошибка обновления задач лида: ${response.body}');
+      throw Exception('Ошибка обновления задач лида!');
     }
   }
 
@@ -807,8 +864,8 @@ Future<List<Lead>> getLeads(
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => LeadHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load lead history: ${response.statusCode}');
-        throw Exception('Ошибка загрузки истории лида: ${response.statusCode}');
+        print('Failed to load lead history!');
+        throw Exception('Ошибка загрузки истории лида!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -841,6 +898,7 @@ Future<List<Lead>> getLeads(
     required String body,
     required int leadId,
     DateTime? date,
+    required List<int> users,
   }) async {
     date ??= DateTime.now();
     final organizationId = await getSelectedOrganization();
@@ -852,31 +910,23 @@ Future<List<Lead>> getLeads(
           'body': body,
           'lead_id': leadId,
           'date': date.toIso8601String(),
+          'users': users,
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка успешно создана.'};
+      return {'success': true, 'message': 'note_created_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {
-          'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('body')) {
-        return {
-          'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('date')) {
-        return {'success': false, 'message': 'Не правильная дата.'};
+        return {'success': false, 'message': 'error_valid_date'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания Заметки: ${response.body}'
-      };
+      return {'success': false, 'message': 'error_create_note'};
     }
   }
 
@@ -904,25 +954,16 @@ Future<List<Lead>> getLeads(
       return {'success': true, 'message': 'Заметка успешно обновлена'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('title')) {
-        return {
-          'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('body')) {
-        return {
-          'success': false,
-          'message': 'Ошибка! Поля не может быть пустым.'
-        };
+        return {'success': false, 'message': 'error_field_is_not_empty'};
       } else if (response.body.contains('date')) {
-        return {'success': false, 'message': 'Не правильная дата.'};
+        return {'success': false, 'message': 'error_valid_date'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания Заметки: ${response.body}'
-      };
+      return {'success': false, 'message': 'error_update_note'};
     }
   }
 
@@ -936,7 +977,7 @@ Future<List<Lead>> getLeads(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete note: ${response.body}');
+      throw Exception('Failed to delete note!');
     }
   }
 
@@ -1008,68 +1049,40 @@ Future<List<Lead>> getLeads(
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Лид успешно создан'};
+      return {'success': true, 'message': 'lead_created_successfully'};
     } else if (response.statusCode == 422) {
       // Обработка ошибки дублирования номера телефона
       if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'Этот номер телефона уже существует.'
-        };
+        return {'success': false, 'message': 'phone_already_exists'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
-        return {
-          'success': false,
-          'message': 'Неправильный e-mail!! Введите корректный e-mail.'
-        };
+        return {'success': false, 'message': 'error_enter_email'};
       }
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотябы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       // Обработка ошибки дублирования логина Instagram
       else if (response.body.contains('insta_login')) {
-        return {
-          'success': false,
-          'message': 'Этот логин Instagram уже используется.'
-        };
+        return {'success': false, 'message': 'instagram_login_exists'};
       } else if (response.body.contains('facebook_login')) {
-        return {
-          'success': false,
-          'message': 'Этот логин facebook уже используется.'
-        };
+        return {'success': false, 'message': 'facebook_login_exists'};
       } else if (response.body.contains('tg_nick')) {
-        return {
-          'success': false,
-          'message': 'Этот логин Telegram уже используется.'
-        };
+        return {'success': false, 'message': 'telegram_nick_exists'};
       } else if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'Не правильная дата рождения.'};
+        return {'success': false, 'message': 'invalid_birthday'};
       } else if (response.body.contains('wa_phone')) {
-        return {
-          'success': false,
-          'message': 'Этот номер Whatsapp уже существует.'
-        };
+        return {'success': false, 'message': 'whatsapp_number_exists'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания лида: ${response.body}'
-      };
+      return {'success': false, 'message': 'lead_creation_error'};
     }
   }
 
@@ -1121,7 +1134,7 @@ Future<List<Lead>> getLeads(
         });
 
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Лид успешно обновлен'};
+      return {'success': true, 'message': 'lead_updated_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('phone')) {
         return {
@@ -1131,30 +1144,21 @@ Future<List<Lead>> getLeads(
         };
       }
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('birthday')) {
-        return {'success': false, 'message': 'Не правильная дата рождения.'};
+        return {'success': false, 'message': 'invalid_birthday'};
       }
       if (response.body
           .contains('The email field must be a valid email address.')) {
-        return {
-          'success': false,
-          'message': 'Неправильный e-mail!! Введите корректный e-mail.'
-        };
+        return {'success': false, 'message': 'error_enter_email'};
       }
       // Другие проверки на ошибки...
-      return {'success': false, 'message': 'Неизвестная ошибка!'};
+      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка обновления лида: ${response.body}'
-      };
+      return {'success': false, 'message': 'lead_creation_error'};
     }
   }
 
@@ -1176,11 +1180,11 @@ Future<List<Lead>> getLeads(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll region: ${response.body}');
+      print('getAll region!');
     }
 
     return dataRegion;
@@ -1205,11 +1209,11 @@ Future<List<Lead>> getLeads(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll manager: ${response.body}');
+      print('getAll manager!');
     }
 
     return dataManager;
@@ -1233,11 +1237,11 @@ Future<List<Lead>> getLeads(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll lead: ${response.body}');
+      print('getAll lead!');
     }
 
     return dataLead;
@@ -1253,7 +1257,31 @@ Future<List<Lead>> getLeads(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete leadStatus: ${response.body}');
+      throw Exception('Failed to delete leadStatus!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateLeadStatusEdit(
+      int leadStatusId, String title, bool isSuccess, bool isFailure) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
     }
   }
 
@@ -1267,7 +1295,7 @@ Future<List<Lead>> getLeads(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete lead: ${response.body}');
+      throw Exception('Failed to delete lead!');
     }
   }
 
@@ -1307,33 +1335,23 @@ Future<List<Lead>> getLeads(
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка успешно создана'};
+      return {'success': true, 'message': 'contact_create_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'Этот номер телефона уже существует.'
-        };
+        return {'success': false, 'message': 'phone_already_exists'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       } else if (response.body.contains('position')) {
-        return {'success': false, 'message': 'Поля не может быть пустым.'};
+        return {'success': false, 'message': 'field_is_not_empty'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания Контактного лица: ${response.body}'
-      };
+      return {'success': false, 'message': 'error_contact_create'};
     }
   }
 
@@ -1357,33 +1375,23 @@ Future<List<Lead>> getLeads(
         });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Заметка успешно создана'};
+      return {'success': true, 'message': 'contact_update_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       if (response.body.contains('The phone has already been taken.')) {
-        return {
-          'success': false,
-          'message': 'Этот номер телефона уже существует.'
-        };
+        return {'success': false, 'message': 'phone_already_exists'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       } else if (response.body.contains('position')) {
-        return {'success': false, 'message': 'Поля не может быть пустым.'};
+        return {'success': false, 'message': 'field_is_not_empty'};
       } else {
-        return {'success': false, 'message': 'Неизвестная ошибка!'};
+        return {'success': false, 'message': 'unknown_error'};
       }
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания Контактного лица: ${response.body}'
-      };
+      return {'success': false, 'message': 'error_contact_update_successfully'};
     }
   }
 
@@ -1397,7 +1405,7 @@ Future<List<Lead>> getLeads(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete contactPerson: ${response.body}');
+      throw Exception('Failed to delete contactPerson!');
     }
   }
 
@@ -1449,8 +1457,8 @@ Future<List<Lead>> getLeads(
       if (response.statusCode == 200) {
         print('Успешно отправлено в 1С');
       } else {
-        print('Ошибка отправки в 1С Лид: ${response.statusCode}');
-        throw Exception('Ошибка отправки в 1С: ${response.statusCode}');
+        print('Ошибка отправки в 1С Лид!');
+        throw Exception('Ошибка отправки в 1С!');
       }
     } catch (e) {
       print('Произошла ошибка!');
@@ -1476,8 +1484,8 @@ Future<List<Lead>> getLeads(
 
   //       // return data;
   //     } else {
-  //       print('Ошибка отправки в  1С Лид: ${response.statusCode}');
-  //       throw Exception('Ошибка отправки в  Лид 1С: ${response.statusCode}');
+  //       print('Ошибка отправки в  1С Лид!');
+  //       throw Exception('Ошибка отправки в  Лид 1С!');
   //     }
   //   } catch (e) {
   //     print('Произошла ошибка!');
@@ -1504,7 +1512,7 @@ Future<List<Lead>> getLeads(
     } else if (response.statusCode == 422) {
       throw Exception('Ошибка валидации (422): Некорректные данные');
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -1525,9 +1533,28 @@ Future<List<Lead>> getLeads(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
+
+  Future<LeadStatus> getLeadStatus(int leadStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/lead-status/$leadStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return LeadStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -1550,37 +1577,47 @@ Future<List<Lead>> getLeads(
 
         return DealById.fromJson(jsonDeal, jsonDeal['deal_status']['id'] ?? 0);
       } else {
-        throw Exception('Ошибка загрузки deal ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки deal ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки deal ID!');
     }
   }
 
-Future<List<Deal>> getDeals(
+  // 1. First, update the Deal API service to handle multiple managers
+  Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
     String? search,
-    int? managerId, // Добавляем параметр managerId
+    List<int>? managers, // Changed from single managerId to List of managers
   }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/deal?page=$page&per_page=$perPage';
 
-    path += '&organization_id=$organizationId';
+    if (organizationId != null) {
+      path += '&organization_id=$organizationId';
+    }
+
+    // Similar logic as in getLeads
+    bool shouldSkipDealStatusId = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty);
+
+    if (!shouldSkipDealStatusId && dealStatusId != null) {
+      path += '&deal_status_id=$dealStatusId';
+    }
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (dealStatusId != null && managerId == null) { // Условие: если нет managerId
-      path += '&deal_status_id=$dealStatusId';
-    }
-    // Добавляем manager_id если есть
-    if (managerId != null) {
-      path += '&manager_id=$managerId';
     }
 
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
+    // Add managers array parameter
+    if (managers != null && managers.isNotEmpty) {
+      for (int i = 0; i < managers.length; i++) {
+        path += '&managers[$i]=${managers[i]}';
+      }
+    }
+
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -1593,9 +1630,7 @@ Future<List<Deal>> getDeals(
         throw Exception('Нет данных о сделках в ответе');
       }
     } else {
-      // Логирование ошибки с ответом сервера
-      print('Error response: ${response.statusCode} - ${response.body}');
-      throw Exception('Ошибка загрузки сделок: ${response.body}');
+      throw Exception('Ошибка загрузки сделок!');
     }
   }
 
@@ -1640,7 +1675,7 @@ Future<List<Deal>> getDeals(
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+        throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов сделок. Используем кэшированные данные.');
@@ -1690,10 +1725,7 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'Статус сделки успешно создан'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка создания статуса сделки: ${response.body}'
-      };
+      return {'success': false, 'message': 'Ошибка создания статуса сделки!'};
     }
   }
 
@@ -1711,9 +1743,8 @@ Future<List<Deal>> getDeals(
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => DealHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load deal history: ${response.statusCode}');
-        throw Exception(
-            'Ошибка загрузки истории сделки: ${response.statusCode}');
+        print('Failed to load deal history!');
+        throw Exception('Ошибка загрузки истории сделки!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -1741,7 +1772,7 @@ Future<List<Deal>> getDeals(
         'Вы не можете переместить задачу на этот статус',
       );
     } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки!');
     }
   }
 
@@ -1803,23 +1834,17 @@ Future<List<Deal>> getDeals(
         requestBody);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'Сделка успешно создана.'};
+      return {'success': true, 'message': 'deal_create_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('name')) {
-        return {'success': false, 'message': 'Введите хотя бы 3-х символов!.'};
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       // Другие проверки на ошибки...
-      return {'success': false, 'message': 'Неизвестная ошибка!'};
+      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка обновления лида: ${response.body}'
-      };
+      return {'success': false, 'message': 'error_deal_create_successfully'};
     }
   }
 
@@ -1862,26 +1887,17 @@ Future<List<Deal>> getDeals(
 
     // Обработка ответа
     if (response.statusCode == 200) {
-      return {'success': true, 'message': 'Сделка успешно обновлена.'};
+      return {'success': true, 'message': 'deal_update_successfully'};
     } else if (response.statusCode == 422) {
       if (response.body.contains('"name"')) {
-        return {
-          'success': false,
-          'message': 'Название должно содержать не менее 3 символов.'
-        };
+        return {'success': false, 'message': 'invalid_name_length'};
       }
       // Дополнительные проверки на другие поля могут быть добавлены здесь...
-      return {'success': false, 'message': 'Неизвестная ошибка!'};
+      return {'success': false, 'message': 'unknown_error'};
     } else if (response.statusCode == 500) {
-      return {
-        'success': false,
-        'message': 'Ошибка на сервере. Попробуйте позже.'
-      };
+      return {'success': false, 'message': 'error_server_text'};
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка обновления лида: ${response.body}'
-      };
+      return {'success': false, 'message': 'error_deal_update_successfully'};
     }
   }
 
@@ -1895,7 +1911,7 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete dealStatus: ${response.body}');
+      throw Exception('Failed to delete dealStatus!');
     }
   }
 
@@ -1909,7 +1925,7 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete deal: ${response.body}');
+      throw Exception('Failed to delete deal!');
     }
   }
 
@@ -1930,7 +1946,51 @@ Future<List<Deal>> getDeals(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+// Метод для изменения статуса deal в ApiService
+  Future<Map<String, dynamic>> updateDealStatusEdit(int dealStatusId,
+      String title, int day, bool isSuccess, bool isFailure) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "day": day,
+      "color": "#000",
+      "is_success": isSuccess ? 1 : 0,
+      "is_failure": isFailure ? 1 : 0,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
+    }
+  }
+
+  Future<DealStatus> getDealStatus(int dealStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/deal/statuses/$dealStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return DealStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
     }
   }
 
@@ -1960,24 +2020,42 @@ Future<List<Deal>> getDeals(
       } else if (response.statusCode == 500) {
         throw Exception('Ошибка сервера. Попробуйте позже');
       } else {
-        throw Exception('Ошибка загрузки task ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки task ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки task ID');
     }
   }
 
-  Future<List<Task>> getTasks(int? taskStatusId,
-      {int page = 1, int perPage = 20, String? search}) async {
+  Future<List<Task>> getTasks(
+    int? taskStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    List<int>? users, // Массив ID менеджеров
+  }) async {
     final organizationId = await getSelectedOrganization();
     String path = '/task?page=$page&per_page=$perPage';
 
     path += '&organization_id=$organizationId';
+    // Если задан поиск или менеджеры, НЕ передаем lead_status_id
+    bool shouldSkipTaskStatusId = (search != null && search.isNotEmpty) ||
+        (users != null && users.isNotEmpty);
+
+    if (!shouldSkipTaskStatusId && taskStatusId != null) {
+      // Если поиск и менеджеры не заданы, передаем lead_status_id
+      path += '&task_status_id=$taskStatusId';
+    }
 
     if (search != null && search.isNotEmpty) {
       path += '&search=$search';
-    } else if (taskStatusId != null) {
-      path += '&task_status_id=$taskStatusId';
+    }
+
+    // Добавляем user_id если есть
+    if (users != null && users.isNotEmpty) {
+      for (int i = 0; i < users.length; i++) {
+        path += '&users[$i]=${users[i]}';
+      }
     }
 
     // Логируем конечный URL запроса
@@ -1987,17 +2065,16 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
-        // Логирование задач
-        final tasks = (data['result']['data'] as List).map((json) {
-          return Task.fromJson(json, taskStatusId ?? -1);
-        }).toList();
-
-        return tasks;
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .toList();
       } else {
         throw Exception('Нет данных о задачах в ответе');
       }
     } else {
-      throw Exception('Ошибка загрузки задач: ${response.body}');
+      // Логирование ошибки с ответом сервера
+      print('Error response! - ${response.body}');
+      throw Exception('Ошибка загрузки задач!');
     }
   }
 
@@ -2014,10 +2091,6 @@ Future<List<Deal>> getDeals(
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['result'] != null) {
-          final statuses = (data['result'] as List)
-              .map((status) => TaskStatus.fromJson(status))
-              .toList();
-
           // Принт старых кэшированных данных (если они есть)
           final cachedStatuses =
               prefs.getString('cachedTaskStatuses_$organizationId');
@@ -2036,14 +2109,15 @@ Future<List<Deal>> getDeals(
           print(data['result']); // Новые данные, которые будут сохранены в кэш
 
           print(
-              '----p---------------¿-----UPDATE CACHE TASKSTATUS----------------------------');
-          print('Статусы задач обновлены в кэше');
-          return statuses;
+              '------------------------------ Статусы задач обновлены в кэше ------------------------------');
+          return (data['result'] as List)
+              .map((status) => TaskStatus.fromJson(status))
+              .toList();
         } else {
           throw Exception('Результат отсутствует в ответе');
         }
       } else {
-        throw Exception('Ошибка при получении данных: ${response.statusCode}');
+        throw Exception('Ошибка ${response.statusCode}!');
       }
     } catch (e) {
       print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
@@ -2095,7 +2169,7 @@ Future<List<Deal>> getDeals(
       throw TaskStatusUpdateException(
           422, 'Вы не можете переместить задачу на этот статус');
     } else {
-      throw Exception('Ошибка обновления задач сделки: ${response.body}');
+      throw Exception('Ошибка обновления задач сделки!');
     }
   }
 
@@ -2160,7 +2234,7 @@ Future<List<Deal>> getDeals(
 
     return {
       'success': false,
-      'message': 'Ошибка ${operation} задачи: ${response.body}',
+      'message': 'Ошибка ${operation} задачи!',
     };
   }
 
@@ -2169,11 +2243,9 @@ Future<List<Deal>> getDeals(
     try {
       final data = json.decode(response.body);
       final errorMessage = data['errors'] ?? data['message'] ?? response.body;
-      return Exception(
-          'Ошибка ${operation}: ${response.statusCode} - $errorMessage');
+      return Exception('Ошибка ${operation}! - $errorMessage');
     } catch (e) {
-      return Exception(
-          'Ошибка ${operation}: ${response.statusCode} - ${response.body}');
+      return Exception('Ошибка ${operation}! - ${response.body}');
     }
   }
 
@@ -2249,7 +2321,7 @@ Future<List<Deal>> getDeals(
 
       return {
         'success': false,
-        'message': '$errorMessage: ${response.body}',
+        'message': '$errorMessage!',
         'statusCode': response.statusCode,
       };
     } catch (e) {
@@ -2348,53 +2420,50 @@ Future<List<Deal>> getDeals(
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно создана из сделки.',
+          'message': 'task_deal_create_successfully',
         };
       } else if (response.statusCode == 422) {
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.statusCode == 500) {
-          return {
-            'success': false,
-            'message': 'Ошибка сервера. Пожалуйста, попробуйте позже'
-          };
+          return {'success': false, 'message': 'error_server_text'};
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         if (response.body.contains('priority_level')) {
           return {
             'success': false,
-            'message': 'Указан некорректный уровень приоритета.',
+            'message': 'error_priority_level',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания задачи!',
+          'message': 'error_create_task',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи!',
+        'message': 'error_create_task',
       };
     }
   }
@@ -2493,53 +2562,53 @@ Future<List<Deal>> getDeals(
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно создана.',
+          'message': 'task_create_successfully',
         };
       } else if (response.statusCode == 422) {
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         if (response.body.contains('priority_level')) {
           return {
             'success': false,
-            'message': 'Указан некорректный уровень приоритета.',
+            'message': 'error_priority_level',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания задачи: ${response.body}',
+          'message': 'error_create_task',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании задачи!',
+        'message': 'error_create_task',
       };
     }
   }
@@ -2637,53 +2706,53 @@ Future<List<Deal>> getDeals(
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Задача успешно обновлена.',
+          'message': 'task_update_successfully',
         };
       } else if (response.statusCode == 422) {
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название задачи должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         if (response.body.contains('from')) {
           return {
             'success': false,
-            'message': 'Дата начала задачи указана некорректно.',
+            'message': 'error_start_date_task',
           };
         }
         if (response.body.contains('to')) {
           return {
             'success': false,
-            'message': 'Дата завершения задачи указана некорректно.',
+            'message': 'error_end_date_task',
           };
         }
         if (response.body.contains('priority_level')) {
           return {
             'success': false,
-            'message': 'Указан некорректный уровень приоритета.',
+            'message': 'error_priority_level',
           };
         }
         return {
           'success': false,
-          'message': 'Неизвестная ошибка!',
+          'message': 'unknown_error',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка обновления задачи: ${response.body}',
+          'message': 'error_task_update_successfully',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении задачи!',
+        'message': 'error_task_update_successfully',
       };
     }
   }
@@ -2702,9 +2771,8 @@ Future<List<Deal>> getDeals(
         final List<dynamic> jsonList = decodedJson['result']['history'];
         return jsonList.map((json) => TaskHistory.fromJson(json)).toList();
       } else {
-        print('Failed to load task history: ${response.statusCode}');
-        throw Exception(
-            'Ошибка загрузки истории задач: ${response.statusCode}');
+        print('Failed to load task history!');
+        throw Exception('Ошибка загрузки истории задач!');
       }
     } catch (e) {
       print('Error occurred!');
@@ -2730,11 +2798,11 @@ Future<List<Deal>> getDeals(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll project: ${response.body}');
+      print('getAll project!');
     }
 
     return dataProject;
@@ -2758,11 +2826,11 @@ Future<List<Deal>> getDeals(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка при получении данных: ${response.statusCode}');
+      throw Exception('Ошибка при получении данных!');
     }
 
     if (kDebugMode) {
-      print('getAll project: ${response.body}');
+      print('getAll project!');
     }
 
     return dataProject;
@@ -2776,8 +2844,8 @@ Future<List<Deal>> getDeals(
       print('Отправка запроса на /user');
       final response = await _getRequest(
           '/user${organizationId != null ? '?organization_id=$organizationId' : ''}');
-      print('Статус ответа: ${response.statusCode}');
-      print('Тело ответа: ${response.body}');
+      print('Статус ответа!');
+      print('Тело ответа!');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -2788,18 +2856,14 @@ Future<List<Deal>> getDeals(
               .map((user) => UserTask.fromJson(user))
               .toList();
 
-          print('Получено пользователей: ${usersList.length}');
           return usersList;
         } else {
-          print('Структура данных неверна: $data');
           throw Exception('Неверная структура данных пользователей');
         }
       } else {
-        print('Ошибка HTTP: ${response.statusCode}');
-        throw Exception('Ошибка сервера: ${response.statusCode}');
+        throw Exception('Ошибка сервера!');
       }
     } catch (e) {
-      print('Ошибка при получении пользователей!');
       rethrow;
     }
   }
@@ -2818,7 +2882,7 @@ Future<List<Deal>> getDeals(
   //     throw Exception('Пользователи не найдены');
   //   }
   // } else {
-  //   throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+  //   throw Exception('Ошибка ${response.statusCode}!');
   // }}
 
   // Метод для получение Роли
@@ -2826,6 +2890,7 @@ Future<List<Deal>> getDeals(
     final organizationId = await getSelectedOrganization();
     final response = await _getRequest(
         '/role${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
@@ -2836,7 +2901,7 @@ Future<List<Deal>> getDeals(
         throw Exception('Роли не найдены');
       }
     } else {
-      throw Exception('Ошибка при получении ролей: ${response.statusCode}');
+      throw Exception('Ошибка при получении ролей!');
     }
   }
 
@@ -2847,7 +2912,7 @@ Future<List<Deal>> getDeals(
     print('Начало запроса статусов задач'); // Отладочный вывод
     final response = await _getRequest(
         '/taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
-    print('Статус код ответа: ${response.statusCode}'); // Отладочный вывод
+    print('Статус код ответа!'); // Отладочный вывод
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -2864,7 +2929,7 @@ Future<List<Deal>> getDeals(
         throw Exception('Статусы задач не найдены');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -2878,7 +2943,7 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete task: ${response.body}');
+      throw Exception('Failed to delete task!');
     }
   }
 
@@ -2893,7 +2958,7 @@ Future<List<Deal>> getDeals(
     if (response.statusCode == 200) {
       return {'result': 'Success'};
     } else {
-      throw Exception('Failed to delete taskStatus: ${response.body}');
+      throw Exception('Failed to delete taskStatus!');
     }
   }
 
@@ -2915,10 +2980,7 @@ Future<List<Deal>> getDeals(
         'message': 'Этот проект не имеет завершающий этап!'
       };
     } else {
-      return {
-        'success': false,
-        'message': 'Ошибка завершения задачи: ${response.body}'
-      };
+      return {'success': false, 'message': 'Ошибка завершения задачи!'};
     }
   }
 
@@ -2939,7 +3001,59 @@ Future<List<Deal>> getDeals(
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<TaskStatus> getTaskStatus(int taskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return TaskStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateTaskStatusEdit({
+    required int taskStatusId,
+    required String name,
+    required bool needsPermission,
+    required bool finalStep,
+    required bool checkingStep,
+    required List<int> roleIds,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
+
+    final payload = {
+      "task_status_name_id": taskStatusId,
+      "needs_permission": needsPermission ? 1 : 0,
+      "final_step": finalStep ? 1 : 0,
+      "checking_step": checkingStep ? 1 : 0,
+      "roles": roles,
+      "organization_id": organizationId,
+    };
+
+    final response = await _patchRequest(
+      '/task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload,
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update task status!');
     }
   }
 
@@ -3095,6 +3209,10 @@ Future<List<Deal>> getDeals(
 
   Future<ProcessSpeed> getProcessSpeedData() async {
     final organizationId = await getSelectedOrganization();
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     String path =
         '/dashboard/lead-process-speed${organizationId != null ? '?organization_id=$organizationId' : ''}';
@@ -3144,8 +3262,7 @@ Future<List<Deal>> getDeals(
 
   //_________________________________ END_____API_SCREEN__DASHBOARD____________________________________________//
 
-
-    //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
+  //_________________________________ START_____API_SCREEN__DASHBOARD_Manager____________________________________________//
 
 // Метод для получения графика Сделки
   Future<DealStatsResponseManager> getDealStatsManagerData() async {
@@ -3168,7 +3285,8 @@ Future<List<Deal>> getDeals(
       throw ('');
     }
   }
- /// Получение данных графика для дашборда
+
+  /// Получение данных графика для дашборда
   Future<List<ChartDataManager>> getLeadChartManager() async {
     final organizationId = await getSelectedOrganization();
 
@@ -3188,7 +3306,8 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка загрузки данных график клиента!');
     }
   }
- Future<LeadConversionManager> getLeadConversionDataManager() async {
+
+  Future<LeadConversionManager> getLeadConversionDataManager() async {
     final organizationId = await getSelectedOrganization();
 
     String path =
@@ -3211,7 +3330,7 @@ Future<List<Deal>> getDeals(
       throw ('');
     }
   }
-  
+
   Future<ProcessSpeedManager> getProcessSpeedDataManager() async {
     final organizationId = await getSelectedOrganization();
 
@@ -3264,36 +3383,34 @@ Future<List<Deal>> getDeals(
       throw ('Ошибка получения данных!');
     }
   }
+
 // API Service
-Future<UserTaskCompletionManager> getUserStatsManager() async {
-  final organizationId = await getSelectedOrganization();
+  Future<UserTaskCompletionManager> getUserStatsManager() async {
+    final organizationId = await getSelectedOrganization();
 
-  String path =
-      '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
+    String path =
+        '/dashboard/completed-task-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
-  final response = await _getRequest(path);
+    final response = await _getRequest(path);
 
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
 
-    if (data['result'] != null) {
-      return UserTaskCompletionManager.fromJson(data);
+      if (data['result'] != null) {
+        return UserTaskCompletionManager.fromJson(data);
+      } else {
+        throw ('Нет данных графика в ответе');
+      }
+    } else if (response.statusCode == 500) {
+      throw ('Ошибка сервера: 500');
     } else {
-      throw ('Нет данных графика в ответе');
+      throw ('Неизвестная ошибка');
     }
-  } else if (response.statusCode == 500) {
-    throw ('Ошибка сервера: 500');
-  } else {
-    throw ('Неизвестная ошибка');
   }
-}
 
   //_________________________________ END_____API_SCREEN__DASHBOARD__Manager__________________________________________//
 
-
-
   //_________________________________ START_____API_SCREEN__CHATS____________________________________________//
-
 
   Future<PaginationDTO<Chats>> getAllChats(String endPoint,
       [int page = 1, String? search]) async {
@@ -3357,7 +3474,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
       final data = json.decode(response.body);
       return data['message'] ?? 'Success';
     } else {
-      throw Exception('Error ${response.statusCode}: ${response.body}');
+      throw Exception('Error ${response.statusCode}!');
     }
   }
 
@@ -3390,29 +3507,23 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
         throw Exception('Результат отсутствует в ответе');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
 // Метод для отправки текстового сообщения
-  Future<void> sendMessage(int chatId, String message) async {
+  Future<void> sendMessage(int chatId, String message,
+      {String? replyMessageId}) async {
     final organizationId = await getSelectedOrganization();
-
     final response = await _postRequest(
         '/chat/sendMessage/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
         {
           'message': message,
+          if (replyMessageId != null) 'forwarded_message_id': replyMessageId,
         });
 
-    if (kDebugMode) {
-      print('Response from sendMessage: ${response.body}');
-    } // Добавлено для отладки
-
     if (response.statusCode != 200) {
-      if (kDebugMode) {
-        print('Ошибка отправки сообщения: ${response.body}');
-      } // Отладка ошибок
-      throw Exception('Ошибка отправки сообщения: ${response.body}');
+      throw Exception('Ошибка отправки сообщения!');
     }
   }
 
@@ -3443,7 +3554,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
             // contentType: 'multipart/form-data',
           ));
       if (kDebugMode) {
-        print('response.statusCode: ${response.statusCode}');
+        print('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
@@ -3491,7 +3602,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
             contentType: 'multipart/form-data',
           ));
       if (kDebugMode) {
-        print('response.statusCode: ${response.statusCode}');
+        print('response.statusCode!');
       }
 
       if (response.statusCode == 200) {
@@ -3526,7 +3637,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
         });
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки файла: ${response.body}');
+      throw Exception('Ошибка отправки файла!');
     }
   }
 
@@ -3542,7 +3653,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
         });
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки голосового сообщения: ${response.body}');
+      throw Exception('Ошибка отправки голосового сообщения!');
     }
   }
 
@@ -3570,7 +3681,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
 //       if (response.statusCode == 200) {
 //         print('Messages marked as read');
 //       } else {
-//         print('Error marking messages as read: ${response.body}');
+//         print('Error marking messages as read!');
 //       }
 //     } catch (e) {
 //       print('Exception when marking messages as read!');
@@ -3641,10 +3752,10 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user: ${response.body}');
+      print('getAll user!');
     }
 
     return dataUser;
@@ -3675,10 +3786,10 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user: ${response.body}');
+      print('getAll user!');
     }
 
     return dataUser;
@@ -3711,10 +3822,10 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getUsersNotInChat: ${response.body}');
+      print('getUsersNotInChat!');
     }
 
     return dataUser;
@@ -3752,10 +3863,10 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     }
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
+      print('Статус ответа!');
     }
     if (kDebugMode) {
-      print('getAll user: ${response.body}');
+      print('getAll user!');
     }
 
     return dataUser;
@@ -3776,8 +3887,8 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     );
 
     if (kDebugMode) {
-      print('Статус ответа: ${response.statusCode}');
-      print('data: ${response.body}');
+      print('Статус ответа!');
+      print('data!');
     }
 
     if (response.statusCode == 200) {
@@ -3810,34 +3921,34 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'message': 'Групповой чат успешно создан.',
+          'message': 'group_chat_created_successfully',
         };
       } else if (response.statusCode == 422) {
         if (response.body.contains('name')) {
           return {
             'success': false,
-            'message': 'Название группы должно быть не менее 3 символов.',
+            'message': 'invalid_name_length',
           };
         }
         return {
           'success': false,
-          'message': 'Ошибки валидации: ${response.body}',
+          'message': 'error_validation',
         };
       } else if (response.statusCode == 500) {
         return {
           'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.',
+          'message': 'error_server_text',
         };
       } else {
         return {
           'success': false,
-          'message': 'Ошибка создания гр. чата: ${response.body}',
+          'message': 'error_create_group_chat',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при создании гр. чата!',
+        'message': 'error_create_group_chat',
       };
     }
   }
@@ -3873,7 +3984,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
       } else {
         return {
           'success': false,
-          'message': 'Ошибка добавления участника: ${response.body}',
+          'message': 'Ошибка добавления участника!',
         };
       }
     } catch (e) {
@@ -3915,7 +4026,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
       } else {
         return {
           'success': false,
-          'message': 'Ошибка добавления участника: ${response.body}',
+          'message': 'Ошибка добавления участника!',
         };
       }
     } catch (e) {
@@ -3943,7 +4054,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     final response = await _deleteRequest(path);
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+      throw Exception('Ошибка удаления уведомлений!');
     }
 
     final data = json.decode(response.body);
@@ -3976,7 +4087,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
       } else if (response.statusCode == 404) {
         throw ('Такого Лида не существует');
       } else {
-        print('Ошибка загрузки профиля чата: ${response.statusCode}');
+        print('Ошибка загрузки профиля чата!');
         throw Exception('${response.statusCode}');
       }
     } catch (e) {
@@ -3994,9 +4105,8 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
         '/task/getByChat/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
       );
 
-      print(
-          'Response status code: ${response.statusCode}'); // Логируем статус ответа
-      print('Response body: ${response.body}'); // Логируем тело ответа
+      print('Response status code!'); // Логируем статус ответа
+      print('Response body!'); // Логируем тело ответа
 
       if (response.statusCode == 200) {
         try {
@@ -4023,8 +4133,8 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
           throw Exception('Ошибка парсинга ответа: $parseError');
         }
       } else {
-        print('Ошибка загрузки задачи: ${response.statusCode}');
-        throw Exception('Ошибка загрузки задачи: ${response.statusCode}');
+        print('Ошибка загрузки задачи!');
+        throw Exception('Ошибка загрузки задачи!');
       }
     } catch (e) {
       print('Полная ошибка в getTaskProfile!');
@@ -4053,7 +4163,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
         throw Exception('Организация не найдено');
       }
     } else {
-      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+      throw Exception('Ошибка ${response.statusCode}!');
     }
   }
 
@@ -4100,7 +4210,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
         throw Exception('Нет данных о уведомлениях в ответе');
       }
     } else {
-      throw Exception('Ошибка загрузки уведомлений: ${response.body}');
+      throw Exception('Ошибка загрузки уведомлений!');
     }
   }
 
@@ -4114,7 +4224,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     final response = await _postRequest(path, {});
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+      throw Exception('Ошибка удаления уведомлений!');
     }
   }
 
@@ -4134,7 +4244,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
     final response = await _postRequest(path, body);
 
     if (response.statusCode != 200) {
-      throw Exception('Ошибка удаления уведомлений: ${response.body}');
+      throw Exception('Ошибка удаления уведомлений!');
     }
     final data = json.decode(response.body);
     if (data['result'] == 'Success') {
@@ -4165,7 +4275,7 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
 
         return UserByIdProfile.fromJson(jsonUser);
       } else {
-        throw Exception('Ошибка загрузки User ID: ${response.statusCode}');
+        throw Exception('Ошибка загрузки User ID!');
       }
     } catch (e) {
       throw Exception('Ошибка загрузки User ID!');
@@ -4231,37 +4341,871 @@ Future<UserTaskCompletionManager> getUserStatsManager() async {
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': 'Профиль успешно обновлен'};
+        return {'success': true, 'message': 'profile_updated_successfully'};
       } else if (response.statusCode == 422) {
-        return {
-          'success': false,
-          'message': 'Ошибка валидации данных. Проверьте введенные данные.'
-        };
+        return {'success': false, 'message': 'error_validation_data'};
       }
       if (response.body.contains('validation.phone')) {
-        return {
-          'success': false,
-          'message':
-              'Неправильный номер телефона. Проверьте формат и количество цифр.'
-        };
+        return {'success': false, 'message': 'invalid_phone_format'};
       } else if (response.statusCode == 500) {
-        return {
-          'success': false,
-          'message': 'Ошибка на сервере. Попробуйте позже.'
-        };
+        return {'success': false, 'message': 'error_server_text'};
       } else {
-        return {
-          'success': false,
-          'message': 'Ошибка обновления профиля: ${response.body}'
-        };
+        return {'success': false, 'message': 'error_update_profile'};
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Ошибка при обновлении профиля!',
+        'message': 'error_update_profile',
       };
     }
   }
 
   //_________________________________ END_____API_PROFILE_SCREEN____________________________________________//
+
+  //_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
+
+  Future<MyTaskById> getMyTaskById(int taskId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+
+        // Проверяем, что поле result существует и является объектом
+        final Map<String, dynamic>? result = decodedJson['result'];
+        if (result == null) {
+          throw Exception('Некорректные данные от API');
+        }
+
+        // Создаем объект задачи из JSON
+        return MyTaskById.fromJson(
+            result, 0); // Передаем 0, если taskStatus отсутствует
+      } else if (response.statusCode == 404) {
+        throw Exception('Ресурс с задачи $taskId не найден');
+      } else if (response.statusCode == 500) {
+        throw Exception('Ошибка сервера. Попробуйте позже');
+      } else {
+        throw Exception('Ошибка загрузки task ID!');
+      }
+    } catch (e) {
+      throw Exception('Ошибка загрузки task ID: $e');
+    }
+  }
+
+  Future<bool> checkOverdueTasks() async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final response = await _getRequest(
+        '/my-task/check/overdue${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        return decodedJson['res'] ?? false;
+      } else {
+        throw Exception('Failed to check overdue tasks');
+      }
+    } catch (e) {
+      throw Exception('Error checking overdue tasks: $e');
+    }
+  }
+
+  Future<List<MyTask>> getMyTasks(
+    int? taskStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/my-task?page=$page&per_page=$perPage';
+
+    path += '&organization_id=$organizationId';
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    } else if (taskStatusId != null) {
+      // Условие: если нет userId
+      path += '&task_status_id=$taskStatusId';
+    }
+    // Логируем конечный URL запроса
+    print('Sending request to API with path: $path');
+    final response = await _getRequest(path);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => MyTask.fromJson(json, taskStatusId ?? -1))
+            .toList();
+      } else {
+        throw Exception('Нет данных о задачах в ответе');
+      }
+    } else {
+      // Логирование ошибки с ответом сервера
+      print('Error response! - ${response.body}');
+      throw Exception('Ошибка загрузки задач!');
+    }
+  }
+
+// Метод для получения статусов задач
+  Future<List<MyTaskStatus>> getMyTaskStatuses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final organizationId = await getSelectedOrganization();
+
+    try {
+      // Отправляем запрос на сервер
+      final response = await _getRequest(
+          '/my-task-status${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null) {
+          // Принт старых кэшированных данных (если они есть)
+          final cachedStatuses =
+              prefs.getString('cachedMyTaskStatuses_$organizationId');
+          if (cachedStatuses != null) {
+            final decodedData = json.decode(cachedStatuses);
+          }
+
+          // Обновляем кэш новыми данными
+          await prefs.setString('cachedMyTaskStatuses_$organizationId',
+              json.encode(data['result']));
+          print(
+              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          print(data['result']); // Новые данные, которые будут сохранены в кэш
+
+          print(
+              '------------------------------ Статусы задач обновлены в кэше ------------------------------');
+          return (data['result'] as List)
+              .map((status) => MyTaskStatus.fromJson(status))
+              .toList();
+        } else {
+          throw Exception('Результат отсутствует в ответе');
+        }
+      } else {
+        throw Exception('Ошибка ${response.statusCode}!');
+      }
+    } catch (e) {
+      print('Ошибка загрузки статусов задач. Используем кэшированные данные.');
+      // Если запрос не удался, пытаемся загрузить данные из кэша
+      final cachedStatuses =
+          prefs.getString('cachedMyTaskStatuses_$organizationId');
+      if (cachedStatuses != null) {
+        final decodedData = json.decode(cachedStatuses);
+        final cachedList = (decodedData as List)
+            .map((status) => MyTaskStatus.fromJson(status))
+            .toList();
+        return cachedList;
+      } else {
+        throw Exception(
+            'Ошибка загрузки статусов задач и отсутствуют кэшированные данные!');
+      }
+    }
+  }
+
+  Future<bool> checkIfStatusHasMyTasks(int taskStatusId) async {
+    try {
+      // Получаем список лидов для указанного статуса, берем только первую страницу
+      final List<MyTask> tasks =
+          await getMyTasks(taskStatusId, page: 1, perPage: 1);
+
+      // Если список лидов не пуст, значит статус содержит элементы
+      return tasks.isNotEmpty;
+    } catch (e) {
+      print('Error while checking if status has deals!');
+      return false;
+    }
+  }
+
+//Обновление статуса карточки Задачи  в колонке
+
+  Future<void> updateMyTaskStatus(
+      int taskId, int position, int statusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/my-task/change-status/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'position': 1,
+          'status_id': statusId,
+        });
+
+    if (response.statusCode == 200) {
+      print('Статус задачи успешно обновлен');
+    } else if (response.statusCode == 422) {
+      throw MyTaskStatusUpdateException(
+          422, 'Вы не можете переместить задачу на этот статус');
+    } else {
+      throw Exception('Ошибка обновления задач сделки!');
+    }
+  }
+
+  Map<String, dynamic> _handleMyTaskResponse(
+      http.Response response, String operation) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+
+      // Проверяем наличие ошибок в ответе
+      if (data['errors'] != null) {
+        return {
+          'success': false,
+          'message': 'Ошибка ${operation} задачи: ${data['errors']}',
+        };
+      }
+
+      return {
+        'success': true,
+        'message':
+            'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        'data': data['result'],
+      };
+    }
+
+    if (response.statusCode == 422) {
+      final data = json.decode(response.body);
+      final validationErrors = {
+        'name': 'Название задачи должно содержать минимум 3 символа.',
+        'from': 'Неверный формат даты начала.',
+        'to': 'Неверный формат даты окончания.',
+        'project_id': 'Указанный проект не существует.',
+        'user_id': 'Указанный пользователь не существует.',
+        // Убрана валидация файла
+      };
+
+      // Игнорируем ошибки валидации файла
+      if (data['errors']?['file'] != null) {
+        data['errors'].remove('file');
+      }
+
+      // Проверяем каждое поле на наличие ошибки, кроме файла
+      for (var entry in validationErrors.entries) {
+        if (data['errors']?[entry.key] != null) {
+          return {'success': false, 'message': entry.value};
+        }
+      }
+
+      // Если остались только ошибки файла, считаем что валидация прошла успешно
+      if (data['errors']?.isEmpty ?? true) {
+        return {
+          'success': true,
+          'message':
+              'Задача ${operation == 'создания' ? 'создана' : 'обновлена'} успешно.',
+        };
+      }
+
+      return {
+        'success': false,
+        'message': 'Ошибка валидации: ${data['errors'] ?? response.body}',
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'Ошибка ${operation} задачи!',
+    };
+  }
+
+  // // Общий метод обработки ошибок
+  // Exception _handleErrorResponse(http.Response response, String operation) {
+  //   try {
+  //     final data = json.decode(response.body);
+  //     final errorMessage = data['errors'] ?? data['message'] ?? response.body;
+  //     return Exception(
+  //         'Ошибка ${operation}! - $errorMessage');
+  //   } catch (e) {
+  //     return Exception(
+  //         'Ошибка ${operation}! - ${response.body}');
+  //   }
+  // }
+  /// Создает новый статус задачи
+  Future<Map<String, dynamic>> CreateMyTaskStatusAdd({
+    required String statusName,
+  }) async {
+    try {
+      // Формируем данные для запроса
+      final Map<String, dynamic> data = {'title': statusName, 'color': "#000"};
+
+      // Получаем идентификатор организации
+      final organizationIdProfile = await getSelectedOrganization();
+
+      // Формируем URL с учетом organization_id
+      final String url =
+          '/my-task-status${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}';
+
+      // Выполняем запрос
+      final response = await _postRequest(url, data);
+
+      // Проверяем успешность запроса
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Статус задачи успешно создан',
+          'data': responseData,
+        };
+      }
+
+      // Получаем текст ошибки в зависимости от кода ответа
+      final errorMessage = _getErrorMessage(response.statusCode);
+
+      return {
+        'success': false,
+        'message': errorMessage,
+        'statusCode': response.statusCode,
+        'details': response.body,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при создании статуса',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Возвращает сообщение об ошибке по коду статуса
+  String _getErrorMessage(int statusCode) {
+    switch (statusCode) {
+      case 400:
+        return 'Неверные данные для создания статуса';
+      case 401:
+        return 'Необходима авторизация';
+      case 403:
+        return 'Недостаточно прав для создания статуса';
+      case 404:
+        return 'Ресурс не найден';
+      case 409:
+        return 'Статус с таким названием уже существует';
+      case 500:
+        return 'Внутренняя ошибка сервера';
+      default:
+        return 'Произошла ошибка при создании статуса (код: $statusCode)';
+    }
+  }
+
+// Метод для создания задачи
+  Future<Map<String, dynamic>> createMyTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+    String? filePath,
+    int position = 1,
+    required bool setPush,
+  }) async {
+    try {
+      // Формируем данные для запроса
+      final Map<String, dynamic> data = {
+        'name': name,
+        'status_id': statusId,
+        'task_status_id': taskStatusId,
+        'position': position,
+        'send_notification': setPush, // Передаем как true/false для boolean
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (description != null) 'description': description,
+      };
+
+      // Получаем идентификатор организации
+      final organizationIdProfile = await getSelectedOrganization();
+
+      // Выполняем запрос
+      final response = await _postRequest(
+        '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}',
+        data,
+      );
+
+      // Проверяем статус ответа
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Задача успешно создана',
+          'data': responseData,
+        };
+      }
+
+      // Обрабатываем различные коды ошибок
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для создания задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при создании задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при создании задачи';
+      }
+
+      return {
+        'success': false,
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при выполнении запроса!',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> updateMyTask({
+    required int taskId,
+    required String name,
+    required int? taskStatusId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? description,
+    String? filePath,
+    required bool setPush,
+  }) async {
+    try {
+      // Формируем данные для запроса
+      final Map<String, dynamic> data = {
+        'name': name,
+        'task_status_id': taskStatusId,
+        'send_notification': setPush, // Передаем как true/false для boolean
+        if (startDate != null) 'from': startDate.toIso8601String(),
+        if (endDate != null) 'to': endDate.toIso8601String(),
+        if (description != null) 'description': description,
+      };
+
+      // Добавляем файл, если он есть
+      if (filePath != null) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          final fileBytes = await file.readAsBytes();
+          data['file'] =
+              base64Encode(fileBytes); // Кодируем файл в base64 для передачи
+        }
+      }
+
+      // Получаем идентификатор организации
+      final organizationId = await getSelectedOrganization();
+
+      // Выполняем запрос
+      final response = await _postRequest(
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        data,
+      );
+
+      // Проверяем статус ответа
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Задача успешно обновлена',
+          'data': responseData,
+        };
+      }
+
+      // Обрабатываем различные коды ошибок
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для обновления задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при обновлении задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при обновлении задачи';
+      }
+
+      return {
+        'success': false,
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Ошибка при выполнении запроса!',
+        'error': e.toString(),
+      };
+    }
+  }
+
+// Метод для получения Истории Задачи
+  Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      // Используем метод _getRequest вместо прямого выполнения запроса
+      final response = await _getRequest(
+          '/my-task/history/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result']['history'];
+        return jsonList.map((json) => MyTaskHistory.fromJson(json)).toList();
+      } else {
+        print('Failed to load task history!');
+        throw Exception('Ошибка загрузки истории задач!');
+      }
+    } catch (e) {
+      print('Error occurred!');
+      throw Exception('Ошибка загрузки истории задач!');
+    }
+  }
+
+// Метод для получения Cтатуса задачи
+  Future<List<MyStatusName>> getMyStatusName() async {
+    final organizationId = await getSelectedOrganization();
+
+    print('Начало запроса статусов задач'); // Отладочный вывод
+    final response = await _getRequest(
+        '/my-taskStatusName${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    print('Статус код ответа!'); // Отладочный вывод
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Полученные данные: $data'); // Отладочный вывод
+
+      if (data['result'] != null) {
+        final statusList = (data['result'] as List)
+            .map((name) => MyStatusName.fromJson(name))
+            .toList();
+        print(
+            'Преобразованный список статусов: $statusList'); // Отладочный вывод
+        return statusList;
+      } else {
+        throw Exception('Статусы задач не найдены');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  // Метод для Удаления Задачи
+  Future<Map<String, dynamic>> deleteMyTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete task!');
+    }
+  }
+
+  // Метод для Удаления Статуса Задачи
+
+  Future<Map<String, dynamic>> deleteMyTaskStatuses(int taskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/my-task-status/$taskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete taskStatus!');
+    }
+  }
+
+  // Метод для завершения задачи
+  Future<Map<String, dynamic>> finishMyTask(int taskId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _postRequest(
+        '/my-task/finish${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'task_id': taskId,
+        });
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'Задача успешно завершена'};
+    } else if (response.statusCode == 422) {
+      return {
+        'success': false,
+        'message': 'Этот проект не имеет завершающий этап!'
+      };
+    } else {
+      return {'success': false, 'message': 'Ошибка завершения задачи!'};
+    }
+  }
+
+  //Метод для получение кастомных полей Задачи
+  Future<Map<String, dynamic>> getMyCustomFields() async {
+    final organizationId = await getSelectedOrganization();
+
+    // Выполняем запрос
+    final response = await _getRequest(
+      '/my-task/get/custom-fields${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return data; // Возвращаем данные, если они есть
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<MyTaskStatus> getMyTaskStatus(int myTaskStatusId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['result'] != null) {
+        return MyTaskStatus.fromJson(data['result']);
+      }
+      throw Exception('Invalid response format');
+    } else {
+      throw Exception('Failed to fetch deal status!');
+    }
+  }
+
+// Метод для изменения статуса лида в ApiService
+  Future<Map<String, dynamic>> updateMyTaskStatusEdit(
+      int myTaskStatusId, String title, AppLocalizations localizations) async {
+    final organizationId = await getSelectedOrganization();
+
+    final payload = {
+      "title": title,
+      "organization_id": organizationId,
+      "color": "#000",
+    };
+
+    final response = await _patchRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload, // Исправлено: Передача `payload` как второго аргумента
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
+    }
+  }
+
+  //_________________________________ END_____API_SCREEN__MY-TASK____________________________________________//a
+
+  //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
+
+  // In api_service.dart, modify the getEvents method:
+  Future<List<NoticeEvent>> getEvents({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    List<int>? managers,
+  }) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      String path = '/notices?page=$page&per_page=$perPage';
+
+      if (organizationId != null) {
+        path += '&organization_id=$organizationId';
+      }
+
+      if (search != null && search.isNotEmpty) {
+        path += '&search=$search';
+      }
+
+      if (managers != null && managers.isNotEmpty) {
+        for (int i = 0; i < managers.length; i++) {
+          path += '&managers[$i]=${managers[i]}';
+        }
+      }
+
+      final response = await _getRequest(path);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null && data['result']['data'] != null) {
+          return (data['result']['data'] as List)
+              .map((json) => NoticeEvent.fromJson(json))
+              .toList();
+        } else {
+          throw ('Нет данных о событиях в ответе');
+        }
+      } else {
+        throw ('Ошибка загрузки событий!');
+      }
+    } catch (e) {
+      throw ('Ошибка загрузки событий');
+    }
+  }
+
+  Future<Notice> getNoticeById(int noticeId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+
+      final response = await _getRequest(
+          '/notices/show/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic>? jsonNotice = decodedJson['result'];
+
+        if (jsonNotice == null) {
+          throw ('Некорректные данные от API');
+        }
+
+        return Notice.fromJson(jsonNotice);
+      } else {
+        throw ('Ошибка загрузки notice ID!');
+      }
+    } catch (e) {
+      throw ('Ошибка загрузки notice ID!');
+    }
+  }
+
+  Future<Map<String, dynamic>> createNotice({
+    String? title,
+    required String body,
+    required int leadId,
+    DateTime? date,
+    required int sendNotification,
+    required List<int> users,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final requestBody = {
+      'title': title ?? '', // Используем пустую строку, если title == null
+      'body': body,
+      'lead_id': leadId,
+      'date': date?.toIso8601String(),
+      'send_notification': sendNotification,
+      'users': users,
+      'organization_id': organizationId ?? '2'
+    };
+
+    final response = await _postRequest(
+        '/notices?organization_id=${organizationId ?? "2"}', requestBody);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': 'notice_create_successfully'};
+    } else if (response.statusCode == 422) {
+      return {'success': false, 'message': 'validation_error'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      return {'success': false, 'message': 'error_notice_create'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotice({
+    required int noticeId,
+    String? title,
+    required String body,
+    required int leadId,
+    DateTime? date,
+    required int sendNotification,
+    required List<int> users,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+
+    final requestBody = {
+      'title': title,
+      'body': body,
+      'lead_id': leadId,
+      'date': date?.toIso8601String(),
+      'send_notification': sendNotification,
+      'users': users,
+      'organization_id': organizationId ?? '2'
+    };
+
+    final response = await _patchRequest(
+        '/notices/$noticeId?organization_id=${organizationId ?? "2"}',
+        requestBody);
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'message': '111'};
+    } else if (response.statusCode == 422) {
+      return {'success': false, 'message': 'validation_error'};
+    } else if (response.statusCode == 500) {
+      return {'success': false, 'message': 'error_server_text'};
+    } else {
+      return {'success': false, 'message': 'error_notice_update'};
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteNotice(int noticeId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _deleteRequest(
+        '/notices/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw ('Failed to delete notice!');
+    }
+  }
+
+  Future<Map<String, dynamic>> finishNotice(int noticeId) async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _patchRequest(
+        '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {});
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw ('Failed to finish notice!');
+    }
+  }
+
+  Future<SubjectDataResponse> getAllSubjects() async {
+    final organizationId = await getSelectedOrganization();
+
+    final response = await _getRequest(
+        '/noteSubject${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return SubjectDataResponse.fromJson(data);
+    } else {
+      throw ('Failed to load subjects');
+    }
+  }
+
+  //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }
+

@@ -1,47 +1,69 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_state.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
-class DealStatsChartManager extends StatelessWidget {
+class DealStatsChartManager extends StatefulWidget {
   const DealStatsChartManager({Key? key}) : super(key: key);
 
-  final List<String> months = const [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
+  @override
+  _DealStatsChartManagerState createState() => _DealStatsChartManagerState();
+}
+
+class _DealStatsChartManagerState extends State<DealStatsChartManager> {
+List<String> getMonths(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  return [
+    localizations.translate('january'),
+    localizations.translate('february'),
+    localizations.translate('march'),
+    localizations.translate('april'),
+    localizations.translate('may'),
+    localizations.translate('june'),
+    localizations.translate('july'),
+    localizations.translate('august'),
+    localizations.translate('september'),
+    localizations.translate('october'),
+    localizations.translate('november'),
+    localizations.translate('december'),
   ];
-  String formatNumber(double value) {
-    if (value >= 1e9) {
-      return '${(value / 1e9).toStringAsFixed(1)}млрд';
-    } else if (value >= 1e6) {
-      return '${(value / 1e6).toStringAsFixed(1)}м';
-    } else if (value >= 1e3) {
-      return '${(value / 1e3).toStringAsFixed(1)}т';
-    } else {
-      return value.toStringAsFixed(0);
-    }
+}
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
   }
+
+String formatNumber(double value, BuildContext context) {
+  final localizations = AppLocalizations.of(context)!; 
+
+  if (value >= 1e9) {
+    return '${(value / 1e9).toStringAsFixed(1)}${localizations.translate('billion')}'; 
+  } else if (value >= 1e6) {
+    return '${(value / 1e6).toStringAsFixed(1)}${localizations.translate('million')}'; 
+  } else if (value >= 1e3) {
+    return '${(value / 1e3).toStringAsFixed(1)}${localizations.translate('thousand')}'; 
+  } else {
+    return value.toStringAsFixed(0); 
+  }
+}
 
   @override
   Widget build(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  final months = getMonths(context);
+
     return BlocBuilder<DealStatsManagerBloc, DealStatsStateManager>(
       builder: (context, state) {
         if (state is DealStatsErrorManager) {
-          if (state.message.contains("Неавторизованный доступ!")) {
+          if (state.message.contains(localizations.translate('unauthorized_access'))) {
             _handleLogout(context);
             return const SizedBox();
           } else {
@@ -71,17 +93,17 @@ class DealStatsChartManager extends StatelessWidget {
                       math.max(item.totalSum.toDouble(),
                           item.successfulSum.toDouble())))
               : 100.0;
-          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 100.0;
+          double maxY = maxCount > 0 ? maxCount.ceilToDouble() : 100.0;
 
           if (!hasData) {
             final random = math.Random();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                    'Статистика сделок',
+                    localizations.translate('deal_stats'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,
@@ -206,8 +228,8 @@ class DealStatsChartManager extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Text(
-                      'Нет данных для отображения',
+                    Text(
+                    localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -223,10 +245,10 @@ class DealStatsChartManager extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
-                  'Статистика сделок',
+                  localizations.translate('deal_stats'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
@@ -253,7 +275,7 @@ class DealStatsChartManager extends StatelessWidget {
                         fitInsideHorizontally: true,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
                           String label =
-                              rodIndex == 0 ? 'Общая сумма' : 'Успешные';
+                              rodIndex == 0 ? localizations.translate('total_amount') : localizations.translate('successful');
                           double value = rod.toY;
                           return BarTooltipItem(
                             '${months[groupIndex]}\n$label\n',
@@ -314,7 +336,7 @@ class DealStatsChartManager extends StatelessWidget {
                             return SizedBox(
                               width: 60,
                               child: Text(
-                                formatNumber(value.toDouble()),
+                                formatNumber(value.toDouble(), context), 
                                 textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',

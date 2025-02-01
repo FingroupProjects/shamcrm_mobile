@@ -1,7 +1,9 @@
 
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_state.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/lead_chart_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +22,14 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
   int? selectedLineIndex;
   final Map<String, bool> _lineVisibility = {};
 
+
+@override
+  void initState() {
+    super.initState();
+      context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
+  }
+
+
   bool _isAllZeros(List<ChartDataManager> data) {
     return data
         .every((chartData) => chartData.data.every((value) => value == 0));
@@ -27,6 +37,8 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return BlocBuilder<DashboardChartBlocManager, DashboardChartStateManager>(
       builder: (context, state) {
         if (state is DashboardChartLoadingManager) {
@@ -75,8 +87,8 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Клиенты',
+                Text(
+                  localizations.translate('clients'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
@@ -100,8 +112,8 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
                                   color: const Color.fromARGB(0, 0, 0, 0).withOpacity(0),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
-                                  'Нет данных для отображения',
+                                child: Text(
+                                localizations.translate('no_data_to_display'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontFamily: "Gilroy",
@@ -208,6 +220,7 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
   }
 
   LineChartData _buildChartData(List<ChartDataManager> chartData) {
+    final localizations = AppLocalizations.of(context)!;
     List<LineChartBarData> lineBars = chartData.asMap().entries.map((entry) {
       int lineIndex = entry.key;
       ChartDataManager data = entry.value;
@@ -336,19 +349,19 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
             showTitles: true,
             getTitlesWidget: (value, meta) {
               final months = [
-                'Янв',
-                'Фев',
-                'Март',
-                'Апр',
-                'Май',
-                'Июнь',
-                'Июль',
-                'Авг',
-                'Сен',
-                'Окт',
-                'Ноя',
-                'Дек'
-              ];
+              localizations.translate('jan'),
+              localizations.translate('feb'),
+              localizations.translate('mar'),
+              localizations.translate('apr'),
+              localizations.translate('may'),
+              localizations.translate('jun'),
+              localizations.translate('jul'),
+              localizations.translate('aug'),
+              localizations.translate('sep'),
+              localizations.translate('oct'),
+              localizations.translate('nov'),
+              localizations.translate('dec'),
+            ];
               return Text(
                 months[value.toInt() % 12],
                 style: TextStyle(
@@ -411,6 +424,7 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
   }
 
   Widget _buildStatsList(List<ChartDataManager> chartData) {
+    final localizations = AppLocalizations.of(context)!;
     List<Widget> stats = chartData.map((data) {
       Color color = Color(int.parse(data.color.replaceFirst('#', '0xff')));
       bool isVisible = _lineVisibility[data.label] ?? true;
@@ -454,8 +468,8 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Статусы:',
+        Text(
+          localizations.translate('statuses'),
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 18,

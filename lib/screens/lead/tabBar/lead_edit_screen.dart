@@ -12,6 +12,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -79,9 +80,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   String? selectedManager;
   String selectedDialCode = '+992';
+  String selectedWhatsAppDialCode = '+992'; // Новая переменная для WhatsApp
 
   List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1'];
   bool _isPhoneEdited = false;
+  bool _isWhatsAppEdited =
+      false; // Новая переменная для отслеживания изменений WhatsApp
 
   List<CustomField> customFields = [];
 
@@ -123,8 +127,22 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
       _isPhoneEdited = false;
     }
-    print(widget.sourceId);
-    print('jkdbfjkwehfkjbwejnffvknfklewnr------------------------');
+    if (widget.whatsApp != null) {
+      String whatsAppNumber = widget.whatsApp!;
+      for (var code in countryCodes) {
+        if (whatsAppNumber.startsWith(code)) {
+          setState(() {
+            selectedWhatsAppDialCode = code;
+            whatsAppController.text = whatsAppNumber.substring(code.length);
+          });
+          break;
+        }
+      }
+      if (whatsAppController.text.isEmpty) {
+        whatsAppController.text = whatsAppNumber;
+      }
+      _isWhatsAppEdited = false;
+    }
 
     instaLoginController.text = widget.instagram ?? '';
     facebookLoginController.text = widget.facebook ?? '';
@@ -179,8 +197,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           ),
           onPressed: () => Navigator.pop(context, null),
         ),
-        title: const Text(
-          'Редактирование лида',
+        title: Text(
+          AppLocalizations.of(context)!.translate('edit_lead'),
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -195,7 +213,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -218,7 +236,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -252,10 +270,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                         hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
+                        label: AppLocalizations.of(context)!.translate('name_list'), 
                         validator: (value) => value!.isEmpty
-                            ? 'Поле обязательно для заполнения'
+                            ? AppLocalizations.of(context)!.translate('field_required')
                             : null,
                       ),
                       CustomPhoneNumberInput(
@@ -269,11 +287,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
-                        label: 'Телефон',
+                        label: AppLocalizations.of(context)!.translate('phone'), 
                       ),
                       const SizedBox(height: 8),
                       RegionRadioGroupWidget(
@@ -305,52 +323,52 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,
-                        hintText: 'Введите логин Instagram',
-                        label: 'Instagram',
+                        hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
+                        label: AppLocalizations.of(context)!.translate('instagram'),
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: facebookLoginController,
-                        hintText: 'Введите логин Facebook',
-                        label: 'Facebook',
+                        hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
+                        label: AppLocalizations.of(context)!.translate('Facebook'),
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: telegramController,
-                        hintText: 'Введите логин Telegram',
-                        label: 'Telegram',
+                        hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
+                        label: AppLocalizations.of(context)!.translate('telegram'),
                       ),
                       const SizedBox(height: 8),
                       CustomPhoneNumberInput(
                         controller: whatsAppController,
-                        selectedDialCode: selectedDialCode,
+                        selectedDialCode:
+                            selectedWhatsAppDialCode, // Используем отдельный код страны для WhatsApp
                         onInputChanged: (String number) {
                           setState(() {
-                            _isPhoneEdited = true;
-                            selectedDialCode = number;
+                            _isWhatsAppEdited = true;
+                            selectedWhatsAppDialCode = number;
                           });
                         },
-                        // Убираем validator, так как поле не обязательное
                         label: 'WhatsApp',
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: emailController,
-                        hintText: 'Введите электронную почту',
-                        label: 'Электронная почта',
+                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
+                        label: AppLocalizations.of(context)!.translate('email'),
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: birthdayController,
-                        label: 'Дата рождения',
+                        label: AppLocalizations.of(context)!.translate('birth_date'),
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 20),
@@ -371,7 +389,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: 'Добавить поле',
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -388,7 +406,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),
@@ -406,12 +424,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Сохранить',
+                              buttonText: AppLocalizations.of(context)!.translate('add'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   String phoneToSend;
+                                  String whatsAppToSend;
 
                                   if (_isPhoneEdited) {
                                     phoneToSend = selectedDialCode;
@@ -419,7 +438,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     phoneToSend =
                                         '$selectedDialCode${phoneController.text}';
                                   }
-
+                                  if (_isWhatsAppEdited) {
+                                    whatsAppToSend = selectedWhatsAppDialCode;
+                                  } else {
+                                    whatsAppToSend = whatsAppController
+                                            .text.isNotEmpty
+                                        ? '$selectedWhatsAppDialCode${whatsAppController.text}'
+                                        : ''; // Если поле пустое, отправляем пустую строку
+                                  }
                                   DateTime? parsedBirthday;
 
                                   if (birthdayController.text.isNotEmpty) {
@@ -430,8 +456,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content: const Text(
-                                              'Ошибка ввода даты роджения. Пожалуйста, используйте формат DD/MM/YYYY.'),
+                                          content:Text(AppLocalizations.of(context)!.translate('error_enter_birth_day'),
+                                              ),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -442,6 +468,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       [];
                                   for (var field in customFields) {
                                     String fieldName = field.fieldName.trim();
+
                                     String fieldValue =
                                         field.controller.text.trim();
                                     if (fieldName.isNotEmpty &&
@@ -451,14 +478,15 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     }
                                   }
                                   final leadBloc = context.read<LeadBloc>();
-                                  context
-                                      .read<LeadBloc>()
-                                      .add(FetchLeadStatuses());
+                                  context.read<LeadBloc>().add(FetchLeadStatuses());
+                            final localizations = AppLocalizations.of(context)!;
+
+
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
                                     phone: phoneToSend,
-                                    waPhone: phoneToSend,
+                                    waPhone: whatsAppToSend, // Теперь передаем отдельный номер для WhatsApp
                                     regionId: selectedRegion != null
                                         ? int.parse(selectedRegion!)
                                         : null,
@@ -476,12 +504,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     description: descriptionController.text,
                                     leadStatusId: widget.statusId,
                                     customFields: customFieldList,
+                                    localizations: localizations,  
+
                                   ));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Пожалуйста, заполните все обязательные поля!',
+                                        AppLocalizations.of(context)!.translate('fill_required_fields'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,

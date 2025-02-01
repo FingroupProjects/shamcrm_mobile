@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -41,7 +42,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -76,8 +77,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Лид',
+                  Text(
+                    AppLocalizations.of(context)!.translate('lead'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -90,7 +91,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                     child: CustomDropdown<LeadData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: leadsList,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -112,7 +113,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem.name ?? 'Выберите лида',
+                          selectedItem.name ?? AppLocalizations.of(context)!.translate('select_leads'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -122,7 +123,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите лид',
+                          Text(AppLocalizations.of(context)!.translate('select_lead'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -133,7 +134,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       initialItem: selectedLeadData,
                       validator: (value) {
                         if (value == null) {
-                          return '   Поле обязательно для заполнения';
+                          return AppLocalizations.of(context)!.translate('field_required_project');
                         }
                         return null;
                       },

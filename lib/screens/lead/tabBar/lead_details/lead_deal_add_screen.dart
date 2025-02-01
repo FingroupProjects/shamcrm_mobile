@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_create_field.dart'
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_status_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -86,10 +87,10 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             context.read<DealBloc>().add(FetchDealStatuses());
           },
         ),
-        title: const Row(
+        title: Row(
           children: [
             Text(
-              'Новая сделка',
+              AppLocalizations.of(context)!.translate('new_deal'), 
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -107,7 +108,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -131,7 +132,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Сделка успешно создана!',
+              AppLocalizations.of(context)!.translate('deal_created_successfully'), 
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -168,11 +169,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
+                        label: AppLocalizations.of(context)!.translate('name_list'), 
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
+                            return AppLocalizations.of(context)!.translate('field_required');
                           }
                           return null;
                         },
@@ -199,7 +200,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: 'Дата начало',
+                        label: AppLocalizations.of(context)!.translate('start_date'),
                         withTime: false,
                         // validator: (value) {
                         //   if (value == null || value.isEmpty) {
@@ -211,7 +212,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: 'Дата завершения',
+                        label: AppLocalizations.of(context)!.translate('end_date'),
                         withTime: false,
                         hasError: isEndDateInvalid,
                         // validator: (value) {
@@ -224,24 +225,24 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: sumController,
-                        hintText: 'Введите сумму',
-                        label: 'Сумма',
+                        hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+                        label: AppLocalizations.of(context)!.translate('summ'),
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Поле обязательно для заполнения';
-                          }
-                          return null;
-                        },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //    return AppLocalizations.of(context)!.translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: 'Введите описание',
-                        label: 'Описание',
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
                         maxLines: 5,
                       ),
                       const SizedBox(height: 8),
@@ -262,7 +263,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: 'Добавить поле',
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -278,7 +279,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: 'Отмена',
+                        buttonText:  AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -299,7 +300,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: 'Добавить',
+                              buttonText:  AppLocalizations.of(context)!.translate('add'),
                               buttonColor: Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: _submitForm,
@@ -327,7 +328,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Пожалуйста, заполните все обязательные поля!',
+            AppLocalizations.of(context)!.translate('fill_required_fields'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -367,8 +368,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-              'Ошибка парсинга даты. Используйте формат DD/MM/YYYY.'),
+          content:  Text(
+              AppLocalizations.of(context)!.translate('error_parsing_date'),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -381,14 +383,15 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              const Text('Дата начала не может быть позже даты завершения!'),
+          content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date'),),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
     final String name = titleController.text;
+      final localizations = AppLocalizations.of(context)!;
+
     context.read<DealBloc>().add(CreateDeal(
           name: name,
           dealStatusId: int.parse(selectedDealStatus!),
@@ -404,6 +407,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           sum: sumController.text,
           description: descriptionController.text,
           customFields: [],
+          localizations: localizations, 
+
         ));
   }
 }

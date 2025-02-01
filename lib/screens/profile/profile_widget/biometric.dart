@@ -1,19 +1,21 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class PinChangeWidget extends StatelessWidget {
   const PinChangeWidget({super.key});
 
   @override
-Widget build(BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      Navigator.pushReplacementNamed(context, '/pin_setup');
-    },
-    child: _buildPinOption(),
-  );
-}
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushReplacementNamed(context, '/pin_setup');
+      },
+      child: _buildPinOption(localizations),
+    );
+  }
 
-  Widget _buildPinOption() {
+  Widget _buildPinOption(AppLocalizations localizations) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16.0),
@@ -40,11 +42,10 @@ Widget build(BuildContext context) {
             ),
           ),
           const SizedBox(width: 16),
-          // "Изменить пин-код" text
-          const Expanded(
+        Expanded(
             child: Text(
-              'Изменить пин-код',
-              style: TextStyle(
+              localizations.translate('change_pin_code'), 
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',

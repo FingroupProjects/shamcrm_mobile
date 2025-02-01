@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -18,7 +19,7 @@ class DeleteTaskDialog extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
              SnackBar(
                content: Text(
-                 '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                  style: TextStyle(
                    fontFamily: 'Gilroy',
                    fontSize: 16, 
@@ -42,7 +43,7 @@ class DeleteTaskDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-          'Удалить задачу',
+          AppLocalizations.of(context)!.translate('delete_task'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -52,7 +53,7 @@ class DeleteTaskDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        'Вы уверены, что хотите удалить эту задачу?',
+        AppLocalizations.of(context)!.translate('confirm_delete_task'),
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
@@ -66,7 +67,7 @@ class DeleteTaskDialog extends StatelessWidget {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -77,14 +78,16 @@ class DeleteTaskDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: 'Удалить',
+                buttonText: AppLocalizations.of(context)!.translate('delete'),
                 onPressed: () {
-                  context.read<TaskBloc>().add(DeleteTask(taskId)); 
+                    final localizations = AppLocalizations.of(context)!;
+
+                  context.read<TaskBloc>().add(DeleteTask(taskId,localizations)); 
                   context.read<TaskBloc>().add(FetchTaskStatuses()); 
                   ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Задача успешно удалена!',
+                 AppLocalizations.of(context)!.translate('task_deleted_successfully'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

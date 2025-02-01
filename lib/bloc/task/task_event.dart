@@ -1,4 +1,5 @@
-import 'package:crm_task_manager/models/task_model.dart';
+
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class TaskEvent {}
 
@@ -7,8 +8,17 @@ class FetchTaskStatuses extends TaskEvent {}
 class FetchTasks extends TaskEvent {
   final int statusId;
   final String? query; // Добавьте параметр для поиска
+  final List<int>? userIds; // Изменено: массив менеджеров
 
-  FetchTasks(this.statusId, {this.query});
+  FetchTasks(
+    this.statusId, {
+    this.query,
+    this.userIds, // Добавляем в конструктор
+  });
+}
+class FetchTaskStatus extends TaskEvent {
+  final int taskStatusId;
+  FetchTaskStatus(this.taskStatusId);
 }
 
 class FetchMoreTasks extends TaskEvent {
@@ -26,12 +36,13 @@ class CreateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>?
-      userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>?userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   final String? filePath;
   final List<Map<String, String>>? customFields;
+  final AppLocalizations localizations;  // Add this to your event
 
+ 
   CreateTask({
     required this.name,
     required this.statusId,
@@ -44,6 +55,8 @@ class CreateTask extends TaskEvent {
     this.description,
     this.customFields,
     this.filePath,
+    required this.localizations,  // Add this to constructor
+
   });
 }
 
@@ -55,13 +68,13 @@ class UpdateTask extends TaskEvent {
   final DateTime? startDate;
   final DateTime? endDate;
   final int? projectId;
-  final List<int>?
-      userId; // Новый параметр для списка идентификаторов пользователей
+  final List<int>? userId; // Новый параметр для списка идентификаторов пользователей
   final String? description;
   final int taskStatusId;
   final List<Map<String, String>>? customFields;
-
   final String? filePath;
+  final AppLocalizations localizations;  // Add this to your event
+
 
   UpdateTask({
     required this.taskId,
@@ -76,6 +89,8 @@ class UpdateTask extends TaskEvent {
     required this.taskStatusId,
     this.customFields,
     this.filePath,
+    required this.localizations,  // Add this to constructor
+
   });
 }
 
@@ -85,6 +100,8 @@ class CreateTaskStatus extends TaskEvent {
   final int organizationId;
   final bool needsPermission;
   final List<int>? roleIds;
+  final AppLocalizations localizations;  // Add this to your event
+
 
   CreateTaskStatus({
     required this.taskStatusNameId,
@@ -92,17 +109,50 @@ class CreateTaskStatus extends TaskEvent {
     required this.organizationId,
     required this.needsPermission,
     this.roleIds,
+    required this.localizations,  // Add this to constructor
+
   });
 }
 
 class DeleteTask extends TaskEvent {
   final int taskId;
+    final AppLocalizations localizations;  // Add this to your event
 
-  DeleteTask(this.taskId);
+
+  DeleteTask(
+    this.taskId,
+      this.localizations,  // Add this to constructor
+
+    );
 }
 
 class DeleteTaskStatuses extends TaskEvent {
   final int taskStatusId;
+  final AppLocalizations localizations;  // Add this to your event
 
-  DeleteTaskStatuses(this.taskStatusId);
+
+  DeleteTaskStatuses(
+    this.taskStatusId,    
+     this.localizations,  // Add this to constructor
+);
+}
+// Event
+class UpdateTaskStatusEdit extends TaskEvent {
+  final int taskStatusId;
+  final String name;
+  final bool needsPermission;
+  final bool finalStep;
+  final bool checkingStep;
+  final List<int> roleIds;
+  final AppLocalizations localizations;
+
+  UpdateTaskStatusEdit({
+    required this.taskStatusId,
+    required this.name,
+    required this.needsPermission,
+    required this.finalStep,
+    required this.checkingStep,
+    required this.roleIds,
+    required this.localizations,
+  });
 }

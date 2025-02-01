@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,7 +25,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Text(
-        'Добавить статуса',
+        AppLocalizations.of(context)!.translate('add_status'),
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
@@ -38,7 +39,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           Row(
             children: [
               Text(
-                'Название',
+                AppLocalizations.of(context)!.translate('name_list'),
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -51,7 +52,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           TextFormField(
             controller: _controller,
             decoration: InputDecoration(
-              hintText: 'Введите название',
+              hintText:  AppLocalizations.of(context)!.translate('enter_title'),
               hintStyle: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -92,7 +93,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     });
                   },
                   child: Text(
-                    'Укажите сколько дней может находиться сделка в этом статусе',
+                    AppLocalizations.of(context)!.translate('how_many_days_in_status'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -112,7 +113,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             controller: _dayController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              hintText: 'Введите число дней',
+              hintText: AppLocalizations.of(context)!.translate('enter_number_day'),
               hintStyle: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -151,7 +152,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -162,7 +163,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: 'Добавить',
+                buttonText: AppLocalizations.of(context)!.translate('add'),
                 onPressed: () {
                   final title = _controller.text;
                   final dayString = _dayController.text;
@@ -179,23 +180,24 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
 
                     if (dayString.isNotEmpty && day == null) {
                       setState(() {
-                        _dayErrorMessage = 'Введите корректное число дней';
+                        _dayErrorMessage = AppLocalizations.of(context)!.translate('enter_valid_number_day');
                       });
                       return;
                     }
-
+                    final localizations = AppLocalizations.of(context)!;
                     context.read<DealBloc>().add(
                           CreateDealStatus(
                             title: title,
                             color: color,
-                            day: day, // Может быть null
+                            day: day, 
+                            localizations: localizations,
                           ),
                         );
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Статус успешно создан!',
+                          AppLocalizations.of(context)!.translate('status_created_successfully'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -220,7 +222,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   } else {
                     setState(() {
                       if (title.isEmpty) {
-                        _errorMessage = 'Заполните название';
+                        _errorMessage = AppLocalizations.of(context)!.translate('enter_textfield');
                       }
                     });
                   }

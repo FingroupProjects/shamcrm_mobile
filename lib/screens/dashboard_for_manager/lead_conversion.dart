@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_state.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -12,9 +14,30 @@ class LeadConversionChartManager extends StatefulWidget {
 }
 class _LeadConversionChartStateManager
     extends State<LeadConversionChartManager> {
-  final List<String> months = const [
-    'Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'
+List<String> getMonths(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  return [
+    localizations.translate('january'),
+    localizations.translate('february'),
+    localizations.translate('march'),
+    localizations.translate('april'),
+    localizations.translate('may'),
+    localizations.translate('june'),
+    localizations.translate('july'),
+    localizations.translate('august'),
+    localizations.translate('september'),
+    localizations.translate('october'),
+    localizations.translate('november'),
+    localizations.translate('december'),
   ];
+}
+
+  
+  @override
+  void initState() {
+    super.initState();
+          context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+  }
 
   String formatPercent(double value) {
     if (value == 100 || value == 0 || value % 1 == 0) {
@@ -24,6 +47,9 @@ class _LeadConversionChartStateManager
   }
   @override
   Widget build(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  final months = getMonths(context);
+
     return BlocBuilder<DashboardConversionBlocManager,
         DashboardConversionStateManager>(
       builder: (context, state) {
@@ -49,10 +75,10 @@ class _LeadConversionChartStateManager
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                    'Конверсия лидов',
+                  localizations.translate('lead_conversion'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,
@@ -162,8 +188,8 @@ class _LeadConversionChartStateManager
                         ),
                       ),
                     ),
-                    const Text(
-                      'Нет данных для отображения',
+                    Text(
+                    localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -182,10 +208,10 @@ class _LeadConversionChartStateManager
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
-                  'Конверсия лидов',
+                localizations.translate('lead_conversion'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,

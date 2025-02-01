@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,11 +38,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             if (state is GetAllClientLoading) {
               // return Center(child: CircularProgressIndicator());
             }
-
             if (state is GetAllClientError) {
               return Text(state.message);
             }
-
             if (state is GetAllClientSuccess) {
               usersList = state.dataUser.result ?? [];
               if (widget.selectedUsers != null && usersList.isNotEmpty) {
@@ -50,12 +49,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         widget.selectedUsers!.contains(user.id.toString()))
                     .toList();
               }
-
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Исполнители',
+                   Text(
+                    AppLocalizations.of(context)!.translate('assignees_list'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -68,7 +66,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     child: CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
                       initialItems: selectedUsersData,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -132,8 +130,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
                         return Text(
                           selectedUsersCount == 0
-                              ? 'Выберите исполнителей'
-                              : 'Выбрано исполнителей: $selectedUsersCount',
+                              ? AppLocalizations.of(context)!.translate('select_assignees_list')
+                              : '${AppLocalizations.of(context)!.translate('selected_assignees_list')} $selectedUsersCount',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -143,7 +141,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите исполнителей',
+                          Text(AppLocalizations.of(context)!.translate('select_assignees_list'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -152,7 +150,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               )),
                       listValidator: (value) {
                         if (value == null || value.isEmpty) {
-                          return '   Поле обязательно для заполнения';
+                          return AppLocalizations.of(context)!.translate('field_required_project');
                         }
                         return null;
                       },

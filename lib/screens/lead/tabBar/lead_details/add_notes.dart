@@ -1,6 +1,9 @@
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
+import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -22,6 +25,8 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
   final TextEditingController titleController = TextEditingController();
+  List<int> selectedManagers = [];
+  String? selectedSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +36,8 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
+                AppLocalizations.of(context)!
+                    .translate(state.message), // Локализация сообщения
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -61,7 +67,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Добавить заметку',
+                  AppLocalizations.of(context)!.translate('add_note'),
                   style: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -70,27 +76,27 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   ),
                 ),
                 SizedBox(height: 8),
-                CustomTextField(
-                  controller: titleController,
-                  hintText: 'Введите название',
-                  label: 'Название',
-                  maxLines: 1,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Поле обязательно для заполнения';
-                    }
-                    return null;
+                SubjectSelectionWidget(
+                  selectedSubject: selectedSubject,
+                  onSelectSubject: (String subject) {
+                    setState(() {
+                      selectedSubject = subject;
+                      print('Selected subject: $selectedSubject'); // DEBUG
+                    });
                   },
                 ),
                 SizedBox(height: 8),
                 CustomTextField(
                   controller: bodyController,
-                  hintText: 'Введите текст',
-                  label: 'Текст',
+                  hintText:
+                      AppLocalizations.of(context)!.translate('enter_text'),
+                  label: AppLocalizations.of(context)!
+                      .translate('description_list'),
                   maxLines: 5,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Поле обязательно для заполнения';
+                      return AppLocalizations.of(context)!
+                          .translate('field_required');
                     }
                     return null;
                   },
@@ -98,12 +104,22 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 SizedBox(height: 8),
                 CustomTextFieldDate(
                   controller: dateController,
-                  label: 'Дата',
+                  label: AppLocalizations.of(context)!.translate('reminder'),
                   withTime: true,
+                ),
+                const SizedBox(height: 8),
+                ManagerMultiSelectWidget(
+                  selectedManagers:
+                      selectedManagers, // Your list of selected manager IDs
+                  onSelectManagers: (List<int> managers) {
+                    setState(() {
+                      selectedManagers = managers;
+                    });
+                  },
                 ),
                 SizedBox(height: 8),
                 CustomButton(
-                  buttonText: 'Сохранить',
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final String title = titleController.text;
@@ -120,9 +136,10 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                  'Введите корректную дату и время в формате ДД/ММ/ГГГГ ЧЧ:ММ'),
-                            ),
+                                content: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('enter_valid_datetime'),
+                            )),
                           );
                           return;
                         }
@@ -130,32 +147,37 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
 
                       context.read<NotesBloc>().add(CreateNotes(
                             leadId: widget.leadId,
-                            title: title,
+                            title: selectedSubject!
+                                .trim(), // Используем trim() для удаления лишних пробелов
                             body: body,
                             date: date,
+                            users: selectedManagers,
                           ));
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(
-                           content: Text(
-                             'Заметка успешно создана!',
-                             style: TextStyle(
-                               fontFamily: 'Gilroy',
-                               fontSize: 16, 
-                               fontWeight: FontWeight.w500, 
-                               color: Colors.white, 
-                             ),
-                           ),
-                           behavior: SnackBarBehavior.floating,
-                           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                           shape: RoundedRectangleBorder(
-                             borderRadius: BorderRadius.circular(12),
-                           ),
-                           backgroundColor: Colors.green,
-                           elevation: 3,
-                           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-                           duration: Duration(seconds: 3),
-                         ),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context)!
+                                .translate('note_created_successfully'),
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.green,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
+                        ),
                       );
                       Navigator.pop(context);
                     }

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_state.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,6 +22,7 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
   @override
   void initState() {
     super.initState();
+    context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -44,6 +47,7 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return BlocConsumer<ProcessSpeedBloc, ProcessSpeedState>(
       listener: (context, state) {
         if (state is ProcessSpeedLoaded) {
@@ -78,16 +82,16 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
   }
 
   Widget _buildGauge(ProcessSpeedLoaded state) {
+    final localizations = AppLocalizations.of(context)!;
     final bool hasNoData = state.processSpeedData.speed == 0;
-
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Скорость обработки',
+          Text(
+            localizations.translate('process_speed'),
             style: TextStyle(
               fontSize: 24,
               fontFamily: "Gilroy",
@@ -111,8 +115,8 @@ class _ProcessSpeedGaugeState extends State<ProcessSpeedGauge>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (hasNoData)
-                          const Text(
-                            'Нет данных для отображения',
+                           Text(
+                               localizations.translate('no_data_to_display'),
                             style: TextStyle(
                               fontSize: 16,
                               fontFamily: "Gilroy",

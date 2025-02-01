@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/screens/dashboard_for_manager/CACHE/users_chart_manager_cache.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -13,68 +15,111 @@ class GoalCompletionChart extends StatefulWidget {
 }
 
 class _GoalCompletionChartState extends State<GoalCompletionChart> {
-  final List<String> months = const [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
+List<String> getMonths(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  return [
+    localizations.translate('january'),
+    localizations.translate('february'),
+    localizations.translate('march'),
+    localizations.translate('april'),
+    localizations.translate('may'),
+    localizations.translate('june'),
+    localizations.translate('july'),
+    localizations.translate('august'),
+    localizations.translate('september'),
+    localizations.translate('october'),
+    localizations.translate('november'),
+    localizations.translate('december'),
   ];
+}
   String? userName;
   int currentMonth = DateTime.now().month - 1; // 0-based index (январь - 0, февраль - 1, ...)
-  double currentMonthProgress = 12.0; // Начальный примерный прогресс
+  double currentMonthProgress = 0; // Начальный примерный прогресс
   List<double> monthlyData = []; // Список для данных с сервера
+  bool isLoading = true; // Переменная для отслеживания загрузки данных
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
-    _loadUserStats();  // Загружаем данные с сервера
+    _loadUserStatsFromCache();  // Загружаем данные из кэша сразу
   }
 
-  Future<void> _loadUserName() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
+Future<void> _loadUserName() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      if (userId.isEmpty) {
-        setState(() {
-          userName = '';
-        });
-        return;
+    // Загружаем ID пользователя из кеша
+    String userId = prefs.getString('userID') ?? '';
+
+    // Загружаем имя пользователя из кеша, если оно есть
+    String? savedUserName = prefs.getString('userName');
+
+    // Если ID пользователя пустое, значит пользователь не авторизован или нет данных
+    if (userId.isEmpty) {
+      setState(() {
+        userName = savedUserName ?? ''; // Если имя в кеше отсутствует, оставляем пустую строку
+      });
+      return;
+    }
+
+    // Если ID пользователя есть, пробуем получить имя из кеша или API
+    if (savedUserName != null && savedUserName.isNotEmpty) {
+      // Если имя пользователя уже сохранено в кеше, используем его
+      setState(() {
+        userName = savedUserName;
+      });
+    } else {
+      // Иначе, загружаем имя из API
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      setState(() {
+        userName = userProfile.name ?? ''; // В случае отсутствия имени в API, оставляем пустую строку
+      });
+
+      // Сохраняем имя в кеш
+      if (userName!.isNotEmpty) {
+        prefs.setString('userName', userName!);
       }
+    }
+  } catch (e) {
+    print('Ошибка при загрузке имени пользователя: $e');
+    setState(() {
+      userName = ''; // В случае ошибки, ставим пустую строку
+    });
+  }
+}
 
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      setState(() {
-        userName = userProfile.name ?? '';
-      });
+  // Загружаем данные о задачах из кэша
+  Future<void> _loadUserStatsFromCache() async {
+    try {
+      List<double>? cachedData = await UserTaskCompletionCacheHandler.getUserTaskCompletionData();
+      if (cachedData != null && cachedData.isNotEmpty) {
+        setState(() {
+          monthlyData = cachedData;
+          currentMonthProgress = monthlyData.isNotEmpty && currentMonth < monthlyData.length
+              ? monthlyData[currentMonth] : 0.0;
+          isLoading = false; 
+        });
+      }
+      _loadUserStatsFromApi(); 
     } catch (e) {
-      print('Ошибка при загрузке имени пользователя: $e');
-      setState(() {
-        userName = '';
-      });
+      print('Ошибка при загрузке данных о задачах из кэша: $e');
+      _loadUserStatsFromApi(); 
     }
   }
 
-  Future<void> _loadUserStats() async {
+  // Загружаем данные о задачах из API
+  Future<void> _loadUserStatsFromApi() async {
     try {
       UserTaskCompletionManager data = await ApiService().getUserStatsManager();
       setState(() {
         monthlyData = data.finishedTasksPercent;
-        currentMonthProgress = monthlyData.isNotEmpty && currentMonth < monthlyData.length
-            ? monthlyData[currentMonth]
-            : 0.0; // Получаем прогресс для текущего месяца
+        currentMonthProgress = monthlyData.isNotEmpty && currentMonth < monthlyData.length ? monthlyData[currentMonth] : 0.0; 
+        isLoading = false; 
       });
+      await UserTaskCompletionCacheHandler.saveUserTaskCompletionData(monthlyData);
     } catch (e) {
-      print('Ошибка при загрузке данных о задачах: $e');
+      print('Ошибка при загрузке данных с API: $e');
     }
   }
 
@@ -98,6 +143,8 @@ class _GoalCompletionChartState extends State<GoalCompletionChart> {
   }
 
   Widget _buildCurrentMonthProgress() {
+  final localizations = AppLocalizations.of(context)!;
+  final months = getMonths(context);
     return Container(
       height: 80,
       padding: const EdgeInsets.all(16),
@@ -142,11 +189,13 @@ class _GoalCompletionChartState extends State<GoalCompletionChart> {
   }
 
   Widget _buildNoDataChart() {
+  final localizations = AppLocalizations.of(context)!;
+  final months = getMonths(context);
     return Column(
       children: [
         const SizedBox(height: 10),
-        const Text(
-          'Нет данных для отображения',
+        Text(
+         localizations.translate('no_data_to_display'),
           style: TextStyle(
             fontSize: 16,
             fontFamily: "Gilroy",
@@ -307,7 +356,8 @@ class _GoalCompletionChartState extends State<GoalCompletionChart> {
   @override
   Widget build(BuildContext context) {
     bool allDataZero = monthlyData.isEmpty || monthlyData.every((element) => element == 0.0);
-
+  final localizations = AppLocalizations.of(context)!;
+  final months = getMonths(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -315,7 +365,7 @@ class _GoalCompletionChartState extends State<GoalCompletionChart> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            'Выполнение целей',
+            localizations.translate('achieving_goals'),
             style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 24,

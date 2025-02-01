@@ -17,15 +17,35 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
+  bool isInitialized = false;
+
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
-    controller?.dispose();
+controller?.pauseCamera();
+controller?.dispose();
+
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    isInitialized = false;
+    
+  }
+
   void _onQRViewCreated(QRViewController controller) {
+  if (!isInitialized) {
     this.controller = controller;
+    isInitialized = true;
+
     controller.scannedDataStream.listen((scanData) async {
       if (scanData.code != null) {
         print('Сканированный QR-код: ${scanData.code}');
@@ -35,43 +55,38 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           Uint8List bytes = base64Decode(base64String);
 
           String decodedString = utf8.decode(bytes);
-
           print('Декодированная строка: $decodedString');
 
-          // Очистка строки от лишнего -back-
           String cleanedResult = decodedString.replaceAll('-back-', '-');
-
-          // Разделяем строку на части
           List<String> qrParts = cleanedResult.split('-');
 
-          // Извлекаем нужные данные
           String token = qrParts[0];
-          String domain = qrParts[1];
-          String userId = qrParts[2];
-          String login = qrParts[3];
-          String organizationId = qrParts[4];
+          String domain = qrParts[2];
+          String mainDomain = qrParts[1];
+          String userId = qrParts[3];
+          String login = qrParts[4];
+          String organizationId = qrParts[5];
 
-          // Выводим результат
           print('Token: $token');
           print('Domain: $domain');
+          print('MainDomain: $mainDomain');
           print('User ID: $userId');
           print('Login: $login');
           print('Organization ID: $organizationId');
 
-          await context.read<ApiService>().initializeWithDomain(domain);
-
-          // Сохраняем данные из QR-кода
-          await context
-              .read<ApiService>()
-              .saveQrData(domain, login, token, userId, organizationId);
+          await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+          await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
           await controller.pauseCamera();
 
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
-
-        } catch (e) {
+        } catch (e, stackTrace) {
           print('Ошибка при декодировании Base64: $e');
+          print('Стек вызовов: $stackTrace');
+          print('Исходные данные сканирования: ${scanData.code}');
+          
+          // Если ошибка при декодировании, пробуем использовать альтернативный метод
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,6 +114,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       }
     });
   }
+}
+
+
+
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
@@ -106,7 +125,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       final file = File(result.files.single.path!);
       print('Файл выбран: ${file.path}');
 
-      // Используем библиотеку scan для считывания QR-кода из изображения
       String? qrCode = await Scan.parse(file.path);
 
       if (qrCode != null) {
@@ -120,28 +138,25 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
           print('Декодированная строка: $decodedString');
 
-          // Очистка строки от лишнего -back-
           String cleanedResult = decodedString.replaceAll('-back-', '-');
-
-          // Разделяем строку на части
           List<String> qrParts = cleanedResult.split('-');
 
-          // Извлекаем нужные данные
           String token = qrParts[0];
-          String domain = qrParts[1];
-          String userId = qrParts[2];
-          String login = qrParts[3];
-          String organizationId = qrParts[4];
+          String domain = qrParts[2];
+          String mainDomain = qrParts[1];
+          String userId = qrParts[3];
+          String login = qrParts[4];
+          String organizationId = qrParts[5];
 
-          // Выводим результат
           print('Token: $token');
           print('Domain: $domain');
+          print('MainDomain: $mainDomain');
           print('User ID: $userId');
           print('Login: $login');
           print('Organization ID: $organizationId');
 
-          await context.read<ApiService>().initializeWithDomain(domain);
-          await context.read<ApiService>().saveQrData(domain, login, token, userId, organizationId);
+          await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
+          await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
@@ -187,17 +202,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         backgroundColor: Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
         iconTheme: IconThemeData(color: Color(0xff1E2E52)),
-          forceMaterialTransparency: true,
-          leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+        forceMaterialTransparency: true,
+        leading: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
           ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

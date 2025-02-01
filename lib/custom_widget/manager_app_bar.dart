@@ -1,16 +1,53 @@
-import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ManagerFilterPopup extends StatelessWidget {
-  final Function(dynamic)? onManagerSelected;
+class ManagerFilterPopup extends StatefulWidget {
+  final Function(List<dynamic>)? onManagersSelected;
+  final List<dynamic> initialSelectedManagers; // Добавляем начальные выбранные менеджеры
 
   const ManagerFilterPopup({
     Key? key,
-    this.onManagerSelected,
+    this.onManagersSelected,
+        this.initialSelectedManagers = const [], // По умолчанию пустой список
+
   }) : super(key: key);
+
+  @override
+  _ManagerFilterPopupState createState() => _ManagerFilterPopupState();
+}
+
+class _ManagerFilterPopupState extends State<ManagerFilterPopup> {
+  List<dynamic> _selectedManagers = [];
+  TextEditingController searchController = TextEditingController();
+  String searchQuery = '';
+@override
+  void initState() {
+    super.initState();
+    // Инициализируем список выбранных менеджеров начальными значениями
+    _selectedManagers = List.from(widget.initialSelectedManagers);
+  }
+  void toggleSelectAll(List<dynamic> managers) {
+    setState(() {
+      if (_selectedManagers.length == managers.length) {
+        _selectedManagers.clear();
+      } else {
+        _selectedManagers = List.from(managers);
+      }
+    });
+  }
+
+
+ List<dynamic> filterManagers(List<dynamic> managers) {
+    if (searchQuery.isEmpty) return managers;
+    return managers.where((manager) {
+      final name = (manager.name?.toString().toLowerCase() ?? '') +
+          (manager.lastname?.toString().toLowerCase() ?? '');
+      return name.contains(searchQuery.toLowerCase());
+    }).toList();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -24,36 +61,87 @@ class ManagerFilterPopup extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Выберите менеджера',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2E52),
-                  ),
+          BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
+            builder: (context, state) {
+              final allManagers = state is GetAllManagerSuccess
+                  ? state.dataManager.result ?? []
+                  : [];
+              final isAllSelected = allManagers.isNotEmpty &&
+                  _selectedManagers.length == allManagers.length;
+              return Padding(
+                padding: EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      margin: EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        onTap: () => toggleSelectAll(allManagers),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isAllSelected
+                                ? Color(0xFF4339F2)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: isAllSelected
+                                  ? Color(0xFF4339F2)
+                                  : Color(0xFFCCCCCC),
+                              width: 1,
+                            ),
+                          ),
+                          child: isAllSelected
+                              ? Icon(Icons.check, size: 18, color: Colors.white)
+                              : null,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText:
+                              AppLocalizations.of(context)!.translate('search'),
+                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Color(0xFF1E2E52)),
+                          ),
+                          fillColor: Colors.white,
+                          filled: true,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                // GestureDetector(
-                //   onTap: () => Navigator.pop(context),
-                //   child: Icon(Icons.close, size: 20),
-                // ),
-              ],
-            ),
+              );
+            },
           ),
-          Container(
-            constraints: BoxConstraints(maxHeight: 300),
+          Expanded(
             child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
               builder: (context, state) {
                 if (state is GetAllManagerLoading) {
                   return Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(color: Color(0xff1E2E52))
+                      child:
+                          CircularProgressIndicator(color: Color(0xff1E2E52)),
                     ),
                   );
                 } else if (state is GetAllManagerError) {
@@ -76,7 +164,8 @@ class ManagerFilterPopup extends StatelessWidget {
                       child: Padding(
                         padding: EdgeInsets.all(16),
                         child: Text(
-                          'Нет доступных менеджеров',
+                          AppLocalizations.of(context)!
+                              .translate('no_any_managers'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                           ),
@@ -84,72 +173,77 @@ class ManagerFilterPopup extends StatelessWidget {
                       ),
                     );
                   }
-                  
+
+                  final filteredManagers = filterManagers(managers);
+
                   return ListView.builder(
                     shrinkWrap: true,
-                    itemCount: managers.length + 1,
+                    itemCount: filteredManagers.length,
                     itemBuilder: (context, index) {
-                      if (index == 0) {
-                        // Опция "Все" теперь полностью сбрасывает состояние
-                        return InkWell(
-                          onTap: () {
-                            if (onManagerSelected != null) {
-                              // Сбрасываем все фильтры и возвращаемся к исходному состоянию
-                              onManagerSelected!(null);
-                              
-                              // Перезагружаем данные через BLoC
-                              final leadBloc = BlocProvider.of<LeadBloc>(context);
-                              leadBloc.add(FetchLeadStatuses());
-                            }
-                            Navigator.pop(context);
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Color(0xFFEEEEEE),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              'Все',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF1E2E52),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      
-                      final manager = managers[index - 1];
-                      final name = manager.name ?? 'Без имени';
+                      final manager = filteredManagers[index];
+                      final name = (manager.name ?? 'Без имени') +
+                          ' ' +
+                          (manager.lastname ?? '');
+                      final isSelected = _selectedManagers.contains(manager);
+
                       return InkWell(
                         onTap: () {
-                          if (onManagerSelected != null) {
-                            onManagerSelected!(manager);
-                          }
-                          Navigator.pop(context);
+                          setState(() {
+                            if (isSelected) {
+                              _selectedManagers.remove(manager);
+                            } else {
+                              _selectedManagers.add(manager);
+                            }
+                          });
                         },
-                        child: Padding(
+                        child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
                           ),
-                          child: Text(
-                            name,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              color: Color(0xFF1E2E52),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Color(0xFFEEEEEE),
+                                width: 1,
+                              ),
                             ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                margin: EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Color(0xFF4339F2)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Color(0xFF4339F2)
+                                        : Color(0xFFCCCCCC),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? Icon(Icons.check,
+                                        size: 18, color: Colors.white)
+                                    : null,
+                              ),
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 14,
+                                    color: Color(0xFF1E2E52),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -158,6 +252,35 @@ class ManagerFilterPopup extends StatelessWidget {
                 }
                 return Container();
               },
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(8),
+            child: ElevatedButton(
+              onPressed: () {
+                if (_selectedManagers.isNotEmpty) {
+                  if (widget.onManagersSelected != null) {
+                    widget.onManagersSelected!(_selectedManagers);
+                  }
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF4339F2),
+                padding: EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('selected'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ],

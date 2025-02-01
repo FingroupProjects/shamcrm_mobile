@@ -1,36 +1,55 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_state.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
-class DealStatsChart extends StatelessWidget {
+class DealStatsChart extends StatefulWidget {
   const DealStatsChart({Key? key}) : super(key: key);
 
-  final List<String> months = const [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
-  ];
-  String formatNumber(double value) {
+  @override
+  _DealStatsChartState createState() => _DealStatsChartState();
+}
+
+class _DealStatsChartState extends State<DealStatsChart> {
+  List<String> getMonths(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('january'),
+      localizations.translate('february'),
+      localizations.translate('march'),
+      localizations.translate('april'),
+      localizations.translate('may'),
+      localizations.translate('june'),
+      localizations.translate('july'),
+      localizations.translate('august'),
+      localizations.translate('september'),
+      localizations.translate('october'),
+      localizations.translate('november'),
+      localizations.translate('december'),
+    ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<DealStatsBloc>().add(LoadDealStatsData());
+  }
+
+  String formatNumber(double value, BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     if (value >= 1e9) {
-      return '${(value / 1e9).toStringAsFixed(1)}млрд';
+      return '${(value / 1e9).toStringAsFixed(1)}${localizations.translate('billion')}';
     } else if (value >= 1e6) {
-      return '${(value / 1e6).toStringAsFixed(1)}м';
+      return '${(value / 1e6).toStringAsFixed(1)}${localizations.translate('million')}';
     } else if (value >= 1e3) {
-      return '${(value / 1e3).toStringAsFixed(1)}т';
+      return '${(value / 1e3).toStringAsFixed(1)}${localizations.translate('thousand')}';
     } else {
       return value.toStringAsFixed(0);
     }
@@ -38,26 +57,30 @@ class DealStatsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final months = getMonths(context);
+
     return BlocBuilder<DealStatsBloc, DealStatsState>(
       builder: (context, state) {
-        if (state is DealStatsError) {
-          if (state.message.contains("Неавторизованный доступ!")) {
-            _handleLogout(context);
-            return const SizedBox();
-          } else {
-            return Center(
-              child: Text(
-                '${state.message}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
-            );
-          }
-        } else if (state is DealStatsLoaded) {
+        // if (state is DealStatsError) {
+        //   if (state.message.contains(localizations.translate('unauthorized_access'))) {
+        //     _handleLogout(context);
+        //     return const SizedBox();
+        //   } else {
+        //     return Center(
+        //       child: Text(
+        //         '${state.message}',
+        //         style: const TextStyle(
+        //           fontFamily: 'Gilroy',
+        //           fontSize: 16,
+        //           fontWeight: FontWeight.w500,
+        //           color: Colors.black,
+        //         ),
+        //       ),
+        //     );
+        //   }
+        // } else
+        if (state is DealStatsLoaded) {
           final data = state.dealStatsData.data;
 
           bool hasData =
@@ -71,17 +94,17 @@ class DealStatsChart extends StatelessWidget {
                       math.max(item.totalSum.toDouble(),
                           item.successfulSum.toDouble())))
               : 100.0;
-          double maxY = maxCount > 0 ? (maxCount * 1.1).ceilToDouble() : 100.0;
+          double maxY = maxCount > 0 ? maxCount.ceilToDouble() : 100.0;
 
           if (!hasData) {
             final random = math.Random();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                    'Статистика сделок',
+                    localizations.translate('deal_stats'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,
@@ -206,8 +229,8 @@ class DealStatsChart extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Text(
-                      'Нет данных для отображения',
+                    Text(
+                      localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -223,10 +246,10 @@ class DealStatsChart extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
-                  'Статистика сделок',
+                  localizations.translate('deal_stats'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
@@ -252,8 +275,9 @@ class DealStatsChart extends StatelessWidget {
                         fitInsideVertically: true,
                         fitInsideHorizontally: true,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                          String label =
-                              rodIndex == 0 ? 'Общая сумма' : 'Успешные';
+                          String label = rodIndex == 0
+                              ? localizations.translate('total_amount')
+                              : localizations.translate('successful');
                           double value = rod.toY;
                           return BarTooltipItem(
                             '${months[groupIndex]}\n$label\n',
@@ -311,21 +335,32 @@ class DealStatsChart extends StatelessWidget {
                         sideTitles: SideTitles(
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
-                            return SizedBox(
-                              width: 60,
-                              child: Text(
-                                formatNumber(value.toDouble()),
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 4.0), // Уменьшен отступ
+                              child: SizedBox(
+                                width: 50, // Уменьшена ширина
+                                child: Text(
+                                  formatNumber(value.toDouble(), context),
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 12, // Уменьшен размер шрифта
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                    height: 1, // Оптимизированная высота строки
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow
+                                      .ellipsis, // Если число слишком длинное
                                 ),
                               ),
                             );
                           },
-                          reservedSize: 42,
+                          reservedSize:
+                              40, // Уменьшено для более компактного вида
+                          interval: maxY /
+                              8, // Уменьшен шаг, чтобы числа не дублировались
                         ),
                       ),
                       rightTitles: AxisTitles(
@@ -340,7 +375,7 @@ class DealStatsChart extends StatelessWidget {
                       drawHorizontalLine: true,
                       drawVerticalLine: true,
                       horizontalInterval: maxY / 5,
-                      verticalInterval: 1,
+                      verticalInterval: 0.1,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
                           color: Colors.grey.withOpacity(0.2),
@@ -384,7 +419,7 @@ class DealStatsChart extends StatelessWidget {
                             ),
                           ),
                           BarChartRodData(
-                            toY: successfulSum > 0 ? successfulSum : 0.1,
+                            toY: successfulSum > 0 ? successfulSum : 0,
                             color: Colors.green,
                             width: 8,
                             borderRadius: const BorderRadius.only(

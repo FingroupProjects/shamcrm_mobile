@@ -18,6 +18,8 @@ class LeadLoaded extends LeadState {
     List<LeadStatus>? leadStatuses,
     Map<int, int>? leadCounts,
   }) {
+    print(leadCounts);
+    print("-------------------------TaskLoaded------------------");
     return LeadLoaded(
       leadStatuses ?? this.leadStatuses,
       leadCounts: leadCounts ?? this.leadCounts,
@@ -25,6 +27,10 @@ class LeadLoaded extends LeadState {
   }
 }
 
+class LeadStatusLoaded extends LeadState {
+  final LeadStatus leadStatus;
+  LeadStatusLoaded(this.leadStatus);
+}
 
 class LeadDataLoaded extends LeadState {
   final List<Lead> leads;
@@ -39,7 +45,6 @@ class LeadDataLoaded extends LeadState {
   }
 }
 
-
 class LeadError extends LeadState {
   final String message;
 
@@ -52,7 +57,6 @@ class LeadSuccess extends LeadState {
   LeadSuccess(this.message);
 }
 
-
 class LeadDeleted extends LeadState {
   final String message;
 
@@ -63,4 +67,11 @@ class LeadStatusDeleted extends LeadState {
   final String message;
 
   LeadStatusDeleted(this.message);
+}
+
+// State для успешного обновления статуса лида
+class LeadStatusUpdatedEdit extends LeadState {
+  final String message;
+
+  LeadStatusUpdatedEdit(this.message);
 }

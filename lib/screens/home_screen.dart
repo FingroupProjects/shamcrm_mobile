@@ -5,6 +5,7 @@ import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/placeholder_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -21,8 +22,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
 
   List<Widget> _widgetOptions = [];
-  List<String> _titles = [];
-  List<String> _navBarTitles = [];
+  List<String> _titleKeys = [];
+  List<String> _navBarTitleKeys = [];
   List<String> _activeIcons = [];
   List<String> _inactiveIcons = [];
 
@@ -34,126 +35,119 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> initializeScreensWithPermissions() async {
-    List<Widget> widgets = [];
-    List<String> titles = [];
-    List<String> navBarTitles = [];
-    List<String> activeIcons = [];
-    List<String> inactiveIcons = [];
+  List<Widget> widgets = [];
+  List<String> titleKeys = [];
+  List<String> navBarTitleKeys = [];
+  List<String> activeIcons = [];
+  List<String> inactiveIcons = [];
 
-    bool hasAvailableScreens = false;
+  bool hasAvailableScreens = false;
 
-    // if (await _apiService.hasPermission('dashboard.read')) {
-      widgets.add(DashboardScreen());
-      titles.add('Дашборд');
-      navBarTitles.add('Дашборд');
-      activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
-      inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
-      hasAvailableScreens = true;
-    // } else {
-    //   widgets.add(PlaceholderScreen(message: 'Экран Дашборд недоступен вам.'));
-    //   titles.add('Дашборд');
-    //   navBarTitles.add('Дашборд');
-    //   activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
-    //   inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
-    // }
+  // Дашборд
+  widgets.add(DashboardScreen());
+  titleKeys.add('appbar_dashboard');
+  navBarTitleKeys.add('appbar_dashboard');
+  activeIcons.add('assets/icons/MyNavBar/dashboard_ON.png');
+  inactiveIcons.add('assets/icons/MyNavBar/dashboard_OFF.png');
+  hasAvailableScreens = true;
 
-    // if ( await _apiService.hasPermission('task.read')) {
-    // if (!hasAvailableScreens || await _apiService.hasPermission('task.read')) {
-      widgets.add(TaskScreen());
-      titles.add('Задачи');
-      navBarTitles.add('Задачи');
-      activeIcons.add('assets/icons/MyNavBar/tasks_ON.png');
-      inactiveIcons.add('assets/icons/MyNavBar/tasks_OFF.png');
-      hasAvailableScreens = true;
-    // }
+  // Задачи
+  widgets.add(TaskScreen());
+  titleKeys.add('appbar_tasks');
+  navBarTitleKeys.add('appbar_tasks');
+  activeIcons.add('assets/icons/MyNavBar/tasks_ON.png');
+  inactiveIcons.add('assets/icons/MyNavBar/tasks_OFF.png');
+  hasAvailableScreens = true;
 
-    if (await _apiService.hasPermission('lead.read')) {
-      widgets.add(LeadScreen());
-      titles.add('Лиды');
-      navBarTitles.add('Лиды');
-      activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
-      inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
-      hasAvailableScreens = true;
-    }
-    // if (await _apiService.hasPermission('chat.read')) {
-      widgets.add(ChatsScreen());
-      titles.add('Чаты');
-      navBarTitles.add('Чаты');
-      activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
-      inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
-      hasAvailableScreens = true;
-    // }
-    if (await _apiService.hasPermission('deal.read')) {
-      widgets.add(DealScreen());
-      titles.add('Сделки');
-      navBarTitles.add('Сделки');
-      activeIcons.add('assets/icons/MyNavBar/deal_ON.png');
-      inactiveIcons.add('assets/icons/MyNavBar/deal_OFF.png');
-      hasAvailableScreens = true;
-    }
+  // Лиды
+  if (await _apiService.hasPermission('lead.read')) {
+    widgets.add(LeadScreen());
+    titleKeys.add('appbar_leads');
+    navBarTitleKeys.add('appbar_leads');
+    activeIcons.add('assets/icons/MyNavBar/clients_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/clients_OFF.png');
+    hasAvailableScreens = true;
+  }
+
+  // Чаты
+  widgets.add(ChatsScreen());
+  titleKeys.add('appbar_chats');
+  navBarTitleKeys.add('appbar_chats');
+  activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
+  inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
+  hasAvailableScreens = true;
+
+  // Сделки
+  if (await _apiService.hasPermission('deal.read')) {
+    widgets.add(DealScreen());
+    titleKeys.add('appbar_deals');
+    navBarTitleKeys.add('appbar_deals');
+    activeIcons.add('assets/icons/MyNavBar/deal_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/deal_OFF.png');
+    hasAvailableScreens = true;
+  }
+
+  setState(() {
+    _widgetOptions = widgets;
+    _titleKeys = titleKeys;
+    _navBarTitleKeys = navBarTitleKeys;
+    _activeIcons = activeIcons;
+    _inactiveIcons = inactiveIcons;
+  });
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     setState(() {
-      _widgetOptions = widgets;
-      _titles = titles;
-      _navBarTitles = navBarTitles;
-      _activeIcons = activeIcons;
-      _inactiveIcons = inactiveIcons;
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-      setState(() {
-        if (args != null) {
-          if (args['screenIndex'] != null) {
-            _selectedIndex = args['screenIndex'];
-          } else if (_widgetOptions.isNotEmpty) {
-            _selectedIndex = 0;
-          }
-        } else if (_widgetOptions.isNotEmpty) {
-          _selectedIndex = 0;
-        }
-      });
-    });
-
-    if (!hasAvailableScreens) {
-      setState(() {
-        _widgetOptions = [PlaceholderScreen(message: 'Нет доступных экранов.')];
-        _titles = ['Нет доступных экранов'];
-        _navBarTitles = [];
-        _activeIcons = [];
-        _inactiveIcons = [];
+      if (args != null && args['screenIndex'] != null) {
+        _selectedIndex = args['screenIndex'];
+      } else if (_widgetOptions.isNotEmpty) {
         _selectedIndex = 0;
-      });
-    }
+      }
+    });
+  });
+
+  if (!hasAvailableScreens) {
+    setState(() {
+      _widgetOptions = [PlaceholderScreen(message: 'Нет доступных экранов.')];
+      _titleKeys = ['no_available_screens'];
+      _navBarTitleKeys = [];
+      _activeIcons = [];
+      _inactiveIcons = [];
+      _selectedIndex = 0;
+    });
   }
+}
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _selectedIndex == -1 // Экран профиля
-          ? ProfileScreen()
-          : (_widgetOptions.isNotEmpty &&
-                  _selectedIndex >= 0 &&
-                  _selectedIndex < _widgetOptions.length
-              ? _widgetOptions[_selectedIndex]
-              : Center(child: Text('Нет доступных экранов'))),
-      backgroundColor: Colors.white,
-      bottomNavigationBar: _widgetOptions.isNotEmpty
-          ? MyNavBar(
-              currentIndex: _selectedIndex,
-              onItemSelected: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                  _isSearching = false;
-                });
-              },
-              navBarTitles: _navBarTitles,
-              activeIcons: _activeIcons,
-              inactiveIcons: _inactiveIcons,
-            )
-          : null,
-    );
-  }
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: _selectedIndex == -1 // Экран профиля
+        ? ProfileScreen()
+        : (_widgetOptions.isNotEmpty &&
+                _selectedIndex >= 0 &&
+                _selectedIndex < _widgetOptions.length
+            ? _widgetOptions[_selectedIndex]
+            : Center(
+                child: Text(AppLocalizations.of(context)!.translate('no_available_screens')),
+              )),
+    backgroundColor: Colors.white,
+    bottomNavigationBar: _widgetOptions.isNotEmpty
+        ? MyNavBar(
+            currentIndex: _selectedIndex,
+            onItemSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+                _isSearching = false;
+              });
+            },
+            navBarTitles: _navBarTitleKeys
+                .map((key) => AppLocalizations.of(context)!.translate(key))
+                .toList(), // Локализация заголовков NavBar
+            activeIcons: _activeIcons,
+            inactiveIcons: _inactiveIcons,
+          )
+        : null,
+  );
+}
 }

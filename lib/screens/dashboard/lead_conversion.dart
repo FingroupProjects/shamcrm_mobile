@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -14,44 +16,75 @@ class LeadConversionChart extends StatefulWidget {
 }
 
 class _LeadConversionChartState extends State<LeadConversionChart> {
-  final List<String> months = const [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
-  ];
+  List<String> getMonths(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      localizations.translate('january'),
+      localizations.translate('february'),
+      localizations.translate('march'),
+      localizations.translate('april'),
+      localizations.translate('may'),
+      localizations.translate('june'),
+      localizations.translate('july'),
+      localizations.translate('august'),
+      localizations.translate('september'),
+      localizations.translate('october'),
+      localizations.translate('november'),
+      localizations.translate('december'),
+    ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+  }
 
   String formatPercent(double value) {
-    if (value == 100 || value == 0 || value % 1 == 0) {
-      return '${value.toInt()}%';
+    // Если значение точно 100, убираем добавленную единицу
+    if (value == 100) {
+      return '${value.toInt()}%'; // Просто выводим 100%
     }
+    // Если значение равно 0 или целое число, также выводим без изменений
+    if (value == 0 || value % 1 == 0) {
+      return '${value.toInt()}%'; // Преобразуем в целое число и добавляем '%'
+    }
+
+    // В остальных случаях возвращаем значение с двумя знаками после запятой
     return '${value.toStringAsFixed(2)}%';
   }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final months = getMonths(context);
+
     return BlocBuilder<DashboardConversionBloc, DashboardConversionState>(
       builder: (context, state) {
         if (state is DashboardConversionError) {
-          return Center(
-            child: Text(
-              '${state.message}',
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          );
+          print('===================================SMS INTERNET DASHBAORD===============================');
+          print(state.message);
+          print('===================================SMS INTERNET DASHBAORD===============================');
+
+        ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          state.message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
         } else if (state is DashboardConversionLoaded) {
           List<double> monthlyData = state.leadConversionData.monthlyData;
           if (monthlyData.every((value) => value == 0)) {
@@ -73,10 +106,10 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                   child: Text(
-                    'Конверсия лидов',
+                    localizations.translate('lead_conversion'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 24,
@@ -186,8 +219,8 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                         ),
                       ),
                     ),
-                    const Text(
-                      'Нет данных для отображения',
+                    Text(
+                      localizations.translate('no_data_to_display'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: "Gilroy",
@@ -207,10 +240,10 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 8, top: 8, bottom: 8),
                 child: Text(
-                  'Конверсия лидов',
+                  localizations.translate('lead_conversion'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
@@ -225,7 +258,7 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
-                    maxY: maxY,
+                    maxY: 100, // Максимум всегда 100
                     minY: 0,
                     groupsSpace: 12,
                     backgroundColor: Colors.white,
@@ -323,7 +356,7 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                       show: true,
                       drawHorizontalLine: true,
                       drawVerticalLine: true,
-                      horizontalInterval: maxY / 5,
+                      horizontalInterval: 20, // Интервалы сетки
                       verticalInterval: 1,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
@@ -351,9 +384,8 @@ class _LeadConversionChartState extends State<LeadConversionChart> {
                         x: index,
                         barRods: [
                           BarChartRodData(
-                            toY: monthlyData[index] > 0
-                                ? monthlyData[index]
-                                : 0.0009,
+                            toY: monthlyData[index] *
+                                1, // Данные преобразуем в проценты
                             color: const Color(0xFF3935E7),
                             width: 20,
                             borderRadius: const BorderRadius.only(

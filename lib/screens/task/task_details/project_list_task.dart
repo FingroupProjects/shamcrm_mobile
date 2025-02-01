@@ -2,8 +2,8 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
-import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -44,7 +44,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -83,8 +83,8 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Проекты',
+                  Text(
+                    AppLocalizations.of(context)!.translate('projects'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -102,7 +102,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                     child: CustomDropdown<ProjectTask>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: projectsList,
-                      searchHintText: 'Поиск',
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -130,7 +130,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem.name ?? 'Выберите проект',
+                          selectedItem.name ,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -140,7 +140,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) =>
-                          Text('Выберите проект',
+                          Text(AppLocalizations.of(context)!.translate('select_project'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -151,7 +151,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                       initialItem: selectedProjectData,
                       validator: (value) {
                         if (value == null) {
-                          return '   Поле обязательно для заполнения';
+                          return AppLocalizations.of(context)!.translate('field_required_project');
                         }
                         return null;
                       },

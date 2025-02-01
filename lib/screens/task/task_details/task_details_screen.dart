@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
@@ -16,7 +17,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -103,7 +103,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
-      return 'Неверный формат';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
@@ -152,7 +152,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -173,51 +173,58 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       return;
     }
 
-    // Карта уровней приоритета
-    final Map<int, String> priorityLevels = {
-      1: 'Обычный',
-      3: 'Срочный',
-      2: 'Важный'
-    };
 
+    final Map<int, String> priorityLevels = {
+  1: AppLocalizations.of(context)!.translate('normal'), 
+  2: AppLocalizations.of(context)!.translate('important'),
+  3: AppLocalizations.of(context)!.translate('urgent'), 
+};
+
+  // // Карта уровней приоритета
+  //   final Map<int, String> priorityLevels = {
+  //     1: 'Обычный',
+  //     3: 'Критический',
+  //     2: 'Сложный'
+  //   };
+    
     currentTask = task;
     details = [
-      {'label': 'Название задачи:', 'value': task?.name ?? ""},
+      {'label': AppLocalizations.of(context)!.translate('task_name'), 'value': task?.name ?? ""},
       {
-        'label': 'Уровень приоритета:',
-        'value': priorityLevels[task.priority] ?? 'Обычний',
+        'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+        'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
       },
       {
-        'label': 'От:',
+        'label': AppLocalizations.of(context)!.translate('from_details'),
         'value': task.startDate != null && task.startDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
             : ''
       },
       {
-        'label': 'До:',
+        'label':  AppLocalizations.of(context)!.translate('to_details'),
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
       },
-      {'label': 'Проект:', 'value': task.project?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('project_details'),  'value': task.project?.name ?? ''},
       {
-        'label': 'Исполнитель:',
+        'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
             : '',
       },
       {
-        'label': 'Описание:',
+        'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
       {
-        'label': 'Статус:',
+        'label': AppLocalizations.of(context)!.translate('status_details'),
         'value': task.taskStatus?.taskStatus.name ?? '',
       },
-      {'label': 'Автор:', 'value': task.author?.name ?? ''},
-      {'label': 'Дата создания:', 'value': formatDate(task.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('author_details'),'value': task.author?.name ?? ''},
+      {'label':  AppLocalizations.of(context)!.translate('creation_date_details'), 'value': formatDate(task.createdAt)},
       if (task.taskFile != null && task.taskFile!.isNotEmpty)
-        {'label': 'Файл:', 'value': 'Ссылка'},
+        {'label': AppLocalizations.of(context)!.translate('file_details'), 'value': AppLocalizations.of(context)!.translate('link'),},
     ];
 
     for (var field in task.taskCustomFields) {
@@ -233,7 +240,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр задачи'),
+        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_task'),),
         backgroundColor: Colors.white,
         body: BlocListener<TaskByIdBloc, TaskByIdState>(
           listener: (context, state) {
@@ -272,7 +279,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 );
               } else if (state is TaskByIdLoaded) {
                 if (state.task == null) {
-                  return Center(child: Text('Данные о задаче недоступны.'));
+                  return Center(child: Text(AppLocalizations.of(context)!.translate('task_data_unavailable'),));
                 }
                 TaskById task = state.task!;
                 _updateDetails(task);
@@ -308,207 +315,257 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                       context: context,
                                       builder: (BuildContext context) =>
                                           AlertDialog(
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 20),
                                         title: Text(
-                                          'Хотите завершить задачу?',
+                                         AppLocalizations.of(context)!.translate('confirm_task_completion'),
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontFamily: 'Gilroy',
                                             fontSize: 18,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: Text(
-                                              'Отмена',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontFamily: 'Gilroy',
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            style: TextButton.styleFrom(
-                                              backgroundColor: Colors.red,
-                                              minimumSize: Size(120, 48),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                          ),
-                                          StatefulBuilder(
-                                            builder: (BuildContext context,
-                                                StateSetter setState) {
-                                              return TextButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : () async {
-                                                        setState(() {
-                                                          _isLoading = true;
-                                                        });
-
-                                                        final taskId =
-                                                            int.parse(
-                                                                widget.taskId);
-                                                        final result =
-                                                            await context
-                                                                .read<
-                                                                    ApiService>()
-                                                                .finishTask(
-                                                                    taskId);
-
-                                                        if (result['success']) {
-                                                          Navigator.pop(
-                                                              context);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                result[
-                                                                    'message'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontFamily:
-                                                                      'Gilroy',
-                                                                  fontSize: 16,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                              ),
-                                                              behavior:
-                                                                  SnackBarBehavior
-                                                                      .floating,
-                                                              margin: EdgeInsets
-                                                                  .symmetric(
-                                                                horizontal: 16,
-                                                                vertical: 8,
-                                                              ),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              backgroundColor:
-                                                                  Colors.green,
-                                                              elevation: 3,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                vertical: 12,
-                                                                horizontal: 16,
-                                                              ),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          2),
-                                                            ),
-                                                          );
-                                                          Navigator.pop(
-                                                              context);
-                                                          context
-                                                              .read<TaskBloc>()
-                                                              .add(
-                                                                  FetchTaskStatuses());
-                                                        } else {
-                                                          Navigator.pop(
-                                                              context);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                result[
-                                                                    'message'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontFamily:
-                                                                      'Gilroy',
-                                                                  fontSize: 16,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                              ),
-                                                              behavior:
-                                                                  SnackBarBehavior
-                                                                      .floating,
-                                                              margin: EdgeInsets
-                                                                  .symmetric(
-                                                                horizontal: 16,
-                                                                vertical: 8,
-                                                              ),
-                                                              shape:
-                                                                  RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              backgroundColor:
-                                                                  Colors.red,
-                                                              elevation: 3,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                vertical: 12,
-                                                                horizontal: 16,
-                                                              ),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          2),
-                                                            ),
-                                                          );
-                                                        }
-
-                                                        setState(() {
-                                                          _isLoading = false;
-                                                        });
-                                                      },
-                                                child: _isLoading
-                                                    ? SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      )
-                                                    : Text(
-                                                        'Подтвердить',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontFamily: 'Gilroy',
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff1E2E52),
-                                                  minimumSize: Size(120, 48),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
+                                        content: Container(
+                                          width: double.maxFinite,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: Text(
+                                                    AppLocalizations.of(context)!.translate('cancel'),
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontFamily: 'Gilroy',
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                    minimumSize: Size(80, 48),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 16),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
                                                   ),
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: StatefulBuilder(
+                                                  builder: (BuildContext
+                                                          context,
+                                                      StateSetter setState) {
+                                                    return TextButton(
+                                                      onPressed: _isLoading
+                                                          ? null
+                                                          : () async {
+                                                              setState(() {
+                                                                _isLoading =
+                                                                    true;
+                                                              });
+
+                                                              final taskId = int.parse(widget.taskId);
+                                                              final result =
+                                                                  await context
+                                                                      .read<
+                                                                          ApiService>()
+                                                                      .finishTask(
+                                                                          taskId);
+
+                                                              if (result[
+                                                                  'success']) {
+                                                                Navigator.pop(
+                                                                    context);
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  SnackBar(
+                                                                    content:
+                                                                        Text(
+                                                                      result[
+                                                                          'message'],
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontFamily:
+                                                                            'Gilroy',
+                                                                        fontSize:
+                                                                            16,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                        color: Colors
+                                                                            .white,
+                                                                      ),
+                                                                    ),
+                                                                    behavior:
+                                                                        SnackBarBehavior
+                                                                            .floating,
+                                                                    margin: EdgeInsets
+                                                                        .symmetric(
+                                                                      horizontal:
+                                                                          16,
+                                                                      vertical:
+                                                                          8,
+                                                                    ),
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              12),
+                                                                    ),
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .green,
+                                                                    elevation:
+                                                                        3,
+                                                                    padding:
+                                                                        EdgeInsets
+                                                                            .symmetric(
+                                                                      vertical:
+                                                                          12,
+                                                                      horizontal:
+                                                                          16,
+                                                                    ),
+                                                                    duration: Duration(
+                                                                        seconds:
+                                                                            2),
+                                                                  ),
+                                                                );
+                                                                Navigator.pop(
+                                                                    context);
+                                                                context
+                                                                    .read<
+                                                                        TaskBloc>()
+                                                                    .add(
+                                                                        FetchTaskStatuses());
+                                                              } else {
+                                                                Navigator.pop(
+                                                                    context);
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                  SnackBar(
+                                                                    content:
+                                                                        Text(
+                                                                      result[
+                                                                          'message'],
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontFamily:
+                                                                            'Gilroy',
+                                                                        fontSize:
+                                                                            16,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                        color: Colors
+                                                                            .white,
+                                                                      ),
+                                                                    ),
+                                                                    behavior:
+                                                                        SnackBarBehavior
+                                                                            .floating,
+                                                                    margin: EdgeInsets
+                                                                        .symmetric(
+                                                                      horizontal:
+                                                                          16,
+                                                                      vertical:
+                                                                          8,
+                                                                    ),
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              12),
+                                                                    ),
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .red,
+                                                                    elevation:
+                                                                        3,
+                                                                    padding:
+                                                                        EdgeInsets
+                                                                            .symmetric(
+                                                                      vertical:
+                                                                          12,
+                                                                      horizontal:
+                                                                          16,
+                                                                    ),
+                                                                    duration: Duration(
+                                                                        seconds:
+                                                                            2),
+                                                                  ),
+                                                                );
+                                                              }
+
+                                                              setState(() {
+                                                                _isLoading =
+                                                                    false;
+                                                              });
+                                                            },
+                                                      child: _isLoading
+                                                          ? SizedBox(
+                                                              width: 20,
+                                                              height: 20,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                color: Colors
+                                                                    .white,
+                                                                strokeWidth: 2,
+                                                              ),
+                                                            )
+                                                          : Text(
+                                                              AppLocalizations.of(context)!.translate('confirm'),
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontFamily:
+                                                                    'Gilroy',
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                            ),
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            Color(0xff1E2E52),
+                                                        minimumSize:
+                                                            Size(130, 48),
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 16),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                         backgroundColor:
                                             Color.fromARGB(255, 255, 255, 255),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
                                       ),
                                     );
                                   },
@@ -521,7 +578,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    'На проверку',
+                                    AppLocalizations.of(context)!.translate('for_review'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -699,7 +756,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _buildDetailItem(String label, String value) {
     // Специальная обработка для названия и описания
-    if (label == 'Название задачи:' || label == 'Описание:') {
+    if (label == AppLocalizations.of(context)!.translate('task_name') || label == AppLocalizations.of(context)!.translate('description_details')) {
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -734,11 +791,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == 'Исполнитель:' && value.contains(',')) {
-      label = 'Исполнители:';
+    if (label == AppLocalizations.of(context)!.translate('assignee') && value.contains(',')) {
+      label = AppLocalizations.of(context)!.translate('assignees');
     }
 
-    if (label == 'Исполнители:') {
+    if (label == AppLocalizations.of(context)!.translate('assignees')) {
       return GestureDetector(
         onTap: () => _showUsersDialog(value),
         child: Row(
@@ -766,7 +823,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == 'Файл:') {
+    if (label == AppLocalizations.of(context)!.translate('file_details')) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -779,7 +836,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               }
             },
             child: Text(
-              'Ссылка',
+              AppLocalizations.of(context)!.translate('link'),
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
@@ -793,7 +850,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-    if (label == 'Уровень приоритета:') {
+    if (label == AppLocalizations.of(context)!.translate('priority_level_colon')) {
+
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -840,55 +898,53 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Color _getPriorityBackgroundColor(String priority) {
-    switch (priority) {
-      case 'Срочный':
-        return Color(0xFFFFEBEE);
-      case 'Важный':
-        return Color(0xFFFFF3E0);
-      case 'Обычный':
-        return Color(0xFFE8F5E9);
-      default:
-        return Color(0xFFE8F5E9);
-    }
-  }
+  // Создаем Map для сопоставления приоритетов и цветов
+  final priorityColors = {
+    AppLocalizations.of(context)!.translate('urgent'): Color(0xFFFFEBEE), // Срочный
+    AppLocalizations.of(context)!.translate('important'): Color(0xFFFFF3E0), // Важный
+    AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), // Обычный
+  };
+  // Возвращаем цвет из Map, либо цвет по умолчанию
+  return priorityColors[priority] ?? Color(0xFFE8F5E9);
+}
 
-  Color _getPriorityBorderColor(String priority) {
-    switch (priority) {
-      case 'Срочный':
-        return Colors.red;
-      case 'Важный':
-        return Colors.orange;
-      case 'Обычный':
-        return Colors.green;
-      default:
-        return Color(0xFF2E7D32);
-    }
-  }
+Color _getPriorityBorderColor(String priority) {
+  // Map для сопоставления приоритетов и цветов рамки
+  final priorityBorderColors = {
+    AppLocalizations.of(context)!.translate('urgent'): Colors.red, // Срочный
+    AppLocalizations.of(context)!.translate('important'): Colors.orange, // Важный
+    AppLocalizations.of(context)!.translate('normal'): Colors.green, // Обычный
+  };
+  // Возвращаем цвет из Map, либо цвет по умолчанию
+  return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
+}
 
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'Срочный':
-        return Color(0xFFC62828);
-      case 'Важный':
-        return Color(0xFFEF6C00);
-      case 'Обычный':
-        return Color(0xFF2E7D32);
-      default:
-        return Color(0xFF2E7D32);
-    }
-  }
-
+Color _getPriorityColor(String priority) {
+  // Map для сопоставления приоритетов и основных цветов
+  final priorityColors = {
+    AppLocalizations.of(context)!.translate('urgent'): Color(0xFFC62828), // Срочный
+    AppLocalizations.of(context)!.translate('important'): Color(0xFFEF6C00), // Важный
+    AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32), // Обычный
+  };
+  // Возвращаем цвет из Map, либо цвет по умолчанию
+  return priorityColors[priority] ?? Color(0xFF2E7D32);
+}
   void _showFile(String fileUrl) async {
     try {
       print('Входящий fileUrl: $fileUrl');
 
       // Получаем базовый домен из ApiService
-      final domain = await _apiService.getEnteredDomain();
-      print('Полученный базовый домен: $domain');
+      // Получаем базовый домен из ApiService
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+  // Извлекаем значения из Map
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain']; 
+         print('Полученный базовый домен: $enteredDomain');
 
       // Формируем полный URL файла
       final fullUrl =
-          Uri.parse('https://$domain-back.sham360.com/storage/$fileUrl');
+          Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла
@@ -906,13 +962,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
         print('Не удалось открыть файл: ${result.message}');
-        _showErrorSnackBar('Не удалось открыть файл.');
+        _showErrorSnackBar(AppLocalizations.of(context)!.translate('failed_to_open_file'));
       } else {
         print('Файл открыт успешно.');
       }
     } catch (e) {
       print('Ошибка при скачивании или открытии файла!');
-      _showErrorSnackBar('Произошла ошибка при скачивании или открытии файла.');
+      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
     }
   }
 
@@ -954,7 +1010,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Container(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                  'Список исполнителей',
+                  AppLocalizations.of(context)!.translate('assignee_list'),
                   style: TextStyle(
                     color: Color(0xff1E2E52),
                     fontSize: 18,
@@ -986,7 +1042,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
                     Navigator.pop(context);
                   },

@@ -6,8 +6,10 @@ import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_update_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactPersonWidget extends StatefulWidget {
   final int leadId;
@@ -33,6 +35,16 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
   }
 
   @override
@@ -77,7 +89,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow('Контактные лица'),
+        _buildTitleRow( AppLocalizations.of(context)!.translate('contacts')),
         SizedBox(height: 8),
         if (contactPerson.isEmpty)
           Padding(
@@ -88,7 +100,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Пусто',
+                    AppLocalizations.of(context)!.translate('empty'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -141,14 +153,30 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        contactPerson.name,
+                        '${contactPerson.name}',
                         style: TaskCardStyles.titleStyle,
                       ),
-                      Text(
-                        contactPerson.phone,
+                      GestureDetector(
+                        onTap: () => _makePhoneCall(contactPerson.phone),
+                        child: Text(
+                          '${AppLocalizations.of(context)!.translate('phone_use')} ${contactPerson.phone}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1E2E52),
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
                       Text(
-                        contactPerson.position.toString(),
+                        '${AppLocalizations.of(context)!.translate('position_contact')} ${contactPerson.position ?? ""}',
+                      ),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('author_contact')} ${contactPerson.author?.name ?? ""}',
+                      ),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('created_at_contact')}${contactPerson.formattedDate}',
                       ),
                     ],
                   ),
@@ -220,7 +248,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
             ),
           ),
           child: Text(
-            'Добавить',
+            AppLocalizations.of(context)!.translate('add'),
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

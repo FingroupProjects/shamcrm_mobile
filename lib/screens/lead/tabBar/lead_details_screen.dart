@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -16,11 +18,13 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_scre
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
+import 'package:url_launcher/url_launcher.dart';
 
 class LeadDetailsScreen extends StatefulWidget {
   final String leadId;
@@ -83,9 +87,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     _loadSelectedOrganization(); // Загружаем выбранную организацию
 
-    context
-        .read<LeadByIdBloc>()
-        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 
   void _showFullTextDialog(String title, String content) {
@@ -132,7 +134,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: 'Закрыть',
+                  buttonText: AppLocalizations.of(context)!.translate('close'), 
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -150,6 +152,90 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     setState(() {
       selectedOrganization = prefs.getString('selectedOrganization');
     });
+  }
+
+  // Добавьте эту функцию для совершения звонка
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    // Убираем все не числовые символы из номера телефона
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Если номер начинается с '8', заменяем на '+7'
+    if (cleanNumber.startsWith('8')) {
+      cleanNumber = '+7${cleanNumber.substring(1)}';
+    }
+    // Если номер начинается с '7', добавляем '+'
+    else if (cleanNumber.startsWith('7')) {
+      cleanNumber = '+$cleanNumber';
+    }
+
+    try {
+      Uri whatsappUri;
+      if (Platform.isIOS) {
+        // Для iOS используем другую схему URL
+        whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
+      } else {
+        // Для Android оставляем прежнюю схему
+        whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
+      }
+
+      if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+        // Если не удалось открыть, показываем сообщение
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('whatsapp_not_installed'), 
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      // Обработка ошибок
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   // Метод для проверки разрешений
@@ -174,33 +260,29 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final parsedDate = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
-      return 'Неверный формат';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
   // Обновление данных лида
   void _updateDetails(LeadById lead) {
-    print('Lead author: ${lead.author?.name}'); // Добавьте вывод для отладки
-    print(
-        '-------------------llll-ll-l-ll-l--l-l-l-l-l--------...........................${lead.sourceLead?.name}');
     currentLead = lead; // Сохраняем актуального лида
     details = [
-      // {'label': 'ID лида:', 'value': lead.id.toString()},
-      {'label': 'Наименование лида :', 'value': lead.name},
-      {'label': 'Телефон:', 'value': lead.phone ?? ''},
-      {'label': 'Регион:', 'value': lead.region?.name ?? ''},
-      {'label': 'Менеджер:', 'value': lead.manager?.name ?? ''},
-      {'label': 'Источник:', 'value': lead.source?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('name_details'), 'value': lead.name},
+      {'label': AppLocalizations.of(context)!.translate('phone_use'), 'value': lead.phone ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('region_details'), 'value': lead.region?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': lead.manager?.name ?? AppLocalizations.of(context)!.translate('system_text')},
+      {'label': AppLocalizations.of(context)!.translate('source_details'), 'value': lead.source?.name ?? ''},
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
       {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-      {'label': 'Электронная почта:', 'value': lead.email ?? ''},
-      {'label': 'Дата рождения:', 'value': formatDate(lead.birthday)},
-      {'label': 'Описание:', 'value': lead.description ?? ''},
-      {'label': 'Автор:', 'value': lead.author?.name ?? ''},
-      {'label': 'Дата создания:', 'value': formatDate(lead.createdAt)},
-      {'label': 'Статус:', 'value': lead.leadStatus?.title ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('email_details'), 'value': lead.email ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('birthday_details'), 'value': formatDate(lead.birthday)},
+      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': lead.description ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('author_details'), 'value': lead.author?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('created_at_details'), 'value': formatDate(lead.createdAt)},
+      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': lead.leadStatus?.title ?? ''},
     ];
     for (var field in lead.leadCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
@@ -216,6 +298,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     return textPainter.didExceedMaxLines;
   }
+
+  
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -242,18 +326,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, 'Просмотр лида'),
+        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_lead')),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
             if (state is LeadByIdLoaded) {
-              print("Лид Data: ${state.lead.toString()}");
             } else if (state is LeadByIdError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -316,7 +399,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdError) {
                 return Center(
                   child: Text(
-                    '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -345,9 +428,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           width: 24,
           height: 24,
         ),
-        onPressed: () {
-          Navigator.pop(context, widget.statusId);
-        },
+        onPressed: () async {
+             Navigator.pop(context, widget.statusId);
+           },
       ),
       title: Text(
         title,
@@ -475,8 +558,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains('Наименование лида') ||
-                      label.contains('Описание'))
+              child: (label.contains(AppLocalizations.of(context)!.translate('lead')) ||
+                      label.contains(AppLocalizations.of(context)!.translate('description_list')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value),
             ),
@@ -499,15 +582,53 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Построение значения
-  Widget _buildValue(String value) {
+ // Модифицируем функцию построения значения
+   Widget _buildValue(String value) {
+    if (value.isEmpty) return Container();
+
+    // Проверяем, является ли это телефонным номером
+    if (details.any((detail) =>
+        detail['label'] == AppLocalizations.of(context)!.translate('phone_use') && detail['value'] == value)) {
+      return GestureDetector(
+        onTap: () => _makePhoneCall(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52),
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+    
+    // Добавляем проверку на WhatsApp
+    if (details.any((detail) =>
+        detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
+      return GestureDetector(
+        onTap: () => _openWhatsApp(value),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E2E52), // Цвет WhatsApp
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      );
+    }
+
     return Text(
       value,
       style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xfff1E2E52),
+        color: Color(0xFF1E2E52),
       ),
       overflow: TextOverflow.visible,
     );

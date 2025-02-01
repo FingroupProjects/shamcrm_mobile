@@ -101,7 +101,7 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
       try {
         final response = await apiService.deleteContactPerson(event.contactpersonId);
         if (response['result'] == 'Success') {
-          emit(ContactPersonDeleted('Контакное лицоуспешно удалена'));
+          emit(ContactPersonDeleted('Контакное лицо успешно удалена'));
           add(FetchContactPerson(event.leadId));
         } else {
           emit(ContactPersonError('Ошибка удаления Контакное лицо'));

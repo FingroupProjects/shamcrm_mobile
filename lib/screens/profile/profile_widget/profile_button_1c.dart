@@ -1,6 +1,5 @@
-import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
-import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -49,6 +48,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!; // Получение локализации
     final organization = widget.organization;
 
     return BlocListener<Data1CBloc, Data1CState>(
@@ -66,8 +66,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               orElse: () => widget.organization,
             );
             final updatedTime = updatedOrganization.last1cUpdate != null
-                ? DateFormat('dd.MM.yyyy HH:mm')
-                    .format(DateTime.parse(updatedOrganization.last1cUpdate!))
+                ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(updatedOrganization.last1cUpdate!))
                 : null;
 
             // Обновление значения в ValueNotifier
@@ -75,9 +74,9 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           });
           _controller.stop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Данные 1С успешно обновлены',
+                localizations.translate('data_updated_successfully'),
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -100,7 +99,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Данные успешно обновлены!',
+                localizations.translate('data_updated_successfully'), 
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -133,7 +132,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
             if (organization.is1cIntegration)
               _buildProfileOption(
                 iconPath: 'assets/icons/1c/5.png',
-                text: 'Обновить данные 1С',
+                text: localizations.translate('update_1c_data'),
               ),
             ValueListenableBuilder<String?>(
               valueListenable: lastUpdatedNotifier,
@@ -141,7 +140,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
                 return lastUpdated != null
                     ? Center(
                         child: Text(
-                          'Последнее обновление 1C: $lastUpdated',
+                          '${localizations.translate('last_update_1c')}: $lastUpdated',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w400,

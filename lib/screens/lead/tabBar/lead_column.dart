@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -34,7 +35,10 @@ class _LeadColumnState extends State<LeadColumn> {
   void initState() {
     super.initState();
     _leadBloc = LeadBloc(_apiService)
-      ..add(FetchLeads(widget.statusId, managerId: widget.managerId));
+      ..add(FetchLeads(
+        widget.statusId,
+        managerIds: widget.managerId != null ? [widget.managerId!] : null,
+      ));
     _checkPermission();
   }
 
@@ -52,9 +56,11 @@ class _LeadColumnState extends State<LeadColumn> {
   }
 
   Future<void> _onRefresh() async {
-    final leadBloc = BlocProvider.of<LeadBloc>(context);
-    leadBloc.add(FetchLeadStatuses());
-    _leadBloc.add(FetchLeads(widget.statusId, managerId: widget.managerId));
+    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+
+    _leadBloc.add(FetchLeads( widget.statusId, managerIds: widget.managerId != null ? [widget.managerId!] : null,
+    ));
+
     return Future.delayed(Duration(milliseconds: 1));
   }
 
@@ -87,7 +93,7 @@ class _LeadColumnState extends State<LeadColumn> {
                     children: [
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4),
-                      Center(child: Text('Нет лидов для выбранного статуса')),
+                      Center(child: Text(AppLocalizations.of(context)!.translate('no_lead_in_status'))),
                     ],
                   ),
                 );
@@ -141,7 +147,8 @@ class _LeadColumnState extends State<LeadColumn> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${state.message}',
+                    content: Text(
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                         style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,

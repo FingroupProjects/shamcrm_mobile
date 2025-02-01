@@ -12,6 +12,7 @@ import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/multi_user_list.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/one_user_list_.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,7 +40,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
       backgroundColor: Colors.white,
       title: Center(
         child: Text(
-          'Создать чат',
+          AppLocalizations.of(context)!.translate('create_chat'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -61,7 +62,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Создать групповой чат',
+                    AppLocalizations.of(context)!.translate('create_chat_group'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -93,8 +94,8 @@ class _AddClientDialogState extends State<AddClientDialog> {
                     children: [
                       CustomTextField(
                         controller: groupNameController,
-                        hintText: 'Введите название группы',
-                        label: 'Название группы',
+                        hintText: AppLocalizations.of(context)!.translate('enter_chat_group'),
+                        label: AppLocalizations.of(context)!.translate('enter_name_group'),
                         isPassword: false,
                         keyboardType: TextInputType.text,
                       ),
@@ -159,7 +160,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -177,7 +178,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Групповой чат успешно создан!',
+                                    AppLocalizations.of(context)!.translate('group_chat_created_successfully'),
                                     style: TextStyle(
                                       fontFamily: 'Gilroy',
                                       fontSize: 16,
@@ -258,38 +259,40 @@ class _AddClientDialogState extends State<AddClientDialog> {
 
   Widget _buildCreateButton(BuildContext context) {
     return CustomButton(
-      buttonText: isGroupChat ? 'Создать' : 'Создать',
+      buttonText: isGroupChat ? AppLocalizations.of(context)!.translate('create') : AppLocalizations.of(context)!.translate('create'),
       onPressed: () {
         bool hasError = false;
         setState(() {
           // Validate for Group Chat
           if (isGroupChat) {
             if (groupNameController.text.isEmpty) {
-              groupNameError = 'Введите название группы';
+              groupNameError =  AppLocalizations.of(context)!.translate('enter_chat_group');
               hasError = true;
             } else {
               groupNameError = null;
             }
 
             if (selectedUsers.isEmpty) {
-              selectedUsersError = 'Выберите хотя бы одного пользователя';
+              selectedUsersError =  AppLocalizations.of(context)!.translate('select_at_least_one_user');
               hasError = true;
             } else {
               selectedUsersError = null;
             }
 
             if (!hasError) {
+                final localizations = AppLocalizations.of(context)!;
+
               context.read<GroupChatBloc>().add(
                     CreateGroupChat(
                       name: groupNameController.text,
                       userId: selectedUsers.map((user) => user.id!).toList(),
+                      localizations: localizations,
                     ),
                   );
             }
           } else {
-            // Validate for Single Client Chat
             if (selectedUserData == null) {
-              selectedUsersError = 'Пожалуйста, выберите пользователя';
+              selectedUsersError = AppLocalizations.of(context)!.translate('please_select_user');
               hasError = true;
             } else {
               selectedUsersError = null;

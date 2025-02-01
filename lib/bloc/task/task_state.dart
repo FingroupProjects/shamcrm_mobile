@@ -17,25 +17,45 @@ class TaskLoaded extends TaskState {
   TaskLoaded copyWith({
     List<TaskStatus>? taskStatuses,
     Map<int, int>? taskCounts,
-  }) {
+  }) {print(taskCounts);
+  print("-------------------------TaskLoaded------------------");
     return TaskLoaded(
       taskStatuses ?? this.taskStatuses,
       taskCounts: taskCounts ?? this.taskCounts,
     );
   }
 }
+class TaskStatusLoaded extends TaskState {
+  final TaskStatus taskStatus;
+  TaskStatusLoaded(this.taskStatus);
+}
 
 class TaskDataLoaded extends TaskState {
   final List<Task> tasks;
   final int currentPage;
   final bool allTasksFetched;
-  TaskDataLoaded(this.tasks,
-      {this.currentPage = 1, this.allTasksFetched = false});
+  final Map<int, int> taskCounts;
 
-  TaskDataLoaded merge(List<Task> newTasks) {
+  TaskDataLoaded(this.tasks,
+      {this.currentPage = 1, this.allTasksFetched = false, Map<int, int>? taskCounts})
+      : taskCounts = taskCounts ?? {};
+
+  TaskDataLoaded merge(List<Task> newTasks) {print(taskCounts);
+  print("-------------------------TaskLoaded------------------");
     return TaskDataLoaded(
       tasks + newTasks,
       currentPage: currentPage,
+      taskCounts: taskCounts,
+    );
+  }
+
+  // Метод для обновления taskCounts
+  TaskDataLoaded updateTaskCounts(Map<int, int> newTaskCounts) {
+    
+    return TaskDataLoaded(
+      tasks,
+      currentPage: currentPage,
+      taskCounts: newTaskCounts,
     );
   }
 }
@@ -58,4 +78,11 @@ class TaskDeleted extends TaskState {
 class TaskStatusDeleted extends TaskState {
   final String message;
   TaskStatusDeleted(this.message);
+}
+
+// State для успешного обновления статуса лида
+class TaskStatusUpdatedEdit extends TaskState {
+  final String message;
+
+  TaskStatusUpdatedEdit(this.message);
 }

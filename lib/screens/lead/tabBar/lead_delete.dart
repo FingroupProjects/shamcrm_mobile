@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -18,7 +19,7 @@ class DeleteLeadDialog extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
              SnackBar(
                content: Text(
-                 '${state.message}',
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                  style: TextStyle(
                    fontFamily: 'Gilroy',
                    fontSize: 16, 
@@ -43,7 +44,7 @@ class DeleteLeadDialog extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Center(
           child: Text(
-          'Удалить лида',
+          AppLocalizations.of(context)!.translate('delete_lead'), 
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -53,7 +54,7 @@ class DeleteLeadDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        'Вы уверены, что хотите удалить этот лид?',
+        AppLocalizations.of(context)!.translate('confirm_delete_lead'), 
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
@@ -67,7 +68,7 @@ class DeleteLeadDialog extends StatelessWidget {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: 'Отмена',
+                buttonText: AppLocalizations.of(context)!.translate('cancel'), 
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -78,14 +79,15 @@ class DeleteLeadDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: 'Удалить',
+                buttonText:  AppLocalizations.of(context)!.translate('delete'), 
                 onPressed: () {
-                  context.read<LeadBloc>().add(DeleteLead(leadId)); 
+                    final localizations = AppLocalizations.of(context)!;
+                  context.read<LeadBloc>().add(DeleteLead(leadId,localizations)); 
                   context.read<LeadBloc>().add(FetchLeadStatuses()); 
                   ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Лид успешно удален!',
+                  AppLocalizations.of(context)!.translate('lead_deleted_successfully'), 
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
