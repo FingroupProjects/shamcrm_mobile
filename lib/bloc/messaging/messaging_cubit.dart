@@ -7,11 +7,8 @@ part 'messaging_state.dart';
 
 class MessagingCubit extends Cubit<MessagingState> {
   final ApiService apiService;
-
   Message? selectedMessage;
   Message? _editingMessage;
-
-
   MessagingCubit(this.apiService) : super(MessagingInitial());
 
   Future<void> getMessages(final int chatId) async {
@@ -177,8 +174,32 @@ void startEditingMessage(Message message) {
     if (state is PinnedMessageState) {
       final messages = (state as PinnedMessageState).messages;
       final pinnedMessageId = (state as PinnedMessageState).pinnedMessage.id;
-      apiService.pinMessage(pinnedMessageId.toString());
+      apiService.unpinMessage(pinnedMessageId.toString());
       emit(MessagesLoadedState(messages: messages));
     }
   }
+
+void pinMessageFromSocket(Message message) {
+  if (state is MessagesLoadedState) {
+    final currentState = state as MessagesLoadedState;
+    final messages = currentState.messages;
+    final existingMessage = messages.firstWhere(
+      (msg) => msg.id == message.id,
+    );
+    if (existingMessage == null) {
+      messages.add(message);
+    }
+    emit(PinnedMessageState(pinnedMessage: message, messages: messages));
+  }
+}
+
+void unpinMessageFromSocket(int messageId) {
+  if (state is PinnedMessageState) {
+    final currentState = state as PinnedMessageState;
+    final messages = currentState.messages;
+    final updatedMessages = List<Message>.from(messages);
+    emit(MessagesLoadedState(messages: updatedMessages));
+  }
+}
+
 }
