@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -77,6 +78,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   String? fileName;
   String? fileSize;
   bool isEndDateInvalid = false;
+  bool _showAdditionalFields = false;
 
   final ApiService _apiService = ApiService();
 
@@ -151,18 +153,23 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       fillColor: Color(0xFFF4F7FD),
     );
   }
-
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        fontFamily: 'Gilroy',
-        color: Color(0xff1E2E52),
-      ),
-    );
+// Функция переключения отображения дополнительных полей
+  void _toggleAdditionalFields() {
+    setState(() {
+      _showAdditionalFields = !_showAdditionalFields;
+    });
   }
+  // Widget _buildLabel(String label) {
+  //   return Text(
+  //     label,
+  //     style: TextStyle(
+  //       fontSize: 14,
+  //       fontWeight: FontWeight.w500,
+  //       fontFamily: 'Gilroy',
+  //       color: Color(0xff1E2E52),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFileSelection(TaskEditScreen task) {
     return Column(
@@ -304,94 +311,92 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     );
   }
 
- Widget _buildPriorityDropdown() {
-          final Map<int, String> priorityLevels = {
-              1: AppLocalizations.of(context)!.translate('normal'), 
-              2: AppLocalizations.of(context)!.translate('important'),
-              3: AppLocalizations.of(context)!.translate('urgent'), 
-            };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('priority_level'),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              canvasColor: Colors.white,
-            ),
-            child: DropdownButtonFormField<int>(
-              value: selectedPriority,
-              items: priorityLevels.entries.map((entry) {
-                Color priorityColor;
-                switch (entry.key) {
-                  case 3:
-                    priorityColor = Colors.red;
-                    break;
-                  case 2:
-                    priorityColor = Colors.yellow;
-                    break;
-                  default:
-                    priorityColor = Colors.green;
-                }
+//  Widget _buildPriorityDropdown() {
+//           final Map<int, String> priorityLevels = {
+//               1: AppLocalizations.of(context)!.translate('normal'), 
+//               2: AppLocalizations.of(context)!.translate('important'),
+//               3: AppLocalizations.of(context)!.translate('urgent'), 
+//             };
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text(
+//           AppLocalizations.of(context)!.translate('priority_level'),
+//           style: TextStyle(
+//             fontSize: 16,
+//             fontWeight: FontWeight.w500,
+//             fontFamily: 'Gilroy',
+//             color: Color(0xff1E2E52),
+//           ),
+//         ),
+//         const SizedBox(height: 4),
+//         Container(
+//           decoration: BoxDecoration(
+//             color: const Color(0xFFF4F7FD),
+//             borderRadius: BorderRadius.circular(8),
+//           ),
+//           child: Theme(
+//             data: Theme.of(context).copyWith(
+//               canvasColor: Colors.white,
+//             ),
+//             child: DropdownButtonFormField<int>(
+//               value: selectedPriority,
+//               items: priorityLevels.entries.map((entry) {
+//                 Color priorityColor;
+//                 switch (entry.key) {
+//                   case 3:
+//                     priorityColor = Colors.red;
+//                     break;
+//                   case 2:
+//                     priorityColor = Colors.yellow;
+//                     break;
+//                   default:
+//                     priorityColor = Colors.green;
+//                 }
                 
-                return DropdownMenuItem<int>(
-                  value: entry.key,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: priorityColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        entry.value,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (int? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    selectedPriority = newValue;
-                  });
-                }
-              },
-              decoration: _inputDecoration(),
-              validator: (value) =>
-                  value == null ? AppLocalizations.of(context)!.translate('field_required') : null,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
-  @override
+//                 return DropdownMenuItem<int>(
+//                   value: entry.key,
+//                   child: Row(
+//                     children: [
+//                       Container(
+//                         width: 10,
+//                         height: 10,
+//                         decoration: BoxDecoration(
+//                           color: priorityColor,
+//                           shape: BoxShape.circle,
+//                         ),
+//                       ),
+//                       const SizedBox(width: 8),
+//                       Text(
+//                         entry.value,
+//                         style: const TextStyle(
+//                           fontSize: 16,
+//                           fontWeight: FontWeight.w500,
+//                           fontFamily: 'Gilroy',
+//                           color: Color(0xff1E2E52),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 );
+//               }).toList(),
+//               onChanged: (int? newValue) {
+//                 if (newValue != null) {
+//                   setState(() {
+//                     selectedPriority = newValue;
+//                   });
+//                 }
+//               },
+//               decoration: _inputDecoration(),
+//               validator: (value) =>
+//                   value == null ? AppLocalizations.of(context)!.translate('field_required') : null,
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -465,48 +470,51 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomTextField(
+                      CustomTextFieldWithPriority(
                         controller: nameController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!.translate('name_list'),
-                        validator: (value) => value!.isEmpty
-                            ? AppLocalizations.of(context)!.translate('field_required')
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPriorityDropdown(),
-                      const SizedBox(height: 16),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('from_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('to_list'),
-                        hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ProjectTaskGroupWidget(
-                        selectedProject: selectedProject,
-                        onSelectProject: (ProjectTask selectedProjectData) {
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
+                        showPriority: true,
+                        isPrioritySelected: selectedPriority == 3,
+                        onPriorityChanged: (bool? value) {
                           setState(() {
-                            selectedProject = selectedProjectData.id.toString();
+                            selectedPriority = value == true ? 3 : 1;
                           });
                         },
+                        priorityText:
+                            AppLocalizations.of(context)!.translate('urgent'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
+                          }
+                          return null;
+                        },
                       ),
+                       const SizedBox(height: 8),
+                      // Здесь могут располагаться другие поля (например, выбор проекта, пользователей и т.д.)
+                      CustomTextField(
+                        controller: descriptionController,
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
+                        maxLines: 5,
+                      ),
+                      // const SizedBox(height: 16),
+                      // _buildPriorityDropdown(),
+                      // const SizedBox(height: 16),
+                      // CustomTextFieldDate(
+                      //   controller: startDateController,
+                      //   label: AppLocalizations.of(context)!.translate('from_list'),
+                      //   validator: (value) {
+                      //     if (value == null || value.isEmpty) {
+                      //       return AppLocalizations.of(context)!.translate('field_required');
+                      //     }
+                      //     return null;
+                      //   },
+                      // ),
+                      
                       const SizedBox(height: 8),
                       UserMultiSelectWidget(
                         selectedUsers: selectedUsers,
@@ -520,45 +528,69 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
-                        maxLines: 5,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFileSelection(widget),
-                      // Добавляем виджет выбора файла
-                      const SizedBox(height: 20),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
+                      ProjectTaskGroupWidget(
+                        selectedProject: selectedProject,
+                        onSelectProject: (ProjectTask selectedProjectData) {
+                          setState(() {
+                            selectedProject = selectedProjectData.id.toString();
+                          });
                         },
                       ),
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
+                     const SizedBox(height: 16),
+                      CustomTextFieldDate(
+                        controller: endDateController,
+                        label: AppLocalizations.of(context)!.translate('deadline'),
+                        hasError: isEndDateInvalid,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!.translate('field_required');
+                          }
+                          return null;
+                        },
                       ),
+                      const SizedBox(height: 16),
+                      // Если дополнительные поля ещё не показаны, выводим кнопку "Дополнительно"
+                      if (!_showAdditionalFields)
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!.translate('additionally'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _toggleAdditionalFields,
+                        ),
+                      // Если дополнительные поля раскрыты, отображаем их
+                      if (_showAdditionalFields) ...[
+                        _buildFileSelection(widget),
+                        const SizedBox(height: 20),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                      ],
+                      // Другие элементы формы можно разместить здесь
                     ],
                   ),
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
                 child: Row(
                   children: [
                     Expanded(
@@ -588,13 +620,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                 if (_formKey.currentState!.validate()) {
                                   DateTime? startDate;
                                   DateTime? endDate;
-
                                   try {
-                                    if (startDateController.text.isNotEmpty) {
-                                      startDate = DateFormat('dd/MM/yyyy')
-                                          .parseStrict(
-                                              startDateController.text);
-                                    }
+                                    // // Пример разбора дат (при наличии соответствующих контроллеров)
+                                    // if (startDateController.text.isNotEmpty) {
+                                    //   startDate = DateFormat('dd/MM/yyyy')
+                                    //       .parseStrict(startDateController.text);
+                                    // }
                                     if (endDateController.text.isNotEmpty) {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
@@ -609,7 +640,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+                                            AppLocalizations.of(context)!
+                                                .translate('start_date_after_end_date'),
                                             style: TextStyle(
                                               color: Colors.white,
                                             ),
@@ -619,19 +651,16 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                       );
                                       return;
                                     }
-                                    List<Map<String, String>> customFieldList =
-                                        [];
+                                    List<Map<String, String>> customFieldList = [];
                                     for (var field in customFields) {
                                       String fieldName = field.fieldName.trim();
-                                      String fieldValue =
-                                          field.controller.text.trim();
+                                      String fieldValue = field.controller.text.trim();
                                       if (fieldName.isNotEmpty &&
                                           fieldValue.isNotEmpty) {
-                                        customFieldList
-                                            .add({fieldName: fieldValue});
+                                        customFieldList.add({fieldName: fieldValue});
                                       }
                                     }
-                                      final localizations = AppLocalizations.of(context)!;
+                                    final localizations = AppLocalizations.of(context)!;
 
                                     context.read<TaskBloc>().add(
                                           UpdateTask(
@@ -649,49 +678,48 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                                     .map((id) => int.parse(id))
                                                     .toList()
                                                 : null,
-                                            priority:
-                                                selectedPriority?.toString(),
-                                            description:
-                                                descriptionController.text,
+                                            priority: selectedPriority?.toString(),
+                                            description: descriptionController.text,
                                             customFields: customFieldList,
-                                            filePath: selectedFile, // Добавляем путь к файлу
-                                           localizations: localizations, 
-
+                                            filePath: selectedFile,
+                                            localizations: localizations,
                                           ),
                                         );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                            AppLocalizations.of(context)!.translate('error_format_date'),
-                                            ),
+                                          AppLocalizations.of(context)!
+                                              .translate('error_format_date'),
+                                        ),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
                                   }
-                                  } else {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                       content: Text(
-                                         AppLocalizations.of(context)!.translate('fill_required_fields'),
-                                         style: TextStyle(
-                                           fontFamily: 'Gilroy',
-                                           fontSize: 16,
-                                           fontWeight: FontWeight.w500,
-                                           color: Colors.white,
-                                         ),
-                                       ),
-                                       behavior: SnackBarBehavior.floating,
-                                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                       shape: RoundedRectangleBorder(
-                                         borderRadius: BorderRadius.circular(12),
-                                       ),
-                                       backgroundColor: Colors.red,
-                                       elevation: 3,
-                                       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                       duration: Duration(seconds: 3),
-                                     ),
-                                   );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('fill_required_fields'),
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
                                 }
                               },
                             );

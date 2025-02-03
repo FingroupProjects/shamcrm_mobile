@@ -77,22 +77,23 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     currentMyTask = task;
     details = [
       {'label': AppLocalizations.of(context)!.translate('task_name'), 'value': task?.name ?? ""},
-       {
-        'label': AppLocalizations.of(context)!.translate('from_details'),
-        'value': task.startDate != null && task.startDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-            : ''
-      },
-     {
-        'label':  AppLocalizations.of(context)!.translate('to_details'),
-        'value': task.endDate != null && task.endDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : ''
-      },
+      //  {
+      //   'label': AppLocalizations.of(context)!.translate('from_details'),
+      //   'value': task.startDate != null && task.startDate!.isNotEmpty
+      //       ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+      //       : ''
+      // },
       {
         'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
+     {
+        'label':  AppLocalizations.of(context)!.translate('deadline'),
+        'value': task.endDate != null && task.endDate!.isNotEmpty
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+            : ''
+      },
+      
        if (task.taskFile != null && task.taskFile!.isNotEmpty)
         {'label': AppLocalizations.of(context)!.translate('file_details'), 'value': AppLocalizations.of(context)!.translate('link'),},
     ];

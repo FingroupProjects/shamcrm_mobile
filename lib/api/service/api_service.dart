@@ -2612,7 +2612,142 @@ class ApiService {
       };
     }
   }
+/*// Метод для создание задачи
+  Future<Map<String, dynamic>> createTask({
+    required String name,
+    required int? statusId,
+    required int? taskStatusId,
+    int? priority,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? projectId,
+    List<int>? userId,
+    String? description,
+    List<Map<String, String>>? customFields,
+    List<String>? filePaths, // Список путей к файлам
+    int position = 1,
+  }) async {
+    try {
+      final token = await getToken(); // Получаем токен
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/task${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
+      // Создаем multipart request
+      var request = http.MultipartRequest('POST', uri);
+
+      // Добавляем заголовки с токеном
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
+
+      // Добавляем все поля в формате form-data
+      request.fields['name'] = name;
+      request.fields['status_id'] = statusId.toString();
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
+
+      if (priority != null) {
+        request.fields['priority_level'] = priority.toString();
+      }
+      if (startDate != null) {
+        request.fields['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        request.fields['to'] = endDate.toIso8601String();
+      }
+      if (projectId != null) {
+        request.fields['project_id'] = projectId.toString();
+      }
+      if (description != null) {
+        request.fields['description'] = description;
+      }
+
+      // Добавляем пользователей
+      if (userId != null && userId.isNotEmpty) {
+        for (int i = 0; i < userId.length; i++) {
+          request.fields['users[$i][user_id]'] = userId[i].toString();
+        }
+      }
+
+      // Добавляем кастомные поля
+      if (customFields != null && customFields.isNotEmpty) {
+        for (int i = 0; i < customFields.length; i++) {
+          var field = customFields[i];
+          request.fields['task_custom_fields[$i][key]'] = field.keys.first;
+          request.fields['task_custom_fields[$i][value]'] = field.values.first;
+        }
+      }
+
+      // Добавляем файлы, если они есть
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath(
+              'files[]', filePath); // Используем 'files[]'
+          request.files.add(file);
+        }
+      }
+
+      // Отправляем запрос
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'task_create_successfully',
+        };
+      } else if (response.statusCode == 422) {
+        // Обработка ошибок валидации
+        if (response.body.contains('name')) {
+          return {
+            'success': false,
+            'message': 'invalid_name_length',
+          };
+        }
+        if (response.body.contains('from')) {
+          return {
+            'success': false,
+            'message': 'error_start_date_task',
+          };
+        }
+        if (response.body.contains('to')) {
+          return {
+            'success': false,
+            'message': 'error_end_date_task',
+          };
+        }
+        if (response.body.contains('priority_level')) {
+          return {
+            'success': false,
+            'message': 'error_priority_level',
+          };
+        }
+        return {
+          'success': false,
+          'message': 'unknown_error',
+        };
+      } else if (response.statusCode == 500) {
+        return {
+          'success': false,
+          'message': 'error_server_text',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'error_create_task',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'error_create_task',
+      };
+    }
+  }
+*/
   //Метод для обновление задачи
   Future<Map<String, dynamic>> updateTask({
     required int taskId,
@@ -4794,7 +4929,102 @@ class ApiService {
       };
     }
   }
+/*// Метод для создания задачи
+  // Метод для создания задачи с поддержкой нескольких файлов
+Future<Map<String, dynamic>> createMyTask({
+  required String name,
+  required int? statusId,
+  required int? taskStatusId,
+  DateTime? startDate,
+  DateTime? endDate,
+  String? description,
+  List<String>? filePaths, // Изменено на список путей к файлам
+  int position = 1,
+  required bool setPush,
+}) async {
+  try {
+    // Формируем данные для запроса
+    final Map<String, dynamic> data = {
+      'name': name,
+      'status_id': statusId,
+      'task_status_id': taskStatusId,
+      'position': position,
+      'send_notification': setPush, // Передаем как true/false для boolean
+      if (startDate != null) 'from': startDate.toIso8601String(),
+      if (endDate != null) 'to': endDate.toIso8601String(),
+      if (description != null) 'description': description,
+    };
 
+    // Получаем идентификатор организации
+    final organizationIdProfile = await getSelectedOrganization();
+
+    // Создаем multipart запрос для загрузки файлов
+    final uri = Uri.parse(
+        '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}');
+    final request = http.MultipartRequest('POST', uri);
+
+    // Добавляем поля данных
+    request.fields.addAll(data.map((key, value) => MapEntry(key, value.toString())));
+
+    // Добавляем файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files', filePath);
+        request.files.add(file);
+      }
+    }
+
+    // Выполняем запрос
+    final response = await request.send();
+
+    // Проверяем статус ответа
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = await response.stream.bytesToString();
+      return {
+        'success': true,
+        'message': 'Задача успешно создана',
+        'data': json.decode(responseData),
+      };
+    }
+
+    // Обрабатываем различные коды ошибок
+    String errorMessage;
+    switch (response.statusCode) {
+      case 400:
+        errorMessage = 'Неверные данные запроса';
+        break;
+      case 401:
+        errorMessage = 'Необходима авторизация';
+        break;
+      case 403:
+        errorMessage = 'Недостаточно прав для создания задачи';
+        break;
+      case 404:
+        errorMessage = 'Ресурс не найден';
+        break;
+      case 409:
+        errorMessage = 'Конфликт при создании задачи';
+        break;
+      case 500:
+        errorMessage = 'Внутренняя ошибка сервера';
+        break;
+      default:
+        errorMessage = 'Произошла ошибка при создании задачи';
+    }
+
+    return {
+      'success': false,
+      'message': '$errorMessage!',
+      'statusCode': response.statusCode,
+    };
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Ошибка при выполнении запроса!',
+      'error': e.toString(),
+    };
+  }
+}*/
   Future<Map<String, dynamic>> updateMyTask({
     required int taskId,
     required String name,

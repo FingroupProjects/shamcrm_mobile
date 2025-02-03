@@ -207,6 +207,7 @@ class _TasksWidgetState extends State<TasksWidget> {
       MaterialPageRoute(
         builder: (context) => TaskDetailsScreen(
           taskId: task.id.toString(),
+          taskNumber: task.taskNumber,
           taskName: task.name ?? '',
           taskStatus: '',
           statusId: 1,

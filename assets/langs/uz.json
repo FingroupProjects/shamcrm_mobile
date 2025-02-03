@@ -575,5 +575,7 @@
     "no_events_in_section": "Bu holatda hech qanday eslatma yo‘q",
     "": "Eslatma muvaffaqiyatli yangilandi!",
     "select_subject": "Sarlavhani kiriting",
-    "subject": "Mavzu"
+    "subject": "Mavzu",
+     "deadline": "Muddat",
+    "additionally": "Qo‘shimcha"
 }

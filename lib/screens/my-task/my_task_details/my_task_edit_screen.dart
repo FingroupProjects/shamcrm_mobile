@@ -52,6 +52,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
   String? fileSize;
   bool isEndDateInvalid = false;
   bool setPush = false;
+  bool _showAdditionalFields = false;
 
   final ApiService _apiService = ApiService();
 
@@ -231,15 +232,15 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
       print('Входящий fileUrl: $fileUrl');
 
       // Получаем базовый домен из ApiService
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-  // Извлекаем значения из Map
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain']; 
-         print('Полученный базовый домен: $enteredDomain');
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+      // Извлекаем значения из Map
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+      print('Полученный базовый домен: $enteredDomain');
 
       // Формируем полный URL файла
-      final fullUrl =
-          Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+      final fullUrl = Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
       print('Сформированный полный URL: $fullUrl');
 
       // Путь для сохранения файла
@@ -362,38 +363,27 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                             .translate('enter_name_list'),
                         label: AppLocalizations.of(context)!
                             .translate('name_list'),
-                        validator: (value) => value!.isEmpty
-                            ? AppLocalizations.of(context)!
-                                .translate('field_required')
-                            : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(height: 16),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!
-                            .translate('from_list'),
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('to_list'),
-                        hasError: isEndDateInvalid,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
+                      // const SizedBox(height: 8),
+                      // CustomTextFieldDate(
+                      //   controller: startDateController,
+                      //   label: AppLocalizations.of(context)!
+                      //       .translate('from_list'),
+                      //   // validator: (value) {
+                      //   //   if (value == null || value.isEmpty) {
+                      //   //     return AppLocalizations.of(context)!
+                      //   //         .translate('field_required');
+                      //   //   }
+                      //   //   return null;
+                      //   // },
+                      // ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
@@ -403,11 +393,40 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                             .translate('description_list'),
                         maxLines: 5,
                       ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: endDateController,
+                        label:
+                            AppLocalizations.of(context)!.translate('deadline'),
+                        hasError: isEndDateInvalid,
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
+                      ),
                       const SizedBox(height: 16),
-                      _buildFileSelection(widget),
-                      _buildPushNotificationCheckbox(), // Add this line
 
-                      // Добавляем виджет выбора файла
+                      if (!_showAdditionalFields)
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('additionally'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: () {
+                            setState(() {
+                              _showAdditionalFields = true;
+                            });
+                          },
+                        )
+                      else ...[
+                        // const SizedBox(height: 16),
+                        _buildFileSelection(
+                            widget), // Добавляем виджет выбора файла
+                        _buildPushNotificationCheckbox(), // Add this line
+                      ],
                     ],
                   ),
                 ),
@@ -479,7 +498,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                       );
                                       return;
                                     }
-                                    final localizations = AppLocalizations.of(context)!;
+                                    final localizations =
+                                        AppLocalizations.of(context)!;
                                     context.read<MyTaskBloc>().add(
                                           UpdateMyTask(
                                             taskId: widget.taskId,
@@ -510,7 +530,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                         AppLocalizations.of(context)!.translate('fill_required_fields'),
+                                        AppLocalizations.of(context)!
+                                            .translate('fill_required_fields'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,
