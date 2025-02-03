@@ -104,7 +104,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy').format(parsedDate);
+      return DateFormat('dd.MM.yyyy').format(parsedDate);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('invalid_format');
     }
