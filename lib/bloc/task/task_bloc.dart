@@ -215,7 +215,40 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TaskError(event.localizations.translate('task_creation_error')));
     }
   }
+/*Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
 
+    if (!await _checkInternetConnection()) {
+      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      return;
+    }
+
+    try {
+      final result = await apiService.createTask(
+        name: event.name,
+        statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
+        priority: event.priority,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        projectId: event.projectId,
+        userId: event.userId,
+        description: event.description,
+        customFields: event.customFields,
+        filePaths: event.filePaths,
+      );
+
+      if (result['success']) {
+        emit(TaskSuccess(
+            event.localizations.translate('task_create_successfully')));
+      } else {
+        emit(TaskError(result['message']));
+      }
+    } catch (e) {
+      emit(TaskError(event.localizations.translate('task_creation_error')));
+    }
+  }
+*/
   Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
