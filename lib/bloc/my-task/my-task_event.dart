@@ -46,7 +46,32 @@ class CreateMyTask extends MyTaskEvent {
     required this.localizations,
   });
 }
+/*class CreateMyTask extends MyTaskEvent {
+  final String name;
+  final int statusId;
+  final int? taskStatusId;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String? description;
+  final List<String>? filePaths; // Изменено на список путей к файлам
+  final List<Map<String, String>>? customFields;
+  final bool setPush; // Добавлено
+  final AppLocalizations localizations;
 
+  CreateMyTask({
+    required this.name,
+    required this.statusId,
+    required this.taskStatusId,
+    this.startDate,
+    this.endDate,
+    this.description,
+    this.customFields,
+    this.filePaths, // Изменено на список путей к файлам
+    this.setPush = false, // Добавлено с значением по умолчанию
+    required this.localizations,
+  });
+}
+*/ 
 class UpdateMyTask extends MyTaskEvent {
   final int taskId;
   final String name;

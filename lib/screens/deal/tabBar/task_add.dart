@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_event.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -49,6 +50,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
+  bool _showAdditionalFields = false;
 
 
   @override
@@ -87,7 +89,12 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       customFields.add(CustomField(fieldName: fieldName));
     });
   }
-
+  /// Переключает видимость дополнительных полей
+  void _toggleAdditionalFields() {
+    setState(() {
+      _showAdditionalFields = true;
+    });
+  }
   void _showAddFieldDialog() {
     showDialog(
       context: context,
@@ -482,44 +489,62 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                       ),
                       const SizedBox(height: 8),
 
-                      CustomTextField(
+                      CustomTextFieldWithPriority(
                         controller: nameController,
-                        hintText:  AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label:  AppLocalizations.of(context)!.translate('name_list'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
+                        showPriority: true,
+                        isPrioritySelected: selectedPriority == 3,
+                        onPriorityChanged: (bool? value) {
+                          setState(() {
+                            selectedPriority = value == true ? 3 : 1;
+                          });
+                        },
+                        priorityText:
+                            AppLocalizations.of(context)!.translate('urgent'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
                       ),
+                      // const SizedBox(height: 8),
+                      // CustomTextFieldDate(
+                      //   controller: startDateController,
+                      //   label: AppLocalizations.of(context)!.translate('from_list'),
+                      //   validator: (value) {
+                      //     if (value == null || value.isEmpty) {
+                      //       return AppLocalizations.of(context)!.translate('field_required');
+                      //     }
+                      //     return null;
+                      //   },
+                      // ),
+                           const SizedBox(height: 8),
+                      // Поле описания задачи
+                      CustomTextField(
+                        controller: descriptionController,
+                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
+                        label: AppLocalizations.of(context)!.translate('description_list'),
+                        maxLines: 5,
+                      ),
                       const SizedBox(height: 8),
-                      _buildPriorityDropdown(),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('from_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
+                      // Выбор пользователей
+                      UserMultiSelectWidget(
+                        selectedUsers: selectedUsers,
+                        onSelectUsers: (List<UserData> selectedUsersData) {
+                          setState(() {
+                            selectedUsers = selectedUsersData
+                                .map((user) => user.id.toString())
+                                .toList();
+                          });
                         },
                       ),
                       const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('to_list'),
-                        hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 8),
+                      // Выбор проекта
                       ProjectTaskGroupWidget(
                         selectedProject: selectedProject,
                         onSelectProject: (ProjectTask selectedProjectData) {
@@ -529,74 +554,62 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      UserMultiSelectWidget(
-                        selectedUsers: selectedUsers,
-                        onSelectUsers: (List<UserData> selectedUsersData) {
-                          setState(() {
-                            // Update selected user IDs
-                            selectedUsers = selectedUsersData
-                                .map((user) => user.id.toString())
-                                .toList();
-                          });
+                      // Дата окончания задачи
+                      CustomTextFieldDate(
+                        controller: endDateController,
+                        label: AppLocalizations.of(context)!.translate('deadline'),
+                        hasError: isEndDateInvalid,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!.translate('field_required');
+                          }
+                          return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'), 
-                        maxLines: 5,
-                      ),
+                      
                       const SizedBox(height: 16),
-                      _buildFileSelection(), // Добавляем виджет выбора файла
+                      // Если дополнительные поля скрыты – показываем кнопку "Дополнительно"
+                      if (!_showAdditionalFields)
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!.translate('additionally'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: () {
+                            setState(() {
+                              _showAdditionalFields = true;
+                            });
+                          },
+                        )
+                      else ...[
+                        // Если дополнительные поля раскрыты, показываем виджет выбора файла,
+                        // список дополнительных полей и кнопку для добавления нового поля
+                        _buildFileSelection(),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                      ],
                       const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-// Динамические поля с сервера
-                      // ListView.builder(
-                      //   shrinkWrap: true,
-                      //   physics: NeverScrollableScrollPhysics(),
-                      //   itemCount: customFields.length,
-                      //   itemBuilder: (context, index) {
-                      //     return CustomTextField(
-                      //       controller: customFields[index].controller,
-                      //       hintText: 'Введите значение',
-                      //       label: customFields[index]
-                      //           .fieldName, // Устанавливаем метку из данных
-                      //       validator: (value) {
-                      //         if (value == null || value.isEmpty) {
-                      //           return 'Поле обязательно для заполнения';
-                      //         }
-                      //         return null;
-                      //       },
-                      //     );
-                      //   },
-                      // ),
-                      const SizedBox(height: 8),
-
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                      const SizedBox(height: 8),
-                      // _buildFileSelection(), // Добавляем виджет выбора файла
                     ],
                   ),
                 ),
