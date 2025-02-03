@@ -3534,7 +3534,17 @@ class ApiService {
     {});
 
   if (response.statusCode != 200) {
-    throw Exception('Ошибка отправки сообщения!');
+    throw Exception('Ошибка закрепления сообщения!');
+  }
+}
+  Future<void> unpinMessage(String messageId) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {});
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка закрепления сообщения!');
   }
 }
 
@@ -3547,7 +3557,7 @@ class ApiService {
     });
 
   if (response.statusCode != 200) {
-    throw Exception('Ошибка отправки сообщения!');
+    throw Exception('Ошибка изменения сообщения!');
   }
 }
 
