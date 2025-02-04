@@ -104,7 +104,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy').format(parsedDate);
+      return DateFormat('dd.MM.yyyy').format(parsedDate);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('invalid_format');
     }
@@ -202,17 +202,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             AppLocalizations.of(context)!.translate('normal'),
       },
       {
-        'label': AppLocalizations.of(context)!.translate('from_details'),
-        'value': task.startDate != null && task.startDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-            : ''
+        'label': AppLocalizations.of(context)!.translate('description_details'),
+        'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('to_details'),
-        'value': task.endDate != null && task.endDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : ''
-      },
+      // {
+      //   'label': AppLocalizations.of(context)!.translate('from_details'),
+      //   'value': task.startDate != null && task.startDate!.isNotEmpty
+      //       ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+      //       : ''
+      // },
+      
       {
         'label': AppLocalizations.of(context)!.translate('project_details'),
         'value': task.project?.name ?? ''
@@ -224,8 +223,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             : '',
       },
       {
-        'label': AppLocalizations.of(context)!.translate('description_details'),
-        'value': task.description?.isNotEmpty == true ? task.description! : ''
+        'label': AppLocalizations.of(context)!.translate('deadline'),
+        'value': task.endDate != null && task.endDate!.isNotEmpty
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+            : ''
       },
       {
         'label': AppLocalizations.of(context)!.translate('status_details'),

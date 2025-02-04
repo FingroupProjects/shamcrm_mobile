@@ -577,5 +577,7 @@
     "no_events_in_section": "No notes in this status",
     "": "Note successfully updated!",
     "select_subject": "Enter title",
-    "subject": "Topic"
+    "subject": "Topic",
+     "deadline": "Deadline",
+    "additionally": "Additionally"
 }
