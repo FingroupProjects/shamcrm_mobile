@@ -135,9 +135,9 @@ class _TasksWidgetState extends State<TasksWidget> {
   }
 
   Widget _buildTaskItem(DealTask task) {
-    final formattedDateFrom = task.from != null
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.from!))
-        : '';
+    // final formattedDateFrom = task.from != null
+    //     ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.from!))
+    //     : '';
 
     final formattedDateTo = task.to != null
         ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.to!))
@@ -175,15 +175,14 @@ class _TasksWidgetState extends State<TasksWidget> {
                       SizedBox(height: 4),
                       Row(
                         children: [
+                          // Text(
+                          //   '${AppLocalizations.of(context)!.translate('from')}$formattedDateFrom',
+                          //   style: TaskCardStyles.priorityStyle.copyWith(
+                          //     color: Color(0xff1E2E52),
+                          //   ),
+                          // ),
                           Text(
-                            '${AppLocalizations.of(context)!.translate('from')}$formattedDateFrom',
-                            style: TaskCardStyles.priorityStyle.copyWith(
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Text(
-                            '${AppLocalizations.of(context)!.translate('to')}$formattedDateTo',
+                            '${AppLocalizations.of(context)!.translate('deadLine')}$formattedDateTo',
                             style: TaskCardStyles.priorityStyle.copyWith(
                               color: Color(0xff1E2E52),
                             ),
