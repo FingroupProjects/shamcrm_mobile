@@ -11,7 +11,8 @@ class MessageBubble extends StatelessWidget {
   final int? replyMessageId;
   final void Function(int)? onReplyTap;
   final bool isHighlighted;
-  final bool isChanged; // Добавляем параметр isChanged
+  final bool isChanged;
+  final bool isRead; 
 
   MessageBubble({
     Key? key,
@@ -23,7 +24,8 @@ class MessageBubble extends StatelessWidget {
     this.replyMessageId,
     this.onReplyTap,
     this.isHighlighted = false,
-    required this.isChanged, // Обязательный параметр
+    required this.isChanged,
+    required this.isRead,
   }) : super(key: key);
 
   @override
@@ -123,14 +125,26 @@ class MessageBubble extends StatelessWidget {
                 ),
               ),
               if (time.isNotEmpty)
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: ChatSmsStyles.appBarTitleColor,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: ChatSmsStyles.appBarTitleColor,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Gilroy',
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    if (isSender)
+                      Icon(
+                        isRead ? Icons.done_all : Icons.done_all,
+                        size: 18,
+                        color: isRead ? const Color.fromARGB(255, 45, 28, 235) : Colors.grey.shade400,
+                      ),
+                  ],
                 ),
             ],
           ),
