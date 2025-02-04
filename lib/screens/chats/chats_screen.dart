@@ -40,7 +40,6 @@ class _ChatsScreenState extends State<ChatsScreen>
   FocusNode focusNode = FocusNode();
   late TabController _tabController;
   late List<String> _tabTitles;
-  // final List<String> _tabTitles = ['Лиды', 'Задачи', 'Корпоративный чат'];
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   String endPointInTab = 'lead';
@@ -54,7 +53,6 @@ class _ChatsScreenState extends State<ChatsScreen>
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
     final CorporateChat = await apiService.hasPermission('corporateChat.read');
-    // final CorporateChat = await apiService.hasPermission('chat.read');
 
     setState(() {
       _showLeadChat = LeadChat;

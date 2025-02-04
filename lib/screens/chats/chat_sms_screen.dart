@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
@@ -895,6 +896,27 @@ Widget messageListUi() {
     });
   } catch (e) {
     print('Error processing messageEdited event: $e');
+  }
+});
+
+ myPresenceChannel.bind('chat.pinned').listen((event) async {
+  try {
+    final data = jsonDecode(event.data);
+  print('==================MESSAGE PINNDE EVENT DATA======START=============');
+  print(event.data);
+  print('==================MESSAGE PINNED--EVENT DATA======END=============');
+    final type = data['type']; 
+    final messageData = data['message'];
+    final message = Message.fromJson(messageData); 
+    final messageId = message.id;
+
+    if (type == 'pinned') {
+      context.read<MessagingCubit>().pinMessageFromSocket(message);
+    } else if (type == 'unpinned') {
+      context.read<MessagingCubit>().unpinMessageFromSocket(messageId);
+    }
+  } catch (e) {
+    print("Error handling pinned event: $e");
   }
 });
 
