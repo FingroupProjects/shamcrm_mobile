@@ -33,6 +33,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   String? fileSize;
   bool isEndDateInvalid = false;
   bool setPush = false;
+  bool _showAdditionalFields = false;
 
   @override
   void initState() {
@@ -281,33 +282,19 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!
-                            .translate('from_list'),
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('to_list'),
-                        hasError: isEndDateInvalid,
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
+                      // const SizedBox(height: 8),
+                      // CustomTextFieldDate(
+                      //   controller: startDateController,
+                      //   label: AppLocalizations.of(context)!
+                      //       .translate('from_list'),
+                      //   // validator: (value) {
+                      //   //   if (value == null || value.isEmpty) {
+                      //   //     return AppLocalizations.of(context)!
+                      //   //         .translate('field_required');
+                      //   //   }
+                      //   //   return null;
+                      //   // },
+                      // ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
@@ -317,9 +304,39 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                             .translate('description_list'),
                         maxLines: 5,
                       ),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: endDateController,
+                        label:
+                            AppLocalizations.of(context)!.translate('deadline'),
+                        hasError: isEndDateInvalid,
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
+                      ),
                       const SizedBox(height: 16),
-                      _buildFileSelection(), // Добавляем виджет выбора файла
-                      _buildPushNotificationCheckbox(), // Add this line
+
+                      if (!_showAdditionalFields)
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('additionally'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: () {
+                            setState(() {
+                              _showAdditionalFields = true;
+                            });
+                          },
+                        )
+                      else ...[
+                        // const SizedBox(height: 16),
+                        _buildFileSelection(), // Добавляем виджет выбора файла
+                        _buildPushNotificationCheckbox(), // Add this line
+                      ],
                     ],
                   ),
                 ),
@@ -502,6 +519,7 @@ List<String> fileSizes = [];
     _setDefaultValues();
     // Подписываемся на изменения в блоках
   }
+
 
   void _setDefaultValues() {
     // Устанавливаем приоритет по умолчанию (Обычный)
