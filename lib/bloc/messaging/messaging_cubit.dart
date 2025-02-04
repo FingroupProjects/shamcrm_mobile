@@ -35,6 +35,90 @@ class MessagingCubit extends Cubit<MessagingState> {
     }
   }
 
+void updateMessageReadStatus(int messageId, int userId, DateTime readAt) {
+  if (state is MessagesLoadedState) {
+    final currentState = state as MessagesLoadedState;
+    final messages = currentState.messages;
+    // Находим сообщение по ID
+    final index = messages.indexWhere((msg) => msg.id == messageId);
+    if (index != -1) {
+      final message = messages[index];
+      // Создаем новый объект Message с обновленным readStatus
+      final updatedMessage = Message(
+        id: message.id,
+        text: message.text,
+        type: message.type,
+        isMyMessage: message.isMyMessage,
+        isRead: true, // Обновляем статус прочтения
+        createMessateTime: message.createMessateTime,
+        senderName: message.senderName,
+        readStatus: ReadStatus(
+          read: [
+            ...(message.readStatus?.read ?? []),
+            User(
+              id: userId,
+              name: '',
+              lastname: '',
+              login: '',
+              email: '',
+              phone: '',
+              image: '',
+              lastSeen: null,
+              fullName: 'User $userId',
+              readAt: readAt,
+            ),
+          ],
+          unread: message.readStatus?.unread ?? [],
+        ),
+      );
+      // Обновляем сообщение в списке
+      messages[index] = updatedMessage;
+      // Эмитим обновление состояния с новым списком сообщений
+      emit(MessagesLoadedState(messages: messages));
+    }
+  } else if (state is PinnedMessageState) {
+    final currentState = state as PinnedMessageState;
+    final messages = currentState.messages;
+    final index = messages.indexWhere((msg) => msg.id == messageId);
+    if (index != -1) {
+      final message = messages[index];
+      final updatedMessage = Message(
+        id: message.id,
+        text: message.text,
+        type: message.type,
+        isMyMessage: message.isMyMessage,
+        isRead: true,
+        createMessateTime: message.createMessateTime,
+        senderName: message.senderName,
+        readStatus: ReadStatus(
+          read: [
+            ...(message.readStatus?.read ?? []),
+            User(
+              id: userId,
+              name: '',
+              lastname: '',
+              login: '',
+              email: '',
+              phone: '',
+              image: '',
+              lastSeen: null,
+              fullName: 'User $userId',
+              readAt: readAt,
+            ),
+          ],
+          unread: message.readStatus?.unread ?? [],
+        ),
+      );
+      messages[index] = updatedMessage;
+      emit(PinnedMessageState(
+        pinnedMessage: currentState.pinnedMessage,
+        messages: messages,
+      ));
+    }
+  }
+}
+
+
   void addMessageFormSocket(Message message) {
     if (state is MessagesLoadedState) {
       final currentState = state as MessagesLoadedState;
