@@ -25,6 +25,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -537,7 +538,6 @@ void _scrollToMessageReply(int messageId) {
 }
 
 
-
 Widget messageListUi() {
   return BlocBuilder<MessagingCubit, MessagingState>(
     builder: (context, state) {
@@ -547,23 +547,23 @@ Widget messageListUi() {
       if (state is MessagesLoadingState) {
         return Center(child: CircularProgressIndicator.adaptive());
       }
- if (state is MessagesLoadedState || state is ReplyingToMessageState || state is PinnedMessageState || state is EditingMessageState) {
-  final messages = state is MessagesLoadedState
-      ? state.messages
-      : state is ReplyingToMessageState
-          ? state.messages
-          : state is PinnedMessageState
-              ? state.messages
-              : (state as EditingMessageState).messages;
+      if (state is MessagesLoadedState || state is ReplyingToMessageState || state is PinnedMessageState || state is EditingMessageState) {
+        final messages = state is MessagesLoadedState
+            ? state.messages
+            : state is ReplyingToMessageState
+                ? state.messages
+                : state is PinnedMessageState
+                    ? state.messages
+                    : (state as EditingMessageState).messages;
 
-  final pinnedMessage = state is PinnedMessageState
-      ? state.pinnedMessage
-      : state is ReplyingToMessageState
-          ? state.pinnedMessage
-          : state is EditingMessageState
-              ? state.pinnedMessage
-              : null;
-        
+        final pinnedMessage = state is PinnedMessageState
+            ? state.pinnedMessage
+            : state is ReplyingToMessageState
+                ? state.pinnedMessage
+                : state is EditingMessageState
+                    ? state.pinnedMessage
+                    : null;
+
         String _getMessageText(Message message) {
            if (message.type == 'voice') {
               return 'Голосовое сообщение'; 
@@ -581,7 +581,7 @@ Widget messageListUi() {
         }
 
         // Отображаем список сообщений
-       List<Widget> messageWidgets = [];
+        List<Widget> messageWidgets = [];
         DateTime? currentDate;
         List<Widget> currentGroup = [];
         
@@ -666,9 +666,9 @@ Widget messageListUi() {
                     onUnpin: () {
                       context.read<MessagingCubit>().unpinMessage();
                     },
-              onTap: () {
-                  _scrollToMessageReply(pinnedMessage.id); 
-                },
+                    onTap: () {
+                      _scrollToMessageReply(pinnedMessage.id); 
+                    },
                   ),
                 ),
               ),
@@ -680,12 +680,12 @@ Widget messageListUi() {
               ),
           ],
         );
-
       }
       return Container();
     },
   );
 }
+
 
   Widget inputWidget() {
     return InputField(
@@ -920,7 +920,28 @@ Widget messageListUi() {
   }
 });
 
+myPresenceChannel.bind('chat.read').listen((event) async {
+  // final readData = messageSocketDataFromJson(event.data);
+      final readData = jsonDecode(event.data);
+        print('==================MESSAGE CHATT EVENT DATA======START=============');
+  print(event.data);
+  print('==================MESSAGE CHATT--EVENT DATA======END=============');
+
+  final messageId = readData['messages'][0]; 
+  print(messageId);
+  final userId = readData['user']['id'];
+  print(userId);
+
+  final readAt = DateTime.parse(readData['read_at']); 
+
+  // Обновляем состояние в MessagingCubit
+  context.read<MessagingCubit>().updateMessageReadStatus(messageId, userId, readAt);
+});
+
+
+
     });
+    
 
     try {
       await socketClient.connect();
@@ -1002,14 +1023,14 @@ Widget messageListUi() {
   @override
   void dispose() {
     chatSubscribtion.cancel();
-    _scrollController.dispose();
 
     _scrollController.addListener(_onScroll);
+    _scrollController.dispose();
+
     _messageController.dispose();
     socketClient.dispose();
     _webSocket?.close();
     _focusNode.dispose(); 
-    print("ScrollController is initialized");
     super.dispose();
   }
 }
@@ -1127,7 +1148,8 @@ class MessageItemWidget extends StatelessWidget {
         onReplyTap?.call(replyMessageId);
       },
       isHighlighted: highlightedMessageId == message.id,
-      isChanged: message.isChanged,
+      isChanged: message.isChanged, 
+      isRead: message.isRead,
     );
   }
 
@@ -1224,62 +1246,41 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
 
   onMenuStateChanged?.call(true);
 
+  bool showReadersList = false;
+  bool isSingleUserChat = message.readStatus?.read.length == 1;
+
+  void showMenuItems() {
   final List<PopupMenuItem> menuItems = [];
 
+  if (showReadersList) {
+  final List<PopupMenuItem> menuItems = [];
+
+  // Добавляем кнопку "Назад" в начало списка
   menuItems.add(
     _buildMenuItem(
-      icon: 'assets/icons/chats/menu_icons/reply.svg',
-      text: "Ответить",
+      icon: 'assets/icons/arrow-left.png',
+      text: "Назад",
       iconColor: Colors.black,
       textColor: Colors.black,
       onTap: () {
         Navigator.pop(context);
-        focusNode.requestFocus();
-        context.read<MessagingCubit>().setReplyMessage(message);
-      },
-    ),
-  );
-    menuItems.add(
-    _buildMenuItem(
-      icon: 'assets/icons/chats/menu_icons/pin.svg',
-      text: "Закрепить",
-      iconColor: Colors.black,
-      textColor: Colors.black,
-      onTap: () {
-        Navigator.pop(context);
-        context.read<MessagingCubit>().pinMessage(message);
-        print("Сообщение закреплено");
+        showReadersList = false;
+        showMenuItems();
       },
     ),
   );
 
-  if (message.isMyMessage) {
+  // Добавляем список пользователей
+  for (var user in message.readStatus?.read ?? []) {
+    String formattedTime = user.readAt != null
+        ? DateFormat('HH:mm').format(user.readAt!)
+        : "Неизвестное время";
     menuItems.add(
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/edit.svg',
-        text: "Изменить",
-        iconColor: Colors.black,
+      _buildMenuItemWithAvatar(
+        avatarSvg: user.image,
+        text: "${user.fullName} — $formattedTime",
         textColor: Colors.black,
-        onTap: () {
-          Navigator.pop(context);
-          focusNode.requestFocus();
-          context.read<MessagingCubit>().startEditingMessage(message);
-          print("Сообщение изменено");
-        },
-      ),
-    );
-
-    menuItems.add(
-      _buildMenuItem(
-        icon: 'assets/icons/chats/menu_icons/delete-red.svg',
-        text: "Удалить",
-        iconColor: Colors.red,
-        textColor: Colors.red,
-        onTap: () {
-          Navigator.pop(context);
-          _deleteMessage(context);
-          print("Сообщение удалено");
-        },
+        onTap: () {},
       ),
     );
   }
@@ -1289,7 +1290,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
     context: context,
     color: Colors.white,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(6),
     ),
     position: RelativeRect.fromLTRB(
       position.dx + messageBox.size.width / 2.5,
@@ -1301,13 +1302,174 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
   ).then((_) {
     onMenuStateChanged?.call(false);
   });
+  return;
 }
 
-PopupMenuItem _buildMenuItem({
-  required String icon, 
+
+    if (message.isMyMessage) {
+  if (message.readStatus?.read.isNotEmpty ?? false) {
+    if (isSingleUserChat) {
+      User reader = message.readStatus!.read.first;
+      String formattedTime = reader.readAt != null
+          ? DateFormat('HH:mm').format(reader.readAt!)
+          : "Неизвестное время";
+      menuItems.add(
+        PopupMenuItem(
+          child: Row(
+            children: [
+              const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
+              const SizedBox(width: 10),
+              Text(
+                "Прочитано в $formattedTime",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: ChatSmsStyles.messageBubbleSenderColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      menuItems.add(
+        PopupMenuItem(
+          child: InkWell(
+            onTap: () {
+              Navigator.pop(context);
+              showReadersList = true;
+              showMenuItems();
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
+                  const SizedBox(width: 10),
+                  Text(
+                    "${message.readStatus!.read.length} просмотров",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: ChatSmsStyles.messageBubbleSenderColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+  } else {
+    menuItems.add(
+      PopupMenuItem(
+        child: Row(
+          children: [
+            const Icon(Icons.done, color: Colors.grey),
+            const SizedBox(width: 10),
+            const Text(
+              "Не прочитано",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+    // Остальные пункты меню
+    menuItems.add(
+      _buildMenuItem(
+        icon: 'assets/icons/chats/menu_icons/reply.svg',
+        text: "Ответить",
+        iconColor: Colors.black,
+        textColor: Colors.black,
+        onTap: () {
+          Navigator.pop(context);
+          focusNode.requestFocus();
+          context.read<MessagingCubit>().setReplyMessage(message);
+        },
+      ),
+    );
+
+    menuItems.add(
+      _buildMenuItem(
+        icon: 'assets/icons/chats/menu_icons/pin.svg',
+        text: "Закрепить",
+        iconColor: Colors.black,
+        textColor: Colors.black,
+        onTap: () {
+          Navigator.pop(context);
+          context.read<MessagingCubit>().pinMessage(message);
+        },
+      ),
+    );
+
+    if (message.isMyMessage) {
+      menuItems.add(
+        _buildMenuItem(
+          icon: 'assets/icons/chats/menu_icons/edit.svg',
+          text: "Изменить",
+          iconColor: Colors.black,
+          textColor: Colors.black,
+          onTap: () {
+            Navigator.pop(context);
+            focusNode.requestFocus();
+            context.read<MessagingCubit>().startEditingMessage(message);
+          },
+        ),
+      );
+
+      menuItems.add(
+        _buildMenuItem(
+          icon: 'assets/icons/chats/menu_icons/delete-red.svg',
+          text: "Удалить",
+          iconColor: Colors.red,
+          textColor: Colors.red,
+          onTap: () {
+            Navigator.pop(context);
+            _deleteMessage(context);
+          },
+        ),
+      );
+    }
+
+    showMenu(
+      context: context,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+      ),
+      position: RelativeRect.fromLTRB(
+        position.dx + messageBox.size.width / 2.5,
+        position.dy,
+        position.dx + messageBox.size.width / 2 + 1,
+        position.dy + messageBox.size.height,
+      ),
+      items: menuItems,
+    ).then((_) {
+      onMenuStateChanged?.call(false);
+    });
+  }
+
+  showMenuItems();
+}
+
+
+PopupMenuItem _buildMenuItemWithAvatar({
+  required String avatarSvg,
   required String text,
-  required Color iconColor,
-  required Color textColor, 
+  required Color textColor,
   required VoidCallback onTap,
 }) {
   return PopupMenuItem(
@@ -1315,14 +1477,13 @@ PopupMenuItem _buildMenuItem({
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         child: Row(
           children: [
-            SvgPicture.asset(
-              icon, 
-              width: 24,
-              height: 24,
-              color: iconColor,
+            SvgPicture.string(
+              avatarSvg,
+              width: 30,
+              height: 30,
             ),
             const SizedBox(width: 10),
             Text(
@@ -1331,7 +1492,7 @@ PopupMenuItem _buildMenuItem({
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: textColor, 
+                color: textColor,
               ),
             ),
           ],
@@ -1340,6 +1501,47 @@ PopupMenuItem _buildMenuItem({
     ),
   );
 }
+
+PopupMenuItem _buildMenuItem({
+  required String icon,
+  required String text,
+  required Color iconColor,
+  required Color textColor,
+  required VoidCallback onTap,
+}) {
+  return PopupMenuItem(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        child: Row(
+          children: [
+            if (icon.isNotEmpty)
+              SvgPicture.asset(
+                icon,
+                width: 24,
+                height: 24,
+                color: iconColor,
+              ),
+            if (icon.isNotEmpty) const SizedBox(width: 10),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+
 
   // Логика для удаления сообщения
   void _deleteMessage(BuildContext context) {

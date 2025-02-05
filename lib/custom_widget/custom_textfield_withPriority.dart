@@ -230,9 +230,9 @@ Widget _buildAnimatedFireIcon() {
             errorText: widget.errorText,
             errorStyle: const TextStyle(
               fontSize: 14,
-              fontFamily: 'Gilroy',
+              // fontFamily: 'Gilroy',
               color: Colors.red,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

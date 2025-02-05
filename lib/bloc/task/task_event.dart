@@ -27,7 +27,7 @@ class FetchMoreTasks extends TaskEvent {
 
   FetchMoreTasks(this.statusId, this.currentPage);
 }
-
+/*
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -59,7 +59,7 @@ class CreateTask extends TaskEvent {
 
   });
 }
-/*
+*/
 class CreateTask extends TaskEvent {
   final String name;
   final int statusId;
@@ -90,7 +90,7 @@ class CreateTask extends TaskEvent {
     required this.localizations,  // Add this to constructor
 
   });
-}*/ 
+}
 class UpdateTask extends TaskEvent {
   final int taskId;
   final String name;
@@ -103,7 +103,7 @@ class UpdateTask extends TaskEvent {
   final String? description;
   final int taskStatusId;
   final List<Map<String, String>>? customFields;
-  final String? filePath;
+  final List<String>? filePaths; // Изменено на список путей к файлам
   final AppLocalizations localizations;  // Add this to your event
 
 
@@ -119,7 +119,7 @@ class UpdateTask extends TaskEvent {
     this.description,
     required this.taskStatusId,
     this.customFields,
-    this.filePath,
+    this.filePaths, // Изменено на список путей к файлам
     required this.localizations,  // Add this to constructor
 
   });

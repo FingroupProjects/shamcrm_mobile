@@ -113,6 +113,24 @@ flutter:
     - assets/langs/
     - assets/icons/icon-fire-color.png
     - assets/icons/icon-fire-no-color.png
+    - assets/icons/files/apk.png
+    - assets/icons/files/csv.png
+    - assets/icons/files/docx.png
+    - assets/icons/files/doc.png
+    - assets/icons/files/exe.png
+    - assets/icons/files/gif.png
+    - assets/icons/files/jpg.png
+    - assets/icons/files/pdf.png
+    - assets/icons/files/png.png
+    - assets/icons/files/svg.png
+    - assets/icons/files/txt.png
+    - assets/icons/files/xls.png
+    - assets/icons/files/zip.png
+    - assets/icons/files/add.png
+    - assets/icons/files/file.png
+    - assets/icons/files/ppt.png
+    - assets/icons/files/pptx.png
+
     # - assets/audio/sender_voice_message.mp3
     # - assets/audio/receiver_voice_message.mp3
   #   - images/a_dot_ham.jpeg

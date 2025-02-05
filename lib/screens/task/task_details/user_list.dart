@@ -23,6 +23,13 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
 
+  final TextStyle userTextStyle = const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    fontFamily: 'Gilroy',
+    color: Color(0xff1E2E52),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -35,9 +42,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
       children: [
         BlocBuilder<GetAllClientBloc, GetAllClientState>(
           builder: (context, state) {
-            if (state is GetAllClientLoading) {
-              // return Center(child: CircularProgressIndicator());
-            }
+            // if (state is GetAllClientLoading) {
+            //   return const Center(child: CircularProgressIndicator());
+            // }
             if (state is GetAllClientError) {
               return Text(state.message);
             }
@@ -49,133 +56,149 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         widget.selectedUsers!.contains(user.id.toString()))
                     .toList();
               }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('assignees_list'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xfff1E2E52),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    child: CustomDropdown<UserData>.multiSelectSearch(
-                      items: usersList,
-                      initialItems: selectedUsersData,
-                      searchHintText:
-                          AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
+              return FormField<List<UserData>>(
+                validator: (value) {
+                  if (selectedUsersData.isEmpty) {
+                    return AppLocalizations.of(context)!.translate('field_required_project');
+                  }
+                  return null;
+                },
+                builder: (FormFieldState<List<UserData>> field) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('assignees_list'),
+                        style: userTextStyle.copyWith(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14,
                         ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
-                        return ListTile(
-                          minTileHeight: 1,
-                          minVerticalPadding: 2,
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          title: Padding(
-                            padding: EdgeInsets.zero,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Color(0xff1E2E52), width: 1),
-                                    color: isSelected
-                                        ? Color(0xff1E2E52)
-                                        : Colors.transparent,
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F7FD),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            width: 1,
+                            color: field.hasError 
+                                ? Colors.red 
+                                : const Color(0xFFE5E7EB),
+                          ),
+                        ),
+                        child: CustomDropdown<UserData>.multiSelectSearch(
+                          items: usersList,
+                          initialItems: selectedUsersData,
+                          searchHintText: AppLocalizations.of(context)!.translate('search'),
+                          overlayHeight: 400,
+                          decoration: CustomDropdownDecoration(
+                            closedFillColor: const Color(0xffF4F7FD),
+                            expandedFillColor: Colors.white,
+                            closedBorder: Border.all(
+                              color: Colors.transparent,
+                              width: 1,
+                            ),
+                            closedBorderRadius: BorderRadius.circular(12),
+                            expandedBorder: Border.all(
+                              color: const Color(0xFFE5E7EB),
+                              width: 1,
+                            ),
+                            expandedBorderRadius: BorderRadius.circular(12),
+                            // textPadding: const EdgeInsets.symmetric(
+                            //   horizontal: 16,
+                            //   vertical: 12,
+                            // ),
+                          ),
+                          listItemBuilder: (context, item, isSelected, onItemSelect) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: const Color(0xff1E2E52),
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                      color: isSelected
+                                          ? const Color(0xff1E2E52)
+                                          : Colors.transparent,
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 14,
+                                          )
+                                        : null,
                                   ),
-                                  child: isSelected
-                                      ? Icon(Icons.check,
-                                          color: Colors.white, size: 16)
-                                      : null,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(item.name!,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    )),
-                              ],
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      item.name!,
+                                      style: userTextStyle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          headerListBuilder: (context, hint, enabled) {
+                            String selectedUsersNames = selectedUsersData.isEmpty
+                                ? AppLocalizations.of(context)!.translate('select_assignees_list')
+                                : selectedUsersData.map((e) => e.name).join(', ');
+
+                            return Text(
+                              selectedUsersNames,
+                              style: userTextStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                          hintBuilder: (context, hint, enabled) => Text(
+                            AppLocalizations.of(context)!.translate('select_assignees_list'),
+                            style: userTextStyle.copyWith(
+                              fontSize: 14,
+                              color: const Color(0xFF6B7280),
                             ),
                           ),
-                          onTap: () {
-                            onItemSelect();
-                            FocusScope.of(context).unfocus();
+                          onListChanged: (values) {
+                            widget.onSelectUsers(values);
+                            setState(() {
+                              selectedUsersData = values;
+                            });
+                            field.didChange(values);
                           },
-                        );
-                      },
-                      headerListBuilder: (context, hint, enabled) {
-                        String selectedUsersNames = selectedUsersData.isEmpty
-                            ? AppLocalizations.of(context)!
-                                .translate('select_assignees_list')
-                            : selectedUsersData.map((e) => e.name).join(', ');
-
-                        return Text(
-                          selectedUsersNames,
+                        ),
+                      ),
+                       if (field.hasError)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 0),
+                        child: Text(
+                          field.errorText!,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                          overflow:
-                              TextOverflow.ellipsis, // Чтобы текст не обрезался
-                        );
-                      },
-                      hintBuilder: (context, hint, enabled) => Text(
-                          AppLocalizations.of(context)!
-                              .translate('select_assignees_list'),
-                          style: TextStyle(
+                            color: Colors.red,
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          )),
-                      listValidator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context)!
-                              .translate('field_required_project');
-                        }
-                        return null;
-                      },
-                      onListChanged: (values) {
-                        widget.onSelectUsers(values);
-                        setState(() {
-                          selectedUsersData = values;
-                        });
-                      },
-                    ),
-                  ),
-                ],
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        ),
+                    ],
+                  );
+                },
               );
             }
-            return SizedBox();
+            return const SizedBox();
           },
         ),
       ],
     );
   }
 }
+

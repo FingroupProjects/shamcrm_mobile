@@ -134,7 +134,7 @@ class Chats {
     }
   }
 
-   ChatItem toChatItem() {
+  ChatItem toChatItem() {
     String avatar;
     if (group != null) {
       avatar = "assets/images/GroupChat.png";
@@ -142,7 +142,7 @@ class Chats {
       // Получаем ID текущего пользователя из поля user
       int currentUserId = user?.id ?? 0;
       print('Current user ID: $currentUserId'); // для отладки
-      
+
       if (chatUsers.length > 1) {
         if (chatUsers[1].id == currentUserId) {
           // Если первый пользователь - это текущий пользователь,
@@ -158,7 +158,7 @@ class Chats {
     } else {
       avatar = "assets/images/AvatarChat.png";
     }
-    
+
     return ChatItem(
       displayName!,
       lastMessage,
@@ -274,9 +274,11 @@ class Message {
   bool isPause;
   Duration duration;
   Duration position;
-  final ForwardedMessage? forwardedMessage; 
+  final ForwardedMessage? forwardedMessage;
   bool isPinned;
   bool isChanged;
+  bool isRead;
+  final ReadStatus? readStatus;
 
   Message({
     required this.id,
@@ -290,16 +292,17 @@ class Message {
     this.isPause = false,
     this.duration = const Duration(),
     this.position = const Duration(),
-    this.forwardedMessage, 
-    this.isPinned=false, 
-    this.isChanged=false, 
+    this.forwardedMessage,
+    this.isPinned = false,
+    this.isChanged = false,
+    this.isRead = false,
+    this.readStatus,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
     String text;
-
     if (json['type'] == 'file') {
-      text = json['text'] ?? 'unknown_file'; 
+      text = json['text'] ?? 'unknown_file';
     } else {
       text = json['text'] ?? '';
     }
@@ -307,6 +310,17 @@ class Message {
     ForwardedMessage? forwardedMessage;
     if (json['forwarded_message'] != null) {
       forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
+    }
+
+    // Проверка и парсинг read_status
+    ReadStatus? readStatus;
+    try {
+      if (json['read_status'] != null) {
+        readStatus = ReadStatus.fromJson(json['read_status']);
+      }
+    } catch (e) {
+      print('Error parsing read_status: $e');
+      readStatus = null; // Если ошибка, игнорируем read_status
     }
 
     return Message(
@@ -318,19 +332,20 @@ class Message {
           : json['sender']['name'] ?? 'Без имени',
       createMessateTime: json['created_at'] ?? '',
       filePath: json['file_path'],
-      isPinned: json['is_pinned'],
-      isChanged: json['is_changed'],
+      isPinned: json['is_pinned'] ?? false,
+      isChanged: json['is_changed'] ?? false,
       isMyMessage: json['is_my_message'] ?? false,
       forwardedMessage: forwardedMessage,
+      isRead: json['is_read'] ?? false,
+      readStatus: readStatus, // Добавляем readStatus после проверки
     );
   }
 
   @override
   String toString() {
-    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged}';
+    return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
 }
-
 
 class ForwardedMessage {
   final int id;
@@ -360,6 +375,86 @@ class ForwardedMessage {
   }
 }
 
+class ReadStatus {
+  final List<User> read;
+  final List<User> unread;
 
+  ReadStatus({
+    required this.read,
+    required this.unread,
+  });
 
+  factory ReadStatus.fromJson(Map<String, dynamic> json) {
+    return ReadStatus(
+      read: (json['read'] as List<dynamic>?)
+              ?.map((e) => User.fromJson(e['user'], e['read_at']))
+              .toList() ??
+          [],
+      unread: (json['unread'] as List<dynamic>?)
+              ?.map((e) => User.fromJson(e['user'], null))
+              .toList() ??
+          [],
+    );
+  }
+}
 
+class User {
+  final int id;
+  final String name;
+  final String lastname;
+  final String? login;
+  final String? email;
+  final String? phone;
+  final String? image;
+  final DateTime? lastSeen;
+  final DateTime? deletedAt;
+  final String? telegramUserId;
+  final String? jobTitle;
+  final bool? online;
+  final String fullName;
+  final DateTime? readAt; 
+
+  User({
+    required this.id,
+    required this.name,
+    required this.lastname,
+    required this.login,
+    required this.email,
+    required this.phone,
+    required this.image,
+    required this.lastSeen,
+    this.deletedAt,
+    this.telegramUserId,
+    this.jobTitle,
+    this.online,
+    required this.fullName,
+    this.readAt, // ✅ Добавлено
+  });
+  factory User.fromJson(Map<String, dynamic> json, [String? readAt]) {
+    return User(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      lastname: json['lastname'] ?? '',
+      login: json['login'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      image: json['image'] ?? '',
+      lastSeen: json['last_seen'] != null
+          ? DateTime.parse(json['last_seen'])
+          : DateTime.now(),
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'])
+          : null,
+      telegramUserId: json['telegram_user_id'],
+      jobTitle: json['job_title'],
+      online: json['online'] ?? false,
+      fullName: json['full_name'] ?? 'Без имени',
+      readAt: readAt != null ? DateTime.parse(readAt) : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'User{id: $id, name: $name, lastname: $lastname, login: $login, email: $email, phone: $phone, image: $image, lastSeen: $lastSeen, deletedAt: $deletedAt, telegramUserId: $telegramUserId, jobTitle: $jobTitle, online: $online, fullName: $fullName,readAt: $readAt}';
+  }
+}

@@ -23,6 +23,13 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   List<ProjectTask> projectsList = [];
   ProjectTask? selectedProjectData;
 
+  final TextStyle projectTextStyle = const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    fontFamily: 'Gilroy',
+    color: Color(0xff1E2E52),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -32,36 +39,31 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
           builder: (context, state) {
-            if (state is GetTaskProjectLoading) {
-              // return Center(child: CircularProgressIndicator());
-            }
+            // if (state is GetTaskProjectLoading) {
+            //   return const Center(child: CircularProgressIndicator());
+            // }
 
             if (state is GetTaskProjectError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+                      AppLocalizations.of(context)!.translate(state.message),
+                      style: projectTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.red,
                     elevation: 3,
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               });
@@ -80,96 +82,117 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 }
               }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('projects'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xfff1E2E52),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    // decoration: BoxDecoration(
-                    //   color: Color(0xFFF4F7FD),
-                    //   borderRadius: BorderRadius.circular(12),
-                    //   border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
-                    // ),
-                    child: CustomDropdown<ProjectTask>.search(
-                      closeDropDownOnClearFilterSearch: true,
-                      items: projectsList,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
-                      overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
+              return FormField<ProjectTask>(
+                validator: (value) {
+                  if (selectedProjectData == null) {
+                    return AppLocalizations.of(context)!.translate('field_required_project');
+                  }
+                  return null;
+                },
+                builder: (FormFieldState<ProjectTask> field) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('projects'),
+                        style: projectTextStyle.copyWith(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14,
                         ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
-                          width: 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder:
-                          (context, item, isSelected, onItemSelect) {
-                        return Text(item.name!,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ));
-                      },
-                      headerBuilder: (context, selectedItem, enabled) {
-                        return Text(
-                          selectedItem.name ,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F7FD),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            width: 1,
+                            color: field.hasError 
+                                ? Colors.red 
+                                : const Color(0xFFE5E7EB),
                           ),
-                        );
-                      },
-                      hintBuilder: (context, hint, enabled) =>
-                          Text(AppLocalizations.of(context)!.translate('select_project'),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              )),
-                      excludeSelected: false,
-                      initialItem: selectedProjectData,
-                      validator: (value) {
-                        if (value == null) {
-                          return AppLocalizations.of(context)!.translate('field_required_project');
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.onSelectProject(value);
-                          setState(() {
-                            selectedProjectData = value;
-                          });
-                          FocusScope.of(context).unfocus();
-                        }
-                      },
-                    ),
-                  ),
-                ],
+                        ),
+                        child: CustomDropdown<ProjectTask>.search(
+                          closeDropDownOnClearFilterSearch: true,
+                          items: projectsList,
+                          searchHintText: AppLocalizations.of(context)!.translate('search'),
+                          overlayHeight: 400,
+                          decoration: CustomDropdownDecoration(
+                            closedFillColor: const Color(0xffF4F7FD),
+                            expandedFillColor: Colors.white,
+                            closedBorder: Border.all(
+                              color: Colors.transparent,
+                              width: 1,
+                            ),
+                            closedBorderRadius: BorderRadius.circular(12),
+                            expandedBorder: Border.all(
+                              color: const Color(0xFFE5E7EB),
+                              width: 1,
+                            ),
+                            expandedBorderRadius: BorderRadius.circular(12),
+                            // textPadding: const EdgeInsets.symmetric(
+                            //   horizontal: 16,
+                            //   vertical: 12,
+                            // ),
+                          ),
+                          listItemBuilder: (context, item, isSelected, onItemSelect) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                item.name!,
+                                style: projectTextStyle,
+                              ),
+                            );
+                          },
+                          headerBuilder: (context, selectedItem, enabled) {
+                            return Text(
+                              selectedItem?.name ?? 
+                                  AppLocalizations.of(context)!.translate('select_project'),
+                              style: projectTextStyle,
+                            );
+                          },
+                          hintBuilder: (context, hint, enabled) => Text(
+                            AppLocalizations.of(context)!.translate('select_project'),
+                            style: projectTextStyle.copyWith(
+                              fontSize: 14,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                          excludeSelected: false,
+                          initialItem: selectedProjectData,
+                          onChanged: (value) {
+                            if (value != null) {
+                              widget.onSelectProject(value);
+                              setState(() {
+                                selectedProjectData = value;
+                              });
+                              field.didChange(value);
+                              FocusScope.of(context).unfocus();
+                            }
+                          },
+                        ),
+                      ),
+                       if (field.hasError)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 0),
+                        child: Text(
+                          field.errorText!,
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        ),
+                    ],
+                  );
+                },
               );
             }
-            return SizedBox();
+            return const SizedBox();
           },
         ),
       ],

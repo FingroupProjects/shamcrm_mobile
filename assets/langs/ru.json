@@ -628,5 +628,6 @@
       "subject":"Тематика",
       "deadline":"Дедлайн",
       "deadLine":"Дедлайн: ",
-      "additionally":"Допольнительно"
+      "additionally":"Допольнительно",
+      "add_file":"Загрузить файл"
   }

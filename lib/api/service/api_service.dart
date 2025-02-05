@@ -2467,7 +2467,7 @@ class ApiService {
       };
     }
   }
-
+/*
 // Метод для создание задачи
   Future<Map<String, dynamic>> createTask({
     required String name,
@@ -2611,8 +2611,8 @@ class ApiService {
         'message': 'error_create_task',
       };
     }
-  }
-/*// Метод для создание задачи
+  }*/
+// Метод для создание задачи
   Future<Map<String, dynamic>> createTask({
     required String name,
     required int? statusId,
@@ -2747,7 +2747,7 @@ class ApiService {
       };
     }
   }
-*/
+
   //Метод для обновление задачи
   Future<Map<String, dynamic>> updateTask({
     required int taskId,
@@ -2760,7 +2760,7 @@ class ApiService {
     int? projectId,
     List<int>? userId,
     String? description,
-    String? filePath,
+    List<String>? filePaths, // Список путей к файлам
     List<Map<String, String>>? customFields,
   }) async {
     try {
@@ -2817,23 +2817,15 @@ class ApiService {
         }
       }
 
-      // Добавляем файл, если он есть
-      if (filePath != null) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          final fileName = file.path.split('/').last;
-          final fileStream = http.ByteStream(file.openRead());
-          final length = await file.length();
-
-          final multipartFile = http.MultipartFile(
-            'file',
-            fileStream,
-            length,
-            filename: fileName,
-          );
-          request.files.add(multipartFile);
+    // Добавляем файлы, если они есть
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath(
+              'files[]', filePath); // Используем 'files[]'
+          request.files.add(file);
         }
       }
+
       // Отправляем запрос
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);

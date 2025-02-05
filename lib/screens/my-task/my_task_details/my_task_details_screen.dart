@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
+/*import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
@@ -524,8 +524,8 @@ Widget _buildValue(String value) {
     ),
     overflow: TextOverflow.visible,
   );
-}
-/*import 'package:crm_task_manager/api/service/api_service.dart';
+}*/
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
@@ -698,18 +698,18 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<MyTaskBloc, MyTaskState>(builder: (context, state) {
-      String? tasksNumber = '';
+      String? tasksNumber1 = '1';
       if (state is MyTaskDataLoaded && state.tasks.isNotEmpty) {
         // Ищем задачу по ID
         final task = state.tasks.firstWhere(
           (task) => task.id.toString() == widget.taskId,
           // orElse: () => Task(),
         );
-        tasksNumber = task.taskNumber?.toString() ?? '';
+        tasksNumber1 = task.taskNumber?.toString() ?? '1';
       }
       print("-------------tasksNumber---------------------------");
 
-print(tasksNumber);
+// print(tasksNumber);
       return Scaffold(
           appBar: _buildAppBar(context,
               "${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber?.toString()}"),
@@ -1085,4 +1085,3 @@ Widget _buildValue(String value) {
     overflow: TextOverflow.visible,
   );
 }
-*/
