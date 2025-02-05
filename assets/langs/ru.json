@@ -190,7 +190,7 @@
     "users": "Пользователи: ",
     "description": "Описание: ",
 
-    "projects": "Проекты",
+    "projects": "Проект",
     "search": "Поиск",
     "search_appbar": "Поиск...",
     "select_project": "Выберите проект",
@@ -246,7 +246,8 @@
     "author_details": "Автор:",
     "creation_date_details": "Дата создания:",
     "link": "Ссылка",
-    "view_task": "Просмотр задачи",
+    "view_task": "Задача",
+    
     "task_data_unavailable": "Данные о задаче недоступны.",
     "confirm_task_completion": "Хотите завершить задачу?",
     "confirm": "Подтвердить",
@@ -626,5 +627,7 @@
       "select_subject":"Введите название",
       "subject":"Тематика",
       "deadline":"Дедлайн",
-      "additionally":"Допольнительно"
+      "deadLine":"Дедлайн: ",
+      "additionally":"Допольнительно",
+      "add_file":"Загрузить файл"
   }

@@ -1,6 +1,7 @@
 class MyTask {
   final int id;
   final String name;
+  final int? taskNumber;
   final String? startDate;
   final String? endDate;
   final String? description;
@@ -12,6 +13,7 @@ class MyTask {
   MyTask({
     required this.id,
     required this.name,
+    this.taskNumber,
     required this.startDate,
     required this.endDate,
     this.description,
@@ -20,12 +22,13 @@ class MyTask {
     this.file,
     required this.taskCustomFields,
   });
-
+ 
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
     try {
       return MyTask(
         id: json['id'] ?? 0,
         name: json['name'] ?? 'Без имени',
+        taskNumber: json['task_number'] is int ? json['task_number'] : 0,
         startDate: json['from'],
         endDate: json['to'],
         description: json['description'] ?? '',
@@ -60,6 +63,7 @@ class MyTask {
     return {
       'id': id,
       'name': name,
+      'task_number':taskNumber,
       'from': startDate,
       'to': endDate,
       'description': description,

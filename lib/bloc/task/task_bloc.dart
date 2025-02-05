@@ -182,7 +182,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+ /* Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     if (!await _checkInternetConnection()) {
@@ -214,8 +214,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     } catch (e) {
       emit(TaskError(event.localizations.translate('task_creation_error')));
     }
-  }
-/*Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+  }*/
+Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     if (!await _checkInternetConnection()) {
@@ -248,7 +248,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TaskError(event.localizations.translate('task_creation_error')));
     }
   }
-*/
+
   Future<void> _updateTask(UpdateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
@@ -270,7 +270,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         description: event.description,
         taskStatusId: event.taskStatusId,
         customFields: event.customFields,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
       );
 
       if (result['success']) {
