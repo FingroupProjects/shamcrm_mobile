@@ -38,6 +38,8 @@ class MessageSocket {
   Map<String, dynamic>? forwardedMessage;
   bool? isChanged;
   bool? isPinned;
+  bool? isRead;
+  
 
   MessageSocket({
     this.id,
@@ -52,11 +54,12 @@ class MessageSocket {
     this.forwardedMessage,
     this.isChanged,
     this.isPinned,
+    this.isRead,
   });
 
     @override
   String toString() {
-    return 'MessageSocket{id: $id, text: $text, type: $type, filePath: $filePath, isLeadMessage: $isLeadMessage, sender: $sender, isMyMessage: $isMyMessage, createdAt: $createdAt, voiceDuration: $voiceDuration,forwardedMessage: $forwardedMessage,isChanged: $isChanged,isPinned: $isPinned}';
+    return 'MessageSocket{id: $id, text: $text, type: $type, filePath: $filePath, isLeadMessage: $isLeadMessage, sender: $sender, isMyMessage: $isMyMessage, createdAt: $createdAt, voiceDuration: $voiceDuration,forwardedMessage: $forwardedMessage,isChanged: $isChanged,isPinned: $isPinned,isRead: $isRead}';
   }
 
 factory MessageSocket.fromJson(Map<String, dynamic> json) {
@@ -73,6 +76,7 @@ factory MessageSocket.fromJson(Map<String, dynamic> json) {
     forwardedMessage: json['forwarded_message'],
     isChanged: json['is_changed'] ?? false, 
     isPinned: json['is_pinned'] ?? false, 
+    isRead: json['is_read'] ?? false, 
 
   );
 }
@@ -88,6 +92,7 @@ factory MessageSocket.fromJson(Map<String, dynamic> json) {
     "forwarded_message": forwardedMessage, 
     "is_changed": isChanged, 
     "is_pinned": isPinned, 
+    "is_read": isRead, 
   };
 }
 

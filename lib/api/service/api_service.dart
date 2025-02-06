@@ -3478,38 +3478,41 @@ class ApiService {
     }
   }
 
-// Метод для получения сообщений по chatId
-  Future<List<Message>> getMessages(int chatId) async {
-    final token = await getToken(); // Получаем токен
-    final organizationId =
-        await getSelectedOrganization(); // Получаем ID организации
+Future<List<Message>> getMessages(
+  int chatId, {
+  String? search,
+}) async {
+  final token = await getToken(); 
+  final organizationId = await getSelectedOrganization(); 
 
-    // Формируем путь с параметром organization_id
-    final url = Uri.parse(
-        '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId');
-
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null) {
-        return (data['result'] as List)
-            .map(
-                (msg) => Message.fromJson(msg)) // Создайте модель для сообщения
-            .toList();
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
-    } else {
-      throw Exception('Ошибка ${response.statusCode}!');
-    }
+  String url = '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId';
+  
+  if (search != null && search.isNotEmpty) {
+    url += '&search=$search';
   }
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result'] != null) {
+      return (data['result'] as List)
+          .map((msg) => Message.fromJson(msg)) 
+          .toList();
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка ${response.statusCode}!');
+  }
+}
+
 
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
@@ -3558,6 +3561,17 @@ class ApiService {
 
   if (response.statusCode != 200) {
     throw Exception('Ошибка изменения сообщения!');
+  }
+}
+
+  Future<void> closeChatSocket(int chatId) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {});
+
+  if (response.statusCode != 200) {
+    throw Exception('close sokcet!');
   }
 }
 

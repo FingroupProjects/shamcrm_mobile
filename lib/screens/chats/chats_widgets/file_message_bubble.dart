@@ -9,6 +9,7 @@ class FileMessageBubble extends StatelessWidget {
   final String senderName;
   final Function(String) onTap;
   final bool isHighlighted; // Add this line
+  final bool isRead; // Added isRead property
 
   const FileMessageBubble({
     Key? key,
@@ -19,6 +20,7 @@ class FileMessageBubble extends StatelessWidget {
     required this.onTap,
     required this.senderName,
     this.isHighlighted = false, // Add this line
+    required this.isRead, // Add isRead to constructor
   }) : super(key: key);
 
   @override
@@ -77,7 +79,7 @@ class FileMessageBubble extends StatelessWidget {
             if (!isSender)
               Text(
                 senderName,
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             GestureDetector(
               onTap: () => onTap(filePath),
@@ -114,14 +116,30 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 12,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w400,
-                fontFamily: 'Gilroy',
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: ChatSmsStyles.appBarTitleColor,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                const SizedBox(width: 3),
+                if (isSender)
+                  Icon(
+                    isRead
+                        ? Icons.done_all
+                        : Icons.done_all,
+                    size: 18,
+                    color: isRead
+                        ? const Color.fromARGB(255, 45, 28, 235)
+                        : Colors.grey.shade400,
+                  ),
+              ],
             ),
           ],
         ),
