@@ -12,7 +12,8 @@ class ImageMessageBubble extends StatefulWidget {
   final String fileName;
   final String senderName;
   final String? replyMessage;
-  final bool isHighlighted;  
+  final bool isHighlighted;
+  final bool isRead;
 
   const ImageMessageBubble({
     Key? key,
@@ -22,7 +23,8 @@ class ImageMessageBubble extends StatefulWidget {
     required this.filePath,
     required this.fileName,
     this.replyMessage,
-    this.isHighlighted = false,  
+    this.isHighlighted = false,
+    required this.isRead,
     required Message message,
   }) : super(key: key);
 
@@ -47,7 +49,6 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
         baseUrl = 'https://${enteredDomainMap['enteredMainDomain']}/storage/';
       });
     } catch (error) {
-      // Handle error or set a default URL
       setState(() {
         baseUrl = 'https://shamcrm.com/storage/';
       });
@@ -74,8 +75,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
       child: Align(
         alignment: widget.isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
-          crossAxisAlignment:
-              widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             if (!widget.isSender)
@@ -100,6 +100,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                     }
                   : null,
               child: Column(
+                crossAxisAlignment: widget.isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
@@ -128,8 +129,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                                   height: 200,
                                   color: Colors.grey,
                                   child: Center(
-                                    child: Text(AppLocalizations.of(context)!
-                                        .translate('error_loading')),
+                                    child: Text(AppLocalizations.of(context)!.translate('error_loading')),
                                   ),
                                 );
                               },
@@ -139,20 +139,37 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                               height: 200,
                               color: Colors.grey,
                               child: Center(
-                                child: Text(AppLocalizations.of(context)!
-                                    .translate('loading')),
+                                child: Text(AppLocalizations.of(context)!.translate('loading')),
                               ),
                             ),
                     ),
                   ),
-                  Text(
-                    widget.time,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: ChatSmsStyles.appBarTitleColor,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Gilroy',
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(
+                          right: widget.isSender ? 0 : 10,
+                          left: widget.isSender ? 10 : 0,
+                        ),
+                        child: Text(
+                          widget.time,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: ChatSmsStyles.appBarTitleColor,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      if (widget.isSender)
+                        Icon(
+                          widget.isRead ? Icons.done_all : Icons.done_all,
+                          size: 18,
+                          color: widget.isRead ? const Color.fromARGB(255, 45, 28, 235) : Colors.grey.shade400,
+                        ),
+                    ],
                   ),
                 ],
               ),

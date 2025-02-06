@@ -299,6 +299,45 @@ class Message {
     this.readStatus,
   });
 
+  // Метод copyWith
+  Message copyWith({
+    int? id,
+    String? text,
+    String? type,
+    String? filePath,
+    bool? isMyMessage,
+    String? createMessateTime,
+    bool? isPlaying,
+    String? senderName,
+    bool? isPause,
+    Duration? duration,
+    Duration? position,
+    ForwardedMessage? forwardedMessage,
+    bool? isPinned,
+    bool? isChanged,
+    bool? isRead,
+    ReadStatus? readStatus,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      type: type ?? this.type,
+      filePath: filePath ?? this.filePath,
+      isMyMessage: isMyMessage ?? this.isMyMessage,
+      createMessateTime: createMessateTime ?? this.createMessateTime,
+      isPlaying: isPlaying ?? this.isPlaying,
+      senderName: senderName ?? this.senderName,
+      isPause: isPause ?? this.isPause,
+      duration: duration ?? this.duration,
+      position: position ?? this.position,
+      forwardedMessage: forwardedMessage ?? this.forwardedMessage,
+      isPinned: isPinned ?? this.isPinned,
+      isChanged: isChanged ?? this.isChanged,
+      isRead: isRead ?? this.isRead,
+      readStatus: readStatus ?? this.readStatus,
+    );
+  }
+
   factory Message.fromJson(Map<String, dynamic> json) {
     String text;
     if (json['type'] == 'file') {
@@ -306,13 +345,10 @@ class Message {
     } else {
       text = json['text'] ?? '';
     }
-
     ForwardedMessage? forwardedMessage;
     if (json['forwarded_message'] != null) {
       forwardedMessage = ForwardedMessage.fromJson(json['forwarded_message']);
     }
-
-    // Проверка и парсинг read_status
     ReadStatus? readStatus;
     try {
       if (json['read_status'] != null) {
@@ -320,9 +356,8 @@ class Message {
       }
     } catch (e) {
       print('Error parsing read_status: $e');
-      readStatus = null; // Если ошибка, игнорируем read_status
+      readStatus = null; 
     }
-
     return Message(
       id: json['id'],
       text: text,
@@ -337,7 +372,7 @@ class Message {
       isMyMessage: json['is_my_message'] ?? false,
       forwardedMessage: forwardedMessage,
       isRead: json['is_read'] ?? false,
-      readStatus: readStatus, // Добавляем readStatus после проверки
+      readStatus: readStatus, 
     );
   }
 
@@ -387,7 +422,12 @@ class ReadStatus {
   factory ReadStatus.fromJson(Map<String, dynamic> json) {
     return ReadStatus(
       read: (json['read'] as List<dynamic>?)
-              ?.map((e) => User.fromJson(e['user'], e['read_at']))
+              ?.map((e) {
+                DateTime? readAt = e['read_at'] != null
+                    ? DateTime.tryParse(e['read_at'])
+                    : null;
+                return User.fromJson(e['user'], readAt);
+              })
               .toList() ??
           [],
       unread: (json['unread'] as List<dynamic>?)
@@ -397,6 +437,25 @@ class ReadStatus {
     );
   }
 }
+
+class ReadUser {
+  final int userId;
+  final String readAt;
+  final User user;
+
+  ReadUser({
+    required this.userId,
+    required this.readAt,
+    required this.user,
+  });
+  
+
+  @override
+  String toString() {
+    return 'ReadUser{userId: $userId, readAt: $readAt, user: $user}';
+  }
+}
+
 
 class User {
   final int id;
@@ -426,32 +485,42 @@ class User {
     this.deletedAt,
     this.telegramUserId,
     this.jobTitle,
-    this.online,
+   this.online,
     required this.fullName,
-    this.readAt, // ✅ Добавлено
+    this.readAt,
   });
-  factory User.fromJson(Map<String, dynamic> json, [String? readAt]) {
-    return User(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      lastname: json['lastname'] ?? '',
-      login: json['login'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      image: json['image'] ?? '',
-      lastSeen: json['last_seen'] != null
-          ? DateTime.parse(json['last_seen'])
-          : DateTime.now(),
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'])
-          : null,
-      telegramUserId: json['telegram_user_id'],
-      jobTitle: json['job_title'],
-      online: json['online'] ?? false,
-      fullName: json['full_name'] ?? 'Без имени',
-      readAt: readAt != null ? DateTime.parse(readAt) : null,
-    );
+
+  factory User.fromJson(Map json, [DateTime? readAt]) {
+  DateTime? parsedReadAt;
+
+  if (json['read_at'] != null) {
+    parsedReadAt = DateTime.tryParse(json['read_at']) ?? readAt;
+  } else if (readAt != null) {
+    parsedReadAt = readAt;
   }
+
+  return User(
+    id: json['id'] ?? 0,
+    name: json['name'] ?? '',
+    lastname: json['lastname'] ?? '',
+    login: json['login'] ?? '',
+    email: json['email'] ?? '',
+    phone: json['phone'] ?? '',
+    image: json['image'] ?? '',
+    lastSeen: json['last_seen'] != null
+      ? DateTime.parse(json['last_seen'])
+      : DateTime.now(),
+    deletedAt: json['deleted_at'] != null
+      ? DateTime.parse(json['deleted_at'])
+      : null,
+    telegramUserId: json['telegram_user_id'],
+    jobTitle: json['job_title'],
+    online: json['online'] ?? false,
+    fullName: json['full_name'] ?? 'Без имени',
+    readAt: parsedReadAt, 
+  );
+}
+
 
   @override
   String toString() {
