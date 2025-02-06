@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_event.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -40,16 +41,16 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  String? selectedFile;
-  String? fileName;
-  String? fileSize;
+  List<String> selectedFiles = [];
+  List<String> fileNames = [];
+  List<String> fileSizes = [];
   int? selectedPriority;
   String? selectedProject;
   int? selectedStatusId;
   List<String>? selectedUsers;
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
-
+  bool _showAdditionalFields = false;
 
   @override
   void initState() {
@@ -88,6 +89,13 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     });
   }
 
+  /// Переключает видимость дополнительных полей
+  void _toggleAdditionalFields() {
+    setState(() {
+      _showAdditionalFields = true;
+    });
+  }
+
   void _showAddFieldDialog() {
     showDialog(
       context: context,
@@ -99,29 +107,6 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         );
       },
     );
-  }
-
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-      if (result != null) {
-        setState(() {
-          selectedFile = result.files.single.path!;
-          fileName = result.files.single.name;
-          fileSize =
-              '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
-        });
-      }
-    } catch (e) {
-      print('Ошибка при выборе файла!');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.translate('file_selection_error')),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   Widget _buildFileSelection() {
@@ -137,117 +122,193 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             color: Color(0xff1E2E52),
           ),
         ),
-        const SizedBox(height: 4),
-        GestureDetector(
-          onTap: _pickFile,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFF4F7FD)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    fileName ?? AppLocalizations.of(context)!.translate('select_file'),
-                    style: TextStyle(
-                      color: fileName != null
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            // Если есть файлы, показываем их + кнопку добавления, иначе только кнопку
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              // Кнопка добавления (показывается либо одна, либо в конце списка)
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const Icon(
-                  Icons.attach_file,
-                  color: Color(0xff99A4BA),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (fileName != null) const SizedBox(height: 8),
-      ],
-    );
-  }
+                );
+              }
 
-  Widget _buildPriorityDropdown() {
+              // Отображение выбранного файла
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
 
-    final Map<int, String> priorityLevels = {
-        1: AppLocalizations.of(context)!.translate('normal'), 
-        2: AppLocalizations.of(context)!.translate('important'),
-        3: AppLocalizations.of(context)!.translate('urgent'), 
-      };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('priority_level'), 
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              canvasColor: Colors.white,
-            ),
-            child: DropdownButtonFormField<int>(
-              value: selectedPriority ?? 1,
-              items: priorityLevels.entries.map((entry) {
-                final priorityColor = entry.key == 2
-                    ? Colors.yellow
-                    : entry.key == 3
-                        ? Colors.red
-                        : Colors.green;
-                return DropdownMenuItem(
-                  value: entry.key,
-                  child: Row(
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Container(
+                  width: 100,
+                  child: Column(
                     children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: priorityColor,
-                          shape: BoxShape.circle,
-                        ),
+                      Image.asset(
+                        'assets/icons/files/$fileExtension.png',
+                        width: 60,
+                        height: 60,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            'assets/icons/files/file.png',
+                            width: 60,
+                            height: 60,
+                          );
+                        },
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(height: 8),
                       Text(
-                        entry.value,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                        fileName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
                           fontFamily: 'Gilroy',
                           color: Color(0xff1E2E52),
                         ),
                       ),
                     ],
                   ),
-                );
-              }).toList(),
-              onChanged: (int? newValue) {
-                setState(() {
-                  selectedPriority = newValue;
-                });
-              },
-              decoration: _inputDecoration(),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ],
     );
   }
+
+// Функция выбора файла остается такой же как у вас
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: true);
+
+      if (result != null) {
+        setState(() {
+          for (var file in result.files) {
+            selectedFiles.add(file.path!);
+            fileNames.add(file.name);
+            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
+          }
+        });
+      }
+    } catch (e) {
+      print('Ошибка при выборе файла!');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              AppLocalizations.of(context)!.translate('file_selection_error')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  // Widget _buildPriorityDropdown() {
+
+  //   final Map<int, String> priorityLevels = {
+  //       1: AppLocalizations.of(context)!.translate('normal'),
+  //       2: AppLocalizations.of(context)!.translate('important'),
+  //       3: AppLocalizations.of(context)!.translate('urgent'),
+  //     };
+
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         AppLocalizations.of(context)!.translate('priority_level'),
+  //         style: TextStyle(
+  //           fontSize: 16,
+  //           fontWeight: FontWeight.w500,
+  //           fontFamily: 'Gilroy',
+  //           color: Color(0xff1E2E52),
+  //         ),
+  //       ),
+  //       const SizedBox(height: 4),
+  //       Container(
+  //         decoration: BoxDecoration(
+  //           color: const Color(0xFFF4F7FD),
+  //           borderRadius: BorderRadius.circular(12),
+  //         ),
+  //         child: Theme(
+  //           data: Theme.of(context).copyWith(
+  //             canvasColor: Colors.white,
+  //           ),
+  //           child: DropdownButtonFormField<int>(
+  //             value: selectedPriority ?? 1,
+  //             items: priorityLevels.entries.map((entry) {
+  //               final priorityColor = entry.key == 2
+  //                   ? Colors.yellow
+  //                   : entry.key == 3
+  //                       ? Colors.red
+  //                       : Colors.green;
+  //               return DropdownMenuItem(
+  //                 value: entry.key,
+  //                 child: Row(
+  //                   children: [
+  //                     Container(
+  //                       width: 10,
+  //                       height: 10,
+  //                       decoration: BoxDecoration(
+  //                         color: priorityColor,
+  //                         shape: BoxShape.circle,
+  //                       ),
+  //                     ),
+  //                     const SizedBox(width: 8),
+  //                     Text(
+  //                       entry.value,
+  //                       style: const TextStyle(
+  //                         fontSize: 16,
+  //                         fontWeight: FontWeight.w500,
+  //                         fontFamily: 'Gilroy',
+  //                         color: Color(0xff1E2E52),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               );
+  //             }).toList(),
+  //             onChanged: (int? newValue) {
+  //               setState(() {
+  //                 selectedPriority = newValue;
+  //               });
+  //             },
+  //             decoration: _inputDecoration(),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   InputDecoration _inputDecoration() {
     return InputDecoration(
@@ -273,7 +334,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         children: [
           Expanded(
             child: CustomButton(
-              buttonText: AppLocalizations.of(context)!.translate('cancel'), 
+              buttonText: AppLocalizations.of(context)!.translate('cancel'),
               buttonColor: const Color(0xffF4F7FD),
               textColor: Colors.black,
               onPressed: () => Navigator.pop(context),
@@ -290,7 +351,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                         ),
                       )
                     : CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add'), 
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('add'),
                         buttonColor: const Color(0xff4759FF),
                         textColor: Colors.white,
                         onPressed: _submitForm,
@@ -308,7 +370,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       if (selectedStatusId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('please_select_status_task')),
+            content: Text(AppLocalizations.of(context)!
+                .translate('please_select_status_task')),
             backgroundColor: Colors.red,
           ),
         );
@@ -316,28 +379,29 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       }
 
       try {
-        final DateTime? startDate = startDateController.text.isNotEmpty
-            ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
-            : null;
+        // final DateTime? startDate = startDateController.text.isNotEmpty
+        //     ? DateFormat('dd/MM/yyyy').parse(startDateController.text)
+        //     : null;
 
         final DateTime? endDate = endDateController.text.isNotEmpty
             ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
             : null;
 
-        if (startDate != null &&
-            endDate != null &&
-            startDate.isAfter(endDate)) {
-          setState(() {
-            isEndDateInvalid = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date')),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
+        // if (startDate != null &&
+        //     endDate != null &&
+        //     startDate.isAfter(endDate)) {
+        //   setState(() {
+        //     isEndDateInvalid = true;
+        //   });
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     SnackBar(
+        //       content: Text(AppLocalizations.of(context)!
+        //           .translate('start_date_after_end_date')),
+        //       backgroundColor: Colors.red,
+        //     ),
+        //   );
+        //   return;
+        // }
 
         final List<Map<String, String>> customFieldMap = customFields
             .where((field) =>
@@ -352,7 +416,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 statusId: selectedStatusId!,
                 taskStatusId: selectedStatusId!,
                 priority: selectedPriority ?? 1,
-                startDate: startDate,
+                // startDate: startDate,
                 endDate: endDate,
                 projectId: selectedProject != null
                     ? int.parse(selectedProject!)
@@ -360,14 +424,14 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 userId: selectedUsers?.map((id) => int.parse(id)).toList(),
                 description: descriptionController.text,
                 customFields: customFieldMap,
-                filePath: selectedFile,
+                filePaths: selectedFiles, // Передаем список путей к файлам
               ),
             );
-
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('error_create_task')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('error_create_task')),
             backgroundColor: Colors.red,
           ),
         );
@@ -375,7 +439,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.translate('fill_required_fields')),
+          content: Text(
+              AppLocalizations.of(context)!.translate('fill_required_fields')),
           backgroundColor: Colors.red,
         ),
       );
@@ -416,7 +481,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -439,7 +505,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -482,44 +549,64 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                       ),
                       const SizedBox(height: 8),
 
-                      CustomTextField(
+                      CustomTextFieldWithPriority(
                         controller: nameController,
-                        hintText:  AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label:  AppLocalizations.of(context)!.translate('name_list'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
+                        showPriority: true,
+                        isPrioritySelected: selectedPriority == 3,
+                        onPriorityChanged: (bool? value) {
+                          setState(() {
+                            selectedPriority = value == true ? 3 : 1;
+                          });
+                        },
+                        priorityText:
+                            AppLocalizations.of(context)!.translate('urgent'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
                       ),
+                      // const SizedBox(height: 8),
+                      // CustomTextFieldDate(
+                      //   controller: startDateController,
+                      //   label: AppLocalizations.of(context)!.translate('from_list'),
+                      //   validator: (value) {
+                      //     if (value == null || value.isEmpty) {
+                      //       return AppLocalizations.of(context)!.translate('field_required');
+                      //     }
+                      //     return null;
+                      //   },
+                      // ),
                       const SizedBox(height: 8),
-                      _buildPriorityDropdown(),
+                      // Поле описания задачи
+                      CustomTextField(
+                        controller: descriptionController,
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description_list'),
+                        maxLines: 5,
+                      ),
                       const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('from_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
+                      // Выбор пользователей
+                      UserMultiSelectWidget(
+                        selectedUsers: selectedUsers,
+                        onSelectUsers: (List<UserData> selectedUsersData) {
+                          setState(() {
+                            selectedUsers = selectedUsersData
+                                .map((user) => user.id.toString())
+                                .toList();
+                          });
                         },
                       ),
                       const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('to_list'),
-                        hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 8),
+                      // Выбор проекта
                       ProjectTaskGroupWidget(
                         selectedProject: selectedProject,
                         onSelectProject: (ProjectTask selectedProjectData) {
@@ -529,74 +616,66 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      UserMultiSelectWidget(
-                        selectedUsers: selectedUsers,
-                        onSelectUsers: (List<UserData> selectedUsersData) {
-                          setState(() {
-                            // Update selected user IDs
-                            selectedUsers = selectedUsersData
-                                .map((user) => user.id.toString())
-                                .toList();
-                          });
+                      // Дата окончания задачи
+                      CustomTextFieldDate(
+                        controller: endDateController,
+                        label:
+                            AppLocalizations.of(context)!.translate('deadline'),
+                        hasError: isEndDateInvalid,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
+                          }
+                          return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'), 
-                        maxLines: 5,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFileSelection(), // Добавляем виджет выбора файла
-                      const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-// Динамические поля с сервера
-                      // ListView.builder(
-                      //   shrinkWrap: true,
-                      //   physics: NeverScrollableScrollPhysics(),
-                      //   itemCount: customFields.length,
-                      //   itemBuilder: (context, index) {
-                      //     return CustomTextField(
-                      //       controller: customFields[index].controller,
-                      //       hintText: 'Введите значение',
-                      //       label: customFields[index]
-                      //           .fieldName, // Устанавливаем метку из данных
-                      //       validator: (value) {
-                      //         if (value == null || value.isEmpty) {
-                      //           return 'Поле обязательно для заполнения';
-                      //         }
-                      //         return null;
-                      //       },
-                      //     );
-                      //   },
-                      // ),
-                      const SizedBox(height: 8),
 
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
+                      const SizedBox(height: 16),
+                      // Если дополнительные поля скрыты – показываем кнопку "Дополнительно"
+                      if (!_showAdditionalFields)
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('additionally'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: () {
+                            setState(() {
+                              _showAdditionalFields = true;
+                            });
+                          },
+                        )
+                      else ...[
+                        // Если дополнительные поля раскрыты, показываем виджет выбора файла,
+                        // список дополнительных полей и кнопку для добавления нового поля
+                        _buildFileSelection(),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                      ],
                       const SizedBox(height: 8),
-                      // _buildFileSelection(), // Добавляем виджет выбора файла
                     ],
                   ),
                 ),
@@ -625,7 +704,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_date')),
           ),
         );
         return;
@@ -639,7 +719,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('enter_valid_date')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('enter_valid_date')),
           ),
         );
         return;
@@ -652,7 +733,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+            AppLocalizations.of(context)!
+                .translate('start_date_after_end_date'),
             style: TextStyle(
               color: Colors.white,
             ),
@@ -662,12 +744,12 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
       );
       return;
     }
-    TaskFile? fileData;
-    if (selectedFile != null) {
-      fileData = TaskFile(
-        name: fileName ?? "unknown",
-        size: fileSize ?? "0KB",
-      );
+    List<TaskFile> files = [];
+    for (int i = 0; i < selectedFiles.length; i++) {
+      files.add(TaskFile(
+        name: fileNames[i],
+        size: fileSizes[i],
+      ));
     }
     // Создание задачи
     List<Map<String, String>> customFieldMap = [];
@@ -678,7 +760,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
         customFieldMap.add({fieldName: fieldValue});
       }
     }
-    print("fileData: $fileData");
+    // print("fileData: $fileData");
 
     void _createTask() {
       try {
@@ -698,7 +780,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date')),
+              content: Text(AppLocalizations.of(context)!
+                  .translate('start_date_after_end_date')),
               backgroundColor: Colors.red,
             ),
           );
@@ -725,13 +808,14 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 userId: selectedUsers?.map((id) => int.parse(id)).toList(),
                 description: descriptionController.text,
                 customFields: customFieldMap,
-                filePath: selectedFile,
+                filePaths: selectedFiles, // Передаем список путей к файлам
               ),
             );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('error_create_task')),
+            content: Text(
+                AppLocalizations.of(context)!.translate('error_create_task')),
             backgroundColor: Colors.red,
           ),
         );

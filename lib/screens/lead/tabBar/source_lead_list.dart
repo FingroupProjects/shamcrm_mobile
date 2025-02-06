@@ -16,7 +16,6 @@ class SourceLeadWidget extends StatefulWidget {
   @override
   _SourceLeadWidgetState createState() => _SourceLeadWidgetState();
 }
-
 class _SourceLeadWidgetState extends State<SourceLeadWidget> {
   SourceLead? selectedSourceData;
 
@@ -57,6 +56,7 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
       },
       child: BlocBuilder<SourceLeadBloc, SourceLeadState>(
         builder: (context, state) {
+          // Обновляем данные при успешной загрузке
           if (state is SourceLeadLoaded) {
             List<SourceLead> sourcesList = state.sourceLead;
             
@@ -69,86 +69,119 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                 selectedSourceData = null;
               }
             }
+          }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('source'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
+          // Всегда отображаем поле
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('source'),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  child: CustomDropdown<SourceLead>.search(
-                    closeDropDownOnClearFilterSearch: true,
-                    items: sourcesList,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
-                      closedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
-                        width: 1,
-                      ),
-                      expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                child: CustomDropdown<SourceLead>.search(
+                  closeDropDownOnClearFilterSearch: true,
+                  items: state is SourceLeadLoaded ? state.sourceLead : [],
+                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  overlayHeight: 400,
+                  enabled: true, // Всегда enabled
+                  decoration: CustomDropdownDecoration(
+                    closedFillColor: Color(0xffF4F7FD),
+                    expandedFillColor: Colors.white,
+                    closedBorder: Border.all(
+                      color: Color(0xffF4F7FD),
+                      width: 1,
                     ),
-                    listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      return Text(item.name);
-                    },
-                    headerBuilder: (context, selectedItem, enabled) {
-                      return Text(
-                        selectedItem.name ?? AppLocalizations.of(context)!.translate('select_source'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
+                    closedBorderRadius: BorderRadius.circular(12),
+                    expandedBorder: Border.all(
+                      color: Color(0xffF4F7FD),
+                      width: 1,
+                    ),
+                    expandedBorderRadius: BorderRadius.circular(12),
+                  ),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      item.name,
+                      style: TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    if (state is SourceLeadLoading) {
+                      return Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('loading'),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
                       );
-                    },
-                    hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_source'),
+                    }
+                    return Text(
+                      selectedItem.name ?? AppLocalizations.of(context)!.translate('select_source'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
                         color: Color(0xff1E2E52),
                       ),
+                    );
+                  },
+                  hintBuilder: (context, hint, enabled) => Text(
+                    AppLocalizations.of(context)!.translate('select_source'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: Color(0xff1E2E52),
                     ),
-                    excludeSelected: false,
-                    initialItem: selectedSourceData,
-                    validator: (value) {
-                      if (value == null) {
-                        return AppLocalizations.of(context)!.translate('field_required_source');
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      if (value != null) {
-                        widget.onChanged(value.id.toString());
-                        setState(() {
-                          selectedSourceData = value;
-                        });
-                        FocusScope.of(context).unfocus();
-                      }
-                    },
                   ),
+                  excludeSelected: false,
+                  initialItem: selectedSourceData,
+                  validator: (value) {
+                    if (value == null) {
+                      return AppLocalizations.of(context)!.translate('field_required_source');
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    if (value != null) {
+                      widget.onChanged(value.id.toString());
+                      setState(() {
+                        selectedSourceData = value;
+                      });
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
                 ),
-              ],
-            );
-          }
-          return SizedBox();
+              ),
+            ],
+          );
         },
       ),
     );

@@ -182,7 +182,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+ /* Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());
 
     if (!await _checkInternetConnection()) {
@@ -203,6 +203,39 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         description: event.description,
         customFields: event.customFields,
         filePath: event.filePath,
+      );
+
+      if (result['success']) {
+        emit(TaskSuccess(
+            event.localizations.translate('task_create_successfully')));
+      } else {
+        emit(TaskError(result['message']));
+      }
+    } catch (e) {
+      emit(TaskError(event.localizations.translate('task_creation_error')));
+    }
+  }*/
+Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
+    emit(TaskLoading());
+
+    if (!await _checkInternetConnection()) {
+      emit(TaskError(event.localizations.translate('no_internet_connection')));
+      return;
+    }
+
+    try {
+      final result = await apiService.createTask(
+        name: event.name,
+        statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
+        priority: event.priority,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        projectId: event.projectId,
+        userId: event.userId,
+        description: event.description,
+        customFields: event.customFields,
+        filePaths: event.filePaths,
       );
 
       if (result['success']) {
@@ -237,7 +270,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         description: event.description,
         taskStatusId: event.taskStatusId,
         customFields: event.customFields,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
       );
 
       if (result['success']) {

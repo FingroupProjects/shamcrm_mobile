@@ -92,21 +92,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : state.organizations.first;
                   return Column(
                     children: [
-                      
                       OrganizationWidget(
                         selectedOrganization: _selectedOrganization,
                         onChanged: _onOrganizationChanged,
                       ),
                       // const NotificationSettingsWidget(),
-                      const PinChangeWidget(),
                       const ProfileEdit(),
                       const LanguageButtonWidget(),
+                      const PinChangeWidget(),
                       const LogoutButtonWidget(),
                       UpdateWidget1C(organization: selectedOrg),
                     ],
                   );
                 } else if (state is OrganizationError) {
-                  if (state.message.contains(localizations.translate("unauthorized_access"))) {
+                  if (state.message.contains(
+                      localizations.translate("unauthorized_access"))) {
                     ApiService().logout().then((_) {
                       Navigator.pushAndRemoveUntil(
                         context,

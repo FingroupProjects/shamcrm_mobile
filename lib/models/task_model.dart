@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/models/project_model.dart';
-import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 
 class Task {
