@@ -2346,7 +2346,7 @@ class ApiService {
     List<int>? userId,
     String? description,
     List<Map<String, String>>? customFields,
-    String? filePath,
+    List<String>? filePaths, // Список путей к файлам
     int position = 1,
   }) async {
     try {
@@ -2397,20 +2397,12 @@ class ApiService {
         }
       }
 
-      if (filePath != null) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          final fileName = file.path.split('/').last;
-          final fileStream = http.ByteStream(file.openRead());
-          final length = await file.length();
-
-          final multipartFile = http.MultipartFile(
-            'file',
-            fileStream,
-            length,
-            filename: fileName,
-          );
-          request.files.add(multipartFile);
+      // Добавляем файлы, если они есть
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath(
+              'files[]', filePath); // Используем 'files[]'
+          request.files.add(file);
         }
       }
 
@@ -2467,6 +2459,7 @@ class ApiService {
       };
     }
   }
+
 /*
 // Метод для создание задачи
   Future<Map<String, dynamic>> createTask({
@@ -2762,6 +2755,8 @@ class ApiService {
     String? description,
     List<String>? filePaths, // Список путей к файлам
     List<Map<String, String>>? customFields,
+    List<TaskFiles>?
+        existingFiles, // Добавляем параметр для существующих файлов
   }) async {
     try {
       final token = await getToken();
@@ -2817,15 +2812,20 @@ class ApiService {
         }
       }
 
-    // Добавляем файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath(
-              'files[]', filePath); // Используем 'files[]'
-          request.files.add(file);
-        }
+       // Добавляем ID существующих файлов
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      for (int i = 0; i < existingFiles.length; i++) {
+        request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
       }
+    }
 
+    // Добавляем новые файлы
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
+      }
+    }
       // Отправляем запрос
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -2836,6 +2836,8 @@ class ApiService {
           'message': 'task_update_successfully',
         };
       } else if (response.statusCode == 422) {
+        print('Server Response: ${response.body}'); // Добавим для отладки
+
         // Обработка ошибок валидации
         if (response.body.contains('name')) {
           return {
@@ -2871,12 +2873,16 @@ class ApiService {
           'message': 'error_server_text',
         };
       } else {
+        print('Server Response: ${response.body}'); // Добавим для отладки
+
         return {
           'success': false,
           'message': 'error_task_update_successfully',
         };
       }
     } catch (e) {
+      print('Update Task Error: $e'); // Добавим для отладки
+
       return {
         'success': false,
         'message': 'error_task_update_successfully',
@@ -3653,41 +3659,41 @@ class ApiService {
       throw Exception('Ошибка отправки сообщения!');
     }
   }
-  
+
   Future<void> pinMessage(String messageId) async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _postRequest(
-    '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {});
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+        '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {});
 
-  if (response.statusCode != 200) {
-    throw Exception('Ошибка закрепления сообщения!');
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка закрепления сообщения!');
+    }
   }
-}
+
   Future<void> unpinMessage(String messageId) async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _postRequest(
-    '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {});
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+        '/chat/pinMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {});
 
-  if (response.statusCode != 200) {
-    throw Exception('Ошибка закрепления сообщения!');
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка закрепления сообщения!');
+    }
   }
-}
 
-  Future<void> editMessage(String messageId,String message) async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _postRequest(
-    '/chat/editMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {
-      'message': message,
-    });
+  Future<void> editMessage(String messageId, String message) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+        '/chat/editMessage/$messageId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+          'message': message,
+        });
 
-  if (response.statusCode != 200) {
-    throw Exception('Ошибка изменения сообщения!');
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка изменения сообщения!');
+    }
   }
-}
-
 
   // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {
@@ -4931,6 +4937,7 @@ class ApiService {
       };
     }
   }
+
 /*// Метод для создания задачи
   // Метод для создания задачи с поддержкой нескольких файлов
 Future<Map<String, dynamic>> createMyTask({
@@ -5465,4 +5472,3 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }
-

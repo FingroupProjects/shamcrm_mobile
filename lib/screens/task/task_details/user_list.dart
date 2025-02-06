@@ -1,11 +1,11 @@
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+  import 'package:animated_custom_dropdown/custom_dropdown.dart';
+  import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+  import 'package:crm_task_manager/models/user_data_response.dart';
+  import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+  import 'package:flutter/material.dart';
+  import 'package:flutter_bloc/flutter_bloc.dart';
 
-class UserMultiSelectWidget extends StatefulWidget {
+  class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
 
@@ -38,167 +38,152 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        BlocBuilder<GetAllClientBloc, GetAllClientState>(
-          builder: (context, state) {
-            // if (state is GetAllClientLoading) {
-            //   return const Center(child: CircularProgressIndicator());
-            // }
-            if (state is GetAllClientError) {
-              return Text(state.message);
-            }
-            if (state is GetAllClientSuccess) {
-              usersList = state.dataUser.result ?? [];
-              if (widget.selectedUsers != null && usersList.isNotEmpty) {
-                selectedUsersData = usersList
-                    .where((user) =>
-                        widget.selectedUsers!.contains(user.id.toString()))
-                    .toList();
-              }
-              return FormField<List<UserData>>(
-                validator: (value) {
-                  if (selectedUsersData.isEmpty) {
-                    return AppLocalizations.of(context)!.translate('field_required_project');
+    return FormField<List<UserData>>(
+      validator: (value) {
+        if (selectedUsersData.isEmpty) {
+          return AppLocalizations.of(context)!.translate('field_required_project');
+        }
+        return null;
+      },
+      builder: (FormFieldState<List<UserData>> field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('assignees_list'),
+              style: userTextStyle.copyWith(
+                fontWeight: FontWeight.w400,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  width: 1,
+                  color: field.hasError 
+                      ? Colors.red 
+                      : const Color(0xFFE5E7EB),
+                ),
+              ),
+              child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
+                builder: (context, state) {
+                  if (state is GetAllClientSuccess) {
+                    usersList = state.dataUser.result ?? [];
+                    if (widget.selectedUsers != null && usersList.isNotEmpty) {
+                      selectedUsersData = usersList
+                          .where((user) =>
+                              widget.selectedUsers!.contains(user.id.toString()))
+                          .toList();
+                    }
                   }
-                  return null;
-                },
-                builder: (FormFieldState<List<UserData>> field) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('assignees_list'),
-                        style: userTextStyle.copyWith(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                        ),
+                  
+                  return CustomDropdown<UserData>.multiSelectSearch(
+                    items: usersList,
+                    initialItems: selectedUsersData,
+                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    overlayHeight: 400,
+                    decoration: CustomDropdownDecoration(
+                      closedFillColor: const Color(0xffF4F7FD),
+                      expandedFillColor: Colors.white,
+                      closedBorder: Border.all(
+                        color: Colors.transparent,
+                        width: 1,
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            width: 1,
-                            color: field.hasError 
-                                ? Colors.red 
-                                : const Color(0xFFE5E7EB),
-                          ),
+                      closedBorderRadius: BorderRadius.circular(12),
+                      expandedBorder: Border.all(
+                        color: const Color(0xFFE5E7EB),
+                        width: 1,
+                      ),
+                      expandedBorderRadius: BorderRadius.circular(12),
+                    ),
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                        child: CustomDropdown<UserData>.multiSelectSearch(
-                          items: usersList,
-                          initialItems: selectedUsersData,
-                          searchHintText: AppLocalizations.of(context)!.translate('search'),
-                          overlayHeight: 400,
-                          decoration: CustomDropdownDecoration(
-                            closedFillColor: const Color(0xffF4F7FD),
-                            expandedFillColor: Colors.white,
-                            closedBorder: Border.all(
-                              color: Colors.transparent,
-                              width: 1,
-                            ),
-                            closedBorderRadius: BorderRadius.circular(12),
-                            expandedBorder: Border.all(
-                              color: const Color(0xFFE5E7EB),
-                              width: 1,
-                            ),
-                            expandedBorderRadius: BorderRadius.circular(12),
-                            // textPadding: const EdgeInsets.symmetric(
-                            //   horizontal: 16,
-                            //   vertical: 12,
-                            // ),
-                          ),
-                          listItemBuilder: (context, item, isSelected, onItemSelect) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xff1E2E52),
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                color: isSelected
+                                    ? const Color(0xff1E2E52)
+                                    : Colors.transparent,
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(0xff1E2E52),
-                                        width: 1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(4),
-                                      color: isSelected
-                                          ? const Color(0xff1E2E52)
-                                          : Colors.transparent,
-                                    ),
-                                    child: isSelected
-                                        ? const Icon(
-                                            Icons.check,
-                                            color: Colors.white,
-                                            size: 14,
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      item.name!,
-                                      style: userTextStyle,
-                                    ),
-                                  ),
-                                ],
+                              child: isSelected
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 14,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                item.name!,
+                                style: userTextStyle,
                               ),
-                            );
-                          },
-                          headerListBuilder: (context, hint, enabled) {
-                            String selectedUsersNames = selectedUsersData.isEmpty
-                                ? AppLocalizations.of(context)!.translate('select_assignees_list')
-                                : selectedUsersData.map((e) => e.name).join(', ');
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    headerListBuilder: (context, hint, enabled) {
+                      String selectedUsersNames = selectedUsersData.isEmpty
+                          ? AppLocalizations.of(context)!.translate('select_assignees_list')
+                          : selectedUsersData.map((e) => e.name).join(', ');
 
-                            return Text(
-                              selectedUsersNames,
-                              style: userTextStyle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            );
-                          },
-                          hintBuilder: (context, hint, enabled) => Text(
-                            AppLocalizations.of(context)!.translate('select_assignees_list'),
-                            style: userTextStyle.copyWith(
-                              fontSize: 14,
-                              color: const Color(0xFF6B7280),
-                            ),
-                          ),
-                          onListChanged: (values) {
-                            widget.onSelectUsers(values);
-                            setState(() {
-                              selectedUsersData = values;
-                            });
-                            field.didChange(values);
-                          },
-                        ),
+                      return Text(
+                        selectedUsersNames,
+                        style: userTextStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                    hintBuilder: (context, hint, enabled) => Text(
+                      AppLocalizations.of(context)!.translate('select_assignees_list'),
+                      style: userTextStyle.copyWith(
+                        fontSize: 14,
+                        color: const Color(0xFF6B7280),
                       ),
-                       if (field.hasError)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, left: 0),
-                        child: Text(
-                          field.errorText!,
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        ),
-                    ],
+                    ),
+                    onListChanged: (values) {
+                      widget.onSelectUsers(values);
+                      setState(() {
+                        selectedUsersData = values;
+                      });
+                      field.didChange(values);
+                    },
                   );
                 },
-              );
-            }
-            return const SizedBox();
-          },
-        ),
-      ],
+              ),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 0),
+                child: Text(
+                  field.errorText!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
-

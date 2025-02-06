@@ -1,4 +1,5 @@
 
+import 'package:crm_task_manager/models/taskbyId_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class TaskEvent {}
@@ -105,6 +106,7 @@ class UpdateTask extends TaskEvent {
   final List<Map<String, String>>? customFields;
   final List<String>? filePaths; // Изменено на список путей к файлам
   final AppLocalizations localizations;  // Add this to your event
+  final List<TaskFiles>? existingFiles; // Добавляем поле для существующих файлов
 
 
   UpdateTask({
@@ -121,6 +123,7 @@ class UpdateTask extends TaskEvent {
     this.customFields,
     this.filePaths, // Изменено на список путей к файлам
     required this.localizations,  // Add this to constructor
+    this.existingFiles, // Добавляем в конструктор
 
   });
 }
