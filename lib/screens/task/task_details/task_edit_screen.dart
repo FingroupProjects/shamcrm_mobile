@@ -19,13 +19,10 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 class TaskEditScreen extends StatefulWidget {
   final int taskId;
@@ -73,16 +70,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   List<String>? selectedUsers;
   int? selectedPriority;
   List<CustomField> customFields = [];
-  // Добавьте эти переменные в класс _TaskEditScreenState
-  // String? selectedFile;
-  // String? fileName;
-  // String? fileSize;
   bool isEndDateInvalid = false;
   bool _showAdditionalFields = false;
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
   final ApiService _apiService = ApiService();
+  List<TaskFiles> existingFiles = []; // Для существующих файлов
 
   @override
   void initState() {
@@ -91,11 +85,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _loadInitialData();
     selectedPriority ??=
         1; // или другое значение по умолчанию из priorityLevels
-    // Преобразуем список TaskFiles в список имен файлов   
-  if (widget.files != null) {
-    fileNames = widget.files!.map((file) => file.name).toList();
+    // Сохраняем существующие файлы
+    if (widget.files != null) {
+      existingFiles = widget.files!;
+      fileNames = existingFiles.map((file) => file.name).toList();
+    }
   }
-}
 
   void _initializeControllers() {
     nameController.text = widget.taskName;
@@ -159,17 +154,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       _showAdditionalFields = !_showAdditionalFields;
     });
   }
-  // Widget _buildLabel(String label) {
-  //   return Text(
-  //     label,
-  //     style: TextStyle(
-  //       fontSize: 14,
-  //       fontWeight: FontWeight.w500,
-  //       fontFamily: 'Gilroy',
-  //       color: Color(0xff1E2E52),
-  //     ),
-  //   );
-  // }
 
   Widget _buildFileSelection() {
     return Column(
@@ -318,91 +302,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     );
   }
 
-//  Widget _buildPriorityDropdown() {
-//           final Map<int, String> priorityLevels = {
-//               1: AppLocalizations.of(context)!.translate('normal'),
-//               2: AppLocalizations.of(context)!.translate('important'),
-//               3: AppLocalizations.of(context)!.translate('urgent'),
-//             };
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Text(
-//           AppLocalizations.of(context)!.translate('priority_level'),
-//           style: TextStyle(
-//             fontSize: 16,
-//             fontWeight: FontWeight.w500,
-//             fontFamily: 'Gilroy',
-//             color: Color(0xff1E2E52),
-//           ),
-//         ),
-//         const SizedBox(height: 4),
-//         Container(
-//           decoration: BoxDecoration(
-//             color: const Color(0xFFF4F7FD),
-//             borderRadius: BorderRadius.circular(8),
-//           ),
-//           child: Theme(
-//             data: Theme.of(context).copyWith(
-//               canvasColor: Colors.white,
-//             ),
-//             child: DropdownButtonFormField<int>(
-//               value: selectedPriority,
-//               items: priorityLevels.entries.map((entry) {
-//                 Color priorityColor;
-//                 switch (entry.key) {
-//                   case 3:
-//                     priorityColor = Colors.red;
-//                     break;
-//                   case 2:
-//                     priorityColor = Colors.yellow;
-//                     break;
-//                   default:
-//                     priorityColor = Colors.green;
-//                 }
-
-//                 return DropdownMenuItem<int>(
-//                   value: entry.key,
-//                   child: Row(
-//                     children: [
-//                       Container(
-//                         width: 10,
-//                         height: 10,
-//                         decoration: BoxDecoration(
-//                           color: priorityColor,
-//                           shape: BoxShape.circle,
-//                         ),
-//                       ),
-//                       const SizedBox(width: 8),
-//                       Text(
-//                         entry.value,
-//                         style: const TextStyle(
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.w500,
-//                           fontFamily: 'Gilroy',
-//                           color: Color(0xff1E2E52),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 );
-//               }).toList(),
-//               onChanged: (int? newValue) {
-//                 if (newValue != null) {
-//                   setState(() {
-//                     selectedPriority = newValue;
-//                   });
-//                 }
-//               },
-//               decoration: _inputDecoration(),
-//               validator: (value) =>
-//                   value == null ? AppLocalizations.of(context)!.translate('field_required') : null,
-//             ),
-//           ),
-//         ),
-//       ],
-//     );
-//   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -432,15 +331,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
-          // if (state is TaskError) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text(state.message),
-          //       duration: const Duration(seconds: 3),
-          //       backgroundColor: Colors.red,
-          //     ),
-          //   );
-          // } else
           if (state is TaskSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -511,20 +401,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             .translate('description_list'),
                         maxLines: 5,
                       ),
-                      // const SizedBox(height: 16),
-                      // _buildPriorityDropdown(),
-                      // const SizedBox(height: 16),
-                      // CustomTextFieldDate(
-                      //   controller: startDateController,
-                      //   label: AppLocalizations.of(context)!.translate('from_list'),
-                      //   validator: (value) {
-                      //     if (value == null || value.isEmpty) {
-                      //       return AppLocalizations.of(context)!.translate('field_required');
-                      //     }
-                      //     return null;
-                      //   },
-                      // ),
-
                       const SizedBox(height: 8),
                       UserMultiSelectWidget(
                         selectedUsers: selectedUsers,
@@ -708,6 +584,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                                             filePaths:
                                                 selectedFiles, // Передаем список путей к файлам
                                             localizations: localizations,
+                                            existingFiles:
+                                                existingFiles, // Добавляем существующие файлы
                                           ),
                                         );
                                   } catch (e) {
