@@ -65,6 +65,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/domain_check.dart';
 import '../../models/login_model.dart';
@@ -2027,56 +2028,73 @@ class ApiService {
     }
   }
 
+  
   Future<List<Task>> getTasks(
-    int? taskStatusId, {
-    int page = 1,
-    int perPage = 20,
-    String? search,
-    List<int>? users, // Массив ID менеджеров
-  }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/task?page=$page&per_page=$perPage';
+  int? taskStatusId, {
+  int page = 1,
+  int perPage = 20,
+  String? search,
+  List<int>? users,
+  int? statuses, 
+  DateTime? fromDate,
+  DateTime? toDate,
+}) async {
+  final organizationId = await getSelectedOrganization();
+  String path = '/task?page=$page&per_page=$perPage';
+  path += '&organization_id=$organizationId';
 
-    path += '&organization_id=$organizationId';
-    // Если задан поиск или менеджеры, НЕ передаем lead_status_id
-    bool shouldSkipTaskStatusId = (search != null && search.isNotEmpty) ||
-        (users != null && users.isNotEmpty);
+  bool shouldSkipTaskStatusId = (search != null && search.isNotEmpty) ||
+      (users != null && users.isNotEmpty) ||
+      (statuses != null ) ||
+      (fromDate != null && toDate != null);
 
-    if (!shouldSkipTaskStatusId && taskStatusId != null) {
-      // Если поиск и менеджеры не заданы, передаем lead_status_id
-      path += '&task_status_id=$taskStatusId';
-    }
+  if (!shouldSkipTaskStatusId && taskStatusId != null) {
+    path += '&task_status_id=$taskStatusId';
+  }
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (search != null && search.isNotEmpty) {
+    path += '&search=$search';
+  }
 
-    // Добавляем user_id если есть
-    if (users != null && users.isNotEmpty) {
-      for (int i = 0; i < users.length; i++) {
-        path += '&users[$i]=${users[i]}';
-      }
-    }
-
-    // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
-    final response = await _getRequest(path);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-            .toList();
-      } else {
-        throw Exception('Нет данных о задачах в ответе');
-      }
-    } else {
-      // Логирование ошибки с ответом сервера
-      print('Error response! - ${response.body}');
-      throw Exception('Ошибка загрузки задач!');
+  // Добавляем user_id если есть
+  if (users != null && users.isNotEmpty) {
+    for (int i = 0; i < users.length; i++) {
+      path += '&users[$i]=${users[i]}';
     }
   }
+
+  // Добавляем status_id если есть
+if (statuses != null) {
+  path += '&statuses=$statuses'; // This will pass a single status ID
+}
+
+
+  // Добавляем диапазон дат если есть
+  if (fromDate != null && toDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+    path += '&from_date=$formattedFromDate&to_date=$formattedToDate';
+  }
+
+  // Логируем конечный URL запроса
+  print('Sending request to API with path: $path');
+
+  final response = await _getRequest(path);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['result']['data'] != null) {
+      return (data['result']['data'] as List)
+          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+          .toList();
+    } else {
+      throw Exception('Нет данных о задачах в ответе');
+    }
+  } else {
+    print('Error response! - ${response.body}');
+    throw Exception('Ошибка загрузки задач!');
+  }
+}
+
 
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {

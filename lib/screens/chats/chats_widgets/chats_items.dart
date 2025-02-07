@@ -8,14 +8,20 @@ class ChatItem {
   final String name;
   final String message;
   final String time;
-  final int unredMessageCount;
+  final int unreadCount;
   final String avatar;
   final String icon;
   final bool isGroup;
 
-  ChatItem(this.name, this.message, this.time, this.avatar, this.icon,
-      this.unredMessageCount,
-      {this.isGroup = false});
+  ChatItem(
+    this.name,
+    this.message,
+    this.time,
+    this.avatar,
+    this.icon,
+    this.unreadCount, {
+    this.isGroup = false,
+  });
 
   get id => null;
 }
@@ -56,7 +62,10 @@ class ChatListItem extends StatelessWidget {
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        chatItem.name.isNotEmpty ? chatItem.name : AppLocalizations.of(context)!.translate('no_name'),
+                        chatItem.name.isNotEmpty
+                            ? chatItem.name
+                            : AppLocalizations.of(context)!
+                                .translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -81,7 +90,25 @@ class ChatListItem extends StatelessWidget {
                 formatChatTime(chatItem.time),
                 style: AppStyles.chatTimeStyle,
               ),
-              getUnredMessageWidget(chatItem.unredMessageCount)
+              if (chatItem.unreadCount != null && chatItem.unreadCount! > 0)
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    chatItem.unreadCount! <= 9
+                        ? '${chatItem.unreadCount}'
+                        : '+9',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
@@ -89,37 +116,8 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
-  String? extractImageUrlFromSvg(String svg) {
-    if (svg.contains('href="')) {
-      final start = svg.indexOf('href="') + 6;
-      final end = svg.indexOf('"', start);
-      return svg.substring(start, end);
-    }
-    return null;
-  }
-
-  String? extractTextFromSvg(String svg) {
-    final textMatch = RegExp(r'<text[^>]*>(.*?)</text>').firstMatch(svg);
-    return textMatch?.group(1);
-  }
-
-  Color? extractBackgroundColorFromSvg(String svg) {
-    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-    if (fillMatch != null) {
-      final colorHex = fillMatch.group(1);
-      if (colorHex != null) {
-        // Конвертируем hex в Color
-        final hex = colorHex.replaceAll('#', '');
-        return Color(int.parse('FF$hex', radix: 16));
-      }
-    }
-    return null;
-  }
-
   Widget _buildAvatar(String avatar) {
-    // Проверяем, содержит ли SVG
     if (avatar.contains('<svg')) {
-      // Проверяем, есть ли в SVG тег `<image>` с URL
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
         return Container(
@@ -134,7 +132,6 @@ class ChatListItem extends StatelessWidget {
           ),
         );
       } else {
-        // Проверяем на наличие текста в SVG
         final text = extractTextFromSvg(avatar);
         final backgroundColor = extractBackgroundColorFromSvg(avatar);
 
@@ -155,7 +152,7 @@ class ChatListItem extends StatelessWidget {
                 text,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 20, // было 15
+                  fontSize: 20,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -163,7 +160,6 @@ class ChatListItem extends StatelessWidget {
             ),
           );
         } else {
-          // Рендерим сам SVG если нет текста
           return SvgPicture.string(
             avatar,
             width: 48,
@@ -174,7 +170,6 @@ class ChatListItem extends StatelessWidget {
       }
     }
 
-    // Если это не SVG, предполагаем, что это локальное изображение
     return CircleAvatar(
       backgroundImage: AssetImage(avatar),
       radius: 24,
@@ -196,17 +191,29 @@ class ChatListItem extends StatelessWidget {
     }
   }
 
-  Widget getUnredMessageWidget(int unreadMessageCount) {
-    if (unreadMessageCount > 0) {
-      return Container(
-        decoration: BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
-        padding: EdgeInsets.all(8),
-        child: Text(
-          unreadMessageCount.toString(),
-          style: AppStyles.chatTimeStyleWhite,
-        ),
-      );
+  String? extractImageUrlFromSvg(String svg) {
+    if (svg.contains('href="')) {
+      final start = svg.indexOf('href="') + 6;
+      final end = svg.indexOf('"', start);
+      return svg.substring(start, end);
     }
-    return SizedBox();
+    return null;
+  }
+
+  String? extractTextFromSvg(String svg) {
+    final textMatch = RegExp(r'<text[^>]*>(.*?)</text>').firstMatch(svg);
+    return textMatch?.group(1);
+  }
+
+  Color? extractBackgroundColorFromSvg(String svg) {
+    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+    if (fillMatch != null) {
+      final colorHex = fillMatch.group(1);
+      if (colorHex != null) {
+        final hex = colorHex.replaceAll('#', '');
+        return Color(int.parse('FF$hex', radix: 16));
+      }
+    }
+    return null;
   }
 }

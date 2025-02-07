@@ -273,7 +273,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                               lastMessage: "",
                               messageType: "",
                               createDate: "",
-                              unredMessage: 0,
+                              unreadCount: 0,
                               canSendMessage: true,
                               chatUsers: [],
                             ).toChatItem(),

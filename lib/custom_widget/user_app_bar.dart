@@ -1,275 +1,183 @@
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/multi_user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
-import 'package:crm_task_manager/bloc/user/user_state.dart';
+import 'package:crm_task_manager/bloc/user/user_event.dart';
+import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/custom_widget/multi_task_status_list.dart';
 
-class UserFilterPopup extends StatefulWidget {
-  final Function(List<dynamic>)? onUsersSelected;
+class UserFilterScreen extends StatefulWidget {
+  final Function(Map<String, dynamic>)? onUsersSelected;
+  final List? initialUsers;
+  final int? initialStatuses;
+  final DateTime? initialFromDate;
+  final DateTime? initialToDate;
 
-  const UserFilterPopup({
+  const UserFilterScreen({
     Key? key,
     this.onUsersSelected,
+    this.initialUsers,
+    this.initialStatuses,
+    this.initialFromDate,
+    this.initialToDate,
   }) : super(key: key);
 
   @override
-  _UserFilterPopupState createState() => _UserFilterPopupState();
+  _UserFilterScreenState createState() => _UserFilterScreenState();
 }
 
-class _UserFilterPopupState extends State<UserFilterPopup> {
-  List<dynamic> _selectedUsers = [];
-  TextEditingController searchController = TextEditingController();
-  String searchQuery = '';
+class _UserFilterScreenState extends State<UserFilterScreen> {
+List _selectedUsers = [];
+int? _selectedStatuses;
+DateTime? _fromDate;
+DateTime? _toDate;
 
-  void toggleSelectAll(List<dynamic> users) {
-    setState(() {
-      if (_selectedUsers.length == users.length) {
-        _selectedUsers.clear();
-      } else {
-        _selectedUsers = List.from(users);
-      }
-    });
+int? selectedStatusId;
+
+
+  @override
+  void initState() {
+    super.initState();
+      _selectedUsers = widget.initialUsers ?? [];
+  _selectedStatuses = widget.initialStatuses;
+  _fromDate = widget.initialFromDate;
+  _toDate = widget.initialToDate;
+    context.read<UserTaskBloc>().add(FetchUsers());
+    context.read<TaskBloc>().add(FetchTaskStatuses());
   }
 
-  List<dynamic> filterUsers(List<dynamic> users) {
-    if (searchQuery.isEmpty) return users;
-    return users.where((user) {
-      final name = user.name?.toString().toLowerCase() ?? '';
-      final lastname = user.lastname?.toString().toLowerCase() ?? '';
-      return name.contains(searchQuery.toLowerCase()) || lastname.contains(searchQuery.toLowerCase());
-    }).toList();
+  void _selectDateRange() async {
+    final DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: _fromDate != null && _toDate != null
+          ? DateTimeRange(start: _fromDate!, end: _toDate!)
+          : null,
+    );
+    if (pickedRange != null) {
+      setState(() {
+        _fromDate = pickedRange.start;
+        _toDate = pickedRange.end;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 250,
-      constraints: BoxConstraints(maxHeight: 400),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+    return Scaffold(
+      backgroundColor: Color(0xffF4F7FD),
+      appBar: AppBar(
+        title: const Text("Фильтр",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black, fontFamily: 'Gilroy')),
+        backgroundColor: Colors.white,
+        forceMaterialTransparency: true,
+        elevation: 1,
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _selectedUsers.clear();
+                // _selectedStatuses.clear();
+                _fromDate = null;
+                _toDate = null;
+              });
+            },
+            child: const Text("Сбросить",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black, fontFamily: 'Gilroy')),
+          ),
+
+TextButton(
+  onPressed: () {
+    widget.onUsersSelected?.call({
+      'users': _selectedUsers,
+      'statuses': _selectedStatuses,
+      'fromDate': _fromDate,
+      'toDate': _toDate,
+    });
+    Navigator.pop(context);
+  },
+            child: const Text("Готово",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black, fontFamily: 'Gilroy')),
+          ),
+        ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          BlocBuilder<UserTaskBloc, UserTaskState>(
-            builder: (context, state) {
-              final allUsers = state is UserTaskLoaded ? state.users : [];
-              final isAllSelected = allUsers.isNotEmpty &&
-                  _selectedUsers.length == allUsers.length;
-              return Padding(
-                padding: EdgeInsets.all(8),
-                child: Row(
+      body: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
+        child: Column(
+          children: [
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: Colors.white, 
+              child: GestureDetector(
+                onTap: _selectDateRange,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _fromDate != null && _toDate != null
+                            ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
+                            : "Выбрать диапазон даты",
+                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                      ),
+                      Icon(Icons.calendar_today, color: Colors.black54),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
                   children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      margin: EdgeInsets.only(right: 8),
-                      child: InkWell(
-                        onTap: () => toggleSelectAll(allUsers),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isAllSelected
-                                ? Color(0xFF4339F2)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: isAllSelected
-                                  ? Color(0xFF4339F2)
-                                  : Color(0xFFCCCCCC),
-                              width: 1,
-                            ),
-                          ),
-                          child: isAllSelected
-                              ? Icon(Icons.check, size: 18, color: Colors.white)
-                              : null,
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: UserMultiSelectWidget(
+                          onSelectUsers: (List<UserData> selectedUsersData) {
+                            setState(() {
+                              _selectedUsers = selectedUsersData;
+                            });
+                          },
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          hintText:
-                              AppLocalizations.of(context)!.translate('search'),
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
-                          contentPadding:
-                              EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Color(0xFFEEEEEE)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Color(0xFFEEEEEE)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Color(0xFF1E2E52)),
-                          ),
-                          fillColor: Colors.white,
-                          filled: true,
-                        ),
-                        onChanged: (value) {
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child:  TaskStatusRadioGroupWidget(
+                        selectedStatus: selectedStatusId?.toString(),
+                        onSelectStatus: (TaskStatus selectedStatusData) {
                           setState(() {
-                            searchQuery = value;
+                            selectedStatusId = selectedStatusData.id;
                           });
                         },
+                      ),
                       ),
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-          Expanded(
-            child: BlocBuilder<UserTaskBloc, UserTaskState>(
-              builder: (context, state) {
-                if (state is UserTaskLoading) {
-                  return Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child:
-                          CircularProgressIndicator(color: Color(0xff1E2E52)),
-                    ),
-                  );
-                } else if (state is UserTaskError) {
-                  return Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        state.message,
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Colors.red,
-                        ),
-                      ),
-                    ),
-                  );
-                } else if (state is UserTaskLoaded) {
-                  final users = state.users;
-                  if (users == null) {
-                    return Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .translate('no_any_users'),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  final filteredUsers = filterUsers(users);
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: filteredUsers.length,
-                    itemBuilder: (context, index) {
-                      final user = filteredUsers[index];
-                      final name = user.name ?? 'Без имени';
-                      final lastname = user.lastname ?? 'Без фамилии';
-                      final isSelected = _selectedUsers.contains(user);
-
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedUsers.remove(user);
-                            } else {
-                              _selectedUsers.add(user);
-                            }
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Color(0xFFEEEEEE),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 24,
-                                height: 24,
-                                margin: EdgeInsets.only(right: 12),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Color(0xFF4339F2)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Color(0xFF4339F2)
-                                        : Color(0xFFCCCCCC),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: isSelected
-                                    ? Icon(Icons.check,
-                                        size: 18, color: Colors.white)
-                                    : null,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '$name $lastname',
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 14,
-                                    color: Color(0xFF1E2E52),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-                return Container();
-              },
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(8),
-            child: ElevatedButton(
-              onPressed: () {
-                if (widget.onUsersSelected != null) {
-                  widget.onUsersSelected!(_selectedUsers);
-                }
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF4339F2),
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('selected'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

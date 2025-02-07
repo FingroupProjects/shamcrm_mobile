@@ -134,7 +134,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         page: 1,
         perPage: 20,
         search: event.query,
-        users: event.userIds?.isNotEmpty == true ? event.userIds : null,
+        users: event.userIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
       );
 
       // Сохраняем задачи в кэш

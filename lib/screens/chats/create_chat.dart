@@ -229,7 +229,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                                       lastMessage: "",
                                       messageType: "",
                                       createDate: "",
-                                      unredMessage: 0,
+                                      unreadCount: 0,
                                       canSendMessage: true,
                                       chatUsers: [],
                                     ).toChatItem(),
