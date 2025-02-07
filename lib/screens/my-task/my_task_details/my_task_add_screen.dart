@@ -28,9 +28,9 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   final TextEditingController endDateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   // Переменные для файла
-  String? selectedFile;
-  String? fileName;
-  String? fileSize;
+  List<String> selectedFiles = [];
+  List<String> fileNames = [];
+  List<String> fileSizes = [];
   bool isEndDateInvalid = false;
   bool setPush = false;
   bool _showAdditionalFields = false;
@@ -52,17 +52,18 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   }
 
   // Функция выбора файла
-  Future<void> _pickFile() async {
+ Future<void> _pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null) {
         setState(() {
-          selectedFile = result.files.single.path!;
-          fileName = result.files.single.name;
-          // Конвертируем размер в КБ
-          fileSize =
-              '${(result.files.single.size / 1024).toStringAsFixed(3)}KB';
+          for (var file in result.files) {
+            selectedFiles.add(file.path!);
+            fileNames.add(file.name);
+            fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
+          }
         });
       }
     } catch (e) {
@@ -76,7 +77,6 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
       );
     }
   }
-
   Widget _buildPushNotificationCheckbox() {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -119,65 +119,112 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
             color: Color(0xff1E2E52),
           ),
         ),
-        const SizedBox(height: 4),
-        GestureDetector(
-          onTap: _pickFile,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFF4F7FD)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    fileName ??
-                        AppLocalizations.of(context)!.translate('select_file'),
-                    style: TextStyle(
-                      color: fileName != null
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                );
+              }
+
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/$fileExtension.png',
+                            width: 60,
+                            height: 60,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/icons/files/file.png',
+                                width: 60,
+                                height: 60,
+                              );
+                            },
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Icon(
-                  Icons.attach_file,
-                  color: const Color(0xff99A4BA),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
-        if (fileName != null) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [],
-          ),
-        ],
       ],
     );
   }
-
-  // Стиль для полей ввода
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      border: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -287,13 +334,13 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                       //   controller: startDateController,
                       //   label: AppLocalizations.of(context)!
                       //       .translate('from_list'),
-                      //   // validator: (value) {
-                      //   //   if (value == null || value.isEmpty) {
-                      //   //     return AppLocalizations.of(context)!
-                      //   //         .translate('field_required');
-                      //   //   }
-                      //   //   return null;
-                      //   // },
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return AppLocalizations.of(context)!
+                        //         .translate('field_required');
+                        //   }
+                        //   return null;
+                        // },
                       // ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -474,15 +521,14 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
       );
       return;
     }
-    MyTaskFile? fileData;
-    if (selectedFile != null) {
-      fileData = MyTaskFile(
-        name: fileName ?? "unknown",
-        size: fileSize ?? "0KB",
-      );
+     List<MyTaskFile> files = [];
+    for (int i = 0; i < selectedFiles.length; i++) {
+      files.add(MyTaskFile(
+        name: fileNames[i],
+        size: fileSizes[i],
+      ));
     }
-      final localizations = AppLocalizations.of(context)!;
-
+    final localizations = AppLocalizations.of(context)!;
 
     context.read<MyTaskBloc>().add(CreateMyTask(
           name: name,
@@ -491,7 +537,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           startDate: startDate,
           endDate: endDate,
           description: description,
-          filePath: selectedFile, // Передаем путь к файлу
+          filePaths: selectedFiles, // Передаем список путей к файлам
           setPush: setPush, // Add this line
           localizations: localizations,
         ));

@@ -577,5 +577,11 @@
     "select_subject": "Sarlavhani kiriting",
     "subject": "Mavzu",
      "deadline": "Muddat ",
-    "additionally": "Qo‘shimcha"
+    "additionally": "Qo‘shimcha",
+    "delete_file": "Faylni ajratish",
+    "confirm_delete_file": "Faylni ajratishni tasdiqlaysizmi?",
+    "file_deleted_successfully": "Fayl muvaffaqiyatli ajratildi",
+    "failed_to_delete_file": "Faylni ajratishda xatolik yuz berdi",
+       "add_file": "Fayl yuklash",
+    "unpin": "Ajratish"
 }

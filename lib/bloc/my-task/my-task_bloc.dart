@@ -216,7 +216,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
         setPush: event.setPush,
       );
 
@@ -278,7 +278,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         endDate: event.endDate,
         description: event.description,
         taskStatusId: event.taskStatusId,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
         setPush: event.setPush,
       );
 

@@ -127,10 +127,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            // Если есть файлы, показываем их + кнопку добавления, иначе только кнопку
             itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
             itemBuilder: (context, index) {
-              // Кнопка добавления (показывается либо одна, либо в конце списка)
               if (fileNames.isEmpty || index == fileNames.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
@@ -162,42 +160,66 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 );
               }
 
-              // Отображение выбранного файла
               final fileName = fileNames[index];
               final fileExtension = fileName.split('.').last.toLowerCase();
 
               return Padding(
                 padding: EdgeInsets.only(right: 16),
-                child: Container(
-                  width: 100,
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/icons/files/$fileExtension.png',
-                        width: 60,
-                        height: 60,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image.asset(
-                            'assets/icons/files/file.png',
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/$fileExtension.png',
                             width: 60,
                             height: 60,
-                          );
-                        },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/icons/files/file.png',
+                                width: 60,
+                                height: 60,
+                              );
+                            },
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        fileName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },

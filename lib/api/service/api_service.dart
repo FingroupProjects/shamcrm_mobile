@@ -3189,6 +3189,19 @@ class ApiService {
       throw Exception('Failed to update task status!');
     }
   }
+Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
+    final organizationId = await getSelectedOrganization();
+    
+    final response = await _deleteRequest(
+      '/task/deleteFile/$fileId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete task file!');
+    }
+  }
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
@@ -3611,42 +3624,51 @@ class ApiService {
     }
   }
 
-Future<List<Message>> getMessages(
-  int chatId, {
-  String? search,
-}) async {
-  final token = await getToken(); 
-  final organizationId = await getSelectedOrganization(); 
-
-  String url = '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId';
-  
-  if (search != null && search.isNotEmpty) {
-    url += '&search=$search';
-  }
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return (data['result'] as List)
-          .map((msg) => Message.fromJson(msg)) 
-          .toList();
-    } else {
-      throw Exception('Результат отсутствует в ответе');
-    }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}!');
-  }
+// Метод для получения сообщений по chatId
+Future<List<Message>> getMessages( 
+  int chatId, { 
+  String? search, 
+}) async { 
+  final token = await getToken();  
+  final organizationId = await getSelectedOrganization();  
+ 
+  String url = '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId'; 
+   
+  if (search != null && search.isNotEmpty) { 
+    url += '&search=$search'; 
+  } 
+ 
+  final response = await http.get( 
+    Uri.parse(url), 
+    headers: { 
+      'Authorization': 'Bearer $token', 
+      'Content-Type': 'application/json', 
+    }, 
+  ); 
+ 
+  if (response.statusCode == 200) { 
+    final data = json.decode(response.body); 
+    if (data['result'] != null) { 
+      return (data['result'] as List) 
+          .map((msg) => Message.fromJson(msg))  
+          .toList(); 
+    } else { 
+      throw Exception('Результат отсутствует в ответе'); 
+    } 
+  } else { 
+    throw Exception('Ошибка ${response.statusCode}!'); 
+  } 
 }
-
-
+Future<void> closeChatSocket(int chatId) async { 
+  final organizationId = await getSelectedOrganization(); 
+  final response = await _postRequest( 
+    '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}', 
+    {}); 
+ 
+  if (response.statusCode != 200) { 
+    throw Exception('close sokcet!'); 
+  } 
+}
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
       {String? replyMessageId}) async {
@@ -3697,18 +3719,6 @@ Future<List<Message>> getMessages(
       throw Exception('Ошибка изменения сообщения!');
     }
   }
-}
-
-  Future<void> closeChatSocket(int chatId) async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _postRequest(
-    '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {});
-
-  if (response.statusCode != 200) {
-    throw Exception('close sokcet!');
-  }
-}
 
   // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {
@@ -4871,33 +4881,51 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для создания задачи
-  Future<Map<String, dynamic>> createMyTask({
+ Future<Map<String, dynamic>> createMyTask({
     required String name,
     required int? statusId,
     required int? taskStatusId,
     DateTime? startDate,
     DateTime? endDate,
     String? description,
-    String? filePath,
+    List<String>? filePaths,
     int position = 1,
     required bool setPush,
+    
   }) async {
     try {
+      // Подготовка информации о файлах
+      List<Map<String, String>> files = [];
+      if (filePaths != null) {
+        for (String path in filePaths) {
+          final file = File(path);
+          final filename = path.split('/').last;
+          final sizeInBytes = await file.length();
+          final sizeInKB = (sizeInBytes / 1024).toStringAsFixed(3);
+          
+          files.add({
+            "name": filename,
+            "size": "${sizeInKB}KB"
+          });
+        }
+      }
+
       // Формируем данные для запроса
       final Map<String, dynamic> data = {
         'name': name,
         'status_id': statusId,
         'task_status_id': taskStatusId,
         'position': position,
-        'send_notification': setPush, // Передаем как true/false для boolean
+        'send_notification': setPush,
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (description != null) 'description': description,
+        if (files.isNotEmpty) 'files': files,
       };
 
       // Получаем идентификатор организации
       final organizationIdProfile = await getSelectedOrganization();
-
+      
       // Выполняем запрос
       final response = await _postRequest(
         '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}',
@@ -4938,7 +4966,6 @@ Future<List<Message>> getMessages(
         default:
           errorMessage = 'Произошла ошибка при создании задачи';
       }
-
       return {
         'success': false,
         'message': '$errorMessage!',
@@ -4952,7 +4979,6 @@ Future<List<Message>> getMessages(
       };
     }
   }
-
 /*// Метод для создания задачи
   // Метод для создания задачи с поддержкой нескольких файлов
 Future<Map<String, dynamic>> createMyTask({
@@ -5049,36 +5075,56 @@ Future<Map<String, dynamic>> createMyTask({
     };
   }
 }*/
-  Future<Map<String, dynamic>> updateMyTask({
+Future<Map<String, dynamic>> updateMyTask({
     required int taskId,
     required String name,
     required int? taskStatusId,
     DateTime? startDate,
     DateTime? endDate,
     String? description,
-    String? filePath,
+    List<String>? filePaths,
     required bool setPush,
+    List<MyTaskFiles>? existingFiles,
   }) async {
     try {
+      // Подготовка информации о новых файлах
+      List<Map<String, String>> files = [];
+      if (filePaths != null) {
+        for (String path in filePaths) {
+          final file = File(path);
+          final filename = path.split('/').last;
+          final sizeInBytes = await file.length();
+          final sizeInKB = (sizeInBytes / 1024).toStringAsFixed(3);
+          
+          files.add({
+            "name": filename,
+            "size": "${sizeInKB}KB"
+          });
+        }
+      }
+
+      // Подготовка информации о существующих файлах
+      List<Map<String, String>> existingFilesList = [];
+      if (existingFiles != null) {
+        for (var file in existingFiles) {
+          existingFilesList.add({
+            "name": file.name,
+            "size": file.path
+          });
+        }
+      }
+
       // Формируем данные для запроса
       final Map<String, dynamic> data = {
         'name': name,
         'task_status_id': taskStatusId,
-        'send_notification': setPush, // Передаем как true/false для boolean
+        'send_notification': setPush,
         if (startDate != null) 'from': startDate.toIso8601String(),
         if (endDate != null) 'to': endDate.toIso8601String(),
         if (description != null) 'description': description,
+        if (files.isNotEmpty) 'files': files,
+        if (existingFilesList.isNotEmpty) 'existing_files': existingFilesList,
       };
-
-      // Добавляем файл, если он есть
-      if (filePath != null) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          final fileBytes = await file.readAsBytes();
-          data['file'] =
-              base64Encode(fileBytes); // Кодируем файл в base64 для передачи
-        }
-      }
 
       // Получаем идентификатор организации
       final organizationId = await getSelectedOrganization();
@@ -5137,7 +5183,6 @@ Future<Map<String, dynamic>> createMyTask({
       };
     }
   }
-
 // Метод для получения Истории Задачи
   Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
     try {

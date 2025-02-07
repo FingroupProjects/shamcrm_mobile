@@ -8,6 +8,8 @@ class MyTaskById {
   final MyTaskStatusById? taskStatus;
   final String? taskFile;
   final int? taskNumber;
+  final List<MyTaskFiles>? files; // вместо String? taskFile
+
   MyTaskById({
     required this.id,
     required this.name,
@@ -18,12 +20,13 @@ class MyTaskById {
     required this.statusId,
     this.taskStatus,
     this.taskFile,
+    this.files,
   });
 
   factory MyTaskById.fromJson(Map<String, dynamic> json, [int statusId = 0]) {
     return MyTaskById(
       id: json['id'] ?? 0,
-      taskNumber: json['task_number']??0,
+      taskNumber: json['task_number'] ?? 0,
       name: json['name'] ?? 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
@@ -33,6 +36,11 @@ class MyTaskById {
           ? MyTaskStatusById.fromJson(json['taskStatus'])
           : null,
       taskFile: json['file'],
+      files: json['files'] != null && json['files'] is List
+          ? (json['files'] as List)
+              .map((fileJson) => MyTaskFiles.fromJson(fileJson))
+              .toList()
+          : null,
     );
   }
 }
@@ -53,7 +61,25 @@ class MyTaskFileById {
         size: json["size"] as String,
       );
 }
+class MyTaskFiles {
+  final int id;
+  final String name;
+  final String path;
 
+  MyTaskFiles({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory MyTaskFiles.fromJson(Map<String, dynamic> json) {
+    return MyTaskFiles(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      path: json['path'] ?? '',
+    );
+  }
+}
 class MyTaskStatusById {
   final int id;
   final MyTaskStatusNameById taskStatus;

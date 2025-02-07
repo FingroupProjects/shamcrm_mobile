@@ -630,5 +630,11 @@
       "deadLine":"Дедлайн: ",
       "additionally":"Дополнительно",
       "add_file":"Загрузить файл",
-      "files_details":"Файл"
+      "files_details":"Файл",
+      "delete_file": "Открепить файл",
+      "confirm_delete_file": "Вы уверены, что хотите открепить файл?",
+      "file_deleted_successfully": "Файл успешно откреплён",
+      "failed_to_delete_file": "Ошибка при откреплении файла",
+      "unpin":"Открепить"
+    
   }
