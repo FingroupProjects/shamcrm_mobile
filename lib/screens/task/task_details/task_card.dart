@@ -492,7 +492,7 @@ Widget build(BuildContext context) {
                           if (widget.task.overdue! > 0)
                             Padding(
                               padding: EdgeInsets.only(
-                                left: MediaQuery.of(context).size.width * 0.52,
+                                left: MediaQuery.of(context).size.width * 0.50,
                               ),
                               child: Container(
                                 width: 24,

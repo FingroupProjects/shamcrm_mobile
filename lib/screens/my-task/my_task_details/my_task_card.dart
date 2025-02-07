@@ -163,6 +163,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                   AppLocalizations.of(context)!
                       .translate('no_name'), // Название задачи
               startDate: widget.task.startDate, // Дата начала задачи
+              taskNumber: widget.task.taskNumber,
               endDate: widget.task.endDate, // Дата окончания задачи
               taskStatus: dropdownValue, // Текущий статус задачи
               statusId: widget.statusId, // ID статуса задачи
@@ -199,7 +200,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
               const SizedBox(height: 0),
               Row(
                 children: [
-                   Text(
+                  Text(
                     AppLocalizations.of(context)!.translate(
                         'column'), // Надпись "Колонка" для статуса задачи
                     style: TextStyle(

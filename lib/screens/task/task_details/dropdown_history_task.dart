@@ -260,16 +260,16 @@ Widget _buildActionItem(String item) {
             '\n${AppLocalizations.of(context)!.translate('final_stage')}${changes.isFinishedPreviousValue ?? AppLocalizations.of(context)!.translate('not_specified')} > ${changes.isFinishedNewValue ?? AppLocalizations.of(context)!.translate('not_specified')}';
       }
 
-      // Дата начала
-      if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
-        actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('from')}${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
-      }
+      // // Дата начала
+      // if (changes.startDateNewValue != null || changes.startDatePreviousValue != null) {
+      //   actionDetail +=
+      //       '\n${AppLocalizations.of(context)!.translate('from')}${formatDate(changes.startDatePreviousValue)} > ${formatDate(changes.startDateNewValue)}';
+      // }
 
       // Дата окончания
       if (changes.endDateNewValue != null || changes.endDatePreviousValue != null) {
         actionDetail +=
-            '\n${AppLocalizations.of(context)!.translate('to')}${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
+            '\n${AppLocalizations.of(context)!.translate('deadLine')}${formatDate(changes.endDatePreviousValue)} > ${formatDate(changes.endDateNewValue)}';
       }
 
       // Проект

@@ -645,7 +645,6 @@ Widget _buildUserView() {
               .map((status) =>
                   {'id': status.id, 'title': status.taskStatus!.name ?? ""})
               .toList());
-
           setState(() {
             _tabTitles = state.taskStatuses
                 .where((status) => _canReadTaskStatus)

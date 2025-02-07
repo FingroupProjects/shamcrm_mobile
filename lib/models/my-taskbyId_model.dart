@@ -7,13 +7,14 @@ class MyTaskById {
   final int statusId;
   final MyTaskStatusById? taskStatus;
   final String? taskFile;
-
+  final int? taskNumber;
   MyTaskById({
     required this.id,
     required this.name,
     required this.startDate,
     required this.endDate,
     this.description,
+    this.taskNumber,
     required this.statusId,
     this.taskStatus,
     this.taskFile,
@@ -22,6 +23,7 @@ class MyTaskById {
   factory MyTaskById.fromJson(Map<String, dynamic> json, [int statusId = 0]) {
     return MyTaskById(
       id: json['id'] ?? 0,
+      taskNumber: json['task_number']??0,
       name: json['name'] ?? 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
