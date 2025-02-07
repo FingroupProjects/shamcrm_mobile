@@ -441,24 +441,28 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   }
 
   void onTap(Chats chat) {
-    FocusManager.instance.primaryFocus?.unfocus();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) => MessagingCubit(ApiService()),
-          child: ChatSmsScreen(
-            chatItem: chat.toChatItem(),
-            chatId: chat.id,
-            endPointInTab: widget.endPointInTab,
-            canSendMessage: chat.canSendMessage,
-          ),
+  setState(() {
+    chat.unreadCount = 0; 
+  });
+  FocusManager.instance.primaryFocus?.unfocus();
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => BlocProvider(
+        create: (context) => MessagingCubit(ApiService()),
+        child: ChatSmsScreen(
+          chatItem: chat.toChatItem(),
+          chatId: chat.id,
+          endPointInTab: widget.endPointInTab,
+          canSendMessage: chat.canSendMessage,
         ),
       ),
-    ).then((_) {
-      widget.updateChats.call();
-    });
-  }
+    ),
+  ).then((_) {
+    widget.updateChats.call(); 
+  });
+}
+
 
   void onLongPress(Chats chat) {
     if (widget.endPointInTab == 'task') {

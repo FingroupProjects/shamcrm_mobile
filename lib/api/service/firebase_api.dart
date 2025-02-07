@@ -263,7 +263,7 @@ class FirebaseApi {
             channel: '',
             lastMessage: '',
             createDate: '',
-            unredMessage: 1,
+            unreadCount: 1,
             chatUsers: [],
           ).toChatItem(),
           chatId: chatId,

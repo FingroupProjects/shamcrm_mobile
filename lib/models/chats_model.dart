@@ -12,7 +12,7 @@ class Chats {
   final String lastMessage;
   final String? messageType;
   final String createDate;
-  final int unredMessage;
+   int unreadCount;
   final bool canSendMessage;
   final String? type;
   final List<ChatUser> chatUsers;
@@ -31,7 +31,7 @@ class Chats {
     required this.lastMessage,
     this.messageType,
     required this.createDate,
-    required this.unredMessage,
+    required this.unreadCount,
     required this.canSendMessage,
     this.type,
     required this.chatUsers,
@@ -77,11 +77,7 @@ class Chats {
           : json['lead'] != null
               ? json['lead']['created_at'] ?? ''
               : '',
-      unredMessage: json['task'] != null
-          ? json['task']['unread_messages_count'] ?? 0
-          : json['lead'] != null
-              ? json['lead']['unread_messages_count'] ?? 0
-              : 0,
+      unreadCount: json['unread_count'],
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
       description:
@@ -165,7 +161,7 @@ class Chats {
       createDate,
       avatar,
       _mapChannelToIcon(channel),
-      unredMessage,
+      unreadCount,
     );
   }
 
