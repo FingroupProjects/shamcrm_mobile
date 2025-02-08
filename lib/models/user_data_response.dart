@@ -35,6 +35,7 @@ class UsersDataResponse {
 class UserData {
   int id;
   String name;
+  String lastname;
   String? login;
   String? email;
   String? phone;
@@ -43,6 +44,7 @@ class UserData {
   UserData({
     required this.id,
     required this.name,
+    required this.lastname,
     this.login,
     this.email,
     this.phone,
@@ -52,6 +54,7 @@ class UserData {
   factory UserData.fromJson(Map<String, dynamic> json) => UserData(
         id: json["id"],
         name: json["name"],
+        lastname: json["lastname"],
         login: json["login"],
         email: json["email"],
         phone: json["phone"],
@@ -61,6 +64,7 @@ class UserData {
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
+        "lastname": lastname,
         "login": login,
         "email": email,
         "phone": phone,

@@ -25,18 +25,30 @@ class CustomAppBar extends StatefulWidget {
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
   Function(bool) clearButtonClickFiltr;
-  bool showSearchIcon;
+  bool showSearchIcon;  
   final bool showFilterIcon;
-  final bool showFilterTaskIcon; // New field for task filter
-  final bool showEvent; // New field for task filter
-  final bool showSeparateTaskFilter; // New field for separate task filter icon
-  final bool showSeparateMyTasks; // New field for separate My Tasks Icon(),
+  final bool showFilterTaskIcon; 
+  final bool showEvent; 
+  final bool showSeparateTaskFilter; 
+  final bool showSeparateMyTasks;
   final bool showNotification;
-  final Function(List<dynamic>)?onManagersSelected; // Изменено на List<dynamic>
-  final Function(Map)? onUsersSelected;// Изменено на List<dynamic>
-  final bool showMyTaskIcon; // Новый параметр
+  final Function(List<dynamic>)?onManagersSelected;
+  final Function(Map)? onUsersSelected;
+  final Function(int?)? onStatusSelected;
+  final Function(DateTime?, DateTime?)? onDateRangeSelected;
+  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeSelected;
+
+  final List? initialUsers;
+  final int? initialStatuses;
+  final DateTime? initialFromDate;
+  final DateTime? initialToDate;
+
+  final VoidCallback? onResetFilters;
+
+
+  final bool showMyTaskIcon;
   final bool showMenuIcon;
-  final bool showSeparateFilter; // New field for separate filter icon
+  final bool showSeparateFilter; 
   
 
   CustomAppBar({
@@ -48,18 +60,26 @@ class CustomAppBar extends StatefulWidget {
     required this.focusNode,
     required this.clearButtonClick,
     required this.clearButtonClickFiltr,
+        this.initialUsers,
+    this.initialStatuses,
+    this.initialFromDate,
+    this.initialToDate,
+    this.onResetFilters,
     this.showSearchIcon = true,
     this.showFilterIcon = true,
-    this.showFilterTaskIcon = true, // Default value for task filter
+    this.showFilterTaskIcon = true, 
     this.onManagersSelected,
-    this.onUsersSelected, // Add to constructor
-    this.showEvent = false, // По умолчанию выключено
-    this.showSeparateTaskFilter = false, // Default to false
-    this.showSeparateMyTasks = false, // Default to false
-    this.showMyTaskIcon = false, // По умолчанию выключено
-    this.showMenuIcon = true, // По умолчанию меню видимо
-    this.showNotification = true, // По умолчанию меню видимо
-    this.showSeparateFilter = false, // Default to false
+    this.onUsersSelected, 
+    this.onStatusSelected, 
+    this.onDateRangeSelected, 
+    this.onStatusAndDateRangeSelected, 
+    this.showEvent = false,
+    this.showSeparateTaskFilter = false, 
+    this.showSeparateMyTasks = false, 
+    this.showMyTaskIcon = false, 
+    this.showMenuIcon = true, 
+    this.showNotification = true, 
+    this.showSeparateFilter = false,
   });
 
   @override
@@ -691,13 +711,22 @@ DateTime? _toDate;
   MaterialPageRoute(
     builder: (context) => UserFilterScreen(
       onUsersSelected: widget.onUsersSelected,
-      initialUsers: _selectedUsers,
-      initialStatuses: _selectedStatuses,
-      initialFromDate: _fromDate,
-      initialToDate: _toDate,
+      onStatusSelected:widget.onStatusSelected ,
+      onDateRangeSelected: widget.onDateRangeSelected,
+      onStatusAndDateRangeSelected: widget.onStatusAndDateRangeSelected,
+      initialUsers: widget.initialUsers,
+      initialStatuses: widget.initialStatuses,
+      initialFromDate: widget.initialFromDate,
+      initialToDate: widget.initialToDate,
+      onResetFilters: widget.onResetFilters,
     ),
   ),
 );
+print('++++++++++++++++++++++++CUSTOM APPBAR+++++++++++++++++++++++++');
+print(widget.initialUsers);
+print(widget.initialStatuses);
+print(widget.initialFromDate);
+print(widget.initialToDate);
                         break;
                       case 'events':
                         // Переход на страницу "События"

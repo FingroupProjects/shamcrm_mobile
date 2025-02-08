@@ -55,7 +55,7 @@ class _TaskStatusRadioGroupWidgetState
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!.translate(state.message),
                       style: statusTextStyle.copyWith(color: Colors.white),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -149,13 +149,7 @@ class _TaskStatusRadioGroupWidgetState
                         style: statusTextStyle.copyWith(fontSize: 14),
                       ),
                       excludeSelected: false,
-                      initialItem: selectedStatusData,
-                      validator: (value) {
-                        if (value == null) {
-                          return AppLocalizations.of(context)!.translate('field_required');
-                        }
-                        return null;
-                      },
+                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
                       onChanged: (value) {
                         if (value != null) {
                           widget.onSelectStatus(value);
