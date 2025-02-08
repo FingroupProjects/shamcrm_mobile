@@ -23,11 +23,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<GetAllClientBloc>().add(GetAllClientEv());
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   context.read<GetAllClientBloc>().add(GetAllClientEv());
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +52,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(
+                  Text(
                     AppLocalizations.of(context)!.translate('assignees_list'),
                     style: TextStyle(
                       fontSize: 16,
@@ -66,7 +66,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     child: CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
                       initialItems: selectedUsersData,
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),
@@ -82,7 +83,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
                         return ListTile(
                           minTileHeight: 1,
                           minVerticalPadding: 2,
@@ -109,7 +111,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       : null,
                                 ),
                                 const SizedBox(width: 10),
-                                Text(item.name!,
+                                Text('${item.name} ${item.lastname}' ,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
@@ -120,8 +122,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                             ),
                           ),
                           onTap: () {
-                            onItemSelect(); 
-                            FocusScope.of(context).unfocus();  
+                            onItemSelect();
+                            FocusScope.of(context).unfocus();
                           },
                         );
                       },
@@ -130,7 +132,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
                         return Text(
                           selectedUsersCount == 0
-                              ? AppLocalizations.of(context)!.translate('select_assignees_list')
+                              ? AppLocalizations.of(context)!
+                                  .translate('select_assignees_list')
                               : '${AppLocalizations.of(context)!.translate('selected_assignees_list')} $selectedUsersCount',
                           style: TextStyle(
                             fontSize: 16,
@@ -140,14 +143,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           ),
                         );
                       },
-                      hintBuilder: (context, hint, enabled) =>
-                          Text(AppLocalizations.of(context)!.translate('select_assignees_list'),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              )),
+                      hintBuilder: (context, hint, enabled) => Text(
+                          AppLocalizations.of(context)!
+                              .translate('select_assignees_list'),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          )),
                       onListChanged: (values) {
                         widget.onSelectUsers(values);
                         setState(() {

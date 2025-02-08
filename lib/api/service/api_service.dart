@@ -2027,9 +2027,8 @@ class ApiService {
       throw Exception('Ошибка загрузки task ID');
     }
   }
-
   
-  Future<List<Task>> getTasks(
+Future<List<Task>> getTasks(
   int? taskStatusId, {
   int page = 1,
   int perPage = 20,
@@ -2043,12 +2042,15 @@ class ApiService {
   String path = '/task?page=$page&per_page=$perPage';
   path += '&organization_id=$organizationId';
 
-  bool shouldSkipTaskStatusId = (search != null && search.isNotEmpty) ||
-      (users != null && users.isNotEmpty) ||
-      (statuses != null ) ||
-      (fromDate != null && toDate != null);
+bool hasFilters = 
+    (search != null && search.isNotEmpty) ||
+    (users != null && users.isNotEmpty) ||
+    (fromDate != null) ||
+    (toDate != null) ||
+    (statuses != null);
 
-  if (!shouldSkipTaskStatusId && taskStatusId != null) {
+
+  if (taskStatusId != null && !hasFilters) {
     path += '&task_status_id=$taskStatusId';
   }
 
@@ -2056,28 +2058,20 @@ class ApiService {
     path += '&search=$search';
   }
 
-  // Добавляем user_id если есть
   if (users != null && users.isNotEmpty) {
     for (int i = 0; i < users.length; i++) {
       path += '&users[$i]=${users[i]}';
     }
   }
+  if (statuses != null ) {
+    path += '&task_status_id=$statuses';
+  }
 
-  // Добавляем status_id если есть
-if (statuses != null) {
-  path += '&statuses=$statuses'; // This will pass a single status ID
-}
-
-
-  // Добавляем диапазон дат если есть
   if (fromDate != null && toDate != null) {
     final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
     final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-    path += '&from_date=$formattedFromDate&to_date=$formattedToDate';
+    path += '&from=$formattedFromDate&to=$formattedToDate';
   }
-
-  // Логируем конечный URL запроса
-  print('Sending request to API with path: $path');
 
   final response = await _getRequest(path);
   if (response.statusCode == 200) {
