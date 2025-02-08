@@ -3207,6 +3207,19 @@ if (statuses != null) {
       throw Exception('Failed to update task status!');
     }
   }
+Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
+    final organizationId = await getSelectedOrganization();
+    
+    final response = await _deleteRequest(
+      '/task/deleteFile/$fileId${organizationId != null ? '?organization_id=$organizationId' : ''}'
+    );
+
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete task file!');
+    }
+  }
 
   //_________________________________ END_____API_SCREEN__TASK____________________________________________//
 
@@ -3629,42 +3642,51 @@ if (statuses != null) {
     }
   }
 
-Future<List<Message>> getMessages(
-  int chatId, {
-  String? search,
-}) async {
-  final token = await getToken(); 
-  final organizationId = await getSelectedOrganization(); 
-
-  String url = '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId';
-  
-  if (search != null && search.isNotEmpty) {
-    url += '&search=$search';
-  }
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result'] != null) {
-      return (data['result'] as List)
-          .map((msg) => Message.fromJson(msg)) 
-          .toList();
-    } else {
-      throw Exception('Результат отсутствует в ответе');
-    }
-  } else {
-    throw Exception('Ошибка ${response.statusCode}!');
-  }
+// Метод для получения сообщений по chatId
+Future<List<Message>> getMessages( 
+  int chatId, { 
+  String? search, 
+}) async { 
+  final token = await getToken();  
+  final organizationId = await getSelectedOrganization();  
+ 
+  String url = '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId'; 
+   
+  if (search != null && search.isNotEmpty) { 
+    url += '&search=$search'; 
+  } 
+ 
+  final response = await http.get( 
+    Uri.parse(url), 
+    headers: { 
+      'Authorization': 'Bearer $token', 
+      'Content-Type': 'application/json', 
+    }, 
+  ); 
+ 
+  if (response.statusCode == 200) { 
+    final data = json.decode(response.body); 
+    if (data['result'] != null) { 
+      return (data['result'] as List) 
+          .map((msg) => Message.fromJson(msg))  
+          .toList(); 
+    } else { 
+      throw Exception('Результат отсутствует в ответе'); 
+    } 
+  } else { 
+    throw Exception('Ошибка ${response.statusCode}!'); 
+  } 
 }
-
-
+Future<void> closeChatSocket(int chatId) async { 
+  final organizationId = await getSelectedOrganization(); 
+  final response = await _postRequest( 
+    '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}', 
+    {}); 
+ 
+  if (response.statusCode != 200) { 
+    throw Exception('close sokcet!'); 
+  } 
+}
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
       {String? replyMessageId}) async {
@@ -3715,18 +3737,6 @@ Future<List<Message>> getMessages(
       throw Exception('Ошибка изменения сообщения!');
     }
   }
-}
-
-  Future<void> closeChatSocket(int chatId) async {
-  final organizationId = await getSelectedOrganization();
-  final response = await _postRequest(
-    '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    {});
-
-  if (response.statusCode != 200) {
-    throw Exception('close sokcet!');
-  }
-}
 
   // Метод для отправки audio file
   Future<void> sendChatAudioFile(int chatId, File audio) async {
@@ -4566,37 +4576,32 @@ Future<List<Message>> getMessages(
   //_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
 
   Future<MyTaskById> getMyTaskById(int taskId) async {
-    try {
-      final organizationId = await getSelectedOrganization();
-
-      final response = await _getRequest(
-        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> decodedJson = json.decode(response.body);
-
-        // Проверяем, что поле result существует и является объектом
-        final Map<String, dynamic>? result = decodedJson['result'];
-        if (result == null) {
-          throw Exception('Некорректные данные от API');
-        }
-
-        // Создаем объект задачи из JSON
-        return MyTaskById.fromJson(
-            result, 0); // Передаем 0, если taskStatus отсутствует
-      } else if (response.statusCode == 404) {
-        throw Exception('Ресурс с задачи $taskId не найден');
-      } else if (response.statusCode == 500) {
-        throw Exception('Ошибка сервера. Попробуйте позже');
-      } else {
-        throw Exception('Ошибка загрузки task ID!');
+  try {
+    final organizationId = await getSelectedOrganization();
+    final response = await _getRequest(
+      '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    );
+    
+    print('Response status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> decodedJson = json.decode(response.body);
+      final Map<String, dynamic>? result = decodedJson['result'];
+      
+      if (result == null) {
+        throw('Некорректные данные от API: result is null');
       }
-    } catch (e) {
-      throw Exception('Ошибка загрузки task ID: $e');
+      
+      return MyTaskById.fromJson(result, 0);
+    } else {
+      throw ('HTTP Error');
     }
+  } catch (e) {
+    print('Error in getMyTaskById: $e');
+    throw ('Ошибка загрузки task ID');
   }
-
+}
   Future<bool> checkOverdueTasks() async {
     try {
       final organizationId = await getSelectedOrganization();
@@ -4889,40 +4894,63 @@ Future<List<Message>> getMessages(
   }
 
 // Метод для создания задачи
-  Future<Map<String, dynamic>> createMyTask({
+Future<Map<String, dynamic>> createMyTask({
     required String name,
     required int? statusId,
     required int? taskStatusId,
     DateTime? startDate,
     DateTime? endDate,
     String? description,
-    String? filePath,
+    List<String>? filePaths,
     int position = 1,
     required bool setPush,
-  }) async {
+}) async {
     try {
-      // Формируем данные для запроса
-      final Map<String, dynamic> data = {
-        'name': name,
-        'status_id': statusId,
-        'task_status_id': taskStatusId,
-        'position': position,
-        'send_notification': setPush, // Передаем как true/false для boolean
-        if (startDate != null) 'from': startDate.toIso8601String(),
-        if (endDate != null) 'to': endDate.toIso8601String(),
-        if (description != null) 'description': description,
-      };
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/my-task${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      // Получаем идентификатор организации
-      final organizationIdProfile = await getSelectedOrganization();
+      // Создаем multipart request
+      var request = http.MultipartRequest('POST', uri);
 
-      // Выполняем запрос
-      final response = await _postRequest(
-        '/my-task${organizationIdProfile != null ? '?organization_id=$organizationIdProfile' : ''}',
-        data,
-      );
+      // Добавляем заголовки с токеном
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
 
-      // Проверяем статус ответа
+      // Добавляем все поля в формате form-data
+      request.fields['name'] = name;
+      request.fields['status_id'] = statusId.toString();
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['position'] = position.toString();
+      request.fields['send_notification'] = setPush ? '1' : '0';
+
+      if (startDate != null) {
+        request.fields['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        request.fields['to'] = endDate.toIso8601String();
+      }
+      if (description != null) {
+        request.fields['description'] = description;
+      }
+
+      // Добавляем файлы, если они есть
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath(
+              'files[]', filePath); // Используем 'files[]'
+          request.files.add(file);
+        }
+      }
+
+      // Отправляем запрос
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
         return {
@@ -4930,47 +4958,46 @@ Future<List<Message>> getMessages(
           'message': 'Задача успешно создана',
           'data': responseData,
         };
+      } else {
+        // Обрабатываем различные коды ошибок
+        String errorMessage;
+        switch (response.statusCode) {
+          case 400:
+            errorMessage = 'Неверные данные запроса';
+            break;
+          case 401:
+            errorMessage = 'Необходима авторизация';
+            break;
+          case 403:
+            errorMessage = 'Недостаточно прав для создания задачи';
+            break;
+          case 404:
+            errorMessage = 'Ресурс не найден';
+            break;
+          case 409:
+            errorMessage = 'Конфликт при создании задачи';
+            break;
+          case 500:
+            errorMessage = 'Внутренняя ошибка сервера';
+            break;
+          default:
+            errorMessage = 'Произошла ошибка при создании задачи';
+        }
+        return {
+          'success': false,
+          'message': '$errorMessage!',
+          'statusCode': response.statusCode,
+        };
       }
-
-      // Обрабатываем различные коды ошибок
-      String errorMessage;
-      switch (response.statusCode) {
-        case 400:
-          errorMessage = 'Неверные данные запроса';
-          break;
-        case 401:
-          errorMessage = 'Необходима авторизация';
-          break;
-        case 403:
-          errorMessage = 'Недостаточно прав для создания задачи';
-          break;
-        case 404:
-          errorMessage = 'Ресурс не найден';
-          break;
-        case 409:
-          errorMessage = 'Конфликт при создании задачи';
-          break;
-        case 500:
-          errorMessage = 'Внутренняя ошибка сервера';
-          break;
-        default:
-          errorMessage = 'Произошла ошибка при создании задачи';
-      }
-
-      return {
-        'success': false,
-        'message': '$errorMessage!',
-        'statusCode': response.statusCode,
-      };
     } catch (e) {
+      print('Detailed error: $e');
       return {
         'success': false,
         'message': 'Ошибка при выполнении запроса!',
         'error': e.toString(),
       };
     }
-  }
-
+}
 /*// Метод для создания задачи
   // Метод для создания задачи с поддержкой нескольких файлов
 Future<Map<String, dynamic>> createMyTask({
@@ -5067,47 +5094,72 @@ Future<Map<String, dynamic>> createMyTask({
     };
   }
 }*/
-  Future<Map<String, dynamic>> updateMyTask({
+Future<Map<String, dynamic>> updateMyTask({
     required int taskId,
     required String name,
     required int? taskStatusId,
     DateTime? startDate,
     DateTime? endDate,
     String? description,
-    String? filePath,
+    List<String>? filePaths,
     required bool setPush,
-  }) async {
+    List<MyTaskFiles>? existingFiles,
+}) async {
     try {
-      // Формируем данные для запроса
-      final Map<String, dynamic> data = {
-        'name': name,
-        'task_status_id': taskStatusId,
-        'send_notification': setPush, // Передаем как true/false для boolean
-        if (startDate != null) 'from': startDate.toIso8601String(),
-        if (endDate != null) 'to': endDate.toIso8601String(),
-        if (description != null) 'description': description,
-      };
+      final token = await getToken();
+      final organizationId = await getSelectedOrganization();
+      var uri = Uri.parse(
+          '${baseUrl}/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      // Добавляем файл, если он есть
-      if (filePath != null) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          final fileBytes = await file.readAsBytes();
-          data['file'] =
-              base64Encode(fileBytes); // Кодируем файл в base64 для передачи
+      // Создаем multipart request
+      var request = http.MultipartRequest('POST', uri);
+
+      // Добавляем заголовки с токеном
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Device': 'mobile'
+      });
+
+      // Добавляем все поля в формате form-data
+      request.fields['name'] = name;
+      request.fields['task_status_id'] = taskStatusId.toString();
+      request.fields['send_notification'] = setPush ? '1' : '0';
+      // request.fields['_method'] = 'PUT'; // Добавляем метод PUT для обновления
+
+      if (startDate != null) {
+        request.fields['from'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        request.fields['to'] = endDate.toIso8601String();
+      }
+      if (description != null) {
+        request.fields['description'] = description;
+      }
+
+      // Добавляем новые файлы, если они есть
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath('files[]', filePath);
+          request.files.add(file);
         }
       }
 
-      // Получаем идентификатор организации
-      final organizationId = await getSelectedOrganization();
+      // Добавляем информацию о существующих файлах
+      if (existingFiles != null && existingFiles.isNotEmpty) {
+        List<Map<String, dynamic>> existingFilesList = existingFiles.map((file) => {
+          'id': file.id,
+          'name': file.name,
+          'path': file.path
+        }).toList();
+        
+        request.fields['existing_files'] = json.encode(existingFilesList);
+      }
 
-      // Выполняем запрос
-      final response = await _postRequest(
-        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        data,
-      );
+      // Отправляем запрос
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-      // Проверяем статус ответа
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
         return {
@@ -5115,47 +5167,46 @@ Future<Map<String, dynamic>> createMyTask({
           'message': 'Задача успешно обновлена',
           'data': responseData,
         };
+      } else {
+        // Обрабатываем различные коды ошибок
+        String errorMessage;
+        switch (response.statusCode) {
+          case 400:
+            errorMessage = 'Неверные данные запроса';
+            break;
+          case 401:
+            errorMessage = 'Необходима авторизация';
+            break;
+          case 403:
+            errorMessage = 'Недостаточно прав для обновления задачи';
+            break;
+          case 404:
+            errorMessage = 'Ресурс не найден';
+            break;
+          case 409:
+            errorMessage = 'Конфликт при обновлении задачи';
+            break;
+          case 500:
+            errorMessage = 'Внутренняя ошибка сервера';
+            break;
+          default:
+            errorMessage = 'Произошла ошибка при обновлении задачи';
+        }
+        return {
+          'success': false,
+          'message': '$errorMessage!',
+          'statusCode': response.statusCode,
+        };
       }
-
-      // Обрабатываем различные коды ошибок
-      String errorMessage;
-      switch (response.statusCode) {
-        case 400:
-          errorMessage = 'Неверные данные запроса';
-          break;
-        case 401:
-          errorMessage = 'Необходима авторизация';
-          break;
-        case 403:
-          errorMessage = 'Недостаточно прав для обновления задачи';
-          break;
-        case 404:
-          errorMessage = 'Ресурс не найден';
-          break;
-        case 409:
-          errorMessage = 'Конфликт при обновлении задачи';
-          break;
-        case 500:
-          errorMessage = 'Внутренняя ошибка сервера';
-          break;
-        default:
-          errorMessage = 'Произошла ошибка при обновлении задачи';
-      }
-
-      return {
-        'success': false,
-        'message': '$errorMessage!',
-        'statusCode': response.statusCode,
-      };
     } catch (e) {
+      print('Detailed error: $e');
       return {
         'success': false,
         'message': 'Ошибка при выполнении запроса!',
         'error': e.toString(),
       };
     }
-  }
-
+}
 // Метод для получения Истории Задачи
   Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
     try {

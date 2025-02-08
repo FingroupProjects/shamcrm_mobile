@@ -52,9 +52,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool showFilter = false;
   List<int>? _selectedUserIds;
   bool _showCustomTabBar = true;
-  
-  String _lastSearchQuery = "";
+  bool _hasPermissionToAddTask = false;
 
+  String _lastSearchQuery = "";
 
 List<UserData> _selectedUsers = [];  // Здесь UserData должен иметь свойство 'id'
 int? _selectedStatuses ;  // И TaskStatus должен иметь 'id'
@@ -111,9 +111,6 @@ DateTime? _toDate;
       if (userId.isEmpty) {
         setState(() {
           userRoles = ['No user ID found'];
-          showFilter = false;
-          
-
         });
         return;
       }
@@ -123,8 +120,6 @@ DateTime? _toDate;
         setState(() {
           userRoles = userProfile.role?.map((role) => role.name).toList() ??
               ['No role assigned'];
-          showFilter = userRoles.any((role) =>
-              role.toLowerCase() == 'admin' || role.toLowerCase() == 'manager');
         });
       }
     } catch (e) {
@@ -132,7 +127,6 @@ DateTime? _toDate;
       if (mounted) {
         setState(() {
           userRoles = ['Error loading roles'];
-          showFilter = false;
         });
       }
     }
@@ -150,19 +144,20 @@ DateTime? _toDate;
     final taskBloc = BlocProvider.of<TaskBloc>(context);
 
     if (query.isEmpty) {
-     if (_selectedUserIds != null && _selectedUserIds!.isNotEmpty) {
-      print('Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
-      taskBloc.add(FetchTasks(
-        currentStatusId,
-        userIds: _selectedUserIds,
-      ));
+      if (_selectedUserIds != null && _selectedUserIds!.isNotEmpty) {
+        print(
+            'Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
+        taskBloc.add(FetchTasks(
+          currentStatusId,
+          userIds: _selectedUserIds,
+        ));
+      } else {
+        print('Очистка поиска и фильтра — загружаем все задачи');
+        taskBloc.add(FetchTasks(currentStatusId, query: " "));
+      }
     } else {
-      print('Очистка поиска и фильтра — загружаем все задачи');
-      taskBloc.add(FetchTasks(currentStatusId,query: " "));
-    }
-  } else {
-    await TaskCache.clearAllTasks();
-    taskBloc.add(FetchTasks(
+      await TaskCache.clearAllTasks();
+      taskBloc.add(FetchTasks(
         currentStatusId,
         query: query,
         userIds: _selectedUserIds,
@@ -196,7 +191,6 @@ Future _handleUserSelected(Map filterData) async {
 
  
 
-
   void _onSearch(String query) {
     _lastSearchQuery = query;
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -204,16 +198,22 @@ Future _handleUserSelected(Map filterData) async {
   }
 
   // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('taskStatus.read');
-    final canCreate = await _apiService.hasPermission('taskStatus.create');
-    final canDelete = await _apiService.hasPermission('taskStatus.delete');
-    setState(() {
-      _canReadTaskStatus = canRead;
-      _canCreateTaskStatus = canCreate;
-      _canDeleteTaskStatus = canDelete;
-    });
-  }
+Future<void> _checkPermissions() async {
+  final canRead = await _apiService.hasPermission('taskStatus.read');
+  final canCreate = await _apiService.hasPermission('taskStatus.create');
+  final canDelete = await _apiService.hasPermission('taskStatus.delete');
+  bool hasPermission = await _apiService.hasPermission('task.create');
+
+  setState(() {
+    _canReadTaskStatus = canRead;
+    _canCreateTaskStatus = canCreate;
+    _canDeleteTaskStatus = canDelete;
+    _hasPermissionToAddTask = hasPermission;
+
+    // Логика отображения фильтра зависит от разрешения на создание задачи
+    showFilter = hasPermission;
+  });
+}
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -229,87 +229,92 @@ Future _handleUserSelected(Map filterData) async {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_tasks'),
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (String value) {
-            if (value.isNotEmpty) {
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_tasks'),
+            onClickProfileAvatar: () {
               setState(() {
-                _isSearching = true;
+                isClickAvatarIcon = !isClickAvatarIcon;
               });
-            }
-            _onSearch(value);
-          },
-          onUsersSelected: _handleUserSelected,
-          textEditingController: textEditingController,
-          focusNode: focusNode,
-          showFilterIcon: false,
-          showMyTaskIcon: true,
-          showEvent: false,
-          showFilterTaskIcon: showFilter,
-          clearButtonClick: (value) {
-            if (value == false) {
-              setState(() {
-                _isSearching = false;
-                _searchController.clear();
-                _lastSearchQuery = ''; 
-              });
-              if (_searchController.text.isEmpty && _selectedUserIds == null) {
+            },
+            onChangedSearchInput: (String value) {
+              if (value.isNotEmpty) {
                 setState(() {
-                  _showCustomTabBar = true;
+                  _isSearching = true;
                 });
-                final taskBloc = BlocProvider.of<TaskBloc>(context);
-                taskBloc.add(FetchTaskStatuses()); 
-              } else if (_selectedUserIds != null && _selectedUserIds!.isNotEmpty) {
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                final taskBloc = BlocProvider.of<TaskBloc>(context);
-                taskBloc.add(FetchTasks(
-                  currentStatusId,
-                  userIds: _selectedUserIds,
-                  query: _searchController.text.isNotEmpty ? _searchController.text : null,
-                ));
               }
-            }
-          },
-           clearButtonClickFiltr: (value) {
-            if (value == false) {
-              // Сброс фильтра
-              setState(() {
-                _selectedUserIds = null; 
-              });
-              if (_searchController.text.isEmpty && _selectedUserIds == null) {
+              _onSearch(value);
+            },
+            onUsersSelected: _handleUserSelected,
+            textEditingController: textEditingController,
+            focusNode: focusNode,
+            showFilterIcon: false,
+            showMyTaskIcon: true,
+            showEvent: false,
+            showFilterTaskIcon: showFilter,
+            clearButtonClick: (value) {
+              if (value == false) {
                 setState(() {
-                  _showCustomTabBar = true; 
+                  _isSearching = false;
+                  _searchController.clear();
+                  _lastSearchQuery = '';
                 });
-                if (_lastSearchQuery.isNotEmpty) {
+                if (_searchController.text.isEmpty &&
+                    _selectedUserIds == null) {
+                  setState(() {
+                    _showCustomTabBar = true;
+                  });
+                  final taskBloc = BlocProvider.of<TaskBloc>(context);
+                  taskBloc.add(FetchTaskStatuses());
+                } else if (_selectedUserIds != null &&
+                    _selectedUserIds!.isNotEmpty) {
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final taskBloc = BlocProvider.of<TaskBloc>(context);
+                  taskBloc.add(FetchTasks(
+                    currentStatusId,
+                    userIds: _selectedUserIds,
+                    query: _searchController.text.isNotEmpty
+                        ? _searchController.text
+                        : null,
+                  ));
+                }
+              }
+            },
+            clearButtonClickFiltr: (value) {
+              if (value == false) {
+                // Сброс фильтра
+                setState(() {
+                  _selectedUserIds = null;
+                });
+                if (_searchController.text.isEmpty &&
+                    _selectedUserIds == null) {
+                  setState(() {
+                    _showCustomTabBar = true;
+                  });
+                  if (_lastSearchQuery.isNotEmpty) {
+                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                    final dealBloc = BlocProvider.of<TaskBloc>(context);
+                    print('Возвращаем поиск после сброса фильтра');
+                    dealBloc.add(
+                        FetchTasks(currentStatusId, query: _lastSearchQuery));
+                  } else {
+                    setState(() {
+                      _showCustomTabBar = true;
+                    });
+                    final leadBloc = BlocProvider.of<TaskBloc>(context);
+                    print('Сброс и поиск пуст, возвращаем все сделки');
+                    leadBloc.add(FetchTaskStatuses());
+                  }
+                } else if (_searchController.text.isNotEmpty) {
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   final dealBloc = BlocProvider.of<TaskBloc>(context);
-                  print('Возвращаем поиск после сброса фильтра');
-                  dealBloc.add(FetchTasks(currentStatusId, query: _lastSearchQuery));
-                } else  {
-                      setState(() {
-                  _showCustomTabBar = true;
-                });
-                  final leadBloc = BlocProvider.of<TaskBloc>(context);
-                  print('Сброс и поиск пуст, возвращаем все сделки');
-                  leadBloc.add(FetchTaskStatuses());
+                  dealBloc.add(FetchTasks(
+                    currentStatusId,
+                    query: _searchController.text,
+                  ));
                 }
-              } else if (_searchController.text.isNotEmpty) {
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                final dealBloc = BlocProvider.of<TaskBloc>(context);
-                dealBloc.add(FetchTasks(
-                  currentStatusId,
-                  query: _searchController.text,
-                ));
               }
-            }
-          }
-        ),
+            }),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
@@ -329,155 +334,13 @@ Future _handleUserSelected(Map filterData) async {
             ),
     );
   }
-Widget searchWidget(List<Task> tasks) {
-  // Если идёт поиск и ничего не найдено
-  if (_isSearching && tasks.isEmpty) {
-    return Center(
-      child: Text(
-        AppLocalizations.of(context)!.translate('nothing_found'),
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  }
-  // Если пользователь выбран, но задач нет
-  else if (_isUser && tasks.isEmpty) {
-    return Center(
-      child: Text(
-        _selectedUserId != null
-            ? 'У выбранного менеджера нет лидов'
-            : 'По запросу ничего не найдено',
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  }
-  // Если задачи пусты, но поиск не активен
-  else if (tasks.isEmpty) {
-    return Center(
-      child: Text(
-          AppLocalizations.of(context)!.translate('nothing_task_for_manager'),
-        style: const TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
-        ),
-      ),
-    );
-  }
 
-  // Если задачи есть, показываем список
-  return Flexible(
-    child: ListView.builder(
-      controller: _scrollController,
-      itemCount: tasks.length,
-      itemBuilder: (context, index) {
-        final task = tasks[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: TaskCard(
-            task: task,
-            name: task.taskStatus?.taskStatus?.name ?? "",
-            statusId: task.statusId,
-            onStatusUpdated: () {
-              print('Статус задачи обновлён');
-            },
-            onStatusId: (StatusLeadId) {
-              print('onStatusId вызван с id: $StatusLeadId');
-            },
-          ),
-        );
-      },
-    ),
-  );
-}
-
-Widget _buildUserView() {
-  return BlocBuilder<TaskBloc, TaskState>(
-    builder: (context, state) {
-      if (state is TaskDataLoaded) {
-        final List<Task> tasks = state.tasks;
-        // Если включён поиск и список задач пуст
-        if (_isSearching && tasks.isEmpty) {
-          return Center(
-            child: Text(
-              AppLocalizations.of(context)!.translate('nothing_found'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-          );
-        }
-
-        // Если показывается список пользователя и он пуст
-        if (_isUser && tasks.isEmpty) {
-          return Center(
-            child: Text(
-              _selectedUserId != null
-                  ? 'У выбранного менеджера нет лидов'
-                  : 'По запросу ничего не найдено',
-              style: const TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-          );
-        }
-
-        // Если есть задачи, отображаем их
-        if (tasks.isNotEmpty) {
-          return Flexible(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: TaskCard(
-                    task: task,
-                    name: task.taskStatus?.taskStatus?.name ?? "",
-                    statusId: task.statusId,
-                    onStatusUpdated: () {},
-                    onStatusId: (StatusLeadId) {},
-                  ),
-                );
-              },
-            ),
-          );
-        }
-      }
-
-      // Если задачи загружаются
-      if (state is TaskLoading) {
-        debugPrint('Loading tasks...');
-        return const Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
-          ),
-        );
-      }
-
-      // Если состояние неизвестное или пустое
-      debugPrint('Unknown state or no data');
+  Widget searchWidget(List<Task> tasks) {
+    // Если идёт поиск и ничего не найдено
+    if (_isSearching && tasks.isEmpty) {
       return Center(
         child: Text(
-          'Нет данных',
+          AppLocalizations.of(context)!.translate('nothing_found'),
           style: const TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
@@ -486,10 +349,153 @@ Widget _buildUserView() {
           ),
         ),
       );
-    },
-  );
-}
+    }
+    // Если пользователь выбран, но задач нет
+    else if (_isUser && tasks.isEmpty) {
+      return Center(
+        child: Text(
+          _selectedUserId != null
+              ? 'У выбранного менеджера нет лидов'
+              : 'По запросу ничего не найдено',
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
+    // Если задачи пусты, но поиск не активен
+    else if (tasks.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('nothing_task_for_manager'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+      );
+    }
 
+    // Если задачи есть, показываем список
+    return Flexible(
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TaskCard(
+              task: task,
+              name: task.taskStatus?.taskStatus?.name ?? "",
+              statusId: task.statusId,
+              onStatusUpdated: () {
+                print('Статус задачи обновлён');
+              },
+              onStatusId: (StatusLeadId) {
+                print('onStatusId вызван с id: $StatusLeadId');
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildUserView() {
+    return BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        if (state is TaskDataLoaded) {
+          final List<Task> tasks = state.tasks;
+          // Если включён поиск и список задач пуст
+          if (_isSearching && tasks.isEmpty) {
+            return Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('nothing_found'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            );
+          }
+
+          // Если показывается список пользователя и он пуст
+          if (_isUser && tasks.isEmpty) {
+            return Center(
+              child: Text(
+                _selectedUserId != null
+                    ? 'У выбранного менеджера нет лидов'
+                    : 'По запросу ничего не найдено',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff99A4BA),
+                ),
+              ),
+            );
+          }
+
+          // Если есть задачи, отображаем их
+          if (tasks.isNotEmpty) {
+            return Flexible(
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: TaskCard(
+                      task: task,
+                      name: task.taskStatus?.taskStatus?.name ?? "",
+                      statusId: task.statusId,
+                      onStatusUpdated: () {},
+                      onStatusId: (StatusLeadId) {},
+                    ),
+                  );
+                },
+              ),
+            );
+          }
+        }
+
+        // Если задачи загружаются
+        if (state is TaskLoading) {
+          debugPrint('Loading tasks...');
+          return const Center(
+            child: PlayStoreImageLoading(
+              size: 80.0,
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
+
+        // Если состояние неизвестное или пустое
+        debugPrint('Unknown state or no data');
+        return Center(
+          child: Text(
+            'Нет данных',
+            style: const TextStyle(
+              fontSize: 18,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xff99A4BA),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildCustomTabBar() {
     return SingleChildScrollView(

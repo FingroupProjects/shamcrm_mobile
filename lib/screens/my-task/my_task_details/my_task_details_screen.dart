@@ -555,6 +555,7 @@ class MyTaskDetailsScreen extends StatefulWidget {
   final String? startDate;
   final String? endDate;
   final String? taskFile; // Добавлено поле для файла
+  final List<MyTaskFiles>? files; // вместо String? taskFile
 
   MyTaskDetailsScreen({
     required this.taskId,
@@ -567,6 +568,7 @@ class MyTaskDetailsScreen extends StatefulWidget {
     this.endDate,
     // this.projectName,
     this.taskFile, // Инициализация опционального параметра
+    this.files
   });
 
   @override
@@ -578,6 +580,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   MyTaskById? currentMyTask;
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
+  bool _isDownloading = false;
+  Map<int, double> _downloadProgress = {};
+
   @override
   void initState() {
     super.initState();
@@ -597,46 +602,42 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   // Обновление данных задачи
-  void _updateDetails(MyTaskById? task) {
-    if (task == null) {
-      currentMyTask = null;
-      details.clear();
-      return;
-    }
-    currentMyTask = task;
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('task_name'),
-        'value': task?.name ?? ""
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('description_details'),
-        'value': task.description?.isNotEmpty == true ? task.description! : ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('deadline'),
-        'value': task.endDate != null && task.endDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': task.startDate != null && task.startDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-            : ''
-      },
-      if (task.taskFile != null && task.taskFile!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('file_details'),
-          'value': AppLocalizations.of(context)!.translate('link'),
-        },
-    ];
-    // Вывод каждой детали в консоль
-    for (var detail in details) {
-      print("${detail['label']} ${detail['value']}");
-    }
+ void _updateDetails(MyTaskById? task) {
+  if (task == null) {
+    currentMyTask = null;
+    details.clear();
+    return;
   }
-
+  
+  currentMyTask = task;
+  details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('task_name'),
+      'value': task.name 
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('description_details'),
+      'value': task.description ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('deadline'),
+      'value': task.endDate != null 
+          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+          : ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('created_at_details'),
+      'value': task.startDate != null 
+          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+          : ''
+    },
+    if (task.files != null && task.files!.isNotEmpty)
+      {
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+      },
+  ];
+}
 // Функция для показа диалогового окна с полным текстом
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -860,7 +861,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                         description: currentMyTask!.description,
                         startDate: currentMyTask!.startDate,
                         endDate: currentMyTask!.endDate,
-                        file: currentMyTask!.taskFile,
+                        files: currentMyTask!.files,
                       ),
                     ),
                   );
@@ -953,27 +954,79 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       );
     }
 
-    if (label == AppLocalizations.of(context)!.translate('file_details')) {
-      return Row(
+    if (label == AppLocalizations.of(context)!.translate('files_details')) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildLabel(label),
-          SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              if (currentMyTask?.taskFile != null) {
-                _showFile(currentMyTask!.taskFile!);
-              }
-            },
-            child: Text(
-              AppLocalizations.of(context)!.translate('link'),
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-                decoration: TextDecoration.underline,
-              ),
+          SizedBox(height: 8),
+          Container(
+            height: 120, // Высота контейнера для файлов
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: currentMyTask?.files?.length ?? 0,
+              itemBuilder: (context, index) {
+                final file = currentMyTask!.files![index];
+                final fileExtension = file.name.split('.').last.toLowerCase();
+
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: () {
+                      if (!_isDownloading) {
+                        _showFile(file.path, file.id);
+                      }
+                    },
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Иконка файла
+                              Image.asset(
+                                'assets/icons/files/$fileExtension.png',
+                                width: 60,
+                                height: 60,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/icons/files/file.png', // Дефолтная иконка
+                                    width: 60,
+                                    height: 60,
+                                  );
+                                },
+                              ),
+                              // Индикатор загрузки
+                              if (_downloadProgress.containsKey(file.id))
+                                CircularProgressIndicator(
+                                  value: _downloadProgress[file.id],
+                                  strokeWidth: 3,
+                                  backgroundColor: Colors.grey.withOpacity(0.3),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xff1E2E52),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            file.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -991,45 +1044,53 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     );
   }
 
-  void _showFile(String fileUrl) async {
+  Future<void> _showFile(String fileUrl, int fileId) async {
     try {
-      print('Входящий fileUrl: $fileUrl');
+      if (_isDownloading) return;
 
-      // Получаем базовый домен из ApiService
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress[fileId] = 0;
+      });
+
       final enteredDomainMap = await ApiService().getEnteredDomain();
-      // Извлекаем значения из Map
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
-      print('Полученный базовый домен: $enteredDomain');
 
-      // Формируем полный URL файла
       final fullUrl = Uri.parse(
           'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
 
-      print('Сформированный полный URL: $fullUrl');
-
-      // Путь для сохранения файла
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = fileUrl.split('/').last;
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${fileUrl.split('/').last}';
       final filePath = '${directory.path}/$fileName';
 
-      // Загружаем файл
       final dio = Dio();
-      await dio.download(fullUrl.toString(), filePath);
+      await dio.download(fullUrl.toString(), filePath,
+          onReceiveProgress: (received, total) {
+        if (total != -1) {
+          setState(() {
+            _downloadProgress[fileId] = received / total;
+          });
+        }
+      });
 
-      print('Файл успешно скачан в $filePath');
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
 
-      // Открываем файл
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
-        print('Не удалось открыть файл: ${result.message}');
         _showErrorSnackBar(
             AppLocalizations.of(context)!.translate('failed_to_open_file'));
-      } else {
-        print('Файл открыт успешно.');
       }
     } catch (e) {
-      print('Ошибка при скачивании или открытии файла!');
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
       _showErrorSnackBar(AppLocalizations.of(context)!
           .translate('file_download_or_open_error'));
     }

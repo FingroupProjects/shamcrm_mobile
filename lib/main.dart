@@ -102,7 +102,7 @@ Future<void> initializeApp() async {
   final String? pin = await authService.getPin();
 
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: DefaultFirebaseOptions.currentPlatform,  
   );
   await FirebaseMessaging.instance.requestPermission();
   await getFCMTokens(apiService);
@@ -245,6 +245,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => EventBloc(widget.apiService)),
           BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
           BlocProvider(create: (context) => GetAllSubjectBloc()),
+          
           ],
       child: MaterialApp(
         locale: _locale ?? const Locale('ru'), 

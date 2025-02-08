@@ -155,7 +155,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     });
   }
 
-  Widget _buildFileSelection() {
+Widget _buildFileSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -173,10 +173,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            // Если есть файлы, показываем их + кнопку добавления, иначе только кнопку
             itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
             itemBuilder: (context, index) {
-              // Кнопка добавления (показывается либо одна, либо в конце списка)
               if (fileNames.isEmpty || index == fileNames.length) {
                 return Padding(
                   padding: EdgeInsets.only(right: 16),
@@ -208,42 +206,181 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 );
               }
 
-              // Отображение выбранного файла
               final fileName = fileNames[index];
               final fileExtension = fileName.split('.').last.toLowerCase();
+              final isExistingFile = index < existingFiles.length;
 
               return Padding(
                 padding: EdgeInsets.only(right: 16),
-                child: Container(
-                  width: 100,
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/icons/files/$fileExtension.png',
-                        width: 60,
-                        height: 60,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image.asset(
-                            'assets/icons/files/file.png',
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/$fileExtension.png',
                             width: 60,
                             height: 60,
-                          );
-                        },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/icons/files/file.png',
+                                width: 60,
+                                height: 60,
+                              );
+                            },
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        fileName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (isExistingFile) {
+                            bool? confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  backgroundColor: Colors.white,
+                                  title: Center(
+                                    child: Text(
+                                      AppLocalizations.of(context)!.translate('delete_file'),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                  ),
+                                  content: Text(
+                                    AppLocalizations.of(context)!.translate('confirm_delete_file'),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff1E2E52),
+                                    ),
+                                  ),
+                                  actions: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: CustomButton(
+                                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop(false);
+                                            },
+                                            buttonColor: Colors.red,
+                                            textColor: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: CustomButton(
+                                            buttonText: AppLocalizations.of(context)!.translate('unpin'),
+                                            onPressed: () async {
+                                              try {
+                                                final result = await _apiService.deleteTaskFile(existingFiles[index].id);
+                                                if (result['result'] == 'Success') {
+                                                  setState(() {
+                                                    existingFiles.removeAt(index);
+                                                    fileNames.removeAt(index);
+                                                  });
+                                                  Navigator.of(context).pop(true);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        AppLocalizations.of(context)!.translate('file_deleted_successfully'),
+                                                        style: TextStyle(
+                                                          fontFamily: 'Gilroy',
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w500,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                      backgroundColor: Colors.green,
+                                                      elevation: 3,
+                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                      duration: Duration(seconds: 3),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                Navigator.of(context).pop(false);
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      AppLocalizations.of(context)!.translate('failed_to_delete_file'),
+                                                      style: TextStyle(
+                                                        fontFamily: 'Gilroy',
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                    behavior: SnackBarBehavior.floating,
+                                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    backgroundColor: Colors.red,
+                                                    elevation: 3,
+                                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                                    duration: Duration(seconds: 3),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            buttonColor: Color(0xff1E2E52),
+                                            textColor: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          } else {
+                            setState(() {
+                              selectedFiles.removeAt(index - existingFiles.length);
+                              fileNames.removeAt(index);
+                              fileSizes.removeAt(index - existingFiles.length);
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },
