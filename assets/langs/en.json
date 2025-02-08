@@ -585,5 +585,6 @@
     "file_deleted_successfully": "File successfully unpinned",
     "failed_to_delete_file": "Failed to unpin file",
        "add_file": "Upload file",
-    "unpin": "Unpin"
+    "unpin": "Unpin",
+    "files_details":"File:"
 }

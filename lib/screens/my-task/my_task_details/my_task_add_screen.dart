@@ -329,11 +329,11 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!
-                            .translate('from_list'),
+                      // const SizedBox(height: 8),
+                      // CustomTextFieldDate(
+                      //   controller: startDateController,
+                      //   label: AppLocalizations.of(context)!
+                      //       .translate('from_list'),
                         // validator: (value) {
                         //   if (value == null || value.isEmpty) {
                         //     return AppLocalizations.of(context)!
@@ -341,7 +341,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         //   }
                         //   return null;
                         // },
-                      ),
+                      // ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
@@ -467,27 +467,27 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
 
   void _createMyTask() {
     final String name = nameController.text;
-    final String? startDateString =
-        startDateController.text.isEmpty ? null : startDateController.text;
+    // final String? startDateString =
+    //     startDateController.text.isEmpty ? null : startDateController.text;
     final String? endDateString =
         endDateController.text.isEmpty ? null : endDateController.text;
     final String? description =
         descriptionController.text.isEmpty ? null : descriptionController.text;
 
-    DateTime? startDate;
-    if (startDateString != null && startDateString.isNotEmpty) {
-      try {
-        startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-            AppLocalizations.of(context)!.translate('fill_required_fields'),
-          )),
-        );
-        return;
-      }
-    }
+    // DateTime? startDate;
+    // if (startDateString != null && startDateString.isNotEmpty) {
+    //   try {
+    //     startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
+    //   } catch (e) {
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(
+    //           content: Text(
+    //         AppLocalizations.of(context)!.translate('fill_required_fields'),
+    //       )),
+    //     );
+    //     return;
+    //   }
+    // }
 
     DateTime? endDate;
     if (endDateString != null && endDateString.isNotEmpty) {
@@ -503,24 +503,24 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         return;
       }
     }
-    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-      setState(() {
-        isEndDateInvalid = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!
-                .translate('start_date_after_end_date'),
-            style: TextStyle(
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+    //   setState(() {
+    //     isEndDateInvalid = true;
+    //   });
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text(
+    //         AppLocalizations.of(context)!
+    //             .translate('start_date_after_end_date'),
+    //         style: TextStyle(
+    //           color: Colors.white,
+    //         ),
+    //       ),
+    //       backgroundColor: Colors.red,
+    //     ),
+    //   );
+    //   return;
+    // }
      List<MyTaskFile> files = [];
     for (int i = 0; i < selectedFiles.length; i++) {
       files.add(MyTaskFile(
@@ -534,7 +534,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           name: name,
           statusId: widget.statusId,
           taskStatusId: widget.statusId,
-          startDate: startDate,
+          // startDate: startDate,
           endDate: endDate,
           description: description,
           filePaths: selectedFiles, // Передаем список путей к файлам
