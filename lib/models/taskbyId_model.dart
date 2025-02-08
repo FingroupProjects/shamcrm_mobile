@@ -2,7 +2,7 @@ import 'package:crm_task_manager/models/project_model.dart';
 
 class TaskById {
   final int id;
-  final int taskNnumber;
+  final int taskNumber;
   final String name;
   final String? startDate;
   final String? endDate;
@@ -19,10 +19,11 @@ class TaskById {
   final List<TaskCustomFieldsById> taskCustomFields;
   final String? taskFile;
   final int isFinished; // Новое поле
+  final List<TaskFiles>? files; // вместо String? taskFile
 
   TaskById({
     required this.id,
-    required this.taskNnumber,
+    required this.taskNumber,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -38,6 +39,7 @@ class TaskById {
     this.author, // Инициализация нового поля
     required this.taskCustomFields,
     this.taskFile,
+    this.files,
     required this.isFinished, // Инициализация нового поля
   });
 
@@ -55,7 +57,7 @@ class TaskById {
 
     return TaskById(
       id: json['id'] is int ? json['id'] : 0,
-      taskNnumber: json['task_number'] is int ? json['task_number'] : 0,
+      taskNumber: json['task_number'] is int ? json['task_number'] : 0,
       name: json['name'] is String ? json['name'] : 'Без имени',
       startDate: json['from'],
       endDate: json['to'],
@@ -78,6 +80,11 @@ class TaskById {
           : null,
       color: json['color'] is String ? json['color'] : null,
       taskFile: json['file'],
+      files: json['files'] != null && json['files'] is List
+          ? (json['files'] as List)
+              .map((fileJson) => TaskFiles.fromJson(fileJson))
+              .toList()
+          : null,
       chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
           ? ChatById.fromJson(json['chat']) // Преобразуем JSON для чата
           : null,
@@ -108,6 +115,26 @@ class AuthorTask {
     return AuthorTask(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указан',
+    );
+  }
+}
+
+class TaskFiles {
+  final int id;
+  final String name;
+  final String path;
+
+  TaskFiles({
+    required this.id,
+    required this.name,
+    required this.path,
+  });
+
+  factory TaskFiles.fromJson(Map<String, dynamic> json) {
+    return TaskFiles(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      path: json['path'] ?? '',
     );
   }
 }

@@ -164,7 +164,7 @@ class FirebaseApi {
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'myTask', message);
         break;
-         case 'eventId':
+      case 'eventId':
         print('Переход на экран лида с ID: $id');
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'eventId', message);
@@ -199,7 +199,7 @@ class FirebaseApi {
       case 'myTask':
         await navigateToMyTaskScreen(id, message);
         break;
- case 'eventId':
+      case 'eventId':
         await navigateToMyTaskScreen(id, message);
         break;
 
@@ -285,15 +285,20 @@ class FirebaseApi {
 
   Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
     final taskId = message.data['id'];
+    final taskNumber =
+        message.data['taskNumber']; // Получаем номер задачи из уведомления
+
     if (taskId != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => TaskDetailsScreen(
-              taskId: taskId,
-              taskName: '',
-              taskStatus: '',
-              statusId: 1,
-              taskCustomFields: []),
+            taskId: taskId,
+            taskName: '',
+            taskStatus: '',
+            statusId: 1,
+            taskNumber: null,
+            taskCustomFields: [],
+          ),
         ),
       );
     }
@@ -330,6 +335,7 @@ class FirebaseApi {
       );
     }
   }
+
   Future<void> navigateToEventScreen(String id, RemoteMessage message) async {
     final eventId = message.data['id'];
     if (eventId != null) {

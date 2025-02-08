@@ -46,7 +46,7 @@ Future<bool> _checkInternetConnection() async {
         userId: event.userId,
         description: event.description,
         customFields: event.customFields,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
       );
 
       if (result['success']) {

@@ -216,7 +216,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
         setPush: event.setPush,
       );
 
@@ -230,7 +230,37 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
       emit(MyTaskError(event.localizations.translate('task_creation_error')));
     }
   }
+/* Future<void> _createMyTask(
+      CreateMyTask event, Emitter<MyTaskState> emit) async {
+    emit(MyTaskLoading());
 
+    if (!await _checkInternetConnection()) {
+      emit(MyTaskError(event.localizations.translate('no_internet_connection')));
+      return;
+    }
+
+    try {
+      final result = await apiService.createMyTask(
+        name: event.name,
+        statusId: event.statusId,
+        taskStatusId: event.taskStatusId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        description: event.description,
+        filePaths: event.filePaths,
+        setPush: event.setPush,
+      );
+
+      if (result['success']) {
+        emit(MyTaskSuccess(event.localizations.translate('task_create_successfully')));
+        // add(FetchMyTasks(event.statusId));
+      } else {
+        emit(MyTaskError(result['message']));
+      }
+    } catch (e) {
+      emit(MyTaskError(event.localizations.translate('task_creation_error')));
+    }
+  }*/
   Future<void> _updateMyTask(
       UpdateMyTask event, Emitter<MyTaskState> emit) async {
     emit(MyTaskLoading());
@@ -248,7 +278,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         endDate: event.endDate,
         description: event.description,
         taskStatusId: event.taskStatusId,
-        filePath: event.filePath,
+        filePaths: event.filePaths,
         setPush: event.setPush,
       );
 
