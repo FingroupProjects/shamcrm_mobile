@@ -586,37 +586,37 @@ Widget _buildFileSelection() {
                                   DateTime? endDate;
 
                                   try {
-                                    if (startDateController.text.isNotEmpty) {
-                                      startDate = DateFormat('dd/MM/yyyy')
-                                          .parseStrict(
-                                              startDateController.text);
-                                    }
+                                    // if (startDateController.text.isNotEmpty) {
+                                    //   startDate = DateFormat('dd/MM/yyyy')
+                                    //       .parseStrict(
+                                    //           startDateController.text);
+                                    // }
                                     if (endDateController.text.isNotEmpty) {
                                       endDate = DateFormat('dd/MM/yyyy')
                                           .parseStrict(endDateController.text);
                                     }
-                                    if (startDate != null &&
-                                        endDate != null &&
-                                        startDate.isAfter(endDate)) {
-                                      setState(() {
-                                        isEndDateInvalid = true;
-                                      });
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            AppLocalizations.of(context)!
-                                                .translate(
-                                                    'start_date_after_end_date'),
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                      return;
-                                    }
+                                    // if (startDate != null &&
+                                    //     endDate != null &&
+                                    //     startDate.isAfter(endDate)) {
+                                    //   setState(() {
+                                    //     isEndDateInvalid = true;
+                                    //   });
+                                    //   ScaffoldMessenger.of(context)
+                                    //       .showSnackBar(
+                                    //     SnackBar(
+                                    //       content: Text(
+                                    //         AppLocalizations.of(context)!
+                                    //             .translate(
+                                    //                 'start_date_after_end_date'),
+                                    //         style: TextStyle(
+                                    //           color: Colors.white,
+                                    //         ),
+                                    //       ),
+                                    //       backgroundColor: Colors.red,
+                                    //     ),
+                                    //   );
+                                    //   return;
+                                    // }
                                     final localizations =
                                         AppLocalizations.of(context)!;
                                     context.read<MyTaskBloc>().add(
@@ -624,7 +624,7 @@ Widget _buildFileSelection() {
                                             taskId: widget.taskId,
                                             name: nameController.text,
                                             taskStatusId: widget.statusId,
-                                            startDate: startDate,
+                                            // startDate: startDate,
                                             endDate: endDate,
                                             description:
                                                 descriptionController.text,

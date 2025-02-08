@@ -186,6 +186,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     context.read<MyTaskStatusBloc>().add(
           CreateMyTaskStatusAdd(
             statusName: statusName, // Передаем название статуса
+            finalStep: isFinalStage,
           ),
         );
     ScaffoldMessenger.of(context).showSnackBar(

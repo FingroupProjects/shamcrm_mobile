@@ -22,7 +22,7 @@ class MyTask {
     this.file,
     required this.taskCustomFields,
   });
- 
+
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
     try {
       return MyTask(
@@ -63,7 +63,7 @@ class MyTask {
     return {
       'id': id,
       'name': name,
-      'task_number':taskNumber,
+      'task_number': taskNumber,
       'from': startDate,
       'to': endDate,
       'description': description,
@@ -139,6 +139,7 @@ class MyTaskStatus {
   final int position;
   final int tasksCount;
   final int? authorId;
+  final bool finalStep;
 
   MyTaskStatus({
     required this.id,
@@ -148,12 +149,14 @@ class MyTaskStatus {
     required this.position,
     required this.tasksCount,
     this.authorId,
+    required this.finalStep,
   });
 
   factory MyTaskStatus.fromJson(Map<String, dynamic> json) {
     return MyTaskStatus(
       id: json['id'] ?? 0,
       title: json['title'] ?? 'Без статуса',
+      finalStep: json['final_step'] == true || json['final_step'] == 1,
       color: json['color'] ?? '#FFFFFF',
       organizationId: json['organization_id'] as int?,
       position: json['position'] ?? 0,

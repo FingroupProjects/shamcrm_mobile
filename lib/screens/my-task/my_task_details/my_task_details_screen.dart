@@ -615,6 +615,14 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       'label': AppLocalizations.of(context)!.translate('task_name'),
       'value': task.name 
     },
+      {
+        'label': AppLocalizations.of(context)!.translate('task_number'),
+        'value': (task?.taskNumber ?? "").toString()
+      },
+        {
+        'label': AppLocalizations.of(context)!.translate('task_number'),
+        'value': (task?.id ?? "").toString()
+      },
     {
       'label': AppLocalizations.of(context)!.translate('description_details'),
       'value': task.description ?? ''

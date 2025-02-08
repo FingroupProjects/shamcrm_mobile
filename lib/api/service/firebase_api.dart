@@ -284,9 +284,14 @@ class FirebaseApi {
   }
 
   Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
+    print('Received push notification data: ${message.data}');
+
     final taskId = message.data['id'];
     final taskNumber =
-        message.data['taskNumber']; // Получаем номер задачи из уведомления
+        int.tryParse(message.data['taskNumber'] ?? ''); // Преобразуем в int
+
+    print('taskId: $taskId');
+    print('taskNumber: $taskNumber');
 
     if (taskId != null) {
       navigatorKey.currentState?.push(
@@ -296,7 +301,7 @@ class FirebaseApi {
             taskName: '',
             taskStatus: '',
             statusId: 1,
-            taskNumber: null,
+            taskNumber: taskNumber, // Теперь taskNumber это int?
             taskCustomFields: [],
           ),
         ),
@@ -321,7 +326,14 @@ class FirebaseApi {
   }
 
   Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
+    print('Received push notification data: ${message.data}');
+
     final myTaskId = message.data['id'];
+    final taskNumber = int.tryParse(message.data['task_number'] ?? '');
+
+    print('taskId: $myTaskId');
+    print('taskNumber: $taskNumber');
+
     if (myTaskId != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
@@ -330,6 +342,7 @@ class FirebaseApi {
             taskName: '',
             taskStatus: '',
             statusId: 1,
+            taskNumber: taskNumber, // Теперь taskNumber это int?
           ),
         ),
       );

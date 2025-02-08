@@ -2027,68 +2027,66 @@ class ApiService {
       throw Exception('Ошибка загрузки task ID');
     }
   }
-  
-Future<List<Task>> getTasks(
-  int? taskStatusId, {
-  int page = 1,
-  int perPage = 20,
-  String? search,
-  List<int>? users,
-  int? statuses, 
-  DateTime? fromDate,
-  DateTime? toDate,
-}) async {
-  final organizationId = await getSelectedOrganization();
-  String path = '/task?page=$page&per_page=$perPage';
-  path += '&organization_id=$organizationId';
-
-bool hasFilters = 
-    (search != null && search.isNotEmpty) ||
-    (users != null && users.isNotEmpty) ||
-    (fromDate != null) ||
-    (toDate != null) ||
-    (statuses != null);
-
-
-  if (taskStatusId != null && !hasFilters) {
-    path += '&task_status_id=$taskStatusId';
-  }
-
-  if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
-  }
-
-  if (users != null && users.isNotEmpty) {
-    for (int i = 0; i < users.length; i++) {
-      path += '&users[$i]=${users[i]}';
-    }
-  }
-  if (statuses != null ) {
-    path += '&task_status_id=$statuses';
-  }
-
-  if (fromDate != null && toDate != null) {
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-    path += '&from=$formattedFromDate&to=$formattedToDate';
-  }
-
-  final response = await _getRequest(path);
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result']['data'] != null) {
-      return (data['result']['data'] as List)
-          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-          .toList();
-    } else {
-      throw Exception('Нет данных о задачах в ответе');
-    }
-  } else {
-    print('Error response! - ${response.body}');
-    throw Exception('Ошибка загрузки задач!');
-  }
+Future<List<Task>> getTasks( 
+  int? taskStatusId, { 
+  int page = 1, 
+  int perPage = 20, 
+  String? search, 
+  List<int>? users, 
+  int? statuses,  
+  DateTime? fromDate, 
+  DateTime? toDate, 
+}) async { 
+  final organizationId = await getSelectedOrganization(); 
+  String path = '/task?page=$page&per_page=$perPage'; 
+  path += '&organization_id=$organizationId'; 
+ 
+bool hasFilters =  
+    (search != null && search.isNotEmpty) || 
+    (users != null && users.isNotEmpty) || 
+    (fromDate != null) || 
+    (toDate != null) || 
+    (statuses != null); 
+ 
+ 
+  if (taskStatusId != null && !hasFilters) { 
+    path += '&task_status_id=$taskStatusId'; 
+  } 
+ 
+  if (search != null && search.isNotEmpty) { 
+    path += '&search=$search'; 
+  } 
+ 
+  if (users != null && users.isNotEmpty) { 
+    for (int i = 0; i < users.length; i++) { 
+      path += '&users[$i]=${users[i]}'; 
+    } 
+  } 
+  if (statuses != null ) { 
+    path += '&task_status_id=$statuses'; 
+  } 
+ 
+  if (fromDate != null && toDate != null) { 
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
+    path += '&from=$formattedFromDate&to=$formattedToDate'; 
+  } 
+ 
+  final response = await _getRequest(path); 
+  if (response.statusCode == 200) { 
+    final data = json.decode(response.body); 
+    if (data['result']['data'] != null) { 
+      return (data['result']['data'] as List) 
+          .map((json) => Task.fromJson(json, taskStatusId ?? -1)) 
+          .toList(); 
+    } else { 
+      throw Exception('Нет данных о задачах в ответе'); 
+    } 
+  } else { 
+    print('Error response! - ${response.body}'); 
+    throw Exception('Ошибка загрузки задач!'); 
+  } 
 }
-
 
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -2824,20 +2822,20 @@ bool hasFilters =
         }
       }
 
-       // Добавляем ID существующих файлов
-    if (existingFiles != null && existingFiles.isNotEmpty) {
-      for (int i = 0; i < existingFiles.length; i++) {
-        request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
+      // Добавляем ID существующих файлов
+      if (existingFiles != null && existingFiles.isNotEmpty) {
+        for (int i = 0; i < existingFiles.length; i++) {
+          request.fields['existing_files[$i]'] = existingFiles[i].id.toString();
+        }
       }
-    }
 
-    // Добавляем новые файлы
-    if (filePaths != null && filePaths.isNotEmpty) {
-      for (var filePath in filePaths) {
-        final file = await http.MultipartFile.fromPath('files[]', filePath);
-        request.files.add(file);
+      // Добавляем новые файлы
+      if (filePaths != null && filePaths.isNotEmpty) {
+        for (var filePath in filePaths) {
+          final file = await http.MultipartFile.fromPath('files[]', filePath);
+          request.files.add(file);
+        }
       }
-    }
       // Отправляем запрос
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -3201,12 +3199,12 @@ bool hasFilters =
       throw Exception('Failed to update task status!');
     }
   }
-Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
+
+  Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
     final organizationId = await getSelectedOrganization();
-    
+
     final response = await _deleteRequest(
-      '/task/deleteFile/$fileId${organizationId != null ? '?organization_id=$organizationId' : ''}'
-    );
+        '/task/deleteFile/$fileId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
     if (response.statusCode == 200) {
       return {'result': 'Success'};
@@ -3637,50 +3635,53 @@ Future<Map<String, dynamic>> deleteTaskFile(int fileId) async {
   }
 
 // Метод для получения сообщений по chatId
-Future<List<Message>> getMessages( 
-  int chatId, { 
-  String? search, 
-}) async { 
-  final token = await getToken();  
-  final organizationId = await getSelectedOrganization();  
- 
-  String url = '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId'; 
-   
-  if (search != null && search.isNotEmpty) { 
-    url += '&search=$search'; 
-  } 
- 
-  final response = await http.get( 
-    Uri.parse(url), 
-    headers: { 
-      'Authorization': 'Bearer $token', 
-      'Content-Type': 'application/json', 
-    }, 
-  ); 
- 
-  if (response.statusCode == 200) { 
-    final data = json.decode(response.body); 
-    if (data['result'] != null) { 
-      return (data['result'] as List) 
-          .map((msg) => Message.fromJson(msg))  
-          .toList(); 
-    } else { 
-      throw Exception('Результат отсутствует в ответе'); 
-    } 
-  } else { 
-    throw Exception('Ошибка ${response.statusCode}!'); 
-  } 
-}
-Future<void> closeChatSocket(int chatId) async { 
-  final organizationId = await getSelectedOrganization(); 
-  final response = await _postRequest( 
-    '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}', 
-    {}); 
- 
-  if (response.statusCode != 200) { 
-    throw Exception('close sokcet!'); 
-  } 
-}
+  Future<List<Message>> getMessages(
+    int chatId, {
+    String? search,
+  }) async {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+
+    String url =
+        '$baseUrl/chat/getMessages/$chatId?organization_id=$organizationId';
+
+    if (search != null && search.isNotEmpty) {
+      url += '&search=$search';
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result'] != null) {
+        return (data['result'] as List)
+            .map((msg) => Message.fromJson(msg))
+            .toList();
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка ${response.statusCode}!');
+    }
+  }
+
+  Future<void> closeChatSocket(int chatId) async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest(
+        '/chat/clearCache/$chatId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {});
+
+    if (response.statusCode != 200) {
+      throw Exception('close sokcet!');
+    }
+  }
+
 // Метод для отправки текстового сообщения
   Future<void> sendMessage(int chatId, String message,
       {String? replyMessageId}) async {
@@ -4570,32 +4571,33 @@ Future<void> closeChatSocket(int chatId) async {
   //_________________________________ START___API__SCREEN__MY-TASK____________________________________________//
 
   Future<MyTaskById> getMyTaskById(int taskId) async {
-  try {
-    final organizationId = await getSelectedOrganization();
-    final response = await _getRequest(
-      '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    );
-    
-    print('Response status code: ${response.statusCode}');
-    print('Response body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> decodedJson = json.decode(response.body);
-      final Map<String, dynamic>? result = decodedJson['result'];
-      
-      if (result == null) {
-        throw('Некорректные данные от API: result is null');
+    try {
+      final organizationId = await getSelectedOrganization();
+      final response = await _getRequest(
+        '/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final Map<String, dynamic>? result = decodedJson['result'];
+
+        if (result == null) {
+          throw ('Некорректные данные от API: result is null');
+        }
+
+        return MyTaskById.fromJson(result, 0);
+      } else {
+        throw ('HTTP Error');
       }
-      
-      return MyTaskById.fromJson(result, 0);
-    } else {
-      throw ('HTTP Error');
+    } catch (e) {
+      print('Error in getMyTaskById: $e');
+      throw ('Ошибка загрузки task ID');
     }
-  } catch (e) {
-    print('Error in getMyTaskById: $e');
-    throw ('Ошибка загрузки task ID');
   }
-}
+
   Future<bool> checkOverdueTasks() async {
     try {
       final organizationId = await getSelectedOrganization();
@@ -4824,10 +4826,17 @@ Future<void> closeChatSocket(int chatId) async {
   /// Создает новый статус задачи
   Future<Map<String, dynamic>> CreateMyTaskStatusAdd({
     required String statusName,
+    bool? finalStep,
   }) async {
     try {
       // Формируем данные для запроса
-      final Map<String, dynamic> data = {'title': statusName, 'color': "#000"};
+      final Map<String, dynamic> data = {
+        'title': statusName,
+        'color': "#000",
+      };
+      if (finalStep != null) {
+        data['final_step'] = finalStep;
+      }
 
       // Получаем идентификатор организации
       final organizationIdProfile = await getSelectedOrganization();
@@ -4888,7 +4897,7 @@ Future<void> closeChatSocket(int chatId) async {
   }
 
 // Метод для создания задачи
-Future<Map<String, dynamic>> createMyTask({
+  Future<Map<String, dynamic>> createMyTask({
     required String name,
     required int? statusId,
     required int? taskStatusId,
@@ -4898,7 +4907,7 @@ Future<Map<String, dynamic>> createMyTask({
     List<String>? filePaths,
     int position = 1,
     required bool setPush,
-}) async {
+  }) async {
     try {
       final token = await getToken();
       final organizationId = await getSelectedOrganization();
@@ -4922,9 +4931,9 @@ Future<Map<String, dynamic>> createMyTask({
       request.fields['position'] = position.toString();
       request.fields['send_notification'] = setPush ? '1' : '0';
 
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
+      // if (startDate != null) {
+      //   request.fields['from'] = startDate.toIso8601String();
+      // }
       if (endDate != null) {
         request.fields['to'] = endDate.toIso8601String();
       }
@@ -4991,7 +5000,8 @@ Future<Map<String, dynamic>> createMyTask({
         'error': e.toString(),
       };
     }
-}
+  }
+
 /*// Метод для создания задачи
   // Метод для создания задачи с поддержкой нескольких файлов
 Future<Map<String, dynamic>> createMyTask({
@@ -5088,7 +5098,7 @@ Future<Map<String, dynamic>> createMyTask({
     };
   }
 }*/
-Future<Map<String, dynamic>> updateMyTask({
+  Future<Map<String, dynamic>> updateMyTask({
     required int taskId,
     required String name,
     required int? taskStatusId,
@@ -5098,7 +5108,7 @@ Future<Map<String, dynamic>> updateMyTask({
     List<String>? filePaths,
     required bool setPush,
     List<MyTaskFiles>? existingFiles,
-}) async {
+  }) async {
     try {
       final token = await getToken();
       final organizationId = await getSelectedOrganization();
@@ -5121,9 +5131,9 @@ Future<Map<String, dynamic>> updateMyTask({
       request.fields['send_notification'] = setPush ? '1' : '0';
       // request.fields['_method'] = 'PUT'; // Добавляем метод PUT для обновления
 
-      if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
-      }
+      // if (startDate != null) {
+      //   request.fields['from'] = startDate.toIso8601String();
+      // }
       if (endDate != null) {
         request.fields['to'] = endDate.toIso8601String();
       }
@@ -5141,12 +5151,11 @@ Future<Map<String, dynamic>> updateMyTask({
 
       // Добавляем информацию о существующих файлах
       if (existingFiles != null && existingFiles.isNotEmpty) {
-        List<Map<String, dynamic>> existingFilesList = existingFiles.map((file) => {
-          'id': file.id,
-          'name': file.name,
-          'path': file.path
-        }).toList();
-        
+        List<Map<String, dynamic>> existingFilesList = existingFiles
+            .map(
+                (file) => {'id': file.id, 'name': file.name, 'path': file.path})
+            .toList();
+
         request.fields['existing_files'] = json.encode(existingFilesList);
       }
 
@@ -5200,7 +5209,8 @@ Future<Map<String, dynamic>> updateMyTask({
         'error': e.toString(),
       };
     }
-}
+  }
+
 // Метод для получения Истории Задачи
   Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
     try {
@@ -5342,28 +5352,25 @@ Future<Map<String, dynamic>> updateMyTask({
     }
   }
 
-// Метод для изменения статуса лида в ApiService
-  Future<Map<String, dynamic>> updateMyTaskStatusEdit(
-      int myTaskStatusId, String title, AppLocalizations localizations) async {
-    final organizationId = await getSelectedOrganization();
-
-    final payload = {
-      "title": title,
-      "organization_id": organizationId,
-      "color": "#000",
-    };
-
-    final response = await _patchRequest(
-      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      payload, // Исправлено: Передача `payload` как второго аргумента
-    );
-
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw Exception('Failed to update leadStatus!');
-    }
+Future<Map<String, dynamic>> updateMyTaskStatusEdit(
+    int myTaskStatusId, String title, bool finalStep, AppLocalizations localizations) async {
+  final organizationId = await getSelectedOrganization();
+  final payload = {
+    "title": title,
+    "organization_id": organizationId,
+    "color": "#000",
+    "final_step": finalStep ? 1 : 0,  // Конвертируем bool в 1/0
+  };
+  final response = await _patchRequest(
+    '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    payload,
+  );
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw Exception('Failed to update leadStatus!');
   }
+}
 
   //_________________________________ END_____API_SCREEN__MY-TASK____________________________________________//a
 

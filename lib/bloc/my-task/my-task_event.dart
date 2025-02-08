@@ -26,7 +26,7 @@ class CreateMyTask extends MyTaskEvent {
   final String name;
   final int statusId;
   final int? taskStatusId;
-  final DateTime? startDate;
+  // final DateTime? startDate;
   final DateTime? endDate;
   final String? description;
   final List<String>? filePaths; // Изменено на список путей к файлам
@@ -38,7 +38,7 @@ class CreateMyTask extends MyTaskEvent {
     required this.name,
     required this.statusId,
     required this.taskStatusId,
-    this.startDate,
+    // this.startDate,
     this.endDate,
     this.description,
     this.customFields,
@@ -77,7 +77,7 @@ class CreateMyTask extends MyTaskEvent {
 class UpdateMyTask extends MyTaskEvent {
   final int taskId;
   final String name;
-  final DateTime? startDate;
+  // final DateTime? startDate;
   final DateTime? endDate;
   final String? description;
   final int taskStatusId;
@@ -90,7 +90,7 @@ class UpdateMyTask extends MyTaskEvent {
   UpdateMyTask({
     required this.taskId,
     required this.name,
-    this.startDate,
+    // this.startDate,
     this.endDate,
     this.description,
     required this.taskStatusId,
@@ -145,10 +145,12 @@ class UpdateMyTaskStatusEdit extends MyTaskEvent {
   final int myTaskStatusId;
   final String title;
   final AppLocalizations localizations;
+  final bool finalStep;
 
   UpdateMyTaskStatusEdit(
     this.myTaskStatusId,
     this.title,
     this.localizations,
+    this.finalStep,
   );
 }

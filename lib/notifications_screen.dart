@@ -453,7 +453,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               taskName: taskDetails.name,
               taskStatus: '',
               statusId: 1,
-              taskNumber: 2,
+              taskNumber: 0,
               taskCustomFields: [],
             ),
           ),

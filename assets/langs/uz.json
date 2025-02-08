@@ -583,5 +583,6 @@
     "file_deleted_successfully": "Fayl muvaffaqiyatli ajratildi",
     "failed_to_delete_file": "Faylni ajratishda xatolik yuz berdi",
        "add_file": "Fayl yuklash",
-    "unpin": "Ajratish"
+    "unpin": "Ajratish",
+    "files_details":"Fayl:"
 }

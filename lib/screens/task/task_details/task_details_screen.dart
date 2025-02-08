@@ -200,6 +200,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'value': task?.name ?? ""
       },
       {
+        'label': AppLocalizations.of(context)!.translate('task_number'),
+        'value': (task?.taskNumber ?? "").toString()
+      },
+        {
+        'label': AppLocalizations.of(context)!.translate('task_number'),
+        'value': (task?.id ?? "").toString()
+      },
+      {
         'label':
             AppLocalizations.of(context)!.translate('priority_level_colon'),
         'value': priorityLevels[task.priority] ??
@@ -215,7 +223,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       //       ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
       //       : ''
       // },
-
       {
         'label': AppLocalizations.of(context)!.translate('project_details'),
         'value': task.project?.name ?? ''
@@ -272,19 +279,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TaskBloc, TaskState>(builder: (context, state) {
-      String? tasksNumber = '1111';
       if (state is TaskDataLoaded && state.tasks.isNotEmpty) {
         // Ищем задачу по ID
         final task = state.tasks.firstWhere(
           (task) => task.id.toString() == widget.taskId,
           // orElse: () => Task(),
         );
-        tasksNumber = task.taskNumber?.toString() ?? '';
       }
-
       return Scaffold(
           appBar: _buildAppBar(context,
-              "${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber?.toString()}"),
+              "${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber}"),
           backgroundColor: Colors.white,
           body: BlocListener<TaskByIdBloc, TaskByIdState>(
             listener: (context, state) {
@@ -890,85 +894,84 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       );
     }
 
-   if (label == AppLocalizations.of(context)!.translate('files_details')) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildLabel(label),
-      SizedBox(height: 8),
-      Container(
-        height: 120, // Высота контейнера для файлов
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: currentTask?.files?.length ?? 0,
-          itemBuilder: (context, index) {
-            final file = currentTask!.files![index];
-            final fileExtension = file.name.split('.').last.toLowerCase();
-            
-            return Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: () {
-                  if (!_isDownloading) {
-                    _showFile(file.path, file.id);
-                  }
-                },
-                child: Container(
-                  width: 100,
-                  child: Column(
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
+    if (label == AppLocalizations.of(context)!.translate('files_details')) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(height: 8),
+          Container(
+            height: 120, // Высота контейнера для файлов
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: currentTask?.files?.length ?? 0,
+              itemBuilder: (context, index) {
+                final file = currentTask!.files![index];
+                final fileExtension = file.name.split('.').last.toLowerCase();
+
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: () {
+                      if (!_isDownloading) {
+                        _showFile(file.path, file.id);
+                      }
+                    },
+                    child: Container(
+                      width: 100,
+                      child: Column(
                         children: [
-                          // Иконка файла
-                          Image.asset(
-                            'assets/icons/files/$fileExtension.png',
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/icons/files/file.png', // Дефолтная иконка
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Иконка файла
+                              Image.asset(
+                                'assets/icons/files/$fileExtension.png',
                                 width: 60,
                                 height: 60,
-                              );
-                            },
-                          ),
-                          // Индикатор загрузки
-                          if (_downloadProgress.containsKey(file.id))
-                            CircularProgressIndicator(
-                              value: _downloadProgress[file.id],
-                              strokeWidth: 3,
-                              backgroundColor: Colors.grey.withOpacity(0.3),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff1E2E52),
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/icons/files/file.png', // Дефолтная иконка
+                                    width: 60,
+                                    height: 60,
+                                  );
+                                },
                               ),
+                              // Индикатор загрузки
+                              if (_downloadProgress.containsKey(file.id))
+                                CircularProgressIndicator(
+                                  value: _downloadProgress[file.id],
+                                  strokeWidth: 3,
+                                  backgroundColor: Colors.grey.withOpacity(0.3),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xff1E2E52),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            file.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
                             ),
+                          ),
                         ],
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        file.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    ],
-  );
-}
-
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
 
     if (label ==
         AppLocalizations.of(context)!.translate('priority_level_colon')) {
@@ -1058,62 +1061,58 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return priorityColors[priority] ?? Color(0xFF2E7D32);
   }
 
- Future<void> _showFile(String fileUrl, int fileId) async {
-  try {
-    if (_isDownloading) return;
-    
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress[fileId] = 0;
-    });
+  Future<void> _showFile(String fileUrl, int fileId) async {
+    try {
+      if (_isDownloading) return;
 
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-    
-    final fullUrl = Uri.parse(
-      'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl'
-    );
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress[fileId] = 0;
+      });
 
-    final directory = await getApplicationDocumentsDirectory();
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${fileUrl.split('/').last}';
-    final filePath = '${directory.path}/$fileName';
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    final dio = Dio();
-    await dio.download(
-      fullUrl.toString(), 
-      filePath,
-      onReceiveProgress: (received, total) {
+      final fullUrl = Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${fileUrl.split('/').last}';
+      final filePath = '${directory.path}/$fileName';
+
+      final dio = Dio();
+      await dio.download(fullUrl.toString(), filePath,
+          onReceiveProgress: (received, total) {
         if (total != -1) {
           setState(() {
             _downloadProgress[fileId] = received / total;
           });
         }
+      });
+
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
+      final result = await OpenFile.open(filePath);
+      if (result.type == ResultType.error) {
+        _showErrorSnackBar(
+            AppLocalizations.of(context)!.translate('failed_to_open_file'));
       }
-    );
+    } catch (e) {
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
 
-    setState(() {
-      _downloadProgress.remove(fileId);
-      _isDownloading = false;
-    });
-
-    final result = await OpenFile.open(filePath);
-    if (result.type == ResultType.error) {
-      _showErrorSnackBar(
-        AppLocalizations.of(context)!.translate('failed_to_open_file')
-      );
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('file_download_or_open_error'));
     }
-  } catch (e) {
-    setState(() {
-      _downloadProgress.remove(fileId);
-      _isDownloading = false;
-    });
-    
-    _showErrorSnackBar(
-      AppLocalizations.of(context)!.translate('file_download_or_open_error')
-    );
   }
-}
+
 // Функция для показа ошибки
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
