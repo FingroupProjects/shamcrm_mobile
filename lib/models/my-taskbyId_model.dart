@@ -8,7 +8,7 @@ class MyTaskById {
   final MyTaskStatusById? taskStatus;
   final String? taskFile;
   final int? taskNumber;
-  final List<MyTaskFiles>? files; // вместо String? taskFile
+  final List<MyTaskFiles>? files;
 
   MyTaskById({
     required this.id,
@@ -24,27 +24,32 @@ class MyTaskById {
   });
 
   factory MyTaskById.fromJson(Map<String, dynamic> json, [int statusId = 0]) {
-    return MyTaskById(
-      id: json['id'] ?? 0,
-      taskNumber: json['task_number'] ?? 0,
-      name: json['name'] ?? 'Без имени',
-      startDate: json['from'],
-      endDate: json['to'],
-      description: json['description'] ?? '',
-      statusId: statusId,
-      taskStatus: json['taskStatus'] != null
-          ? MyTaskStatusById.fromJson(json['taskStatus'])
-          : null,
-      taskFile: json['file'],
-      files: json['files'] != null && json['files'] is List
-          ? (json['files'] as List)
-              .map((fileJson) => MyTaskFiles.fromJson(fileJson))
-              .toList()
-          : null,
-    );
+    try {
+      return MyTaskById(
+        id: json['id'] ?? 0,
+        taskNumber: json['task_number'] ?? 0,
+        name: json['name'] ?? 'Без имени',
+        startDate: json['from']?.toString(),
+        endDate: json['to']?.toString(),
+        description: json['description'] ?? '',
+        statusId: json['taskStatus']?['id'] ?? statusId, // Изменено здесь
+        taskStatus: json['taskStatus'] != null 
+            ? MyTaskStatusById.fromJson(json['taskStatus'] as Map<String, dynamic>)
+            : null,
+        taskFile: json['file']?.toString(),
+        files: json['files'] != null
+            ? List<MyTaskFiles>.from(
+                (json['files'] as List).map((x) => MyTaskFiles.fromJson(x as Map<String, dynamic>)))
+            : null,
+      );
+    } catch (e, stackTrace) {
+      print('Error parsing MyTaskById: $e');
+      print('Stack trace: $stackTrace');
+      print('JSON data: $json');
+      rethrow;
+    }
   }
 }
-
 class MyTaskFileById {
   final String name;
   final String size;
@@ -82,33 +87,45 @@ class MyTaskFiles {
 }
 class MyTaskStatusById {
   final int id;
-  final MyTaskStatusNameById taskStatus;
+  final String title;
   final String color;
+  final int position;
+  final String? taskStatus;
 
   MyTaskStatusById({
     required this.id,
-    required this.taskStatus,
+    required this.title,
     required this.color,
+    required this.position,
+    this.taskStatus,
   });
 
-  // Метод для создания объекта из JSON
   factory MyTaskStatusById.fromJson(Map<String, dynamic> json) {
-    return MyTaskStatusById(
-      id: json['id'],
-      taskStatus: MyTaskStatusNameById.fromJson(json['taskStatus']),
-      color: json['color'],
-    );
-  }
-
-  // Метод для преобразования объекта в JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'taskStatus': taskStatus.toJson(),
-      'color': color,
-    };
+    try {
+      return MyTaskStatusById(
+        id: json['id'] ?? 0,
+        title: json['title'] ?? '',
+        color: json['color'] ?? '#000000',
+        position: json['position'] ?? 0,
+        taskStatus: json['title']?.toString(), // Используем title как taskStatus
+      );
+    } catch (e) {
+      print('Error parsing MyTaskStatusById: $e');
+      print('JSON data: $json');
+      rethrow;
+    }
   }
 }
+
+//   // Метод для преобразования объекта в JSON
+//   Map<String, dynamic> toJson() {
+//     return {
+//       'id': id,
+//       'taskStatus': taskStatus.toJson(),
+//       'color': color,
+//     };
+//   }
+// }
 
 class MyTaskStatusNameById {
   final int id;

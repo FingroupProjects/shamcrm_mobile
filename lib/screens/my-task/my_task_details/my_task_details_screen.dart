@@ -555,6 +555,7 @@ class MyTaskDetailsScreen extends StatefulWidget {
   final String? startDate;
   final String? endDate;
   final String? taskFile; // Добавлено поле для файла
+  final List<MyTaskFiles>? files; // вместо String? taskFile
 
   MyTaskDetailsScreen({
     required this.taskId,
@@ -567,6 +568,7 @@ class MyTaskDetailsScreen extends StatefulWidget {
     this.endDate,
     // this.projectName,
     this.taskFile, // Инициализация опционального параметра
+    this.files
   });
 
   @override
@@ -600,48 +602,42 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   // Обновление данных задачи
-  void _updateDetails(MyTaskById? task) {
-    if (task == null) {
-      currentMyTask = null;
-      details.clear();
-      return;
-    }
-    currentMyTask = task;
-    details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('task_name'),
-        'value': task?.name ?? ""
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('description_details'),
-        'value': task.description?.isNotEmpty == true ? task.description! : ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('deadline'),
-        'value': task.endDate != null && task.endDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-            : ''
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': task.startDate != null && task.startDate!.isNotEmpty
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-            : ''
-      },
-      if (task.files != null && task.files!.isNotEmpty)
-        {
-          'label': AppLocalizations.of(context)!.translate('files_details'),
-          'value': task.files!.length.toString() +
-              ' ' +
-              AppLocalizations.of(context)!.translate('files'),
-        },
-    ];
-    // Вывод каждой детали в консоль
-    for (var detail in details) {
-      print("${detail['label']} ${detail['value']}");
-    }
+ void _updateDetails(MyTaskById? task) {
+  if (task == null) {
+    currentMyTask = null;
+    details.clear();
+    return;
   }
-
+  
+  currentMyTask = task;
+  details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('task_name'),
+      'value': task.name 
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('description_details'),
+      'value': task.description ?? ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('deadline'),
+      'value': task.endDate != null 
+          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+          : ''
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('created_at_details'),
+      'value': task.startDate != null 
+          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+          : ''
+    },
+    if (task.files != null && task.files!.isNotEmpty)
+      {
+        'label': AppLocalizations.of(context)!.translate('files_details'),
+        'value': '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+      },
+  ];
+}
 // Функция для показа диалогового окна с полным текстом
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -1048,63 +1044,57 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     );
   }
 
- 
- Future<void> _showFile(String fileUrl, int fileId) async {
-  try {
-    if (_isDownloading) return;
-    
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress[fileId] = 0;
-    });
+  Future<void> _showFile(String fileUrl, int fileId) async {
+    try {
+      if (_isDownloading) return;
 
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-    
-    final fullUrl = Uri.parse(
-      'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl'
-    );
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress[fileId] = 0;
+      });
 
-    final directory = await getApplicationDocumentsDirectory();
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${fileUrl.split('/').last}';
-    final filePath = '${directory.path}/$fileName';
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-    final dio = Dio();
-    await dio.download(
-      fullUrl.toString(), 
-      filePath,
-      onReceiveProgress: (received, total) {
+      final fullUrl = Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${fileUrl.split('/').last}';
+      final filePath = '${directory.path}/$fileName';
+
+      final dio = Dio();
+      await dio.download(fullUrl.toString(), filePath,
+          onReceiveProgress: (received, total) {
         if (total != -1) {
           setState(() {
             _downloadProgress[fileId] = received / total;
           });
         }
+      });
+
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
+      final result = await OpenFile.open(filePath);
+      if (result.type == ResultType.error) {
+        _showErrorSnackBar(
+            AppLocalizations.of(context)!.translate('failed_to_open_file'));
       }
-    );
+    } catch (e) {
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
 
-    setState(() {
-      _downloadProgress.remove(fileId);
-      _isDownloading = false;
-    });
-
-    final result = await OpenFile.open(filePath);
-    if (result.type == ResultType.error) {
-      _showErrorSnackBar(
-        AppLocalizations.of(context)!.translate('failed_to_open_file')
-      );
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('file_download_or_open_error'));
     }
-  } catch (e) {
-    setState(() {
-      _downloadProgress.remove(fileId);
-      _isDownloading = false;
-    });
-    
-    _showErrorSnackBar(
-      AppLocalizations.of(context)!.translate('file_download_or_open_error')
-    );
   }
-}
 
 // Функция для показа ошибки
   void _showErrorSnackBar(String message) {

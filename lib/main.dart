@@ -102,7 +102,7 @@ Future<void> initializeApp() async {
   final String? pin = await authService.getPin();
 
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: DefaultFirebaseOptions.currentPlatform,  
   );
   await FirebaseMessaging.instance.requestPermission();
   await getFCMTokens(apiService);

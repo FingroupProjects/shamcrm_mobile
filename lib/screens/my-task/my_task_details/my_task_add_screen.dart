@@ -329,11 +329,11 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                           return null;
                         },
                       ),
-                      // const SizedBox(height: 8),
-                      // CustomTextFieldDate(
-                      //   controller: startDateController,
-                      //   label: AppLocalizations.of(context)!
-                      //       .translate('from_list'),
+                      const SizedBox(height: 8),
+                      CustomTextFieldDate(
+                        controller: startDateController,
+                        label: AppLocalizations.of(context)!
+                            .translate('from_list'),
                         // validator: (value) {
                         //   if (value == null || value.isEmpty) {
                         //     return AppLocalizations.of(context)!
@@ -341,7 +341,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         //   }
                         //   return null;
                         // },
-                      // ),
+                      ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,

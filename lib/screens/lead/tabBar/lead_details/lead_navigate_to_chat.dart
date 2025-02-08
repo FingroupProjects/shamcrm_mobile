@@ -231,7 +231,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               lastMessage: "",
               messageType: "",
               createDate: "",
-              unredMessage: 0,
+              unreadCount: 0,
               canSendMessage: canSendMessage,
               chatUsers: [],
             ).toChatItem(),

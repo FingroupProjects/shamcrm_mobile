@@ -52,7 +52,7 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                             lastMessage: "",
                             messageType: "",
                             createDate: "",
-                            unredMessage: 0,
+                            unreadCount: 0,
                             canSendMessage: widget.canSendMessage,
                             type: '',
                             chatUsers: [],

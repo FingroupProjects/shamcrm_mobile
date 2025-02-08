@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -54,6 +55,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _hasPermissionToAddTask = false;
 
   String _lastSearchQuery = "";
+
+List<UserData> _selectedUsers = [];  // Здесь UserData должен иметь свойство 'id'
+int? _selectedStatuses ;  // И TaskStatus должен иметь 'id'
+
+DateTime? _fromDate;
+DateTime? _toDate;
+
 
   @override
   void initState() {
@@ -157,32 +165,31 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleUserSelected(List<dynamic> users) async {
-    await TaskCache.clearAllTasks();
+Future _handleUserSelected(Map filterData) async {
+  setState(() {
+    _showCustomTabBar = false;
 
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedUserIds = users
-          .map((user) {
-            if (user is UserTask) {
-              return user.id;
-            }
-            return null;
-          })
-          .where((id) => id != null)
-          .cast<int>()
-          .toList();
-    });
+    _selectedUsers = filterData['users'];
+    _selectedStatuses = filterData['statuses'];
+    _fromDate = filterData['fromDate'];
+    _toDate = filterData['toDate'];
+  });
 
-    // Запрашиваем обновленные данные с учетом выбранного пользователя
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    final taskBloc = BlocProvider.of<TaskBloc>(context);
-    taskBloc.add(FetchTasks(
-      currentStatusId,
-      userIds: _selectedUserIds?.isNotEmpty == true ? _selectedUserIds : null,
-      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-    ));
-  }
+  // Ensure you're passing the correct parameters here
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    userIds: _selectedUsers.map((user) => user.id).toList(), // Mapping to IDs
+    statusIds: _selectedStatuses, // Pass the selected status ID
+    fromDate: _fromDate,
+    toDate: _toDate,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+
+ 
 
   void _onSearch(String query) {
     _lastSearchQuery = query;

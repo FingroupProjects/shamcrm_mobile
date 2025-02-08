@@ -32,12 +32,12 @@ class CustomAppBar extends StatefulWidget {
   final bool showSeparateTaskFilter; // New field for separate task filter icon
   final bool showSeparateMyTasks; // New field for separate My Tasks Icon(),
   final bool showNotification;
-  final Function(List<dynamic>)?
-      onManagersSelected; // Изменено на List<dynamic>
-  final Function(List<dynamic>)? onUsersSelected; // Изменено на List<dynamic>
+  final Function(List<dynamic>)?onManagersSelected; // Изменено на List<dynamic>
+  final Function(Map)? onUsersSelected;// Изменено на List<dynamic>
   final bool showMyTaskIcon; // Новый параметр
   final bool showMenuIcon;
   final bool showSeparateFilter; // New field for separate filter icon
+  
 
   CustomAppBar({
     super.key,
@@ -85,6 +85,11 @@ class _CustomAppBarState extends State<CustomAppBar>
   late Animation<double> _blinkAnimation;
   bool _showCustomTabBar = true;
   bool _hasOverdueTasks =false;
+
+  List? _selectedUsers;
+int? _selectedStatuses;
+DateTime? _fromDate;
+DateTime? _toDate;
 
   @override
   void initState() {
@@ -681,44 +686,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                   onSelected: (String value) {
                     switch (value) {
                       case 'filter_task':
-                        if (_isFiltering || _isFiltering) {
-                          setState(() {
-                            _isTaskFiltering = !_isTaskFiltering;
-                          });
-                        } else {
-                          _toggleTaskFilter();
-                          widget.clearButtonClickFiltr(_isTaskFiltering);
-                          if (_isTaskFiltering) {
-                            FocusScope.of(context).requestFocus(focusNode);
-                            context.read<UserTaskBloc>().add(FetchUsers());
-                            final RenderBox button =
-                                context.findRenderObject() as RenderBox;
-                            final position = button.localToGlobal(Offset.zero);
-
-                            showMenu(
-                              context: context,
-                              position: RelativeRect.fromLTRB(
-                                position.dx,
-                                position.dy + button.size.height,
-                                position.dx + button.size.width,
-                                position.dy + button.size.height,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                              color: Colors.white,
-                              items: [
-                                PopupMenuItem(
-                                  padding: EdgeInsets.zero,
-                                  child: UserFilterPopup(
-                                    onUsersSelected: widget.onUsersSelected,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        }
+                       Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => UserFilterScreen(
+      onUsersSelected: widget.onUsersSelected,
+      initialUsers: _selectedUsers,
+      initialStatuses: _selectedStatuses,
+      initialFromDate: _fromDate,
+      initialToDate: _toDate,
+    ),
+  ),
+);
                         break;
                       case 'events':
                         // Переход на страницу "События"
