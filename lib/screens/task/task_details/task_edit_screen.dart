@@ -77,12 +77,15 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   List<String> fileSizes = [];
   final ApiService _apiService = ApiService();
   List<TaskFiles> existingFiles = []; // Для существующих файлов
+  bool _shouldShowAdditionalFieldsButton = true;
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
     _loadInitialData();
+    _checkAdditionalFields(); // Проверяем поля при инициализации
+
     selectedPriority ??=
         1; // или другое значение по умолчанию из priorityLevels
     // Сохраняем существующие файлы
@@ -92,6 +95,44 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
   }
 
+  void _checkAdditionalFields() {
+  bool hasDataInAdditionalFields = false;
+
+  // Проверяем, есть ли данные в файлах
+  if (fileNames.isNotEmpty) {
+    hasDataInAdditionalFields = true;
+  }
+
+  // Проверяем, есть ли данные в кастомных полях
+  for (var field in customFields) {
+    if (field.controller.text.isNotEmpty) {
+      hasDataInAdditionalFields = true;
+      break;
+    }
+  }
+
+  // Если есть данные в дополнительных полях, показываем их вне кнопки
+  if (hasDataInAdditionalFields) {
+    setState(() {
+      _showAdditionalFields = true;
+    });
+  } else {
+    setState(() {
+      _showAdditionalFields = false;
+    });
+  }
+
+  // Если все дополнительные поля имеют данные, скрываем кнопку "additionally"
+  if (fileNames.isNotEmpty && customFields.every((field) => field.controller.text.isNotEmpty)) {
+    setState(() {
+      _shouldShowAdditionalFieldsButton = false;
+    });
+  } else {
+    setState(() {
+      _shouldShowAdditionalFieldsButton = true;
+    });
+  }
+}
   void _initializeControllers() {
     nameController.text = widget.taskName;
     if (widget.startDate != null) {
@@ -155,7 +196,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     });
   }
 
-Widget _buildFileSelection() {
+  Widget _buildFileSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -250,125 +291,180 @@ Widget _buildFileSelection() {
                       top: -6,
                       child: GestureDetector(
                         onTap: () async {
-                          if (isExistingFile) {
-                            bool? confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  backgroundColor: Colors.white,
-                                  title: Center(
-                                    child: Text(
-                                      AppLocalizations.of(context)!.translate('delete_file'),
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontFamily: 'Gilroy',
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    ),
-                                  ),
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate('confirm_delete_file'),
+                          // Показываем диалог подтверждения для всех файлов
+                          bool? confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                backgroundColor: Colors.white,
+                                title: Center(
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('delete_file'),
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 20,
                                       fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w600,
                                       color: Color(0xff1E2E52),
                                     ),
                                   ),
-                                  actions: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Expanded(
-                                          child: CustomButton(
-                                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                                            onPressed: () {
-                                              Navigator.of(context).pop(false);
-                                            },
-                                            buttonColor: Colors.red,
-                                            textColor: Colors.white,
-                                          ),
+                                ),
+                                content: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('confirm_delete_file'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                                actions: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: CustomButton(
+                                          buttonText:
+                                              AppLocalizations.of(context)!
+                                                  .translate('cancel'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop(false);
+                                          },
+                                          buttonColor: Colors.red,
+                                          textColor: Colors.white,
                                         ),
-                                        SizedBox(width: 8),
-                                        Expanded(
-                                          child: CustomButton(
-                                            buttonText: AppLocalizations.of(context)!.translate('unpin'),
-                                            onPressed: () async {
+                                      ),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: CustomButton(
+                                          buttonText:
+                                              AppLocalizations.of(context)!
+                                                  .translate('unpin'),
+                                          onPressed: () async {
+                                            if (isExistingFile) {
                                               try {
-                                                final result = await _apiService.deleteTaskFile(existingFiles[index].id);
-                                                if (result['result'] == 'Success') {
+                                                final result = await _apiService
+                                                    .deleteTaskFile(
+                                                        existingFiles[index]
+                                                            .id);
+                                                if (result['result'] ==
+                                                    'Success') {
                                                   setState(() {
-                                                    existingFiles.removeAt(index);
+                                                    existingFiles
+                                                        .removeAt(index);
                                                     fileNames.removeAt(index);
                                                   });
-                                                  Navigator.of(context).pop(true);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                  Navigator.of(context)
+                                                      .pop(true);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
                                                     SnackBar(
                                                       content: Text(
-                                                        AppLocalizations.of(context)!.translate('file_deleted_successfully'),
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'file_deleted_successfully'),
                                                         style: TextStyle(
                                                           fontFamily: 'Gilroy',
                                                           fontSize: 16,
-                                                          fontWeight: FontWeight.w500,
+                                                          fontWeight:
+                                                              FontWeight.w500,
                                                           color: Colors.white,
                                                         ),
                                                       ),
-                                                      behavior: SnackBarBehavior.floating,
-                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(12),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      margin:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 8),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
                                                       ),
-                                                      backgroundColor: Colors.green,
+                                                      backgroundColor:
+                                                          Colors.green,
                                                       elevation: 3,
-                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      duration: Duration(seconds: 3),
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              vertical: 12,
+                                                              horizontal: 16),
+                                                      duration:
+                                                          Duration(seconds: 3),
                                                     ),
                                                   );
                                                 }
                                               } catch (e) {
-                                                Navigator.of(context).pop(false);
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                Navigator.of(context)
+                                                    .pop(false);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
                                                   SnackBar(
                                                     content: Text(
-                                                      AppLocalizations.of(context)!.translate('failed_to_delete_file'),
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .translate(
+                                                              'failed_to_delete_file'),
                                                       style: TextStyle(
                                                         fontFamily: 'Gilroy',
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         color: Colors.white,
                                                       ),
                                                     ),
-                                                    behavior: SnackBarBehavior.floating,
-                                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(12),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                    margin:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
                                                     ),
                                                     backgroundColor: Colors.red,
                                                     elevation: 3,
-                                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                    duration: Duration(seconds: 3),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            vertical: 12,
+                                                            horizontal: 16),
+                                                    duration:
+                                                        Duration(seconds: 3),
                                                   ),
                                                 );
                                               }
-                                            },
-                                            buttonColor: Color(0xff1E2E52),
-                                            textColor: Colors.white,
-                                          ),
+                                            } else {
+                                              // Для новых файлов просто удаляем из списков
+                                              setState(() {
+                                                selectedFiles.removeAt(index -
+                                                    existingFiles.length);
+                                                fileNames.removeAt(index);
+                                                fileSizes.removeAt(index -
+                                                    existingFiles.length);
+                                              });
+                                              Navigator.of(context).pop(true);
+                                            }
+                                            _checkAdditionalFields(); // Проверяем поля после удаления файла
+                                          },
+                                          buttonColor: Color(0xff1E2E52),
+                                          textColor: Colors.white,
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          } else {
-                            setState(() {
-                              selectedFiles.removeAt(index - existingFiles.length);
-                              fileNames.removeAt(index);
-                              fileSizes.removeAt(index - existingFiles.length);
-                            });
-                          }
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          // Если диалог был отменен, ничего не делаем
+                          if (confirmed != true) return;
                         },
                         child: Container(
                           padding: EdgeInsets.all(4),
@@ -403,6 +499,7 @@ Widget _buildFileSelection() {
             fileNames.add(file.name);
             fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
           }
+        _checkAdditionalFields(); // Проверяем поля после добавления файлов
         });
       }
     } catch (e) {
@@ -559,7 +656,6 @@ Widget _buildFileSelection() {
                           });
                         },
                       ),
-                      const SizedBox(height: 16),
                       CustomTextFieldDate(
                         controller: endDateController,
                         label:
@@ -575,7 +671,8 @@ Widget _buildFileSelection() {
                       ),
                       const SizedBox(height: 16),
                       // Если дополнительные поля ещё не показаны, выводим кнопку "Дополнительно"
-                      if (!_showAdditionalFields)
+                      if (_shouldShowAdditionalFieldsButton &&
+                          !_showAdditionalFields)
                         CustomButton(
                           buttonText: AppLocalizations.of(context)!
                               .translate('additionally'),
@@ -598,6 +695,7 @@ Widget _buildFileSelection() {
                               onRemove: () {
                                 setState(() {
                                   customFields.removeAt(index);
+                                  _checkAdditionalFields(); // Проверяем поля после удаления
                                 });
                               },
                             );

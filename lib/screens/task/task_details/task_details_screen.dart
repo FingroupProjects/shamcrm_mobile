@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
@@ -18,6 +21,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -63,6 +67,86 @@ class TaskDetailsScreen extends StatefulWidget {
 
   @override
   _TaskDetailsScreenState createState() => _TaskDetailsScreenState();
+}
+class FileCacheManager {
+  static final FileCacheManager _instance = FileCacheManager._internal();
+  factory FileCacheManager() => _instance;
+  FileCacheManager._internal();
+
+  static const String CACHE_INFO_KEY = 'file_cache_info';
+  late SharedPreferences _prefs;
+  final Map<int, String> _cachedFiles = {};
+  bool _initialized = false;
+
+  Future<void> init() async {
+    if (_initialized) return;
+    _prefs = await SharedPreferences.getInstance();
+    await _loadCacheInfo();
+    _initialized = true;
+  }
+
+  Future<void> _loadCacheInfo() async {
+    final String? cacheInfo = _prefs.getString(CACHE_INFO_KEY);
+    if (cacheInfo != null) {
+      final Map<String, dynamic> cacheMap = json.decode(cacheInfo);
+      cacheMap.forEach((key, value) {
+        _cachedFiles[int.parse(key)] = value.toString();
+      });
+    }
+  }
+
+  Future<void> _saveCacheInfo() async {
+    final Map<String, dynamic> cacheMap = {};
+    _cachedFiles.forEach((key, value) {
+      cacheMap[key.toString()] = value;
+    });
+    await _prefs.setString(CACHE_INFO_KEY, json.encode(cacheMap));
+  }
+
+  Future<String?> getCachedFilePath(int fileId) async {
+    await init();
+    if (_cachedFiles.containsKey(fileId)) {
+      final file = File(_cachedFiles[fileId]!);
+      if (await file.exists()) {
+        return _cachedFiles[fileId];
+      } else {
+        _cachedFiles.remove(fileId);
+        await _saveCacheInfo();
+      }
+    }
+    return null;
+  }
+
+  Future<void> cacheFile(int fileId, String filePath) async {
+    await init();
+    _cachedFiles[fileId] = filePath;
+    await _saveCacheInfo();
+  }
+
+  Future<void> clearCache() async {
+    await init();
+    for (var filePath in _cachedFiles.values) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+    _cachedFiles.clear();
+    await _saveCacheInfo();
+  }
+
+  // Метод для получения размера кэша
+  Future<int> getCacheSize() async {
+    await init();
+    int totalSize = 0;
+    for (var filePath in _cachedFiles.values) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        totalSize += await file.length();
+      }
+    }
+    return totalSize;
+  }
 }
 
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
@@ -199,14 +283,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('task_name'),
         'value': task?.name ?? ""
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('task_number'),
-        'value': (task?.taskNumber ?? "").toString()
-      },
-        {
-        'label': AppLocalizations.of(context)!.translate('task_number'),
-        'value': (task?.id ?? "").toString()
-      },
+      // {
+      //   'label': AppLocalizations.of(context)!.translate('task_number'),
+      //   'value': (task?.taskNumber ?? "").toString()
+      // },
+      //   {
+      //   'label': AppLocalizations.of(context)!.translate('task_number'),
+      //   'value': (task?.id ?? "").toString()
+      // },
       {
         'label':
             AppLocalizations.of(context)!.translate('priority_level_colon'),
@@ -234,7 +318,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             : '',
       },
       {
-        'label': AppLocalizations.of(context)!.translate('deadline'),
+        'label': AppLocalizations.of(context)!.translate('dead_line'),
         'value': task.endDate != null && task.endDate!.isNotEmpty
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
@@ -1061,58 +1145,76 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return priorityColors[priority] ?? Color(0xFF2E7D32);
   }
 
-  Future<void> _showFile(String fileUrl, int fileId) async {
-    try {
-      if (_isDownloading) return;
+Future<void> _showFile(String fileUrl, int fileId) async {
+  try {
+    if (_isDownloading) return;
 
-      setState(() {
-        _isDownloading = true;
-        _downloadProgress[fileId] = 0;
-      });
-
-      final enteredDomainMap = await ApiService().getEnteredDomain();
-      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-      String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-      final fullUrl = Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
-
-      final directory = await getApplicationDocumentsDirectory();
-      final fileName =
-          '${DateTime.now().millisecondsSinceEpoch}_${fileUrl.split('/').last}';
-      final filePath = '${directory.path}/$fileName';
-
-      final dio = Dio();
-      await dio.download(fullUrl.toString(), filePath,
-          onReceiveProgress: (received, total) {
-        if (total != -1) {
-          setState(() {
-            _downloadProgress[fileId] = received / total;
-          });
-        }
-      });
-
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      final result = await OpenFile.open(filePath);
+    // Проверяем наличие файла в постоянном кэше
+    final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
+    if (cachedFilePath != null) {
+      final result = await OpenFile.open(cachedFilePath);
       if (result.type == ResultType.error) {
         _showErrorSnackBar(
             AppLocalizations.of(context)!.translate('failed_to_open_file'));
       }
-    } catch (e) {
-      setState(() {
-        _downloadProgress.remove(fileId);
-        _isDownloading = false;
-      });
-
-      _showErrorSnackBar(AppLocalizations.of(context)!
-          .translate('file_download_or_open_error'));
+      return;
     }
-  }
 
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress[fileId] = 0;
+    });
+
+    final enteredDomainMap = await ApiService().getEnteredDomain();
+    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+    String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+    final fullUrl = Uri.parse(
+        'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
+    // Создаём постоянную директорию для файлов
+    final appDir = await getApplicationDocumentsDirectory();
+    final cacheDir = Directory('${appDir.path}/cached_files');
+    if (!await cacheDir.exists()) {
+      await cacheDir.create(recursive: true);
+    }
+
+    final fileName = '${fileId}_${fileUrl.split('/').last}'; // Добавляем fileId к имени файла
+    final filePath = '${cacheDir.path}/$fileName';
+
+    final dio = Dio();
+    await dio.download(fullUrl.toString(), filePath,
+        onReceiveProgress: (received, total) {
+      if (total != -1) {
+        setState(() {
+          _downloadProgress[fileId] = received / total;
+        });
+      }
+    });
+
+    // Сохраняем информацию о файле в постоянном кэше
+    await FileCacheManager().cacheFile(fileId, filePath);
+
+    setState(() {
+      _downloadProgress.remove(fileId);
+      _isDownloading = false;
+    });
+
+    final result = await OpenFile.open(filePath);
+    if (result.type == ResultType.error) {
+      _showErrorSnackBar(
+          AppLocalizations.of(context)!.translate('failed_to_open_file'));
+    }
+  } catch (e) {
+    setState(() {
+      _downloadProgress.remove(fileId);
+      _isDownloading = false;
+    });
+
+    _showErrorSnackBar(AppLocalizations.of(context)!
+        .translate('file_download_or_open_error'));
+  }
+}
 // Функция для показа ошибки
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
