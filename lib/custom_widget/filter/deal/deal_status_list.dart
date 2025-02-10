@@ -1,31 +1,30 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task/task_state.dart';
-import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class TaskStatusRadioGroupWidget extends StatefulWidget {
+class DealStatusRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
-  final Function(TaskStatus) onSelectStatus;
+  final Function(DealStatus) onSelectStatus;
 
-  TaskStatusRadioGroupWidget({
+  DealStatusRadioGroupWidget({
     Key? key,
     required this.onSelectStatus,
     this.selectedStatus,
   }) : super(key: key);
 
   @override
-  State<TaskStatusRadioGroupWidget> createState() =>
-      _TaskStatusRadioGroupWidgetState();
+  State<DealStatusRadioGroupWidget> createState() =>
+      _DealStatusRadioGroupWidgetState();
 }
 
-class _TaskStatusRadioGroupWidgetState
-    extends State<TaskStatusRadioGroupWidget> {
-  List<TaskStatus> statusList = [];
-  TaskStatus? selectedStatusData;
+class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget> {
+  List<DealStatus> statusList = [];
+  DealStatus? selectedStatusData;
 
   final TextStyle statusTextStyle = const TextStyle(
     fontSize: 16,
@@ -37,7 +36,7 @@ class _TaskStatusRadioGroupWidgetState
   @override
   void initState() {
     super.initState();
-    context.read<TaskBloc>().add(FetchTaskStatuses());
+    context.read<DealBloc>().add(FetchDealStatuses());
   }
 
   @override
@@ -45,12 +44,12 @@ class _TaskStatusRadioGroupWidgetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        BlocBuilder<TaskBloc, TaskState>(
+        BlocBuilder<DealBloc, DealState>(
           builder: (context, state) {
-            if (state is TaskLoading) {
+            if (state is DealLoading) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (state is TaskError) {
+            if (state is DealError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -74,8 +73,8 @@ class _TaskStatusRadioGroupWidgetState
               });
             }
 
-            if (state is TaskLoaded) {
-              statusList = state.taskStatuses;
+            if (state is DealLoaded) {
+              statusList = state.dealStatuses;
 
               if (statusList.length == 1 && selectedStatusData == null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -99,7 +98,7 @@ class _TaskStatusRadioGroupWidgetState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.translate('task_statuses'),
+                    AppLocalizations.of(context)!.translate('deal_statuses'),
                     style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
@@ -112,7 +111,7 @@ class _TaskStatusRadioGroupWidgetState
                         color: const Color(0xFFF4F7FD),
                       ),
                     ),
-                    child: CustomDropdown<TaskStatus>.search(
+                    child: CustomDropdown<DealStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
                       searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -134,13 +133,13 @@ class _TaskStatusRadioGroupWidgetState
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(
-                          item.taskStatus?.name ?? "",
+                          item.title,
                           style: statusTextStyle,
                         );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.taskStatus?.name ?? AppLocalizations.of(context)!.translate('select_status'),
+                          selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
                           style: statusTextStyle,
                         );
                       },

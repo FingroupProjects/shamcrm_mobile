@@ -180,6 +180,9 @@
   "select_roles": "Select Roles",
   "all": "All",
   "task_statuses": "Task Statuses",
+  "lead_statuses": "Lead statuses",
+  "deal_statuses": "Deal statuses",
+  "event_statuses": "Event statuses",
   "select_status": "Select Status",
   "field_required": "Field is required",
   "normal": "Normal",
@@ -584,7 +587,14 @@
     "confirm_delete_file": "Are you sure you want to unpin the file?",
     "file_deleted_successfully": "File successfully unpinned",
     "failed_to_delete_file": "Failed to unpin file",
-       "add_file": "Upload file",
+    "add_file": "Upload file",
     "unpin": "Unpin",
-    "files_details":"File:"
+    "files_details":"File:",
+    "managers": "Managers",
+    "filter": "Filter",
+    "reset": "Reset",
+    "apply": "Apply",
+    "select_date_range": "Select date range",
+    "enter_date_range_create": "Enter creation date range",
+    "enter_date_range_notice": "Enter reminder date range"
 }

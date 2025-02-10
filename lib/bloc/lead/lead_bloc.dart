@@ -60,9 +60,10 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         page: 1,
         perPage: 20,
         search: event.query,
-        managers: event.managerIds ??
-            [], // Передаем пустой список, если managerIds null
-        // Убедимся, что менеджеры передаются
+        managers: event.managerIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
       );
       print('Переданные менеджеры: ${event.managerIds}');
 

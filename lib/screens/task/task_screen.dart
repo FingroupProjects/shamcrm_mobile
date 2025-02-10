@@ -62,7 +62,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime? _fromDate;
   DateTime? _toDate;
 
-    List<UserData> _initialselectedUsers = []; 
+  List<UserData> _initialselectedUsers = []; 
   int? _initialSelStatus;
    DateTime? _intialFromDate;
   DateTime? _intialToDate;
@@ -331,11 +331,11 @@ Future<void> _checkPermissions() async {
           initialFromDate: _intialFromDate,
           initialToDate: _intialToDate,
           onResetFilters: _resetFilters,
-
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterIcon: false,
           showMyTaskIcon: true,
+          showFilterIconDeal: false,
           showEvent: false,
           showFilterTaskIcon: showFilter,
           clearButtonClick: (value) {

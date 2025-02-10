@@ -7,13 +7,19 @@ class FetchLeadStatuses extends LeadEvent {}
 class FetchLeads extends LeadEvent {
   final int statusId;
   final String? query;
-  final List<int>? managerIds; // Изменено: массив менеджеров
+  final List<int>? managerIds; 
+  final int? statusIds; 
+  final DateTime? fromDate; 
+  final DateTime? toDate; 
 
 
   FetchLeads(
     this.statusId, {
     this.query,
     this.managerIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
   });
 }
 

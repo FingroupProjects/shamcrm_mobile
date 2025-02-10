@@ -1,12 +1,10 @@
-import 'package:crm_task_manager/bloc/task/task_bloc.dart';
-import 'package:crm_task_manager/custom_widget/multi_user_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/custom_widget/multi_task_status_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 
 class UserFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onUsersSelected;
@@ -74,9 +72,10 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     return Scaffold(
       backgroundColor: Color(0xffF4F7FD),
       appBar: AppBar(
-        title: const Text(
-          "Фильтр",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black, fontFamily: 'Gilroy'),
+        titleSpacing: 0,
+        title: Text(
+         AppLocalizations.of(context)!.translate('filter'),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xfff1E2E52), fontFamily: 'Gilroy'),
         ),
         backgroundColor: Colors.white,
         forceMaterialTransparency: true,
@@ -101,7 +100,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-              "Сбросить",
+              AppLocalizations.of(context)!.translate('reset'),
               style: TextStyle(
                 fontSize: 16, 
                 fontWeight: FontWeight.w600, 
@@ -139,7 +138,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           
                 widget.onStatusAndDateRangeSelected?.call(_selectedStatuses, _toDate, _fromDate);
               } else {
-                print('NAOTHING TO FILTR');
+                print('NOTHING!!!!!!');
               }
               Navigator.pop(context);
             },
@@ -152,7 +151,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-              "Готово",
+              AppLocalizations.of(context)!.translate('apply'),
               style: TextStyle(
                 fontSize: 16, 
                 fontWeight: FontWeight.w600, 
@@ -185,7 +184,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : "Выбрать диапазон даты",
+                            : AppLocalizations.of(context)!.translate('select_date_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 16),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),

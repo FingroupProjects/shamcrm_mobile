@@ -30,6 +30,11 @@ Future<void> _onFetchEvents(
         perPage: _perPage,
         search: event.query,
         managers: event.managerIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
+        noticefromDate: event.noticefromDate,
+        noticetoDate: event.noticetoDate,
       );
 
       emit(EventDataLoaded(

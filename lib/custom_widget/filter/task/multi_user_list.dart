@@ -66,8 +66,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     child: CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
                       initialItems: selectedUsersData,
-                      searchHintText:
-                          AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: Color(0xffF4F7FD),

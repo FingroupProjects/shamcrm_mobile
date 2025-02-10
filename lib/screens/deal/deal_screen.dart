@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
-import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
@@ -46,17 +46,28 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
-  List<int>? _selectedManagerIds; // Add this field
-  int? _selectedManagerId; // ID выбранного менеджера.
+  List<int>? _selectedManagerIds; 
+  int? _selectedManagerId;
   late final DealBloc _dealBloc;
 
   bool _showCustomTabBar = true;
   String _lastSearchQuery = "";
 
+  List<ManagerData> _selectedManagers = [];
+  int? _selectedStatuses;  
+  DateTime? _fromDate;
+  DateTime? _toDate;
+
+  List<ManagerData> _initialselectedManagers = []; 
+  int? _initialSelStatus;
+   DateTime? _intialFromDate;
+  DateTime? _intialToDate;
+
 
   @override
   void initState() {
     super.initState();
+     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _scrollController = ScrollController();
     DealCache.getDealStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -116,60 +127,123 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _searchDeals(String query, int currentStatusId) async {
   final dealBloc = BlocProvider.of<DealBloc>(context);
-
-  if (query.isEmpty) {
-    // Если фильтр активен, выполняем запрос только с фильтром
-    if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-      print('Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
-      dealBloc.add(FetchDeals(
-        currentStatusId,
-        managerIds: _selectedManagerIds,
-      ));
-    } else {
-      print('Очистка поиска и фильтра — загружаем все сделки');
-      dealBloc.add(FetchDeals(currentStatusId,query: " "));
-    }
-  } else {
     await DealCache.clearAllDeals();
-
+  print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
     dealBloc.add(FetchDeals(
       currentStatusId,
       query: query,
-      managerIds: _selectedManagerIds, // Передаем список ID менеджеров
+      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
     ));
-  }
 }
 
 
-  Future<void> _handleManagerSelected(List<dynamic> managers) async {
-    await DealCache.clearAllDeals();
+void _resetFilters() {
+  setState(() {
+    _showCustomTabBar = true;
+    _selectedManagers = [];
+    _selectedStatuses = null;
+    _fromDate = null;
+    _toDate = null;
+    _initialselectedManagers = [];
+    _initialSelStatus = null;
+    _intialFromDate = null;
+    _intialToDate = null;
+    _lastSearchQuery = '';
+    _searchController.clear();
+  });
+   final leadBloc = BlocProvider.of<DealBloc>(context);
+   leadBloc.add(FetchDealStatuses());
+}
 
-    setState(() {
-      _showCustomTabBar = false;
-      _selectedManagerIds = managers
-          .map((manager) {
-            if (manager is String) {
-              return int.tryParse(manager);
-            } else if (manager is ManagerData) {
-              return manager.id;
-            }
-            return null;
-          })
-          .where((id) => id != null)
-          .cast<int>()
-          .toList();
-    });
+  Future<void> _handleManagerSelected(Map managers) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedManagers = managers['managers'];
+    _selectedStatuses = managers['statuses'];
+    _fromDate = managers['fromDate'];
+    _toDate = managers['toDate'];
+
+    _initialselectedManagers = managers['managers'];
+    _initialSelStatus = managers['statuses'];
+    _intialFromDate = managers['fromDate'];
+    _intialToDate = managers['toDate'];
+    
+  });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    final dealBloc = BlocProvider.of<DealBloc>(context);
-
-    dealBloc.add(FetchDeals(
+    final leadBloc = BlocProvider.of<DealBloc>(context);
+    leadBloc.add(FetchDeals(
     currentStatusId,
-    managerIds: _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, // Учитываем последний поиск
-
+    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    statusIds: _selectedStatuses, 
+    fromDate: _fromDate,
+    toDate: _toDate,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
     ));
   }
+  
+Future _handleStatusSelected(int? selectedStatusId) async {
+  setState(() {
+     _showCustomTabBar = false;
+    _selectedStatuses = selectedStatusId;
+    
+    _initialSelStatus=selectedStatusId;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<DealBloc>(context);
+  taskBloc.add(FetchDeals(
+    currentStatusId,
+    statusIds: _selectedStatuses, 
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
+  setState(() {
+     _showCustomTabBar = false;
+    _fromDate = fromDate;
+    _toDate = toDate;
+
+    _intialFromDate = fromDate;
+    _intialToDate = toDate;
+    
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<DealBloc>(context);
+  taskBloc.add(FetchDeals(
+    currentStatusId,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, DateTime? toDate) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedStatuses=selectedStatus;
+    _fromDate = fromDate;
+    _toDate = toDate;
+
+    _initialSelStatus=selectedStatus;
+    _intialFromDate = fromDate;
+    _intialToDate = toDate;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<DealBloc>(context);
+  taskBloc.add(FetchDeals(
+    currentStatusId,
+    statusIds: selectedStatus,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
 
 void _onSearch(String query) {
   _lastSearchQuery = query; // Сохраняем последний поисковый запрос
@@ -206,73 +280,64 @@ void _onSearch(String query) {
             }
             _onSearch(value);
           },
-          onManagersSelected: _handleManagerSelected,
+          onManagersDealSelected: _handleManagerSelected,
+          onStatusDealSelected: _handleStatusSelected,
+          onDateRangeDealSelected: _handleDateSelected,
+          onStatusAndDateRangeDealSelected: _handleStatusAndDateSelected,
+          initialManagersDeal: _initialselectedManagers,
+          initialManagerDealStatuses: _initialSelStatus,
+          initialManagerDealFromDate: _intialFromDate,
+          initialManagerDealToDate: _intialToDate,
+          onDealResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: true, 
+          showFilterIcon: false,
+          showFilterIconDeal: true, 
           showEvent: true,
+          clearButtonClick: (value) {
+                if (value == false) {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _lastSearchQuery = '';
+                  });
 
-clearButtonClick: (value) {
-  if (value == false) {
-    // Сброс поиска
-    setState(() {
-      _isSearching = false;
-      _searchController.clear(); 
-      _lastSearchQuery = ''; 
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; 
-      });
-      final leadBloc = BlocProvider.of<DealBloc>(context);
-      leadBloc.add(FetchDealStatuses());
-    } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
-      // Если фильтр активен, показываем результаты фильтрации
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(
-        currentStatusId,
-        managerIds: _selectedManagerIds,
-        query: _searchController.text.isNotEmpty ? _searchController.text : null,
-      ));
-    } 
-  }
-},
+              if (_searchController.text.isEmpty) {
+                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null) {
+                  print("IF SEARCH EMPTY AND NO FILTERS");
+                  setState(() {
+                    _showCustomTabBar = true;
+                  });
+                  final taskBloc = BlocProvider.of<DealBloc>(context);
+                  taskBloc.add(FetchDealStatuses());
+                } else {
+                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final taskBloc = BlocProvider.of<DealBloc>(context);
+                  taskBloc.add(FetchDeals(
+                    currentStatusId,
+                    managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
+                    statusIds: _selectedStatuses,
+                    fromDate: _fromDate,
+                    toDate: _toDate,
+                  ));
+                }
+                  } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+                    print("ELSE IF SEARCH NOT EMPTY");
+
+                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                    final taskBloc = BlocProvider.of<DealBloc>(context);
+                    taskBloc.add(FetchDeals(
+                      currentStatusId,
+                      managerIds: _selectedManagerIds,
+                      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                    ));
+                  }
+                }
+              },
 clearButtonClickFiltr: (value) {
-  if (value == false) {
-    // Сброс фильтра
-    setState(() {
-      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-      // Проверка на наличие предыдущего запроса поиска
-      if (_lastSearchQuery.isNotEmpty) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        final dealBloc = BlocProvider.of<DealBloc>(context);
-        print('Возвращаем поиск после сброса фильтра');
-        dealBloc.add(FetchDeals(currentStatusId, query: _lastSearchQuery));
-      } else  {
-        // Если и поиск, и фильтр пусты, показываем все сделки
-        final leadBloc = BlocProvider.of<DealBloc>(context);
-        print('Сброс и поиск пуст, возвращаем все сделки');
-        leadBloc.add(FetchDealStatuses());
-      }
-    } else if (_searchController.text.isNotEmpty) {
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<DealBloc>(context);
-      dealBloc.add(FetchDeals(
-        currentStatusId,
-        query: _searchController.text,
-      ));
-    }
-  }
+ 
 }
 
 
