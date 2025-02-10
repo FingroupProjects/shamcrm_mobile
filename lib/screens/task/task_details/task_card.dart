@@ -99,18 +99,18 @@ class _TaskCardState extends State<TaskCard> {
   }
 
   /// Получение текстового представления приоритета
-String _getPriorityText(int? priority, BuildContext context) {
-  switch (priority) {
-    case 1:
-      return AppLocalizations.of(context)!.translate('normal'); 
-    case 3:
-      return AppLocalizations.of(context)!.translate('urgent'); 
-    case 2:
-      return AppLocalizations.of(context)!.translate('important'); 
-    default:
-      return AppLocalizations.of(context)!.translate('normal');
+  String _getPriorityText(int? priority, BuildContext context) {
+    switch (priority) {
+      case 1:
+        return AppLocalizations.of(context)!.translate('normal');
+      case 3:
+        return AppLocalizations.of(context)!.translate('urgent');
+      case 2:
+        return AppLocalizations.of(context)!.translate('important');
+      default:
+        return AppLocalizations.of(context)!.translate('normal');
+    }
   }
-}
 
   /// Получение инициалов пользователя из имени
   String _getUserInitials(String name) {
@@ -123,79 +123,79 @@ String _getPriorityText(int? priority, BuildContext context) {
     return '';
   }
 
-
- @override
-Widget build(BuildContext context) {
-  String? extractImageUrlFromSvg(String svg) {
-    if (svg.contains('href="')) {
-      final start = svg.indexOf('href="') + 6;
-      final end = svg.indexOf('"', start);
-      return svg.substring(start, end);
-    }
-    return null;
-  }
-
-  Color? extractBackgroundColorFromSvg(String svg) {
-    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-    if (fillMatch != null) {
-      final colorHex = fillMatch.group(1);
-      if (colorHex != null) {
-        final hex = colorHex.replaceAll('#', '');
-        return Color(int.parse('FF$hex', radix: 16));
+  @override
+  Widget build(BuildContext context) {
+    String? extractImageUrlFromSvg(String svg) {
+      if (svg.contains('href="')) {
+        final start = svg.indexOf('href="') + 6;
+        final end = svg.indexOf('"', start);
+        return svg.substring(start, end);
       }
+      return null;
     }
-    return null;
-  }
 
-  Widget buildSvgAvatar(String svg, {double size = 32}) {
-    if (svg.contains('image href=')) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          image: DecorationImage(
-            image: NetworkImage(extractImageUrlFromSvg(svg) ?? ''),
-            fit: BoxFit.cover,
+    Color? extractBackgroundColorFromSvg(String svg) {
+      final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+      if (fillMatch != null) {
+        final colorHex = fillMatch.group(1);
+        if (colorHex != null) {
+          final hex = colorHex.replaceAll('#', '');
+          return Color(int.parse('FF$hex', radix: 16));
+        }
+      }
+      return null;
+    }
+
+    Widget buildSvgAvatar(String svg, {double size = 32}) {
+      if (svg.contains('image href=')) {
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(extractImageUrlFromSvg(svg) ?? ''),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-      );
-    } else {
-      final backgroundColor = extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
-      
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: backgroundColor,
-          border: Border.all(
-            color: Colors.white,
-            width: 1,
+        );
+      } else {
+        final backgroundColor =
+            extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: backgroundColor,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
           ),
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: Padding(
-              padding: EdgeInsets.all(size * 0.3),
-              child: Text(
-                RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: size * 0.4,
-                  fontWeight: FontWeight.w500,
-                  height: 1,
-                  letterSpacing: 0,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Padding(
+                padding: EdgeInsets.all(size * 0.3),
+                child: Text(
+                  RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: size * 0.4,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ),
-        ),
-      );
+        );
+      }
     }
-  }
 
     // Получаем количество просроченных дней
     int overdueDays = _getOverdueDays(widget.task.endDate);
@@ -206,16 +206,21 @@ Widget build(BuildContext context) {
             context,
             MaterialPageRoute(
               builder: (context) => TaskDetailsScreen(
-                taskId: widget.task.id.toString(), // ID задачи для детального экрана
+                taskId: widget.task.id
+                    .toString(), // ID задачи для детального экрана
                 taskNumber: widget.task.taskNumber,
-                taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
+                taskName: widget.task.name ??
+                    AppLocalizations.of(context)!
+                        .translate('no_name'), // Название задачи
                 startDate: widget.task.startDate, // Дата начала задачи
                 endDate: widget.task.endDate, // Дата окончания задачи
                 taskStatus: dropdownValue, // Текущий статус задачи
                 statusId: widget.statusId, // ID статуса задачи
                 priority: widget.task.priority, // Приоритет задачи
                 description: widget.task.description, // Описание задачи
-                project: widget.task.project?.name ?? widget.project ?? AppLocalizations.of(context)!.translate('no_project'),
+                project: widget.task.project?.name ??
+                    widget.project ??
+                    AppLocalizations.of(context)!.translate('no_project'),
                 taskCustomFields: widget.task.taskCustomFields,
               ),
             ),
@@ -225,42 +230,52 @@ Widget build(BuildContext context) {
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
           decoration:
-          TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
+              TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
           child: Stack(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment
+                      .start, // Изменение: Выравнивание по верхнему краю
                   children: [
                     Expanded(
                       child: Text(
-                        widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
-                        style:TaskCardStyles.titleStyle, // Стиль заголовка задачи
-                        overflow: TextOverflow.ellipsis, // Обрезка текста, если не помещается
+                        widget.task.name ??
+                            AppLocalizations.of(context)!.translate('no_name'),
+                        style: TaskCardStyles.titleStyle,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getPriorityBackgroundColor( widget.task.priority), // Цвет фона приоритета
-                        borderRadius: BorderRadius.circular(16), // Радиус скругления
-                      ),
-                      child: Text(
-                        _getPriorityText(widget.task.priority, context),// Текст приоритета
-                        style: TextStyle(
-                          color: _getPriorityTextColor(widget.task.priority), // Цвет текста приоритета
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          top:
+                              2), // Изменение: Небольшой отступ сверху для визуального выравнивания
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              _getPriorityBackgroundColor(widget.task.priority),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _getPriorityText(widget.task.priority, context),
+                          style: TextStyle(
+                            color: _getPriorityTextColor(widget.task.priority),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 0), 
+                const SizedBox(height: 0, width: 4,),
                 Text(
-                  widget.task.project?.name ?? AppLocalizations.of(context)!.translate('no_project'),
+                  widget.task.project?.name ??
+                      AppLocalizations.of(context)!.translate('no_project'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -272,7 +287,7 @@ Widget build(BuildContext context) {
                 Row(
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.translate('column'), 
+                      AppLocalizations.of(context)!.translate('column'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',

@@ -70,7 +70,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
   List<CustomField> customFields = [];
   bool isEndDateInvalid = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -144,7 +143,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -167,7 +167,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate('deal_updated_successfully'),
+                  AppLocalizations.of(context)!
+                      .translate('deal_updated_successfully'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -201,10 +202,13 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label: AppLocalizations.of(context)!.translate('name_list'), 
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
                         validator: (value) => value!.isEmpty
-                            ? AppLocalizations.of(context)!.translate('field_required')
+                            ? AppLocalizations.of(context)!
+                                .translate('field_required')
                             : null,
                       ),
                       const SizedBox(height: 8),
@@ -228,20 +232,23 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('start_date'),
+                        label: AppLocalizations.of(context)!
+                            .translate('start_date'),
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('end_date'),
+                        label:
+                            AppLocalizations.of(context)!.translate('end_date'),
                         hasError: isEndDateInvalid,
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: sumController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_summ'),
                         label: AppLocalizations.of(context)!.translate('summ'),
                         // validator: (value) {
                         //   if (value == null || value.isEmpty) {
@@ -253,9 +260,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description_list'),
                         maxLines: 5,
+                        keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 20),
                       ListView.builder(
@@ -275,7 +285,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -291,7 +302,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText:  AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),
@@ -309,7 +321,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText:  AppLocalizations.of(context)!.translate('save'),
+                              buttonText: AppLocalizations.of(context)!
+                                  .translate('save'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
@@ -329,7 +342,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                              AppLocalizations.of(context)!.translate('error_parsing_date'),),
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'error_parsing_date'),
+                                          ),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -344,28 +360,37 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content:  Text(
-                                        AppLocalizations.of(context)!.translate('error_parsing_date'),), 
-                                         backgroundColor: Colors.red,
+                                          content: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'error_parsing_date'),
+                                          ),
+                                          backgroundColor: Colors.red,
                                         ),
                                       );
                                       return;
                                     }
                                   }
 
-                                 if (parsedStartDate != null && parsedEndDate != null &&  parsedStartDate.isAfter(parsedEndDate)) {
-                                      setState(() {
-                                        isEndDateInvalid=true;
-                                      });
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                       content: Text(AppLocalizations.of(context)!.translate('start_date_after_end_date'),),
-                                       backgroundColor: Colors.red,
-                                     ),
-                                   );
-                                   return;
-                                 }
-                                 List<Map<String, String>> customFieldList =
+                                  if (parsedStartDate != null &&
+                                      parsedEndDate != null &&
+                                      parsedStartDate.isAfter(parsedEndDate)) {
+                                    setState(() {
+                                      isEndDateInvalid = true;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate(
+                                                  'start_date_after_end_date'),
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  List<Map<String, String>> customFieldList =
                                       [];
                                   for (var field in customFields) {
                                     String fieldName = field.fieldName.trim();
@@ -373,10 +398,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         field.controller.text.trim();
                                     if (fieldName.isNotEmpty &&
                                         fieldValue.isNotEmpty) {
-                                      customFieldList.add({fieldName: fieldValue});
+                                      customFieldList
+                                          .add({fieldName: fieldValue});
                                     }
                                   }
-                                  final localizations = AppLocalizations.of(context)!;
+                                  final localizations =
+                                      AppLocalizations.of(context)!;
                                   context.read<DealBloc>().add(UpdateDeal(
                                         dealId: widget.dealId,
                                         name: titleController.text,
@@ -396,28 +423,31 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         localizations: localizations,
                                       ));
                                 } else {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                       content: Text(
-                                         AppLocalizations.of(context)!.translate('fill_required_fields'),
-                                         style: TextStyle(
-                                           fontFamily: 'Gilroy',
-                                           fontSize: 16,
-                                           fontWeight: FontWeight.w500,
-                                           color: Colors.white,
-                                         ),
-                                       ),
-                                       behavior: SnackBarBehavior.floating,
-                                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                       shape: RoundedRectangleBorder(
-                                         borderRadius: BorderRadius.circular(12),
-                                       ),
-                                       backgroundColor: Colors.red,
-                                       elevation: 3,
-                                       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                       duration: Duration(seconds: 3),
-                                     ),
-                                   );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('fill_required_fields'),
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
                                 }
                               },
                             );

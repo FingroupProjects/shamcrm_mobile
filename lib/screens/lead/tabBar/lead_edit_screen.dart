@@ -213,7 +213,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -236,7 +237,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -270,10 +272,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                         hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label: AppLocalizations.of(context)!.translate('name_list'), 
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
                         validator: (value) => value!.isEmpty
-                            ? AppLocalizations.of(context)!.translate('field_required')
+                            ? AppLocalizations.of(context)!
+                                .translate('field_required')
                             : null,
                       ),
                       CustomPhoneNumberInput(
@@ -287,11 +292,12 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
-                        label: AppLocalizations.of(context)!.translate('phone'), 
+                        label: AppLocalizations.of(context)!.translate('phone'),
                       ),
                       const SizedBox(height: 8),
                       RegionRadioGroupWidget(
@@ -323,20 +329,26 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: instaLoginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_instagram_username'),
-                        label: AppLocalizations.of(context)!.translate('instagram'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_instagram_username'),
+                        label: AppLocalizations.of(context)!
+                            .translate('instagram'),
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: facebookLoginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_facebook_username'),
-                        label: AppLocalizations.of(context)!.translate('Facebook'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_facebook_username'),
+                        label:
+                            AppLocalizations.of(context)!.translate('Facebook'),
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: telegramController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_telegram_username'),
-                        label: AppLocalizations.of(context)!.translate('telegram'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_telegram_username'),
+                        label:
+                            AppLocalizations.of(context)!.translate('telegram'),
                       ),
                       const SizedBox(height: 8),
                       CustomPhoneNumberInput(
@@ -354,22 +366,27 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: emailController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_email'),
                         label: AppLocalizations.of(context)!.translate('email'),
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: birthdayController,
-                        label: AppLocalizations.of(context)!.translate('birth_date'),
+                        label: AppLocalizations.of(context)!
+                            .translate('birth_date'),
                         withTime: false,
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description_list'),
                         maxLines: 5,
+                        keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 20),
                       ListView.builder(
@@ -389,7 +406,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -406,7 +424,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: const Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () => Navigator.pop(context, null),
@@ -424,7 +443,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('add'),
+                              buttonText: AppLocalizations.of(context)!
+                                  .translate('add'),
                               buttonColor: const Color(0xff4759FF),
                               textColor: Colors.white,
                               onPressed: () {
@@ -456,8 +476,11 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content:Text(AppLocalizations.of(context)!.translate('error_enter_birth_day'),
-                                              ),
+                                          content: Text(
+                                            AppLocalizations.of(context)!
+                                                .translate(
+                                                    'error_enter_birth_day'),
+                                          ),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -478,15 +501,18 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     }
                                   }
                                   final leadBloc = context.read<LeadBloc>();
-                                  context.read<LeadBloc>().add(FetchLeadStatuses());
-                            final localizations = AppLocalizations.of(context)!;
-
+                                  context
+                                      .read<LeadBloc>()
+                                      .add(FetchLeadStatuses());
+                                  final localizations =
+                                      AppLocalizations.of(context)!;
 
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
                                     phone: phoneToSend,
-                                    waPhone: whatsAppToSend, // Теперь передаем отдельный номер для WhatsApp
+                                    waPhone:
+                                        whatsAppToSend, // Теперь передаем отдельный номер для WhatsApp
                                     regionId: selectedRegion != null
                                         ? int.parse(selectedRegion!)
                                         : null,
@@ -504,14 +530,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                     description: descriptionController.text,
                                     leadStatusId: widget.statusId,
                                     customFields: customFieldList,
-                                    localizations: localizations,  
-
+                                    localizations: localizations,
                                   ));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        AppLocalizations.of(context)!.translate('fill_required_fields'),
+                                        AppLocalizations.of(context)!
+                                            .translate('fill_required_fields'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,

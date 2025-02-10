@@ -507,8 +507,6 @@ class _CustomAppBarState extends State<CustomAppBar>
         color: Colors.white,
         padding: EdgeInsets.zero,
         child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 40,
@@ -790,7 +788,6 @@ class _CustomAppBarState extends State<CustomAppBar>
     ),
   ),
 );
-
                         break;
                       case 'filter_lead':
                        Navigator.push(

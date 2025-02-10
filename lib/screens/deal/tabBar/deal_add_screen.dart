@@ -109,7 +109,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
         title: Row(
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('new_deal'), 
+              AppLocalizations.of(context)!.translate('new_deal'),
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
@@ -126,7 +126,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -149,7 +150,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                  AppLocalizations.of(context)!
+                      .translate(state.message), // Локализация сообщения
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -184,11 +186,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     children: [
                       CustomTextField(
                         controller: titleController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_name_list'), 
-                        label: AppLocalizations.of(context)!.translate('name_list'), 
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_name_list'),
+                        label: AppLocalizations.of(context)!
+                            .translate('name_list'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
+                            return AppLocalizations.of(context)!
+                                .translate('field_required');
                           }
                           return null;
                         },
@@ -214,22 +219,23 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: startDateController,
-                        label: AppLocalizations.of(context)!.translate('start_date'),
+                        label: AppLocalizations.of(context)!
+                            .translate('start_date'),
                         withTime: false,
-                       
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label: AppLocalizations.of(context)!.translate('end_date'),
+                        label:
+                            AppLocalizations.of(context)!.translate('end_date'),
                         hasError: isEndDateInvalid,
                         withTime: false,
-                        
                       ),
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: sumController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_summ'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_summ'),
                         label: AppLocalizations.of(context)!.translate('summ'),
                         keyboardType: TextInputType.number,
                         inputFormatters: [
@@ -245,9 +251,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_description'),
-                        label: AppLocalizations.of(context)!.translate('description_list'),
+                        hintText: AppLocalizations.of(context)!
+                            .translate('enter_description'),
+                        label: AppLocalizations.of(context)!
+                            .translate('description_list'),
                         maxLines: 5,
+                        keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 8),
                       ListView.builder(
@@ -267,7 +276,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         },
                       ),
                       CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('add_field'),
                         buttonColor: Color(0xff1E2E52),
                         textColor: Colors.white,
                         onPressed: _showAddFieldDialog,
@@ -283,7 +293,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText:  AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: Color(0xffF4F7FD),
                         textColor: Colors.black,
                         onPressed: () {
@@ -304,7 +315,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             );
                           } else {
                             return CustomButton(
-                              buttonText:  AppLocalizations.of(context)!.translate('add'),
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('add'),
                                 buttonColor: Color(0xff4759FF),
                                 textColor: Colors.white,
                                 onPressed: _submitForm);
@@ -356,11 +368,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
   void _createDeal() {
     final String name = titleController.text;
 
-    final String? startDateString = startDateController.text.isEmpty ? null : startDateController.text;
-    final String? endDateString = endDateController.text.isEmpty ? null : endDateController.text;
+    final String? startDateString =
+        startDateController.text.isEmpty ? null : startDateController.text;
+    final String? endDateString =
+        endDateController.text.isEmpty ? null : endDateController.text;
 
     final String sum = sumController.text;
-    final String? description = descriptionController.text.isEmpty ? null : descriptionController.text;
+    final String? description =
+        descriptionController.text.isEmpty ? null : descriptionController.text;
 
     DateTime? startDate;
     if (startDateString != null && startDateString.isNotEmpty) {
@@ -369,8 +384,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.translate('enter_valid_datetime'),),
+            content: Text(
+              AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+            ),
           ),
         );
         return;
@@ -383,8 +399,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.translate('enter_valid_datetime'),),
+            content: Text(
+              AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+            ),
           ),
         );
         return;
@@ -398,7 +415,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
+            AppLocalizations.of(context)!
+                .translate('start_date_after_end_date'),
             style: TextStyle(
               color: Colors.white,
             ),
@@ -419,8 +437,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
       }
     }
 
-      final localizations = AppLocalizations.of(context)!;
-
+    final localizations = AppLocalizations.of(context)!;
 
     context.read<DealBloc>().add(CreateDeal(
           name: name,
@@ -433,7 +450,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
           sum: sum,
           description: description,
           customFields: customFieldMap,
-          localizations: localizations, 
+          localizations: localizations,
         ));
   }
 }

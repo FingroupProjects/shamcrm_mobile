@@ -72,7 +72,7 @@ class _LeadCardState extends State<LeadCard> {
 
   String formatDate(String dateString) {
     DateTime dateTime = DateTime.parse(dateString);
-    return DateFormat('dd-MM-yyyy').format(dateTime);
+    return DateFormat('dd.MM.yyyy').format(dateTime);
   }
 
   final Map<String, String> sourceIcons = {
@@ -82,6 +82,43 @@ class _LeadCardState extends State<LeadCard> {
     'Facebook': 'assets/icons/leads/facebook.png',
     'Инстаграм': 'assets/icons/leads/instagram.png',
   };
+  Widget _buildHourglassIcon() {
+    // Если leadStatus.isSuccess равен true, возвращаем пустой контейнер
+    if (widget.lead.leadStatus?.isSuccess ?? false) {
+      return Container();
+    }
+
+    // В противном случае показываем иконку с таймером и отступом
+    return Row(
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.lead.lastUpdate! > 5 ? Colors.red : Color(0xff99A4BA),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.hourglass_empty,
+              size: 14,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        Text(
+          ' ${widget.lead.lastUpdate ?? 0}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff99A4BA),
+          ),
+        ),
+        const SizedBox(width: 8), // Перенесли SizedBox сюда
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,38 +267,7 @@ class _LeadCardState extends State<LeadCard> {
                   children: [
                     Row(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                // color: Color(0xff99A4BA),
-                                color: widget.lead.lastUpdate! > 5
-                                    ? Colors.red
-                                    : Color(0xff99A4BA),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.hourglass_empty,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              ' ${widget.lead.lastUpdate ?? 0}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 8),
+                        _buildHourglassIcon(), // Заменяем старый блок на новый метод
                         Row(
                           children: [
                             Image.asset(

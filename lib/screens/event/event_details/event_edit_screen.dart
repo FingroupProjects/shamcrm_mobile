@@ -172,6 +172,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('description_list'),
                         maxLines: 5,
+                                                keyboardType: TextInputType.multiline,
+
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return AppLocalizations.of(context)!
