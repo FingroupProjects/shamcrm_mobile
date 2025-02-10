@@ -128,19 +128,19 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                       if (state is GetAllLeadLoading) {
                         return Row(
                           children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xff1E2E52)),
-                              ),
-                            ),
-                            SizedBox(width: 8),
+                            // SizedBox(
+                            //   width: 16,
+                            //   height: 16,
+                            //   child: CircularProgressIndicator(
+                            //     strokeWidth: 2,
+                            //     valueColor: AlwaysStoppedAnimation<Color>(
+                            //         Color(0xff1E2E52)),
+                            //   ),
+                            // ),
+                            // SizedBox(width: 8),
                             Text(
                               AppLocalizations.of(context)!
-                                  .translate('loading'),
+                                  .translate('select_leads'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,

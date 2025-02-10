@@ -122,17 +122,17 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                       if (state is GetAllRegionLoading) {
                         return Row(
                           children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                              ),
-                            ),
+                            // SizedBox(
+                            //   width: 16,
+                            //   height: 16,
+                            //   child: CircularProgressIndicator(
+                            //     strokeWidth: 2,
+                            //     valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            //   ),
+                            // ),
                             SizedBox(width: 8),
                             Text(
-                              AppLocalizations.of(context)!.translate('loading'),
+                              AppLocalizations.of(context)!.translate('select_region'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,

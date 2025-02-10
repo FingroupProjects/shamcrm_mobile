@@ -437,8 +437,6 @@ DateTime? _toDate;
         color: Colors.white,
         padding: EdgeInsets.zero,
         child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 40,
@@ -722,11 +720,6 @@ DateTime? _toDate;
     ),
   ),
 );
-print('++++++++++++++++++++++++CUSTOM APPBAR+++++++++++++++++++++++++');
-print(widget.initialUsers);
-print(widget.initialStatuses);
-print(widget.initialFromDate);
-print(widget.initialToDate);
                         break;
                       case 'events':
                         // Переход на страницу "События"

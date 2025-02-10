@@ -18,8 +18,7 @@ class InputField extends StatelessWidget {
   final Function onRecordVoice;
   final TextEditingController messageController;
   final Function(File soundFile, String time) sendRequestFunction;
-  final FocusNode focusNode; 
-
+  final FocusNode focusNode;
 
   const InputField({
     super.key,
@@ -29,19 +28,22 @@ class InputField extends StatelessWidget {
     required this.messageController,
     required this.sendRequestFunction,
     required this.focusNode,
-
   });
 
   @override
   Widget build(BuildContext context) {
     final messagingCubit = context.read<MessagingCubit>();
-    final editingMessage = context.watch<MessagingCubit>().state is EditingMessageState
-        ? (context.read<MessagingCubit>().state as EditingMessageState).editingMessage
-        : null;
+    final editingMessage =
+        context.watch<MessagingCubit>().state is EditingMessageState
+            ? (context.read<MessagingCubit>().state as EditingMessageState)
+                .editingMessage
+            : null;
 
-    final replyingToMessage = context.watch<MessagingCubit>().state is ReplyingToMessageState
-        ? (context.read<MessagingCubit>().state as ReplyingToMessageState).replyingMessage
-        : null;
+    final replyingToMessage =
+        context.watch<MessagingCubit>().state is ReplyingToMessageState
+            ? (context.read<MessagingCubit>().state as ReplyingToMessageState)
+                .replyingMessage
+            : null;
 
     final String? replyMsgId = replyingToMessage?.id.toString();
 
@@ -59,52 +61,53 @@ class InputField extends StatelessWidget {
           if (replyingToMessage != null)
             Container(
               decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: Color(0xfff4F40EC),
-                  width: 1,
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Color(0xfff4F40EC),
+                    width: 1,
+                  ),
                 ),
               ),
-            ),
-          padding: const EdgeInsets.only(left: 20, right: 6, top: 0, bottom: 0),
-          margin: const EdgeInsets.only(bottom: 2),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+              padding:
+                  const EdgeInsets.only(left: 20, right: 6, top: 0, bottom: 0),
+              margin: const EdgeInsets.only(bottom: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SvgPicture.asset(
-                  'assets/icons/chats/menu_icons/reply.svg', 
-                    width: 16,
-                    height: 16,
-                    color: Colors.grey.shade700, 
-                  ),
-                  const SizedBox(width: 6), 
-                  RichText(
-                    text: TextSpan(
-                      text: "В ответ ",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/chats/menu_icons/reply.svg',
+                        width: 16,
+                        height: 16,
                         color: Colors.grey.shade700,
-                        fontFamily: 'Gilroy',
                       ),
-                      children: [
-                        TextSpan(
-                          text: replyingToMessage.senderName,
+                      const SizedBox(width: 6),
+                      RichText(
+                        text: TextSpan(
+                          text: "В ответ ",
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: ChatSmsStyles.messageBubbleSenderColor,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
                             fontFamily: 'Gilroy',
                           ),
+                          children: [
+                            TextSpan(
+                              text: replyingToMessage.senderName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: ChatSmsStyles.messageBubbleSenderColor,
+                                fontFamily: 'Gilroy',
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
                   Row(
                     children: [
                       Expanded(
@@ -123,7 +126,8 @@ class InputField extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.red, size: 28),
+                        icon: const Icon(Icons.close,
+                            color: Colors.red, size: 28),
                         padding: EdgeInsets.only(bottom: 20),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -135,55 +139,56 @@ class InputField extends StatelessWidget {
                 ],
               ),
             ),
-            if (editingMessage != null)
-             Container(
+          if (editingMessage != null)
+            Container(
               decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: Color(0xfff4F40EC),
-                  width: 1,
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Color(0xfff4F40EC),
+                    width: 1,
+                  ),
                 ),
               ),
+              padding:
+                  const EdgeInsets.only(left: 20, right: 6, top: 0, bottom: 0),
+              margin: const EdgeInsets.only(bottom: 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/chats/menu_icons/edit.svg',
+                        width: 16,
+                        height: 16,
+                        color: Colors.grey.shade700,
+                      ),
+                      const SizedBox(width: 6),
+                      RichText(
+                        text: TextSpan(
+                          text: "Редактирование сообщения",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red, size: 28),
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      messagingCubit.clearEditingMessage();
+                      messageController.clear();
+                    },
+                  ),
+                ],
+              ),
             ),
-               padding: const EdgeInsets.only(left: 20, right: 6, top: 0, bottom: 0),
-               margin: const EdgeInsets.only(bottom: 0),
-               child: Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
-                   Row(
-                     children: [
-                       SvgPicture.asset(
-                         'assets/icons/chats/menu_icons/edit.svg', 
-                         width: 16,
-                         height: 16,
-                         color: Colors.grey.shade700, 
-                       ),
-                       const SizedBox(width: 6), 
-                       RichText(
-                         text: TextSpan(
-                           text: "Редактирование сообщения",
-                           style: TextStyle(
-                             fontSize: 12,
-                             fontWeight: FontWeight.w500,
-                             color: Colors.grey.shade700,
-                             fontFamily: 'Gilroy',
-                           ),
-                         ),
-                       ),
-                     ],
-                   ),
-                   IconButton(
-                     icon: const Icon(Icons.close, color: Colors.red, size: 28),
-                     constraints: const BoxConstraints(),
-                     onPressed: () {
-                       messagingCubit.clearEditingMessage();
-                       messageController.clear(); 
-                     },
-                   ),
-                 ],
-               ),
-             ),
           Row(
             children: [
               Expanded(
@@ -193,39 +198,48 @@ class InputField extends StatelessWidget {
                     (context.watch<ListenSenderFileCubit>().state)
                         ? Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                            child: CircularProgressIndicator(
+                                color: Color(0xff1E2E52)),
                           )
                         : Container(
                             height: 50,
                             child: Container(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: TextField(
-                                controller: messageController,
-                                focusNode: focusNode, 
-                                decoration: InputDecoration(
-                                  hintText: AppLocalizations.of(context)!.translate('enter_your_sms'),
-                                  hintStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: ChatSmsStyles.hintTextColor,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
+                                padding: const EdgeInsets.only(left: 16),
+                                child: TextField(
+                                  controller: messageController,
+                                  focusNode: focusNode,
+                                  decoration: InputDecoration(
+                                    hintText: AppLocalizations.of(context)!
+                                        .translate('enter_your_sms'),
+                                    hintStyle: TextStyle(
+                                      fontSize: 14,
+                                      color: ChatSmsStyles.hintTextColor,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                    ),
+                                    fillColor:
+                                        ChatSmsStyles.inputBackgroundColor,
+                                    filled: true,
+                                    contentPadding:
+                                        EdgeInsets.only(left: 10, right: 40),
+                                    border: OutlineInputBorder(
+                                      borderRadius:
+                                          ChatSmsStyles.inputBorderRadius,
+                                      borderSide: BorderSide.none,
+                                    ),
                                   ),
-                                  fillColor: ChatSmsStyles.inputBackgroundColor,
-                                  filled: true,
-                                  contentPadding: EdgeInsets.only(left: 10, right: 40),
-                                  border: OutlineInputBorder(
-                                    borderRadius: ChatSmsStyles.inputBorderRadius,
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                                style: ChatSmsStyles.messageTextStyle,
-                              ),
-                            ),
+                                  keyboardType: TextInputType.multiline,
+                                  minLines: 1, // Минимальное количество строк
+                                  maxLines:
+                                      5, // Максимальное количество строк до появления прокрутки
+                                  style: ChatSmsStyles.messageTextStyle,
+                                )),
                           ),
                     Positioned(
                       right: 0,
                       child: IconButton(
-                        icon: Image.asset('assets/icons/chats/file.png', width: 24, height: 24),
+                        icon: Image.asset('assets/icons/chats/file.png',
+                            width: 24, height: 24),
                         onPressed: onAttachFile,
                       ),
                     ),
@@ -240,7 +254,8 @@ class InputField extends StatelessWidget {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                          child: CircularProgressIndicator(
+                              color: Color(0xff1E2E52)),
                         ),
                       ],
                     )
@@ -249,27 +264,39 @@ class InputField extends StatelessWidget {
                         size: Size(300, 400),
                       ),
                       child: SocialMediaRecorder(
-                        startRecording: () {  },
-                        stopRecording: (_time) {   },
+                        startRecording: () {},
+                        stopRecording: (_time) {},
                         sendRequestFunction: sendRequestFunction,
-                        cancelText: AppLocalizations.of(context)!.translate('cancel'),
-                        cancelTextStyle: TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500),
-                        slideToCancelText: AppLocalizations.of(context)!.translate('cancel_chat_sms'),
-                        slideToCancelTextStyle: TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500),
+                        cancelText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        cancelTextStyle: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500),
+                        slideToCancelText: AppLocalizations.of(context)!
+                            .translate('cancel_chat_sms'),
+                        slideToCancelTextStyle: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500),
                         recordIconBackGroundColor: Color(0xfff4F40EC),
-                        counterTextStyle: TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500),
+                        counterTextStyle: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500),
                         encode: AudioEncoderType.AAC,
                         radius: BorderRadius.circular(12),
                       ),
                     ),
-                   (context.watch<ListenSenderTextCubit>().state) 
+              (context.watch<ListenSenderTextCubit>().state)
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                          child: CircularProgressIndicator(
+                              color: Color(0xff1E2E52)),
                         ),
                       ],
                     )

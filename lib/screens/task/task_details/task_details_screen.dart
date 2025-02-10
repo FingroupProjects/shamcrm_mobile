@@ -307,15 +307,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       //       ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
       //       : ''
       // },
-      {
-        'label': AppLocalizations.of(context)!.translate('project_details'),
-        'value': task.project?.name ?? ''
-      },
+      
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': task.user != null && task.user!.isNotEmpty
             ? task.user!.map((user) => user.name).join(', ')
             : '',
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('project_details'),
+        'value': task.project?.name ?? ''
       },
       {
         'label': AppLocalizations.of(context)!.translate('dead_line'),
