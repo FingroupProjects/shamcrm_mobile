@@ -8,11 +8,11 @@ class FetchTaskStatuses extends TaskEvent {}
 
 class FetchTasks extends TaskEvent {
   final int statusId;
-  final String? query; // Параметр для поиска
-  final List<int>? userIds; // ID пользователей
-  final int? statusIds; // ID статусов
-  final DateTime? fromDate; // Начальная дата
-  final DateTime? toDate; // Конечная дата
+  final String? query; 
+  final List<int>? userIds; 
+  final int? statusIds; 
+  final DateTime? fromDate; 
+  final DateTime? toDate; 
 
   FetchTasks(
     this.statusId, {

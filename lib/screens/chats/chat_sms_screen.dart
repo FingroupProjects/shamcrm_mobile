@@ -1111,9 +1111,11 @@ class MessageItemWidget extends StatelessWidget {
       key: Key(message.id.toString()),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
+        if (endPointInTab == 'task' || endPointInTab == 'corporate') {
         focusNode.requestFocus(); 
         context.read<MessagingCubit>().setReplyMessage(message);
         return false;
+        }
       },
       child: GestureDetector(
       onLongPress: () {

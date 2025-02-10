@@ -5,13 +5,22 @@ abstract class EventEvent {}
 class FetchEvents extends EventEvent {
   final bool refresh;
   final String? query;
-  final List<int>? managerIds;
-  final int? statusId;
+  final List<int>? managerIds; 
+  final int? statusIds; 
+  final DateTime? fromDate; 
+  final DateTime? toDate; 
+  final DateTime? noticefromDate; 
+  final DateTime? noticetoDate; 
+
   FetchEvents({
-    this.statusId,
     this.refresh = false,
     this.query,
     this.managerIds,
+    this.statusIds,
+    this.fromDate,
+    this.toDate,
+    this.noticefromDate,
+    this.noticetoDate,
   });
 }
 

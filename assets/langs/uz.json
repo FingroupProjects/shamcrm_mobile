@@ -179,6 +179,9 @@
   "select_roles": "Rollarni tanlang",
   "all": "Hammasi",
   "task_statuses": "Vazifa holatlari",
+  "lead_statuses": "Lid holatlari",
+  "deal_statuses": "Bitim holatlari",
+  "event_statuses": "Voqea holatlari",
   "select_status": "Holatni tanlang",
   "field_required": "Maydonni to'ldirish shart",
   "normal": "Oddiy",
@@ -241,6 +244,7 @@
   "status_created_successfully": "Holat muvaffaqiyatli yaratildi!",
   "final_stage_add": "Yakuniy bosqich",
   "task_status": "Vazifa holati",
+
   "select_status_task": "Vazifa holatini tanlang",
   "assignees_list": "Mas’ul shaxslar",
   "select_assignees_list": "Mas’ul shaxslarni tanlang",
@@ -582,7 +586,14 @@
     "confirm_delete_file": "Faylni ajratishni tasdiqlaysizmi?",
     "file_deleted_successfully": "Fayl muvaffaqiyatli ajratildi",
     "failed_to_delete_file": "Faylni ajratishda xatolik yuz berdi",
-       "add_file": "Fayl yuklash",
+   "add_file": "Fayl yuklash",
     "unpin": "Ajratish",
-    "files_details":"Fayl:"
+    "files_details":"Fayl:",
+    "managers": "Menejerlar",
+    "filter": "Filtr",
+    "reset": "Tiklash",
+    "apply": "Qo‘llash",
+    "select_date_range": "Sana oralig‘ini tanlang",
+    "enter_date_range_create": "Yaratilgan sana oralig‘ini kiriting",
+    "enter_date_range_notice": "Eslatma sanasi oralig‘ini kiriting"
 }

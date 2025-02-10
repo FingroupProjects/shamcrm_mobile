@@ -177,10 +177,12 @@ class ApiService {
     await prefs.remove('token'); // Удаляем токен
   }
 
+
+
   // Метод для логаута — очистка токена
   Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
 
+     
     // Сохраняем текущие значения domainChecked и enteredDomain
     // bool? domainChecked = prefs.getBool('domainChecked');
     // String? enteredDomain = prefs.getString('enteredDomain');
@@ -258,7 +260,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         if (token != null)
-          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+        'Authorization': 'Bearer $token', // Добавляем токен, если он есть
         'Device': 'mobile'
       },
       body: json.encode(body),
@@ -685,34 +687,48 @@ class ApiService {
     int page = 1,
     int perPage = 20,
     String? search,
-    List<int>? managers, // Массив ID менеджеров
+    List<int>? managers,
+    int? statuses,  
+    DateTime? fromDate, 
+    DateTime? toDate, 
   }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/lead?page=$page&per_page=$perPage';
+      final organizationId = await getSelectedOrganization(); 
+  String path = '/lead?page=$page&per_page=$perPage'; 
+  path += '&organization_id=$organizationId'; 
 
-    if (organizationId != null) {
-      path += '&organization_id=$organizationId';
-    }
+  bool hasFilters =  
+    (search != null && search.isNotEmpty) || 
+    (managers != null && managers.isNotEmpty) || 
+    (fromDate != null) || 
+    (toDate != null) || 
+    (statuses != null); 
 
-    // Если задан поиск или менеджеры, НЕ передаем lead_status_id
-    bool shouldSkipLeadStatusId = (search != null && search.isNotEmpty) ||
-        (managers != null && managers.isNotEmpty);
 
-    if (!shouldSkipLeadStatusId && leadStatusId != null) {
-      // Если поиск и менеджеры не заданы, передаем lead_status_id
-      path += '&lead_status_id=$leadStatusId';
-    }
+ if (leadStatusId != null && !hasFilters) { 
+    path += '&lead_status_id=$leadStatusId'; 
+  } 
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (search != null && search.isNotEmpty) { 
+    path += '&search=$search'; 
+  } 
 
-    // Формируем массив managers с индексами
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
         path += '&managers[$i]=${managers[i]}';
       }
     }
+
+      if (statuses != null ) { 
+    path += '&lead_status_id=$statuses'; 
+  } 
+ 
+  if (fromDate != null && toDate != null) { 
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
+    path += '&from=$formattedFromDate&to=$formattedToDate'; 
+  } 
+ 
+
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -1585,39 +1601,52 @@ class ApiService {
     }
   }
 
-  // 1. First, update the Deal API service to handle multiple managers
   Future<List<Deal>> getDeals(
     int? dealStatusId, {
     int page = 1,
     int perPage = 20,
     String? search,
-    List<int>? managers, // Changed from single managerId to List of managers
+    List<int>? managers,
+    int? statuses,  
+    DateTime? fromDate, 
+    DateTime? toDate, 
   }) async {
-    final organizationId = await getSelectedOrganization();
-    String path = '/deal?page=$page&per_page=$perPage';
 
-    if (organizationId != null) {
-      path += '&organization_id=$organizationId';
-    }
+  final organizationId = await getSelectedOrganization(); 
+  String path = '/deal?page=$page&per_page=$perPage'; 
+  path += '&organization_id=$organizationId'; 
 
-    // Similar logic as in getLeads
-    bool shouldSkipDealStatusId = (search != null && search.isNotEmpty) ||
-        (managers != null && managers.isNotEmpty);
+  bool hasFilters =  
+    (search != null && search.isNotEmpty) || 
+    (managers != null && managers.isNotEmpty) || 
+    (fromDate != null) || 
+    (toDate != null) || 
+    (statuses != null); 
 
-    if (!shouldSkipDealStatusId && dealStatusId != null) {
-      path += '&deal_status_id=$dealStatusId';
-    }
+ if (dealStatusId != null && !hasFilters) { 
+    path += '&lead_status_id=$dealStatusId'; 
+  } 
 
-    if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
-    }
+  if (search != null && search.isNotEmpty) { 
+    path += '&search=$search'; 
+  } 
 
-    // Add managers array parameter
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
         path += '&managers[$i]=${managers[i]}';
       }
     }
+
+      if (statuses != null ) { 
+    path += '&deal_status_id=$statuses'; 
+  } 
+ 
+  if (fromDate != null && toDate != null) { 
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
+    path += '&from=$formattedFromDate&to=$formattedToDate'; 
+  } 
+ 
 
     final response = await _getRequest(path);
 
@@ -4392,6 +4421,18 @@ class ApiService {
     await prefs.remove('selectedOrganization'); // Удаляем токен
   }
 
+        Future<void> logoutAccount() async {
+    final organizationId = await getSelectedOrganization();
+    final response = await _postRequest('/logout${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {
+
+        });
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка logout аккаунта!');
+    }
+  }
+
   //_________________________________ END_____API_SCREEN__PROFILE____________________________________________//
 
   //_________________________________ START_____API_SCREEN__NOTIFICATIONS____________________________________________//
@@ -5377,20 +5418,22 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
 
-  // In api_service.dart, modify the getEvents method:
   Future<List<NoticeEvent>> getEvents({
     int page = 1,
     int perPage = 20,
     String? search,
     List<int>? managers,
+    int? statuses,  
+    DateTime? fromDate, 
+    DateTime? toDate, 
+    DateTime? noticefromDate, 
+    DateTime? noticetoDate, 
   }) async {
     try {
-      final organizationId = await getSelectedOrganization();
-      String path = '/notices?page=$page&per_page=$perPage';
+        final organizationId = await getSelectedOrganization(); 
+  String path = '/notices?page=$page&per_page=$perPage'; 
+  path += '&organization_id=$organizationId'; 
 
-      if (organizationId != null) {
-        path += '&organization_id=$organizationId';
-      }
 
       if (search != null && search.isNotEmpty) {
         path += '&search=$search';
@@ -5401,6 +5444,23 @@ Future<Map<String, dynamic>> createMyTask({
           path += '&managers[$i]=${managers[i]}';
         }
       }
+
+        if (statuses != null ) { 
+    path += '&event_status_id=$statuses'; 
+  } 
+ 
+  if (fromDate != null && toDate != null) { 
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
+    path += '&created_from=$formattedFromDate&created_to=$formattedToDate'; 
+  } 
+
+  if (noticefromDate != null && noticetoDate != null) { 
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(noticefromDate); 
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(noticetoDate); 
+    path += '&push_from=$formattedFromDate&push_to=$formattedToDate'; 
+  } 
+
 
       final response = await _getRequest(path);
 

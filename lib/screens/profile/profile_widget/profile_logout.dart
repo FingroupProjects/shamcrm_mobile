@@ -19,7 +19,8 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-
+   ApiService apiService = ApiService();
+    await apiService.logoutAccount();
         // Очистка SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String? token = prefs.getString('token') ?? '';
@@ -27,8 +28,7 @@ class LogoutButtonWidget extends StatelessWidget {
         print(token);
         await prefs.clear();
 
-        // Вызов метода logout в ApiService
-        ApiService apiService = ApiService();
+
         await apiService.logout();
 
 

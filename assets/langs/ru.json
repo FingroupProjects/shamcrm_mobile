@@ -201,6 +201,9 @@
     "all": "Все",
 
     "task_statuses": "Статусы задачи",
+    "lead_statuses": "Статусы лида",
+    "deal_statuses": "Статусы сделки",
+    "event_statuses": "Статусы cобитый",
     "select_status": "Выберите статус",
     "field_required": "Поле обязательно для заполнения",
 
@@ -636,6 +639,13 @@
       "confirm_delete_file": "Вы уверены, что хотите открепить файл?",
       "file_deleted_successfully": "Файл успешно откреплён",
       "failed_to_delete_file": "Ошибка при откреплении файла",
-      "unpin":"Открепить"
+      "unpin":"Открепить",
+      "managers":"Менеджеры",
+      "filter":"Фильтр",
+      "reset":"Сбросить",
+      "apply":"Применить",
+      "select_date_range":"Выбрать диапазон даты",
+      "enter_date_range_create":"Введите интервал даты создания",
+      "enter_date_range_notice":"Введите интервал даты напоминания"
     
   }

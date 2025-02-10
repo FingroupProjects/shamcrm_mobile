@@ -13,13 +13,11 @@ class LeadColumn extends StatefulWidget {
   final int statusId;
   final String title;
   final Function(int) onStatusId; // Callback to notify status change
-  final int? managerId; // Добавляем параметр managerId
 
   LeadColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
-    this.managerId, // Добавляем в конструктор
   });
 
   @override
@@ -37,7 +35,6 @@ class _LeadColumnState extends State<LeadColumn> {
     _leadBloc = LeadBloc(_apiService)
       ..add(FetchLeads(
         widget.statusId,
-        managerIds: widget.managerId != null ? [widget.managerId!] : null,
       ));
     _checkPermission();
   }
@@ -58,7 +55,7 @@ class _LeadColumnState extends State<LeadColumn> {
   Future<void> _onRefresh() async {
     BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
-    _leadBloc.add(FetchLeads( widget.statusId, managerIds: widget.managerId != null ? [widget.managerId!] : null,
+    _leadBloc.add(FetchLeads( widget.statusId,
     ));
 
     return Future.delayed(Duration(milliseconds: 1));

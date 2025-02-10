@@ -60,7 +60,10 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
         page: 1,
         perPage: 20,
         search: event.query,
-        managers: event.managerIds ?? [], // Pass managers list
+        managers: event.managerIds,
+        statuses: event.statusIds,
+        fromDate: event.fromDate,
+        toDate: event.toDate,
       );
 
       print('Переданные менеджеры: ${event.managerIds}');

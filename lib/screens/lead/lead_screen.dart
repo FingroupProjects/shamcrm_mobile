@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
@@ -36,7 +37,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   bool _isManager = false;
-  bool _isFiltr = false;
   final TextEditingController _searchController = TextEditingController();
   bool _canReadLeadStatus = false;
   bool _canCreateLeadStatus = false;
@@ -50,13 +50,23 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   String _lastSearchQuery = "";
 
 
-  int? _selectedManagerId; // ID выбранного менеджера.
+  List<ManagerData> _selectedManagers = [];
+  int? _selectedStatuses;  
+  DateTime? _fromDate;
+  DateTime? _toDate;
+
+  List<ManagerData> _initialselectedManagers = []; 
+  int? _initialSelStatus;
+   DateTime? _intialFromDate;
+  DateTime? _intialToDate;
+
     List<int>? _selectedManagerIds;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+   _scrollController = ScrollController();
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -99,61 +109,133 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _searchController.dispose();
     super.dispose();
   }
-
-  Future<void> _searchLeads(String query, int currentStatusId) async {
+Future<void> _searchLeads(String query, int currentStatusId) async {
   final leadBloc = BlocProvider.of<LeadBloc>(context);
-  if (query.isEmpty) {
-    if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-    print('Очистка поиска, но фильтр активен — загружаем сделки по фильтру');
-    leadBloc.add(FetchLeads(
-      currentStatusId, 
-      managerIds: _selectedManagerIds, 
-    ));
-     } else {
-      print('Очистка поиска и фильтра — загружаем все лиди');
-      leadBloc.add(FetchLeads(currentStatusId,query: " "));
-    }
-  } else {
-    await LeadCache.clearAllLeads();
-    leadBloc.add(FetchLeads(
-      currentStatusId, 
-      query: query, 
-      managerIds: _selectedManagerIds,
-    ));
-  }
+
+  await LeadCache.clearAllLeads();
+  print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
+
+  print('Запрос: $query');
+  print('Текущий статус ID: $currentStatusId');
+  print('Менеджеры: ${_selectedManagers.map((manager) => manager.id).toList()}');
+  print('Статусы: $_selectedStatuses');
+  print('Дата от: $_fromDate');
+  print('Дата до: $_toDate');
+
+  leadBloc.add(FetchLeads(
+    currentStatusId,
+    query: query,
+    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    statusIds: _selectedStatuses,
+    fromDate: _fromDate,
+    toDate: _toDate,
+  ));
 }
 
-// Добавляем метод для обработки выбора менеджера
+void _resetFilters() {
+  setState(() {
+    _showCustomTabBar = true;
+    _selectedManagers = [];
+    _selectedStatuses = null;
+    _fromDate = null;
+    _toDate = null;
+    _initialselectedManagers = [];
+    _initialSelStatus = null;
+    _intialFromDate = null;
+    _intialToDate = null;
+    _lastSearchQuery = '';
+    _searchController.clear();
+  });
+   final leadBloc = BlocProvider.of<LeadBloc>(context);
+   leadBloc.add(FetchLeadStatuses());
+}
 
-  Future<void> _handleManagerSelected(List<dynamic> managers) async {
-    await LeadCache.clearAllLeads();
+  Future<void> _handleManagerSelected(Map managers) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedManagers = managers['managers'];
+    _selectedStatuses = managers['statuses'];
+    _fromDate = managers['fromDate'];
+    _toDate = managers['toDate'];
 
-    setState(() {
-      
-      _showCustomTabBar = false;
-
-      _selectedManagerIds = managers
-          .map((manager) {
-            if (manager is String) {
-              return int.tryParse(manager);
-            } else if (manager is ManagerData) {
-              return manager.id;
-            }
-            return null;
-          })
-          .where((id) => id != null)
-          .cast<int>()
-          .toList();
-    });
+    _initialselectedManagers = managers['managers'];
+    _initialSelStatus = managers['statuses'];
+    _intialFromDate = managers['fromDate'];
+    _intialToDate = managers['toDate'];
+    
+  });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final leadBloc = BlocProvider.of<LeadBloc>(context);
     leadBloc.add(FetchLeads(
     currentStatusId,
-    managerIds: _selectedManagerIds?.isNotEmpty == true ? _selectedManagerIds : null,
+    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    statusIds: _selectedStatuses, 
+    fromDate: _fromDate,
+    toDate: _toDate,
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
     ));
   }
+  
+Future _handleStatusSelected(int? selectedStatusId) async {
+  setState(() {
+     _showCustomTabBar = false;
+    _selectedStatuses = selectedStatusId;
+    
+    _initialSelStatus=selectedStatusId;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<LeadBloc>(context);
+  taskBloc.add(FetchLeads(
+    currentStatusId,
+    statusIds: _selectedStatuses, 
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
+  setState(() {
+     _showCustomTabBar = false;
+    _fromDate = fromDate;
+    _toDate = toDate;
+
+    _intialFromDate = fromDate;
+    _intialToDate = toDate;
+    
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<LeadBloc>(context);
+  taskBloc.add(FetchLeads(
+    currentStatusId,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, DateTime? toDate) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedStatuses=selectedStatus;
+    _fromDate = fromDate;
+    _toDate = toDate;
+
+    _initialSelStatus=selectedStatus;
+    _intialFromDate = fromDate;
+    _intialToDate = toDate;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<LeadBloc>(context);
+  taskBloc.add(FetchLeads(
+    currentStatusId,
+    statusIds: selectedStatus,
+    fromDate: _fromDate,
+    toDate: _toDate,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
@@ -202,73 +284,64 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             }
             _onSearch(value);
           },
-          onManagersSelected: _handleManagerSelected,
+          onManagersLeadSelected: _handleManagerSelected,
+          onStatusLeadSelected: _handleStatusSelected,
+          onDateRangeLeadSelected: _handleDateSelected,
+          onStatusAndDateRangeLeadSelected: _handleStatusAndDateSelected,
+          initialManagersLead: _initialselectedManagers,
+          initialManagerLeadStatuses: _initialSelStatus,
+          initialManagerLeadFromDate: _intialFromDate,
+          initialManagerLeadToDate: _intialToDate,
+          onLeadResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
           showFilterTaskIcon: false,
-          showMyTaskIcon: true, // Выключаем иконку My Tasks
+          showMyTaskIcon: true,
+          showFilterIconDeal: false,
           showEvent: true,
+         clearButtonClick: (value) {
+                if (value == false) {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _lastSearchQuery = '';
+                  });
 
-          clearButtonClick: (value) {
-            if (value == false) {
-                  // Сброс поиска
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear(); 
-                  _lastSearchQuery = ''; 
-                });
-          if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-                setState(() {
-                  _showCustomTabBar = true; 
-                });
-                final leadBloc = BlocProvider.of<LeadBloc>(context);
-                leadBloc.add(FetchLeadStatuses());
-               } else if (_selectedManagerIds != null || _selectedManagerIds!.isNotEmpty) {
-                // Если фильтр активен, показываем результаты фильтрации
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                final dealBloc = BlocProvider.of<LeadBloc>(context);
-                dealBloc.add(FetchLeads(
-                  currentStatusId,
-                  managerIds: _selectedManagerIds,
-                  query: _searchController.text.isNotEmpty ? _searchController.text : null,
-                ));
-              } 
-            }
-          },
-          clearButtonClickFiltr: (value) {
-if (value == false) {
-    // Сброс фильтра
-    setState(() {
-      _selectedManagerIds = null; // Обнуляем выбранных менеджеров
-    });
-    // Если оба пустые (поиск и фильтр), сбрасываем состояние полностью
-    if (_searchController.text.isEmpty && _selectedManagerIds == null) {
-      setState(() {
-        _showCustomTabBar = true; // Показываем кастомные табы
-      });
-      // Проверка на наличие предыдущего запроса поиска
-      if (_lastSearchQuery.isNotEmpty) {
-        final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-        final dealBloc = BlocProvider.of<LeadBloc>(context);
-        print('Возвращаем поиск после сброса фильтра');
-        dealBloc.add(FetchLeads(currentStatusId, query: _lastSearchQuery));
-      } else  {
-        // Если и поиск, и фильтр пусты, показываем все сделки
-        final leadBloc = BlocProvider.of<LeadBloc>(context);
-        print('Сброс и поиск пуст, возвращаем все сделки');
-        leadBloc.add(FetchLeadStatuses());
-      }
-    } else if (_searchController.text.isNotEmpty) {
-      // Если поиск активен, показываем результаты поиска
-      final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-      final dealBloc = BlocProvider.of<LeadBloc>(context);
-      dealBloc.add(FetchLeads(
-        currentStatusId,
-        query: _searchController.text,
-      ));
-    }
-  }
-          },
+              if (_searchController.text.isEmpty) {
+                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null) {
+                  print("IF SEARCH EMPTY AND NO FILTERS");
+                  setState(() {
+                    _showCustomTabBar = true;
+                  });
+                  final taskBloc = BlocProvider.of<LeadBloc>(context);
+                  taskBloc.add(FetchLeadStatuses());
+                } else {
+                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final taskBloc = BlocProvider.of<LeadBloc>(context);
+                  taskBloc.add(FetchLeads(
+                    currentStatusId,
+                    managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
+                    statusIds: _selectedStatuses,
+                    fromDate: _fromDate,
+                    toDate: _toDate,
+                  ));
+                }
+                  } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+                    print("ELSE IF SEARCH NOT EMPTY");
+
+                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                    final taskBloc = BlocProvider.of<LeadBloc>(context);
+                    taskBloc.add(FetchLeads(
+                      currentStatusId,
+                      managerIds: _selectedManagerIds,
+                      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                    ));
+                  }
+                }
+              },
+
+          clearButtonClickFiltr: (value) { },
         ),
       ),
       body: isClickAvatarIcon
@@ -276,13 +349,12 @@ if (value == false) {
           : Column(
               children: [
                 const SizedBox(height: 15),
-                // Условие для отображения табов с использованием флага
                 if (!_isSearching &&
-                    _selectedManagerId == null &&
+                    _selectedManagerIds == null &&
                     _showCustomTabBar)
                   _buildCustomTabBar(),
                 Expanded(
-                  child: _isSearching || _selectedManagerId != null
+                  child: _isSearching || _selectedManagerIds != null
                       ? _buildManagerView()
                       : _buildTabBarView(),
                 ),
@@ -378,7 +450,7 @@ if (value == false) {
           if (filteredLeads.isEmpty) {
             return Center(
               child: Text(
-                _selectedManagerId != null
+                _selectedManagers != null
                     ? AppLocalizations.of(context)!
                         .translate('selected_manager_has_any_lead')
                     : AppLocalizations.of(context)!.translate('nothing_found'),
@@ -782,7 +854,6 @@ void _showStatusOptions(BuildContext context, int index) {
                 return LeadColumn(
                   statusId: statusId,
                   title: title,
-                  managerId: _selectedManagerId, // Передаем ID менеджера
                   onStatusId: (newStatusId) {
                     print('Status ID changed: $newStatusId');
                     final index = _tabTitles
@@ -829,3 +900,4 @@ void _showStatusOptions(BuildContext context, int index) {
     }
   }
 }
+

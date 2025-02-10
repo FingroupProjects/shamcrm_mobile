@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
-import 'package:crm_task_manager/bloc/user/user_bloc.dart';
-import 'package:crm_task_manager/bloc/user/user_event.dart';
-import 'package:crm_task_manager/custom_widget/manager_app_bar.dart';
-import 'package:crm_task_manager/custom_widget/user_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
+import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
+import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
+import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
@@ -14,7 +13,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomAppBar extends StatefulWidget {
@@ -26,13 +24,34 @@ class CustomAppBar extends StatefulWidget {
   Function(bool) clearButtonClick;
   Function(bool) clearButtonClickFiltr;
   bool showSearchIcon;  
+  bool showFilterIconEvent;  
   final bool showFilterIcon;
+  final bool showFilterIconDeal;
   final bool showFilterTaskIcon; 
   final bool showEvent; 
   final bool showSeparateTaskFilter; 
   final bool showSeparateMyTasks;
   final bool showNotification;
-  final Function(List<dynamic>)?onManagersSelected;
+  final Function(Map)?onManagersLeadSelected;
+  final Function(int?)? onStatusLeadSelected;
+  final Function(DateTime?, DateTime?)? onDateRangeLeadSelected;
+  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeLeadSelected;
+  
+  final Function(Map)?onManagersDealSelected;
+  final Function(int?)? onStatusDealSelected;
+  final Function(DateTime?, DateTime?)? onDateRangeDealSelected;
+  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeDealSelected;
+
+  final Function(Map)?onManagersEventSelected;
+  final Function(int?)? onStatusEventSelected;
+  final Function(DateTime?, DateTime?)? onDateRangeEventSelected;
+  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeEventSelected;
+  final Function(DateTime?, DateTime?)? onNoticeDateRangeEventSelected;
+  final Function(int?,DateTime?, DateTime?)? onNoticeStatusAndDateRangeEventSelected;
+  final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeStatusAndDateRangeSelected;
+  final Function(DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeAndDateRangeSelected;
+
+
   final Function(Map)? onUsersSelected;
   final Function(int?)? onStatusSelected;
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
@@ -43,7 +62,28 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
 
+ 
+  final List? initialManagersLead;
+  final int? initialManagerLeadStatuses;
+  final DateTime? initialManagerLeadFromDate;
+  final DateTime? initialManagerLeadToDate;
+
+  final List? initialManagersDeal;
+  final int? initialManagerDealStatuses;
+  final DateTime? initialManagerDealFromDate;
+  final DateTime? initialManagerDealToDate;
+
+  final List? initialManagersEvent;
+  final int? initialManagerEventStatuses;
+  final DateTime? initialManagerEventFromDate;
+  final DateTime? initialManagerEventToDate;
+  final DateTime? initialNoticeManagerEventFromDate;
+  final DateTime? initialNoticeManagerEventToDate;
+
   final VoidCallback? onResetFilters;
+  final VoidCallback? onLeadResetFilters;
+  final VoidCallback? onDealResetFilters;
+  final VoidCallback? onEventResetFilters;
 
 
   final bool showMyTaskIcon;
@@ -60,15 +100,49 @@ class CustomAppBar extends StatefulWidget {
     required this.focusNode,
     required this.clearButtonClick,
     required this.clearButtonClickFiltr,
-        this.initialUsers,
+    this.initialUsers,
     this.initialStatuses,
     this.initialFromDate,
     this.initialToDate,
+    this.initialManagersLead,
+    this.initialManagerLeadStatuses,
+    this.initialManagerLeadFromDate,
+    this.initialManagerLeadToDate,
+    this.initialManagersDeal,
+    this.initialManagerDealStatuses,
+    this.initialManagerDealFromDate,
+    this.initialManagerDealToDate,
+    this.initialManagersEvent,
+    this.initialManagerEventStatuses,
+    this.initialManagerEventFromDate,
+    this.initialManagerEventToDate,
+    this.initialNoticeManagerEventFromDate,
+    this.initialNoticeManagerEventToDate,
     this.onResetFilters,
+    this.onLeadResetFilters,
+    this.onDealResetFilters,
+    this.onEventResetFilters,
     this.showSearchIcon = true,
+    this.showFilterIconEvent = false,
     this.showFilterIcon = true,
+    this.showFilterIconDeal = true,
     this.showFilterTaskIcon = true, 
-    this.onManagersSelected,
+    this.onManagersLeadSelected,
+    this.onStatusLeadSelected, 
+    this.onDateRangeLeadSelected, 
+    this.onStatusAndDateRangeLeadSelected, 
+    this.onManagersDealSelected,
+    this.onStatusDealSelected, 
+    this.onDateRangeDealSelected, 
+    this.onStatusAndDateRangeDealSelected, 
+    this.onManagersEventSelected,
+    this.onStatusEventSelected, 
+    this.onDateRangeEventSelected, 
+    this.onStatusAndDateRangeEventSelected, 
+    this.onNoticeDateRangeEventSelected, 
+    this.onNoticeStatusAndDateRangeEventSelected, 
+    this.onDateNoticeStatusAndDateRangeSelected, 
+    this.onDateNoticeAndDateRangeSelected, 
     this.onUsersSelected, 
     this.onStatusSelected, 
     this.onDateRangeSelected, 
@@ -90,13 +164,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     with SingleTickerProviderStateMixin {
   bool _isSearching = false;
 
+
   late TextEditingController _searchController;
   late FocusNode focusNode;
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
   bool _isFiltering = false;
-  bool _isTaskFiltering = false; // New state for task filter
+  bool _isTaskFiltering = false; 
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;
@@ -105,11 +180,6 @@ class _CustomAppBarState extends State<CustomAppBar>
   late Animation<double> _blinkAnimation;
   bool _showCustomTabBar = true;
   bool _hasOverdueTasks =false;
-
-  List? _selectedUsers;
-int? _selectedStatuses;
-DateTime? _fromDate;
-DateTime? _toDate;
 
   @override
   void initState() {
@@ -517,67 +587,65 @@ DateTime? _toDate;
                     },
                   ),
                 ),
-              // Separate Filter Icon (not task filter)
-              if (widget.showSeparateFilter)
-                IconButton(
-                  icon: _isFiltering
-                      ? Icon(Icons.close)
-                      : Image.asset(
-                          'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                  onPressed: () {
-                    _toggleFilter();
-                    if (_isFiltering) {
-                      context.read<GetAllManagerBloc>().add(GetAllManagerEv());
-                      final RenderBox button =
-                          context.findRenderObject() as RenderBox;
-                      final position = button.localToGlobal(Offset.zero);
-
-                      showMenu(
-                        context: context,
-                        position: RelativeRect.fromLTRB(
-                          position.dx,
-                          position.dy + button.size.height,
-                          position.dx + button.size.width,
-                          position.dy + button.size.height,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                        color: Colors.white,
-                        items: [
-                          PopupMenuItem(
-                            padding: EdgeInsets.zero,
-                            child: ManagerFilterPopup(
-                              onManagersSelected: widget.onManagersSelected,
-                            ),
+              if (widget.showFilterIconEvent)
+                Tooltip(
+                  message: AppLocalizations.of(context)!.translate('search'),
+                  preferBelow: false,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
+                  child: IconButton(
+                    icon: _isFiltering
+                        ? Icon(Icons.close)
+                        : Image.asset(
+                            'assets/icons/AppBar/filter.png',
+                            width: 24,
+                            height: 24,
                           ),
-                        ],
-                      );
-                    }
-                  },
-                  tooltip: AppLocalizations.of(context)!.translate('filtr'),
-                ),
-              if (widget.showSeparateTaskFilter)
-                IconButton(
-                  icon: _isTaskFiltering
-                      ? Icon(Icons.close)
-                      : Image.asset(
-                          'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
+                    onPressed: () {
+                      Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EventManagerFilterScreen(
+                          onManagersSelected: widget.onManagersEventSelected,
+                          onStatusSelected:widget.onStatusEventSelected,
+                          onDateRangeSelected: widget.onDateRangeEventSelected,
+                          onStatusAndDateRangeSelected: widget.onStatusAndDateRangeEventSelected,
+                          onNoticeDateRangeSelected: widget.onNoticeDateRangeEventSelected,
+                          onNoticeStatusAndDateRangeSelected: widget.onNoticeStatusAndDateRangeEventSelected,
+                          onDateNoticeStatusAndDateRangeSelected: widget.onDateNoticeStatusAndDateRangeSelected,
+                          onDateNoticeAndDateRangeSelected: widget.onDateNoticeAndDateRangeSelected,
+                          initialManagers: widget.initialManagersEvent,
+                          initialStatuses: widget.initialManagerEventStatuses,
+                          initialFromDate: widget.initialManagerEventFromDate,
+                          initialToDate: widget.initialManagerEventToDate,
+                          initialNoticeFromDate: widget.initialNoticeManagerEventFromDate,
+                          initialNoticeToDate: widget.initialNoticeManagerEventToDate,
+                          onResetFilters: widget.onEventResetFilters,
                         ),
-                  onPressed: () {
-                    _toggleTaskFilter();
-                    widget.clearButtonClickFiltr?.call(_isTaskFiltering);
-                    if (_isTaskFiltering) {
-                      context.read<UserTaskBloc>().add(FetchUsers());
-                    }
-                  },
-                  tooltip: AppLocalizations.of(context)!.translate('filtr'),
+                      ),
+                    );
+                    print('++++++++++++++++++++++++CUSTOM APPBAR+Event++++++++++++++++++++++++');
+                    print(widget.initialManagersEvent);
+                    print(widget.initialManagerEventStatuses);
+                    print(widget.initialManagerEventFromDate);
+                    print(widget.initialManagerEventToDate);
+                    print(widget.initialNoticeManagerEventFromDate);
+                    print(widget.initialNoticeManagerEventToDate);
+                    },
+                  ),
                 ),
               if (widget.showSeparateMyTasks)
                 IconButton(
@@ -721,13 +789,48 @@ DateTime? _toDate;
   ),
 );
                         break;
+                      case 'filter_lead':
+                       Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ManagerFilterScreen(
+                          onManagersSelected: widget.onManagersLeadSelected,
+                          onStatusSelected:widget.onStatusLeadSelected ,
+                          onDateRangeSelected: widget.onDateRangeLeadSelected,
+                          onStatusAndDateRangeSelected: widget.onStatusAndDateRangeLeadSelected,
+                          initialManagers: widget.initialManagersLead,
+                          initialStatuses: widget.initialManagerLeadStatuses,
+                          initialFromDate: widget.initialManagerLeadFromDate,
+                          initialToDate: widget.initialManagerLeadToDate,
+                          onResetFilters: widget.onLeadResetFilters,
+                        ),
+                      ),
+                    );
+                        break;
+                      case 'filter_deal':
+                       Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DealManagerFilterScreen(
+                          onManagersSelected: widget.onManagersDealSelected,
+                          onStatusSelected:widget.onStatusDealSelected ,
+                          onDateRangeSelected: widget.onDateRangeDealSelected,
+                          onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
+                          initialManagers: widget.initialManagersDeal,
+                          initialStatuses: widget.initialManagerDealStatuses,
+                          initialFromDate: widget.initialManagerDealFromDate,
+                          initialToDate: widget.initialManagerDealToDate,
+                          onResetFilters: widget.onDealResetFilters,
+                        ),
+                      ),
+                    );
+                        break;
                       case 'events':
-                        // Переход на страницу "События"
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                EventScreen(), // Переход на EventScreen
+                                EventScreen(), 
                           ),
                         );
                         break;
@@ -739,54 +842,32 @@ DateTime? _toDate;
                           ),
                         );
                         break;
-                      case 'filter':
-                        if (_isTaskFiltering || _isTaskFiltering) {
-                          setState(() {
-                            _isFiltering = !_isFiltering;
-                          });
-                        } else {
-                          _toggleFilter();
-                          if (_isFiltering) {
-                            context
-                                .read<GetAllManagerBloc>()
-                                .add(GetAllManagerEv());
-                            final RenderBox button =
-                                context.findRenderObject() as RenderBox;
-                            final position = button.localToGlobal(Offset.zero);
 
-                            showMenu(
-                              context: context,
-                              position: RelativeRect.fromLTRB(
-                                position.dx,
-                                position.dy + button.size.height,
-                                position.dx + button.size.width,
-                                position.dy + button.size.height,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                              color: Colors.white,
-                              items: [
-                                PopupMenuItem(
-                                  padding: EdgeInsets.zero,
-                                  child: ManagerFilterPopup(
-                                    onManagersSelected:
-                                        widget.onManagersSelected,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        }
-                        break;
                     }
                   },
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<String>>[
                     if (widget.showFilterIcon)
                       PopupMenuItem<String>(
-                        value: 'filter',
+                        value: 'filter_lead',
+                        child: Row(
+                          children: [
+                            _isFiltering
+                                ? Icon(Icons.close)
+                                : Image.asset(
+                                    'assets/icons/AppBar/filter.png',
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                            SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!
+                                .translate('filtr')),
+                          ],
+                        ),
+                      ),
+                    if (widget.showFilterIconDeal)
+                      PopupMenuItem<String>(
+                        value: 'filter_deal',
                         child: Row(
                           children: [
                             _isFiltering
