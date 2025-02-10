@@ -2027,66 +2027,65 @@ class ApiService {
       throw Exception('Ошибка загрузки task ID');
     }
   }
-Future<List<Task>> getTasks( 
-  int? taskStatusId, { 
-  int page = 1, 
-  int perPage = 20, 
-  String? search, 
-  List<int>? users, 
-  int? statuses,  
-  DateTime? fromDate, 
-  DateTime? toDate, 
-}) async { 
-  final organizationId = await getSelectedOrganization(); 
-  String path = '/task?page=$page&per_page=$perPage'; 
-  path += '&organization_id=$organizationId'; 
- 
-bool hasFilters =  
-    (search != null && search.isNotEmpty) || 
-    (users != null && users.isNotEmpty) || 
-    (fromDate != null) || 
-    (toDate != null) || 
-    (statuses != null); 
- 
- 
-  if (taskStatusId != null && !hasFilters) { 
-    path += '&task_status_id=$taskStatusId'; 
-  } 
- 
-  if (search != null && search.isNotEmpty) { 
-    path += '&search=$search'; 
-  } 
- 
-  if (users != null && users.isNotEmpty) { 
-    for (int i = 0; i < users.length; i++) { 
-      path += '&users[$i]=${users[i]}'; 
-    } 
-  } 
-  if (statuses != null ) { 
-    path += '&task_status_id=$statuses'; 
-  } 
- 
-  if (fromDate != null && toDate != null) { 
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
-    path += '&from=$formattedFromDate&to=$formattedToDate'; 
-  } 
- 
-  final response = await _getRequest(path); 
-  if (response.statusCode == 200) { 
-    final data = json.decode(response.body); 
-    if (data['result']['data'] != null) { 
-      return (data['result']['data'] as List) 
-          .map((json) => Task.fromJson(json, taskStatusId ?? -1)) 
-          .toList(); 
-    } else { 
-      throw Exception('Нет данных о задачах в ответе'); 
-    } 
-  } else { 
-    print('Error response! - ${response.body}'); 
-    throw Exception('Ошибка загрузки задач!'); 
-  } 
-}
+
+  Future<List<Task>> getTasks(
+    int? taskStatusId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    List<int>? users,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/task?page=$page&per_page=$perPage';
+    path += '&organization_id=$organizationId';
+
+    bool hasFilters = (search != null && search.isNotEmpty) ||
+        (users != null && users.isNotEmpty) ||
+        (fromDate != null) ||
+        (toDate != null) ||
+        (statuses != null);
+
+    if (taskStatusId != null && !hasFilters) {
+      path += '&task_status_id=$taskStatusId';
+    }
+
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    if (users != null && users.isNotEmpty) {
+      for (int i = 0; i < users.length; i++) {
+        path += '&users[$i]=${users[i]}';
+      }
+    }
+    if (statuses != null) {
+      path += '&task_status_id=$statuses';
+    }
+
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&from=$formattedFromDate&to=$formattedToDate';
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .toList();
+      } else {
+        throw Exception('Нет данных о задачах в ответе');
+      }
+    } else {
+      print('Error response! - ${response.body}');
+      throw Exception('Ошибка загрузки задач!');
+    }
+  }
 
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
@@ -2656,11 +2655,12 @@ bool hasFilters =
         request.fields['priority_level'] = priority.toString();
       }
       if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
+        request.fields['from'] = startDate.toString().split(' ')[0];
       }
       if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
+        request.fields['to'] = endDate.toString().split(' ')[0];
       }
+
       if (projectId != null) {
         request.fields['project_id'] = projectId.toString();
       }
@@ -2794,11 +2794,12 @@ bool hasFilters =
         request.fields['priority_level'] = priority;
       }
       if (startDate != null) {
-        request.fields['from'] = startDate.toIso8601String();
+        request.fields['from'] = startDate.toString().split(' ')[0];
       }
       if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
+        request.fields['to'] = endDate.toString().split(' ')[0];
       }
+
       if (projectId != null) {
         request.fields['project_id'] = projectId.toString();
       }
@@ -5352,25 +5353,25 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-Future<Map<String, dynamic>> updateMyTaskStatusEdit(
-    int myTaskStatusId, String title, bool finalStep, AppLocalizations localizations) async {
-  final organizationId = await getSelectedOrganization();
-  final payload = {
-    "title": title,
-    "organization_id": organizationId,
-    "color": "#000",
-    "final_step": finalStep ? 1 : 0,  // Конвертируем bool в 1/0
-  };
-  final response = await _patchRequest(
-    '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-    payload,
-  );
-  if (response.statusCode == 200) {
-    return {'result': 'Success'};
-  } else {
-    throw Exception('Failed to update leadStatus!');
+  Future<Map<String, dynamic>> updateMyTaskStatusEdit(int myTaskStatusId,
+      String title, bool finalStep, AppLocalizations localizations) async {
+    final organizationId = await getSelectedOrganization();
+    final payload = {
+      "title": title,
+      "organization_id": organizationId,
+      "color": "#000",
+      "final_step": finalStep ? 1 : 0, // Конвертируем bool в 1/0
+    };
+    final response = await _patchRequest(
+      '/my-task-status/$myTaskStatusId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      payload,
+    );
+    if (response.statusCode == 200) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to update leadStatus!');
+    }
   }
-}
 
   //_________________________________ END_____API_SCREEN__MY-TASK____________________________________________//a
 

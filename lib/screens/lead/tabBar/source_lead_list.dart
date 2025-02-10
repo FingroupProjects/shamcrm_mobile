@@ -121,17 +121,16 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     if (state is SourceLeadLoading) {
                       return Row(
                         children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                            ),
-                          ),
-                          SizedBox(width: 8),
+                          // SizedBox(
+                          //   width: 16,
+                          //   height: 16,
+                          //   child: CircularProgressIndicator(
+                          //     strokeWidth: 2,
+                          //     valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                          //   ),
+                          // ),
                           Text(
-                            AppLocalizations.of(context)!.translate('loading'),
+                            AppLocalizations.of(context)!.translate('select_source'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -162,13 +161,15 @@ class _SourceLeadWidgetState extends State<SourceLeadWidget> {
                     ),
                   ),
                   excludeSelected: false,
-                  initialItem: selectedSourceData,
-                  validator: (value) {
-                    if (value == null) {
-                      return AppLocalizations.of(context)!.translate('field_required_source');
-                    }
-                    return null;
-                  },
+initialItem: (state is SourceLeadLoaded && state.sourceLead.contains(selectedSourceData))
+    ? selectedSourceData
+    : null,
+                  // validator: (value) {
+                  //   if (value == null) {
+                  //     return AppLocalizations.of(context)!.translate('field_required_source');
+                  //   }
+                  //   return null;
+                  // },
                   onChanged: (value) {
                     if (value != null) {
                       widget.onChanged(value.id.toString());

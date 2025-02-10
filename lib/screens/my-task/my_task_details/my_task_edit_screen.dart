@@ -511,6 +511,8 @@ Widget _buildFileSelection() {
                         label: AppLocalizations.of(context)!
                             .translate('description_list'),
                         maxLines: 5,
+                                                keyboardType: TextInputType.multiline,
+
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/profile_details.dart';
 import 'package:flutter/material.dart';
 
 class ProfileEdit extends StatelessWidget {
@@ -14,7 +15,7 @@ class ProfileEdit extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProfileEditPage(), // Передаем user
+            builder: (context) => ProfileDetailsPage(), // Передаем user
           ),
         );
       },

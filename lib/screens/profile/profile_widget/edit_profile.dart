@@ -546,28 +546,57 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
     }
 
-    return Scaffold(
+ return Scaffold(
       key: _formKey,
       appBar: AppBar(
-        title:  Text(AppLocalizations.of(context)!.translate('edit_profile'),
+        title: Transform.translate(
+          offset: const Offset(-20, 0), // Двигаем заголовок ближе к стрелке
+          child: Text(
+            AppLocalizations.of(context)!.translate('edit_profile'),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: Color(0xff1E2E52),
-            )),
-        centerTitle: false,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+            ),
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
         ),
-        backgroundColor: Color.fromARGB(255, 255, 255, 255),
+        centerTitle: false, // Заголовок остаётся слева
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Transform.translate(
+            offset:
+                const Offset(0, -2), // Поднимаем иконку стрелки немного вверх
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ),
+        ),
+        leadingWidth: 40, // Уменьшаем ширину области для стрелки
+        // actions: [
+        //   IconButton(
+        //     icon: Image.asset(
+        //       'assets/icons/edit.png',
+        //       width: 24,
+        //       height: 24,
+        //     ),
+        //     onPressed: () {
+        //       Navigator.push(
+        //         context,
+        //         MaterialPageRoute(
+        //             builder: (context) => const ProfileEditPage()),
+        //       );
+        //     },
+        //   ),
+        // ],
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       body: _isLoading
           ? Center(

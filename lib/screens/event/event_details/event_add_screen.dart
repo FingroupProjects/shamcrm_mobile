@@ -148,6 +148,8 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('description_list'),
                         maxLines: 5,
+                                                keyboardType: TextInputType.multiline,
+
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return AppLocalizations.of(context)!

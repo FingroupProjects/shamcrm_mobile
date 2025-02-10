@@ -28,6 +28,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
   final Function(String)? onInputChanged;
   final String label;
   final String? selectedDialCode;
+  final bool readOnly; // Добавьте это поле
 
   CustomPhoneNumberInput({
     required this.controller,
@@ -35,6 +36,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
     this.onInputChanged,
     this.selectedDialCode,
     required Map<String, int> phoneNumberLengths,
+    this.readOnly = false, // Добавьте это в конструктор с дефолтным значением
   });
 
   @override
@@ -68,7 +70,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
   void _validatePhoneNumber(String value) {
     final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-    
+
     setState(() {
       if (value.isEmpty) {
         _errorText = AppLocalizations.of(context)!.translate('field_required');
@@ -77,7 +79,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         _errorText = null;
         _hasReachedMaxLength = true;
       } else {
-        _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
+        _errorText =
+            AppLocalizations.of(context)!.translate('error_phone_number');
         _hasReachedMaxLength = false;
       }
     });
@@ -100,7 +103,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         TextFormField(
           controller: widget.controller,
           decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.translate('enter_phone_number'), 
+            hintText:
+                AppLocalizations.of(context)!.translate('enter_phone_number'),
             hintStyle: TextStyle(
               fontFamily: 'Gilroy',
               color: Color(0xff99A4BA),
@@ -173,7 +177,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (value) {
-            final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+            final maxLength =
+                phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
             if (value.length > maxLength) {
               widget.controller.text = value.substring(0, maxLength);
               widget.controller.selection = TextSelection.fromPosition(
@@ -181,7 +186,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               );
               value = widget.controller.text;
             }
-            
+
             _validatePhoneNumber(value);
 
             if (widget.onInputChanged != null) {

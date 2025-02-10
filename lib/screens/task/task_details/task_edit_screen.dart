@@ -96,43 +96,45 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   void _checkAdditionalFields() {
-  bool hasDataInAdditionalFields = false;
+    bool hasDataInAdditionalFields = false;
 
-  // Проверяем, есть ли данные в файлах
-  if (fileNames.isNotEmpty) {
-    hasDataInAdditionalFields = true;
-  }
-
-  // Проверяем, есть ли данные в кастомных полях
-  for (var field in customFields) {
-    if (field.controller.text.isNotEmpty) {
+    // Проверяем, есть ли данные в файлах
+    if (fileNames.isNotEmpty) {
       hasDataInAdditionalFields = true;
-      break;
+    }
+
+    // Проверяем, есть ли данные в кастомных полях
+    for (var field in customFields) {
+      if (field.controller.text.isNotEmpty) {
+        hasDataInAdditionalFields = true;
+        break;
+      }
+    }
+
+    // Если есть данные в дополнительных полях, показываем их вне кнопки
+    if (hasDataInAdditionalFields) {
+      setState(() {
+        _showAdditionalFields = true;
+      });
+    } else {
+      setState(() {
+        _showAdditionalFields = false;
+      });
+    }
+
+    // Если все дополнительные поля имеют данные, скрываем кнопку "additionally"
+    if (fileNames.isNotEmpty &&
+        customFields.every((field) => field.controller.text.isNotEmpty)) {
+      setState(() {
+        _shouldShowAdditionalFieldsButton = false;
+      });
+    } else {
+      setState(() {
+        _shouldShowAdditionalFieldsButton = true;
+      });
     }
   }
 
-  // Если есть данные в дополнительных полях, показываем их вне кнопки
-  if (hasDataInAdditionalFields) {
-    setState(() {
-      _showAdditionalFields = true;
-    });
-  } else {
-    setState(() {
-      _showAdditionalFields = false;
-    });
-  }
-
-  // Если все дополнительные поля имеют данные, скрываем кнопку "additionally"
-  if (fileNames.isNotEmpty && customFields.every((field) => field.controller.text.isNotEmpty)) {
-    setState(() {
-      _shouldShowAdditionalFieldsButton = false;
-    });
-  } else {
-    setState(() {
-      _shouldShowAdditionalFieldsButton = true;
-    });
-  }
-}
   void _initializeControllers() {
     nameController.text = widget.taskName;
     if (widget.startDate != null) {
@@ -499,7 +501,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             fileNames.add(file.name);
             fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
           }
-        _checkAdditionalFields(); // Проверяем поля после добавления файлов
+          _checkAdditionalFields(); // Проверяем поля после добавления файлов
         });
       }
     } catch (e) {
@@ -634,6 +636,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('description_list'),
                         maxLines: 5,
+                        keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 8),
                       UserMultiSelectWidget(
