@@ -1,9 +1,10 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
@@ -31,65 +32,60 @@ class FirebaseApi {
     initPushNotification();
   }
 
-  void initPushNotification() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedPin = prefs.getString('user_pin');
-    print('------------------------');
-    print('-----------------SAVEPINCODE-------');
-    print(savedPin);
+void initPushNotification() async {
+        final prefs = await SharedPreferences.getInstance();
+        final savedPin = prefs.getString('user_pin');
+        print('------------------------');
+        print('-----------------SAVEPINCODE-------');
+        print(savedPin);
 
-    if (savedPin == null) {
-      FirebaseMessaging.instance.getInitialMessage().then((message) {
-        print(
-            'Получено уведомление при запуске приложения: ${message?.messageId}');
-        handleMessage(message);
-        _printCustomData(message);
-      });
-    } else {
-      FirebaseMessaging.instance.getInitialMessage().then((message) {
-        print(
-            'Получено уведомление при запуске приложения: ${message?.messageId}');
-        _navigateToMainScreen(message);
-      });
-    }
-
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      print('Пользователь нажал на уведомление: ${message.messageId}');
-      _navigateToMainScreen(message);
+ if (savedPin == null) {
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      print('Получено уведомление при запуске приложения: ${message?.messageId}');
+      handleMessage(message);
+      _printCustomData(message);
     });
+} else {
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      print('Получено уведомление при закрытом сосотние приложения: ${message?.messageId}');
+      _navigateToMainScreen(message); 
+    });
+}
 
+
+  FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    print('Пользователь нажал на уведомление: ${message.messageId}');
+    _navigateToMainScreen(message);
+  });
+  
     // FirebaseMessaging.onMessageOpenedApp.listen((message) {
     //   print('Пользователь нажал на уведомление: ${message.messageId}');
     //   handleMessage(message);
     //   _printCustomData(message);
     // });
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print(
-          'Уведомление при активном приложении: ${message.notification?.title}');
-      _printCustomData(message);
-    });
-  }
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Уведомление при активном приложении: ${message.notification?.title}');
+    _printCustomData(message);
+  });
+}
 
-  Future<void> _navigateToMainScreen(RemoteMessage? message) async {
-    if (message != null) {
-      await _navigateToPinScreenAndHandleNotification(message);
-    }
+Future<void> _navigateToMainScreen(RemoteMessage? message) async {
+  if (message != null) {
+    await _navigateToPinScreenAndHandleNotification(message);
   }
+}
+
 
   // Функция для перехода на экран PIN и потом на основной экран
-  Future<void> _navigateToPinScreenAndHandleNotification(
-      RemoteMessage? message) async {
-    // First, navigate to the PIN screen before handling the notification
-    navigatorKey.currentState
-        ?.pushReplacementNamed('/pin_screen')
-        .then((_) async {
-      // After PIN is entered, handle the notification
-      if (message != null) {
-        await handleMessage(message);
-      }
-    });
+Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) async {
+  if (message != null) {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pending_notification', jsonEncode(message.data));
   }
+  navigatorKey.currentState?.pushReplacementNamed('/pin_screen');
+}
+
 
   void _printCustomData(RemoteMessage? message) {
     if (message != null && message.data.isNotEmpty) {

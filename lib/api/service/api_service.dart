@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
+import 'package:crm_task_manager/firebase_options.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -94,7 +95,7 @@ class ApiService {
 
   Future<void> initialize() async {
     baseUrl = await getDynamicBaseUrl();
-    baseUrlSocket = await getSocketBaseUrl();
+
   }
 
   // Инициализация API с доменом из QR-кода
