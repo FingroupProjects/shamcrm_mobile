@@ -40,7 +40,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     try {
       DateTime parsedDate =
           DateTime.parse(date).toUtc().add(Duration(hours: 5));
-      return DateFormat('dd-MM-yyyy HH:mm').format(parsedDate);
+      return DateFormat('dd.MM.yyyy HH:mm').format(parsedDate);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('unknow');
     }

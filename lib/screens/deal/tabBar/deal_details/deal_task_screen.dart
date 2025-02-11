@@ -136,11 +136,11 @@ class _TasksWidgetState extends State<TasksWidget> {
 
   Widget _buildTaskItem(DealTask task) {
     // final formattedDateFrom = task.from != null
-    //     ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.from!))
+    //     ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.from!))
     //     : '';
 
     final formattedDateTo = task.to != null
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(task.to!))
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.to!))
         : '';
 
     return GestureDetector(

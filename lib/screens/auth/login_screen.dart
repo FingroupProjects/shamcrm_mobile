@@ -36,7 +36,6 @@ class LoginScreen extends StatelessWidget {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('userName', state.user.name.toString());
               await prefs.setString('userID', state.user.id.toString());
-
               await prefs.setString('userLogin', state.user.login.toString());
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
@@ -60,8 +59,13 @@ class LoginScreen extends StatelessWidget {
                       firstOrganization.id.toString());
                 }
               }
+
+              // Задержка в 1.5 секунды перед переходом
+              await Future.delayed(Duration(seconds: 1));
               await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
+              // Задержка в 1.5 секунды перед показом ошибки
+              await Future.delayed(Duration(seconds: 1));
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

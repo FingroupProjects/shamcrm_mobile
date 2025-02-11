@@ -114,7 +114,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+          appBar: AppBar(
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -125,7 +125,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             width: 24,
             height: 24,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, null),
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('edit_deal'),

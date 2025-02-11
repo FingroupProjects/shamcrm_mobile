@@ -561,23 +561,23 @@ class MyTaskDetailsScreen extends StatefulWidget {
   final String? taskFile; // Добавлено поле для файла
   final List<MyTaskFiles>? files; // вместо String? taskFile
 
-  MyTaskDetailsScreen({
-    required this.taskId,
-    required this.taskName,
-    this.taskNumber,
-    required this.taskStatus,
-    required this.statusId,
-    this.description,
-    this.startDate,
-    this.endDate,
-    // this.projectName,
-    this.taskFile, // Инициализация опционального параметра
-    this.files
-  });
+  MyTaskDetailsScreen(
+      {required this.taskId,
+      required this.taskName,
+      this.taskNumber,
+      required this.taskStatus,
+      required this.statusId,
+      this.description,
+      this.startDate,
+      this.endDate,
+      // this.projectName,
+      this.taskFile, // Инициализация опционального параметра
+      this.files});
 
   @override
   _MyTaskDetailsScreenState createState() => _MyTaskDetailsScreenState();
 }
+
 class FileCacheManager {
   static final FileCacheManager _instance = FileCacheManager._internal();
   factory FileCacheManager() => _instance;
@@ -658,6 +658,7 @@ class FileCacheManager {
     return totalSize;
   }
 }
+
 class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   List<Map<String, String>> details = [];
   MyTaskById? currentMyTask;
@@ -685,42 +686,44 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   // Обновление данных задачи
- void _updateDetails(MyTaskById? task) {
-  if (task == null) {
-    currentMyTask = null;
-    details.clear();
-    return;
-  }
-  
-  currentMyTask = task;
-  details = [
-    {
-      'label': AppLocalizations.of(context)!.translate('task_name'),
-      'value': task.name 
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('description_details'),
-      'value': task.description ?? ''
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('deadline'),
-      'value': task.endDate != null 
-          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-          : ''
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('created_at_details'),
-      'value': task.startDate != null 
-          ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-          : ''
-    },
-    if (task.files != null && task.files!.isNotEmpty)
+  void _updateDetails(MyTaskById? task) {
+    if (task == null) {
+      currentMyTask = null;
+      details.clear();
+      return;
+    }
+
+    currentMyTask = task;
+    details = [
       {
-        'label': AppLocalizations.of(context)!.translate('files_details'),
-        'value': '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+        'label': AppLocalizations.of(context)!.translate('task_name'),
+        'value': task.name
       },
-  ];
-}
+      {
+        'label': AppLocalizations.of(context)!.translate('description_details'),
+        'value': task.description ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('deadline'),
+        'value': task.endDate != null
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
+            : ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': task.startDate != null
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+            : ''
+      },
+      if (task.files != null && task.files!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('files_details'),
+          'value':
+              '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}'
+        },
+    ];
+  }
+
 // Функция для показа диалогового окна с полным текстом
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -892,44 +895,54 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     });
   }
 
-  AppBar _buildAppBar(BuildContext context, String title) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      centerTitle: false,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
+AppBar _buildAppBar(BuildContext context, String title) {
+  return AppBar(
+    backgroundColor: Colors.white,
+    forceMaterialTransparency: true, // Добавлено
+    elevation: 0,
+    centerTitle: false,
+    leadingWidth: 40,
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 0),
+      child: Transform.translate(
+        offset: const Offset(0, -2),  // Добавлен правильный offset как в первом варианте
+        child: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
+            Navigator.pop(context, widget.statusId);
+          },
         ),
-        onPressed: () {
-          Navigator.pop(context, widget.statusId);
-          // context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
-        },
       ),
-      title: Text(
+    ),
+    title: Transform.translate(
+      offset: const Offset(-10, 0),  // Добавлен правильный offset как в первом варианте
+      child: Text(
         title,
-        style: TextStyle(
-          fontSize: 18,
+        style: const TextStyle(
+          fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
           color: Color(0xff1E2E52),
         ),
       ),
-      actions: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () async {
+    ),
+    actions: [
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
                 if (currentMyTask != null) {
                   final shouldUpdate = await Navigator.push(
                     context,
@@ -975,7 +988,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
               },
             ),
           ],
-        ),
+        ),  
       ],
     );
   }
@@ -1037,7 +1050,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       );
     }
 
-     if (label == AppLocalizations.of(context)!.translate('files_details')) {
+    if (label == AppLocalizations.of(context)!.translate('files_details')) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1127,76 +1140,77 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     );
   }
 
- Future<void> _showFile(String fileUrl, int fileId) async {
-  try {
-    if (_isDownloading) return;
+  Future<void> _showFile(String fileUrl, int fileId) async {
+    try {
+      if (_isDownloading) return;
 
-    // Проверяем наличие файла в постоянном кэше
-    final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
-    if (cachedFilePath != null) {
-      final result = await OpenFile.open(cachedFilePath);
+      // Проверяем наличие файла в постоянном кэше
+      final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
+      if (cachedFilePath != null) {
+        final result = await OpenFile.open(cachedFilePath);
+        if (result.type == ResultType.error) {
+          _showErrorSnackBar(
+              AppLocalizations.of(context)!.translate('failed_to_open_file'));
+        }
+        return;
+      }
+
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress[fileId] = 0;
+      });
+
+      final enteredDomainMap = await ApiService().getEnteredDomain();
+      String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+      String? enteredDomain = enteredDomainMap['enteredDomain'];
+
+      final fullUrl = Uri.parse(
+          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+
+      // Создаём постоянную директорию для файлов
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/cached_files');
+      if (!await cacheDir.exists()) {
+        await cacheDir.create(recursive: true);
+      }
+
+      final fileName =
+          '${fileId}_${fileUrl.split('/').last}'; // Добавляем fileId к имени файла
+      final filePath = '${cacheDir.path}/$fileName';
+
+      final dio = Dio();
+      await dio.download(fullUrl.toString(), filePath,
+          onReceiveProgress: (received, total) {
+        if (total != -1) {
+          setState(() {
+            _downloadProgress[fileId] = received / total;
+          });
+        }
+      });
+
+      // Сохраняем информацию о файле в постоянном кэше
+      await FileCacheManager().cacheFile(fileId, filePath);
+
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
+      final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
         _showErrorSnackBar(
             AppLocalizations.of(context)!.translate('failed_to_open_file'));
       }
-      return;
+    } catch (e) {
+      setState(() {
+        _downloadProgress.remove(fileId);
+        _isDownloading = false;
+      });
+
+      _showErrorSnackBar(AppLocalizations.of(context)!
+          .translate('file_download_or_open_error'));
     }
-
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress[fileId] = 0;
-    });
-
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-    final fullUrl = Uri.parse(
-        'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
-
-    // Создаём постоянную директорию для файлов
-    final appDir = await getApplicationDocumentsDirectory();
-    final cacheDir = Directory('${appDir.path}/cached_files');
-    if (!await cacheDir.exists()) {
-      await cacheDir.create(recursive: true);
-    }
-
-    final fileName = '${fileId}_${fileUrl.split('/').last}'; // Добавляем fileId к имени файла
-    final filePath = '${cacheDir.path}/$fileName';
-
-    final dio = Dio();
-    await dio.download(fullUrl.toString(), filePath,
-        onReceiveProgress: (received, total) {
-      if (total != -1) {
-        setState(() {
-          _downloadProgress[fileId] = received / total;
-        });
-      }
-    });
-
-    // Сохраняем информацию о файле в постоянном кэше
-    await FileCacheManager().cacheFile(fileId, filePath);
-
-    setState(() {
-      _downloadProgress.remove(fileId);
-      _isDownloading = false;
-    });
-
-    final result = await OpenFile.open(filePath);
-    if (result.type == ResultType.error) {
-      _showErrorSnackBar(
-          AppLocalizations.of(context)!.translate('failed_to_open_file'));
-    }
-  } catch (e) {
-    setState(() {
-      _downloadProgress.remove(fileId);
-      _isDownloading = false;
-    });
-
-    _showErrorSnackBar(AppLocalizations.of(context)!
-        .translate('file_download_or_open_error'));
   }
-}
 
 // Функция для показа ошибки
   void _showErrorSnackBar(String message) {

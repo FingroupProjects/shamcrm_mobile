@@ -550,7 +550,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       key: _formKey,
       appBar: AppBar(
         title: Transform.translate(
-          offset: const Offset(-20, 0), // Двигаем заголовок ближе к стрелке
+          offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
           child: Text(
             AppLocalizations.of(context)!.translate('edit_profile'),
             style: const TextStyle(

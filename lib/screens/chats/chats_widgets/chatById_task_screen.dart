@@ -56,9 +56,9 @@ class TaskByIdScreen extends StatelessWidget {
               final DateTime toDate = DateTime.parse(task.to);
 
               final String formattedFromDate =
-                  DateFormat('dd-MM-yyyy').format(fromDate);
+                  DateFormat('dd.MM.yyyy').format(fromDate);
               final String formattedToDate =
-                  DateFormat('dd-MM-yyyy').format(toDate);
+                  DateFormat('dd.MM.yyyy').format(toDate);
 
               List<String> userNamesList = task.usersNames.split(',');
 

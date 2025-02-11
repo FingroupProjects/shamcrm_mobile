@@ -1,11 +1,11 @@
-  import 'package:animated_custom_dropdown/custom_dropdown.dart';
-  import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
-  import 'package:crm_task_manager/models/user_data_response.dart';
-  import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-  import 'package:flutter/material.dart';
-  import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-  class UserMultiSelectWidget extends StatefulWidget {
+class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
 
@@ -41,7 +41,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     return FormField<List<UserData>>(
       validator: (value) {
         if (selectedUsersData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -63,9 +64,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError 
-                      ? Colors.red 
-                      : const Color(0xFFE5E7EB),
+                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
                 ),
               ),
               child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
@@ -74,16 +73,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     usersList = state.dataUser.result ?? [];
                     if (widget.selectedUsers != null && usersList.isNotEmpty) {
                       selectedUsersData = usersList
-                          .where((user) =>
-                              widget.selectedUsers!.contains(user.id.toString()))
+                          .where((user) => widget.selectedUsers!
+                              .contains(user.id.toString()))
                           .toList();
                     }
                   }
-                  
+
                   return CustomDropdown<UserData>.multiSelectSearch(
                     items: usersList,
                     initialItems: selectedUsersData,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: const Color(0xffF4F7FD),
@@ -131,7 +131,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                item.name!,
+                                '${item.name!} ${item.lastname ?? ''}', // Добавляем фамилию
                                 style: userTextStyle,
                               ),
                             ),
@@ -141,8 +141,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedUsersNames = selectedUsersData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_assignees_list')
-                          : selectedUsersData.map((e) => e.name).join(', ');
+                          ? AppLocalizations.of(context)!
+                              .translate('select_assignees_list')
+                          : selectedUsersData
+                              .map((e) => '${e.name} ${e.lastname ?? ''}')
+                              .join(', ');
 
                       return Text(
                         selectedUsersNames,
@@ -152,7 +155,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_assignees_list'),
+                      AppLocalizations.of(context)!
+                          .translate('select_assignees_list'),
                       style: userTextStyle.copyWith(
                         fontSize: 14,
                         color: const Color(0xFF6B7280),

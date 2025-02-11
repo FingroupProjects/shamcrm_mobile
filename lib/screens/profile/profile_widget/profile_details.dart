@@ -583,7 +583,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       key: _formKey,
       appBar: AppBar(
         title: Transform.translate(
-          offset: const Offset(-20, 0), // Двигаем заголовок ближе к стрелке
+          offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
           child: Text(
             AppLocalizations.of(context)!.translate('profile_editor'),
             style: const TextStyle(

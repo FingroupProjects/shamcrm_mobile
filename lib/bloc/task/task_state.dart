@@ -45,7 +45,9 @@ class TaskDataLoaded extends TaskState {
     return TaskDataLoaded(
       tasks + newTasks,
       currentPage: currentPage,
-      taskCounts: taskCounts,
+      taskCounts: taskCounts,    
+        allTasksFetched: newTasks.isEmpty, // Обновляем флаг, если новые задачи пусты
+
     );
   }
 

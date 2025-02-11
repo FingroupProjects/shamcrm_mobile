@@ -224,7 +224,7 @@ Widget _buildActionItem(String item) {
   List<String> _buildActionHistoryItems(List<TaskHistory> history) {
   return history.map((entry) {
     final changes = entry.changes;
-    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
     String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
     // Форматирование дат

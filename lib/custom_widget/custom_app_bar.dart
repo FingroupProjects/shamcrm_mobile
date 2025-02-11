@@ -23,46 +23,47 @@ class CustomAppBar extends StatefulWidget {
   ValueChanged<String>? onChangedSearchInput;
   Function(bool) clearButtonClick;
   Function(bool) clearButtonClickFiltr;
-  bool showSearchIcon;  
-  bool showFilterIconEvent;  
+  bool showSearchIcon;
+  bool showFilterIconEvent;
   final bool showFilterIcon;
   final bool showFilterIconDeal;
-  final bool showFilterTaskIcon; 
-  final bool showEvent; 
-  final bool showSeparateTaskFilter; 
+  final bool showFilterTaskIcon;
+  final bool showEvent;
+  final bool showSeparateTaskFilter;
   final bool showSeparateMyTasks;
   final bool showNotification;
-  final Function(Map)?onManagersLeadSelected;
+  final Function(Map)? onManagersLeadSelected;
   final Function(int?)? onStatusLeadSelected;
   final Function(DateTime?, DateTime?)? onDateRangeLeadSelected;
-  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeLeadSelected;
-  
-  final Function(Map)?onManagersDealSelected;
+  final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeLeadSelected;
+
+  final Function(Map)? onManagersDealSelected;
   final Function(int?)? onStatusDealSelected;
   final Function(DateTime?, DateTime?)? onDateRangeDealSelected;
-  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeDealSelected;
+  final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeDealSelected;
 
-  final Function(Map)?onManagersEventSelected;
+  final Function(Map)? onManagersEventSelected;
   final Function(int?)? onStatusEventSelected;
   final Function(DateTime?, DateTime?)? onDateRangeEventSelected;
-  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeEventSelected;
+  final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeEventSelected;
   final Function(DateTime?, DateTime?)? onNoticeDateRangeEventSelected;
-  final Function(int?,DateTime?, DateTime?)? onNoticeStatusAndDateRangeEventSelected;
-  final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeStatusAndDateRangeSelected;
-  final Function(DateTime?, DateTime?, DateTime?, DateTime?)? onDateNoticeAndDateRangeSelected;
-
+  final Function(int?, DateTime?, DateTime?)?
+      onNoticeStatusAndDateRangeEventSelected;
+  final Function(int?, DateTime?, DateTime?, DateTime?, DateTime?)?
+      onDateNoticeStatusAndDateRangeSelected;
+  final Function(DateTime?, DateTime?, DateTime?, DateTime?)?
+      onDateNoticeAndDateRangeSelected;
 
   final Function(Map)? onUsersSelected;
   final Function(int?)? onStatusSelected;
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
-  final Function(int?,DateTime?, DateTime?)? onStatusAndDateRangeSelected;
+  final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
 
   final List? initialUsers;
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
 
- 
   final List? initialManagersLead;
   final int? initialManagerLeadStatuses;
   final DateTime? initialManagerLeadFromDate;
@@ -85,11 +86,9 @@ class CustomAppBar extends StatefulWidget {
   final VoidCallback? onDealResetFilters;
   final VoidCallback? onEventResetFilters;
 
-
   final bool showMyTaskIcon;
   final bool showMenuIcon;
-  final bool showSeparateFilter; 
-  
+  final bool showSeparateFilter;
 
   CustomAppBar({
     super.key,
@@ -126,33 +125,33 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIconEvent = false,
     this.showFilterIcon = true,
     this.showFilterIconDeal = true,
-    this.showFilterTaskIcon = true, 
+    this.showFilterTaskIcon = true,
     this.onManagersLeadSelected,
-    this.onStatusLeadSelected, 
-    this.onDateRangeLeadSelected, 
-    this.onStatusAndDateRangeLeadSelected, 
+    this.onStatusLeadSelected,
+    this.onDateRangeLeadSelected,
+    this.onStatusAndDateRangeLeadSelected,
     this.onManagersDealSelected,
-    this.onStatusDealSelected, 
-    this.onDateRangeDealSelected, 
-    this.onStatusAndDateRangeDealSelected, 
+    this.onStatusDealSelected,
+    this.onDateRangeDealSelected,
+    this.onStatusAndDateRangeDealSelected,
     this.onManagersEventSelected,
-    this.onStatusEventSelected, 
-    this.onDateRangeEventSelected, 
-    this.onStatusAndDateRangeEventSelected, 
-    this.onNoticeDateRangeEventSelected, 
-    this.onNoticeStatusAndDateRangeEventSelected, 
-    this.onDateNoticeStatusAndDateRangeSelected, 
-    this.onDateNoticeAndDateRangeSelected, 
-    this.onUsersSelected, 
-    this.onStatusSelected, 
-    this.onDateRangeSelected, 
-    this.onStatusAndDateRangeSelected, 
+    this.onStatusEventSelected,
+    this.onDateRangeEventSelected,
+    this.onStatusAndDateRangeEventSelected,
+    this.onNoticeDateRangeEventSelected,
+    this.onNoticeStatusAndDateRangeEventSelected,
+    this.onDateNoticeStatusAndDateRangeSelected,
+    this.onDateNoticeAndDateRangeSelected,
+    this.onUsersSelected,
+    this.onStatusSelected,
+    this.onDateRangeSelected,
+    this.onStatusAndDateRangeSelected,
     this.showEvent = false,
-    this.showSeparateTaskFilter = false, 
-    this.showSeparateMyTasks = false, 
-    this.showMyTaskIcon = false, 
-    this.showMenuIcon = true, 
-    this.showNotification = true, 
+    this.showSeparateTaskFilter = false,
+    this.showSeparateMyTasks = false,
+    this.showMyTaskIcon = false,
+    this.showMenuIcon = true,
+    this.showNotification = true,
     this.showSeparateFilter = false,
   });
 
@@ -164,14 +163,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     with SingleTickerProviderStateMixin {
   bool _isSearching = false;
 
-
   late TextEditingController _searchController;
   late FocusNode focusNode;
   String _userImage = '';
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
   bool _isFiltering = false;
-  bool _isTaskFiltering = false; 
+  bool _isTaskFiltering = false;
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;
@@ -179,7 +177,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
   bool _showCustomTabBar = true;
-  bool _hasOverdueTasks =false;
+  bool _hasOverdueTasks = false;
 
   @override
   void initState() {
@@ -506,149 +504,244 @@ class _CustomAppBarState extends State<CustomAppBar>
         height: kToolbarHeight,
         color: Colors.white,
         padding: EdgeInsets.zero,
-        child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: _buildAvatarImage(_userImage),
-                  onPressed: widget.onClickProfileAvatar,
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: _buildAvatarImage(_userImage),
+              onPressed: widget.onClickProfileAvatar,
+            ),
+          ),
+          SizedBox(width: 8),
+          if (!_isSearching)
+            Expanded(
+              child: Text(
+                widget.title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xfff1E2E52),
                 ),
               ),
-              SizedBox(width: 8),
-              if (!_isSearching)
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xfff1E2E52),
-                    ),
+            ),
+          if (_isSearching)
+            Expanded(
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: _isSearching ? 200.0 : 0.0,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: focusNode,
+                  onChanged: widget.onChangedSearchInput,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('search_appbar'),
+                    border: InputBorder.none,
                   ),
+                  style: TextStyle(fontSize: 16),
+                  autofocus: true,
                 ),
-
-              if (_isSearching)
-                Expanded(
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    width: _isSearching ? 200.0 : 0.0,
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: focusNode,
-                      onChanged: widget.onChangedSearchInput,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!
-                            .translate('search_appbar'),
-                        border: InputBorder.none,
-                      ),
-                      style: TextStyle(fontSize: 16),
-                      autofocus: true,
+              ),
+            ),
+          if (widget.showNotification)
+            Transform.translate(
+              offset: const Offset(10, 0), // Сдвигаем вправо
+              child: Tooltip(
+                message:
+                    AppLocalizations.of(context)!.translate('notification'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
                     ),
-                  ),
+                  ],
                 ),
-              if (widget.showSearchIcon)
-                Tooltip(
-                  message: AppLocalizations.of(context)!.translate('search'),
-                  preferBelow: false,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero, // Убираем внутренние отступы
+                  constraints:
+                      BoxConstraints(), // Убираем стандартные ограничения
+                  icon: Stack(
+                    children: [
+                      Image.asset(
+                        'assets/icons/AppBar/notification.png',
+                        width: 24,
+                        height: 24,
                       ),
+                      if (_hasNewNotification)
+                        Positioned(
+                          right: 0,
+                          child: FadeTransition(
+                            opacity: _blinkAnimation,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  textStyle: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black,
-                  ),
-                  child: IconButton(
-                    icon: _isSearching
-                        ? Icon(Icons.close)
-                        : Image.asset(
-                            'assets/icons/AppBar/search.png',
-                            width: 24,
-                            height: 24,
-                          ),
-                    onPressed: () {
-                      _toggleSearch();
-                      widget.clearButtonClick(_isSearching);
-                      if (_isSearching) {
-                        FocusScope.of(context).requestFocus(focusNode);
-                      }
-                    },
-                  ),
-                ),
-              if (widget.showFilterIconEvent)
-                Tooltip(
-                  message: AppLocalizations.of(context)!.translate('search'),
-                  preferBelow: false,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black,
-                  ),
-                  child: IconButton(
-                    icon: _isFiltering
-                        ? Icon(Icons.close)
-                        : Image.asset(
-                            'assets/icons/AppBar/filter.png',
-                            width: 24,
-                            height: 24,
-                          ),
-                    onPressed: () {
-                      Navigator.push(
+                  onPressed: () {
+                    setState(() {
+                      _hasNewNotification = false;
+                    });
+                    SharedPreferences.getInstance().then((prefs) {
+                      prefs.setBool('hasNewNotification', false);
+                    });
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EventManagerFilterScreen(
-                          onManagersSelected: widget.onManagersEventSelected,
-                          onStatusSelected:widget.onStatusEventSelected,
-                          onDateRangeSelected: widget.onDateRangeEventSelected,
-                          onStatusAndDateRangeSelected: widget.onStatusAndDateRangeEventSelected,
-                          onNoticeDateRangeSelected: widget.onNoticeDateRangeEventSelected,
-                          onNoticeStatusAndDateRangeSelected: widget.onNoticeStatusAndDateRangeEventSelected,
-                          onDateNoticeStatusAndDateRangeSelected: widget.onDateNoticeStatusAndDateRangeSelected,
-                          onDateNoticeAndDateRangeSelected: widget.onDateNoticeAndDateRangeSelected,
-                          initialManagers: widget.initialManagersEvent,
-                          initialStatuses: widget.initialManagerEventStatuses,
-                          initialFromDate: widget.initialManagerEventFromDate,
-                          initialToDate: widget.initialManagerEventToDate,
-                          initialNoticeFromDate: widget.initialNoticeManagerEventFromDate,
-                          initialNoticeToDate: widget.initialNoticeManagerEventToDate,
-                          onResetFilters: widget.onEventResetFilters,
-                        ),
+                        builder: (context) => NotificationsScreen(),
                       ),
                     );
-                    print('++++++++++++++++++++++++CUSTOM APPBAR+Event++++++++++++++++++++++++');
-                    print(widget.initialManagersEvent);
-                    print(widget.initialManagerEventStatuses);
-                    print(widget.initialManagerEventFromDate);
-                    print(widget.initialManagerEventToDate);
-                    print(widget.initialNoticeManagerEventFromDate);
-                    print(widget.initialNoticeManagerEventToDate);
-                    },
-                  ),
+                  },
                 ),
-              if (widget.showSeparateMyTasks)
-                IconButton(
+              ),
+            ),
+          if (widget.showSearchIcon)
+            Transform.translate(
+              offset: const Offset(10, 0), // Сдвигаем немного вправо
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.translate('search'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 0),
+                    ),
+                  ],
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero, // Убираем внутренние отступы
+                  constraints:
+                      BoxConstraints(), // Убираем стандартные ограничения
+                  icon: _isSearching
+                      ? Icon(Icons.close)
+                      : Image.asset(
+                          'assets/icons/AppBar/search.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                  onPressed: () {
+                    _toggleSearch();
+                    widget.clearButtonClick(_isSearching);
+                    if (_isSearching) {
+                      FocusScope.of(context).requestFocus(focusNode);
+                    }
+                  },
+                ),
+              ),
+            ),
+          if (widget.showFilterIconEvent)
+            Tooltip(
+              message: AppLocalizations.of(context)!.translate('search'),
+              preferBelow: false,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              textStyle: TextStyle(
+                fontSize: 12,
+                color: Colors.black,
+              ),
+              child: IconButton(
+                icon: _isFiltering
+                    ? Icon(Icons.close)
+                    : Image.asset(
+                        'assets/icons/AppBar/filter.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventManagerFilterScreen(
+                        onManagersSelected: widget.onManagersEventSelected,
+                        onStatusSelected: widget.onStatusEventSelected,
+                        onDateRangeSelected: widget.onDateRangeEventSelected,
+                        onStatusAndDateRangeSelected:
+                            widget.onStatusAndDateRangeEventSelected,
+                        onNoticeDateRangeSelected:
+                            widget.onNoticeDateRangeEventSelected,
+                        onNoticeStatusAndDateRangeSelected:
+                            widget.onNoticeStatusAndDateRangeEventSelected,
+                        onDateNoticeStatusAndDateRangeSelected:
+                            widget.onDateNoticeStatusAndDateRangeSelected,
+                        onDateNoticeAndDateRangeSelected:
+                            widget.onDateNoticeAndDateRangeSelected,
+                        initialManagers: widget.initialManagersEvent,
+                        initialStatuses: widget.initialManagerEventStatuses,
+                        initialFromDate: widget.initialManagerEventFromDate,
+                        initialToDate: widget.initialManagerEventToDate,
+                        initialNoticeFromDate:
+                            widget.initialNoticeManagerEventFromDate,
+                        initialNoticeToDate:
+                            widget.initialNoticeManagerEventToDate,
+                        onResetFilters: widget.onEventResetFilters,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          if (widget.showSeparateMyTasks)
+            Transform.translate(
+              offset: const Offset(6, 0), // Сдвиг вправо на 4 пикселя
+              child: Tooltip(
+                message:
+                    AppLocalizations.of(context)!.translate('appbar_my_tasks'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                textStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero, // Убираем внутренние отступы
+                  constraints:
+                      BoxConstraints(), // Убираем стандартные ограничения
                   icon: Stack(
                     children: [
                       Image.asset(
@@ -681,276 +774,219 @@ class _CustomAppBarState extends State<CustomAppBar>
                       ),
                     );
                   },
-                  tooltip: AppLocalizations.of(context)!
-                      .translate('appbar_my_tasks'),
                 ),
-              if (widget.showNotification)
-                Tooltip(
-                  message:
-                      AppLocalizations.of(context)!.translate('notification'),
-                  preferBelow: false,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black,
-                  ),
-                  child: IconButton(
-                    icon: Stack(
-                      children: [
-                        Image.asset(
-                          'assets/icons/AppBar/notification.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                        if (_hasNewNotification)
-                          Positioned(
-                            right: 0,
-                            child: FadeTransition(
-                              opacity: _blinkAnimation,
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
+              ),
+            ),
+          if (widget.showMenuIcon)
+            Transform.translate(
+              offset: const Offset(8, 0), // Сдвигаем вправо
+              child: PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                position: PopupMenuPosition.under,
+                icon: Stack(
+                  children: [
+                    Icon(Icons.more_vert),
+                    if (_hasOverdueTasks)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: FadeTransition(
+                          opacity: _blinkAnimation,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
                             ),
                           ),
-                      ],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _hasNewNotification = false;
-                      });
-                      SharedPreferences.getInstance().then((prefs) {
-                        prefs.setBool('hasNewNotification', false);
-                      });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              if (widget.showMenuIcon) // Условный рендеринг меню
-                PopupMenuButton<String>(
-                  icon: Stack(
-                    children: [
-                      Icon(Icons.more_vert), // Иконка "три точки"
-                      if (_hasOverdueTasks) // Если есть просроченные задачи
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: FadeTransition(
-                            opacity: _blinkAnimation,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  color: Colors.white,
-                  onSelected: (String value) {
-                    switch (value) {
-                      case 'filter_task':
-                       Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => UserFilterScreen(
-      onUsersSelected: widget.onUsersSelected,
-      onStatusSelected:widget.onStatusSelected ,
-      onDateRangeSelected: widget.onDateRangeSelected,
-      onStatusAndDateRangeSelected: widget.onStatusAndDateRangeSelected,
-      initialUsers: widget.initialUsers,
-      initialStatuses: widget.initialStatuses,
-      initialFromDate: widget.initialFromDate,
-      initialToDate: widget.initialToDate,
-      onResetFilters: widget.onResetFilters,
-    ),
-  ),
-);
-                        break;
-                      case 'filter_lead':
-                       Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ManagerFilterScreen(
-                          onManagersSelected: widget.onManagersLeadSelected,
-                          onStatusSelected:widget.onStatusLeadSelected ,
-                          onDateRangeSelected: widget.onDateRangeLeadSelected,
-                          onStatusAndDateRangeSelected: widget.onStatusAndDateRangeLeadSelected,
-                          initialManagers: widget.initialManagersLead,
-                          initialStatuses: widget.initialManagerLeadStatuses,
-                          initialFromDate: widget.initialManagerLeadFromDate,
-                          initialToDate: widget.initialManagerLeadToDate,
-                          onResetFilters: widget.onLeadResetFilters,
-                        ),
-                      ),
-                    );
-                        break;
-                      case 'filter_deal':
-                       Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DealManagerFilterScreen(
-                          onManagersSelected: widget.onManagersDealSelected,
-                          onStatusSelected:widget.onStatusDealSelected ,
-                          onDateRangeSelected: widget.onDateRangeDealSelected,
-                          onStatusAndDateRangeSelected: widget.onStatusAndDateRangeDealSelected,
-                          initialManagers: widget.initialManagersDeal,
-                          initialStatuses: widget.initialManagerDealStatuses,
-                          initialFromDate: widget.initialManagerDealFromDate,
-                          initialToDate: widget.initialManagerDealToDate,
-                          onResetFilters: widget.onDealResetFilters,
-                        ),
-                      ),
-                    );
-                        break;
-                      case 'events':
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EventScreen(), 
-                          ),
-                        );
-                        break;
-                      case 'my_tasks':
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MyTaskScreen(),
-                          ),
-                        );
-                        break;
-
-                    }
-                  },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                    if (widget.showFilterIcon)
-                      PopupMenuItem<String>(
-                        value: 'filter_lead',
-                        child: Row(
-                          children: [
-                            _isFiltering
-                                ? Icon(Icons.close)
-                                : Image.asset(
-                                    'assets/icons/AppBar/filter.png',
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                            SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!
-                                .translate('filtr')),
-                          ],
-                        ),
-                      ),
-                    if (widget.showFilterIconDeal)
-                      PopupMenuItem<String>(
-                        value: 'filter_deal',
-                        child: Row(
-                          children: [
-                            _isFiltering
-                                ? Icon(Icons.close)
-                                : Image.asset(
-                                    'assets/icons/AppBar/filter.png',
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                            SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!
-                                .translate('filtr')),
-                          ],
-                        ),
-                      ),
-                    if (widget.showEvent)
-                      PopupMenuItem<String>(
-                        value: 'events',
-                        child: Row(
-                          children: [
-                            Icon(Icons.event), // Иконка всегда отображается
-                            SizedBox(
-                                width: 8), // Отступ между иконкой и текстом
-                            Text(AppLocalizations.of(context)!
-                                .translate('events')),
-                          ],
-                        ),
-                      ),
-                    if (widget.showFilterTaskIcon)
-                      PopupMenuItem<String>(
-                        value: 'filter_task',
-                        child: Row(
-                          children: [
-                            _isTaskFiltering
-                                ? Icon(Icons.close)
-                                : Image.asset(
-                                    'assets/icons/AppBar/filter.png',
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                            SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!
-                                .translate('filtr')),
-                          ],
-                        ),
-                      ),
-                    if (widget.showMyTaskIcon)
-                      PopupMenuItem<String>(
-                        value: 'my_tasks',
-                        child: Row(
-                          children: [
-                            Stack(
-                              children: [
-                                Image.asset(
-                                  'assets/icons/AppBar/my-task.png',
-                                  width: 24,
-                                  height: 24,
-                                ),
-                                if (_hasOverdueTasks)
-                                  Positioned(
-                                    right: 0,
-                                    child: FadeTransition(
-                                      opacity: _blinkAnimation,
-                                      child: Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!
-                                .translate('appbar_my_tasks')),
-                          ],
                         ),
                       ),
                   ],
                 ),
-            ]));
+                color: Colors.white,
+                onSelected: (String value) {
+                  switch (value) {
+                    case 'filter_task':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserFilterScreen(
+                            onUsersSelected: widget.onUsersSelected,
+                            onStatusSelected: widget.onStatusSelected,
+                            onDateRangeSelected: widget.onDateRangeSelected,
+                            onStatusAndDateRangeSelected:
+                                widget.onStatusAndDateRangeSelected,
+                            initialUsers: widget.initialUsers,
+                            initialStatuses: widget.initialStatuses,
+                            initialFromDate: widget.initialFromDate,
+                            initialToDate: widget.initialToDate,
+                            onResetFilters: widget.onResetFilters,
+                          ),
+                        ),
+                      );
+                      break;
+                    case 'filter_lead':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ManagerFilterScreen(
+                            onManagersSelected: widget.onManagersLeadSelected,
+                            onStatusSelected: widget.onStatusLeadSelected,
+                            onDateRangeSelected: widget.onDateRangeLeadSelected,
+                            onStatusAndDateRangeSelected:
+                                widget.onStatusAndDateRangeLeadSelected,
+                            initialManagers: widget.initialManagersLead,
+                            initialStatuses: widget.initialManagerLeadStatuses,
+                            initialFromDate: widget.initialManagerLeadFromDate,
+                            initialToDate: widget.initialManagerLeadToDate,
+                            onResetFilters: widget.onLeadResetFilters,
+                          ),
+                        ),
+                      );
+                      break;
+                    case 'filter_deal':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DealManagerFilterScreen(
+                            onManagersSelected: widget.onManagersDealSelected,
+                            onStatusSelected: widget.onStatusDealSelected,
+                            onDateRangeSelected: widget.onDateRangeDealSelected,
+                            onStatusAndDateRangeSelected:
+                                widget.onStatusAndDateRangeDealSelected,
+                            initialManagers: widget.initialManagersDeal,
+                            initialStatuses: widget.initialManagerDealStatuses,
+                            initialFromDate: widget.initialManagerDealFromDate,
+                            initialToDate: widget.initialManagerDealToDate,
+                            onResetFilters: widget.onDealResetFilters,
+                          ),
+                        ),
+                      );
+                      break;
+                    case 'events':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EventScreen(),
+                        ),
+                      );
+                      break;
+                    case 'my_tasks':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyTaskScreen(),
+                        ),
+                      );
+                      break;
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  if (widget.showFilterIcon)
+                    PopupMenuItem<String>(
+                      value: 'filter_lead',
+                      child: Row(
+                        children: [
+                          _isFiltering
+                              ? Icon(Icons.close)
+                              : Image.asset(
+                                  'assets/icons/AppBar/filter.png',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                          SizedBox(width: 8),
+                          Text(
+                              AppLocalizations.of(context)!.translate('filtr')),
+                        ],
+                      ),
+                    ),
+                  if (widget.showFilterIconDeal)
+                    PopupMenuItem<String>(
+                      value: 'filter_deal',
+                      child: Row(
+                        children: [
+                          _isFiltering
+                              ? Icon(Icons.close)
+                              : Image.asset(
+                                  'assets/icons/AppBar/filter.png',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                          SizedBox(width: 8),
+                          Text(
+                              AppLocalizations.of(context)!.translate('filtr')),
+                        ],
+                      ),
+                    ),
+                  if (widget.showEvent)
+                    PopupMenuItem<String>(
+                      value: 'events',
+                      child: Row(
+                        children: [
+                          Icon(Icons.event), // Иконка всегда отображается
+                          SizedBox(width: 8), // Отступ между иконкой и текстом
+                          Text(AppLocalizations.of(context)!
+                              .translate('events')),
+                        ],
+                      ),
+                    ),
+                  if (widget.showFilterTaskIcon)
+                    PopupMenuItem<String>(
+                      value: 'filter_task',
+                      child: Row(
+                        children: [
+                          _isTaskFiltering
+                              ? Icon(Icons.close)
+                              : Image.asset(
+                                  'assets/icons/AppBar/filter.png',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                          SizedBox(width: 8),
+                          Text(
+                              AppLocalizations.of(context)!.translate('filtr')),
+                        ],
+                      ),
+                    ),
+                  if (widget.showMyTaskIcon)
+                    PopupMenuItem<String>(
+                      value: 'my_tasks',
+                      child: Row(
+                        children: [
+                          Stack(
+                            children: [
+                              Image.asset(
+                                'assets/icons/AppBar/my-task.png',
+                                width: 24,
+                                height: 24,
+                              ),
+                              if (_hasOverdueTasks)
+                                Positioned(
+                                  right: 0,
+                                  child: FadeTransition(
+                                    opacity: _blinkAnimation,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!
+                              .translate('appbar_my_tasks')),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ]));
   }
 }
