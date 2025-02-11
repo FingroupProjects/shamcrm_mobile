@@ -64,23 +64,38 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
     _NoticetoDate = widget.initialNoticeToDate;
   }
 
-  void _selectDateRange() async {
-    final DateTimeRange? pickedRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      initialDateRange: _fromDate != null && _toDate != null
-          ? DateTimeRange(start: _fromDate!, end: _toDate!)
-          : null,
-    );
-    if (pickedRange != null) {
-      setState(() {
-        _fromDate = pickedRange.start;
-        _toDate = pickedRange.end;
-      });
-    }
+void _selectDateRange() async {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final double dialogWidth = screenWidth > 600 ? 400 : screenWidth * 0.8;
+  final DateTimeRange? pickedRange = await showDateRangePicker(
+    context: context,
+    firstDate: DateTime(2000),
+    lastDate: DateTime(2101),
+    initialDateRange: _fromDate != null && _toDate != null
+        ? DateTimeRange(start: _fromDate!, end: _toDate!)
+        : null,
+    builder: (context, child) {
+      return Dialog(
+        child: Container(
+          width: dialogWidth, 
+          child: child,
+        ),
+      );
+    },
+  );
+  
+  if (pickedRange != null) {
+    setState(() {
+      _fromDate = pickedRange.start;
+      _toDate = pickedRange.end;
+    });
   }
+}
+
 void _selectNoticeDateRange() async {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final double dialogWidth = screenWidth > 600 ? 400 : screenWidth * 0.8;
+
   final DateTimeRange? pickedRange = await showDateRangePicker(
     context: context,
     firstDate: DateTime(2000),
@@ -88,7 +103,16 @@ void _selectNoticeDateRange() async {
     initialDateRange: _NoticefromDate != null && _NoticetoDate != null
         ? DateTimeRange(start: _NoticefromDate!, end: _NoticetoDate!)
         : null,
+    builder: (context, child) {
+      return Dialog(
+        child: Container(
+          width: dialogWidth,
+          child: child,
+        ),
+      );
+    },
   );
+
   if (pickedRange != null) {
     setState(() {
       _NoticefromDate = pickedRange.start;
@@ -96,6 +120,7 @@ void _selectNoticeDateRange() async {
     });
   }
 }
+
 
 
   @override

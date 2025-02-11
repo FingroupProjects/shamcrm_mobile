@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -78,6 +79,13 @@ controller?.dispose();
           await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
           await controller.pauseCamera();
+
+              final apiService = context.read<ApiService>();
+
+              String? fcmToken = await FirebaseMessaging.instance.getToken();
+              if (fcmToken != null) {
+                await apiService.sendDeviceToken(fcmToken);
+              }
 
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
@@ -158,6 +166,14 @@ controller?.dispose();
           await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
           await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
+            // final apiService = context.read<ApiService>();
+
+            //   String? fcmToken = await FirebaseMessaging.instance.getToken();
+            //   if (fcmToken != null) {
+            //     await apiService.sendDeviceToken(fcmToken);
+            //   }
+
+              
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
         } catch (e) {
