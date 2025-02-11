@@ -148,6 +148,7 @@ class _LeadCardState extends State<LeadCard> {
               widget.lead.name,
               style: TaskCardStyles.titleStyle,
               overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
             const SizedBox(height: 5),
             Row(
@@ -279,7 +280,7 @@ class _LeadCardState extends State<LeadCard> {
                             Text(
                               ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xff99A4BA),

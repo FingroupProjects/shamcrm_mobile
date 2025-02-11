@@ -46,7 +46,7 @@ class _DealCardState extends State<DealCard> {
     }
     try {
       DateTime dateTime = DateTime.parse(dateString);
-      return DateFormat('dd-MM-yyyy').format(dateTime);
+      return DateFormat('dd.MM.yyyy').format(dateTime);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('unknow');
     }
@@ -114,7 +114,7 @@ class _DealCardState extends State<DealCard> {
               widget.deal.name ??
                   AppLocalizations.of(context)!.translate('no_name'),
               style: TaskCardStyles.titleStyle,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 5),
@@ -239,7 +239,7 @@ class _DealCardState extends State<DealCard> {
                                     .translate('unknow'),
                           )}',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
                             color: Color(0xff99A4BA),

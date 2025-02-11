@@ -2,6 +2,7 @@
 class NoticeLead {
   final int id;
   final String name;
+  final String lastname;
   final String? facebookLogin;
   final String? instaLogin;
   final String? tgNick;
@@ -28,6 +29,7 @@ class NoticeLead {
   NoticeLead({
     required this.id,
     required this.name,
+    required this.lastname,
     this.facebookLogin,
     this.instaLogin,
     this.tgNick,
@@ -56,6 +58,7 @@ class NoticeLead {
     return NoticeLead(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
+      lastname: json['lastname'] ?? '',
       facebookLogin: json['facebook_login'],
       instaLogin: json['insta_login'],
       tgNick: json['tg_nick'],
@@ -125,7 +128,8 @@ class NoticeAuthor {
       image: json['image'],
       lastSeen: json['last_seen'],
       deletedAt: json['deleted_at'],
-      telegramUserId: json['telegram_user_id']?.toString(), // Преобразуем в строку
+      telegramUserId:
+          json['telegram_user_id']?.toString(), // Преобразуем в строку
       jobTitle: json['job_title'],
       online: json['online'],
       fullName: json['full_name'],
@@ -175,13 +179,15 @@ class NoticeUser {
       image: json['image'],
       lastSeen: json['last_seen'],
       deletedAt: json['deleted_at'],
-      telegramUserId: json['telegram_user_id']?.toString(), // Преобразуем в строку
+      telegramUserId:
+          json['telegram_user_id']?.toString(), // Преобразуем в строку
       jobTitle: json['job_title'],
       online: json['online'],
       fullName: json['full_name'],
     );
   }
 }
+
 // notice_event.dart
 class NoticeEvent {
   final int id;
@@ -223,11 +229,10 @@ class NoticeEvent {
           .map((user) => NoticeUser.fromJson(user))
           .toList(),
       sendNotification: json['send_notification'] ?? 0,
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       canFinish: json['can_finish'] ?? false,
     );
   }
-  
 }

@@ -223,7 +223,7 @@ Widget _buildActionItem(String item) {
   List<String> _buildActionHistoryItems(List<DealHistory> history) {
   return history.map((entry) {
     final changes = entry.changes;
-    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
     String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
     String formatDate(String? dateString) {
@@ -232,7 +232,7 @@ Widget _buildActionItem(String item) {
       }
       try {
         DateTime date = DateTime.parse(dateString);
-        return DateFormat('dd-MM-yyyy').format(date);
+        return DateFormat('dd.MM.yyyy').format(date);
       } catch (e) {
         return AppLocalizations.of(context)!.translate('not_specified');
       }
@@ -240,7 +240,7 @@ Widget _buildActionItem(String item) {
 
     String formatDateTime(DateTime? dateTime) {
       if (dateTime == null) return AppLocalizations.of(context)!.translate('not_specified');
-      return DateFormat('dd-MM-yyyy').format(dateTime);
+      return DateFormat('dd.MM.yyyy').format(dateTime);
     }
 
     if (changes != null) {

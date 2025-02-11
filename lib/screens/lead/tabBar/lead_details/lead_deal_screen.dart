@@ -166,7 +166,7 @@ class _DealsWidgetState extends State<DealsWidget> {
 
   try {
     formattedDate = (deal.lastseen != null && deal.lastseen!.isNotEmpty)
-        ? DateFormat('dd-MM-yyyy').format(DateTime.parse(deal.lastseen!))
+        ? DateFormat('dd.MM.yyyy').format(DateTime.parse(deal.lastseen!))
         : AppLocalizations.of(context)!.translate('not_specified');
   } catch (e) {
     formattedDate = AppLocalizations.of(context)!.translate('not_specified'); 

@@ -433,7 +433,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('lead_name'),
-        'value': notice.lead!.name
+        'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
       },
       {
         'label': AppLocalizations.of(context)!.translate('date'),
@@ -443,11 +443,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
-        'value': notice.users.map((user) => user.name).join(', '),
+        'value': notice.users
+            .map((user) => '${user.name} ${user.lastname ?? ''}')
+            .join(', '),
       },
       {
         'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': notice.author?.name ?? ''
+        'value': '${notice.author?.name} ${notice.author?.lastname ?? ''}',
       },
       {
         'label': AppLocalizations.of(context)!.translate('created_at_details'),
@@ -624,47 +626,47 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           );
         }
 
-       // Обработка длинных текстов
-      if (label == AppLocalizations.of(context)!.translate('body')) {
-        return GestureDetector(
-          onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(label),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
+        // Обработка длинных текстов
+        if (label == AppLocalizations.of(context)!.translate('body')) {
+          return GestureDetector(
+            onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 7,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 7,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-        );
-      }
+              ],
+            ),
+          );
+        }
 
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          SizedBox(width: 8),
-          Expanded(
-            child: _buildValue(value),
-          ),
-        ],
-      );
-    },
-  );
-}
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: _buildValue(value),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildLabel(String label) {
     return Text(

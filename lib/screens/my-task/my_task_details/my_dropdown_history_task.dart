@@ -226,7 +226,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
     return history.map((entry) {
       final changes = entry.changes;
       final formattedDate =
-          DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+          DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
       String actionDetail =
           '${entry.status}\n${entry.user.name} $formattedDate';
 

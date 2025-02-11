@@ -67,7 +67,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     _loadInitialData();
 
     // Инициализируем информацию о файле, если он есть
-  if (widget.files != null) {
+    if (widget.files != null) {
       existingFiles = widget.files!;
       fileNames = existingFiles.map((file) => file.name).toList();
     }
@@ -128,7 +128,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
     );
   }
 
-Widget _buildFileSelection() {
+  Widget _buildFileSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,7 +231,8 @@ Widget _buildFileSelection() {
                                   backgroundColor: Colors.white,
                                   title: Center(
                                     child: Text(
-                                      AppLocalizations.of(context)!.translate('delete_file'),
+                                      AppLocalizations.of(context)!
+                                          .translate('delete_file'),
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontFamily: 'Gilroy',
@@ -241,7 +242,8 @@ Widget _buildFileSelection() {
                                     ),
                                   ),
                                   content: Text(
-                                    AppLocalizations.of(context)!.translate('confirm_delete_file'),
+                                    AppLocalizations.of(context)!
+                                        .translate('confirm_delete_file'),
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontFamily: 'Gilroy',
@@ -255,7 +257,9 @@ Widget _buildFileSelection() {
                                       children: [
                                         Expanded(
                                           child: CustomButton(
-                                            buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                                            buttonText:
+                                                AppLocalizations.of(context)!
+                                                    .translate('cancel'),
                                             onPressed: () {
                                               Navigator.of(context).pop(false);
                                             },
@@ -266,61 +270,103 @@ Widget _buildFileSelection() {
                                         SizedBox(width: 8),
                                         Expanded(
                                           child: CustomButton(
-                                            buttonText: AppLocalizations.of(context)!.translate('unpin'),
+                                            buttonText:
+                                                AppLocalizations.of(context)!
+                                                    .translate('unpin'),
                                             onPressed: () async {
                                               try {
-                                                final result = await _apiService.deleteTaskFile(existingFiles[index].id);
-                                                if (result['result'] == 'Success') {
+                                                final result = await _apiService
+                                                    .deleteTaskFile(
+                                                        existingFiles[index]
+                                                            .id);
+                                                if (result['result'] ==
+                                                    'Success') {
                                                   setState(() {
-                                                    existingFiles.removeAt(index);
+                                                    existingFiles
+                                                        .removeAt(index);
                                                     fileNames.removeAt(index);
                                                   });
-                                                  Navigator.of(context).pop(true);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                  Navigator.of(context)
+                                                      .pop(true);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
                                                     SnackBar(
                                                       content: Text(
-                                                        AppLocalizations.of(context)!.translate('file_deleted_successfully'),
+                                                        AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'file_deleted_successfully'),
                                                         style: TextStyle(
                                                           fontFamily: 'Gilroy',
                                                           fontSize: 16,
-                                                          fontWeight: FontWeight.w500,
+                                                          fontWeight:
+                                                              FontWeight.w500,
                                                           color: Colors.white,
                                                         ),
                                                       ),
-                                                      behavior: SnackBarBehavior.floating,
-                                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(12),
+                                                      behavior: SnackBarBehavior
+                                                          .floating,
+                                                      margin:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 8),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
                                                       ),
-                                                      backgroundColor: Colors.green,
+                                                      backgroundColor:
+                                                          Colors.green,
                                                       elevation: 3,
-                                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                      duration: Duration(seconds: 3),
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              vertical: 12,
+                                                              horizontal: 16),
+                                                      duration:
+                                                          Duration(seconds: 3),
                                                     ),
                                                   );
                                                 }
                                               } catch (e) {
-                                                Navigator.of(context).pop(false);
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                Navigator.of(context)
+                                                    .pop(false);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
                                                   SnackBar(
                                                     content: Text(
-                                                      AppLocalizations.of(context)!.translate('failed_to_delete_file'),
+                                                      AppLocalizations.of(
+                                                              context)!
+                                                          .translate(
+                                                              'failed_to_delete_file'),
                                                       style: TextStyle(
                                                         fontFamily: 'Gilroy',
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         color: Colors.white,
                                                       ),
                                                     ),
-                                                    behavior: SnackBarBehavior.floating,
-                                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(12),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                    margin:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
                                                     ),
                                                     backgroundColor: Colors.red,
                                                     elevation: 3,
-                                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                                    duration: Duration(seconds: 3),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            vertical: 12,
+                                                            horizontal: 16),
+                                                    duration:
+                                                        Duration(seconds: 3),
                                                   ),
                                                 );
                                               }
@@ -337,7 +383,8 @@ Widget _buildFileSelection() {
                             );
                           } else {
                             setState(() {
-                              selectedFiles.removeAt(index - existingFiles.length);
+                              selectedFiles
+                                  .removeAt(index - existingFiles.length);
                               fileNames.removeAt(index);
                               fileSizes.removeAt(index - existingFiles.length);
                             });
@@ -389,6 +436,7 @@ Widget _buildFileSelection() {
       );
     }
   }
+
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -417,26 +465,35 @@ Widget _buildFileSelection() {
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
+        title: Transform.translate(
+          offset: const Offset(-10, 0),          child: Text(
+            AppLocalizations.of(context)!.translate('task_edit'),
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
         centerTitle: false,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () => Navigator.pop(context, null),
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.translate('task_edit'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Transform.translate(
+            offset: const Offset(0, -2),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () => Navigator.pop(context, null),
+            ),
           ),
         ),
+        leadingWidth: 40,
       ),
       body: BlocListener<MyTaskBloc, MyTaskState>(
         listener: (context, state) {
@@ -511,8 +568,7 @@ Widget _buildFileSelection() {
                         label: AppLocalizations.of(context)!
                             .translate('description_list'),
                         maxLines: 5,
-                                                keyboardType: TextInputType.multiline,
-
+                        keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
@@ -544,8 +600,7 @@ Widget _buildFileSelection() {
                         )
                       else ...[
                         // const SizedBox(height: 16),
-                        _buildFileSelection(
-                            ), // Добавляем виджет выбора файла
+                        _buildFileSelection(), // Добавляем виджет выбора файла
                         _buildPushNotificationCheckbox(), // Add this line
                       ],
                     ],
@@ -630,11 +685,11 @@ Widget _buildFileSelection() {
                                             endDate: endDate,
                                             description:
                                                 descriptionController.text,
-                                          filePaths:
+                                            filePaths:
                                                 selectedFiles, // Передаем список путей к файлам
                                             setPush: setPush, // Add this line
                                             localizations: localizations,
-                                             existingFiles:
+                                            existingFiles:
                                                 existingFiles, // Добавляем существующие файлы
                                           ),
                                         );

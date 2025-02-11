@@ -158,7 +158,7 @@ class _NotesWidgetState extends State<NotesWidget> {
 
   Widget _buildNoteItem(Notes note) {
     final formattedDate = note.date != null
-        ? DateFormat('dd-MM-yyyy HH:mm')
+        ? DateFormat('dd.MM.yyyy HH:mm')
             .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
         : AppLocalizations.of(context)!.translate('not_specified');
 

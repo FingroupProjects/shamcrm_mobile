@@ -15,14 +15,15 @@ class ManagerMultiSelectWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ManagerMultiSelectWidget> createState() => _ManagerMultiSelectWidgetState();
+  State<ManagerMultiSelectWidget> createState() =>
+      _ManagerMultiSelectWidgetState();
 }
 
 class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
   final TextEditingController _searchController = TextEditingController();
   bool isExpanded = false;
   String searchQuery = '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -75,14 +76,17 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     builder: (context, state) {
                       if (state is GetAllManagerSuccess) {
                         final selectedNames = state.dataManager.result
-                            ?.where((manager) => widget.selectedManagers.contains(manager.id))
-                            .map((manager) => manager.name)
+                            ?.where((manager) =>
+                                widget.selectedManagers.contains(manager.id))
+                            .map((manager) =>
+                                '${manager.name} ${manager.lastname ?? ''}')
                             .join(', ');
-                        
+
                         return Text(
                           selectedNames?.isNotEmpty == true
                               ? selectedNames!
-                              : AppLocalizations.of(context)!.translate('select_m'),
+                              : AppLocalizations.of(context)!
+                                  .translate('select_m'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -106,7 +110,9 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   ),
                 ),
                 Icon(
-                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: Color(0xff1E2E52),
                 ),
               ],
@@ -135,9 +141,11 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.translate('search'),
+                      hintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
-                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: Color(0xFFEEEEEE)),
@@ -165,12 +173,13 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
                     builder: (context, state) {
                       if (state is GetAllManagerLoading) {
-                        return Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                          ),
-                        );
+                        // return Center(
+                        //   child: Padding(
+                        //     padding: EdgeInsets.all(16),
+                        //     child: CircularProgressIndicator(
+                        //         color: Color(0xff1E2E52)),
+                        //   ),
+                        // );
                       } else if (state is GetAllManagerError) {
                         return Center(
                           child: Padding(
@@ -193,11 +202,13 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                           itemCount: filteredManagers.length,
                           itemBuilder: (context, index) {
                             final manager = filteredManagers[index];
-                            final isSelected = widget.selectedManagers.contains(manager.id);
+                            final isSelected =
+                                widget.selectedManagers.contains(manager.id);
 
                             return InkWell(
                               onTap: () {
-                                List<int> newSelection = List.from(widget.selectedManagers);
+                                List<int> newSelection =
+                                    List.from(widget.selectedManagers);
                                 if (isSelected) {
                                   newSelection.remove(manager.id);
                                 } else {
@@ -206,7 +217,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                 widget.onSelectManagers(newSelection);
                               },
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     bottom: BorderSide(
@@ -222,21 +234,27 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                       height: 24,
                                       margin: EdgeInsets.only(right: 12),
                                       decoration: BoxDecoration(
-                                        color: isSelected ? Color(0xFF4339F2) : Colors.white,
+                                        color: isSelected
+                                            ? Color(0xFF4339F2)
+                                            : Colors.white,
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
-                                          color: isSelected ? Color(0xFF4339F2) : Color(0xFFCCCCCC),
+                                          color: isSelected
+                                              ? Color(0xFF4339F2)
+                                              : Color(0xFFCCCCCC),
                                           width: 1,
                                         ),
                                       ),
                                       child: isSelected
-                                          ? Icon(Icons.check, size: 18, color: Colors.white)
+                                          ? Icon(Icons.check,
+                                              size: 18, color: Colors.white)
                                           : null,
                                     ),
                                     Expanded(
                                       child: Text(
-                                        manager.name ??             AppLocalizations.of(context)!.translate('no_name'),
-
+                                        '${manager.name} ${manager.lastname ?? ''}' ??
+                                            AppLocalizations.of(context)!
+                                                .translate('no_name'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 14,

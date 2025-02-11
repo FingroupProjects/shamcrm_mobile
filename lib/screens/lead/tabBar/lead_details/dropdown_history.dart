@@ -235,13 +235,13 @@ List<String> _buildActionHistoryItems(List<LeadHistory> history) {
 
   try {
     DateTime birthday = DateTime.parse(birthdayString);
-    return DateFormat('dd-MM-yyyy').format(birthday);
+    return DateFormat('dd.MM.yyyy').format(birthday);
   } catch (e) {
     return AppLocalizations.of(context)!.translate('not_specified'); 
   }
 }
 
-    final formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(entry.date.toLocal());
+    final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
     String actionDetail = '${entry.status}\n${entry.user.name} $formattedDate';
 
     if (changes != null) {

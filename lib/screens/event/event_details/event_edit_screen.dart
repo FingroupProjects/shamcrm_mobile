@@ -63,17 +63,18 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+            appBar: AppBar(
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
           icon: Image.asset(
             'assets/icons/arrow-left.png',
             width: 24,
             height: 24,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, null),
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('edit_notice'),
