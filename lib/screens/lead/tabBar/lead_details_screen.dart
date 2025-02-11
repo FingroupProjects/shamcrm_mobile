@@ -87,7 +87,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     _loadSelectedOrganization(); // Загружаем выбранную организацию
 
-    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+    context
+        .read<LeadByIdBloc>()
+        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 
   void _showFullTextDialog(String title, String content) {
@@ -134,7 +136,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('close'), 
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
                   buttonColor: Color(0xff1E2E52),
                   textColor: Colors.white,
@@ -168,7 +170,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Future<void> _openWhatsApp(String phoneNumber) async {
     // Убираем все не числовые символы из номера телефона
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    
+
     // Если номер начинается с '8', заменяем на '+7'
     if (cleanNumber.startsWith('8')) {
       cleanNumber = '+7${cleanNumber.substring(1)}';
@@ -193,7 +195,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.translate('whatsapp_not_installed'), 
+              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -268,21 +270,56 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   void _updateDetails(LeadById lead) {
     currentLead = lead; // Сохраняем актуального лида
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_details'), 'value': lead.name},
-      {'label': AppLocalizations.of(context)!.translate('phone_use'), 'value': lead.phone ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('region_details'), 'value': lead.region?.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': lead.manager?.name ?? AppLocalizations.of(context)!.translate('system_text')},
-      {'label': AppLocalizations.of(context)!.translate('source_details'), 'value': lead.source?.name ?? ''},
+      {
+        'label': AppLocalizations.of(context)!.translate('name_details'),
+        'value': lead.name
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('phone_use'),
+        'value': lead.phone ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('region_details'),
+        'value': lead.region?.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('manager_details'),
+        'value': lead.manager != null
+            ? '${lead.manager!.name} ${lead.manager!.lastname ?? ''}'
+            : AppLocalizations.of(context)!.translate('system_text'),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('source_details'),
+        'value': lead.source?.name ?? ''
+      },
       {'label': 'Instagram:', 'value': lead.instagram ?? ''},
       {'label': 'Facebook:', 'value': lead.facebook ?? ''},
       {'label': 'Telegram:', 'value': lead.telegram ?? ''},
       {'label': 'WhatsApp:', 'value': lead.whatsApp ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('email_details'), 'value': lead.email ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('birthday_details'), 'value': formatDate(lead.birthday)},
-      {'label': AppLocalizations.of(context)!.translate('description_details'), 'value': lead.description ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('author_details'), 'value': lead.author?.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('created_at_details'), 'value': formatDate(lead.createdAt)},
-      {'label': AppLocalizations.of(context)!.translate('status_details'), 'value': lead.leadStatus?.title ?? ''},
+      {
+        'label': AppLocalizations.of(context)!.translate('email_details'),
+        'value': lead.email ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('birthday_details'),
+        'value': formatDate(lead.birthday)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('description_details'),
+        'value': lead.description ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': lead.author?.name ?? ''
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': formatDate(lead.createdAt)
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('status_details'),
+        'value': lead.leadStatus?.title ?? ''
+      },
     ];
     for (var field in lead.leadCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
@@ -298,8 +335,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     return textPainter.didExceedMaxLines;
   }
-
-  
 
   Widget _buildExpandableText(String label, String value, double maxWidth) {
     final TextStyle style = TextStyle(
@@ -326,7 +361,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_lead')),
+        appBar: _buildAppBar(
+            context, AppLocalizations.of(context)!.translate('view_lead')),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
@@ -336,7 +372,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                      AppLocalizations.of(context)!
+                          .translate(state.message), // Локализация сообщения
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -399,7 +436,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdError) {
                 return Center(
                   child: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                    AppLocalizations.of(context)!
+                        .translate(state.message), // Локализация сообщения
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -422,23 +460,33 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
+      leadingWidth: 40,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              Navigator.pop(context, widget.statusId);
+            },
+          ),
         ),
-        onPressed: () async {
-             Navigator.pop(context, widget.statusId);
-           },
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ),
       actions: [
@@ -558,8 +606,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: (label.contains(AppLocalizations.of(context)!.translate('lead')) ||
-                      label.contains(AppLocalizations.of(context)!.translate('description_list')))
+              child: (label.contains(
+                          AppLocalizations.of(context)!.translate('lead')) ||
+                      label.contains(AppLocalizations.of(context)!
+                          .translate('description_list')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
                   : _buildValue(value),
             ),
@@ -582,13 +632,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
- // Модифицируем функцию построения значения
-   Widget _buildValue(String value) {
+  // Модифицируем функцию построения значения
+  Widget _buildValue(String value) {
     if (value.isEmpty) return Container();
 
     // Проверяем, является ли это телефонным номером
     if (details.any((detail) =>
-        detail['label'] == AppLocalizations.of(context)!.translate('phone_use') && detail['value'] == value)) {
+        detail['label'] ==
+            AppLocalizations.of(context)!.translate('phone_use') &&
+        detail['value'] == value)) {
       return GestureDetector(
         onTap: () => _makePhoneCall(value),
         child: Text(
@@ -603,7 +655,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ),
       );
     }
-    
+
     // Добавляем проверку на WhatsApp
     if (details.any((detail) =>
         detail['label'] == 'WhatsApp:' && detail['value'] == value)) {

@@ -198,12 +198,15 @@ class ChatById {
 class UserById {
   final int id;
   final String name;
+  final String lastname;
+
   final String email;
   final String phone;
 
   UserById({
     required this.id,
     required this.name,
+    required this.lastname,
     required this.email,
     required this.phone,
   });
@@ -211,9 +214,10 @@ class UserById {
   factory UserById.fromJson(Map<String, dynamic> json) {
     return UserById(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано',
-      email: json['email'] ?? 'Не указано',
-      phone: json['phone'] ?? 'Не указано',
+      name: json['name'] ?? '',
+      lastname: json['lastname'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
     );
   }
 }

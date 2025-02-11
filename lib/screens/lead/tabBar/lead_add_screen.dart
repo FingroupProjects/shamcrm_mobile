@@ -102,33 +102,38 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            Navigator.pop(context, widget.statusId);
-            context.read<LeadBloc>().add(FetchLeadStatuses());
-          },
-        ),
-        title: Row(
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('new_lead'), 
-              style: TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
+        title: Transform.translate(
+          offset: const Offset(-10, 0),
+          child: Text(
+            AppLocalizations.of(context)!.translate('new_lead'),
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
             ),
-          ],
+          ),
         ),
+        centerTitle: false,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Transform.translate(
+            offset: const Offset(0, -2),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                Navigator.pop(context, widget.statusId);
+            context.read<LeadBloc>().add(FetchLeadStatuses());
+              },
+            ),
+          ),
+        ),
+        leadingWidth: 40,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       body: BlocListener<LeadBloc, LeadState>(
         listener: (context, state) {

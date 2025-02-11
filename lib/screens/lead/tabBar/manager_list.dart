@@ -49,7 +49,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.red,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -65,7 +66,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               if (widget.selectedManager != null && managersList.isNotEmpty) {
                 try {
                   selectedManagerData = managersList.firstWhere(
-                    (manager) => manager.id.toString() == widget.selectedManager,
+                    (manager) =>
+                        manager.id.toString() == widget.selectedManager,
                   );
                 } catch (e) {
                   selectedManagerData = null;
@@ -91,7 +93,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   child: CustomDropdown<ManagerData>.search(
                     closeDropDownOnClearFilterSearch: true,
                     items: managersList,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     enabled: true, // Всегда enabled
                     decoration: CustomDropdownDecoration(
@@ -110,7 +113,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return Text(
-                        item.name!,
+                        '${item.name!} ${item.lastname ?? ''}', // Добавляем фамилию
                         style: TextStyle(
                           color: Color(0xff1E2E52),
                           fontSize: 14,
@@ -124,16 +127,17 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         return Row(
                           children: [
                             SizedBox(
-                              // width: 16,
-                              // height: 16,
-                              // child: CircularProgressIndicator(
-                              //   strokeWidth: 2,
-                              //   valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                              // ),
-                            ),
+                                // width: 16,
+                                // height: 16,
+                                // child: CircularProgressIndicator(
+                                //   strokeWidth: 2,
+                                //   valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                // ),
+                                ),
                             // SizedBox(width: 8),
                             Text(
-                              AppLocalizations.of(context)!.translate('select_manager'),
+                              AppLocalizations.of(context)!
+                                  .translate('select_manager'),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -145,7 +149,12 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                         );
                       }
                       return Text(
-                        selectedItem.name ?? AppLocalizations.of(context)!.translate('select_manager'),
+                        '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
+                                .trim()
+                                .isNotEmpty
+                            ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
+                            : AppLocalizations.of(context)!
+                                .translate('select_manager'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -167,7 +176,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     initialItem: selectedManagerData,
                     validator: (value) {
                       if (value == null) {
-                        return AppLocalizations.of(context)!.translate('field_required_project');
+                        return AppLocalizations.of(context)!
+                            .translate('field_required_project');
                       }
                       return null;
                     },

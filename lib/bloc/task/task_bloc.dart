@@ -160,30 +160,28 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
   }
 
-  Future<void> _fetchMoreTasks(
-      FetchMoreTasks event, Emitter<TaskState> emit) async {
-    if (allTasksFetched) return;
+Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) async {
+  if (allTasksFetched) return;
 
-    if (!await _checkInternetConnection()) {
-      emit(TaskError('Нет подключения к интернету'));
+  if (!await _checkInternetConnection()) {
+    emit(TaskError('Нет подключения к интернету'));
+    return;
+  }
+
+  try {
+    final tasks = await apiService.getTasks(event.statusId, page: event.currentPage + 1);
+    if (tasks.isEmpty) {
+      allTasksFetched = true; // Обновляем флаг, если задач больше нет
       return;
     }
-
-    try {
-      final tasks = await apiService.getTasks(event.statusId,
-          page: event.currentPage + 1);
-      if (tasks.isEmpty) {
-        allTasksFetched = true;
-        return;
-      }
-      if (state is TaskDataLoaded) {
-        final currentState = state as TaskDataLoaded;
-        emit(currentState.merge(tasks));
-      }
-    } catch (e) {
-      emit(TaskError('Не удалось загрузить дополнительные задачи!'));
+    if (state is TaskDataLoaded) {
+      final currentState = state as TaskDataLoaded;
+      emit(currentState.merge(tasks));
     }
+  } catch (e) {
+    emit(TaskError('Не удалось загрузить дополнительные задачи!'));
   }
+}
 
  /* Future<void> _createTask(CreateTask event, Emitter<TaskState> emit) async {
     emit(TaskLoading());

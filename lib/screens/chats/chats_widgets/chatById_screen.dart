@@ -92,7 +92,7 @@ class UserProfileScreen extends StatelessWidget {
               final profile = state.profile;
               final DateTime parsedDate = DateTime.parse(profile.createdAt);
               final String formattedDate =
-                  DateFormat('dd-MM-yyyy').format(parsedDate);
+                  DateFormat('dd.MM.yyyy').format(parsedDate);
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),

@@ -544,26 +544,36 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
+        title: Transform.translate(
+          offset: const Offset(-10, 0),
+          child: Text(
+            AppLocalizations.of(context)!.translate('task_edit'),
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
         centerTitle: false,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () => Navigator.pop(context, null),
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.translate('task_edit'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Transform.translate(
+            offset: const Offset(0, -2),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () => Navigator.pop(context, null),
+            ),
           ),
         ),
+        leadingWidth: 40,
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
@@ -659,58 +669,55 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                           });
                         },
                       ),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('deadline'),
-                        hasError: isEndDateInvalid,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
+                     CustomTextFieldDate(
+                      controller: endDateController,
+                      label: AppLocalizations.of(context)!.translate('deadline'),
+                      hasError: isEndDateInvalid,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!.translate('field_required');
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Отображаем секцию с файлами, если есть данные
+                    if (fileNames.isNotEmpty) _buildFileSelection(),
+                    // Отображаем кнопку "additionally", если нет данных в файлах и кастомных полях
+                    if (_shouldShowAdditionalFieldsButton && !_showAdditionalFields)
+                      CustomButton(
+                        buttonText: AppLocalizations.of(context)!.translate('additionally'),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _toggleAdditionalFields,
+                      ),
+                    // Отображаем дополнительные поля, если они раскрыты
+                    if (_showAdditionalFields) ...[
+                      if (fileNames.isEmpty) _buildFileSelection(),
+                      const SizedBox(height: 0),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: customFields.length,
+                        itemBuilder: (context, index) {
+                          return CustomFieldWidget(
+                            fieldName: customFields[index].fieldName,
+                            valueController: customFields[index].controller,
+                            onRemove: () {
+                              setState(() {
+                                customFields.removeAt(index);
+                                _checkAdditionalFields();
+                              });
+                            },
+                          );
                         },
                       ),
-                      const SizedBox(height: 16),
-                      // Если дополнительные поля ещё не показаны, выводим кнопку "Дополнительно"
-                      if (_shouldShowAdditionalFieldsButton &&
-                          !_showAdditionalFields)
-                        CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('additionally'),
-                          buttonColor: Color(0xff1E2E52),
-                          textColor: Colors.white,
-                          onPressed: _toggleAdditionalFields,
-                        ),
-                      // Если дополнительные поля раскрыты, отображаем их
-                      if (_showAdditionalFields) ...[
-                        _buildFileSelection(),
-                        const SizedBox(height: 20),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: customFields.length,
-                          itemBuilder: (context, index) {
-                            return CustomFieldWidget(
-                              fieldName: customFields[index].fieldName,
-                              valueController: customFields[index].controller,
-                              onRemove: () {
-                                setState(() {
-                                  customFields.removeAt(index);
-                                  _checkAdditionalFields(); // Проверяем поля после удаления
-                                });
-                              },
-                            );
-                          },
-                        ),
-                        CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('add_field'),
-                          buttonColor: Color(0xff1E2E52),
-                          textColor: Colors.white,
-                          onPressed: _showAddFieldDialog,
-                        ),
+                      CustomButton(
+                        buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                        onPressed: _showAddFieldDialog,
+                      ),
                       ],
                       // Другие элементы формы можно разместить здесь
                     ],

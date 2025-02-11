@@ -38,7 +38,7 @@ static bool _isValidDate(String date) {
     if (date != null && date!.isNotEmpty) {
       try {
         final dateTime = DateTime.parse(date!);
-        return DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
+        return DateFormat('dd.MM.yyyy HH:mm').format(dateTime);
       } catch (e) {
         return 'Не указано'; // Если дата некорректная
       }

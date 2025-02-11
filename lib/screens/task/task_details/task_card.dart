@@ -48,7 +48,7 @@ class _TaskCardState extends State<TaskCard> {
     statusId = widget.statusId;
   }
 
-  /// Форматирование даты в `dd-MM-yyyy`
+  /// Форматирование даты в `dd.MM.yyyy`
   String formatDate(String dateString) {
     DateTime dateTime =
         DateTime.parse(dateString); // Преобразование строки в дату
@@ -78,7 +78,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFFFEBEE); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFFFF3E0); // Цвет для сложного приоритета
+        return const Color(0xFFE8F5E9); // Цвет для сложного приоритета
       default:
         return const Color(0xFFE8F5E9); // Цвет по умолчанию
     }
@@ -92,7 +92,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFC62828); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFEF6C00); // Цвет для сложного приоритета
+        return const Color(0xFF2E7D32); // Цвет для сложного приоритета
       default:
         return const Color(0xFF2E7D32); // Цвет по умолчанию
     }
@@ -106,7 +106,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return AppLocalizations.of(context)!.translate('urgent');
       case 2:
-        return AppLocalizations.of(context)!.translate('important');
+        return AppLocalizations.of(context)!.translate('normal');
       default:
         return AppLocalizations.of(context)!.translate('normal');
     }
@@ -461,7 +461,7 @@ class _TaskCardState extends State<TaskCard> {
                         ],
                       ),
                     Padding(
-                      padding: const EdgeInsets.all(0), // Отступы
+                      padding: const EdgeInsets.all(3), // Отступы
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment
                             .spaceBetween, // Пространство между элементами
@@ -482,17 +482,17 @@ class _TaskCardState extends State<TaskCard> {
                                 ),
                                 child: Image.asset(
                                   'assets/icons/tabBar/date.png', // Иконка даты
-                                  width: 24,
-                                  height: 36,
+                               width: 18,
+                              height: 22,
                                 ),
                               ),
                               const SizedBox(
-                                  width: 4), // Отступ между иконкой и текстом
+                                  width: 4, height: 14,), // Отступ между иконкой и текстом
                               Text(
                                 formatDate(widget.task.endDate ??
                                     DateTime.now().toString()),
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
                                   color: overdueDays > 0
@@ -507,7 +507,7 @@ class _TaskCardState extends State<TaskCard> {
                           if (widget.task.overdue! > 0)
                             Padding(
                               padding: EdgeInsets.only(
-                                left: MediaQuery.of(context).size.width * 0.50,
+                                left: MediaQuery.of(context).size.width * 0.52,
                               ),
                               child: Container(
                                 width: 24,

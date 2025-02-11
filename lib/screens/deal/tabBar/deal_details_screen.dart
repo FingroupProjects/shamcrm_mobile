@@ -264,118 +264,128 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
+  return AppBar(
+    backgroundColor: Colors.white,
+    forceMaterialTransparency: true,
+    elevation: 0,
+    centerTitle: false,
+    leadingWidth: 40,
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 0),
+      child: Transform.translate(
+        offset: const Offset(0, -2),
+        child: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
+            Navigator.pop(context, widget.statusId);
+          },
         ),
-        onPressed: () {
-          Navigator.pop(context, widget.statusId);
-        },
       ),
-      title: Text(
+    ),
+    title: Transform.translate(
+      offset: const Offset(-10, 0),
+      child: Text(
         title,
-        style: TextStyle(
-          fontSize: 18,
+        style: const TextStyle(
+          fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
           color: Color(0xff1E2E52),
         ),
       ),
-      actions: [
-        if (_canEditDeal || _canDeleteDeal)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_canEditDeal)
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/edit.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () async {
-                    if (currentDeal != null) {
-                      final startDateString = currentDeal!.startDate != null &&
-                              currentDeal!.startDate!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentDeal!.startDate!))
-                          : null;
-                      final endDateString = currentDeal!.endDate != null &&
-                              currentDeal!.endDate!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentDeal!.endDate!))
-                          : null;
-                      final createdAtDateString = currentDeal!.createdAt !=
-                                  null &&
-                              currentDeal!.createdAt!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentDeal!.createdAt!))
-                          : null;
-
-                      final shouldUpdate = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DealEditScreen(
-                            dealId: currentDeal!.id,
-                            dealName: currentDeal!.name,
-                            statusId: currentDeal!.statusId,
-                            manager: currentDeal!.manager != null
-                                ? currentDeal!.manager!.id.toString()
-                                : '',
-                            lead: currentDeal!.lead != null
-                                ? currentDeal!.lead!.id.toString()
-                                : '',
-                            startDate: startDateString,
-                            endDate: endDateString,
-                            createdAt: createdAtDateString,
-                            sum: currentDeal!.sum.toString(),
-                            description: currentDeal!.description ?? '',
-                            dealCustomFields: currentDeal!.dealCustomFields,
-                          ),
-                        ),
-                      );
-
-                      if (shouldUpdate == true) {
-                        context
-                            .read<DealByIdBloc>()
-                            .add(FetchDealByIdEvent(dealId: currentDeal!.id));
-                        context.read<DealBloc>().add(FetchDealStatuses());
-                      }
-                    }
-                  },
+    ),
+    actions: [
+      if (_canEditDeal || _canDeleteDeal)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canEditDeal)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/edit.png',
+                  width: 24,
+                  height: 24,
                 ),
-              if (_canDeleteDeal)
-                IconButton(
-                  padding: EdgeInsets.only(right: 8),
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => DeleteDealDialog(
-                        dealId: currentDeal!.id,
-                        leadId: currentDeal!.lead!.id,
+                onPressed: () async {
+                  if (currentDeal != null) {
+                    final startDateString = currentDeal!.startDate != null &&
+                            currentDeal!.startDate!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentDeal!.startDate!))
+                        : null;
+                    final endDateString = currentDeal!.endDate != null &&
+                            currentDeal!.endDate!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentDeal!.endDate!))
+                        : null;
+                    final createdAtDateString = currentDeal!.createdAt != null &&
+                            currentDeal!.createdAt!.isNotEmpty
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(currentDeal!.createdAt!))
+                        : null;
+
+                    final shouldUpdate = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DealEditScreen(
+                          dealId: currentDeal!.id,
+                          dealName: currentDeal!.name,
+                          statusId: currentDeal!.statusId,
+                          manager: currentDeal!.manager != null
+                              ? currentDeal!.manager!.id.toString()
+                              : '',
+                          lead: currentDeal!.lead != null
+                              ? currentDeal!.lead!.id.toString()
+                              : '',
+                          startDate: startDateString,
+                          endDate: endDateString,
+                          createdAt: createdAtDateString,
+                          sum: currentDeal!.sum.toString(),
+                          description: currentDeal!.description ?? '',
+                          dealCustomFields: currentDeal!.dealCustomFields,
+                        ),
                       ),
                     );
-                  },
+
+                    if (shouldUpdate == true) {
+                      context
+                          .read<DealByIdBloc>()
+                          .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                      context.read<DealBloc>().add(FetchDealStatuses());
+                    }
+                  }
+                },
+              ),
+            if (_canDeleteDeal)
+              IconButton(
+                padding: EdgeInsets.only(right: 8),
+                constraints: BoxConstraints(),
+                icon: Image.asset(
+                  'assets/icons/delete.png',
+                  width: 24,
+                  height: 24,
                 ),
-            ],
-          ),
-      ],
-    );
-  }
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => DeleteDealDialog(
+                      dealId: currentDeal!.id,
+                      leadId: currentDeal!.lead!.id,
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+    ],
+  );
+}
 
   Widget _buildDetailsList() {
     return ListView.builder(

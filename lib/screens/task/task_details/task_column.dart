@@ -15,7 +15,6 @@ class TaskColumn extends StatefulWidget {
   final Function(int) onStatusId;
   final int? userId; // Добавляем параметр managerId
 
-
   TaskColumn({
     required this.statusId,
     required this.name,
@@ -38,17 +37,9 @@ class _TaskColumnState extends State<TaskColumn> {
     super.initState();
     _taskBloc = TaskBloc(_apiService)..add(FetchTasks(widget.statusId));
     _checkPermission();
-
+    _scrollController.addListener(_onScroll);
     // Добавляем слушатель для пагинации
-    void _onScroll() {
-      if (_scrollController.position.pixels ==
-          _scrollController.position.maxScrollExtent) {
-        final currentState = _taskBloc.state;
-        if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
-          _taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
-        }
-      }
-    }
+   
   }
 
   @override
@@ -63,7 +54,16 @@ class _TaskColumnState extends State<TaskColumn> {
     _scrollController.dispose(); // Удаляем контроллер при уничтожении
     super.dispose();
   }
-
+ void _onScroll() {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        final currentState = _taskBloc.state;
+        if (currentState is TaskDataLoaded && !currentState.allTasksFetched) {
+          _taskBloc
+              .add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+        }
+      }
+    }
   Future<void> _checkPermission() async {
     bool hasPermission = await _apiService.hasPermission('task.create');
     setState(() {
@@ -75,7 +75,7 @@ class _TaskColumnState extends State<TaskColumn> {
     final leadBloc = BlocProvider.of<TaskBloc>(context);
     leadBloc.add(FetchTaskStatuses());
 
-        // BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+    // BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
 
     _taskBloc.add(FetchTasks(widget.statusId));
     return Future.delayed(Duration(milliseconds: 1));
@@ -111,7 +111,9 @@ class _TaskColumnState extends State<TaskColumn> {
                     children: [
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4),
-                      Center(child: Text(AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'))),
+                      Center(
+                          child: Text(AppLocalizations.of(context)!
+                              .translate('no_tasks_for_selected_status'))),
                     ],
                   ),
                 );
@@ -120,10 +122,13 @@ class _TaskColumnState extends State<TaskColumn> {
               final ScrollController _scrollController = ScrollController();
               _scrollController.addListener(() {
                 if (_scrollController.position.pixels ==
-                        _scrollController.position.maxScrollExtent &&
-                    !_taskBloc.allTasksFetched) {
-                  _taskBloc
-                      .add(FetchMoreTasks(widget.statusId, state.currentPage));
+                    _scrollController.position.maxScrollExtent) {
+                  final currentState = _taskBloc.state;
+                  if (currentState is TaskDataLoaded &&
+                      !currentState.allTasksFetched) {
+                    _taskBloc.add(FetchMoreTasks(
+                        widget.statusId, currentState.currentPage));
+                  }
                 }
               });
 
@@ -165,9 +170,9 @@ class _TaskColumnState extends State<TaskColumn> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: 
-                    Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
+                    content: Text(
+                        AppLocalizations.of(context)!
+                            .translate(state.message), // Локализация сообщения
                         style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,

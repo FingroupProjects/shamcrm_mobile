@@ -762,7 +762,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   // }
 
   // Функция выбора файла
- Widget _buildFileSelection() {
+  Widget _buildFileSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -881,6 +881,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       ],
     );
   }
+
 // Функция выбора файла остается такой же как у вас
   Future<void> _pickFile() async {
     try {
@@ -957,28 +958,38 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            Navigator.pop(context, widget.statusId);
-            context.read<TaskBloc>().add(FetchTaskStatuses());
-          },
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.translate('new_task'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        title: Transform.translate(
+          offset: const Offset(-10, 0),
+          child: Text(
+            AppLocalizations.of(context)!.translate('new_task'),
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
           ),
         ),
-        backgroundColor: Colors.white,
         centerTitle: false,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Transform.translate(
+            offset: const Offset(0, -2),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () {
+                Navigator.pop(context, widget.statusId);
+                context.read<TaskBloc>().add(FetchTaskStatuses());
+              },
+            ),
+          ),
+        ),
+        leadingWidth: 40,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       body: BlocListener<TaskBloc, TaskState>(
         listener: (context, state) {
@@ -1130,7 +1141,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           },
                         )
                       else ...[
-                        // Если дополнительные поля раскрыты, показываем виджет выбора файла,
                         // список дополнительных полей и кнопку для добавления нового поля
                         _buildFileSelection(),
                         const SizedBox(height: 8),
