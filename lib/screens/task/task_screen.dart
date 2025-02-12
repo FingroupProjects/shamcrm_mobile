@@ -420,7 +420,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   if (_selectedUsers.isEmpty &&
                       _selectedStatuses == null &&
                       _fromDate == null &&
-                      _toDate == null) {
+                      _toDate == null &&
+                      _initialOverdue == null &&
+                      _initialHasFile == null &&
+                      _initialHasDeal == null &&
+                      _initialUrgent == null &&
+                      _initialDeadline == null) {
                     print("IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
@@ -439,6 +444,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       statusIds: _selectedStatuses,
                       fromDate: _fromDate,
                       toDate: _toDate,
+                      overdue: _initialOverdue,
+                      hasFile: _initialHasFile,
+                      hasDeal: _initialHasDeal,
+                      urgent: _initialUrgent,
+                      deadline: _initialDeadline,
                     ));
                   }
                 } else if (_selectedUserIds != null &&
