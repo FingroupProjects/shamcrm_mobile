@@ -255,8 +255,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   }
 
   Future<void> _setUpSocketForNotifications() async {
-    debugPrint(
-        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    debugPrint('--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final baseUrlSocket = await ApiService().getSocketBaseUrl();

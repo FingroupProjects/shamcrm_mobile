@@ -21,7 +21,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   bool isInitialized = false;
 
 
-
   @override
   void initState() {
     super.initState();
@@ -58,8 +57,8 @@ controller?.dispose();
           String decodedString = utf8.decode(bytes);
           print('Декодированная строка: $decodedString');
 
-          String cleanedResult = decodedString.replaceAll('-back-', '-');
-          List<String> qrParts = cleanedResult.split('-');
+          String cleanedResult = decodedString.replaceAll('-back?', '?');
+          List<String> qrParts = cleanedResult.split('?');
 
           String token = qrParts[0];
           String domain = qrParts[2];
@@ -82,19 +81,40 @@ controller?.dispose();
 
               final apiService = context.read<ApiService>();
 
-              String? fcmToken = await FirebaseMessaging.instance.getToken();
+ 
+
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+                       String? fcmToken = await FirebaseMessaging.instance.getToken();
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
-
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
         } catch (e, stackTrace) {
           print('Ошибка при декодировании Base64: $e');
           print('Стек вызовов: $stackTrace');
           print('Исходные данные сканирования: ${scanData.code}');
-          
-          // Если ошибка при декодировании, пробуем использовать альтернативный метод
+          // Показываем сообщение об ошибке
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Неверный формат QR-кода!',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -146,8 +166,8 @@ controller?.dispose();
 
           print('Декодированная строка: $decodedString');
 
-          String cleanedResult = decodedString.replaceAll('-back-', '-');
-          List<String> qrParts = cleanedResult.split('-');
+          String cleanedResult = decodedString.replaceAll('?back?', '?');
+          List<String> qrParts = cleanedResult.split('?');
 
           String token = qrParts[0];
           String domain = qrParts[2];
@@ -166,16 +186,13 @@ controller?.dispose();
           await context.read<ApiService>().initializeWithDomain(domain, mainDomain);
           await context.read<ApiService>().saveQrData(domain, mainDomain, login, token, userId, organizationId);
 
-            // final apiService = context.read<ApiService>();
+            final apiService = context.read<ApiService>();
 
-            //   String? fcmToken = await FirebaseMessaging.instance.getToken();
-            //   if (fcmToken != null) {
-            //     await apiService.sendDeviceToken(fcmToken);
-            //   }
-
-              
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => PinSetupScreen()));
+                String? fcmToken = await FirebaseMessaging.instance.getToken();
+              if (fcmToken != null) {
+                await apiService.sendDeviceToken(fcmToken);
+              }
         } catch (e) {
           print('Ошибка при декодировании Base64: $e');
         }

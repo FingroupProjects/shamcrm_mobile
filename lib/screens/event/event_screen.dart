@@ -54,6 +54,7 @@ class _EventScreenState extends State<EventScreen>
 void initState() {
   super.initState();
   context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+  _eventBloc = context.read<EventBloc>();
 
   _tabScrollController = ScrollController();
   _listScrollController = ScrollController();

@@ -301,9 +301,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_date_range'),
-                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                            : AppLocalizations.of(context)!.translate('select_date_range'),
+                        style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
                     ],

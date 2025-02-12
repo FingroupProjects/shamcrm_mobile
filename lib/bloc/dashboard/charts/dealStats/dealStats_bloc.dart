@@ -34,7 +34,7 @@ class DealStatsBloc extends Bloc<DealStatsEvent, DealStatsState> {
       // Попытка загрузить данные из кеша
       final cachedData = await DealStatsCache.getDealStatsData();
       if (cachedData != null) {
-        print("📦 Найдены данные в кеше Deal Stats: $cachedData");
+        print("📦 Найдены данные в кеше Deal Stats.");
         emit(DealStatsLoaded(dealStatsData: DealStatsResponse(data: cachedData)));
       } else {
         print("⚠️ Данные не найдены в кэше.");

@@ -119,7 +119,7 @@ Future<void> _loadUserName() async {
       });
       await UserTaskCompletionCacheHandler.saveUserTaskCompletionData(monthlyData);
     } catch (e) {
-      print('Ошибка при загрузке данных с API: $e');
+      // print('Ошибка при загрузке данных с API: $e');
     }
   }
 

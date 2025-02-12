@@ -64,38 +64,23 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
     _NoticetoDate = widget.initialNoticeToDate;
   }
 
-void _selectDateRange() async {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final double dialogWidth = screenWidth > 600 ? 400 : screenWidth * 0.8;
-  final DateTimeRange? pickedRange = await showDateRangePicker(
-    context: context,
-    firstDate: DateTime(2000),
-    lastDate: DateTime(2101),
-    initialDateRange: _fromDate != null && _toDate != null
-        ? DateTimeRange(start: _fromDate!, end: _toDate!)
-        : null,
-    builder: (context, child) {
-      return Dialog(
-        child: Container(
-          width: dialogWidth, 
-          child: child,
-        ),
-      );
-    },
-  );
-  
-  if (pickedRange != null) {
-    setState(() {
-      _fromDate = pickedRange.start;
-      _toDate = pickedRange.end;
-    });
+  void _selectDateRange() async {
+    final DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: _fromDate != null && _toDate != null
+          ? DateTimeRange(start: _fromDate!, end: _toDate!)
+          : null,
+    );
+    if (pickedRange != null) {
+      setState(() {
+        _fromDate = pickedRange.start;
+        _toDate = pickedRange.end;
+      });
+    }
   }
-}
-
 void _selectNoticeDateRange() async {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final double dialogWidth = screenWidth > 600 ? 400 : screenWidth * 0.8;
-
   final DateTimeRange? pickedRange = await showDateRangePicker(
     context: context,
     firstDate: DateTime(2000),
@@ -103,16 +88,7 @@ void _selectNoticeDateRange() async {
     initialDateRange: _NoticefromDate != null && _NoticetoDate != null
         ? DateTimeRange(start: _NoticefromDate!, end: _NoticetoDate!)
         : null,
-    builder: (context, child) {
-      return Dialog(
-        child: Container(
-          width: dialogWidth,
-          child: child,
-        ),
-      );
-    },
   );
-
   if (pickedRange != null) {
     setState(() {
       _NoticefromDate = pickedRange.start;
@@ -120,7 +96,6 @@ void _selectNoticeDateRange() async {
     });
   }
 }
-
 
 
   @override
@@ -258,7 +233,7 @@ void _selectNoticeDateRange() async {
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                             : AppLocalizations.of(context)!.translate('enter_date_range_create'),
-                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
                     ],
@@ -285,7 +260,7 @@ void _selectNoticeDateRange() async {
                         _NoticefromDate != null && _NoticetoDate != null
                             ? "${_NoticefromDate!.day.toString().padLeft(2, '0')}.${_NoticefromDate!.month.toString().padLeft(2, '0')}.${_NoticefromDate!.year} - ${_NoticetoDate!.day.toString().padLeft(2, '0')}.${_NoticetoDate!.month.toString().padLeft(2, '0')}.${_NoticetoDate!.year}"
                             : AppLocalizations.of(context)!.translate('enter_date_range_notice'),
-                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
                     ],

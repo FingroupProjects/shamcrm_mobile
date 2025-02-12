@@ -892,7 +892,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
-          print('state: ${state.runtimeType}');
+          // print('state: ${state.runtimeType}');
           if (state is TaskDataLoaded) {
             final List<Task> tasks = state.tasks;
             print(tasks);

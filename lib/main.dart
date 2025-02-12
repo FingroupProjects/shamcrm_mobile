@@ -87,10 +87,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized(); 
-  await initializeApp(); 
-}
-Future<void> initializeApp() async {
-  WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
   final authService = AuthService();
@@ -107,6 +103,9 @@ Future<void> initializeApp() async {
   await FirebaseMessaging.instance.requestPermission();
   await getFCMTokens(apiService);
 
+  FirebaseApi firebaseApi = FirebaseApi();
+  await firebaseApi.initNotifications();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -114,8 +113,6 @@ Future<void> initializeApp() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-  FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications();
 
   final String? savedLanguageCode = await LanguageManager.getLanguage();
   final Locale savedLocale = savedLanguageCode != null ? Locale(savedLanguageCode) : const Locale('ru');
@@ -298,4 +295,5 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+  
 }
