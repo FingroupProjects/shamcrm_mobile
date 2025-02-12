@@ -8,11 +8,18 @@ class FetchTaskStatuses extends TaskEvent {}
 
 class FetchTasks extends TaskEvent {
   final int statusId;
-  final String? query; 
-  final List<int>? userIds; 
-  final int? statusIds; 
-  final DateTime? fromDate; 
-  final DateTime? toDate; 
+  final String? query;
+  final List<int>? userIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? overdue;
+  final bool? hasFile;
+  final bool? hasDeal;
+  final bool? urgent;
+  final DateTime? deadline;
+  final String? project;
+  final String? author;
 
   FetchTasks(
     this.statusId, {
@@ -21,6 +28,13 @@ class FetchTasks extends TaskEvent {
     this.statusIds,
     this.fromDate,
     this.toDate,
+    this.overdue,
+    this.hasFile,
+    this.hasDeal,
+    this.urgent,
+    this.deadline,
+    this.project,
+    this.author,
   });
 }
 class FetchTaskStatus extends TaskEvent {

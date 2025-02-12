@@ -64,7 +64,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode(); 
   WebSocket? _webSocket;
-  late StreamSubscription<ChannelReadEvent> chatSubscribtion;
+  late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
   late PusherChannelsClient socketClient;
 
   late VoiceController audioController;
@@ -248,7 +248,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   String formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
+    return "${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}";
   }
 
   Widget _buildAvatar(String avatar) {
@@ -368,7 +368,6 @@ Widget build(BuildContext context) {
             height: 24,
           ),
           onPressed: () {
-            apiService.closeChatSocket(widget.chatId);
             Navigator.pop(context);
           },
         ),
@@ -777,7 +776,7 @@ Widget messageListUi() {
 
     final baseUrlSocket = await apiService.getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
-    // Извлекаем значения из Map
+    
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
@@ -815,6 +814,9 @@ Widget messageListUi() {
       ),
     );
 
+    Set<int> processedMessageIds = {};
+
+
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
       chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
@@ -827,6 +829,16 @@ Widget messageListUi() {
         print('----sender');
         print(mm.message?.text ?? 'No text');
         print(mm.message?.sender?.name ?? 'Unknown sender');
+
+            // Проверяем, не обрабатывалось ли это сообщение ранее
+    if (processedMessageIds.contains(mm.message?.id)) {
+      print('Duplicate message, skipping.');
+      return; // Пропускаем сообщение, если оно уже было обработано
+    }
+
+    // Добавляем ID сообщения в множество
+    processedMessageIds.add(mm.message?.id ?? 0);
+
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String UUID = prefs.getString('userID') ?? '';
@@ -1057,20 +1069,27 @@ myPresenceChannel.bind('chat.read').listen((event) async {
     }
   }
 
-  @override
-  void dispose() {
-    chatSubscribtion.cancel();
-
-    _scrollController.addListener(_onScroll);
-    _scrollController.dispose();
-
-    _messageController.dispose();
-    socketClient.dispose();
+@override
+void dispose() {
+  if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
     _webSocket?.close();
-    _focusNode.dispose(); 
-    super.dispose();
   }
+  if (chatSubscribtion != null) {
+    chatSubscribtion?.cancel();
+    chatSubscribtion = null;
+  }
+
+  apiService.closeChatSocket(widget.chatId);
+  _scrollController.removeListener(_onScroll);
+  _scrollController.dispose();
+  _messageController.dispose();
+  socketClient.dispose();
+  _focusNode.dispose(); 
+
+  super.dispose();
 }
+}
+
 
 extension on Key? {
   get currentContext => null;

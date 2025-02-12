@@ -271,27 +271,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       3: AppLocalizations.of(context)!.translate('urgent'),
     };
 
-    // // Карта уровней приоритета
-    //   final Map<int, String> priorityLevels = {
-    //     1: 'Обычный',
-    //     3: 'Критический',
-    //     2: 'Сложный'
-    //   };
-
     currentTask = task;
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('task_name'),
         'value': task?.name ?? ""
       },
-      // {
-      //   'label': AppLocalizations.of(context)!.translate('task_number'),
-      //   'value': (task?.taskNumber ?? "").toString()
-      // },
-      //   {
-      //   'label': AppLocalizations.of(context)!.translate('task_number'),
-      //   'value': (task?.id ?? "").toString()
-      // },
       {
         'label':
             AppLocalizations.of(context)!.translate('priority_level_colon'),
@@ -302,12 +287,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description?.isNotEmpty == true ? task.description! : ''
       },
-      // {
-      //   'label': AppLocalizations.of(context)!.translate('from_details'),
-      //   'value': task.startDate != null && task.startDate!.isNotEmpty
-      //       ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-      //       : ''
-      // },
+
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
         'value': task.user != null && task.user!.isNotEmpty
@@ -340,11 +320,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(task.createdAt)
       },
-      // if (task.taskFile != null && task.taskFile!.isNotEmpty)
-      //   {
-      //     'label': AppLocalizations.of(context)!.translate('file_details'),
-      //     'value': AppLocalizations.of(context)!.translate('link'),
-      //   },
       if (task.files != null && task.files!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('files_details'),
@@ -356,11 +331,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     for (var field in task.taskCustomFields) {
       details.add({'label': '${field.key}:', 'value': field.value});
-    }
-
-    // Вывод каждой детали в консоль
-    for (var detail in details) {
-      print("${detail['label']} ${detail['value']}");
     }
   }
 
@@ -381,7 +351,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           body: BlocListener<TaskByIdBloc, TaskByIdState>(
             listener: (context, state) {
               if (state is TaskByIdLoaded) {
-                print("Задача Data: ${state.task.toString()}");
               } else if (state is TaskByIdError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

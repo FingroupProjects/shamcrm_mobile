@@ -87,27 +87,33 @@ class _HomeScreenState extends State<HomeScreen> {
     hasAvailableScreens = true;
   }
 
-  setState(() {
-    _widgetOptions = widgets;
-    _titleKeys = titleKeys;
-    _navBarTitleKeys = navBarTitleKeys;
-    _activeIcons = activeIcons;
-    _inactiveIcons = inactiveIcons;
-  });
+    // Проверяем, смонтирован ли виджет перед вызовом setState
+  if (mounted) {
+    setState(() {
+      _widgetOptions = widgets;
+      _titleKeys = titleKeys;
+      _navBarTitleKeys = navBarTitleKeys;
+      _activeIcons = activeIcons;
+      _inactiveIcons = inactiveIcons;
+    });
+  }
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    // Проверяем, смонтирован ли виджет перед вызовом setState
+    if (mounted) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    setState(() {
-      if (args != null && args['screenIndex'] != null) {
-        _selectedIndex = args['screenIndex'];
-      } else if (_widgetOptions.isNotEmpty) {
-        _selectedIndex = 0;
-      }
-    });
+      setState(() {
+        if (args != null && args['screenIndex'] != null) {
+          _selectedIndex = args['screenIndex'];
+        } else if (_widgetOptions.isNotEmpty) {
+          _selectedIndex = 0;
+        }
+      });
+    }
   });
 
-  if (!hasAvailableScreens) {
+  if (!hasAvailableScreens && mounted) {
     setState(() {
       _widgetOptions = [PlaceholderScreen(message: 'Нет доступных экранов.')];
       _titleKeys = ['no_available_screens'];
