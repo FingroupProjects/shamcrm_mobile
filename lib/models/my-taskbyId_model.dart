@@ -43,9 +43,6 @@ class MyTaskById {
             : null,
       );
     } catch (e, stackTrace) {
-      print('Error parsing MyTaskById: $e');
-      print('Stack trace: $stackTrace');
-      print('JSON data: $json');
       rethrow;
     }
   }
@@ -110,8 +107,6 @@ class MyTaskStatusById {
         taskStatus: json['title']?.toString(), // Используем title как taskStatus
       );
     } catch (e) {
-      print('Error parsing MyTaskStatusById: $e');
-      print('JSON data: $json');
       rethrow;
     }
   }

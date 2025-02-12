@@ -940,7 +940,7 @@ clearButtonClickFiltr: (value) {
       },
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
-          print('state: ${state.runtimeType}');
+          // print('state: ${state.runtimeType}');
           if (state is DealDataLoaded) {
             final List<Deal> deals = state.deals;
             print(deals);

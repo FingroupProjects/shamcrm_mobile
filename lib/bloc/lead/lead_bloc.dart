@@ -65,8 +65,6 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         fromDate: event.fromDate,
         toDate: event.toDate,
       );
-      print('Переданные менеджеры: ${event.managerIds}');
-
       // Сохраняем лиды в кэш
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);
 
@@ -95,7 +93,6 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         leadCounts: Map.from(_leadCounts),
       ));
     }
-    print("Updated leass counts: $_leadCounts");
 
     // Then fetch from API
     if (!await _checkInternetConnection()) {
@@ -109,8 +106,6 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         emit(LeadError('Нет статусов'));
         return;
       }
-      print("Updated lead counts: $_leadCounts");
-
       // Cache the statuses
       await LeadCache.cacheLeadStatuses(response
           .map((status) => {'id': status.id, 'title': status.title})
