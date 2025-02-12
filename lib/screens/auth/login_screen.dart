@@ -27,12 +27,9 @@ class LoginScreen extends StatelessWidget {
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) async {
             if (state is LoginLoaded) {
-              // Логирование успешного получения userId
               print('Received userId: ${state.user.id}');
-              // Сохраняем userID после успешного входа
               userID.value = state.user.id.toString();
 
-              // Сохранение имени пользователя в SharedPreferences
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('userName', state.user.name.toString());
               await prefs.setString('userID', state.user.id.toString());
@@ -43,13 +40,11 @@ class LoginScreen extends StatelessWidget {
                 await prefs.setString('userRoleName', 'No role assigned');
               }
 
-              // Получаем токен устройства и отправляем его на сервер
               String? fcmToken = await FirebaseMessaging.instance.getToken();
               if (fcmToken != null) {
                 await apiService.sendDeviceToken(fcmToken);
               }
 
-              // Проверяем сохранённую организацию
               final savedOrganization = await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
                 final organizations = await apiService.getOrganization();
@@ -60,12 +55,10 @@ class LoginScreen extends StatelessWidget {
                 }
               }
 
-              // Задержка в 1.5 секунды перед переходом
-              await Future.delayed(Duration(seconds: 1));
+              // Показываем анимацию 2 секунды перед переходом
+              await Future.delayed(Duration(seconds: 2));
               await _checkPinSetupStatus(context);
             } else if (state is LoginError) {
-              // Задержка в 1.5 секунды перед показом ошибки
-              await Future.delayed(Duration(seconds: 1));
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -110,8 +103,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    localizations
-                        .translate('login_subtitle'), 
+                    localizations.translate('login_subtitle'), 
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xff99A4BA),
@@ -133,28 +125,33 @@ class LoginScreen extends StatelessWidget {
                     isPassword: true,
                   ),
                   SizedBox(height: 16),
-                  state is LoginLoading
-                      ? Center(
-                          child: CircularProgressIndicator(
-                              color: Color(0xff1E2E52)))
-                      : CustomButton(
-                          buttonText: localizations.translate('login_button'), 
-                          buttonColor: Color(0xff4F40EC),
-                          textColor: Colors.white,
-                          onPressed: () {
-                            final login = loginController.text.trim();
-                            final password = passwordController.text.trim();
-                            if (login.isEmpty || password.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(localizations.translate('login_empty_fields_error')), 
-                                ),
-                              );
-                              return;
-                            }
-                            BlocProvider.of<LoginBloc>(context).add(CheckLogin(login, password));
-                          },
-                        ),
+                  // Показываем анимацию загрузки для состояний LoginLoading и LoginLoaded
+                  if (state is LoginLoading || state is LoginLoaded)
+                    Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xff1E2E52),
+                      ),
+                    )
+                  // Показываем кнопку только если состояние Initial или Error
+                  else
+                    CustomButton(
+                      buttonText: localizations.translate('login_button'), 
+                      buttonColor: Color(0xff4F40EC),
+                      textColor: Colors.white,
+                      onPressed: () {
+                        final login = loginController.text.trim();
+                        final password = passwordController.text.trim();
+                        if (login.isEmpty || password.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(localizations.translate('login_empty_fields_error')), 
+                            ),
+                          );
+                          return;
+                        }
+                        BlocProvider.of<LoginBloc>(context).add(CheckLogin(login, password));
+                      },
+                    ),
                   SizedBox(height: 16),
                   ForgotPassword(
                     onPressed: () {},
@@ -173,11 +170,9 @@ class LoginScreen extends StatelessWidget {
     final isPinSetupComplete = prefs.getBool('isPinSetupComplete') ?? false;
 
     if (!isPinSetupComplete) {
-      // Первый раз: переходим на страницу /pin_setup
       prefs.setBool('isPinSetupComplete', true);
       Navigator.pushReplacementNamed(context, '/pin_setup');
     } else {
-      // Последующие разы: переходим на страницу /pin_screen
       Navigator.pushReplacementNamed(context, '/pin_screen');
     }
   }

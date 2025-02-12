@@ -646,6 +646,12 @@
       "apply":"Применить",
       "select_date_range":"Выбрать диапазон даты",
       "enter_date_range_create":"Введите интервал даты создания",
-      "enter_date_range_notice":"Введите интервал даты напоминания"
-    
+      "enter_date_range_notice":"Введите интервал даты напоминания",
+
+
+      "select_deadline":"Дедлайн",
+      "has_deal":"На основе сделки",
+      "has_file":"С файлом",
+      "overdue":"Просроченные"
+
   }

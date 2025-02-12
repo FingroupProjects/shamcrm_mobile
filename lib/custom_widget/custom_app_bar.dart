@@ -90,6 +90,11 @@ class CustomAppBar extends StatefulWidget {
   final bool showMenuIcon;
   final bool showSeparateFilter;
 
+  final bool? initialTaskIsOverdue;
+  final bool? initialTaskHasFile;
+  final bool? initialTaskHasDeal;
+  final bool? initialTaskIsUrgent;
+  final DateTime? initialTaskDeadline;
   CustomAppBar({
     super.key,
     required this.title,
@@ -153,6 +158,11 @@ class CustomAppBar extends StatefulWidget {
     this.showMenuIcon = true,
     this.showNotification = true,
     this.showSeparateFilter = false,
+     this.initialTaskIsOverdue,
+    this.initialTaskHasFile,
+    this.initialTaskHasDeal,
+    this.initialTaskIsUrgent,
+    this.initialTaskDeadline,
   });
 
   @override
@@ -821,6 +831,11 @@ class _CustomAppBarState extends State<CustomAppBar>
                             initialStatuses: widget.initialStatuses,
                             initialFromDate: widget.initialFromDate,
                             initialToDate: widget.initialToDate,
+                            initialIsOverdue: widget.initialTaskIsOverdue,
+                            initialHasFile: widget.initialTaskHasFile,
+                            initialHasDeal: widget.initialTaskHasDeal,
+                            initialIsUrgent: widget.initialTaskIsUrgent,
+                            initialDeadline: widget.initialTaskDeadline,
                             onResetFilters: widget.onResetFilters,
                           ),
                         ),

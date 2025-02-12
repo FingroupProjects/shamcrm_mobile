@@ -57,21 +57,33 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   String _lastSearchQuery = "";
 
-  List<UserData> _selectedUsers = []; 
-  int? _selectedStatuses;  
+  List<UserData> _selectedUsers = [];
+  int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
-
-  List<UserData> _initialselectedUsers = []; 
+  bool _isOverdue = false;
+  bool _hasFile = false;
+  bool _hasDeal = false;
+  bool _isUrgent = false;
+  DateTime? _deadline;
+  String? _selectedProject;
+  String? _selectedAuthor;
+  List<UserData> _initialselectedUsers = [];
   int? _initialSelStatus;
-   DateTime? _intialFromDate;
+  DateTime? _intialFromDate;
   DateTime? _intialToDate;
-
+  bool _initialOverdue = false;
+  bool _initialHasFile = false;
+  bool _initialHasDeal = false;
+  bool _initialUrgent = false;
+  DateTime? _initialDeadline;
+  String? _initialProject;
+  String? _initialAuthor;
 
   @override
   void initState() {
     super.initState();
-     context.read<GetAllClientBloc>().add(GetAllClientEv());
+    context.read<GetAllClientBloc>().add(GetAllClientEv());
     _scrollController = ScrollController();
     _loadUserRoles();
     TaskCache.getTaskStatuses().then((cachedStatuses) {
@@ -150,123 +162,174 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
 
     await TaskCache.clearAllTasks();
-    print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
+
     taskBloc.add(FetchTasks(
-    currentStatusId,
-    query: query,
-    userIds: _selectedUsers.map((user) => user.id).toList(),
-    statusIds: _selectedStatuses, 
-    fromDate: _fromDate,
-    toDate: _toDate,
-      ));
+      currentStatusId,
+      query: query,
+      userIds: _selectedUsers.map((user) => user.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      overdue: _isOverdue,
+      hasFile: _hasFile,
+      hasDeal: _hasDeal,
+      urgent: _isUrgent,
+      deadline: _deadline,
+      project: _selectedProject,
+      author: _selectedAuthor,
+    ));
   }
 
-Future _handleUserSelected(Map filterData) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedUsers = filterData['users'];
-    _selectedStatuses = filterData['statuses'];
-    _fromDate = filterData['fromDate'];
-    _toDate = filterData['toDate'];
+  Future _handleUserSelected(Map filterData) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedUsers = filterData['users'] ?? [];
+      _selectedStatuses = filterData['statuses'];
+      _fromDate = filterData['fromDate'];
+      _toDate = filterData['toDate'];
 
-    _initialselectedUsers = filterData['users'];
-    _initialSelStatus = filterData['statuses'];
-    _intialFromDate = filterData['fromDate'];
-    _intialToDate = filterData['toDate'];
-    
-  });
+      // Добавляем новые фильтры
+      _isOverdue = filterData['overdue'] ?? false;
+      _hasFile = filterData['hasFile'] ?? false;
+      _hasDeal = filterData['hasDeal'] ?? false;
+      _isUrgent = filterData['urgent'] ?? false;
+      _deadline = filterData['to'];
+      _selectedProject = filterData['project'];
+      _selectedAuthor = filterData['author'];
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    userIds: _selectedUsers.map((user) => user.id).toList(),
-    statusIds: _selectedStatuses, 
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+      // Сохраняем начальные значения
+      _initialselectedUsers = filterData['users'] ?? [];
+      _initialSelStatus = filterData['statuses'];
+      _intialFromDate = filterData['fromDate'];
+      _intialToDate = filterData['toDate'];
+      _initialOverdue = filterData['overdue'] ?? false;
+      _initialHasFile = filterData['hasFile'] ?? false;
+      _initialHasDeal = filterData['hasDeal'] ?? false;
+      _initialUrgent = filterData['urgent'] ?? false;
+      _initialDeadline = filterData['to'];
+      _initialProject = filterData['project'];
+      _initialAuthor = filterData['author'];
+    });
 
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
 
-Future _handleStatusSelected(int? selectedStatusId) async {
-  setState(() {
-     _showCustomTabBar = false;
-    _selectedStatuses = selectedStatusId;
-    
-    _initialSelStatus=selectedStatusId;
-  });
+    await TaskCache.clearAllTasks();
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    statusIds: _selectedStatuses, 
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      userIds: _selectedUsers.map((user) => user.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      overdue: _isOverdue,
+      hasFile: _hasFile,
+      hasDeal: _hasDeal,
+      urgent: _isUrgent,
+      deadline: _deadline,
+      project: _selectedProject,
+      author: _selectedAuthor,
+    ));
+  }
 
-Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
-  setState(() {
-     _showCustomTabBar = false;
-    _fromDate = fromDate;
-    _toDate = toDate;
+  Future _handleStatusSelected(int? selectedStatusId) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedStatuses = selectedStatusId;
 
-    _intialFromDate = fromDate;
-    _intialToDate = toDate;
-    
-  });
+      _initialSelStatus = selectedStatusId;
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
-Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, DateTime? toDate) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedStatuses=selectedStatus;
-    _fromDate = fromDate;
-    _toDate = toDate;
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      statusIds: _selectedStatuses,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
-    _initialSelStatus=selectedStatus;
-    _intialFromDate = fromDate;
-    _intialToDate = toDate;
-  });
+  Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _fromDate = fromDate;
+      _toDate = toDate;
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    statusIds: selectedStatus,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+      _intialFromDate = fromDate;
+      _intialToDate = toDate;
+    });
 
-void _resetFilters() {
-  setState(() {
-    _showCustomTabBar = true;
-    _selectedUsers = [];
-    _selectedStatuses = null;
-    _fromDate = null;
-    _toDate = null;
-    _initialselectedUsers = [];
-    _initialSelStatus = null;
-    _intialFromDate = null;
-    _intialToDate = null;
-    _lastSearchQuery = '';
-    _searchController.clear();
-  });
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTaskStatuses());
-}
+  Future _handleStatusAndDateSelected(
+      int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedStatuses = selectedStatus;
+      _fromDate = fromDate;
+      _toDate = toDate;
+
+      _initialSelStatus = selectedStatus;
+      _intialFromDate = fromDate;
+      _intialToDate = toDate;
+    });
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      statusIds: selectedStatus,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _showCustomTabBar = true;
+      _selectedUsers = [];
+      _selectedStatuses = null;
+      _fromDate = null;
+      _toDate = null;
+      _lastSearchQuery = '';
+      _searchController.clear();
+
+      // Сбрасываем новые фильтры
+      _isOverdue = false;
+      _hasFile = false;
+      _hasDeal = false;
+      _isUrgent = false;
+      _deadline = null;
+      _selectedProject = null;
+      _selectedAuthor = null;
+
+      // Сбрасываем начальные значения
+      _initialselectedUsers = [];
+      _initialSelStatus = null;
+      _intialFromDate = null;
+      _intialToDate = null;
+      _initialOverdue = false;
+      _initialHasFile = false;
+      _initialHasDeal = false;
+      _initialUrgent = false;
+      _initialDeadline = null;
+      _initialProject = null;
+      _initialAuthor = null;
+    });
+
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTaskStatuses());
+  }
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
@@ -275,22 +338,22 @@ void _resetFilters() {
   }
 
   // Метод для проверки разрешений
-Future<void> _checkPermissions() async {
-  final canRead = await _apiService.hasPermission('taskStatus.read');
-  final canCreate = await _apiService.hasPermission('taskStatus.create');
-  final canDelete = await _apiService.hasPermission('taskStatus.delete');
-  bool hasPermission = await _apiService.hasPermission('task.create');
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('taskStatus.read');
+    final canCreate = await _apiService.hasPermission('taskStatus.create');
+    final canDelete = await _apiService.hasPermission('taskStatus.delete');
+    bool hasPermission = await _apiService.hasPermission('task.create');
 
-  setState(() {
-    _canReadTaskStatus = canRead;
-    _canCreateTaskStatus = canCreate;
-    _canDeleteTaskStatus = canDelete;
-    _hasPermissionToAddTask = hasPermission;
+    setState(() {
+      _canReadTaskStatus = canRead;
+      _canCreateTaskStatus = canCreate;
+      _canDeleteTaskStatus = canDelete;
+      _hasPermissionToAddTask = hasPermission;
 
-    // Логика отображения фильтра зависит от разрешения на создание задачи
-    showFilter = hasPermission;
-  });
-}
+      // Логика отображения фильтра зависит от разрешения на создание задачи
+      showFilter = hasPermission;
+    });
+  }
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -306,84 +369,95 @@ Future<void> _checkPermissions() async {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_tasks'),
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (String value) {
-            if (value.isNotEmpty) {
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_tasks'),
+            onClickProfileAvatar: () {
               setState(() {
-                _isSearching = true;
+                isClickAvatarIcon = !isClickAvatarIcon;
               });
-            }
-            _onSearch(value);
-          },
-          onUsersSelected: _handleUserSelected,
-          onStatusSelected: _handleStatusSelected,
-          onDateRangeSelected: _handleDateSelected,
-          onStatusAndDateRangeSelected: _handleStatusAndDateSelected,
-          initialUsers: _initialselectedUsers,
-          initialStatuses: _initialSelStatus,
-          initialFromDate: _intialFromDate,
-          initialToDate: _intialToDate,
-          onResetFilters: _resetFilters,
-          textEditingController: textEditingController,
-          focusNode: focusNode,
-          showFilterIcon: false,
-          showMyTaskIcon: true,
-          showFilterIconDeal: false,
-          showEvent: false,
-          showFilterTaskIcon: showFilter,
-          clearButtonClick: (value) {
-                if (value == false) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _lastSearchQuery = '';
-                  });
+            },
+            onChangedSearchInput: (String value) {
+              if (value.isNotEmpty) {
+                setState(() {
+                  _isSearching = true;
+                });
+              }
+              _onSearch(value);
+            },
+            onUsersSelected: _handleUserSelected,
+            onStatusSelected: _handleStatusSelected,
+            onDateRangeSelected: _handleDateSelected,
+            onStatusAndDateRangeSelected: _handleStatusAndDateSelected,
+            initialUsers: _initialselectedUsers,
+            initialStatuses: _initialSelStatus,
+            initialFromDate: _intialFromDate,
+            initialToDate: _intialToDate,
+            initialTaskIsOverdue: _initialOverdue,
+            initialTaskHasFile: _initialHasFile,
+            initialTaskHasDeal: _initialHasDeal,
+            initialTaskIsUrgent: _initialUrgent,
+            initialTaskDeadline: _initialDeadline,
+            // initialProject: _initialProject,
+            // initialAuthor: _initialAuthor,
+            onResetFilters: _resetFilters,
+            textEditingController: textEditingController,
+            focusNode: focusNode,
+            showFilterIcon: false,
+            showMyTaskIcon: true,
+            showFilterIconDeal: false,
+            showEvent: false,
+            showFilterTaskIcon: showFilter,
+            clearButtonClick: (value) {
+              if (value == false) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _lastSearchQuery = '';
+                });
 
-              if (_searchController.text.isEmpty) {
-                if (_selectedUsers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null) {
-                  print("IF SEARCH EMPTY AND NO FILTERS");
-                  setState(() {
-                    _showCustomTabBar = true;
-                  });
-                  final taskBloc = BlocProvider.of<TaskBloc>(context);
-                  taskBloc.add(FetchTaskStatuses());
-                } else {
-                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  final taskBloc = BlocProvider.of<TaskBloc>(context);
-                  taskBloc.add(FetchTasks(
-                    currentStatusId,
-                    userIds: _selectedUsers.isNotEmpty ? _selectedUsers.map((user) => user.id).toList() : null,
-                    statusIds: _selectedStatuses,
-                    fromDate: _fromDate,
-                    toDate: _toDate,
-                  ));
-                }
-                  } else if (_selectedUserIds != null && _selectedUserIds!.isNotEmpty) {
-                    print("ELSE IF SEARCH NOT EMPTY");
-
+                if (_searchController.text.isEmpty) {
+                  if (_selectedUsers.isEmpty &&
+                      _selectedStatuses == null &&
+                      _fromDate == null &&
+                      _toDate == null) {
+                    print("IF SEARCH EMPTY AND NO FILTERS");
+                    setState(() {
+                      _showCustomTabBar = true;
+                    });
+                    final taskBloc = BlocProvider.of<TaskBloc>(context);
+                    taskBloc.add(FetchTaskStatuses());
+                  } else {
+                    print("IF SEARCH EMPTY BUT FILTERS EXIST");
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<TaskBloc>(context);
                     taskBloc.add(FetchTasks(
                       currentStatusId,
-                      userIds: _selectedUserIds,
-                      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                      userIds: _selectedUsers.isNotEmpty
+                          ? _selectedUsers.map((user) => user.id).toList()
+                          : null,
+                      statusIds: _selectedStatuses,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
                     ));
                   }
-                }
-              },
-           clearButtonClickFiltr: (value) {
-          
-          }
-        ),
+                } else if (_selectedUserIds != null &&
+                    _selectedUserIds!.isNotEmpty) {
+                  print("ELSE IF SEARCH NOT EMPTY");
 
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final taskBloc = BlocProvider.of<TaskBloc>(context);
+                  taskBloc.add(FetchTasks(
+                    currentStatusId,
+                    userIds: _selectedUserIds,
+                    query: _searchController.text.isNotEmpty
+                        ? _searchController.text
+                        : null,
+                  ));
+                }
+              }
+            },
+            clearButtonClickFiltr: (value) {}),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()

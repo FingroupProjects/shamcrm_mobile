@@ -10,8 +10,7 @@ import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
 import 'qr_scanner_screen.dart';
-import 'dart:ui' as ui; // Добавьте этот импорт
-
+import 'dart:ui' as ui;
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -51,12 +50,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    // if (!_isDomainChecked) {
-    //   return Scaffold(
-    //     body: Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
-    //   );
-    // }
-
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
 
@@ -85,7 +78,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     visible: !_showManualInput,
                     child: Column(
                       children: [
-                         Text(
+                        Text(
                           localizations!.translate('Сканировать QR-код'),
                           style: TextStyle(
                             fontSize: 20,
@@ -95,11 +88,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           ),
                         ),
                         SizedBox(height: 10),
-                           Icon(
-                            Icons.arrow_downward, 
-                            size: 60, 
-                            color: Color(0xff1E2E52),
-                          ),
+                        Icon(
+                          Icons.arrow_downward,
+                          size: 60,
+                          color: Color(0xff1E2E52),
+                        ),
                         SizedBox(height: 10),
                         IconButton(
                           icon: Icon(Icons.qr_code_scanner, size: 120, color: Color(0xff1E2E52)),
@@ -128,7 +121,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                localizations!.translate('Ручной ввод'),
+                                localizations.translate('Ручной ввод'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -136,7 +129,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                 ),
                               ),
                             ),
-                          )
+                          ),
                         ),
                       ],
                     ),
@@ -172,6 +165,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                 if (state.domainCheck.result) {
                                   await context.read<ApiService>().saveDomainChecked(true);
                                   await context.read<ApiService>().initialize();
+                                  // Добавляем задержку перед переходом
+                                  await Future.delayed(Duration(seconds: 2));
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(builder: (_) => LoginScreen()),
@@ -200,11 +195,16 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               }
                             },
                             builder: (context, state) {
-                              if (state is DomainLoading) {
-                                return CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                              // Показываем анимацию для состояний DomainLoading и успешного DomainLoaded
+                              if (state is DomainLoading || 
+                                  (state is DomainLoaded && state.domainCheck.result)) {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                  ),
                                 );
                               }
+                              // Показываем кнопку для всех остальных состояний
                               return CustomButton(
                                 buttonText: localizations.translate('login_button'),
                                 buttonColor: Color(0xff4F40EC),
@@ -233,26 +233,26 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                 _showManualInput = false;
                               });
                             },
-                             child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: AnimatedContainer(
-                              duration: Duration(milliseconds: 200),
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                border: Border.all(color: Color(0xff4F40EC), width: 2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                localizations!.translate('QR-CODE'), 
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xff4F40EC),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: AnimatedContainer(
+                                duration: Duration(milliseconds: 200),
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(color: Color(0xff4F40EC), width: 2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  localizations.translate('QR-CODE'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xff4F40EC),
+                                  ),
                                 ),
                               ),
                             ),
-                          )
                           ),
                         ],
                       ),
