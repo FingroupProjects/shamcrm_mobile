@@ -15,7 +15,7 @@ class ProfileEdit extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProfileDetailsPage(), // Передаем user
+            builder: (context) => ProfileEditPage(), // Передаем user
           ),
         );
       },
