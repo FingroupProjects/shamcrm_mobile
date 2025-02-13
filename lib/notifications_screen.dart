@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_details_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationsScreen extends StatefulWidget {
   @override
@@ -251,7 +252,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                     : notification.type =='taskOutDated'
                                                         ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
                                                         : notification.type == 'lead'
-                                                            ? AppLocalizations.of(context)!.translate('assigned_as_lead_manager')
+                                                          ? AppLocalizations.of(context)!.translate('task_deadline_reminder')
+                                                          : notification.type == 'updateLeadStatus'
+                                                            ? AppLocalizations.of(context)!.translate('Статус лида изменен!')
                                                             : notification.type,
                                 style: const TextStyle(
                                     fontSize: 16,
@@ -383,12 +386,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         } else if (getChatById.type == "corporate") {
           final getChatById = await ApiService().getChatById(chatId);
           String? chatName;
-          chatName = getChatById.group != null
-              ? getChatById.group!.name
-              : getChatById.chatUsers.length > 1
-                  ? '${getChatById.chatUsers[1].participant.name}'
-                  : getChatById.chatUsers[0].participant.name;
-
+            final prefs = await SharedPreferences.getInstance();
+            String userId = prefs.getString('userID').toString();
+            if (getChatById.group != null) {
+              chatName = getChatById.group!.name;
+            } else {
+              int userIndex = getChatById.chatUsers.indexWhere(
+                  (user) => user.participant.id.toString() == userId);
+              if (userIndex != -1) {
+                int otherUserIndex = (userIndex == 0) ? 1 : 0;
+                chatName =
+                    '${getChatById.chatUsers[otherUserIndex].participant.name}';
+              } else {
+                chatName = getChatById.chatUsers[0].participant.name;
+              }
+            }
           navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (context) => BlocProvider(
@@ -417,7 +429,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       } catch (e) {
         Navigator.of(context).pop();
         if (e.toString().contains('404')) {
-          // Handle 404 error (resource not found)
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Ресурс не найден для задачи.'),
@@ -494,7 +505,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       );
-    } else if (type == 'lead') {
+    } else if (type == 'lead' || type =='updateLeadStatus') {
       List<LeadCustomField> defaultCustomFields = [
         LeadCustomField(id: 1, key: '', value: ''),
         LeadCustomField(id: 2, key: '', value: ''),
