@@ -1071,6 +1071,8 @@ myPresenceChannel.bind('chat.read').listen((event) async {
 
 @override
 void dispose() {
+  apiService.closeChatSocket(widget.chatId);
+  
   if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
     _webSocket?.close();
   }
@@ -1079,7 +1081,7 @@ void dispose() {
     chatSubscribtion = null;
   }
 
-  apiService.closeChatSocket(widget.chatId);
+  
   _scrollController.removeListener(_onScroll);
   _scrollController.dispose();
   _messageController.dispose();
