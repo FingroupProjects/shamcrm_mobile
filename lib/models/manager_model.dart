@@ -49,8 +49,6 @@ class ManagersDataResponse {
 
   factory ManagersDataResponse.fromJson(Map<String, dynamic> json) {
     // Печать данных для отладки
-    print('JSON data: $json');
-
     return ManagersDataResponse(
       result: json["result"] != null && json["result"]["data"] != null
           ? List<ManagerData>.from(

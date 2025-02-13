@@ -3,6 +3,7 @@ import 'dart:io';
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -755,9 +756,9 @@ class ApiService {
       final response = await _getRequest(
           '/lead/statuses${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      print(
-          '=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
-      print('Отправка запроса на API с путём: ${response.body}');
+      // print(
+      //     '=--=-=-=-=--==-=-=--=-==-RESPONSE GET-STATUS LEADS=-=--==-=-=-=-=-=-=-=-=-=--==-=-');
+      // print('Отправка запроса на API с путём: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -771,21 +772,18 @@ class ApiService {
               prefs.getString('cachedLeadStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-            print(
-                '------------------------------ Старые данные в кэше ------------------------------');
-            print(decodedData); // Старые данные
+            // print(
+            //     '------------------------------ Старые данные в кэше ------------------------------');
+            // print(decodedData); // Старые данные
           }
 
           // Обновляем кэш новыми данными
           await prefs.setString('cachedLeadStatuses_$organizationId',
               json.encode(data['result']));
-          print(
-              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // print(
+          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          // print(data['result']); // Новые данные, которые будут сохранены в кэш
 
-          print(
-              '----p---------------¿-----UPDATE CACHE LEADSTATUS----------------------------');
-          print('Статусы лидов обновлены в кэше');
           return statuses;
         } else {
           throw Exception('Результат отсутствует в ответе');
@@ -1231,7 +1229,6 @@ class ApiService {
     }
 
     if (kDebugMode) {
-      print('getAll manager!');
     }
 
     return dataManager;
@@ -1683,21 +1680,19 @@ class ApiService {
               prefs.getString('cachedDealStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-            print(
-                '------------------------------ Старые данные в кэше ------------------------------');
-            print(decodedData); // Старые данные
+  
           }
 
           // Обновляем кэш новыми данными
           await prefs.setString('cachedDealStatuses_$organizationId',
               json.encode(data['result']));
-          print(
-              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // print(
+          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          // print(data['result']); // Новые данные, которые будут сохранены в кэш
 
-          print(
-              '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
-          print('Статусы сделок обновлены в кэше');
+          // print(
+          //     '----p---------------¿-----UPDATE CACHE DEALSTATUS----------------------------');
+          // print('Статусы сделок обновлены в кэше');
 
           return (data['result'] as List)
               .map((status) => DealStatus.fromJson(status))
@@ -2125,13 +2120,13 @@ Future<List<Task>> getTasks(
   }
   if (deadline != null) {
     final formattedDeadline = DateFormat('yyyy-MM-dd').format(deadline);
-    path += '&deadline=$formattedDeadline';
+    path += '&to=$formattedDeadline';
   }
   if (project != null && project.isNotEmpty) {
     path += '&project=$project';
   }
   if (author != null && author.isNotEmpty) {
-    path += '&author=$author';
+    path += '&authors=$author';
   }
   final response = await _getRequest(path);
   if (response.statusCode == 200) {
@@ -2166,20 +2161,18 @@ Future<List<Task>> getTasks(
               prefs.getString('cachedTaskStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-            print(
-                '------------------------------ Старые данные в кэше ------------------------------');
-            print(decodedData); // Старые данные
+            // print(
+            //     '------------------------------ Старые данные в кэше ------------------------------');
+            // print(decodedData); // Старые данные
           }
 
           // Обновляем кэш новыми данными
           await prefs.setString('cachedTaskStatuses_$organizationId',
               json.encode(data['result']));
-          print(
-              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // print(
+          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          // print(data['result']); // Новые данные, которые будут сохранены в кэш
 
-          print(
-              '------------------------------ Статусы задач обновлены в кэше ------------------------------');
           return (data['result'] as List)
               .map((status) => TaskStatus.fromJson(status))
               .toList();
@@ -4477,7 +4470,7 @@ Future<List<Task>> getTasks(
 
     path += '&organization_id=$organizationId';
 
-    print('Sending request to API with path: $path');
+    // print('Sending request to API with path: $path');
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -4708,7 +4701,7 @@ Future<List<Task>> getTasks(
       path += '&task_status_id=$taskStatusId';
     }
     // Логируем конечный URL запроса
-    print('Sending request to API with path: $path');
+    // print('Sending request to API with path: $path');
     final response = await _getRequest(path);
 
     if (response.statusCode == 200) {
@@ -4750,12 +4743,10 @@ Future<List<Task>> getTasks(
           // Обновляем кэш новыми данными
           await prefs.setString('cachedMyTaskStatuses_$organizationId',
               json.encode(data['result']));
-          print(
-              '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
-          print(data['result']); // Новые данные, которые будут сохранены в кэш
+          // print(
+          //     '------------------------------------ Новые данные, которые сохраняются в кэш ---------------------------------');
+          // print(data['result']); // Новые данные, которые будут сохранены в кэш
 
-          print(
-              '------------------------------ Статусы задач обновлены в кэше ------------------------------');
           return (data['result'] as List)
               .map((status) => MyTaskStatus.fromJson(status))
               .toList();
@@ -5647,6 +5638,42 @@ Future<Map<String, dynamic>> createMyTask({
       throw ('Failed to load subjects');
     }
   }
+
+// get all authors
+  Future<AuthorsDataResponse> getAllAuthor() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+    late AuthorsDataResponse dataAuthor;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataAuthor = AuthorsDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа!');
+    }
+    if (kDebugMode) {
+      print('getAll author!');
+    }
+
+    return dataAuthor;
+  }
+
 
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }

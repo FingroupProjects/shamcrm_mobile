@@ -77,9 +77,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
   DateTime? _initialDeadline;
-  String? _initialProject;
-  String? _initialAuthor;
-
+  List<String> _selectedAuthors = []; // Add this
+  List<String> _initialSelectedAuthors = []; // Add this
   @override
   void initState() {
     super.initState();
@@ -177,6 +176,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       deadline: _deadline,
       project: _selectedProject,
       author: _selectedAuthor,
+      
     ));
   }
 
@@ -195,7 +195,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _isUrgent = filterData['urgent'] ?? false;
       _deadline = filterData['to'];
       _selectedProject = filterData['project'];
-      _selectedAuthor = filterData['author'];
+      _selectedAuthors = filterData['authors'] ?? []; // Add this
 
       // Сохраняем начальные значения
       _initialselectedUsers = filterData['users'] ?? [];
@@ -206,9 +206,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialHasFile = filterData['hasFile'] ?? false;
       _initialHasDeal = filterData['hasDeal'] ?? false;
       _initialUrgent = filterData['urgent'] ?? false;
-      _initialDeadline = filterData['to'];
-      _initialProject = filterData['project'];
-      _initialAuthor = filterData['author'];
+      _initialDeadline = filterData['deadline'];
     });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -293,7 +291,159 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ));
   }
+// Handler for task overdue status
+Future _handleOverdueSelected(bool isOverdue) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _isOverdue = isOverdue;
+    _initialOverdue = isOverdue;
+  });
 
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    overdue: _isOverdue,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+// Handler for task file attachment status
+Future _handleHasFileSelected(bool hasFile) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _hasFile = hasFile;
+    _initialHasFile = hasFile;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    hasFile: _hasFile,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+// Handler for task deal status
+Future _handleHasDealSelected(bool hasDeal) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _hasDeal = hasDeal;
+    _initialHasDeal = hasDeal;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    hasDeal: _hasDeal,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+// Handler for task urgency status
+Future _handleUrgentSelected(bool isUrgent) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _isUrgent = isUrgent;
+    _initialUrgent = isUrgent;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    urgent: _isUrgent,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+// Handler for task deadline
+Future _handleDeadlineSelected(DateTime? deadline) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _deadline = deadline;
+    _initialDeadline = deadline;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    deadline: _deadline,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+// Handler for project selection
+Future _handleProjectSelected(String? project) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedProject = project;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    project: _selectedProject,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+
+// Handler for author selection
+Future _handleAuthorsSelected(List<String> authors) async {
+  setState(() {
+    _showCustomTabBar = false;
+    _selectedAuthors = authors;
+    _initialSelectedAuthors = authors;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    author: authors.isNotEmpty ? authors.first : null, // Assuming single author selection
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
+Future _handleCombinedFilters(Map<String, dynamic> filters) async {
+  setState(() {
+    _showCustomTabBar = false;
+    
+    // Update all filter states
+    _isOverdue = filters['overdue'] ?? false;
+    _hasFile = filters['hasFile'] ?? false;
+    _hasDeal = filters['hasDeal'] ?? false;
+    _isUrgent = filters['urgent'] ?? false;
+    _deadline = filters['deadline'];
+    _selectedProject = filters['project'];
+    _selectedAuthors = filters['authors'] ?? [];
+    
+    // Update initial states
+    _initialOverdue = _isOverdue;
+    _initialHasFile = _hasFile;
+    _initialHasDeal = _hasDeal;
+    _initialUrgent = _isUrgent;
+    _initialDeadline = _deadline;
+    _initialSelectedAuthors = _selectedAuthors;
+  });
+
+  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  final taskBloc = BlocProvider.of<TaskBloc>(context);
+  taskBloc.add(FetchTasks(
+    currentStatusId,
+    overdue: _isOverdue,
+    hasFile: _hasFile,
+    hasDeal: _hasDeal,
+    urgent: _isUrgent,
+    deadline: _deadline,
+    project: _selectedProject,
+    author: _selectedAuthors.isNotEmpty ? _selectedAuthors.first : null,
+    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  ));
+}
   void _resetFilters() {
     setState(() {
       _showCustomTabBar = true;
@@ -311,7 +461,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _isUrgent = false;
       _deadline = null;
       _selectedProject = null;
-      _selectedAuthor = null;
+      _selectedAuthors = []; // Add this
 
       // Сбрасываем начальные значения
       _initialselectedUsers = [];
@@ -323,8 +473,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialHasDeal = false;
       _initialUrgent = false;
       _initialDeadline = null;
-      _initialProject = null;
-      _initialAuthor = null;
+      _initialSelectedAuthors = []; // Add this
     });
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -391,6 +540,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             onStatusAndDateRangeSelected: _handleStatusAndDateSelected,
             initialUsers: _initialselectedUsers,
             initialStatuses: _initialSelStatus,
+            initialAuthors: _initialSelectedAuthors, // Add this
             initialFromDate: _intialFromDate,
             initialToDate: _intialToDate,
             initialTaskIsOverdue: _initialOverdue,
@@ -398,8 +548,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialTaskHasDeal: _initialHasDeal,
             initialTaskIsUrgent: _initialUrgent,
             initialTaskDeadline: _initialDeadline,
-            // initialProject: _initialProject,
-            // initialAuthor: _initialAuthor,
             onResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -902,7 +1050,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
-          print('state: ${state.runtimeType}');
+          // print('state: ${state.runtimeType}');
           if (state is TaskDataLoaded) {
             final List<Task> tasks = state.tasks;
             print(tasks);

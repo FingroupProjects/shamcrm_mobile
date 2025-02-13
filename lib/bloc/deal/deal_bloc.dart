@@ -66,8 +66,6 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
         toDate: event.toDate,
       );
 
-      print('Переданные менеджеры: ${event.managerIds}');
-
       await DealCache.cacheDealsForStatus(event.statusId, deals);
 
       final dealCounts = Map<int, int>.from(_dealCounts);

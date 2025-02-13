@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_domain/domain_bloc.dart';
+import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
@@ -87,10 +88,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized(); 
-  await initializeApp(); 
-}
-Future<void> initializeApp() async {
-  WidgetsFlutterBinding.ensureInitialized();
   await AppTrackingTransparency.requestTrackingAuthorization();
   final apiService = ApiService();
   final authService = AuthService();
@@ -107,6 +104,9 @@ Future<void> initializeApp() async {
   await FirebaseMessaging.instance.requestPermission();
   await getFCMTokens(apiService);
 
+  FirebaseApi firebaseApi = FirebaseApi();
+  await firebaseApi.initNotifications();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -114,8 +114,6 @@ Future<void> initializeApp() async {
       systemNavigationBarColor: Colors.white,
     ),
   );
-  FirebaseApi firebaseApi = FirebaseApi();
-  await firebaseApi.initNotifications();
 
   final String? savedLanguageCode = await LanguageManager.getLanguage();
   final Locale savedLocale = savedLanguageCode != null ? Locale(savedLanguageCode) : const Locale('ru');
@@ -204,6 +202,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => MyTaskByIdBloc(widget.apiService)),
           BlocProvider(create: (context) => DealHistoryBloc(widget.apiService)),
           BlocProvider(create: (context) => GetAllClientBloc(apiService: widget.apiService)),
+          BlocProvider(create: (context) => GetAllAuthorBloc(apiService: widget.apiService)),
           BlocProvider(create: (context) => CreateClientBloc()),
           BlocProvider(create: (context) => GroupChatBloc(widget.apiService)),
           BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),

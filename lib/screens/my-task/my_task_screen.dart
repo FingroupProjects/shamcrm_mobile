@@ -655,7 +655,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       },
       child: BlocBuilder<MyTaskBloc, MyTaskState>(
         builder: (context, state) {
-          print('state: ${state.runtimeType}');
+          // print('state: ${state.runtimeType}');
           if (state is MyTaskDataLoaded) {
             final List<MyTask> tasks = state.tasks;
             print(tasks);
