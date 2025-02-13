@@ -3,6 +3,7 @@ import 'dart:io';
 // import 'package:crm_task_manager/models/chart_data.dart';
 // import 'package:crm_task_manager/models/dashboard_charts_models/lead_conversion_model.dart';
 import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/chatById_model.dart';
 import 'package:crm_task_manager/models/chatGetId_model.dart';
 import 'package:crm_task_manager/models/chatTaskProfile_model.dart';
@@ -2119,13 +2120,13 @@ Future<List<Task>> getTasks(
   }
   if (deadline != null) {
     final formattedDeadline = DateFormat('yyyy-MM-dd').format(deadline);
-    path += '&deadline=$formattedDeadline';
+    path += '&to=$formattedDeadline';
   }
   if (project != null && project.isNotEmpty) {
     path += '&project=$project';
   }
   if (author != null && author.isNotEmpty) {
-    path += '&author=$author';
+    path += '&authors=$author';
   }
   final response = await _getRequest(path);
   if (response.statusCode == 200) {
@@ -5637,6 +5638,42 @@ Future<Map<String, dynamic>> createMyTask({
       throw ('Failed to load subjects');
     }
   }
+
+// get all authors
+  Future<AuthorsDataResponse> getAllAuthor() async {
+    final token = await getToken(); // Получаем токен перед запросом
+    final organizationId = await getSelectedOrganization();
+
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/user${organizationId != null ? '?organization_id=$organizationId' : ''}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+    late AuthorsDataResponse dataAuthor;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataAuthor = AuthorsDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Статус ответа!');
+    }
+    if (kDebugMode) {
+      print('getAll author!');
+    }
+
+    return dataAuthor;
+  }
+
 
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }

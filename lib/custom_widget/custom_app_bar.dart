@@ -95,6 +95,8 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialTaskHasDeal;
   final bool? initialTaskIsUrgent;
   final DateTime? initialTaskDeadline;
+  final List<String>? initialAuthors; // Add this
+
   CustomAppBar({
     super.key,
     required this.title,
@@ -158,11 +160,12 @@ class CustomAppBar extends StatefulWidget {
     this.showMenuIcon = true,
     this.showNotification = true,
     this.showSeparateFilter = false,
-     this.initialTaskIsOverdue,
+    this.initialTaskIsOverdue,
     this.initialTaskHasFile,
     this.initialTaskHasDeal,
     this.initialTaskIsUrgent,
     this.initialTaskDeadline,
+    this.initialAuthors, // Add this
   });
 
   @override
@@ -255,7 +258,8 @@ class _CustomAppBarState extends State<CustomAppBar>
   }
 
   Future<void> _setUpSocketForNotifications() async {
-    debugPrint('--------------------------- start socket CUSTOM APPBAR:::::::----------------');
+    debugPrint(
+        '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     final baseUrlSocket = await ApiService().getSocketBaseUrl();
@@ -836,6 +840,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                             initialIsUrgent: widget.initialTaskIsUrgent,
                             initialDeadline: widget.initialTaskDeadline,
                             onResetFilters: widget.onResetFilters,
+                            initialAuthors: widget.initialAuthors, // Add this
                           ),
                         ),
                       );

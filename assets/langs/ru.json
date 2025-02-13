@@ -276,7 +276,8 @@
     "assignees_list": "Исполнители",
     "select_assignees_list": "Выберите исполнителей",
     "selected_assignees_list": "Выбрано исполнителей:",
-
+    "select_author_list": "Выберите автора",
+    "author_list":"Автор",
     "COMMENT_TITLE_SCREEN_LEAD_SCREEN": "----------------------------Тексты для экрана TASK SCREEN---------------------------",
     "selected_manager_has_any_lead": "У выбранного менеджера нет лидов",
     "new_lead": "Новый лид",

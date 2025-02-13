@@ -1,4 +1,6 @@
+import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
+import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter/material.dart';
@@ -15,13 +17,14 @@ class UserFilterScreen extends StatefulWidget {
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
-  final bool? initialIsOverdue;    // Added
-  final bool? initialHasFile;      // Added
-  final bool? initialHasDeal;      // Added
-  final bool? initialIsUrgent;     // Added
+  final bool? initialIsOverdue; // Added
+  final bool? initialHasFile; // Added
+  final bool? initialHasDeal; // Added
+  final bool? initialIsUrgent; // Added
   final DateTime? initialDeadline; // Added
   final VoidCallback? onResetFilters;
-  
+  final List<String>? initialAuthors; // Added
+
   UserFilterScreen({
     Key? key,
     this.onUsersSelected,
@@ -32,12 +35,13 @@ class UserFilterScreen extends StatefulWidget {
     this.initialStatuses,
     this.initialFromDate,
     this.initialToDate,
-    this.initialIsOverdue,    // Added
-    this.initialHasFile,      // Added
-    this.initialHasDeal,      // Added
-    this.initialIsUrgent,     // Added
-    this.initialDeadline,     // Added
+    this.initialIsOverdue, // Added
+    this.initialHasFile, // Added
+    this.initialHasDeal, // Added
+    this.initialIsUrgent, // Added
+    this.initialDeadline, // Added
     this.onResetFilters,
+    this.initialAuthors, // Added
   }) : super(key: key);
 
   @override
@@ -46,6 +50,7 @@ class UserFilterScreen extends StatefulWidget {
 
 class _UserFilterScreenState extends State<UserFilterScreen> {
   List _selectedUsers = [];
+  List<String> _selectedAuthors = []; // Added
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -62,12 +67,15 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
-    _isOverdue = widget.initialIsOverdue ?? false;  // Initialize from props
-    _hasFile = widget.initialHasFile ?? false;      // Initialize from props
-    _hasDeal = widget.initialHasDeal ?? false;      // Initialize from props
-    _isUrgent = widget.initialIsUrgent ?? false;    // Initialize from props
-    _deadline = widget.initialDeadline;             // Initialize from props
+    _selectedAuthors = widget.initialAuthors ?? []; // Initialize authors
+
+    _isOverdue = widget.initialIsOverdue ?? false; // Initialize from props
+    _hasFile = widget.initialHasFile ?? false; // Initialize from props
+    _hasDeal = widget.initialHasDeal ?? false; // Initialize from props
+    _isUrgent = widget.initialIsUrgent ?? false; // Initialize from props
+    _deadline = widget.initialDeadline; // Initialize from props
   }
+
   void _selectDateRange() async {
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
@@ -76,6 +84,27 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       initialDateRange: _fromDate != null && _toDate != null
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
+            dialogBackgroundColor: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue, // Цвет кружков начальной и конечной даты
+              onPrimary: Colors.white, // Цвет текста на выделенных датах
+              onSurface: Colors.black, // Цвет обычного текста
+              secondary: Colors.blue
+                  .withOpacity(0.1), // Цвет фона выделенного диапазона
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue, // Цвет кнопок
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (pickedRange != null) {
       setState(() {
@@ -94,11 +123,18 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
             dialogBackgroundColor: Colors.white,
             colorScheme: ColorScheme.light(
-                // primary: Colors.blueAccent, // Цвет выделения даты
-                // onSurface: Colors.black,    // Цвет текста
-                ),
+              primary: Colors.blue, // Цвет выделенной даты
+              onPrimary: Colors.white, // Цвет текста на выделенной дате
+              onSurface: Colors.black, // Цвет обычного текста
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue, // Цвет кнопок
+              ),
+            ),
           ),
           child: child!,
         );
@@ -154,6 +190,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               setState(() {
                 widget.onResetFilters?.call();
                 _selectedUsers.clear();
+                _selectedAuthors.clear(); // Added
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
@@ -184,80 +221,47 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           ),
           SizedBox(width: 10),
           TextButton(
-            onPressed: () async {
-              bool hasFilters = false; // Проверка, есть ли выбранные фильтры
+         onPressed: () async {
+  // Очищаем кэш перед применением фильтров
+  await TaskCache.clearAllTasks();
 
-              await TaskCache
-                  .clearAllTasks(); // Очищаем кэш перед применением фильтров
+  // Собираем все параметры фильтров в один объект
+  final filters = {
+    'users': _selectedUsers,
+    'statuses': _selectedStatuses,
+    'fromDate': _fromDate,
+    'toDate': _toDate,
+    'overdue': _isOverdue,
+    'hasFile': _hasFile,
+    'hasDeal': _hasDeal,
+    'urgent': _isUrgent,
+    'deadline': _deadline,
+    'authors': _selectedAuthors,
+  };
 
-              // Проверка выбранных пользователей
-              if (_selectedUsers.isNotEmpty) {
-                hasFilters = true;
-                widget.onUsersSelected?.call({
-                  'users': _selectedUsers,
-                  'statuses': _selectedStatuses,
-                  'fromDate': _fromDate,
-                  'toDate': _toDate,
-                  'overdue': _isOverdue,
-                  'hasFile': _hasFile,
-                  'hasDeal': _hasDeal,
-                  'urgent': _isUrgent,
-                  'deadline': _deadline,
-                });
-              }
+  // Проверяем, есть ли хотя бы один активный фильтр
+  final bool hasFilters = _selectedUsers.isNotEmpty ||
+      _selectedStatuses != null ||
+      (_fromDate != null && _toDate != null) ||
+      _isOverdue ||
+      _hasFile ||
+      _hasDeal ||
+      _isUrgent ||
+      _deadline != null ||
+      _selectedAuthors.isNotEmpty;
 
-              // Проверка выбранного статуса
-              if (_selectedStatuses != null) {
-                hasFilters = true;
-                print('STATUS');
-                print(_selectedStatuses);
-                widget.onStatusSelected?.call(_selectedStatuses);
-              }
+  if (hasFilters) {
+    // Если есть хотя бы один фильтр, вызываем метод с передачей всех фильтров
+    print('APPLYING FILTERS');
+    widget.onUsersSelected?.call(filters);
+  } else {
+    // Если ни один фильтр не выбран
+    print('NOTHING!!!!!!');
+  }
 
-              // Проверка выбранного диапазона дат
-              if (_fromDate != null && _toDate != null) {
-                hasFilters = true;
-                print('DATE');
-                widget.onDateRangeSelected?.call(_fromDate, _toDate);
-              }
-
-              // Проверка статуса и диапазона дат одновременно
-              if (_selectedStatuses != null &&
-                  _fromDate != null &&
-                  _toDate != null) {
-                hasFilters = true;
-                print('STATUS + DATE');
-                widget.onStatusAndDateRangeSelected
-                    ?.call(_selectedStatuses, _fromDate, _toDate);
-              }
-
-              if (_isOverdue ||
-                  _hasFile ||
-                  _hasDeal ||
-                  _isUrgent ||
-                  _deadline != null) {
-                hasFilters = true;
-                widget.onUsersSelected?.call({
-                  'users': _selectedUsers,
-                  'statuses': _selectedStatuses,
-                  'fromDate': _fromDate,
-                  'toDate': _toDate,
-                  'overdue': _isOverdue,
-                  'hasFile': _hasFile,
-                  'hasDeal': _hasDeal,
-                  'urgent': _isUrgent,
-                  'deadline': _deadline,
-                });
-              }
-
-              // Если ни один фильтр не выбран
-              if (!hasFilters) {
-                print('NOTHING!!!!!!');
-              }
-
-              Navigator.pop(
-                  context); // Закрываем экран фильтров после применения
-            },
+  // Закрываем экран фильтров после применения
+  Navigator.pop(context);
+},
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
@@ -301,7 +305,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!.translate('select_date_range'),
+                            : AppLocalizations.of(context)!
+                                .translate('select_date_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
@@ -345,6 +350,25 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                           onSelectStatus: (TaskStatus selectedStatusData) {
                             setState(() {
                               _selectedStatuses = selectedStatusData.id;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: AuthorMultiSelectWidget(
+                          selectedAuthors: _selectedAuthors,
+                          onSelectAuthors:
+                              (List<AuthorData> selectedAuthorsData) {
+                            setState(() {
+                              _selectedAuthors = selectedAuthorsData
+                                  .map((author) => author.id.toString())
+                                  .toList();
                             });
                           },
                         ),
