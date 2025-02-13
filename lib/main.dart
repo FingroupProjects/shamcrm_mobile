@@ -79,6 +79,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -117,6 +118,9 @@ void main() async {
   final String? savedLanguageCode = await LanguageManager.getLanguage();
   final Locale savedLocale = savedLanguageCode != null ? Locale(savedLanguageCode) : const Locale('ru');
 
+ final prefs = await SharedPreferences.getInstance();
+  final bool openedViaNotification = prefs.getBool('openedViaNotification') ?? false;
+
   runApp(MyApp(
     apiService: apiService,
     authService: authService,
@@ -124,9 +128,9 @@ void main() async {
     token: token,
     pin: pin,
     initialLocale: savedLocale,
+    openedViaNotification: openedViaNotification, 
   ));
 }
-
 Future<void> getFCMTokens(ApiService apiService) async {}
 
 class MyApp extends StatefulWidget {
@@ -136,6 +140,7 @@ class MyApp extends StatefulWidget {
   final String? token;
   final String? pin;
   final Locale initialLocale; 
+  final bool openedViaNotification; 
 
   const MyApp({
     required this.apiService,
@@ -144,6 +149,7 @@ class MyApp extends StatefulWidget {
     this.token,
     this.pin,
     required this.initialLocale, 
+    required this.openedViaNotification, 
   });
 
   static void setLocale(BuildContext context, Locale newLocale) {
@@ -279,6 +285,13 @@ class _MyAppState extends State<MyApp> {
               return AuthScreen();
             } else if (widget.pin == null) {
               return PinSetupScreen();
+             } else if (widget.openedViaNotification) {
+                   Future.microtask(() {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+      return Container(); 
             } else {
               return PinScreen();
             }

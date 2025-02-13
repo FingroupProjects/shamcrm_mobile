@@ -552,7 +552,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         title: Transform.translate(
           offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
           child: Text(
-            AppLocalizations.of(context)!.translate('edit_profile'),
+            AppLocalizations.of(context)!.translate('profile_editor'),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

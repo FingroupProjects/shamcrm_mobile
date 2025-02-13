@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
@@ -36,29 +37,29 @@ void initPushNotification() async {
 
   if (savedPin == null) {
     FirebaseMessaging.instance.getInitialMessage().then((message) {
-      print('Получено уведомление при запуске приложения: ${message?.messageId}');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        handleMessage(message);
-        _printCustomData(message);
-      });
+      print('Первый запуск приложение ${message?.messageId}');
+
     });
   } else {
+    prefs.setBool('openedViaNotification', true);
+
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       print('Получено уведомление при закрытом состоянии приложения: ${message?.messageId}');
-      print('300 SEONDS');
-  Future.delayed(Duration(milliseconds: 300), () {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _navigateToMainScreen(message);
-    });
-  });
+      Future.delayed(Duration(milliseconds: 1), () {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => PinScreen()),(route) => false,).then((_) async {
+    if (message != null) {
+      await handleMessage(message);
+
+    }
+  });    
+      });
+      });
+     prefs.setBool('openedViaNotification', false);
+
     });
   }
-    // FirebaseMessaging.onMessageOpenedApp.listen((message) {
-    //   print('Пользователь нажал на уведомление: ${message.messageId}');
-    //   handleMessage(message);
-    //   _printCustomData(message);
-    // });
-
 
   FirebaseMessaging.onMessageOpenedApp.listen((message) {
     print('Пользователь нажал на уведомление: ${message.messageId}');
@@ -68,24 +69,6 @@ void initPushNotification() async {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print('Уведомление при активном приложении: ${message.notification?.title}');
     _printCustomData(message);
-  });
-}
-Future<void> _navigateToMainScreen(RemoteMessage? message) async {
-  if (message != null) {
-    await _navigateToPinScreenAndHandleNotification(message);
-  }
-}
-
-
-  // Функция для перехода на экран PIN и потом на основной экран
-Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) async {
-  navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
-    // After PIN is entered, handle the notification
-    if (message != null) {
-      await handleMessage(message);
-      print('ПЕРЕДЧА ПУШ СООБЩЕНИЕ в закр сосотняние');
-      print('ПЕРЕДЧА ПУШ СООБЩЕНИЕ в закр сосотняние121211');
-    }
   });
 }
 
@@ -101,6 +84,8 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
   }
 
   Future<void> handleMessage(RemoteMessage? message) async {
+    final ApiService _apiService = ApiService();
+
     if (message == null || message.data.isEmpty) {
       print('handleMessage: сообщение пустое или данные отсутствуют');
       return;
@@ -120,8 +105,14 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
     switch (type) {
       case 'message':
         print('Переход на экран чата с ID: $id');
-        screenIndex = 3;
-        await navigateToScreen(screenIndex, id, 'message', message);
+        if (await _apiService.hasPermission('deal.read') &&
+            await _apiService.hasPermission('lead.read')) {
+          screenIndex = 3;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        } else {
+          screenIndex = 2;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        }
         break;
 
       case 'task':
@@ -146,6 +137,7 @@ Future<void> _navigateToPinScreenAndHandleNotification(RemoteMessage? message) a
         break;
 
       case 'lead':
+      case 'updateLeadStatus':
         print('Переход на экран лида с ID: $id');
         screenIndex = 2;
         await navigateToScreen(screenIndex, id, 'lead', message);

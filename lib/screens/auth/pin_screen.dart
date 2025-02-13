@@ -79,42 +79,48 @@ void initState() {
     }
   });
 }
- Future<void> _loadUserRoleId() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-      if (userId.isEmpty) {
+Future<void> _loadUserRoleId() async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String userId = prefs.getString('userID') ?? '';
+    if (userId.isEmpty) {
+      if (mounted) { // Проверяем, mounted ли виджет
         setState(() {
           userRoleId = 0;
         });
-        return;
       }
+      return;
+    }
 
-      // Получение ИД РОЛЯ через API
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
+    // Получение ИД РОЛЯ через API
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+    if (mounted) { // Проверяем, mounted ли виджет
       setState(() {
         userRoleId = userProfile.role!.first.id;
       });
-      // Выводим данные в консоль
-      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
-      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+    }
 
-      
+    // Выводим данные в консоль
+    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+    BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
+
+    if (mounted) { // Проверяем, mounted ли виджет
       setState(() {
-        isPermissionsLoaded = true; 
+        isPermissionsLoaded = true;
       });
-
-    } catch (e) {
-      print('Error loading user role!');
+    }
+  } catch (e) {
+    print('Error loading user role!');
+    if (mounted) { // Проверяем, mounted ли виджет
       setState(() {
         userRoleId = 0;
       });
     }
   }
+}
+
 Future<void> _loadUserPhone() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -123,7 +129,7 @@ Future<void> _loadUserPhone() async {
   String? savedUserImage = prefs.getString('userImage');
 
   if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
-    if (mounted) {
+    if (mounted) { // Проверяем, mounted ли виджет
       setState(() {
         _userName = savedUserName;
         _userNameProfile = savedUserNameProfile;
@@ -133,42 +139,43 @@ Future<void> _loadUserPhone() async {
     return;
   }
 
-try {
-  // Инициализация SharedPreferences
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+  try {
+    // Инициализация SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Получение userID из SharedPreferences
-  String UUID = prefs.getString('userID') ?? '';
-  print('userID : $UUID');
+    // Получение userID из SharedPreferences
+    String UUID = prefs.getString('userID') ?? '';
+    print('userID : $UUID');
 
-  // Преобразование UUID в число и вызов метода getUserById
-  UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+    // Преобразование UUID в число и вызов метода getUserById
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
 
-  // Сохранение данных пользователя в SharedPreferences
-  await prefs.setString('userName', userProfile.name);
-  await prefs.setString('userNameProfile', userProfile.name ?? '');
-  await prefs.setString('userImage', userProfile.image ?? '');
+    // Сохранение данных пользователя в SharedPreferences
+    await prefs.setString('userName', userProfile.name);
+    await prefs.setString('userNameProfile', userProfile.name ?? '');
+    await prefs.setString('userImage', userProfile.image ?? '');
 
-  // Обновление состояния
-  if (mounted) {
-    setState(() {
-      _userName = userProfile.name;
-      _userNameProfile = userProfile.name ?? '';
-      _userImage = userProfile.image ?? '';
-    });
+    // Обновление состояния
+    if (mounted) { // Проверяем, mounted ли виджет
+      setState(() {
+        _userName = userProfile.name;
+        _userNameProfile = userProfile.name ?? '';
+        _userImage = userProfile.image ?? '';
+      });
+    }
+  } catch (e) {
+    // Обработка ошибок
+    print('Ошибка при загрузке данных с сервера: $e');
+
+    if (mounted) { // Проверяем, mounted ли виджет
+      setState(() {
+        _userName = 'Не найдено';
+        _userNameProfile = 'Не найдено';
+        _userImage = '';
+      });
+    }
   }
-} catch (e) {
-  // Обработка ошибок
-  print('Ошибка при загрузке данных с сервера: $e');
 
-  if (mounted) {
-    setState(() {
-      _userName = 'Не найдено';
-      _userNameProfile = 'Не найдено';
-      _userImage = '';
-    });
-  }
-}
 }
   Future<void> _initBiometrics() async {
     final localizations = AppLocalizations.of(context)!;
