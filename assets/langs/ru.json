@@ -646,6 +646,7 @@
       "reset":"Сбросить",
       "apply":"Применить",
       "select_date_range":"Выбрать диапазон даты",
+      "select_date_deadline":"Выбрать дедлайн",
       "enter_date_range_create":"Введите интервал даты создания",
       "enter_date_range_notice":"Введите интервал даты напоминания",
 

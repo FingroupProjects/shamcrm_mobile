@@ -33,9 +33,6 @@ class CustomAppBar extends StatefulWidget {
   final bool showSeparateMyTasks;
   final bool showNotification;
   final Function(Map)? onManagersLeadSelected;
-  final Function(int?)? onStatusLeadSelected;
-  final Function(DateTime?, DateTime?)? onDateRangeLeadSelected;
-  final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
   final Function(int?)? onStatusDealSelected;
@@ -65,9 +62,20 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialToDate;
 
   final List? initialManagersLead;
+  final List? initialManagersLeadRegions;
+  final List? initialManagersLeadSources;
   final int? initialManagerLeadStatuses;
   final DateTime? initialManagerLeadFromDate;
   final DateTime? initialManagerLeadToDate;
+  final DateTime? initialManagerLeadFromDeadLine;
+  final DateTime? initialManagerLeadToDeadLine;
+  final bool? initialManagerLeadHasSuccessDeals;
+  final bool? initialManagerLeadHasInProgressDeals;
+  final bool? initialManagerLeadHasFailureDeals;
+  final bool? initialManagerLeadHasNotices;
+  final bool? initialManagerLeadHasContact;
+  final bool? initialManagerLeadHasChat;
+  final int? initialManagerLeadDaysWithoutActivity;
 
   final List? initialManagersDeal;
   final int? initialManagerDealStatuses;
@@ -111,9 +119,20 @@ class CustomAppBar extends StatefulWidget {
     this.initialFromDate,
     this.initialToDate,
     this.initialManagersLead,
+    this.initialManagersLeadRegions,
+    this.initialManagersLeadSources,
     this.initialManagerLeadStatuses,
     this.initialManagerLeadFromDate,
     this.initialManagerLeadToDate,
+    this.initialManagerLeadFromDeadLine,
+    this.initialManagerLeadToDeadLine,
+    this.initialManagerLeadHasSuccessDeals,
+    this.initialManagerLeadHasInProgressDeals,
+    this.initialManagerLeadHasFailureDeals,
+    this.initialManagerLeadHasNotices,
+    this.initialManagerLeadHasContact,
+    this.initialManagerLeadHasChat,
+    this.initialManagerLeadDaysWithoutActivity,
     this.initialManagersDeal,
     this.initialManagerDealStatuses,
     this.initialManagerDealFromDate,
@@ -134,9 +153,6 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIconDeal = true,
     this.showFilterTaskIcon = true,
     this.onManagersLeadSelected,
-    this.onStatusLeadSelected,
-    this.onDateRangeLeadSelected,
-    this.onStatusAndDateRangeLeadSelected,
     this.onManagersDealSelected,
     this.onStatusDealSelected,
     this.onDateRangeDealSelected,
@@ -840,7 +856,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                             initialIsUrgent: widget.initialTaskIsUrgent,
                             initialDeadline: widget.initialTaskDeadline,
                             onResetFilters: widget.onResetFilters,
-                            initialAuthors: widget.initialAuthors, // Add this
+                            initialAuthors: widget.initialAuthors,
                           ),
                         ),
                       );
@@ -851,14 +867,21 @@ class _CustomAppBarState extends State<CustomAppBar>
                         MaterialPageRoute(
                           builder: (context) => ManagerFilterScreen(
                             onManagersSelected: widget.onManagersLeadSelected,
-                            onStatusSelected: widget.onStatusLeadSelected,
-                            onDateRangeSelected: widget.onDateRangeLeadSelected,
-                            onStatusAndDateRangeSelected:
-                                widget.onStatusAndDateRangeLeadSelected,
                             initialManagers: widget.initialManagersLead,
+                            initialRegions: widget.initialManagersLeadRegions,
+                            initialSources: widget.initialManagersLeadSources,
                             initialStatuses: widget.initialManagerLeadStatuses,
                             initialFromDate: widget.initialManagerLeadFromDate,
                             initialToDate: widget.initialManagerLeadToDate,
+                            initialDeadLineFromDate: widget.initialManagerLeadFromDeadLine,
+                            initialDeadLineToDate: widget.initialManagerLeadToDeadLine,
+                            initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
+                            initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
+                            initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
+                            initialHasNotices: widget.initialManagerLeadHasNotices,
+                            initialHasContact: widget.initialManagerLeadHasContact,
+                            initialHasChat: widget.initialManagerLeadHasChat,
+                            initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
                             onResetFilters: widget.onLeadResetFilters,
                           ),
                         ),

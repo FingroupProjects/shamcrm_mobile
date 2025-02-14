@@ -266,6 +266,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   Expanded(
                                     child: Text(
                                       notification.message,
+                                      maxLines: 2,
                                       style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,

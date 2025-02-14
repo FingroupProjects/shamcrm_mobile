@@ -595,6 +595,7 @@
     "reset": "Reset",
     "apply": "Apply",
     "select_date_range": "Select date range",
+    "select_date_deadline": "Select deadline",
     "enter_date_range_create": "Enter creation date range",
     "enter_date_range_notice": "Enter reminder date range"
 }

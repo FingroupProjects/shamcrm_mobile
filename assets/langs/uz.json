@@ -594,6 +594,7 @@
     "reset": "Tiklash",
     "apply": "Qo‘llash",
     "select_date_range": "Sana oralig‘ini tanlang",
+    "select_date_deadline": "Muddatni tanlang",
     "enter_date_range_create": "Yaratilgan sana oralig‘ini kiriting",
     "enter_date_range_notice": "Eslatma sanasi oralig‘ini kiriting"
 }

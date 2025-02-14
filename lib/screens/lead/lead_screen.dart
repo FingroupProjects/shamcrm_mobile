@@ -1,9 +1,13 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
+import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
@@ -51,14 +55,36 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
 
   List<ManagerData> _selectedManagers = [];
+  List<RegionData> _selectedRegions = [];
+  List<SourceData> _selectedSources = [];
   int? _selectedStatuses;  
   DateTime? _fromDate;
   DateTime? _toDate;
+  DateTime? _deadLineFromDate;
+  DateTime? _deadLineToDate;
+  bool? _hasSuccessDeals = false;
+  bool? _hasInProgressDeals = false;
+  bool? _hasFailureDeals = false;
+  bool? _hasNotices = false;
+  bool? _hasContact = false;
+  bool? _hasChat = false;
+  int? _daysWithoutActivity;
 
   List<ManagerData> _initialselectedManagers = []; 
+  List<RegionData> _initialselectedRegions = []; 
+  List<SourceData> _initialselectedSources = []; 
   int? _initialSelStatus;
-   DateTime? _intialFromDate;
+  DateTime? _intialFromDate;
   DateTime? _intialToDate;
+  DateTime? _intialDeadLineFromDate;
+  DateTime? _intialDeadLineToDate;
+  bool? _initialHasSuccessDeals;
+  bool? _initialHasInProgressDeals;
+  bool? _initialHasFailureDeals;
+  bool? _initialHasNotices;
+  bool? _initialHasContact;
+  bool? _initialHasChat;
+  int? _initialDaysWithoutActivity;
 
     List<int>? _selectedManagerIds;
 
@@ -66,6 +92,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    context.read<GetAllSourceBloc>().add(GetAllSourceEv());
    _scrollController = ScrollController();
     // Попытка получить данные из кеша
     LeadCache.getLeadStatuses().then((cachedStatuses) {
@@ -109,26 +137,31 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _searchController.dispose();
     super.dispose();
   }
+  
 Future<void> _searchLeads(String query, int currentStatusId) async {
   final leadBloc = BlocProvider.of<LeadBloc>(context);
 
   await LeadCache.clearAllLeads();
   print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
 
-  print('Запрос: $query');
-  print('Текущий статус ID: $currentStatusId');
-  print('Менеджеры: ${_selectedManagers.map((manager) => manager.id).toList()}');
-  print('Статусы: $_selectedStatuses');
-  print('Дата от: $_fromDate');
-  print('Дата до: $_toDate');
-
   leadBloc.add(FetchLeads(
     currentStatusId,
     query: query,
     managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    regionsIds: _selectedRegions.map((region) => region.id).toList(),
+    sourcesIds: _selectedSources.map((sources) => sources.id).toList(),
     statusIds: _selectedStatuses,
     fromDate: _fromDate,
     toDate: _toDate,
+    deadLineFromDate: _deadLineFromDate,
+    deadLineToDate: _deadLineToDate,
+    hasSuccessDeals: _hasSuccessDeals,
+    hasInProgressDeals: _hasInProgressDeals,
+    hasFailureDeals: _hasFailureDeals,
+    hasNotices: _hasNotices,
+    hasContact: _hasContact,
+    hasChat: _hasChat,
+    daysWithoutActivity: _daysWithoutActivity,
   ));
 }
 
@@ -136,13 +169,35 @@ void _resetFilters() {
   setState(() {
     _showCustomTabBar = true;
     _selectedManagers = [];
+    _selectedRegions = [];
+    _selectedSources = [];
     _selectedStatuses = null;
     _fromDate = null;
     _toDate = null;
+    _deadLineFromDate = null;
+    _deadLineToDate = null;
+    _hasSuccessDeals = false;
+    _hasInProgressDeals = false;
+    _hasFailureDeals = false;
+    _hasNotices = false;
+    _hasContact = false;
+    _hasChat = false;
+    _daysWithoutActivity = null;
     _initialselectedManagers = [];
+    _initialselectedRegions = [];
+    _initialselectedSources = [];
     _initialSelStatus = null;
     _intialFromDate = null;
     _intialToDate = null;
+    _intialDeadLineFromDate = null;
+    _intialDeadLineToDate = null;
+    _initialHasSuccessDeals = false;
+    _initialHasInProgressDeals = false;
+    _initialHasFailureDeals = false;
+    _initialHasNotices = false;
+    _initialHasContact = false;
+    _initialHasChat = false;
+    _initialDaysWithoutActivity = null;
     _lastSearchQuery = '';
     _searchController.clear();
   });
@@ -150,19 +205,41 @@ void _resetFilters() {
    leadBloc.add(FetchLeadStatuses());
 }
 
+
   Future<void> _handleManagerSelected(Map managers) async {
   setState(() {
     _showCustomTabBar = false;
     _selectedManagers = managers['managers'];
+    _selectedRegions = managers['regions'];
+    _selectedSources= managers['sources'];
     _selectedStatuses = managers['statuses'];
     _fromDate = managers['fromDate'];
     _toDate = managers['toDate'];
+    _deadLineFromDate=managers['deadLineFromDate'];
+    _deadLineToDate=managers['deadLineToDate'];
+    _hasSuccessDeals=managers['hasSuccessDeals'];
+    _hasInProgressDeals=managers['hasInProgressDeals'];
+    _hasFailureDeals=managers['hasFailureDeals'];
+    _hasNotices=managers['hasNotices'];
+    _hasContact=managers['hasContact'];
+    _hasChat=managers['hasChat'];
+    _daysWithoutActivity=managers['daysWithoutActivity'];
 
     _initialselectedManagers = managers['managers'];
+    _initialselectedRegions = managers['regions'];
+    _initialselectedSources = managers['sources'];
     _initialSelStatus = managers['statuses'];
     _intialFromDate = managers['fromDate'];
     _intialToDate = managers['toDate'];
-    
+    _intialDeadLineFromDate = managers['deadLineFromDate'];
+    _intialDeadLineToDate = managers['deadLineToDate'];
+    _initialHasSuccessDeals = managers['hasSuccessDeals'];
+    _initialHasInProgressDeals = managers['hasInProgressDeals'];
+    _initialHasFailureDeals = managers['hasFailureDeals'];
+    _initialHasNotices = managers['hasNotices'];
+    _initialHasContact = managers['hasContact'];
+    _initialHasChat = managers['hasChat'];
+    _initialDaysWithoutActivity = managers['daysWithoutActivity'];
   });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -170,72 +247,23 @@ void _resetFilters() {
     leadBloc.add(FetchLeads(
     currentStatusId,
     managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+    regionsIds: _selectedRegions.map((region) => region.id).toList(),
+    sourcesIds: _selectedSources.map((source) => source.id).toList(),
     statusIds: _selectedStatuses, 
     fromDate: _fromDate,
     toDate: _toDate,
+    deadLineFromDate: _deadLineFromDate,
+    deadLineToDate: _deadLineToDate,
+    hasSuccessDeals: _hasSuccessDeals,
+    hasInProgressDeals: _hasInProgressDeals,
+    hasFailureDeals: _hasFailureDeals,
+    hasNotices: _hasNotices,
+    hasContact: _hasContact,
+    hasChat: _hasChat,
+    daysWithoutActivity: _daysWithoutActivity,
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
     ));
   }
-  
-Future _handleStatusSelected(int? selectedStatusId) async {
-  setState(() {
-     _showCustomTabBar = false;
-    _selectedStatuses = selectedStatusId;
-    
-    _initialSelStatus=selectedStatusId;
-  });
-
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<LeadBloc>(context);
-  taskBloc.add(FetchLeads(
-    currentStatusId,
-    statusIds: _selectedStatuses, 
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
-
-Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
-  setState(() {
-     _showCustomTabBar = false;
-    _fromDate = fromDate;
-    _toDate = toDate;
-
-    _intialFromDate = fromDate;
-    _intialToDate = toDate;
-    
-  });
-
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<LeadBloc>(context);
-  taskBloc.add(FetchLeads(
-    currentStatusId,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
-Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, DateTime? toDate) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedStatuses=selectedStatus;
-    _fromDate = fromDate;
-    _toDate = toDate;
-
-    _initialSelStatus=selectedStatus;
-    _intialFromDate = fromDate;
-    _intialToDate = toDate;
-  });
-
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<LeadBloc>(context);
-  taskBloc.add(FetchLeads(
-    currentStatusId,
-    statusIds: selectedStatus,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
@@ -285,13 +313,21 @@ Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, Date
             _onSearch(value);
           },
           onManagersLeadSelected: _handleManagerSelected,
-          onStatusLeadSelected: _handleStatusSelected,
-          onDateRangeLeadSelected: _handleDateSelected,
-          onStatusAndDateRangeLeadSelected: _handleStatusAndDateSelected,
           initialManagersLead: _initialselectedManagers,
+          initialManagersLeadRegions: _initialselectedRegions,
+          initialManagersLeadSources: _initialselectedSources,
           initialManagerLeadStatuses: _initialSelStatus,
           initialManagerLeadFromDate: _intialFromDate,
           initialManagerLeadToDate: _intialToDate,
+          initialManagerLeadFromDeadLine: _intialDeadLineFromDate,
+          initialManagerLeadToDeadLine: _intialDeadLineToDate,
+          initialManagerLeadHasSuccessDeals: _initialHasSuccessDeals,
+          initialManagerLeadHasInProgressDeals: _initialHasInProgressDeals,
+          initialManagerLeadHasFailureDeals: _initialHasFailureDeals,
+          initialManagerLeadHasNotices: _initialHasNotices,
+          initialManagerLeadHasContact: _initialHasContact,
+          initialManagerLeadHasChat: _initialHasChat,
+          initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
           onLeadResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
@@ -306,9 +342,10 @@ Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, Date
                     _searchController.clear();
                     _lastSearchQuery = '';
                   });
-
               if (_searchController.text.isEmpty) {
-                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null) {
+                if (_selectedManagers.isEmpty && _selectedRegions.isEmpty && _selectedSources.isEmpty && _selectedStatuses == null && _fromDate == null
+                && _toDate == null && _deadLineFromDate == null && _deadLineToDate == null && _hasSuccessDeals == false && _hasInProgressDeals == false && _hasFailureDeals == false
+                && _hasNotices == false && _hasContact == false && _hasChat == false ) {
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
@@ -322,9 +359,20 @@ Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, Date
                   taskBloc.add(FetchLeads(
                     currentStatusId,
                     managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
+                    regionsIds: _selectedRegions.isNotEmpty ? _selectedRegions.map((region) => region.id).toList() : null,
+                    sourcesIds: _selectedSources.isNotEmpty ? _selectedSources.map((source) => source.id).toList() : null,
                     statusIds: _selectedStatuses,
                     fromDate: _fromDate,
                     toDate: _toDate,
+                    deadLineFromDate: _deadLineFromDate,
+                    deadLineToDate: _deadLineToDate,
+                    hasSuccessDeals: _hasSuccessDeals,
+                    hasInProgressDeals: _hasInProgressDeals,
+                    hasFailureDeals: _hasFailureDeals,
+                    hasNotices: _hasNotices,
+                    hasContact: _hasContact,
+                    hasChat: _hasChat,
+                    daysWithoutActivity: _daysWithoutActivity,
                   ));
                 }
                   } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
