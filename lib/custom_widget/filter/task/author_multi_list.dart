@@ -159,7 +159,6 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                           .translate('select_author_list'),
                       style: authorTextStyle.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF6B7280),
                       ),
                     ),
                     onListChanged: (values) {

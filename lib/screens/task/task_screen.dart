@@ -9,7 +9,6 @@ import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
-import 'package:crm_task_manager/models/user_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -61,22 +60,24 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
+  DateTime? _deadlinefromDate;
+  DateTime? _deadlinetoDate;
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
   bool _isUrgent = false;
-  DateTime? _deadline;
   String? _selectedProject;
-  String? _selectedAuthor;
+  List<String>? authors;
   List<UserData> _initialselectedUsers = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
   DateTime? _intialToDate;
+  DateTime? _intialDeadlineFromDate;
+  DateTime? _intialDeadlineToDate;
   bool _initialOverdue = false;
   bool _initialHasFile = false;
   bool _initialHasDeal = false;
   bool _initialUrgent = false;
-  DateTime? _initialDeadline;
   List<String> _selectedAuthors = []; // Add this
   List<String> _initialSelectedAuthors = []; // Add this
   @override
@@ -173,27 +174,31 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       hasFile: _hasFile,
       hasDeal: _hasDeal,
       urgent: _isUrgent,
-      deadline: _deadline,
+      deadlinefromDate: _deadlinefromDate,
+      deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
-      author: _selectedAuthor,
-      
+      authors:
+          _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
     ));
   }
 
   Future _handleUserSelected(Map filterData) async {
     setState(() {
+      print("DEAdline$_intialDeadlineFromDate");
+      print('Filter Data received: $filterData'); // В начале метода
+      print('Selected Authors: $_selectedAuthors'); // После установки значений
       _showCustomTabBar = false;
       _selectedUsers = filterData['users'] ?? [];
       _selectedStatuses = filterData['statuses'];
       _fromDate = filterData['fromDate'];
       _toDate = filterData['toDate'];
-
+      _deadlinefromDate = filterData['deadlinefromDate'];
+      _deadlinetoDate = filterData['deadlinetoDate'];
       // Добавляем новые фильтры
       _isOverdue = filterData['overdue'] ?? false;
       _hasFile = filterData['hasFile'] ?? false;
       _hasDeal = filterData['hasDeal'] ?? false;
       _isUrgent = filterData['urgent'] ?? false;
-      _deadline = filterData['to'];
       _selectedProject = filterData['project'];
       _selectedAuthors = filterData['authors'] ?? []; // Add this
 
@@ -206,9 +211,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _initialHasFile = filterData['hasFile'] ?? false;
       _initialHasDeal = filterData['hasDeal'] ?? false;
       _initialUrgent = filterData['urgent'] ?? false;
-      _initialDeadline = filterData['deadline'];
+      _intialDeadlineFromDate = filterData['deadlinefromDate'];
+      _intialDeadlineToDate = filterData['deadlinetoDate'];
+      _initialSelectedAuthors = filterData['authors'] ?? [];
     });
-
+    print('Filter Data received: $filterData'); // В начале метода
+    print('Selected Authors: $_selectedAuthors'); // После установки значений
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final taskBloc = BlocProvider.of<TaskBloc>(context);
 
@@ -225,9 +233,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       hasFile: _hasFile,
       hasDeal: _hasDeal,
       urgent: _isUrgent,
-      deadline: _deadline,
+      deadlinefromDate: _deadlinefromDate,
+      deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
-      author: _selectedAuthor,
+      authors: _selectedAuthors,
     ));
   }
 
@@ -291,159 +300,164 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ));
   }
-// Handler for task overdue status
-Future _handleOverdueSelected(bool isOverdue) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _isOverdue = isOverdue;
-    _initialOverdue = isOverdue;
-  });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    overdue: _isOverdue,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+// Handler for task overdue status
+  Future _handleOverdueSelected(bool isOverdue) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _isOverdue = isOverdue;
+      _initialOverdue = isOverdue;
+    });
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      overdue: _isOverdue,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
 // Handler for task file attachment status
-Future _handleHasFileSelected(bool hasFile) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _hasFile = hasFile;
-    _initialHasFile = hasFile;
-  });
+  Future _handleHasFileSelected(bool hasFile) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _hasFile = hasFile;
+      _initialHasFile = hasFile;
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    hasFile: _hasFile,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      hasFile: _hasFile,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
 // Handler for task deal status
-Future _handleHasDealSelected(bool hasDeal) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _hasDeal = hasDeal;
-    _initialHasDeal = hasDeal;
-  });
+  Future _handleHasDealSelected(bool hasDeal) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _hasDeal = hasDeal;
+      _initialHasDeal = hasDeal;
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    hasDeal: _hasDeal,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      hasDeal: _hasDeal,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
 // Handler for task urgency status
-Future _handleUrgentSelected(bool isUrgent) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _isUrgent = isUrgent;
-    _initialUrgent = isUrgent;
-  });
+  Future _handleUrgentSelected(bool isUrgent) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _isUrgent = isUrgent;
+      _initialUrgent = isUrgent;
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    urgent: _isUrgent,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      urgent: _isUrgent,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
-// Handler for task deadline
-Future _handleDeadlineSelected(DateTime? deadline) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _deadline = deadline;
-    _initialDeadline = deadline;
-  });
+// // Handler for task deadline
+//   Future _handleDeadlineSelected(DateTime? deadline) async {
+//     setState(() {
+//       _showCustomTabBar = false;
+//       _deadline = deadline;
+//       _initialDeadline = deadline;
+//     });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    deadline: _deadline,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+//     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+//     final taskBloc = BlocProvider.of<TaskBloc>(context);
+//     taskBloc.add(FetchTasks(
+//       currentStatusId,
+//       deadline: _deadline,
+//       query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+//     ));
+//   }
 
 // Handler for project selection
-Future _handleProjectSelected(String? project) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedProject = project;
-  });
+  Future _handleProjectSelected(String? project) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedProject = project;
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    project: _selectedProject,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    taskBloc.add(FetchTasks(
+      currentStatusId,
+      project: _selectedProject,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
 // Handler for author selection
-Future _handleAuthorsSelected(List<String> authors) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedAuthors = authors;
-    _initialSelectedAuthors = authors;
-  });
+  // Future _handleAuthorsSelected(List<String> authors) async {
+  //   setState(() {
+  //     _showCustomTabBar = false;
+  //     _selectedAuthors = authors;
+  //     _initialSelectedAuthors = authors;
+  //   });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    author: authors.isNotEmpty ? authors.first : null, // Assuming single author selection
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
-Future _handleCombinedFilters(Map<String, dynamic> filters) async {
-  setState(() {
-    _showCustomTabBar = false;
-    
-    // Update all filter states
-    _isOverdue = filters['overdue'] ?? false;
-    _hasFile = filters['hasFile'] ?? false;
-    _hasDeal = filters['hasDeal'] ?? false;
-    _isUrgent = filters['urgent'] ?? false;
-    _deadline = filters['deadline'];
-    _selectedProject = filters['project'];
-    _selectedAuthors = filters['authors'] ?? [];
-    
-    // Update initial states
-    _initialOverdue = _isOverdue;
-    _initialHasFile = _hasFile;
-    _initialHasDeal = _hasDeal;
-    _initialUrgent = _isUrgent;
-    _initialDeadline = _deadline;
-    _initialSelectedAuthors = _selectedAuthors;
-  });
+  //   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  //   final taskBloc = BlocProvider.of<TaskBloc>(context);
+  //   taskBloc.add(FetchTasks(
+  //     currentStatusId,
+  //     authors: authors.isNotEmpty
+  //         ? authors.first
+  //         : null, // Assuming single author selection
+  //     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  //   ));
+  // }
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<TaskBloc>(context);
-  taskBloc.add(FetchTasks(
-    currentStatusId,
-    overdue: _isOverdue,
-    hasFile: _hasFile,
-    hasDeal: _hasDeal,
-    urgent: _isUrgent,
-    deadline: _deadline,
-    project: _selectedProject,
-    author: _selectedAuthors.isNotEmpty ? _selectedAuthors.first : null,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+  // Future _handleCombinedFilters(Map<String, dynamic> filters) async {
+  //   setState(() {
+  //     _showCustomTabBar = false;
+
+  //     // Update all filter states
+  //     _isOverdue = filters['overdue'] ?? false;
+  //     _hasFile = filters['hasFile'] ?? false;
+  //     _hasDeal = filters['hasDeal'] ?? false;
+  //     _isUrgent = filters['urgent'] ?? false;
+  //     _deadline = filters['deadline'];
+  //     _selectedProject = filters['project'];
+  //     _selectedAuthors = filters['authors'] ?? [];
+
+  //     // Update initial states
+  //     _initialOverdue = _isOverdue;
+  //     _initialHasFile = _hasFile;
+  //     _initialHasDeal = _hasDeal;
+  //     _initialUrgent = _isUrgent;
+  //     _initialDeadline = _deadline;
+  //     _initialSelectedAuthors = _selectedAuthors;
+  //   });
+
+  //   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+  //   final taskBloc = BlocProvider.of<TaskBloc>(context);
+  //   taskBloc.add(FetchTasks(
+  //     currentStatusId,
+  //     overdue: _isOverdue,
+  //     hasFile: _hasFile,
+  //     hasDeal: _hasDeal,
+  //     urgent: _isUrgent,
+  //     deadline: _deadline,
+  //     project: _selectedProject,
+  //     authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
+  //     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+  //   ));
+  // }
+
   void _resetFilters() {
     setState(() {
       _showCustomTabBar = true;
@@ -459,8 +473,9 @@ Future _handleCombinedFilters(Map<String, dynamic> filters) async {
       _hasFile = false;
       _hasDeal = false;
       _isUrgent = false;
-      _deadline = null;
-      _selectedProject = null;
+      _deadlinefromDate = null;
+      _deadlinetoDate = null;    
+        _selectedProject = null;
       _selectedAuthors = []; // Add this
 
       // Сбрасываем начальные значения
@@ -472,7 +487,8 @@ Future _handleCombinedFilters(Map<String, dynamic> filters) async {
       _initialHasFile = false;
       _initialHasDeal = false;
       _initialUrgent = false;
-      _initialDeadline = null;
+      _intialDeadlineFromDate = null;
+      _intialDeadlineToDate = null;
       _initialSelectedAuthors = []; // Add this
     });
 
@@ -543,11 +559,12 @@ Future _handleCombinedFilters(Map<String, dynamic> filters) async {
             initialAuthors: _initialSelectedAuthors, // Add this
             initialFromDate: _intialFromDate,
             initialToDate: _intialToDate,
+            initialDeadlineFromDate: _intialDeadlineFromDate,
+            initialDeadlineToDate: _intialDeadlineToDate,
             initialTaskIsOverdue: _initialOverdue,
             initialTaskHasFile: _initialHasFile,
             initialTaskHasDeal: _initialHasDeal,
             initialTaskIsUrgent: _initialUrgent,
-            initialTaskDeadline: _initialDeadline,
             onResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
@@ -573,7 +590,8 @@ Future _handleCombinedFilters(Map<String, dynamic> filters) async {
                       _initialHasFile == null &&
                       _initialHasDeal == null &&
                       _initialUrgent == null &&
-                      _initialDeadline == null) {
+                      _deadlinefromDate == null &&
+                      _deadlinetoDate == null) {
                     print("IF SEARCH EMPTY AND NO FILTERS");
                     setState(() {
                       _showCustomTabBar = true;
@@ -596,7 +614,8 @@ Future _handleCombinedFilters(Map<String, dynamic> filters) async {
                       hasFile: _initialHasFile,
                       hasDeal: _initialHasDeal,
                       urgent: _initialUrgent,
-                      deadline: _initialDeadline,
+                      deadlinefromDate: _fromDate,
+                      deadlinetoDate: _toDate,
                     ));
                   }
                 } else if (_selectedUserIds != null &&

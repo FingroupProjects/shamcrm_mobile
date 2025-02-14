@@ -653,6 +653,6 @@
       "select_deadline":"Дедлайн",
       "has_deal":"На основе сделки",
       "has_file":"С файлом",
-      "overdue":"Просроченные"
-
+      "overdue":"Просроченные",
+      "select_deadline_range":"Выберите диапазон дедлайна"
   }

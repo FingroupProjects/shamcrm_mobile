@@ -21,7 +21,8 @@ class UserFilterScreen extends StatefulWidget {
   final bool? initialHasFile; // Added
   final bool? initialHasDeal; // Added
   final bool? initialIsUrgent; // Added
-  final DateTime? initialDeadline; // Added
+  final DateTime? initialDeadlineFromDate;
+  final DateTime? initialDeadlineToDate;
   final VoidCallback? onResetFilters;
   final List<String>? initialAuthors; // Added
 
@@ -39,7 +40,8 @@ class UserFilterScreen extends StatefulWidget {
     this.initialHasFile, // Added
     this.initialHasDeal, // Added
     this.initialIsUrgent, // Added
-    this.initialDeadline, // Added
+    this.initialDeadlineFromDate,
+    this.initialDeadlineToDate,
     this.onResetFilters,
     this.initialAuthors, // Added
   }) : super(key: key);
@@ -54,11 +56,12 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
+  DateTime? _deadlinefromDate;
+  DateTime? _deadlinetoDate;
   bool _isOverdue = false;
   bool _hasFile = false;
   bool _hasDeal = false;
   bool _isUrgent = false;
-  DateTime? _deadline;
 
   @override
   void initState() {
@@ -68,12 +71,12 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
     _selectedAuthors = widget.initialAuthors ?? []; // Initialize authors
-
     _isOverdue = widget.initialIsOverdue ?? false; // Initialize from props
     _hasFile = widget.initialHasFile ?? false; // Initialize from props
     _hasDeal = widget.initialHasDeal ?? false; // Initialize from props
     _isUrgent = widget.initialIsUrgent ?? false; // Initialize from props
-    _deadline = widget.initialDeadline; // Initialize from props
+     _deadlinefromDate = widget.initialDeadlineFromDate;
+    _deadlinetoDate = widget.initialDeadlineToDate;
   }
 
   void _selectDateRange() async {
@@ -115,20 +118,24 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   }
 
   void _selectDeadline() async {
-    final DateTime? picked = await showDatePicker(
+       final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
-      initialDate: _deadline ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
+      initialDateRange: _deadlinefromDate != null && _deadlinetoDate != null
+          ? DateTimeRange(start: _deadlinefromDate!, end: _deadlinetoDate!)
+          : null,
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
             scaffoldBackgroundColor: Colors.white,
             dialogBackgroundColor: Colors.white,
             colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Цвет выделенной даты
-              onPrimary: Colors.white, // Цвет текста на выделенной дате
+              primary: Colors.blue, // Цвет кружков начальной и конечной даты
+              onPrimary: Colors.white, // Цвет текста на выделенных датах
               onSurface: Colors.black, // Цвет обычного текста
+              secondary: Colors.blue
+                  .withOpacity(0.1), // Цвет фона выделенного диапазона
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
@@ -140,13 +147,13 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
         );
       },
     );
-    if (picked != null) {
+    if (pickedRange != null) {
       setState(() {
-        _deadline = picked;
+        _deadlinefromDate = pickedRange.start;
+        _deadlinetoDate = pickedRange.end;
       });
     }
   }
-
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
       title: Text(
@@ -198,7 +205,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 _hasFile = false;
                 _hasDeal = false;
                 _isUrgent = false;
-                _deadline = null;
+                _deadlinefromDate = null;
+                _deadlinetoDate = null;
+
               });
             },
             style: TextButton.styleFrom(
@@ -221,47 +230,44 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           ),
           SizedBox(width: 10),
           TextButton(
-         onPressed: () async {
-  // Очищаем кэш перед применением фильтров
-  await TaskCache.clearAllTasks();
+            onPressed: () async {
+              print('Applying filters with authors: $_selectedAuthors');
+              print('Applying filters with deadline: $_deadlinetoDate');
+              // Очищаем кэш перед применением фильтров
+              await TaskCache.clearAllTasks();
 
-  // Собираем все параметры фильтров в один объект
-  final filters = {
-    'users': _selectedUsers,
-    'statuses': _selectedStatuses,
-    'fromDate': _fromDate,
-    'toDate': _toDate,
-    'overdue': _isOverdue,
-    'hasFile': _hasFile,
-    'hasDeal': _hasDeal,
-    'urgent': _isUrgent,
-    'deadline': _deadline,
-    'authors': _selectedAuthors,
-  };
+              // Собираем все параметры фильтров в один объект
+              final filters = {
+                'users': _selectedUsers,
+                'statuses': _selectedStatuses,
+                'fromDate': _fromDate,
+                'toDate': _toDate,
+                'overdue': _isOverdue,
+                'hasFile': _hasFile,
+                'hasDeal': _hasDeal,
+                'urgent': _isUrgent,
+                'deadlinefromDate': _deadlinefromDate,
+                'deadlinetoDate': _deadlinetoDate,
+                'authors': _selectedAuthors,
+              };
 
-  // Проверяем, есть ли хотя бы один активный фильтр
-  final bool hasFilters = _selectedUsers.isNotEmpty ||
-      _selectedStatuses != null ||
-      (_fromDate != null && _toDate != null) ||
-      _isOverdue ||
-      _hasFile ||
-      _hasDeal ||
-      _isUrgent ||
-      _deadline != null ||
-      _selectedAuthors.isNotEmpty;
+              // Проверяем, есть ли хотя бы один активный фильтр
+              final bool hasFilters = _selectedUsers.isNotEmpty ||
+                  _selectedStatuses != null ||
+                  (_fromDate != null && _toDate != null) ||_isOverdue ||_hasFile ||_hasDeal ||_isUrgent ||  (_deadlinefromDate != null && _deadlinetoDate != null) ||_selectedAuthors.isNotEmpty;
 
-  if (hasFilters) {
-    // Если есть хотя бы один фильтр, вызываем метод с передачей всех фильтров
-    print('APPLYING FILTERS');
-    widget.onUsersSelected?.call(filters);
-  } else {
-    // Если ни один фильтр не выбран
-    print('NOTHING!!!!!!');
-  }
+              if (hasFilters) {
+                // Если есть хотя бы один фильтр, вызываем метод с передачей всех фильтров
+                print('APPLYING FILTERS');
+                widget.onUsersSelected?.call(filters);
+              } else {
+                // Если ни один фильтр не выбран
+                print('NOTHING!!!!!!');
+              }
 
-  // Закрываем экран фильтров после применения
-  Navigator.pop(context);
-},
+              // Закрываем экран фильтров после применения
+              Navigator.pop(context);
+            },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               backgroundColor: Colors.blueAccent.withOpacity(0.1),
@@ -307,6 +313,36 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                             : AppLocalizations.of(context)!
                                 .translate('select_date_range'),
+                        style: TextStyle(color: Colors.black54, fontSize: 14),
+                      ),
+                      Icon(Icons.calendar_today, color: Colors.black54),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+              const SizedBox(height: 8),
+                    // Deadline selector
+                    Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: GestureDetector(
+                onTap: _selectDeadline,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _deadlinefromDate != null && _deadlinetoDate != null
+                            ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
+                            : AppLocalizations.of(context)!
+                                .translate('select_deadline_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
@@ -371,33 +407,6 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                                   .toList();
                             });
                           },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Deadline selector
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: GestureDetector(
-                        onTap: _selectDeadline,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _deadline != null
-                                    ? "${_deadline!.day.toString().padLeft(2, '0')}.${_deadline!.month.toString().padLeft(2, '0')}.${_deadline!.year}"
-                                    : AppLocalizations.of(context)!
-                                        .translate('select_deadline'),
-                                style: TextStyle(
-                                    color: Colors.black54, fontSize: 16),
-                              ),
-                              Icon(Icons.event, color: Colors.black54),
-                            ],
-                          ),
                         ),
                       ),
                     ),
