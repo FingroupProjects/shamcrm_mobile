@@ -143,9 +143,10 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       hasFile: event.hasFile,
       hasDeal: event.hasDeal,
       urgent: event.urgent,
-      deadline: event.deadline,
       project: event.project,
-      author: event.author,
+      authors: event.authors,
+      deadlinefromDate: event.deadlinefromDate,
+      deadlinetoDate: event.deadlinetoDate,
     );
 
     // Сохраняем задачи в кэш

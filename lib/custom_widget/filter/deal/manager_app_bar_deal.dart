@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -37,6 +39,7 @@ class DealManagerFilterScreen extends StatefulWidget {
 
 class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   List _selectedManagers = [];
+    List _selectedLeads = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -215,6 +218,22 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    //  Card(
+                    //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    //   color: Colors.white,
+                    //   child: Padding(
+                    //     padding: const EdgeInsets.all(8),
+                    //     child: LeadMultiSelectWidget(
+                    //       selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
+                    //       onSelectLeads: (List<LeadData> selectedUsersData) {
+                    //         setState(() {
+                    //           _selectedLeads = selectedUsersData;
+                    //         });
+                    //       },
+                    //     ),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,

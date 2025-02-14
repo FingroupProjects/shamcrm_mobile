@@ -25,9 +25,9 @@ import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
+import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_bloc.dart';
-import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -46,6 +46,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
+import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
@@ -193,6 +194,8 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => GetAllRegionBloc()),
           BlocProvider(create: (context) => GetAllSourceBloc()),
           BlocProvider(create: (context) => GetAllLeadBloc()),
+          BlocProvider(create: (context) => GetAllRegionBloc()),
+          BlocProvider(create: (context) => GetAllLeadMultiBloc()),
           BlocProvider(create: (context) => DealBloc(widget.apiService)),
           BlocProvider(create: (context) => TaskBloc(widget.apiService)),
           BlocProvider(create: (context) => MyTaskBloc(widget.apiService)),

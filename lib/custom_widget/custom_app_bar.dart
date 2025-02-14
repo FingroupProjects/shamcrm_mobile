@@ -102,7 +102,8 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialTaskHasFile;
   final bool? initialTaskHasDeal;
   final bool? initialTaskIsUrgent;
-  final DateTime? initialTaskDeadline;
+  final DateTime? initialDeadlineFromDate;
+  final DateTime? initialDeadlineToDate;
   final List<String>? initialAuthors; // Add this
 
   CustomAppBar({
@@ -180,7 +181,8 @@ class CustomAppBar extends StatefulWidget {
     this.initialTaskHasFile,
     this.initialTaskHasDeal,
     this.initialTaskIsUrgent,
-    this.initialTaskDeadline,
+    this.initialDeadlineFromDate,
+    this.initialDeadlineToDate,
     this.initialAuthors, // Add this
   });
 
@@ -837,6 +839,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                 onSelected: (String value) {
                   switch (value) {
                     case 'filter_task':
+                      print("AUTHOR_________${widget.initialUsers}");
+                     print("DEADLINEFROM_________${widget.initialDeadlineFromDate}");
+                      print("Deadlineto_________${widget.initialDeadlineToDate}");
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -854,9 +860,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                             initialHasFile: widget.initialTaskHasFile,
                             initialHasDeal: widget.initialTaskHasDeal,
                             initialIsUrgent: widget.initialTaskIsUrgent,
-                            initialDeadline: widget.initialTaskDeadline,
                             onResetFilters: widget.onResetFilters,
-                            initialAuthors: widget.initialAuthors,
+                            initialAuthors: widget.initialAuthors, 
+                            initialDeadlineFromDate: widget.initialDeadlineFromDate,
+                            initialDeadlineToDate: widget.initialDeadlineToDate
                           ),
                         ),
                       );

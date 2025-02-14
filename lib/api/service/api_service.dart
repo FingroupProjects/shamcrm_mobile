@@ -25,6 +25,7 @@ import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
@@ -1315,6 +1316,33 @@ Future<List<SourceData>> getAllSource() async {
 
     return dataManager;
   }
+//Метод для получения Менеджера
+  Future<LeadsMultiDataResponse> getAllLeadMulti() async {
+    final organizationId = await getSelectedOrganization();
+
+    // Используем общий метод для выполнения GET-запроса
+    final response = await _getRequest(
+        '/lead${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+    late LeadsMultiDataResponse dataLead;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['result'] != null) {
+        dataLead = LeadsMultiDataResponse.fromJson(data);
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
+    } else {
+      throw Exception('Ошибка при получении данных!');
+    }
+
+    if (kDebugMode) {
+    }
+
+    return dataLead;
+  }
 
   //Метод для получения лида
   Future<LeadsDataResponse> getAllLead() async {
@@ -2149,25 +2177,18 @@ Future<List<Task>> getTasks(
   bool? hasFile,
   bool? hasDeal,
   bool? urgent,
-  DateTime? deadline,
+   DateTime? deadlinefromDate,
+  DateTime? deadlinetoDate,
   String? project,
-  String? author,
-}) async {
+ final List<String>?
+      authors }) async {
+print('Authors parameter: $authors');
   final organizationId = await getSelectedOrganization();
   String path = '/task?page=$page&per_page=$perPage';
   path += '&organization_id=$organizationId';
-  bool hasFilters = (search != null && search.isNotEmpty) ||
-      (users != null && users.isNotEmpty) ||
-      (fromDate != null) ||
-      (toDate != null) ||
-      (statuses != null) ||
-      overdue == true ||
-      hasFile == true ||
-      hasDeal == true ||
-      urgent == true ||
-      deadline != null ||
+  bool hasFilters = (search != null && search.isNotEmpty) || (users != null && users.isNotEmpty) ||(fromDate != null) ||(toDate != null) || (statuses != null) || overdue == true ||hasFile == true ||hasDeal == true ||urgent == true ||(deadlinefromDate != null) ||(deadlinetoDate != null) ||
       (project != null && project.isNotEmpty) ||
-      (author != null && author.isNotEmpty);
+      (authors != null && authors.isNotEmpty);
   if (taskStatusId != null && !hasFilters) {
     path += '&task_status_id=$taskStatusId';
   }
@@ -2192,24 +2213,27 @@ Future<List<Task>> getTasks(
     path += '&overdue=1';
   }
   if (hasFile == true) {
-    path += '&has_file=1';
+    path += '&hasFile=1';
   }
   if (hasDeal == true) {
-    path += '&has_deal=1';
+    path += '&hasDeal=1';
   }
   if (urgent == true) {
     path += '&urgent=1';
   }
-  if (deadline != null) {
-    final formattedDeadline = DateFormat('yyyy-MM-dd').format(deadline);
-    path += '&to=$formattedDeadline';
+ if (deadlinefromDate != null && deadlinetoDate != null) {
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
   }
   if (project != null && project.isNotEmpty) {
     path += '&project=$project';
   }
-  if (author != null && author.isNotEmpty) {
-    path += '&authors=$author';
+ if (authors != null && authors.isNotEmpty) {
+  for (int i = 0; i < authors.length; i++) {
+    path += '&authors[$i]=${authors[i]}';
   }
+}
   final response = await _getRequest(path);
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
