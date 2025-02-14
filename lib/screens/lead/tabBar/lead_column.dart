@@ -95,14 +95,12 @@ class _LeadColumnState extends State<LeadColumn> {
                   ),
                 );
               }
-
               final ScrollController _scrollController = ScrollController();
               _scrollController.addListener(() {
                 if (_scrollController.position.pixels ==
                         _scrollController.position.maxScrollExtent &&
                     !_leadBloc.allLeadsFetched) {
-                  _leadBloc
-                      .add(FetchMoreLeads(widget.statusId, state.currentPage));
+                  _leadBloc.add(FetchMoreLeads(widget.statusId, state.currentPage));
                 }
               });
 

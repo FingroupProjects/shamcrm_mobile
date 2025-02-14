@@ -61,9 +61,21 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         perPage: 20,
         search: event.query,
         managers: event.managerIds,
+        regions: event.regionsIds,
+        sources: event.sourcesIds,
         statuses: event.statusIds,
         fromDate: event.fromDate,
         toDate: event.toDate,
+        deadLineFromDate: event.deadLineFromDate,
+        deadLineToDate: event.deadLineToDate,
+        hasSuccessDeals: event.hasSuccessDeals,
+        hasInProgressDeals: event.hasInProgressDeals,
+        hasFailureDeals: event.hasFailureDeals,
+        hasNotices: event.hasNotices,
+        hasContact: event.hasContact,
+        hasChat: event.hasChat,
+        daysWithoutActivity: event.daysWithoutActivity
+
       );
       // Сохраняем лиды в кэш
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);

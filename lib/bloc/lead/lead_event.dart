@@ -8,18 +8,40 @@ class FetchLeads extends LeadEvent {
   final int statusId;
   final String? query;
   final List<int>? managerIds; 
+  final List<int>? regionsIds; 
+  final List<int>? sourcesIds; 
   final int? statusIds; 
   final DateTime? fromDate; 
   final DateTime? toDate; 
+  final DateTime? deadLineFromDate;
+  final DateTime? deadLineToDate;
+  final bool? hasSuccessDeals ;
+  final bool? hasInProgressDeals;
+  final bool? hasFailureDeals;
+  final bool? hasNotices;
+  final bool? hasContact;
+  final bool? hasChat;
+  final int? daysWithoutActivity;
 
 
   FetchLeads(
     this.statusId, {
     this.query,
     this.managerIds,
+    this.regionsIds,
+    this.sourcesIds,
     this.statusIds,
     this.fromDate,
     this.toDate,
+    this.deadLineFromDate,
+    this.deadLineToDate,
+    this.hasSuccessDeals,
+    this.hasInProgressDeals,
+    this.hasFailureDeals,
+    this.hasNotices,
+    this.hasContact,
+    this.hasChat,
+    this.daysWithoutActivity,
   });
 }
 

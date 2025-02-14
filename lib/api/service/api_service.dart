@@ -37,6 +37,7 @@ import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_mo
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
@@ -687,13 +688,24 @@ class ApiService {
   // Метод для получения списка Лидов с пагинацией
   Future<List<Lead>> getLeads(
     int? leadStatusId, {
-    int page = 1,
+    int page = 3,
     int perPage = 20,
     String? search,
     List<int>? managers,
+    List<int>? regions,
+    List<int>? sources,
     int? statuses,  
     DateTime? fromDate, 
     DateTime? toDate, 
+    DateTime? deadLineFromDate,
+    DateTime? deadLineToDate,
+    bool? hasSuccessDeals,
+    bool? hasInProgressDeals,
+    bool? hasFailureDeals,
+    bool? hasNotices,
+    bool? hasContact,
+    bool? hasChat,
+    int? daysWithoutActivity,
   }) async {
       final organizationId = await getSelectedOrganization(); 
   String path = '/lead?page=$page&per_page=$perPage'; 
@@ -702,8 +714,19 @@ class ApiService {
   bool hasFilters =  
     (search != null && search.isNotEmpty) || 
     (managers != null && managers.isNotEmpty) || 
+    (regions != null && regions.isNotEmpty) || 
+    (sources != null && sources.isNotEmpty) || 
     (fromDate != null) || 
     (toDate != null) || 
+    (deadLineFromDate != null) || 
+    (deadLineToDate != null) || 
+    (hasSuccessDeals == true) || 
+    (hasInProgressDeals == true) || 
+    (hasFailureDeals == true) || 
+    (hasNotices == true) || 
+    (hasContact == true) || 
+    (hasChat == true) || 
+    (daysWithoutActivity != null) || 
     (statuses != null); 
 
 
@@ -720,6 +743,16 @@ class ApiService {
         path += '&managers[$i]=${managers[i]}';
       }
     }
+    if (regions != null && regions.isNotEmpty) {
+      for (int i = 0; i < regions.length; i++) {
+        path += '&regions[$i]=${regions[i]}';
+      }
+    }
+    if (sources != null && sources.isNotEmpty) {
+      for (int i = 0; i < sources.length; i++) {
+        path += '&sources[$i]=${sources[i]}';
+      }
+    }
 
       if (statuses != null ) { 
     path += '&lead_status_id=$statuses'; 
@@ -730,6 +763,33 @@ class ApiService {
     final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
     path += '&from=$formattedFromDate&to=$formattedToDate'; 
   } 
+  if (deadLineFromDate != null && deadLineToDate != null) { 
+    final formattedFromDate = DateFormat('yyyy-MM-dd').format(deadLineFromDate); 
+    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadLineToDate); 
+    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate'; 
+  } 
+
+    if (hasSuccessDeals == true) {
+    path += '&hasSuccessDeals=1';
+  }
+  if (hasInProgressDeals == true) {
+    path += '&hasInProgressDeals=1';
+  }
+  if (hasFailureDeals == true) {
+    path += '&hasFailureDeals=1';
+  }
+  if (hasNotices == true) {
+    path += '&hasNotices=1';
+  }
+  if (hasContact == true) {
+    path += '&hasContact=1';
+  }
+  if (hasChat == true) {
+    path += '&hasChat=1';
+  }
+  if (daysWithoutActivity != null) {
+    path += '&lastUpdate=$daysWithoutActivity';
+  }
  
 
     final response = await _getRequest(path);
@@ -1206,6 +1266,28 @@ class ApiService {
 
     return dataRegion;
   }
+  //Метод для получения региона
+// In your ApiService
+Future<List<SourceData>> getAllSource() async {
+  final organizationId = await getSelectedOrganization();
+
+  final response = await _getRequest(
+      '/source${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data != null) {
+      List<SourceData> dataSource = List<SourceData>.from(
+        data.map((source) => SourceData.fromJson(source))
+      );
+      return dataSource;
+    } else {
+      throw Exception('Результат отсутствует в ответе');
+    }
+  } else {
+    throw Exception('Ошибка при получении данных!');
+  }
+}
 
   //Метод для получения Менеджера
   Future<ManagersDataResponse> getAllManager() async {

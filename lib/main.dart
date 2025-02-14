@@ -61,6 +61,7 @@ import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
+import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
@@ -190,6 +191,8 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => HistoryBloc(widget.apiService)),
           BlocProvider(create: (context) => NotesBloc(widget.apiService)),
           BlocProvider(create: (context) => GetAllManagerBloc()),
+          BlocProvider(create: (context) => GetAllRegionBloc()),
+          BlocProvider(create: (context) => GetAllSourceBloc()),
           BlocProvider(create: (context) => GetAllLeadBloc()),
           BlocProvider(create: (context) => GetAllRegionBloc()),
           BlocProvider(create: (context) => GetAllLeadMultiBloc()),

@@ -391,6 +391,52 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                         ),
                       ),
                     ),
+                    // Card(
+                    //   shape: RoundedRectangleBorder(
+                    //       borderRadius: BorderRadius.circular(12)),
+                    //   color: Colors.white,
+                    //   child: Padding(
+                    //     padding: const EdgeInsets.all(8),
+                    //     child: AuthorMultiSelectWidget(
+                    //       selectedAuthors: _selectedAuthors,
+                    //       onSelectAuthors:
+                    //           (List<AuthorData> selectedAuthorsData) {
+                    //         setState(() {
+                    //           _selectedAuthors = selectedAuthorsData
+                    //               .map((author) => author.id.toString())
+                    //               .toList();
+                    //         });
+                    //       },
+                    //     ),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 8),
+                    // Deadline selector
+                    // Card(
+                    //   shape: RoundedRectangleBorder(
+                    //       borderRadius: BorderRadius.circular(12)),
+                    //   color: Colors.white,
+                    //   child: GestureDetector(
+                    //     onTap: _selectDeadline,
+                    //     child: Container(
+                    //       padding: const EdgeInsets.all(12),
+                    //       child: Row(
+                    //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //         children: [
+                    //           Text(
+                    //             _deadline != null
+                    //                 ? "${_deadline!.day.toString().padLeft(2, '0')}.${_deadline!.month.toString().padLeft(2, '0')}.${_deadline!.year}"
+                    //                 : AppLocalizations.of(context)!
+                    //                     .translate('select_deadline'),
+                    //             style: TextStyle(
+                    //                 color: Colors.black54, fontSize: 16),
+                    //           ),
+                    //           Icon(Icons.event, color: Colors.black54),
+                    //         ],
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
