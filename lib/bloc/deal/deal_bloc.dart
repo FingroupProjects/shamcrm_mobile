@@ -64,6 +64,10 @@ Future<void> _fetchDealStatus(FetchDealStatus event, Emitter<DealState> emit) as
         statuses: event.statusIds,
         fromDate: event.fromDate,
         toDate: event.toDate,
+        leads: event.leadIds,
+        hasTasks: event.hasTasks,
+        daysWithoutActivity: event.daysWithoutActivity
+
       );
 
       await DealCache.cacheDealsForStatus(event.statusId, deals);

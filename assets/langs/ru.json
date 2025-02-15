@@ -21,7 +21,6 @@
     "data_updated_successfully": "Данные 1С успешно обновлены",
     "data_update_failed": "Ошибка при обновлении данных 1С",
     "last_update": "Последнее обновление",
-
     "COMMENT_TITLE_SCREEN_Profile_Edit": "----------------------------Тексты для экрана PROFILE-EDIT----------------------------",
     "file_too_large": "Выбранный файл слишком большой.",
     "image_selected_successfully": "Изображение успешно выбрано!",
@@ -54,8 +53,6 @@
     "invalid_email": "Введите корректный email адрес",
     "profile_update_error": "Произошла ошибка при обновлении профиля",
     "save": "Сохранить",
-
-
     "COMMENT_TITLE_SCREEN_Domain": "----------------------------Тексты для экрана Домена----------------------------",
     "enter_subdomain": "Введите ваш поддомен",
     "subdomain_hint": "Введите поддомен",
@@ -63,7 +60,6 @@
     "login_button": "Войти",
     "invalid_subdomain": "Неверный поддомен",
     "enter_subdomain_error": "Пожалуйста, введите поддомен",
-
     "COMMENT_TITLE_SCREEN_Login": "----------------------------Тексты для экрана Login----------------------------",
     "login_title": "Вход",
     "login_subtitle": "Введите логин и пароль для входа",
@@ -72,12 +68,10 @@
     "login_password_hint": "Введите пароль",
     "login_password_label": "Пароль",
     "login_empty_fields_error": "Пожалуйста, заполните все поля",
-
     "COMMENT_TITLE_SCREEN_Pin_Setup": "----------------------------Тексты для экрана PIN SETUP----------------------------",
     "set_pin_title": "Установите PIN-код",
     "confirm_pin_title": "Повторите PIN-код",
     "pins_do_not_match_error": "Пароли не совпадают",
-
     "COMMENT_TITLE_SCREEN_Pin": "----------------------------Тексты для экрана PIN----------------------------",
     "enter_pin": "Введите ваш PIN-код",
     "wrong_pin": "Неправильный пароль",
@@ -88,7 +82,6 @@
     "forgot_pin": "Забыли PIN-код?",
     "biometric_unavailable": "Биометрическая аутентификация недоступна",
     "confirm_identity": "Подтвердите личность",
-
     "COMMENT_TITLE_SCREEN_Forgot_Pin": "----------------------------Тексты для экрана FORGOT-PIN----------------------------",
     "forgot_pin_title": "Забыли PIN - код?",
     "enter_login": "Введите логин",
@@ -102,7 +95,6 @@
     "did_not_receive_code": "Не получили код подтверждения?",
     "confirm_code": "Подтвердить код подтверждение",
     "wrong_confirmation_code": "Неверный код подтверждения!",
-
     "COMMENT_TITLE_SCREEN_Dashboard": "----------------------------Тексты для экрана APP-DASHBOARD----------------------------",
     "appbar_dashboard": "Дашборд",
     "appbar_tasks": "Задачи",
@@ -110,7 +102,6 @@
     "appbar_chats": "Чаты",
     "appbar_deals": "Сделки",
     "appbar_settings": "Настройки",
-
     "COMMENT_TITLE_SCREEN_Dashboard_Lead_Conversion": "----------------------------Тексты для экрана DASHBOARD-LEAD-CONVERSION----------------------------",
     "lead_conversion": "Конверсия лидов",
     "no_data_to_display": "Нет данных для отображения",
@@ -126,10 +117,8 @@
     "october": "Октябрь",
     "november": "Ноябрь",
     "december": "Декабрь",
-
     "COMMENT_TITLE_SCREEN_Dashboard_User_Chart": "----------------------------Тексты для экрана DASHBOARD-USER-CHART----------------------------",
     "achieving_goals": "Выполнение целей",
-
     "COMMENT_TITLE_SCREEN_Dashboard_Task_Chart": "----------------------------Тексты для экрана DASHBOARD-TASK-CHART----------------------------",
     "tasks": "Задачи",
     "total_tasks": "Общее количество задач",
@@ -137,7 +126,6 @@
     "overdue_tasks": "Просроченные",
     "completed_tasks": "Завершённые",
     "data_loading_error": "Ошибка загрузки данных",
-
     "COMMENT_TITLE_SCREEN_Dashboard_Graphic_Клиенты": "----------------------------Тексты для экрана DASHBOARD-GRAPHIC-DASHBOARD-КЛИЕНТЫ----------------------------",
     "clients": "Клиенты",
     "statuses": "Статусы:",
@@ -153,11 +141,8 @@
     "oct": "Окт",
     "nov": "Ноя",
     "dec": "Дек",
-
     "COMMENT_TITLE_SCREEN_Dashboard_Procces_Speed": "----------------------------Тексты для экрана DASHBOARD-PROCCE-SPEED-СКОРОСЬ ОБРАБОТКИ---------------------------",
     "process_speed": "Скорость обработки",
-
-
     "COMMENT_TITLE_SCREEN_Dashboard_Deal_Stats": "----------------------------Тексты для экрана DASHBOARD-DEAL-STATS-СТАТИСТИКА СДЕЛОК---------------------------",
     "billion": "млрд",
     "million": "м",
@@ -166,19 +151,16 @@
     "deal_stats": "Статистика сделок",
     "total_amount": "Общая сумма",
     "successful": "Успешные",
-
     "COMMENT_TITLE_SCREEN_TASK_SCREEN": "----------------------------Тексты для экрана TASK SCREEN---------------------------",
     "nothing_found": "По запросу ничего не найдено",
     "no_tasks_for_user": "У выбранного пользователя нет задач",
     "no_internet_connection": "Нет подключения к интернету",
-
     "delete_task_status": "Удалить статус задачи",
     "confirm_delete_task_status": "Вы уверены, что хотите удалить этот статус задачи?",
     "cancel": "Отмена",
     "delete": "Удалить",
     "remove_cards_first": "Сначала уберите карточки из этого статуса!",
     "status_deleted_successfully": "Статус успешно удален!",
-
     "action_history": "История действий",
     "not_specified": "Не указано",
     "status_task": "Статус задачи: ",
@@ -188,25 +170,21 @@
     "to": "До: ",
     "project": "Проект: ",
     "users": "Пользователи: ",
-    "description": "Описание: ",
-
+   "description": "Описание: ",
     "projects": "Проект",
     "search": "Поиск",
     "search_appbar": "Поиск...",
     "select_project": "Выберите проект",
     "field_required_project": "   Поле обязательно для заполнения",
     "field_required_source": " Поле обязательно для заполнения",
-
     "select_roles": "Выберите роли",
     "all": "Все",
-
     "task_statuses": "Статусы задачи",
     "lead_statuses": "Статусы лида",
     "deal_statuses": "Статусы сделки",
     "event_statuses": "Статусы cобитый",
     "select_status": "Выберите статус",
     "field_required": "Поле обязательно для заполнения",
-
     "normal": "Обычный",
     "important": "Важный",
     "urgent": "Срочный",
@@ -226,17 +204,13 @@
     "fill_required_fields": "Пожалуйста, заполните все обязательные поля!",
     "enter_valid_date": "Введите корректную дату в формате ДД/ММ/ГГГГ",
     "start_date_after_end_date": "Дата начала не может быть позже даты завершения!",
-
     "no_name": "Без имени",
     "no_project": "Без проекта",
     "column": "Колонка: ",
-
     "no_tasks_for_selected_status": "Нет задач для выбранного статуса",
-
     "delete_task": "Удалить задачу",
     "confirm_delete_task": "Вы уверены, что хотите удалить эту задачу?",
     "task_deleted_successfully": "Задача успешно удалена!",
-
     "invalid_format": "Неверный формат",
     "task_name": "Название задачи:",
     "from_details": "От:",
@@ -249,8 +223,7 @@
     "author_details": "Автор:",
     "creation_date_details": "Дата создания:",
     "link": "Ссылка",
-    "view_task": "Задача",
-    
+    "view_task": "Задача", 
     "task_data_unavailable": "Данные о задаче недоступны.",
     "confirm_task_completion": "Хотите завершить задачу?",
     "confirm": "Подтвердить",
@@ -377,7 +350,6 @@
     "yes": "Да",
     "delete_lead_status": "Удалить статус лида",
     "confrim_delete_lead_status": "Вы уверены, что хотите удалить этот статус лида?",
-
     "COMMENT_TITLE_SCREEN_API_SERVICE": "----------------------------Тексты для экрана API SERVICE---------------------------",
     "lead_created_successfully": "Лид успешно создан!",
     "lead_updated_successfully": "Лид успешно обновлен!",
@@ -416,10 +388,6 @@
     "error_validation": "Ошибки валидации!",
     "error_validation_data": "Ошибка валидации данных. Проверьте введенные данные.",
     "error_update_profile": "Ошибка обновления профиля!",
-
-
-
-
     "COMMENT_TITLE_SCREEN_CUSTOM_TEXTFIELD_DATE": "----------------------------Тексты для экрана CUSTOM TEXTFIELD---------------------------",
     "ddmmyyyy": "дд/ММ/гггг",
     "ok": "Ок",
@@ -434,7 +402,6 @@
     "enter_phone_number": "Введите номер телефона",
     "error_phone_number": "Неправильный номер телефона!",
     "enter_textfield_text": "Введите значение поля!",
-
     "COMMENT_TITLE_SCREEN_NOTIFICATION": "----------------------------Тексты для экрана NOTIFICATION---------------------------",
     "all_notifications_deleted_successfully": "Все уведомления успешно удалены!",
     "notifications": "Уведомления",
@@ -446,7 +413,6 @@
     "task_closed": "Задача закрыта",
     "task_deadline_reminder": "Напоминание о просроченном сроке задачи",
     "assigned_as_lead_manager": "Вас назначили менеджером лида",
-
     "COMMENT_TITLE_SCREEN_DEAL": "----------------------------Тексты для экрана DEAL---------------------------",
     "delete_deal_status": "Удалить статус сделки",
     "confirm_delete_status_deal": "Вы уверены, что хотите удалить этот статус сделки?",
@@ -474,7 +440,6 @@
     "end_date_history": "Дата завершения: ",
     "summa_history": "Сумма:",
     "date_update_status_history": "Дата обновления статуса: ",
-
     "COMMENT_TITLE_SCREEN_CHAT": "----------------------------Тексты для экрана CHAT---------------------------",
     "delete_chat": "Удалить чат",
     "delete_chat_group": "Удалить группу",
@@ -524,8 +489,6 @@
     "user_delete_successfully": "Пользователь успешно удален из группы",
     "cannot_delete_user": "Нельзя удалить участника!",
     "error_delete_user": "Ошибка удаления пользователя!",
-
-
     "COMMENT_TITLE_SCREEN_CHAT_MODEL": "----------------------------Тексты для экрана CHAT-MODEL---------------------------",
     "text_message": "Текстовое сообщение",
     "sent_voice_message": "Отправлено голосовое сообщение",
@@ -535,29 +498,24 @@
     "video_message": "Вам пришло видео сообщение",
     "location_message": "Вам пришло местоположение:",
     "sticker_message": "Вам пришел стикер",
-
-
     "COMMENT_TITLE_SCREEN_MY_TASK_SCREEN": "----------------------------Тексты для экрана Мои задачи---------------------------",
     "set_push_notification": "Отправить Push-уведомление",
     "date_not":"Дата не указана",
     "Invalid_date_format":"Неверный формат даты",
     "enter_status_namer":"Введите название статуса",
     "appbar_my_tasks": "Мои задачи",
-
     "COMMENT_TITLE_SCREEN_LEAD_PROFILE_SCREEN": "----------------------------Тексты для Профиль Лида---------------------------",
     "lead_profile":"Профиль лида",
     "whatsApp":"WhatsApp",
     "creation_date_lead":"Дата создания",
     "status_lead_profile":"Статус",
     "download_data":"Загрузите данные",
-
     "COMMENT_TITLE_SCREEN_TASK_PROFILE_SCREEN": "----------------------------Тексты для Профиль Задачи---------------------------",
     "about_task":"Информация о задаче",
     "task_name_profile":"Название задачи",
     "number_task":"Номер задачи",
     "author":"Автор",
     "and_else":" и еще",
-
     "COMMENT_TITLE_SCREEN_GROUP_PROFILE_SCREEN": "----------------------------Тексты для Профиль Группы---------------------------",
     "group_profile":"Профиль группы",
     "participant":"участника",
@@ -567,7 +525,6 @@
     "deleted_account":"Удаленный аккаунт",
     "owner":"Владелец",
     "you":"Вы",
-
     "COMMENT_TITLE_SCREEN_USER_PROFILE_SCREEN": "----------------------------Тексты для Профиль пользователя---------------------------",
     "user_profile":"Профиль пользователя",
     "user_name":"Имя пользователя",
@@ -580,7 +537,6 @@
     "notification":"Уведомление",
     "filtr":"Фильтр",
     "clear":"Очистить",
-
     "COMMENT_TITLE_SCREEN_BLOC": "----------------------------Тексты для экрана  BLOC---------------------------",
     "no_status_task":"Нет статусов задачи!",
     "status_task_delete_successfully":"Статус задачи успешно удалена!",
@@ -596,7 +552,6 @@
     "error_delete_deal":"Ошибка удаления сделки!",
     "status_deal_delete_successfully":"Статус сделки успешно удален!",
     "error_status_deal_delete":"Ошибка удаления статуса сделки!",
-   
     "error_get_data_lead":"Не удалось загрузить данные лида!",
     "nothing_deal_for_manager":"Нет сделок для отображения",
     "nothing_lead_for_manager":"Нет лидов для отображения",
@@ -604,7 +559,6 @@
     "status_updated_successfully":"Статус обновлен успешно",
     "events":"События",
     "appbar_events":"События",
-  
       "title": "Тематика:",
       "body": "Описание:",
       "Дата создание": "Дата создание:",
@@ -651,14 +605,21 @@
       "select_date_deadline":"Выбрать дедлайн",
       "enter_date_range_create":"Введите интервал даты создания",
       "enter_date_range_notice":"Введите интервал даты напоминания",
-
-
       "select_deadline":"Дедлайн",
       "has_deal":"На основе сделки",
       "has_file":"С файлом",
       "overdue":"Просроченные",
       "select_deadline_range":"Выберите диапазон дедлайна",
-
+      "select_creation_date":"Выберите дата создание",
+      "urgents":"Срочные",
+      "hasTask": "С задачами",
+      "daysWithoutActivity": "Количество дней без активности",
+      "hasSuccessfulDeal": "С успешной сделкой",
+      "hasPendingDeal": "С сделкой в ожидании",
+      "hasUnsuccessfulDeal": "С неуспешной сделкой",
+      "hasNotice": "С заметкой",
+      "hasContacts": "С контактами",
+      "hasChat": "С чатом"
       "with_successful_deal": "С успешной сделкой",
       "with_deal_in_progress": "С сделкой в ожидании",
       "with_unsuccessful_deal": "С не успешной сделкой",
@@ -666,5 +627,4 @@
       "with_contacts": "С контактами",
       "with_chat": "С чатом",
       "days_without_activity": "Количество дней без активности"
-
   }

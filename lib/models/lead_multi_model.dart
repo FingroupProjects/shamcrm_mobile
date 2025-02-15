@@ -16,7 +16,7 @@ class LeadData{
   factory LeadData.fromJson(Map<String, dynamic> json) => LeadData(
     id: json["id"],
     name: json["name"],
-    lastname: json["lastname"]
+    lastname: json["lastname"]??""
   
   );
 

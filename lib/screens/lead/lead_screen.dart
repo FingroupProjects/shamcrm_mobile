@@ -81,7 +81,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasContact;
   bool? _initialHasChat;
   int? _initialDaysWithoutActivity;
-
     List<int>? _selectedManagerIds;
 
   @override

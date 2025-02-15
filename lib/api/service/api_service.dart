@@ -1705,9 +1705,13 @@ Future<List<SourceData>> getAllSource() async {
     int perPage = 20,
     String? search,
     List<int>? managers,
+    List<int>? leads,
     int? statuses,  
     DateTime? fromDate, 
     DateTime? toDate, 
+    int? daysWithoutActivity,
+    bool? hasTasks,
+
   }) async {
 
   final organizationId = await getSelectedOrganization(); 
@@ -1717,8 +1721,11 @@ Future<List<SourceData>> getAllSource() async {
   bool hasFilters =  
     (search != null && search.isNotEmpty) || 
     (managers != null && managers.isNotEmpty) || 
+    (leads != null && leads.isNotEmpty) || 
     (fromDate != null) || 
     (toDate != null) || 
+    (daysWithoutActivity != null) || 
+    (hasTasks == true) || 
     (statuses != null); 
 
  if (dealStatusId != null && !hasFilters) { 
@@ -1734,7 +1741,17 @@ Future<List<SourceData>> getAllSource() async {
         path += '&managers[$i]=${managers[i]}';
       }
     }
-
+  if (leads != null && leads.isNotEmpty) {
+      for (int i = 0; i < leads.length; i++) {
+        path += '&clients[$i]=${leads[i]}';
+      }
+    }
+     if (daysWithoutActivity != null) {
+    path += '&lastUpdate=$daysWithoutActivity';
+  }
+    if (hasTasks == true) {
+    path += '&withTasks=1';
+  }
       if (statuses != null ) { 
     path += '&deal_status_id=$statuses'; 
   } 

@@ -480,7 +480,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                             (value) => setState(() => _hasDeal = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('urgent'),
+                            AppLocalizations.of(context)!.translate('urgents'),
                             _isUrgent,
                             (value) => setState(() => _isUrgent = value),
                           ),
