@@ -236,6 +236,8 @@
   "error": "Xato",
   "status_changed_successfully": "Holat muvaffaqiyatli o‘zgartirildi!",
   "cannot_move_task_to_status": "Siz vazifani ushbu holatga ko‘chira olmaysiz!",
+  "cannot_move_lead_to_status": "Siz leadni ushbu holatga ko'chira olmaysiz!",
+  "cannot_move_deal_to_status": "Siz dealni ushbu holatga ko'chira olmaysiz!",
   "task_edit": "Vazifani tahrirlash",
   "error_format_date": "Sana formati xato!",
   "go_to_chat": "Chatga o‘tish",
@@ -596,5 +598,12 @@
     "select_date_range": "Sana oralig‘ini tanlang",
     "select_date_deadline": "Muddatni tanlang",
     "enter_date_range_create": "Yaratilgan sana oralig‘ini kiriting",
-    "enter_date_range_notice": "Eslatma sanasi oralig‘ini kiriting"
+    "enter_date_range_notice": "Eslatma sanasi oralig‘ini kiriting",
+    "with_successful_deal": "Muvaffaqiyatli bitim bilan",
+    "with_deal_in_progress": "Kutilayotgan bitim bilan",
+    "with_unsuccessful_deal": "Muvaffaqiyatsiz bitim bilan",
+    "with_note": "Eslatma bilan",
+    "with_contacts": "Kontaktlar bilan",
+    "with_chat": "Chat bilan",
+    "days_without_activity": "Faoliyatsiz o‘tgan kunlar soni"
 }

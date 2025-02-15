@@ -516,22 +516,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       .add(FetchLeadStatuses());
                                   final localizations =
                                       AppLocalizations.of(context)!;
-
                                   leadBloc.add(UpdateLead(
                                     leadId: widget.leadId,
                                     name: titleController.text,
                                     phone: phoneToSend,
-                                    waPhone:
-                                        whatsAppToSend, // Теперь передаем отдельный номер для WhatsApp
-                                    regionId: selectedRegion != null
-                                        ? int.parse(selectedRegion!)
-                                        : null,
-                                    managerId: selectedManager != null
-                                        ? int.parse(selectedManager!)
-                                        : null,
-                                    sourseId: selectedSource != null
-                                        ? int.parse(selectedSource!)
-                                        : null,
+                                    waPhone:whatsAppToSend,
+                                    regionId: selectedRegion != null ? int.tryParse(selectedRegion!) : null,
+                                    managerId: selectedManager != null ? int.tryParse(selectedManager!) : null,
+                                    sourseId: selectedSource != null ? int.tryParse(selectedSource!) : null,
                                     instaLogin: instaLoginController.text,
                                     facebookLogin: facebookLoginController.text,
                                     tgNick: telegramController.text,

@@ -688,7 +688,7 @@ class ApiService {
   // Метод для получения списка Лидов с пагинацией
   Future<List<Lead>> getLeads(
     int? leadStatusId, {
-    int page = 3,
+    int page = 1,
     int perPage = 20,
     String? search,
     List<int>? managers,
@@ -697,8 +697,6 @@ class ApiService {
     int? statuses,  
     DateTime? fromDate, 
     DateTime? toDate, 
-    DateTime? deadLineFromDate,
-    DateTime? deadLineToDate,
     bool? hasSuccessDeals,
     bool? hasInProgressDeals,
     bool? hasFailureDeals,
@@ -718,8 +716,6 @@ class ApiService {
     (sources != null && sources.isNotEmpty) || 
     (fromDate != null) || 
     (toDate != null) || 
-    (deadLineFromDate != null) || 
-    (deadLineToDate != null) || 
     (hasSuccessDeals == true) || 
     (hasInProgressDeals == true) || 
     (hasFailureDeals == true) || 
@@ -763,12 +759,6 @@ class ApiService {
     final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
     path += '&from=$formattedFromDate&to=$formattedToDate'; 
   } 
-  if (deadLineFromDate != null && deadLineToDate != null) { 
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(deadLineFromDate); 
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadLineToDate); 
-    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate'; 
-  } 
-
     if (hasSuccessDeals == true) {
     path += '&hasSuccessDeals=1';
   }
@@ -2180,9 +2170,7 @@ Future<List<Task>> getTasks(
    DateTime? deadlinefromDate,
   DateTime? deadlinetoDate,
   String? project,
- final List<String>?
-      authors }) async {
-print('Authors parameter: $authors');
+ final List<String>?authors }) async {
   final organizationId = await getSelectedOrganization();
   String path = '/task?page=$page&per_page=$perPage';
   path += '&organization_id=$organizationId';

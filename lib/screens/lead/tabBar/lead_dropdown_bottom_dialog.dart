@@ -123,7 +123,7 @@ void DropdownBottomSheet(
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                       AppLocalizations.of(context)!.translate('cannot_move_task_to_status'),
+                                       AppLocalizations.of(context)!.translate('cannot_move_lead_to_status'),
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,

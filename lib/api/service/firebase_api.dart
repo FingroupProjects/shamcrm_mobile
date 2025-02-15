@@ -106,6 +106,7 @@ void initPushNotification() async {
       case 'message':
         print('Переход на экран чата с ID: $id');
         if (await _apiService.hasPermission('deal.read') &&
+            await _apiService.hasPermission('section.dashboard') &&
             await _apiService.hasPermission('lead.read')) {
           screenIndex = 3;
           await navigateToScreen(screenIndex, id, 'message', message);
