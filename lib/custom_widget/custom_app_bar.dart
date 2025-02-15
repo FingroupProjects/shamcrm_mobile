@@ -67,8 +67,7 @@ class CustomAppBar extends StatefulWidget {
   final int? initialManagerLeadStatuses;
   final DateTime? initialManagerLeadFromDate;
   final DateTime? initialManagerLeadToDate;
-  final DateTime? initialManagerLeadFromDeadLine;
-  final DateTime? initialManagerLeadToDeadLine;
+
   final bool? initialManagerLeadHasSuccessDeals;
   final bool? initialManagerLeadHasInProgressDeals;
   final bool? initialManagerLeadHasFailureDeals;
@@ -125,8 +124,6 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadStatuses,
     this.initialManagerLeadFromDate,
     this.initialManagerLeadToDate,
-    this.initialManagerLeadFromDeadLine,
-    this.initialManagerLeadToDeadLine,
     this.initialManagerLeadHasSuccessDeals,
     this.initialManagerLeadHasInProgressDeals,
     this.initialManagerLeadHasFailureDeals,
@@ -880,8 +877,6 @@ class _CustomAppBarState extends State<CustomAppBar>
                             initialStatuses: widget.initialManagerLeadStatuses,
                             initialFromDate: widget.initialManagerLeadFromDate,
                             initialToDate: widget.initialManagerLeadToDate,
-                            initialDeadLineFromDate: widget.initialManagerLeadFromDeadLine,
-                            initialDeadLineToDate: widget.initialManagerLeadToDeadLine,
                             initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
                             initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
                             initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,

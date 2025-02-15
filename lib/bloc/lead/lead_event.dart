@@ -13,8 +13,6 @@ class FetchLeads extends LeadEvent {
   final int? statusIds; 
   final DateTime? fromDate; 
   final DateTime? toDate; 
-  final DateTime? deadLineFromDate;
-  final DateTime? deadLineToDate;
   final bool? hasSuccessDeals ;
   final bool? hasInProgressDeals;
   final bool? hasFailureDeals;
@@ -33,8 +31,6 @@ class FetchLeads extends LeadEvent {
     this.statusIds,
     this.fromDate,
     this.toDate,
-    this.deadLineFromDate,
-    this.deadLineToDate,
     this.hasSuccessDeals,
     this.hasInProgressDeals,
     this.hasFailureDeals,

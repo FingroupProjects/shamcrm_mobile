@@ -66,8 +66,6 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         statuses: event.statusIds,
         fromDate: event.fromDate,
         toDate: event.toDate,
-        deadLineFromDate: event.deadLineFromDate,
-        deadLineToDate: event.deadLineToDate,
         hasSuccessDeals: event.hasSuccessDeals,
         hasInProgressDeals: event.hasInProgressDeals,
         hasFailureDeals: event.hasFailureDeals,

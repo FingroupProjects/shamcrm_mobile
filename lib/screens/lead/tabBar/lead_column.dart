@@ -110,16 +110,14 @@ class _LeadColumnState extends State<LeadColumn> {
                 onRefresh: _onRefresh,
                 child: Column(
                   children: [
-                    SizedBox(height: 15),
+                    SizedBox(height: 8),
                     Expanded(
                       child: ListView.builder(
                         controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
                         itemCount: leads.length,
                         itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
+                          return Padding( padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: LeadCard(
                               lead: leads[index],
                               title: widget.title,

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/author_multi_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -169,7 +170,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       activeColor: const Color.fromARGB(255, 255, 255, 255),
       inactiveTrackColor:
           const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-      activeTrackColor: const Color.fromARGB(255, 51, 65, 98).withOpacity(0.5),
+      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
       inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
   }
