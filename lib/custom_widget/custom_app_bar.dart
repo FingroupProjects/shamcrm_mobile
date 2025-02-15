@@ -35,6 +35,7 @@ class CustomAppBar extends StatefulWidget {
   final Function(Map)? onManagersLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
+  final Function(Map)? onLeadsDealSelected;
   final Function(int?)? onStatusDealSelected;
   final Function(DateTime?, DateTime?)? onDateRangeDealSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeDealSelected;
@@ -78,9 +79,12 @@ class CustomAppBar extends StatefulWidget {
   final int? initialManagerLeadDaysWithoutActivity;
 
   final List? initialManagersDeal;
+  final List? initialLeadsDeal;
   final int? initialManagerDealStatuses;
   final DateTime? initialManagerDealFromDate;
   final DateTime? initialManagerDealToDate;
+  final bool? initialManagerDealHasTasks;
+  final int? initialManagerDealDaysWithoutActivity;
 
   final List? initialManagersEvent;
   final int? initialManagerEventStatuses;
@@ -184,6 +188,10 @@ class CustomAppBar extends StatefulWidget {
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
     this.initialAuthors, // Add this
+    this.initialLeadsDeal,
+    this.initialManagerDealDaysWithoutActivity,
+    this.initialManagerDealHasTasks,
+    this.onLeadsDealSelected,
   });
 
   @override
@@ -840,31 +848,34 @@ class _CustomAppBarState extends State<CustomAppBar>
                   switch (value) {
                     case 'filter_task':
                       print("AUTHOR_________${widget.initialUsers}");
-                     print("DEADLINEFROM_________${widget.initialDeadlineFromDate}");
-                      print("Deadlineto_________${widget.initialDeadlineToDate}");
+                      print(
+                          "DEADLINEFROM_________${widget.initialDeadlineFromDate}");
+                      print(
+                          "Deadlineto_________${widget.initialDeadlineToDate}");
 
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UserFilterScreen(
-                            onUsersSelected: widget.onUsersSelected,
-                            onStatusSelected: widget.onStatusSelected,
-                            onDateRangeSelected: widget.onDateRangeSelected,
-                            onStatusAndDateRangeSelected:
-                                widget.onStatusAndDateRangeSelected,
-                            initialUsers: widget.initialUsers,
-                            initialStatuses: widget.initialStatuses,
-                            initialFromDate: widget.initialFromDate,
-                            initialToDate: widget.initialToDate,
-                            initialIsOverdue: widget.initialTaskIsOverdue,
-                            initialHasFile: widget.initialTaskHasFile,
-                            initialHasDeal: widget.initialTaskHasDeal,
-                            initialIsUrgent: widget.initialTaskIsUrgent,
-                            onResetFilters: widget.onResetFilters,
-                            initialAuthors: widget.initialAuthors, 
-                            initialDeadlineFromDate: widget.initialDeadlineFromDate,
-                            initialDeadlineToDate: widget.initialDeadlineToDate
-                          ),
+                              onUsersSelected: widget.onUsersSelected,
+                              onStatusSelected: widget.onStatusSelected,
+                              onDateRangeSelected: widget.onDateRangeSelected,
+                              onStatusAndDateRangeSelected:
+                                  widget.onStatusAndDateRangeSelected,
+                              initialUsers: widget.initialUsers,
+                              initialStatuses: widget.initialStatuses,
+                              initialFromDate: widget.initialFromDate,
+                              initialToDate: widget.initialToDate,
+                              initialIsOverdue: widget.initialTaskIsOverdue,
+                              initialHasFile: widget.initialTaskHasFile,
+                              initialHasDeal: widget.initialTaskHasDeal,
+                              initialIsUrgent: widget.initialTaskIsUrgent,
+                              onResetFilters: widget.onResetFilters,
+                              initialAuthors: widget.initialAuthors,
+                              initialDeadlineFromDate:
+                                  widget.initialDeadlineFromDate,
+                              initialDeadlineToDate:
+                                  widget.initialDeadlineToDate),
                         ),
                       );
                       break;
@@ -880,35 +891,50 @@ class _CustomAppBarState extends State<CustomAppBar>
                             initialStatuses: widget.initialManagerLeadStatuses,
                             initialFromDate: widget.initialManagerLeadFromDate,
                             initialToDate: widget.initialManagerLeadToDate,
-                            initialDeadLineFromDate: widget.initialManagerLeadFromDeadLine,
-                            initialDeadLineToDate: widget.initialManagerLeadToDeadLine,
-                            initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
-                            initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
-                            initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
-                            initialHasNotices: widget.initialManagerLeadHasNotices,
-                            initialHasContact: widget.initialManagerLeadHasContact,
+                            initialDeadLineFromDate:
+                                widget.initialManagerLeadFromDeadLine,
+                            initialDeadLineToDate:
+                                widget.initialManagerLeadToDeadLine,
+                            initialHasSuccessDeals:
+                                widget.initialManagerLeadHasSuccessDeals,
+                            initialHasInProgressDeals:
+                                widget.initialManagerLeadHasInProgressDeals,
+                            initialHasFailureDeals:
+                                widget.initialManagerLeadHasFailureDeals,
+                            initialHasNotices:
+                                widget.initialManagerLeadHasNotices,
+                            initialHasContact:
+                                widget.initialManagerLeadHasContact,
                             initialHasChat: widget.initialManagerLeadHasChat,
-                            initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
+                            initialDaysWithoutActivity:
+                                widget.initialManagerLeadDaysWithoutActivity,
                             onResetFilters: widget.onLeadResetFilters,
                           ),
                         ),
                       );
                       break;
                     case 'filter_deal':
+                      print("HASTASK_________________________________________");
+                      print(widget.initialManagerDealHasTasks);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => DealManagerFilterScreen(
                             onManagersSelected: widget.onManagersDealSelected,
+                            onLeadsSelected: widget.onLeadsDealSelected,
                             onStatusSelected: widget.onStatusDealSelected,
                             onDateRangeSelected: widget.onDateRangeDealSelected,
                             onStatusAndDateRangeSelected:
                                 widget.onStatusAndDateRangeDealSelected,
                             initialManagers: widget.initialManagersDeal,
+                            initialLeads: widget.initialLeadsDeal,
+                            initialHasTasks: widget.initialManagerDealHasTasks,
                             initialStatuses: widget.initialManagerDealStatuses,
                             initialFromDate: widget.initialManagerDealFromDate,
                             initialToDate: widget.initialManagerDealToDate,
                             onResetFilters: widget.onDealResetFilters,
+                            initialDaysWithoutActivity:
+                                widget.initialManagerDealDaysWithoutActivity,
                           ),
                         ),
                       );

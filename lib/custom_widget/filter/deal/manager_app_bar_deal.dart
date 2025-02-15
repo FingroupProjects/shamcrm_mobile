@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
@@ -8,49 +9,116 @@ import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-
 class DealManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
+  final Function(Map<String, dynamic>)? onLeadsSelected;
   final Function(int?)? onStatusSelected;
   final Function(DateTime?, DateTime?)? onDateRangeSelected;
   final Function(int?, DateTime?, DateTime?)? onStatusAndDateRangeSelected;
   final List? initialManagers;
+  final List? initialLeads;
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
   final VoidCallback? onResetFilters;
+  final int? initialDaysWithoutActivity;
+  final bool? initialHasTasks;
 
   DealManagerFilterScreen({
     Key? key,
     this.onManagersSelected,
+    this.onLeadsSelected,
     this.onStatusSelected,
     this.onDateRangeSelected,
     this.onStatusAndDateRangeSelected,
     this.initialManagers,
+    this.initialLeads,
     this.initialStatuses,
     this.initialFromDate,
     this.initialToDate,
-    this.onResetFilters, 
+    this.initialDaysWithoutActivity,
+    this.onResetFilters,
+    this.initialHasTasks,
   }) : super(key: key);
 
   @override
-  _DealManagerFilterScreenState createState() => _DealManagerFilterScreenState();
+  _DealManagerFilterScreenState createState() =>
+      _DealManagerFilterScreenState();
 }
 
 class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   List _selectedManagers = [];
-    List _selectedLeads = [];
+  List _selectedLeads = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
+  bool? _hasTasks;
+  int? _daysWithoutActivity;
+  DateTime? _createAt;
+
+  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
+    return SwitchListTile(
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.black54,
+          fontFamily: 'Gilroy',
+        ),
+      ),
+      value: value,
+      onChanged: onChanged,
+      activeColor: const Color.fromARGB(255, 255, 255, 255),
+      inactiveTrackColor:
+          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
+      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
+      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+    );
+  }
+
+  void _selectCreateAt() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _createAt ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
+            dialogBackgroundColor: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue, // Цвет выделенной даты
+              onPrimary: Colors.white, // Цвет текста на выделенной дате
+              onSurface: Colors.black, // Цвет обычного текста
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue, // Цвет кнопок
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _createAt = picked;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _selectedManagers = widget.initialManagers ?? [];
+    _selectedLeads = widget.initialLeads ?? [];
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
+    _daysWithoutActivity = widget.initialDaysWithoutActivity;
+    _hasTasks = widget.initialHasTasks;
   }
 
   void _selectDateRange() async {
@@ -77,8 +145,12 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
-         AppLocalizations.of(context)!.translate('filter'),
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xfff1E2E52), fontFamily: 'Gilroy'),
+          AppLocalizations.of(context)!.translate('filter'),
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xfff1E2E52),
+              fontFamily: 'Gilroy'),
         ),
         backgroundColor: Colors.white,
         forceMaterialTransparency: true,
@@ -87,11 +159,14 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                widget.onResetFilters?.call(); 
+                widget.onResetFilters?.call();
                 _selectedManagers.clear();
+                _selectedLeads.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
+                _daysWithoutActivity = null;
+                _hasTasks = null;
               });
             },
             style: TextButton.styleFrom(
@@ -103,10 +178,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-               AppLocalizations.of(context)!.translate('reset'),
+              AppLocalizations.of(context)!.translate('reset'),
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w600, 
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: Colors.blueAccent,
                 fontFamily: 'Gilroy',
               ),
@@ -115,35 +190,37 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           SizedBox(width: 10),
           TextButton(
             onPressed: () async {
-              if (_selectedManagers.isNotEmpty) {
-                await DealCache.clearAllDeals();
-                print('MANAGER');
-                widget.onManagersSelected?.call({
-                  'managers': _selectedManagers,
-                  'statuses': _selectedStatuses,
-                  'fromDate': _fromDate,
-                  'toDate': _toDate,
-                });
-              } else if (_selectedStatuses != null && _fromDate == null && _toDate == null) {
-                await DealCache.clearAllDeals();
-                print('STATUs');
-                print(_selectedStatuses);
-          
-                widget.onStatusSelected?.call(_selectedStatuses);
-              } else if (_fromDate != null && _toDate != null && _selectedStatuses == null) {
-                await DealCache.clearAllDeals();
-                print('DATE');
-          
-                widget.onDateRangeSelected?.call(_fromDate, _toDate);
-              } else if (_fromDate != null && _toDate != null && _selectedStatuses != null) {
-                await DealCache.clearAllDeals();
-                print('STATUS + DATE');
-          
-                widget.onStatusAndDateRangeSelected?.call(_selectedStatuses, _toDate, _fromDate);
+              await DealCache.clearAllDeals();
+              Map<String, dynamic> filterData = {
+                'managers': _selectedManagers,
+                'leads': _selectedLeads,
+                'statuses': _selectedStatuses,
+                'fromDate': _fromDate,
+                'toDate': _toDate,
+                'daysWithoutActivity': _daysWithoutActivity,
+                'hasTask': _hasTasks
+              };
+print('Selected Leads: $_selectedLeads');
+print('Selected Managers: $_selectedManagers');
+print('Selected Statuses: $_selectedStatuses');
+print('From Date: $_fromDate');
+print('To Date: $_toDate');
+print('Days Without Activity: $_daysWithoutActivity');
+print('Has Tasks: $_hasTasks');
+              // Managers only
+              if (_selectedManagers.isNotEmpty ||
+                  _selectedLeads.isNotEmpty ||
+                  _selectedStatuses != null ||
+                  _fromDate != null ||
+                  _toDate != null ||
+                  _daysWithoutActivity != null ||
+                  _hasTasks != null) {
+                print('COMBINED FILTERS');
+                widget.onManagersSelected?.call(filterData);
               } else {
-                
-                print('NOTHING!!!!!!');
+                print('NO FILTERS SELECTED');
               }
+
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(
@@ -155,10 +232,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
-               AppLocalizations.of(context)!.translate('apply'),
+              AppLocalizations.of(context)!.translate('apply'),
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w600, 
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: Colors.blueAccent,
                 fontFamily: 'Gilroy',
               ),
@@ -172,7 +249,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         child: Column(
           children: [
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
               child: GestureDetector(
                 onTap: _selectDateRange,
@@ -188,7 +266,8 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       Text(
                         _fromDate != null && _toDate != null
                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!.translate('select_date_range'),
+                            : AppLocalizations.of(context)!
+                                .translate('select_date_range'),
                         style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       Icon(Icons.calendar_today, color: Colors.black54),
@@ -197,19 +276,51 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            // Card(
+            //   shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(12)),
+            //   color: Colors.white,
+            //   child: GestureDetector(
+            //     onTap: _selectCreateAt,
+            //     child: Container(
+            //       padding: const EdgeInsets.all(12),
+            //       decoration: BoxDecoration(
+            //         color: Colors.white,
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //       child: Row(
+            //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //         children: [
+            //           Text(
+            //             _createAt != null
+            //                 ? "${_createAt!.day.toString().padLeft(2, '0')}.${_createAt!.month.toString().padLeft(2, '0')}.${_createAt!.year}"
+            //                 : AppLocalizations.of(context)!
+            //                     .translate('select_creation_date'),
+            //             style: TextStyle(color: Colors.black54, fontSize: 14),
+            //           ),
+            //           Icon(Icons.calendar_today, color: Colors.black54),
+            //         ],
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: ManagerMultiSelectWidget(
-                          selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
-                          onSelectManagers: (List<ManagerData> selectedUsersData) {
+                          selectedManagers: _selectedManagers
+                              .map((manager) => manager.id.toString())
+                              .toList(),
+                          onSelectManagers:
+                              (List<ManagerData> selectedUsersData) {
                             setState(() {
                               _selectedManagers = selectedUsersData;
                             });
@@ -218,24 +329,28 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    //  Card(
-                    //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    //   color: Colors.white,
-                    //   child: Padding(
-                    //     padding: const EdgeInsets.all(8),
-                    //     child: LeadMultiSelectWidget(
-                    //       selectedLeads: _selectedLeads.map((lead) => lead.id.toString()).toList(),
-                    //       onSelectLeads: (List<LeadData> selectedUsersData) {
-                    //         setState(() {
-                    //           _selectedLeads = selectedUsersData;
-                    //         });
-                    //       },
-                    //     ),
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 8),
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: LeadMultiSelectWidget(
+                          selectedLeads: _selectedLeads
+                              .map((lead) => lead.id.toString())
+                              .toList(),
+                          onSelectLeads: (List<LeadData> selectedUsersData) {
+                            setState(() {
+                              _selectedLeads = selectedUsersData;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
@@ -246,6 +361,75 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               _selectedStatuses = selectedStatusData.id;
                             });
                           },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Column(
+                        children: [
+                          _buildSwitchTile(
+                            AppLocalizations.of(context)!
+                                .translate('hasTask'),
+                            _hasTasks ?? false,
+                            (value) => setState(() => _hasTasks = value),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            left: 12, right: 12, top: 4, bottom: 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('daysWithoutActivity'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Gilroy',
+                                color: Color(0xfff1E2E52),
+                              ),
+                            ),
+                            Slider(
+                              value: (_daysWithoutActivity ?? 0).toDouble(),
+                              min: 0,
+                              max: 100,
+                              divisions: 100,
+                              label: _daysWithoutActivity.toString(),
+                              onChanged: (double value) {
+                                setState(() {
+                                  _daysWithoutActivity = value.toInt();
+                                });
+                              },
+                              activeColor:
+                                  ChatSmsStyles.messageBubbleSenderColor,
+                              inactiveColor: Color.fromARGB(255, 179, 179, 179)
+                                  .withOpacity(0.5),
+                            ),
+                            Center(
+                              child: Text(
+                                "${_daysWithoutActivity ?? '0'}",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                  color: Color(0xfff1E2E52),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

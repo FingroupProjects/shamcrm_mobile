@@ -323,7 +323,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                               Text(
                                 _deadLineFromDate != null && _deadLineToDate != null
                                     ? "${_deadLineFromDate!.day.toString().padLeft(2, '0')}.${_deadLineFromDate!.month.toString().padLeft(2, '0')}.${_deadLineFromDate!.year} - ${_deadLineToDate!.day.toString().padLeft(2, '0')}.${_deadLineToDate!.month.toString().padLeft(2, '0')}.${_deadLineToDate!.year}"
-                                    : AppLocalizations.of(context)!.translate('select_date_deadline'),
+                                    : AppLocalizations.of(context)!.translate('select_deadline_range'),
                                 style: TextStyle(color: Colors.black54, fontSize: 14),
                               ),
                               Icon(Icons.calendar_today, color: Colors.black54),
@@ -403,32 +403,32 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                       child: Column(
                         children: [
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('C успешной сделкой'),
+                            AppLocalizations.of(context)!.translate('hasSuccessfulDeal'),
                             _hasSuccessDeals ?? false,
                             (value) => setState(() => _hasSuccessDeals = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('С сделкой в ожидании'),
+                            AppLocalizations.of(context)!.translate('hasPendingDeal'),
                             _hasInProgressDeals ?? false,
                             (value) => setState(() => _hasInProgressDeals = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('C не успешной сделкой'),
+                            AppLocalizations.of(context)!.translate('hasUnsuccessfulDeal'),
                             _hasFailureDeals ?? false,
                             (value) => setState(() => _hasFailureDeals = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('C заметкой'),
+                            AppLocalizations.of(context)!.translate('hasNotice'),
                             _hasNotices ?? false,
                             (value) => setState(() => _hasNotices = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('C контаками'),
+                            AppLocalizations.of(context)!.translate('hasContacts'),
                             _hasContact ?? false,
                             (value) => setState(() => _hasContact = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('C чатом'),
+                            AppLocalizations.of(context)!.translate('hasChat'),
                             _hasChat ?? false,
                             (value) => setState(() => _hasChat = value),
                           ),
@@ -444,7 +444,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('Количество дней без активности'),
+                              AppLocalizations.of(context)!.translate('daysWithoutActivity'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,

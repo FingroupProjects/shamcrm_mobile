@@ -8,17 +8,23 @@ class FetchDeals extends DealEvent {
   final int statusId;
   final String? query;
   final List<int>? managerIds; 
+  final List<int>? leadIds; 
   final int? statusIds; 
   final DateTime? fromDate; 
   final DateTime? toDate; 
+  final int? daysWithoutActivity;
+  final bool? hasTasks ;
 
   FetchDeals(
     this.statusId, {
     this.query,
     this.managerIds,
+    this.leadIds,
     this.statusIds,
     this.fromDate,
     this.toDate,
+    this.daysWithoutActivity,
+    this.hasTasks,
   });
 }
 class FetchDealStatus extends DealEvent {

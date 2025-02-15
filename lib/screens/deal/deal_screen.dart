@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
@@ -54,14 +55,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   String _lastSearchQuery = "";
 
   List<ManagerData> _selectedManagers = [];
+  List<LeadData> _selectedLeads = [];
   int? _selectedStatuses;  
   DateTime? _fromDate;
   DateTime? _toDate;
+  int? _daysWithoutActivity;
+  bool? _hasTasks = false;
 
   List<ManagerData> _initialselectedManagers = []; 
+  List<LeadData> _initialselectedLeads = []; 
   int? _initialSelStatus;
-   DateTime? _intialFromDate;
+  DateTime? _intialFromDate;
   DateTime? _intialToDate;
+  bool? _initialHasTasks;
+  int? _initialDaysWithoutActivity;
 
 
   @override
@@ -133,9 +140,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       currentStatusId,
       query: query,
       managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      leadIds: _selectedLeads.map((lead) => lead.id).toList(),
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
       toDate: _toDate,
+      daysWithoutActivity: _daysWithoutActivity,
+      hasTasks: _hasTasks
     ));
 }
 
@@ -144,28 +154,43 @@ void _resetFilters() {
   setState(() {
     _showCustomTabBar = true;
     _selectedManagers = [];
+    _selectedLeads=[];
     _selectedStatuses = null;
     _fromDate = null;
+    _hasTasks = false;
+    _daysWithoutActivity = null;
     _toDate = null;
     _initialselectedManagers = [];
+    _initialselectedLeads = [];
     _initialSelStatus = null;
     _intialFromDate = null;
     _intialToDate = null;
     _lastSearchQuery = '';
     _searchController.clear();
+    _initialHasTasks = false;
+    _initialDaysWithoutActivity = null;
   });
    final leadBloc = BlocProvider.of<DealBloc>(context);
    leadBloc.add(FetchDealStatuses());
 }
 
   Future<void> _handleManagerSelected(Map managers) async {
+    print(_initialHasTasks);
+        print("_initialHasTasks");
+
   setState(() {
     _showCustomTabBar = false;
     _selectedManagers = managers['managers'];
+    _selectedLeads = managers['leads'];
     _selectedStatuses = managers['statuses'];
     _fromDate = managers['fromDate'];
     _toDate = managers['toDate'];
+    _hasTasks = managers['hasTask'];
+    _daysWithoutActivity = managers['daysWithoutActivity'];
 
+    _initialHasTasks = managers['hasTask'];
+    _initialselectedLeads = managers['leads'];
+    _initialDaysWithoutActivity = managers['daysWithoutActivity'];
     _initialselectedManagers = managers['managers'];
     _initialSelStatus = managers['statuses'];
     _intialFromDate = managers['fromDate'];
@@ -181,6 +206,9 @@ void _resetFilters() {
     statusIds: _selectedStatuses, 
     fromDate: _fromDate,
     toDate: _toDate,
+    hasTasks: _hasTasks,
+    leadIds: _selectedLeads.map((lead) => lead.id).toList(),
+    daysWithoutActivity: _daysWithoutActivity,
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
     ));
   }
@@ -207,7 +235,7 @@ Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
      _showCustomTabBar = false;
     _fromDate = fromDate;
     _toDate = toDate;
-
+    
     _intialFromDate = fromDate;
     _intialToDate = toDate;
     
@@ -285,9 +313,12 @@ void _onSearch(String query) {
           onDateRangeDealSelected: _handleDateSelected,
           onStatusAndDateRangeDealSelected: _handleStatusAndDateSelected,
           initialManagersDeal: _initialselectedManagers,
+          initialLeadsDeal: _initialselectedLeads,
           initialManagerDealStatuses: _initialSelStatus,
           initialManagerDealFromDate: _intialFromDate,
           initialManagerDealToDate: _intialToDate,
+          initialManagerDealDaysWithoutActivity: _initialDaysWithoutActivity,
+          initialManagerDealHasTasks: _initialHasTasks,
           onDealResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
@@ -304,7 +335,7 @@ void _onSearch(String query) {
                   });
 
               if (_searchController.text.isEmpty) {
-                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null) {
+                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null && _selectedLeads.isEmpty&& _hasTasks == false && _daysWithoutActivity == null) {
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
@@ -321,6 +352,9 @@ void _onSearch(String query) {
                     statusIds: _selectedStatuses,
                     fromDate: _fromDate,
                     toDate: _toDate,
+                    daysWithoutActivity: _daysWithoutActivity,
+                    hasTasks: _hasTasks,
+                    leadIds: _selectedLeads.isNotEmpty ? _selectedLeads.map((lead) => lead.id).toList() : null,
                   ));
                 }
                   } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
@@ -336,11 +370,8 @@ void _onSearch(String query) {
                   }
                 }
               },
-clearButtonClickFiltr: (value) {
- 
-}
-
-
+                  clearButtonClickFiltr: (value) {
+                  }
   ),
       ),
       body: isClickAvatarIcon
