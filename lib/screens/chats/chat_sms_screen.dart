@@ -23,6 +23,7 @@ import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -1162,9 +1163,7 @@ class MessageItemWidget extends StatelessWidget {
       },
       child: GestureDetector(
       onLongPress: () {
-        if (endPointInTab == 'task' || endPointInTab == 'corporate') {
           _showMessageContextMenu(context, message, focusNode);
-        }
       },
         child: Container(
           width: double.infinity,
@@ -1339,13 +1338,43 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
   bool showReadersList = false;
   bool isSingleUserChat = message.readStatus?.read.length == 1;
 
+   if (endPointInTab == 'lead') {
+    showMenu(
+      context: context,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+      ),
+      position: RelativeRect.fromLTRB(
+        position.dx + messageBox.size.width / 2.5,
+        position.dy,
+        position.dx + messageBox.size.width / 2 + 1,
+        position.dy + messageBox.size.height,
+      ),
+      items: [
+        _buildMenuItem(
+          icon: 'assets/icons/chats/menu_icons/copy.svg',
+          text: "Копировать",
+          iconColor: Colors.black,
+          textColor: Colors.black,
+          onTap: () {
+            Navigator.pop(context);
+          _copyMessageToClipboard(context, message.text);
+          },
+        ),
+      ],
+    ).then((_) {
+      onMenuStateChanged?.call(false);
+    });
+    return;
+  }
+
   void showMenuItems() {
   final List<PopupMenuItem> menuItems = [];
 
   if (showReadersList) {
   final List<PopupMenuItem> menuItems = [];
 
-  // Добавляем кнопку "Назад" в начало списка
         menuItems.add(
           PopupMenuItem(
             child: InkWell(
@@ -1562,6 +1591,19 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
       ),
     );
 
+      menuItems.add(
+      _buildMenuItem(
+        icon: 'assets/icons/chats/menu_icons/copy.svg',
+        text: "Копировать",
+        iconColor: Colors.black,
+        textColor: Colors.black,
+        onTap: () {
+          Navigator.pop(context);
+          _copyMessageToClipboard(context, message.text);
+        },
+      ),
+    );
+
     if (message.isMyMessage) {
       menuItems.add(
         _buildMenuItem(
@@ -1611,6 +1653,34 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
 
   showMenuItems();
 }
+
+void _copyMessageToClipboard(BuildContext context, String messageText) {
+  Clipboard.setData(ClipboardData(text: messageText));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate('Сообщение скопировано!'), 
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.green,
+                elevation: 3,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: Duration(seconds: 3),
+              ),
+              );
+        }
+
+
 
 
 PopupMenuItem _buildMenuItemWithAvatar({

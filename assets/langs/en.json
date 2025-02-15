@@ -237,6 +237,8 @@
   "error": "Error",
   "status_changed_successfully": "Status changed successfully!",
   "cannot_move_task_to_status": "You cannot move the task to this status!",
+  "cannot_move_lead_to_status": "You cannot move the lead to this status!",
+  "cannot_move_deal_to_status": "You cannot move the deal to this status!",
   "task_edit": "Task editing",
   "error_format_date": "Error in date format!",
   "go_to_chat": "Go to chat",
@@ -616,4 +618,11 @@
       "hasNotice": "With a notice",
       "hasContacts": "With contacts",
       "hasChat": "With a chat"
+    "with_successful_deal": "With a successful deal",
+    "with_deal_in_progress": "With a deal in progress",
+    "with_unsuccessful_deal": "With an unsuccessful deal",
+    "with_note": "With a note",
+    "with_contacts": "With contacts",
+    "with_chat": "With chat",
+    "days_without_activity": "Number of days without activity"
 }

@@ -31,9 +31,13 @@ class _LeadCardState extends State<LeadCard> {
 
   Widget _buildDealCount(String label, int? count) {
     if (count == null || count <= 0) {
-      return Container();
+      return Container(
+        width: 30,
+        height: 30,
+      );
     }
 
+    // Normal behavior when count is available
     Color backgroundColor;
     if (label == 'In Progress') {
       backgroundColor = Colors.yellow;
@@ -115,7 +119,7 @@ class _LeadCardState extends State<LeadCard> {
             color: Color(0xff99A4BA),
           ),
         ),
-        const SizedBox(width: 8), // Перенесли SizedBox сюда
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -144,13 +148,21 @@ class _LeadCardState extends State<LeadCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.lead.name,
-              style: TaskCardStyles.titleStyle,
-              overflow: TextOverflow.ellipsis,
+            RichText(
               maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                text: widget.lead.name,
+                style: TaskCardStyles.titleStyle,
+                children: const <TextSpan>[
+                  TextSpan(
+                    text: '\n\u200B',
+                    style: TaskCardStyles.titleStyle,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 5),
+            // const SizedBox(height: 5),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -193,7 +205,7 @@ class _LeadCardState extends State<LeadCard> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                              horizontal: 8, vertical: 2),
                           child: Row(
                             children: [
                               Container(
@@ -222,18 +234,6 @@ class _LeadCardState extends State<LeadCard> {
                     ),
                   ],
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDealCount(
-                        'In Progress', widget.lead.inProgressDealsCount),
-                    const SizedBox(width: 16),
-                    _buildDealCount(
-                        'Success', widget.lead.successefullyDealsCount),
-                    const SizedBox(width: 16),
-                    _buildDealCount('Failed', widget.lead.failedDealsCount),
-                  ],
-                ),
               ],
             ),
             Column(
@@ -259,16 +259,50 @@ class _LeadCardState extends State<LeadCard> {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 18),
+                    const SizedBox(width: 10),
                   ],
                 ),
-                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    if (widget.lead.successefullyDealsCount != null &&
+                        widget.lead.successefullyDealsCount! > 0)
+                      _buildDealCount(
+                          'Success', widget.lead.successefullyDealsCount!),
+                    if (widget.lead.successefullyDealsCount != null &&
+                        widget.lead.successefullyDealsCount! > 0 &&
+                        widget.lead.inProgressDealsCount != null &&
+                        widget.lead.inProgressDealsCount! > 0)
+                      const SizedBox(width: 2),
+                    if (widget.lead.inProgressDealsCount != null &&
+                        widget.lead.inProgressDealsCount! > 0)
+                      _buildDealCount(
+                          'In Progress', widget.lead.inProgressDealsCount!),
+                    if (widget.lead.inProgressDealsCount != null &&
+                        widget.lead.inProgressDealsCount! > 0 &&
+                        widget.lead.failedDealsCount != null &&
+                        widget.lead.failedDealsCount! > 0)
+                      const SizedBox(width: 2),
+                    if (widget.lead.failedDealsCount != null &&
+                        widget.lead.failedDealsCount! > 0)
+                      _buildDealCount('Failed', widget.lead.failedDealsCount!),
+                    if (widget.lead.successefullyDealsCount == null ||
+                        widget.lead.successefullyDealsCount! <= 0)
+                      _buildDealCount('Success', 0),
+                    if (widget.lead.inProgressDealsCount == null ||
+                        widget.lead.inProgressDealsCount! <= 0)
+                      _buildDealCount('In Progress', 0),
+                    if (widget.lead.failedDealsCount == null ||
+                        widget.lead.failedDealsCount! <= 0)
+                      _buildDealCount('Failed', 0),
+                  ],
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        _buildHourglassIcon(), // Заменяем старый блок на новый метод
+                        _buildHourglassIcon(),
                         Row(
                           children: [
                             Image.asset(
@@ -276,7 +310,6 @@ class _LeadCardState extends State<LeadCard> {
                               width: 18,
                               height: 18,
                             ),
-                            const SizedBox(width: 0),
                             Text(
                               ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',
                               style: const TextStyle(

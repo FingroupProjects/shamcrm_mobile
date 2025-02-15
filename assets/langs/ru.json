@@ -237,6 +237,8 @@
     "error": "Ошибка",
     "status_changed_successfully": "Статус успешно изменен!",
     "cannot_move_task_to_status": "Вы не можете переместить задачу на этот статус!",
+    "cannot_move_lead_to_status": "Вы не можете переместить лида на этот статус!",
+    "cannot_move_deal_to_status": "Вы не можете переместить сделку на этот статус!",
     "task_edit": "Редактирование задачи",
     "error_format_date": "Ошибка в формате даты!",
     "go_to_chat": "Перейти в чат",
@@ -618,4 +620,11 @@
       "hasNotice": "С заметкой",
       "hasContacts": "С контактами",
       "hasChat": "С чатом"
+      "with_successful_deal": "С успешной сделкой",
+      "with_deal_in_progress": "С сделкой в ожидании",
+      "with_unsuccessful_deal": "С не успешной сделкой",
+      "with_note": "С заметкой",
+      "with_contacts": "С контактами",
+      "with_chat": "С чатом",
+      "days_without_activity": "Количество дней без активности"
   }

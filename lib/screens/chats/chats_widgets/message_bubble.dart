@@ -1,5 +1,7 @@
-import 'package:crm_task_manager/utils/app_colors.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -12,7 +14,7 @@ class MessageBubble extends StatelessWidget {
   final void Function(int)? onReplyTap;
   final bool isHighlighted;
   final bool isChanged;
-  final bool isRead; 
+  final bool isRead;
 
   MessageBubble({
     Key? key,
@@ -103,13 +105,8 @@ class MessageBubble extends StatelessWidget {
                   crossAxisAlignment:
                       isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      message,
-                      style: isSender
-                          ? ChatSmsStyles.senderMessageTextStyle
-                          : ChatSmsStyles.receiverMessageTextStyle,
-                    ),
-                    if (isChanged) 
+                    _buildMessageWithLinks(message),
+                    if (isChanged)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
@@ -152,4 +149,65 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildMessageWithLinks(String text) {
+  final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+  final matches = linkRegExp.allMatches(text);
+
+  if (matches.isEmpty) {
+    return Text(
+      text,
+      style: isSender
+          ? ChatSmsStyles.senderMessageTextStyle
+          : ChatSmsStyles.receiverMessageTextStyle,
+    );
+  }
+
+  List<TextSpan> spans = [];
+  int start = 0;
+  for (final match in matches) {
+    if (match.start > start) {
+      spans.add(TextSpan(text: text.substring(start, match.start)));
+    }
+    final String url = match.group(0)!;
+    spans.add(
+    TextSpan(
+         text: url,
+         style: TextStyle(
+          color: isSender ? Colors.white : Colors.blue, 
+           fontWeight: FontWeight.w600,
+           decoration: TextDecoration.underline, 
+           fontStyle: FontStyle.normal,
+           fontFamily: 'Gilroy',
+           fontSize: 14, 
+         ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () async {
+            try {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                print("Не удалось открыть ссылку");
+              } else {
+               launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            } catch (e) {
+              print("Ошибка при открытии ссылки: $e");
+            }
+          },
+      ),
+    );
+    start = match.end;
+  }
+  if (start < text.length) {
+    spans.add(TextSpan(text: text.substring(start)));
+  }
+  return RichText(
+    text: TextSpan(
+      style: isSender
+          ? ChatSmsStyles.senderMessageTextStyle
+          : ChatSmsStyles.receiverMessageTextStyle,
+      children: spans,
+    ),
+  );
+}
 }

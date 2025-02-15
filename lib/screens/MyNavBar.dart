@@ -63,15 +63,14 @@ class _MyNavBarState extends State<MyNavBar> {
     );
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
-    // Проверка доступности экрана (добавьте свою логику проверки доступности экранов)
     bool allItemsAvailable = widget.navBarTitles.length == widget.activeIcons.length &&
         widget.navBarTitles.length == widget.inactiveIcons.length;
 
     return BottomNavyBar(
       backgroundColor: Color(0xffF4F7FD),
-      selectedIndex: currentIndex,
+      selectedIndex: currentIndex == -1 ? -1 : currentIndex, // Если текущий индекс -1, ничего не выбрано
       onItemSelected: (index) {
         setState(() {
           currentIndex = index;

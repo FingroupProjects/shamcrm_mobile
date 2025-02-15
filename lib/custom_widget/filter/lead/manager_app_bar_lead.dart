@@ -21,8 +21,6 @@ class ManagerFilterScreen extends StatefulWidget {
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
-  final DateTime? initialDeadLineFromDate;
-  final DateTime? initialDeadLineToDate;
   final bool? initialHasSuccessDeals;
   final bool? initialHasInProgressDeals;
   final bool? initialHasFailureDeals;
@@ -41,8 +39,6 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialStatuses,
     this.initialFromDate,
     this.initialToDate,
-    this.initialDeadLineFromDate,
-    this.initialDeadLineToDate,
     this.initialHasSuccessDeals,
     this.initialHasInProgressDeals,
     this.initialHasFailureDeals,
@@ -65,8 +61,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
-  DateTime? _deadLineFromDate;
-  DateTime? _deadLineToDate;
 
   bool? _hasSuccessDeals;
   bool? _hasInProgressDeals;
@@ -86,8 +80,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
-    _deadLineFromDate = widget.initialDeadLineFromDate;
-    _deadLineToDate = widget.initialDeadLineToDate;
     _hasSuccessDeals = widget.initialHasSuccessDeals;
     _hasInProgressDeals = widget.initialHasInProgressDeals;
     _hasFailureDeals = widget.initialHasFailureDeals;
@@ -110,23 +102,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
       setState(() {
         _fromDate = pickedRange.start;
         _toDate = pickedRange.end;
-      });
-    }
-  }
-
-  void _selectDeadLineDateRange() async {
-    final DateTimeRange? pickedRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      initialDateRange: _deadLineFromDate != null && _deadLineToDate != null
-          ? DateTimeRange(start: _deadLineFromDate!, end: _deadLineToDate!)
-          : null,
-    );
-    if (pickedRange != null) {
-      setState(() {
-        _deadLineFromDate = pickedRange.start;
-        _deadLineToDate = pickedRange.end;
       });
     }
   }
@@ -175,8 +150,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
-                _deadLineFromDate = null;
-                _deadLineToDate = null;
                 _hasSuccessDeals = false;
                 _hasInProgressDeals = false;
                 _hasFailureDeals = false;
@@ -214,8 +187,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _selectedStatuses != null ||
                   _fromDate != null ||
                   _toDate != null ||
-                  _deadLineFromDate != null ||
-                  _deadLineToDate != null ||
                   _hasSuccessDeals == true ||
                   _hasInProgressDeals == true ||
                   _hasFailureDeals == true ||
@@ -235,8 +206,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   'statuses': _selectedStatuses,
                   'fromDate': _fromDate,
                   'toDate': _toDate,
-                  'deadLineFromDate': _deadLineFromDate,
-                  'deadLineToDate': _deadLineToDate,
                   'hasSuccessDeals': _hasSuccessDeals,
                   'hasInProgressDeals': _hasInProgressDeals,
                   'hasFailureDeals': _hasFailureDeals,
@@ -297,33 +266,6 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                                 _fromDate != null && _toDate != null
                                     ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                                     : AppLocalizations.of(context)!.translate('select_date_range'),
-                                style: TextStyle(color: Colors.black54, fontSize: 14),
-                              ),
-                              Icon(Icons.calendar_today, color: Colors.black54),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: GestureDetector(
-                        onTap: _selectDeadLineDateRange,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _deadLineFromDate != null && _deadLineToDate != null
-                                    ? "${_deadLineFromDate!.day.toString().padLeft(2, '0')}.${_deadLineFromDate!.month.toString().padLeft(2, '0')}.${_deadLineFromDate!.year} - ${_deadLineToDate!.day.toString().padLeft(2, '0')}.${_deadLineToDate!.month.toString().padLeft(2, '0')}.${_deadLineToDate!.year}"
-                                    : AppLocalizations.of(context)!.translate('select_deadline_range'),
                                 style: TextStyle(color: Colors.black54, fontSize: 14),
                               ),
                               Icon(Icons.calendar_today, color: Colors.black54),
@@ -403,32 +345,32 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                       child: Column(
                         children: [
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('hasSuccessfulDeal'),
+                            AppLocalizations.of(context)!.translate('with_successful_deal'),
                             _hasSuccessDeals ?? false,
                             (value) => setState(() => _hasSuccessDeals = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('hasPendingDeal'),
+                            AppLocalizations.of(context)!.translate('with_deal_in_progress'),
                             _hasInProgressDeals ?? false,
                             (value) => setState(() => _hasInProgressDeals = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('hasUnsuccessfulDeal'),
+                            AppLocalizations.of(context)!.translate('with_unsuccessful_deal'),
                             _hasFailureDeals ?? false,
                             (value) => setState(() => _hasFailureDeals = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('hasNotice'),
+                            AppLocalizations.of(context)!.translate('with_note'),
                             _hasNotices ?? false,
                             (value) => setState(() => _hasNotices = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('hasContacts'),
+                            AppLocalizations.of(context)!.translate('with_contacts'),
                             _hasContact ?? false,
                             (value) => setState(() => _hasContact = value),
                           ),
                           _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('hasChat'),
+                            AppLocalizations.of(context)!.translate('with_chat'),
                             _hasChat ?? false,
                             (value) => setState(() => _hasChat = value),
                           ),
@@ -444,7 +386,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('daysWithoutActivity'),
+                              AppLocalizations.of(context)!.translate('days_without_activity'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,

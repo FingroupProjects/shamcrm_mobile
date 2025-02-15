@@ -174,13 +174,6 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     ),
                     excludeSelected: false,
                     initialItem: selectedManagerData,
-                    validator: (value) {
-                      if (value == null) {
-                        return AppLocalizations.of(context)!
-                            .translate('field_required_project');
-                      }
-                      return null;
-                    },
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectManager(value);

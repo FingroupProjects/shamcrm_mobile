@@ -60,8 +60,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _selectedStatuses;  
   DateTime? _fromDate;
   DateTime? _toDate;
-  DateTime? _deadLineFromDate;
-  DateTime? _deadLineToDate;
   bool? _hasSuccessDeals = false;
   bool? _hasInProgressDeals = false;
   bool? _hasFailureDeals = false;
@@ -76,8 +74,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _initialSelStatus;
   DateTime? _intialFromDate;
   DateTime? _intialToDate;
-  DateTime? _intialDeadLineFromDate;
-  DateTime? _intialDeadLineToDate;
   bool? _initialHasSuccessDeals;
   bool? _initialHasInProgressDeals;
   bool? _initialHasFailureDeals;
@@ -152,8 +148,6 @@ Future<void> _searchLeads(String query, int currentStatusId) async {
     statusIds: _selectedStatuses,
     fromDate: _fromDate,
     toDate: _toDate,
-    deadLineFromDate: _deadLineFromDate,
-    deadLineToDate: _deadLineToDate,
     hasSuccessDeals: _hasSuccessDeals,
     hasInProgressDeals: _hasInProgressDeals,
     hasFailureDeals: _hasFailureDeals,
@@ -173,8 +167,6 @@ void _resetFilters() {
     _selectedStatuses = null;
     _fromDate = null;
     _toDate = null;
-    _deadLineFromDate = null;
-    _deadLineToDate = null;
     _hasSuccessDeals = false;
     _hasInProgressDeals = false;
     _hasFailureDeals = false;
@@ -188,8 +180,6 @@ void _resetFilters() {
     _initialSelStatus = null;
     _intialFromDate = null;
     _intialToDate = null;
-    _intialDeadLineFromDate = null;
-    _intialDeadLineToDate = null;
     _initialHasSuccessDeals = false;
     _initialHasInProgressDeals = false;
     _initialHasFailureDeals = false;
@@ -214,8 +204,6 @@ void _resetFilters() {
     _selectedStatuses = managers['statuses'];
     _fromDate = managers['fromDate'];
     _toDate = managers['toDate'];
-    _deadLineFromDate=managers['deadLineFromDate'];
-    _deadLineToDate=managers['deadLineToDate'];
     _hasSuccessDeals=managers['hasSuccessDeals'];
     _hasInProgressDeals=managers['hasInProgressDeals'];
     _hasFailureDeals=managers['hasFailureDeals'];
@@ -230,8 +218,6 @@ void _resetFilters() {
     _initialSelStatus = managers['statuses'];
     _intialFromDate = managers['fromDate'];
     _intialToDate = managers['toDate'];
-    _intialDeadLineFromDate = managers['deadLineFromDate'];
-    _intialDeadLineToDate = managers['deadLineToDate'];
     _initialHasSuccessDeals = managers['hasSuccessDeals'];
     _initialHasInProgressDeals = managers['hasInProgressDeals'];
     _initialHasFailureDeals = managers['hasFailureDeals'];
@@ -251,8 +237,6 @@ void _resetFilters() {
     statusIds: _selectedStatuses, 
     fromDate: _fromDate,
     toDate: _toDate,
-    deadLineFromDate: _deadLineFromDate,
-    deadLineToDate: _deadLineToDate,
     hasSuccessDeals: _hasSuccessDeals,
     hasInProgressDeals: _hasInProgressDeals,
     hasFailureDeals: _hasFailureDeals,
@@ -318,8 +302,6 @@ void _resetFilters() {
           initialManagerLeadStatuses: _initialSelStatus,
           initialManagerLeadFromDate: _intialFromDate,
           initialManagerLeadToDate: _intialToDate,
-          initialManagerLeadFromDeadLine: _intialDeadLineFromDate,
-          initialManagerLeadToDeadLine: _intialDeadLineToDate,
           initialManagerLeadHasSuccessDeals: _initialHasSuccessDeals,
           initialManagerLeadHasInProgressDeals: _initialHasInProgressDeals,
           initialManagerLeadHasFailureDeals: _initialHasFailureDeals,
@@ -343,7 +325,7 @@ void _resetFilters() {
                   });
               if (_searchController.text.isEmpty) {
                 if (_selectedManagers.isEmpty && _selectedRegions.isEmpty && _selectedSources.isEmpty && _selectedStatuses == null && _fromDate == null
-                && _toDate == null && _deadLineFromDate == null && _deadLineToDate == null && _hasSuccessDeals == false && _hasInProgressDeals == false && _hasFailureDeals == false
+                && _toDate == null  && _hasSuccessDeals == false && _hasInProgressDeals == false && _hasFailureDeals == false
                 && _hasNotices == false && _hasContact == false && _hasChat == false ) {
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
@@ -363,8 +345,6 @@ void _resetFilters() {
                     statusIds: _selectedStatuses,
                     fromDate: _fromDate,
                     toDate: _toDate,
-                    deadLineFromDate: _deadLineFromDate,
-                    deadLineToDate: _deadLineToDate,
                     hasSuccessDeals: _hasSuccessDeals,
                     hasInProgressDeals: _hasInProgressDeals,
                     hasFailureDeals: _hasFailureDeals,
@@ -411,8 +391,6 @@ void _resetFilters() {
   }
 
   Widget searchWidget(List<Lead> leads) {
-    print('_isSearching: $_isSearching, _isManager: $_isManager, leads.isEmpty: ${leads.isEmpty}, leads.length: ${leads.length}');
-
     // Если идёт поиск и ничего не найдено
     if (_isSearching && leads.isEmpty) {
       return Center(
@@ -797,8 +775,7 @@ void _showStatusOptions(BuildContext context, int index) {
                   _scrollToActiveTab();
                 }
               });
-              int initialIndex = state.leadStatuses
-                  .indexWhere((status) => status.id == widget.initialStatusId);
+              int initialIndex = state.leadStatuses.indexWhere((status) => status.id == widget.initialStatusId);
               if (initialIndex != -1) {
                 _tabController.index = initialIndex;
                 _currentTabIndex = initialIndex;
