@@ -26,6 +26,9 @@ class CustomAppBar extends StatefulWidget {
   bool showSearchIcon;
   bool showFilterIconEvent;
   final bool showFilterIcon;
+  final bool showFilterIconOnSelectLead;
+  final bool showFilterIconOnSelectDeal;
+  final bool showFilterIconOnSelectTask;
   final bool showFilterIconDeal;
   final bool showFilterTaskIcon;
   final bool showEvent;
@@ -152,6 +155,9 @@ class CustomAppBar extends StatefulWidget {
     this.showSearchIcon = true,
     this.showFilterIconEvent = false,
     this.showFilterIcon = true,
+    this.showFilterIconOnSelectLead = false,
+    this.showFilterIconOnSelectDeal = false,
+    this.showFilterIconOnSelectTask = false,
     this.showFilterIconDeal = true,
     this.showFilterTaskIcon = true,
     this.onManagersLeadSelected,
@@ -212,8 +218,10 @@ class _CustomAppBarState extends State<CustomAppBar>
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
-  bool _showCustomTabBar = true;
   bool _hasOverdueTasks = false;
+
+    Color _iconColor = Colors.red;
+  late Timer _timer;
 
   @override
   void initState() {
@@ -247,6 +255,12 @@ class _CustomAppBarState extends State<CustomAppBar>
       const Duration(minutes: 5),
       (_) => _checkOverdueTasks(),
     );
+
+     _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
+      setState(() {
+        _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
+      });
+    });
   }
 
   Future<void> _checkOverdueTasks() async {
@@ -268,6 +282,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   void dispose() {
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
+    _timer.cancel();
 
     super.dispose();
   }
@@ -585,7 +600,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
           if (widget.showNotification)
             Transform.translate(
-              offset: const Offset(10, 0), // Сдвигаем вправо
+              offset: const Offset(10, 0),
               child: Tooltip(
                 message:
                     AppLocalizations.of(context)!.translate('notification'),
@@ -606,9 +621,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                   color: Colors.black,
                 ),
                 child: IconButton(
-                  padding: EdgeInsets.zero, // Убираем внутренние отступы
-                  constraints:
-                      BoxConstraints(), // Убираем стандартные ограничения
+                  padding: EdgeInsets.zero, 
+                  constraints:BoxConstraints(), 
                   icon: Stack(
                     children: [
                       Image.asset(
@@ -652,7 +666,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
           if (widget.showSearchIcon)
             Transform.translate(
-              offset: const Offset(10, 0), // Сдвигаем немного вправо
+              offset: const Offset(10, 0), 
               child: Tooltip(
                 message: AppLocalizations.of(context)!.translate('search'),
                 preferBelow: false,
@@ -672,9 +686,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                   color: Colors.black,
                 ),
                 child: IconButton(
-                  padding: EdgeInsets.zero, // Убираем внутренние отступы
-                  constraints:
-                      BoxConstraints(), // Убираем стандартные ограничения
+                  padding: EdgeInsets.zero,
+                  constraints:BoxConstraints(), 
                   icon: _isSearching
                       ? Icon(Icons.close)
                       : Image.asset(
@@ -712,9 +725,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                 color: Colors.black,
               ),
               child: IconButton(
-                icon: _isFiltering
-                    ? Icon(Icons.close)
-                    : Image.asset(
+                icon: Image.asset(
                         'assets/icons/AppBar/filter.png',
                         width: 24,
                         height: 24,
@@ -727,24 +738,17 @@ class _CustomAppBarState extends State<CustomAppBar>
                         onManagersSelected: widget.onManagersEventSelected,
                         onStatusSelected: widget.onStatusEventSelected,
                         onDateRangeSelected: widget.onDateRangeEventSelected,
-                        onStatusAndDateRangeSelected:
-                            widget.onStatusAndDateRangeEventSelected,
-                        onNoticeDateRangeSelected:
-                            widget.onNoticeDateRangeEventSelected,
-                        onNoticeStatusAndDateRangeSelected:
-                            widget.onNoticeStatusAndDateRangeEventSelected,
-                        onDateNoticeStatusAndDateRangeSelected:
-                            widget.onDateNoticeStatusAndDateRangeSelected,
-                        onDateNoticeAndDateRangeSelected:
-                            widget.onDateNoticeAndDateRangeSelected,
+                        onStatusAndDateRangeSelected:widget.onStatusAndDateRangeEventSelected,
+                        onNoticeDateRangeSelected:widget.onNoticeDateRangeEventSelected,
+                        onNoticeStatusAndDateRangeSelected:widget.onNoticeStatusAndDateRangeEventSelected,
+                        onDateNoticeStatusAndDateRangeSelected: widget.onDateNoticeStatusAndDateRangeSelected,
+                        onDateNoticeAndDateRangeSelected:widget.onDateNoticeAndDateRangeSelected,
                         initialManagers: widget.initialManagersEvent,
                         initialStatuses: widget.initialManagerEventStatuses,
                         initialFromDate: widget.initialManagerEventFromDate,
                         initialToDate: widget.initialManagerEventToDate,
-                        initialNoticeFromDate:
-                            widget.initialNoticeManagerEventFromDate,
-                        initialNoticeToDate:
-                            widget.initialNoticeManagerEventToDate,
+                        initialNoticeFromDate:widget.initialNoticeManagerEventFromDate,
+                        initialNoticeToDate:widget.initialNoticeManagerEventToDate,
                         onResetFilters: widget.onEventResetFilters,
                       ),
                     ),
@@ -752,12 +756,56 @@ class _CustomAppBarState extends State<CustomAppBar>
                 },
               ),
             ),
+          if (widget.showFilterIconOnSelectLead)
+            IconButton(
+              icon: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Image.asset(
+                  'assets/icons/AppBar/filter.png',
+                  width: 24,
+                  height: 24,
+                  color: _iconColor,
+                ),
+              ),
+              onPressed: () {
+                navigateToLeadManagerFilterScreen(context);
+              },
+            ),
+          if (widget.showFilterIconOnSelectDeal)
+            IconButton(
+              icon: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Image.asset(
+                  'assets/icons/AppBar/filter.png',
+                  width: 24,
+                  height: 24,
+                  color: _iconColor,
+                ),
+              ),
+              onPressed: () {
+                navigateToDealManagerFilterScreen(context);
+              },
+            ),
+          if (widget.showFilterIconOnSelectTask)
+            IconButton(
+              icon: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Image.asset(
+                  'assets/icons/AppBar/filter.png',
+                  width: 24,
+                  height: 24,
+                  color: _iconColor,
+                ),
+              ),
+              onPressed: () {
+                navigateToTaskManagerFilterScreen(context);
+              },
+            ),
           if (widget.showSeparateMyTasks)
             Transform.translate(
-              offset: const Offset(6, 0), // Сдвиг вправо на 4 пикселя
+              offset: const Offset(6, 0), 
               child: Tooltip(
-                message:
-                    AppLocalizations.of(context)!.translate('appbar_my_tasks'),
+                message: AppLocalizations.of(context)!.translate('appbar_my_tasks'),
                 preferBelow: false,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -775,9 +823,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                   color: Colors.black,
                 ),
                 child: IconButton(
-                  padding: EdgeInsets.zero, // Убираем внутренние отступы
-                  constraints:
-                      BoxConstraints(), // Убираем стандартные ограничения
+                  padding: EdgeInsets.zero, 
+                  constraints: BoxConstraints(), 
                   icon: Stack(
                     children: [
                       Image.asset(
@@ -815,7 +862,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
           if (widget.showMenuIcon)
             Transform.translate(
-              offset: const Offset(8, 0), // Сдвигаем вправо
+              offset: const Offset(8, 0), 
               child: PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
                 position: PopupMenuPosition.under,
@@ -844,88 +891,13 @@ class _CustomAppBarState extends State<CustomAppBar>
                 onSelected: (String value) {
                   switch (value) {
                     case 'filter_task':
-                      print("AUTHOR_________${widget.initialUsers}");
-                      print(
-                          "DEADLINEFROM_________${widget.initialDeadlineFromDate}");
-                      print(
-                          "Deadlineto_________${widget.initialDeadlineToDate}");
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserFilterScreen(
-                              onUsersSelected: widget.onUsersSelected,
-                              onStatusSelected: widget.onStatusSelected,
-                              onDateRangeSelected: widget.onDateRangeSelected,
-                              onStatusAndDateRangeSelected:
-                                  widget.onStatusAndDateRangeSelected,
-                              initialUsers: widget.initialUsers,
-                              initialStatuses: widget.initialStatuses,
-                              initialFromDate: widget.initialFromDate,
-                              initialToDate: widget.initialToDate,
-                              initialIsOverdue: widget.initialTaskIsOverdue,
-                              initialHasFile: widget.initialTaskHasFile,
-                              initialHasDeal: widget.initialTaskHasDeal,
-                              initialIsUrgent: widget.initialTaskIsUrgent,
-                              onResetFilters: widget.onResetFilters,
-                              initialAuthors: widget.initialAuthors,
-                              initialDeadlineFromDate:
-                                  widget.initialDeadlineFromDate,
-                              initialDeadlineToDate:
-                                  widget.initialDeadlineToDate),
-                        ),
-                      );
+                      navigateToTaskManagerFilterScreen(context);
                       break;
                     case 'filter_lead':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ManagerFilterScreen(
-                            onManagersSelected: widget.onManagersLeadSelected,
-                            initialManagers: widget.initialManagersLead,
-                            initialRegions: widget.initialManagersLeadRegions,
-                            initialSources: widget.initialManagersLeadSources,
-                            initialStatuses: widget.initialManagerLeadStatuses,
-                            initialFromDate: widget.initialManagerLeadFromDate,
-                            initialToDate: widget.initialManagerLeadToDate,
-                            initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
-                            initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
-                            initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
-                            initialHasNotices: widget.initialManagerLeadHasNotices,
-                            initialHasContact: widget.initialManagerLeadHasContact,
-                            initialHasChat: widget.initialManagerLeadHasChat,
-                            initialDaysWithoutActivity:
-                                widget.initialManagerLeadDaysWithoutActivity,
-                            onResetFilters: widget.onLeadResetFilters,
-                          ),
-                        ),
-                      );
+                      navigateToLeadManagerFilterScreen(context);
                       break;
                     case 'filter_deal':
-                      print("HASTASK_________________________________________");
-                      print(widget.initialManagerDealHasTasks);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DealManagerFilterScreen(
-                            onManagersSelected: widget.onManagersDealSelected,
-                            onLeadsSelected: widget.onLeadsDealSelected,
-                            onStatusSelected: widget.onStatusDealSelected,
-                            onDateRangeSelected: widget.onDateRangeDealSelected,
-                            onStatusAndDateRangeSelected:
-                                widget.onStatusAndDateRangeDealSelected,
-                            initialManagers: widget.initialManagersDeal,
-                            initialLeads: widget.initialLeadsDeal,
-                            initialHasTasks: widget.initialManagerDealHasTasks,
-                            initialStatuses: widget.initialManagerDealStatuses,
-                            initialFromDate: widget.initialManagerDealFromDate,
-                            initialToDate: widget.initialManagerDealToDate,
-                            onResetFilters: widget.onDealResetFilters,
-                            initialDaysWithoutActivity:
-                                widget.initialManagerDealDaysWithoutActivity,
-                          ),
-                        ),
-                      );
+                     navigateToDealManagerFilterScreen(context);
                       break;
                     case 'events':
                       Navigator.push(
@@ -987,8 +959,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                       value: 'events',
                       child: Row(
                         children: [
-                          Icon(Icons.event), // Иконка всегда отображается
-                          SizedBox(width: 8), // Отступ между иконкой и текстом
+                          Icon(Icons.event),
+                          SizedBox(width: 8), 
                           Text(AppLocalizations.of(context)!
                               .translate('events')),
                         ],
@@ -1052,4 +1024,76 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
         ]));
   }
+  
+  void navigateToLeadManagerFilterScreen(BuildContext context) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ManagerFilterScreen(
+        onManagersSelected: widget.onManagersLeadSelected,
+        initialManagers: widget.initialManagersLead,
+        initialRegions: widget.initialManagersLeadRegions,
+        initialSources: widget.initialManagersLeadSources,
+        initialStatuses: widget.initialManagerLeadStatuses,
+        initialFromDate: widget.initialManagerLeadFromDate,
+        initialToDate: widget.initialManagerLeadToDate,
+        initialHasSuccessDeals: widget.initialManagerLeadHasSuccessDeals,
+        initialHasInProgressDeals: widget.initialManagerLeadHasInProgressDeals,
+        initialHasFailureDeals: widget.initialManagerLeadHasFailureDeals,
+        initialHasNotices: widget.initialManagerLeadHasNotices,
+        initialHasContact: widget.initialManagerLeadHasContact,
+        initialHasChat: widget.initialManagerLeadHasChat,
+        initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
+        onResetFilters: widget.onLeadResetFilters,
+      ),
+    ),
+  );
+}
+  void navigateToDealManagerFilterScreen(BuildContext context) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => DealManagerFilterScreen(
+        onManagersSelected: widget.onManagersDealSelected,
+        onLeadsSelected: widget.onLeadsDealSelected,
+        onStatusSelected: widget.onStatusDealSelected,
+        onDateRangeSelected: widget.onDateRangeDealSelected,
+        onStatusAndDateRangeSelected:widget.onStatusAndDateRangeDealSelected,
+        initialManagers: widget.initialManagersDeal,
+        initialLeads: widget.initialLeadsDeal,
+        initialHasTasks: widget.initialManagerDealHasTasks,
+        initialStatuses: widget.initialManagerDealStatuses,
+        initialFromDate: widget.initialManagerDealFromDate,
+        initialToDate: widget.initialManagerDealToDate,
+        onResetFilters: widget.onDealResetFilters,
+        initialDaysWithoutActivity:widget.initialManagerDealDaysWithoutActivity,
+      ),
+    ),
+  );
+}
+  void navigateToTaskManagerFilterScreen(BuildContext context) {
+ Navigator.push(
+  context,
+   MaterialPageRoute(
+     builder: (context) => UserFilterScreen(
+         onUsersSelected: widget.onUsersSelected,
+         onStatusSelected: widget.onStatusSelected,
+         onDateRangeSelected: widget.onDateRangeSelected,
+         onStatusAndDateRangeSelected: widget.onStatusAndDateRangeSelected,
+         initialUsers: widget.initialUsers,
+         initialStatuses: widget.initialStatuses,
+         initialFromDate: widget.initialFromDate,
+         initialToDate: widget.initialToDate,
+         initialIsOverdue: widget.initialTaskIsOverdue,
+         initialHasFile: widget.initialTaskHasFile,
+         initialHasDeal: widget.initialTaskHasDeal,
+         initialIsUrgent: widget.initialTaskIsUrgent,
+         onResetFilters: widget.onResetFilters,
+         initialAuthors: widget.initialAuthors,
+         initialDeadlineFromDate: widget.initialDeadlineFromDate,
+         initialDeadlineToDate: widget.initialDeadlineToDate),
+   ),
+ );
+}
+
 }
