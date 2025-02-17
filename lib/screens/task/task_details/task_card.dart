@@ -488,7 +488,7 @@ class _TaskCardState extends State<TaskCard> {
                                 child: Image.asset(
                                   'assets/icons/tabBar/date.png', // Иконка даты
                                width: 18,
-                              height: 22,
+                              height: 20,
                                 ),
                               ),
                               const SizedBox(

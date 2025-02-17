@@ -110,12 +110,19 @@ class _DealCardState extends State<DealCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.deal.name ??
-                  AppLocalizations.of(context)!.translate('no_name'),
-              style: TaskCardStyles.titleStyle,
+            RichText(
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                text: widget.deal.name,
+                style: TaskCardStyles.titleStyle,
+                children: const <TextSpan>[
+                  TextSpan(
+                    text: '\n\u200B',
+                    style: TaskCardStyles.titleStyle,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 5),
             Row(
