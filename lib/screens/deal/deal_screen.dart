@@ -322,6 +322,8 @@ void _onSearch(String query) {
           onDealResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showMenuIcon: _showCustomTabBar,
+          showFilterIconOnSelectDeal: !_showCustomTabBar,
           showFilterTaskIcon: false,
           showFilterIcon: false,
           showFilterIconDeal: true, 

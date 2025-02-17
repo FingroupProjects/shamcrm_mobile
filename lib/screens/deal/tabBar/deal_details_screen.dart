@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -139,7 +140,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final parsedDate = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy').format(parsedDate);
+      return DateFormat('dd.MM.yyyy').format(parsedDate);
     } catch (e) {
       return AppLocalizations.of(context)!.translate('invalid_format');
     }
@@ -150,7 +151,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     details = [
       {'label': AppLocalizations.of(context)!.translate('name_deal_details'),'value': deal.name},
       {'label': AppLocalizations.of(context)!.translate('lead_deal_card'),'value': deal.lead?.name ?? ''},
-      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': deal.manager?.name ?? ''},
+      {'label': AppLocalizations.of(context)!.translate('manager_details'), 'value': deal.manager?.name ?? 'Система'},
       {'label': AppLocalizations.of(context)!.translate('start_date_details'), 'value': formatDate(deal.startDate)},
       {'label': AppLocalizations.of(context)!.translate('end_date_details'), 'value': formatDate(deal.endDate)},
       {'label': AppLocalizations.of(context)!.translate('summa_details'), 'value': deal.sum.toString()},
@@ -297,8 +298,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           color: Color(0xff1E2E52),
         ),
       ),
+      //в котор
     ),
-    actions: [
+      actions: [
       if (_canEditDeal || _canDeleteDeal)
         Row(
           mainAxisSize: MainAxisSize.min,

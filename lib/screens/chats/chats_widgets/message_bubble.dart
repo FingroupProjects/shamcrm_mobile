@@ -1,5 +1,8 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
@@ -105,7 +108,7 @@ class MessageBubble extends StatelessWidget {
                   crossAxisAlignment:
                       isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                   children: [
-                    _buildMessageWithLinks(message),
+                    _buildMessageWithLinks(context, message),
                     if (isChanged)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -150,63 +153,163 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageWithLinks(String text) {
-  final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
-  final matches = linkRegExp.allMatches(text);
+  
+  Widget _buildMessageWithLinks(BuildContext context, String text) {
+    final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+    final matches = linkRegExp.allMatches(text);
 
-  if (matches.isEmpty) {
-    return Text(
-      text,
-      style: isSender
-          ? ChatSmsStyles.senderMessageTextStyle
-          : ChatSmsStyles.receiverMessageTextStyle,
-    );
-  }
-
-  List<TextSpan> spans = [];
-  int start = 0;
-  for (final match in matches) {
-    if (match.start > start) {
-      spans.add(TextSpan(text: text.substring(start, match.start)));
+    if (matches.isEmpty) {
+      return Text(
+        text,
+        style: isSender
+            ? ChatSmsStyles.senderMessageTextStyle
+            : ChatSmsStyles.receiverMessageTextStyle,
+      );
     }
-    final String url = match.group(0)!;
-    spans.add(
-    TextSpan(
-         text: url,
-         style: TextStyle(
-          color: isSender ? Colors.white : Colors.blue, 
-           fontWeight: FontWeight.w600,
-           decoration: TextDecoration.underline, 
-           fontStyle: FontStyle.normal,
-           fontFamily: 'Gilroy',
-           fontSize: 14, 
-         ),
+
+    List<TextSpan> spans = [];
+    int start = 0;
+    for (final match in matches) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: text.substring(start, match.start)));
+      }
+      final String url = match.group(0)!;
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(
+            color: isSender ? Colors.white : Colors.blue,
+            fontWeight: FontWeight.w600,
+            decoration: TextDecoration.underline,
+            fontSize: 14,
+          ),
         recognizer: TapGestureRecognizer()
           ..onTap = () async {
-            try {
               final uri = Uri.parse(url);
               if (await canLaunchUrl(uri)) {
-                print("Не удалось открыть ссылку");
-              } else {
-               launchUrl(uri, mode: LaunchMode.externalApplication);
+                launchUrl(uri, mode: LaunchMode.externalApplication);
               }
-            } catch (e) {
-              print("Ошибка при открытии ссылки: $e");
-            }
+            } 
+          ..onTap = () {
+            final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+            final RenderBox messageBox = context.findRenderObject() as RenderBox;
+            final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+        
+            showMenu(
+              context: context,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              position: RelativeRect.fromLTRB(
+                position.dx + messageBox.size.width / 2.5,
+                position.dy,
+                position.dx + messageBox.size.width / 2 + 1,
+                position.dy + messageBox.size.height,
+              ),
+              items: [
+                _buildMenuItem(
+                  icon: 'assets/icons/chats/menu_icons/open.svg',
+                  text: "Открыть",
+                  iconColor: Colors.black,
+                  textColor: Colors.black,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                  },
+                ),
+                _buildMenuItem(
+                  icon: 'assets/icons/chats/menu_icons/copy.svg',
+                  text: "Копировать",
+                  iconColor: Colors.black,
+                  textColor: Colors.black,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Clipboard.setData(ClipboardData(text: url));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!.translate('Ссылка скопировано!'), 
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.green,
+                        elevation: 3,
+                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 3),
+                      ),
+                      );
+                  },
+                ),
+              ],
+            );
           },
+
+        ),
+      );
+      start = match.end;
+    }
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+    return RichText(
+      text: TextSpan(
+        style: isSender
+            ? ChatSmsStyles.senderMessageTextStyle
+            : ChatSmsStyles.receiverMessageTextStyle,
+        children: spans,
       ),
     );
-    start = match.end;
   }
-  if (start < text.length) {
-    spans.add(TextSpan(text: text.substring(start)));
-  }
-  return RichText(
-    text: TextSpan(
-      style: isSender
-          ? ChatSmsStyles.senderMessageTextStyle
-          : ChatSmsStyles.receiverMessageTextStyle,
-      children: spans,
+
+  
+  PopupMenuItem _buildMenuItem({
+  required String icon,
+  required String text,
+  required Color iconColor,
+  required Color textColor,
+  required VoidCallback onTap,
+}) {
+  return PopupMenuItem(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        child: Row(
+          children: [
+            if (icon.isNotEmpty)
+              SvgPicture.asset(
+                icon,
+                width: 24,
+                height: 24,
+                color: iconColor,
+              ),
+            if (icon.isNotEmpty) const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,  
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: textColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }

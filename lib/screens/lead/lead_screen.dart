@@ -312,6 +312,8 @@ void _resetFilters() {
           onLeadResetFilters: _resetFilters,
           textEditingController: textEditingController,
           focusNode: focusNode,
+          showMenuIcon: _showCustomTabBar,
+          showFilterIconOnSelectLead: !_showCustomTabBar,
           showFilterTaskIcon: false,
           showMyTaskIcon: true,
           showFilterIconDeal: false,

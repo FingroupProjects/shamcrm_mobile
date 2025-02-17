@@ -229,9 +229,8 @@ class InputField extends StatelessWidget {
                                     ),
                                   ),
                                   keyboardType: TextInputType.multiline,
-                                  minLines: 1, // Минимальное количество строк
-                                  maxLines:
-                                      5, // Максимальное количество строк до появления прокрутки
+                                  minLines: 1, 
+                                  maxLines: 5, 
                                   style: ChatSmsStyles.messageTextStyle,
                                 )),
                           ),

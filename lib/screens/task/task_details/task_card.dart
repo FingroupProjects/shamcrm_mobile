@@ -230,27 +230,32 @@ class _TaskCardState extends State<TaskCard> {
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
           decoration:
-              TaskCardStyles.taskCardDecoration, // Стиль карточки задачи
+              TaskCardStyles.taskCardDecoration, 
           child: Stack(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment
-                      .start, // Изменение: Выравнивание по верхнему краю
+                  crossAxisAlignment: CrossAxisAlignment.start, 
                   children: [
                     Expanded(
-                      child: Text(
-                        widget.task.name ??
-                            AppLocalizations.of(context)!.translate('no_name'),
-                        style: TaskCardStyles.titleStyle,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                      ),
+                      child: RichText(
+                       maxLines: 2,
+                       overflow: TextOverflow.ellipsis,
+                       text: TextSpan(
+                         text: widget.task.name,
+                         style: TaskCardStyles.titleStyle,
+                         children: const <TextSpan>[
+                           TextSpan(
+                             text: '\n\u200B',
+                             style: TaskCardStyles.titleStyle,
+                           ),
+                         ],
+                       ),
+                     ),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(
-                          top:
-                              2), // Изменение: Небольшой отступ сверху для визуального выравнивания
+                          top: 2), 
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
