@@ -129,6 +129,26 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
       initialDateRange: _fromDate != null && _toDate != null
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: Colors.white,
+            dialogBackgroundColor: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+              secondary: Colors.blue.withOpacity(0.1), 
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (pickedRange != null) {
       setState(() {

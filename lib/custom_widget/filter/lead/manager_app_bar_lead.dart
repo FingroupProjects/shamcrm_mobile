@@ -10,7 +10,6 @@ import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 
 class ManagerFilterScreen extends StatefulWidget {

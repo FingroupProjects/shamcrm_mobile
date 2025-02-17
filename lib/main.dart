@@ -293,9 +293,11 @@ class _MyAppState extends State<MyApp> {
               return PinSetupScreen();
              } else if (widget.openedViaNotification) {
                    Future.microtask(() {
+           WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
+          });   
       });
       return Container(); 
             } else {

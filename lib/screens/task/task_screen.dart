@@ -568,6 +568,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             onResetFilters: _resetFilters,
             textEditingController: textEditingController,
             focusNode: focusNode,
+            showMenuIcon: _showCustomTabBar,
+            showFilterIconOnSelectTask: !_showCustomTabBar,
             showFilterIcon: false,
             showMyTaskIcon: true,
             showFilterIconDeal: false,
