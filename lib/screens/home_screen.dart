@@ -55,13 +55,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Задачи
+    if (await _apiService.hasPermission('task.read')) {
     widgets.add(TaskScreen());
     titleKeys.add('appbar_tasks');
     navBarTitleKeys.add('appbar_tasks');
     activeIcons.add('assets/icons/MyNavBar/tasks_ON.png');
     inactiveIcons.add('assets/icons/MyNavBar/tasks_OFF.png');
     hasAvailableScreens = true;
-
+    }
     // Лиды
     if (await _apiService.hasPermission('lead.read')) {
       widgets.add(LeadScreen());

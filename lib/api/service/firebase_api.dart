@@ -44,18 +44,17 @@ void initPushNotification() async {
     prefs.setBool('openedViaNotification', true);
 
     FirebaseMessaging.instance.getInitialMessage().then((message) {
-      print('Получено уведомление при закрытом состоянии приложения: ${message?.messageId}');
-      Future.delayed(Duration(milliseconds: 1), () {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => PinScreen()),(route) => false,).then((_) async {
-    if (message != null) {
-      await handleMessage(message);
+  print('Получено уведомление при закрытом состоянии приложения: ${message?.messageId}');
+  Future.delayed(Duration(milliseconds: 10), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
+        if (message != null) {
+          await handleMessage(message);
+        }
+      });
+    });
+  });
 
-    }
-  });    
-      });
-      });
      prefs.setBool('openedViaNotification', false);
 
     });
@@ -105,9 +104,15 @@ void initPushNotification() async {
     switch (type) {
       case 'message':
         print('Переход на экран чата с ID: $id');
-        if (await _apiService.hasPermission('deal.read') &&
-            await _apiService.hasPermission('section.dashboard') &&
-            await _apiService.hasPermission('lead.read')) {
+
+    bool hasDealRead = await _apiService.hasPermission('deal.read');
+    bool hasDashboard = await _apiService.hasPermission('section.dashboard');
+    bool hasLeadRead = await _apiService.hasPermission('lead.read');
+
+        if (hasDashboard && hasLeadRead && hasDealRead){
+          screenIndex = 3;
+          await navigateToScreen(screenIndex, id, 'message', message);
+        } else if (hasDashboard && hasLeadRead || hasDealRead) {
           screenIndex = 3;
           await navigateToScreen(screenIndex, id, 'message', message);
         } else {

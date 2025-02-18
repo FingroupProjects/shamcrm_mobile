@@ -254,11 +254,9 @@ class _TaskCardState extends State<TaskCard> {
                      ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(
-                          top: 2), 
+                      padding: const EdgeInsets.only(top: 2), 
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color:
                               _getPriorityBackgroundColor(widget.task.priority),

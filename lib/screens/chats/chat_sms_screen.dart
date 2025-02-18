@@ -547,7 +547,6 @@ Widget build(BuildContext context) {
 }
 
 
-// Исправленный метод для прокрутки к сообщению
 void _scrollToMessageReply(int messageId) {
 
   final state = context.read<MessagingCubit>().state;
@@ -680,33 +679,38 @@ Widget messageListUi() {
         messageWidgets.addAll(currentGroup);
       }
 
-      return Stack(
+        return Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: ScrollablePositionedList.builder(
-              itemScrollController: _scrollControllerMessage, 
-              itemCount: messages.length,
-              reverse: true, 
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                return MessageItemWidget(
-                  message: message,
-                  chatId: widget.chatId,
-                  endPointInTab: widget.endPointInTab,
-                  apiServiceDownload: widget.apiServiceDownload,
-                  baseUrl: baseUrl,
-                  onReplyTap: _scrollToMessageReply,
-                  highlightedMessageId: _highlightedMessageId,
-                  onMenuStateChanged: (isOpen) {
-                    setState(() {
-                      _isMenuOpen = isOpen;
-                    });
-                  },
-                  focusNode: _focusNode,
-                  isRead: message.isRead,
-                );
-              },
+          GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ScrollablePositionedList.builder(
+                itemScrollController: _scrollControllerMessage, 
+                itemCount: messages.length,
+                reverse: true, 
+                itemBuilder: (context, index) {
+                  final message = messages[index];
+                  return MessageItemWidget(
+                    message: message,
+                    chatId: widget.chatId,
+                    endPointInTab: widget.endPointInTab,
+                    apiServiceDownload: widget.apiServiceDownload,
+                    baseUrl: baseUrl,
+                    onReplyTap: _scrollToMessageReply,
+                    highlightedMessageId: _highlightedMessageId,
+                    onMenuStateChanged: (isOpen) {
+                      setState(() {
+                        _isMenuOpen = isOpen;
+                      });
+                    },
+                    focusNode: _focusNode,
+                    isRead: message.isRead,
+                  );
+                },
+              ),
             ),
           ),
           if (pinnedMessages.isNotEmpty)
