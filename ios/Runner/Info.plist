@@ -119,6 +119,8 @@
 	<string>Для сканирования QR-кодов</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Для загрузки изображения с QR-кодом</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Мы нуждаемся в доступе к вашим контактам для отображения и добавления новых контактов</string>
 
 </dict>
 </plist>

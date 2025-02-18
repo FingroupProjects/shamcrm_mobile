@@ -293,18 +293,15 @@ class _MyAppState extends State<MyApp> {
               return AuthScreen();
             } else if (widget.pin == null) {
               return PinSetupScreen();
-    } else if (widget.openedViaNotification) {
-      // Ожидаем, пока завершится pop
-      Future.microtask(() async {
-        await Future.delayed(Duration(milliseconds: 100), () async {
-           WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context); // Ждем, пока выполнится pop
-          }
-        });
-        });
-      });
-      return Container(color: Colors.white,); 
+            } else if (widget.openedViaNotification) {
+              Future.microtask(() async {
+                   WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context); 
+                  }
+                });
+              });
+            return Container(color: Colors.white,); 
             } else {
               return PinScreen();
             }
