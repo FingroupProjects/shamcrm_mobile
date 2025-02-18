@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
@@ -489,27 +491,64 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
 // Функция выбора файла остается такой же как у вас
-  Future<void> _pickFile() async {
+   Future<void> _pickFile() async {
     try {
       FilePickerResult? result =
           await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null) {
+        double totalSize = selectedFiles.fold<double>(
+          0.0,
+          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024), // MB
+        );
+
+        double newFilesSize = result.files.fold<double>(
+          0.0,
+          (sum, file) => sum + file.size / (1024 * 1024), // MB
+        );
+
+        if (totalSize + newFilesSize > 50) {
+          ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+                                      content: Text(
+                                        AppLocalizations.of(context)!
+                                            .translate('file_size_too_large'),
+                                        style: TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      margin: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      elevation: 3,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      duration: Duration(seconds: 3),
+                                    ),
+          );
+          return;
+        }
+
         setState(() {
           for (var file in result.files) {
             selectedFiles.add(file.path!);
             fileNames.add(file.name);
             fileSizes.add('${(file.size / 1024).toStringAsFixed(3)}KB');
           }
-          _checkAdditionalFields(); // Проверяем поля после добавления файлов
         });
       }
     } catch (e) {
       print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.translate('file_selection_error')),
+          content: Text("Ошибка при выборе файла!"),
           backgroundColor: Colors.red,
         ),
       );

@@ -626,5 +626,6 @@
       "with_note": "С заметкой",
       "with_contacts": "С контактами",
       "with_chat": "С чатом",
-      "days_without_activity": "Количество дней без активности"
+      "days_without_activity": "Количество дней без активности",
+      "file_size_too_large":"Слишком большой объем файлов!"
   }

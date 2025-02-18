@@ -41,7 +41,7 @@ class DealHistoryLead {
   factory DealHistoryLead.fromJson(Map<String, dynamic> json) {
     return DealHistoryLead(
       id: json['id'] ?? 0,
-      title: json['title'] ?? '',
+      title: json['name'] ?? '',
       history: (json['history'] as List?)
               ?.map((item) => HistoryItem.fromJson(item))
               .toList() ??
