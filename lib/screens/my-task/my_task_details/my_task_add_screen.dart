@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
@@ -52,12 +54,48 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   }
 
   // Функция выбора файла
- Future<void> _pickFile() async {
+  Future<void> _pickFile() async {
     try {
       FilePickerResult? result =
           await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null) {
+        double totalSize = selectedFiles.fold<double>(
+          0.0,
+          (sum, file) => sum + File(file).lengthSync() / (1024 * 1024), // MB
+        );
+
+        double newFilesSize = result.files.fold<double>(
+          0.0,
+          (sum, file) => sum + file.size / (1024 * 1024), // MB
+        );
+
+        if (totalSize + newFilesSize > 50) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('file_size_too_large'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.red,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+
         setState(() {
           for (var file in result.files) {
             selectedFiles.add(file.path!);
@@ -70,13 +108,13 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
       print('Ошибка при выборе файла!');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.translate('file_selection_error')),
+          content: Text("Ошибка при выборе файла!"),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
+
   Widget _buildPushNotificationCheckbox() {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -225,6 +263,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
       ],
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -255,7 +294,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
               ),
               onPressed: () {
                 Navigator.pop(context, widget.statusId);
-              context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+                context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
               },
             ),
           ),
@@ -344,13 +383,13 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                       //   controller: startDateController,
                       //   label: AppLocalizations.of(context)!
                       //       .translate('from_list'),
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //     return AppLocalizations.of(context)!
-                        //         .translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
+                      // validator: (value) {
+                      //   if (value == null || value.isEmpty) {
+                      //     return AppLocalizations.of(context)!
+                      //         .translate('field_required');
+                      //   }
+                      //   return null;
+                      // },
                       // ),
                       const SizedBox(height: 8),
                       CustomTextField(
@@ -360,7 +399,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('description_list'),
                         maxLines: 5,
-                                                keyboardType: TextInputType.multiline,
+                        keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 8),
                       CustomTextFieldDate(
@@ -532,7 +571,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
     //   );
     //   return;
     // }
-     List<MyTaskFile> files = [];
+    List<MyTaskFile> files = [];
     for (int i = 0; i < selectedFiles.length; i++) {
       files.add(MyTaskFile(
         name: fileNames[i],

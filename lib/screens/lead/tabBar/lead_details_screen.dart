@@ -495,9 +495,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(),
           icon: Icon(
-            Icons.history, // встроенная иконка истории
+            Icons.history, 
             size: 30,
-            color: Color.fromARGB(255, 0, 0, 0), // используем тот же цвет, что и в остальном приложении
+            color: Color.fromARGB(224, 0, 0, 0),
           ),
           onPressed: () {
             showDialog(

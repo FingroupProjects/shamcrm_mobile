@@ -17,7 +17,9 @@ class HistoryDialog extends StatefulWidget {
 
 class _HistoryDialogState extends State<HistoryDialog> {
   int _selectedTab = 0;
-
+  int? expandedItemId;
+Set<int> expandedNoticeIds = {};
+Set<int> expandedDealIds = {};
   @override
   void initState() {
     super.initState();
@@ -93,13 +95,19 @@ class _HistoryDialogState extends State<HistoryDialog> {
           setState(() => _selectedTab = index);
           switch (index) {
             case 0:
-              context.read<HistoryLeadsBloc>().add(FetchLeadHistory(widget.leadId));
+              context
+                  .read<HistoryLeadsBloc>()
+                  .add(FetchLeadHistory(widget.leadId));
               break;
             case 1:
-              context.read<HistoryLeadsBloc>().add(FetchNoticeHistory(widget.leadId));
+              context
+                  .read<HistoryLeadsBloc>()
+                  .add(FetchNoticeHistory(widget.leadId));
               break;
             case 2:
-              context.read<HistoryLeadsBloc>().add(FetchDealHistory(widget.leadId));
+              context
+                  .read<HistoryLeadsBloc>()
+                  .add(FetchDealHistory(widget.leadId));
               break;
           }
         },
@@ -124,7 +132,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
     );
   }
 
-List<Widget> _buildLeadChanges(Changes changes) {
+ List<Widget> _buildLeadChanges(Changes changes) {
   final Map<String, dynamic> body = {
     "lead_status": {
       "previous_value": changes.leadStatusPreviousValue,
@@ -184,8 +192,30 @@ List<Widget> _buildLeadChanges(Changes changes) {
     "description": "Описание",
     "insta_login": "Логин в Instagram",
     "facebook_login": "Логин в Facebook",
-    "lead_status":"Статус"
+    "lead_status": "Статус"
   };
+
+  String formatDateIfNeeded(String key, dynamic value) {
+    if (key == 'birthday' && value != null && value.toString().isNotEmpty) {
+      try {
+        DateTime date;
+        String dateStr = value.toString();
+        
+        // Пробуем распарсить дату, даже если она в разных форматах
+        if (dateStr.contains('T')) {
+          date = DateTime.parse(dateStr);
+        } else {
+          // Для простых строк без времени
+          date = DateTime.parse(dateStr);
+        }
+        
+        return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+      } catch (e) {
+        return value.toString();
+      }
+    }
+    return value?.toString() ?? '-';
+  }
 
   return body.entries.map((entry) {
     final previous = entry.value['previous_value'];
@@ -196,11 +226,14 @@ List<Widget> _buildLeadChanges(Changes changes) {
     }
 
     final String translatedKey = translations[entry.key] ?? entry.key;
+    
+    final formattedPrevious = formatDateIfNeeded(entry.key, previous);
+    final formattedNewValue = formatDateIfNeeded(entry.key, newValue);
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(
-        '$translatedKey: ${previous ?? '-'} → ${newValue ?? '-'}',
+        '$translatedKey: $formattedPrevious → $formattedNewValue',
         style: const TextStyle(
           fontSize: 14,
           fontFamily: 'Gilroy',
@@ -211,7 +244,6 @@ List<Widget> _buildLeadChanges(Changes changes) {
     );
   }).toList();
 }
-
 
 //И здесь name, phone, email, region, manager, tg_nick, birthday, description, insta_login, facebook_login
   Widget _buildHistoryItem(LeadHistory item) {
@@ -311,64 +343,145 @@ List<Widget> _buildLeadChanges(Changes changes) {
     );
   }
 
-  Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: notices.map((notice) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  notice.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ),
-              ...notice.history.map((item) => _buildNoticeHistoryItem(item)).toList(),
-              const Divider(color: Color(0xFFE0E0E0), height: 24),
-            ],
-          );
-        }).toList(),
+Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
+  if (notices.isEmpty) {
+    return Center(
+      child: Text(
+        'Нет данных для отображения',
+        style: const TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff8F9BB3),
+        ),
       ),
     );
   }
-
-  Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: deals.map((deal) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
+  
+  return SingleChildScrollView(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: notices.map((notice) {
+        final bool isExpanded = expandedNoticeIds.contains(notice.id);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    expandedNoticeIds.remove(notice.id);
+                  } else {
+                    expandedNoticeIds.add(notice.id);
+                  }
+                });
+              },
+              child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  deal.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        notice.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: const Color(0xff8F9BB3),
+                    ),
+                  ],
                 ),
               ),
-              ...deal.history.map((item) => _buildDealHistoryItem(item)).toList(),
-              const Divider(color: Color(0xFFE0E0E0), height: 24),
+            ),
+            if (isExpanded) ...[
+              ...notice.history
+                  .map((item) => _buildNoticeHistoryItem(item))
+                  .toList(),
             ],
-          );
-        }).toList(),
+            const Divider(color: Color(0xFFE0E0E0), height: 24),
+          ],
+        );
+      }).toList(),
+    ),
+  );
+}
+
+Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
+  if (deals.isEmpty) {
+    return Center(
+      child: Text(
+        'Нет данных для отображения',
+        style: const TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff8F9BB3),
+        ),
       ),
     );
   }
-
+  
+  return SingleChildScrollView(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: deals.map((deal) {
+        final bool isExpanded = expandedDealIds.contains(deal.id);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    expandedDealIds.remove(deal.id);
+                  } else {
+                    expandedDealIds.add(deal.id);
+                  }
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        deal.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: const Color(0xff8F9BB3),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (isExpanded) ...[
+              ...deal.history
+                  .map((item) => _buildDealHistoryItem(item))
+                  .toList(),
+            ],
+            const Divider(color: Color(0xFFE0E0E0), height: 24),
+          ],
+        );
+      }).toList(),
+    ),
+  );
+}
   Widget _buildNoticeHistoryItem(HistoryItem item) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -423,7 +536,8 @@ List<Widget> _buildLeadChanges(Changes changes) {
                 color: Color(0xff1E2E52),
               ),
             ),
-            if (item.changes.isNotEmpty) ..._buildNoticeChanges(item.changes.first),
+            if (item.changes.isNotEmpty)
+              ..._buildNoticeChanges(item.changes.first),
           ],
         ),
       ),
@@ -484,7 +598,8 @@ List<Widget> _buildLeadChanges(Changes changes) {
                 color: Color(0xff1E2E52),
               ),
             ),
-            if (item.changes.isNotEmpty) ..._buildDealChanges(item.changes.first),
+            if (item.changes.isNotEmpty)
+              ..._buildDealChanges(item.changes.first),
           ],
         ),
       ),
@@ -503,15 +618,40 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
     'title': 'Заголовок',
   };
 
+  String formatDateIfNeeded(String key, dynamic value) {
+    if (key == 'date' && value != null && value.toString().isNotEmpty) {
+      try {
+        DateTime date;
+        String dateStr = value.toString();
+        
+        // Пробуем распарсить дату, даже если она в разных форматах
+        if (dateStr.contains('T')) {
+          date = DateTime.parse(dateStr);
+        } else {
+          // Для простых строк без времени
+          date = DateTime.parse(dateStr);
+        }
+        
+        return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+      } catch (e) {
+        return value.toString();
+      }
+    }
+    return value?.toString() ?? '-';
+  }
+
   return body.entries.map((entry) {
     if (entry.value is Map) {
       final changeMap = Map<String, dynamic>.from(entry.value as Map);
       final String translatedKey = translations[entry.key] ?? entry.key;
 
+      final formattedPreviousValue = formatDateIfNeeded(entry.key, changeMap['previous_value']);
+      final formattedNewValue = formatDateIfNeeded(entry.key, changeMap['new_value']);
+
       return Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Text(
-          '$translatedKey: ${changeMap['previous_value'] ?? '-'} → ${changeMap['new_value'] ?? '-'}',
+          '$translatedKey: $formattedPreviousValue → $formattedNewValue',
           style: const TextStyle(
             fontSize: 14,
             fontFamily: 'Gilroy',
@@ -525,10 +665,9 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
   }).toList();
 }
 
-List<Widget> _buildDealChanges(ChangesLead changes) {
+ List<Widget> _buildDealChanges(ChangesLead changes) {
   final Map<String, dynamic> body = changes.body;
   if (body.isEmpty) return [];
-
   // Словарь переводов ключей
   final Map<String, String> translations = {
     'sum': 'Сумма',
@@ -537,17 +676,34 @@ List<Widget> _buildDealChanges(ChangesLead changes) {
     'description': 'Описание',
     'end_date': 'Дата завершения',
     'start_date': 'Дата начала',
+    'deal_status': 'Статус',
+    'lead': 'Лид',
   };
-
+  
+  String formatDateIfNeeded(String key, dynamic value) {
+    if ((key == 'end_date' || key == 'start_date') && value != null && value.toString().isNotEmpty) {
+      try {
+        final date = DateTime.parse(value.toString());
+        return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+      } catch (e) {
+        return value.toString();
+      }
+    }
+    return value?.toString() ?? '-';
+  }
+  
   return body.entries.map((entry) {
     if (entry.value is Map) {
       final changeMap = Map<String, dynamic>.from(entry.value as Map);
       final String translatedKey = translations[entry.key] ?? entry.key;
-
+      
+      final formattedPreviousValue = formatDateIfNeeded(entry.key, changeMap['previous_value']);
+      final formattedNewValue = formatDateIfNeeded(entry.key, changeMap['new_value']);
+      
       return Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Text(
-          '$translatedKey: ${changeMap['previous_value'] ?? '-'} → ${changeMap['new_value'] ?? '-'}',
+          '$translatedKey: $formattedPreviousValue → $formattedNewValue',
           style: const TextStyle(
             fontSize: 14,
             fontFamily: 'Gilroy',
@@ -560,9 +716,7 @@ List<Widget> _buildDealChanges(ChangesLead changes) {
     return const SizedBox.shrink();
   }).toList();
 }
-
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
+String _formatDate(DateTime date) {
+ return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+}
 }
