@@ -10,6 +10,7 @@ import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
@@ -490,6 +491,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ),
       ),
       actions: [
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints(),
+          icon: Icon(
+            Icons.history, // встроенная иконка истории
+            size: 30,
+            color: Color.fromARGB(255, 0, 0, 0), // используем тот же цвет, что и в остальном приложении
+          ),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => HistoryDialog(
+                leadId: currentLead!.id,
+              ),
+            );
+          },
+        ),
         if (_canEditLead || _canDeleteLead)
           Row(
             mainAxisSize: MainAxisSize.min,

@@ -262,7 +262,7 @@ class _DealCardState extends State<DealCard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '${widget.deal.manager?.name ?? ""}',
+                        '${widget.deal.manager?.name ?? "Система"}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
