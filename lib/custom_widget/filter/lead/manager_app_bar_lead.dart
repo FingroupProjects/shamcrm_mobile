@@ -26,6 +26,7 @@ class ManagerFilterScreen extends StatefulWidget {
   final bool? initialHasNotices;
   final bool? initialHasContact;
   final bool? initialHasChat;
+  final bool? initialHasDeal;
   final int? initialDaysWithoutActivity;
   final VoidCallback? onResetFilters;
 
@@ -44,6 +45,7 @@ class ManagerFilterScreen extends StatefulWidget {
     this.initialHasNotices,
     this.initialHasContact,
     this.initialHasChat,
+    this.initialHasDeal,
     this.initialDaysWithoutActivity,
     this.onResetFilters, 
   }) : super(key: key);
@@ -67,6 +69,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
   bool? _hasNotices ;
   bool? _hasContact;
   bool? _hasChat;
+  bool? _hasDeal;
 
   int? _daysWithoutActivity;
 
@@ -85,6 +88,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
     _hasNotices = widget.initialHasNotices;
     _hasContact = widget.initialHasContact;
     _hasChat = widget.initialHasChat;
+    _hasDeal = widget.initialHasDeal;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
   }
 
@@ -154,7 +158,8 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                 _hasFailureDeals = false;
                 _hasNotices = false;
                 _hasContact = false;
-                _hasChat = false;
+                _hasChat = false; 
+                _hasDeal = false;
                 _daysWithoutActivity = null;
               });
             },
@@ -192,6 +197,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   _hasNotices == true ||
                   _hasContact == true ||
                   _hasChat == true ||
+                  _hasDeal == true ||
                   _daysWithoutActivity != null;
 
               if (isAnyFilterSelected) {
@@ -211,6 +217,7 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                   'hasNotices': _hasNotices,
                   'hasContact': _hasContact,
                   'hasChat': _hasChat,
+                  'hasDeal': _hasDeal,
                   'daysWithoutActivity': _daysWithoutActivity,
                 });
               } else {
@@ -372,6 +379,11 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
                             AppLocalizations.of(context)!.translate('with_chat'),
                             _hasChat ?? false,
                             (value) => setState(() => _hasChat = value),
+                          ),
+                           _buildSwitchTile(
+                            AppLocalizations.of(context)!.translate('withoutDeal'),
+                            _hasDeal ?? false,
+                            (value) => setState(() => _hasDeal = value),
                           ),
                         ],
                       ),

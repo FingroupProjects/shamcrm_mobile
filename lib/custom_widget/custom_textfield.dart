@@ -11,7 +11,7 @@ class CustomTextField extends StatefulWidget {
   final Widget? suffixIcon;
   final TextInputType keyboardType;
   final List<TextInputFormatter>? inputFormatters;
-  final int maxLines; 
+  final int maxLines;
   final String? Function(String?)? validator;
   final Function(String)? onChanged; // Add onChanged parameter
   final String? errorText; // Add errorText support
@@ -27,8 +27,8 @@ class CustomTextField extends StatefulWidget {
     this.suffixIcon,
     this.keyboardType = TextInputType.text,
     this.inputFormatters,
-    this.maxLines = 1, 
-    this.validator, 
+    this.maxLines = 1,
+    this.validator,
     this.onChanged, // Add to constructor
     this.errorText, // Add errorText support
     this.hasError = false,
@@ -44,7 +44,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     // Determine if the field has an error
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty || widget.hasError;
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
+        widget.hasError;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,10 +86,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.isPassword
                 ? IconButton(
-                    icon: Icon(
+                    icon: Image.asset(
                       _isPasswordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                          ? 'assets/icons/Profile/eye.png'
+                          : 'assets/icons/Profile/eye_close.png',
+                      width: 24,
+                      height: 24,
                       color: const Color(0xff99A4BA),
                     ),
                     onPressed: () {
@@ -100,10 +103,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 : widget.suffixIcon,
             errorText: widget.errorText,
             errorStyle: const TextStyle(
-              fontSize: 14, 
+              fontSize: 14,
               // fontFamily: 'Gilroy',
               color: Colors.red,
-              fontWeight: FontWeight.w400, 
+              fontWeight: FontWeight.w400,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

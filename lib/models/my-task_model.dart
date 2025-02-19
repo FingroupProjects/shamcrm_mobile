@@ -9,6 +9,7 @@ class MyTask {
   final MyTaskStatus? taskStatus;
   final MyTaskFile? file;
   final List<MyTaskCustomField> taskCustomFields;
+  final int? overdue;
 
   MyTask({
     required this.id,
@@ -21,6 +22,7 @@ class MyTask {
     this.taskStatus,
     this.file,
     required this.taskCustomFields,
+    this.overdue,
   });
 
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -44,6 +46,7 @@ class MyTask {
                 .map((field) => MyTaskCustomField.fromJson(field))
                 .toList()
             : [],
+        overdue: json['overdue'] is int ? json['overdue'] : 0,
       );
     } catch (e) {
       print('Error parsing MyTask: $e, JSON: $json');
@@ -71,6 +74,7 @@ class MyTask {
       'taskStatus': taskStatus?.toJson(),
       'file': file?.toJson(),
       'task_custom_fields': taskCustomFields.map((e) => e.toJson()).toList(),
+      'overdue': overdue,
     };
   }
 }

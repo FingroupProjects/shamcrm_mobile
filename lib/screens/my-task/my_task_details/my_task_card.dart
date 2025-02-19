@@ -301,6 +301,30 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             height: 36,
                           ),
                         ),
+                        
+                          if (widget.task.overdue! > 0)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: MediaQuery.of(context).size.width * 0.52,
+                              ),
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 253, 98, 87),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    widget.task.overdue.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         const SizedBox(
                             width: 4), // Отступ между иконкой и текстом
                         Text(

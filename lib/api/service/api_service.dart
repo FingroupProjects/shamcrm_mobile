@@ -704,6 +704,7 @@ class ApiService {
     bool? hasNotices,
     bool? hasContact,
     bool? hasChat,
+    bool? hasDeal,
     int? daysWithoutActivity,
   }) async {
       final organizationId = await getSelectedOrganization(); 
@@ -723,6 +724,7 @@ class ApiService {
     (hasNotices == true) || 
     (hasContact == true) || 
     (hasChat == true) || 
+    (hasDeal == true) || 
     (daysWithoutActivity != null) || 
     (statuses != null); 
 
@@ -777,6 +779,9 @@ class ApiService {
   }
   if (hasChat == true) {
     path += '&hasChat=1';
+  }
+  if (hasDeal == true) {
+    path += '&withoutDeal=1';
   }
   if (daysWithoutActivity != null) {
     path += '&lastUpdate=$daysWithoutActivity';
