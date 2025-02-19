@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/deal_by_id/dealById_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_event.dart';
 import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
@@ -12,6 +13,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_histo
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/history_dialog.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -205,7 +207,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       body: BlocListener<DealByIdBloc, DealByIdState>(
         listener: (context, state) {
           if (state is DealByIdLoaded) {
-            print("Deal Data: ${state.deal.toString()}");
           } else if (state is DealByIdError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -356,9 +357,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                     );
 
                     if (shouldUpdate == true) {
-                      context
-                          .read<DealByIdBloc>()
-                          .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                      context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
                       context.read<DealBloc>().add(FetchDealStatuses());
                     }
                   }
@@ -407,25 +406,52 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: (label.contains(AppLocalizations.of(context)!.translate('name_list')) ||
-                      label.contains(AppLocalizations.of(context)!.translate('description_list')) ||
-                      label.contains(AppLocalizations.of(context)!.translate('lead')))
-                  ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  return LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints constraints) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabel(label),
+          SizedBox(width: 8),
+          Expanded(
+            child: (label.contains(AppLocalizations.of(context)!.translate('name_list')) ||
+                    label.contains(AppLocalizations.of(context)!.translate('description_list')))
+                ? _buildExpandableText(label, value, constraints.maxWidth)
+                : (label == AppLocalizations.of(context)!.translate('lead_deal_card') && value.isNotEmpty)
+                    ? GestureDetector(
+                        onTap: () {
+                          if (currentDeal?.lead?.id != null) {
+                            navigatorKey.currentState?.push(
+                              MaterialPageRoute(
+                                builder: (context) => LeadDetailsScreen(
+                                  leadId: currentDeal!.lead!.id.toString(),
+                                  leadName: value,
+                                  leadStatus: "", 
+                                  statusId: 0,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                            decoration: TextDecoration.underline, 
+                          ),
+                        ),
+                      )                      
+                    : _buildValue(value),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   Widget _buildLabel(String label) {
     return Text(

@@ -1766,7 +1766,7 @@ Future<List<SourceData>> getAllSource() async {
     (statuses != null); 
 
  if (dealStatusId != null && !hasFilters) { 
-    path += '&lead_status_id=$dealStatusId'; 
+    path += '&deal_status_id=$dealStatusId'; 
   } 
 
   if (search != null && search.isNotEmpty) { 
@@ -3155,32 +3155,36 @@ Future<List<Task>> getTasks(
   }
 
 // Метод для получения Проекта
-  Future<ProjectTaskDataResponse> getTaskProject() async {
-    final organizationId = await getSelectedOrganization();
+Future<ProjectTaskDataResponse> getTaskProject() async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _getRequest(
-        '/task/get/projects${organizationId != null ? '?organization_id=$organizationId' : ''}');
+  final response = await _getRequest(
+      '/task/get/projects${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-    late ProjectTaskDataResponse dataProject;
+  late ProjectTaskDataResponse dataProject;
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
 
-      if (data['result'] != null) {
-        dataProject = ProjectTaskDataResponse.fromJson(data);
-      } else {
-        throw Exception('Результат отсутствует в ответе');
-      }
+    if (data['result'] != null) {
+      dataProject = ProjectTaskDataResponse.fromJson(data);
     } else {
-      throw Exception('Ошибка при получении данных!');
+      throw ('Результат отсутствует в ответе');
     }
-
-    if (kDebugMode) {
-      print('getAll project!');
-    }
-
-    return dataProject;
+  } else if (response.statusCode == 404) {
+    throw ('Ресурс не найден');
+  } else if (response.statusCode == 500) {
+    throw ('Внутренняя ошибка сервера');
+  } else {
+    throw ('Ошибка при получении данных!');
   }
+
+  if (kDebugMode) {
+    print('getAll project!');
+  }
+
+  return dataProject;
+}
 
   // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {

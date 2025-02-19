@@ -58,8 +58,12 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
           );
         }
       },
-      child: SingleChildScrollView(
-        child: Padding(
+        child: GestureDetector(
+        onTap: () {
+            FocusScope.of(context).unfocus();
+         },
+          child: SingleChildScrollView(       
+          child: Padding(
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
@@ -81,7 +85,6 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   onSelectSubject: (String subject) {
                     setState(() {
                       selectedSubject = subject;
-                      print('Selected subject: $selectedSubject'); // DEBUG
                     });
                   },
                 ),
@@ -95,8 +98,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   maxLines: 5,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context)!
-                          .translate('field_required');
+                      return AppLocalizations.of(context)!.translate('field_required');
                     }
                     return null;
                   },
@@ -109,8 +111,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                 ),
                 const SizedBox(height: 8),
                 ManagerMultiSelectWidget(
-                  selectedManagers:
-                      selectedManagers, // Your list of selected manager IDs
+                  selectedManagers: selectedManagers, 
                   onSelectManagers: (List<int> managers) {
                     setState(() {
                       selectedManagers = managers;
@@ -147,8 +148,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
 
                       context.read<NotesBloc>().add(CreateNotes(
                             leadId: widget.leadId,
-                            title: selectedSubject!
-                                .trim(), // Используем trim() для удаления лишних пробелов
+                            title: selectedSubject!.trim(), 
                             body: body,
                             date: date,
                             users: selectedManagers,
@@ -157,8 +157,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            AppLocalizations.of(context)!
-                                .translate('note_created_successfully'),
+                            AppLocalizations.of(context)!.translate('note_created_successfully'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -167,10 +166,8 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          margin:EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
                           ),
                           backgroundColor: Colors.green,
                           elevation: 3,
@@ -190,6 +187,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
