@@ -62,21 +62,34 @@ class _DealCardState extends State<DealCard> {
 
   @override
   Widget build(BuildContext context) {
-    Color borderColor;
-    if (widget.deal.dealStatus?.isSuccess == true &&
-        widget.deal.dealStatus?.isFailure == false &&
-        widget.deal.outDated == false) {
-      borderColor = Colors.green;
-    } else if (widget.deal.dealStatus?.isSuccess == false &&
-        widget.deal.dealStatus?.isFailure == true) {
-      borderColor = Colors.red;
-    } else if (widget.deal.dealStatus?.isSuccess == true &&
-        widget.deal.dealStatus?.isFailure == false &&
-        widget.deal.outDated == true) {
-      borderColor = Colors.red;
-    } else {
-      borderColor = Colors.yellow;
-    }
+Color borderColor;
+
+// Логируем полученные данные
+print("➡️ Статус сделки:");
+print("isSuccess: ${widget.deal.dealStatus?.isSuccess}");
+print("isFailure: ${widget.deal.dealStatus?.isFailure}");
+print("outDated: ${widget.deal.outDated}");
+
+if (widget.deal.dealStatus?.isSuccess == true &&
+    widget.deal.dealStatus?.isFailure == false &&
+    widget.deal.outDated == true) {
+  borderColor = Colors.green;
+  print("✅ Сделка успешная и не просрочена (зеленый)");
+} else if (widget.deal.dealStatus?.isSuccess == false &&
+    widget.deal.dealStatus?.isFailure == true) {
+  borderColor = Colors.red;
+  print("❌ Сделка неуспешная (красный)");
+} else if (widget.deal.dealStatus?.isSuccess == false &&
+    widget.deal.dealStatus?.isFailure == false &&
+    widget.deal.outDated == true) {
+  borderColor = Colors.red;
+  print("⚠️ Сделка успешная, но просроченная (красный)");
+} else {
+  borderColor = Colors.yellow;
+  print("🟡 Сделка в процессе, либо неизвестный статус (желтый)");
+}
+
+
     return GestureDetector(
       onTap: () {
         Navigator.push(

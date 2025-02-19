@@ -17,59 +17,40 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseApi {
   final _firebaseMessaging = FirebaseMessaging.instance;
+  RemoteMessage? _initialMessage;
 
   Future<void> initNotifications() async {
-    // Запрос разрешений на уведомления
     await _firebaseMessaging.requestPermission();
-
-    // Получение FCM токена
     final fcmToken = await _firebaseMessaging.getToken();
     print('FCM Token: $fcmToken');
 
-    // Настройка обработчиков уведомлений
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    initPushNotification();
+    await initPushNotification();
   }
 
-void initPushNotification() async {
-  final prefs = await SharedPreferences.getInstance();
-  final savedPin = prefs.getString('user_pin');
+  Future<void> initPushNotification() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('user_pin');
 
-  if (savedPin == null) {
-    FirebaseMessaging.instance.getInitialMessage().then((message) {
-      print('Первый запуск приложение ${message?.messageId}');
+    // Сохраняем пуш, но не обрабатываем сразу
+    _initialMessage = await FirebaseMessaging.instance.getInitialMessage();
 
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      print('Пользователь нажал на уведомление: ${message.messageId}');
+      handleMessage(message);
     });
-  } else {
-    prefs.setBool('openedViaNotification', true);
 
-    FirebaseMessaging.instance.getInitialMessage().then((message) {
-  print('Получено уведомление при закрытом состоянии приложения: ${message?.messageId}');
-  Future.delayed(Duration(milliseconds: 10), () {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      navigatorKey.currentState?.pushReplacementNamed('/pin_screen').then((_) async {
-        if (message != null) {
-          await handleMessage(message);
-        }
-      });
-    });
-  });
-
-     prefs.setBool('openedViaNotification', false);
-
+    FirebaseMessaging.onMessage.listen((message) {
+      print('Уведомление при активном приложении: ${message.notification?.title}');
+      _printCustomData(message);
     });
   }
 
-  FirebaseMessaging.onMessageOpenedApp.listen((message) {
-    print('Пользователь нажал на уведомление: ${message.messageId}');
-    handleMessage(message);
-  });
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Уведомление при активном приложении: ${message.notification?.title}');
-    _printCustomData(message);
-  });
+  RemoteMessage? getInitialMessage() {
+    return _initialMessage;
+  }
 }
+
 
 
   void _printCustomData(RemoteMessage? message) {
@@ -108,11 +89,12 @@ void initPushNotification() async {
     bool hasDealRead = await _apiService.hasPermission('deal.read');
     bool hasDashboard = await _apiService.hasPermission('section.dashboard');
     bool hasLeadRead = await _apiService.hasPermission('lead.read');
+    bool hasTaskRead = await _apiService.hasPermission('task.read');
 
-        if (hasDashboard && hasLeadRead && hasDealRead){
+        if (hasDashboard && hasLeadRead && hasDealRead && hasTaskRead){
           screenIndex = 3;
           await navigateToScreen(screenIndex, id, 'message', message);
-        } else if (hasDashboard && hasLeadRead || hasDealRead) {
+        } else if (hasDashboard && hasTaskRead && hasLeadRead || hasDealRead) {
           screenIndex = 3;
           await navigateToScreen(screenIndex, id, 'message', message);
         } else {
@@ -370,7 +352,7 @@ void initPushNotification() async {
         ),
       );
     }
-  }
+  
 }
 
 // Фоновый обработчик сообщений

@@ -41,8 +41,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     return FormField<List<UserData>>(
       validator: (value) {
         if (selectedUsersData.isEmpty) {
-          return AppLocalizations.of(context)!
-              .translate('field_required_project');
+          return AppLocalizations.of(context)!.translate('field_required_project');
         }
         return null;
       },
@@ -64,7 +63,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? Colors.red : Colors.white,
                 ),
               ),
               child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
@@ -99,46 +98,49 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
-                    listItemBuilder: (context, item, isSelected, onItemSelect) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xff1E2E52),
-                                  width: 1,
+                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                        return ListTile(
+                          minTileHeight: 1,
+                          minVerticalPadding: 2,
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Padding(
+                            padding: EdgeInsets.zero,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: Color(0xff1E2E52), width: 1),
+                                    color: isSelected
+                                        ? Color(0xff1E2E52)
+                                        : Colors.transparent,
+                                  ),
+                                  child: isSelected
+                                      ? Icon(Icons.check,
+                                          color: Colors.white, size: 16)
+                                      : null,
                                 ),
-                                borderRadius: BorderRadius.circular(4),
-                                color: isSelected
-                                    ? const Color(0xff1E2E52)
-                                    : Colors.transparent,
-                              ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: Colors.white,
-                                      size: 14,
-                                    )
-                                  : null,
+                                const SizedBox(width: 10),
+                                Text(item.name!,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Color(0xff1E2E52),
+                                    )),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                '${item.name!} ${item.lastname ?? ''}', // Добавляем фамилию
-                                style: userTextStyle,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                          ),
+                          onTap: () {
+                            FocusScope.of(context).unfocus();  
+                            onItemSelect(); 
+                          },
+                        );
+                      },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedUsersNames = selectedUsersData.isEmpty
                           ? AppLocalizations.of(context)!
@@ -168,6 +170,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         selectedUsersData = values;
                       });
                       field.didChange(values);
+                      
+                      // FocusScope.of(context).unfocus();
+                      
                     },
                   );
                 },

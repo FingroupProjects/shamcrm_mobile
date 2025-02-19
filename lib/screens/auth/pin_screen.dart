@@ -1,6 +1,7 @@
 // lib/screens/auth/auth_screen.dart
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,10 +24,12 @@ import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
 
 class PinScreen extends StatefulWidget {
-  const PinScreen({Key? key}) : super(key: key);
+  final RemoteMessage? initialMessage;
+
+  const PinScreen({Key? key, this.initialMessage}) : super(key: key);
 
   @override
-  State<PinScreen> createState() => _PinScreenState();
+  _PinScreenState createState() => _PinScreenState();
 }
 
 class _PinScreenState extends State<PinScreen>
@@ -216,7 +220,7 @@ Future<void> _authenticate() async {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(localizations.translate('biometric_unavailable')), 
+            content: Text(localizations.translate('biometric_unavailable')),
           ),
         );
       }
@@ -232,16 +236,15 @@ Future<void> _authenticate() async {
       ),
     );
 
-
-      if (didAuthenticate && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
-           
-      }
-    } on PlatformException catch (e) {
-      if (mounted) {
-      }
+    if (didAuthenticate && mounted) {
+      _navigateToHome();
+    }
+  } on PlatformException catch (e) {
+    if (mounted) {
+      print('Ошибка биометрической аутентификации: $e');
     }
   }
+}
 
   Future<void> _checkSavedPin() async {
     final prefs = await SharedPreferences.getInstance();
@@ -254,27 +257,42 @@ Future<void> _authenticate() async {
   }
 
   void _onNumberPressed(String number) async {
-    if (_pin.length < 4) {
-      setState(() {
-        _pin += number;
-      });
-      // Вибрация при каждом нажатии на кнопку
-      if (await Vibration.hasVibrator() ?? false) {
-        Vibration.vibrate(duration: 50); // Вибрация длиной 50 миллисекунд
-      }
-      if (_pin.length == 4) {
-        final prefs = await SharedPreferences.getInstance();
-        final savedPin = prefs.getString('user_pin');
-        if (_pin == savedPin) {
-          if (mounted) {
-            Navigator.of(context).pushReplacementNamed('/home');
-          }
-        } else {
-          _triggerErrorEffect();
+  if (_pin.length < 4) {
+    setState(() {
+      _pin += number;
+    });
+    
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: 50);
+    }
+    
+    if (_pin.length == 4) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPin = prefs.getString('user_pin');
+      
+      if (_pin == savedPin) {
+        if (mounted) {
+          _navigateToHome();
         }
+      } else {
+        _triggerErrorEffect();
       }
     }
   }
+}
+
+void _navigateToHome() {
+   Future.delayed(Duration(milliseconds: 10), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+
+  if (widget.initialMessage != null) {
+    handleMessage(widget.initialMessage!);
+  }
+      });
+  });
+  Navigator.of(context).pushReplacementNamed('/home');
+}
+
 
   void _triggerErrorEffect() async {
     if (await Vibration.hasVibrator() ?? false) {

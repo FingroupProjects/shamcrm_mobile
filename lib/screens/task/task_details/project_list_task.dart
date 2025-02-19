@@ -67,7 +67,7 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                   width: 1,
                   color: field.hasError 
                       ? Colors.red 
-                      : const Color(0xFFE5E7EB),
+                      :  Colors.white,
                 ),
               ),
               child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
@@ -84,26 +84,26 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                         selectedProjectData = null;
                       }
                     }
-                  } else if (state is GetTaskProjectError) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!.translate(state.message),
-                            style: projectTextStyle.copyWith(color: Colors.white),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.red,
-                          elevation: 3,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    });
+                  // } else if (state is GetTaskProjectError) {
+                  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+                  //     ScaffoldMessenger.of(context).showSnackBar(
+                  //       SnackBar(
+                  //         content: Text(
+                  //           AppLocalizations.of(context)!.translate(state.message),
+                  //           style: projectTextStyle.copyWith(color: Colors.white),
+                  //         ),
+                  //         behavior: SnackBarBehavior.floating,
+                  //         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //         shape: RoundedRectangleBorder(
+                  //           borderRadius: BorderRadius.circular(12),
+                  //         ),
+                  //         backgroundColor: Colors.red,
+                  //         elevation: 3,
+                  //         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  //         duration: const Duration(seconds: 2),
+                  //       ),
+                  //     );
+                  //   });
                   }
 
                   return CustomDropdown<ProjectTask>.search(

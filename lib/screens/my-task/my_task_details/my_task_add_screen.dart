@@ -316,10 +316,14 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -398,6 +402,7 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
               _buildActionButtons(context),
             ],

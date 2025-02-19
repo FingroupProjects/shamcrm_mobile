@@ -1044,16 +1044,19 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Поле ввода названия задачи с выбором приоритета
                       CustomTextFieldWithPriority(
                         controller: nameController,
                         hintText: AppLocalizations.of(context)!
@@ -1089,7 +1092,6 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         keyboardType: TextInputType.multiline,
                       ),
                       const SizedBox(height: 8),
-                      // Выбор пользователей
                       UserMultiSelectWidget(
                         selectedUsers: selectedUsers,
                         onSelectUsers: (List<UserData> selectedUsersData) {
@@ -1114,8 +1116,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       // Дата окончания задачи
                       CustomTextFieldDate(
                         controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('deadline'),
+                        label: AppLocalizations.of(context)!.translate('deadline'),
                         hasError: isEndDateInvalid,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -1174,10 +1175,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   ),
                 ),
               ),
-              _buildActionButtons(context),
-            ],
-          ),
+            ),
+            _buildActionButtons(context),
+          ],
         ),
+      ),
       ),
     );
   }

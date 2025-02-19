@@ -109,6 +109,8 @@ void main() async {
 
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications();
+  RemoteMessage? initialMessage = firebaseApi.getInitialMessage();
+
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -121,8 +123,6 @@ void main() async {
   final String? savedLanguageCode = await LanguageManager.getLanguage();
   final Locale savedLocale = savedLanguageCode != null ? Locale(savedLanguageCode) : const Locale('ru');
 
- final prefs = await SharedPreferences.getInstance();
-  final bool openedViaNotification = prefs.getBool('openedViaNotification') ?? false;
 
   runApp(MyApp(
     apiService: apiService,
@@ -131,7 +131,7 @@ void main() async {
     token: token,
     pin: pin,
     initialLocale: savedLocale,
-    openedViaNotification: openedViaNotification, 
+    initialMessage: initialMessage, 
   ));
 }
 Future<void> getFCMTokens(ApiService apiService) async {}
@@ -143,7 +143,7 @@ class MyApp extends StatefulWidget {
   final String? token;
   final String? pin;
   final Locale initialLocale; 
-  final bool openedViaNotification; 
+  final RemoteMessage? initialMessage;
 
   const MyApp({
     required this.apiService,
@@ -152,7 +152,7 @@ class MyApp extends StatefulWidget {
     this.token,
     this.pin,
     required this.initialLocale, 
-    required this.openedViaNotification, 
+    this.initialMessage, 
   });
 
   static void setLocale(BuildContext context, Locale newLocale) {
@@ -291,18 +291,10 @@ class _MyAppState extends State<MyApp> {
               return AuthScreen();
             } else if (widget.pin == null) {
               return PinSetupScreen();
-            } else if (widget.openedViaNotification) {
-              Future.microtask(() async {
-                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context); 
-                  }
-                });
-              });
-            return Container(color: Colors.white,); 
             } else {
-              return PinScreen();
-            }
+              return PinScreen(initialMessage: widget.initialMessage, 
+            );
+           }
           },
         ),
         routes: {

@@ -112,10 +112,14 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -185,6 +189,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
               Container(
                 padding:
