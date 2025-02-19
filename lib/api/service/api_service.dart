@@ -31,6 +31,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
+import 'package:crm_task_manager/models/notice_history_model.dart';
 import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/project_chart_model.dart';
@@ -940,6 +941,42 @@ class ApiService {
     }
   }
 
+  Future<List<NoticeHistory>> getNoticeHistory(int leadId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final response = await _getRequest(
+          '/notices/history-by-lead-id/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result'];
+        return jsonList.map((json) => NoticeHistory.fromJson(json)).toList();
+      } else {
+        throw Exception('Ошибка загрузки истории заметок!');
+      }
+    } catch (e) {
+      throw Exception('Ошибка загрузки истории заметок!');
+    }
+  }
+
+  Future<List<DealHistoryLead>> getDealHistoryLead(int leadId) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final response = await _getRequest(
+          '/deal/history-by-lead-id/$leadId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedJson = json.decode(response.body);
+        final List<dynamic> jsonList = decodedJson['result'];
+        return jsonList.map((json) => DealHistoryLead.fromJson(json)).toList();
+      } else {
+        throw Exception('Ошибка загрузки истории сделок!');
+      }
+    } catch (e) {
+      throw Exception('Ошибка загрузки истории сделок!');
+    }
+  }
+
   Future<List<Notes>> getLeadNotes(int leadId,
       {int page = 1, int perPage = 20}) async {
     final organizationId =
@@ -1759,7 +1796,7 @@ Future<List<SourceData>> getAllSource() async {
   if (fromDate != null && toDate != null) { 
     final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
     final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
-    path += '&from=$formattedFromDate&to=$formattedToDate'; 
+    path += '&created_from=$formattedFromDate&created_to=$formattedToDate'; 
   } 
  
 

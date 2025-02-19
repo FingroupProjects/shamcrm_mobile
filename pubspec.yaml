@@ -101,6 +101,8 @@ flutter:
     - assets/icons/leads/
     - assets/icons/chats/
     - assets/icons/chats/menu_icons/pin.svg
+    - assets/icons/history.png
+    - assets/icons/history2.png
     - assets/icons/chats/menu_icons/pin_list.svg
     - assets/icons/chats/menu_icons/edit.svg
     - assets/icons/chats/menu_icons/delete.svg

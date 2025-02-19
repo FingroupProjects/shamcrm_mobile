@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_card_my-tasks_tabBar.dart';
+import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
@@ -185,14 +186,21 @@ class _MyTaskCardState extends State<MyTaskCard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      widget.task.name ??
-                          AppLocalizations.of(context)!
-                              .translate('no_name'), // Название задачи
-                      style:
-                          MyTaskCardStyles.titleStyle, // Стиль заголовка задачи
-                      overflow: TextOverflow
-                          .ellipsis, // Обрезка текста, если не помещается
+                    child: Text.rich(
+                      TextSpan(
+                        text: widget.task.name ??
+                            AppLocalizations.of(context)!.translate('no_name'),
+                        style: MyTaskCardStyles.titleStyle,
+                        children: const <TextSpan>[
+                          TextSpan(
+                            text:
+                                '\n\u200B', // Невидимый пробел (Zero Width Space)
+                            style: TaskCardStyles.titleStyle,
+                          ),
+                        ],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ),
                 ],
