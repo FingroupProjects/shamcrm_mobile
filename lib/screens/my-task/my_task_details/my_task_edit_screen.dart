@@ -564,10 +564,14 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -646,6 +650,7 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
               Container(
                 padding:

@@ -585,8 +585,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
-                      decoration:
-                          TextDecoration.underline, // Добавляем подчеркивание
+                      decoration: TextDecoration.underline, // Добавляем подчеркивание
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),

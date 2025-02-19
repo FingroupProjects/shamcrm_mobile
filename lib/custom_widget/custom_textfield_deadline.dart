@@ -172,8 +172,7 @@ class CustomTextFieldDate extends StatelessWidget {
                 ),
                 filled: true,
                 fillColor: const Color(0xffF4F7FD),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),

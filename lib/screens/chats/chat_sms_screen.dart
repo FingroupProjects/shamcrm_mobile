@@ -184,12 +184,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   onDateChanged: (date) {
                     final index = _findMessageIndexByDate(messages, date);
                     if (index != -1) {
+                      print(' +++_+_+__+_INDEX+_++__+_++_');
+                      print(index);
+                      print(' +++_+_+__DATE+_+_++__+_++_');
+                      print(date);
                       Navigator.pop(context);
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToMessageIndex(index);
+                        _scrollToMessageIndex(date);
                       });
                     } else {
-                      // Обработка, если нет сообщений на выбранную дату
                     }
                   },
                 ),
@@ -207,43 +210,43 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     for (int i = 0; i < messages.length; i++) {
       final messageDate = DateTime.parse(messages[i].createMessateTime);
       if (isSameDay(messageDate, targetDate)) {
+        print('last INDEX');
+        print(lastIndex);
         lastIndex = i; // Сохраняем последний найденный индекс
       }
     }
+          print('Return INDEX');
+        print(lastIndex);
     return lastIndex;
   }
 
-  void _scrollToMessageIndex(int index) {
-    if (_scrollController.hasClients) {
-      final state = context.read<MessagingCubit>().state;
-      if (state is MessagesLoadedState) {
-        final messagesLength = state.messages.length;
+  // void _scrollToMessageIndex(int index) {
+void _scrollToMessageIndex(DateTime selectedDate) {
+  final state = context.read<MessagingCubit>().state;
+  if (state is MessagesLoadedState || state is PinnedMessagesState) {
+    final messages = state is MessagesLoadedState
+        ? state.messages
+        : (state as PinnedMessagesState).messages;
 
-        // Вычисляем высоту одного элемента
-        final maxScroll = _scrollController.position.maxScrollExtent;
-        final itemHeight = maxScroll / messagesLength;
+    final messageIndex = messages.indexWhere((msg) {
+      final messageDate = DateTime.parse(msg.createMessateTime);
+      return isSameDay(messageDate, selectedDate);
+    });
 
-        // Целевая позиция для движения
-        final targetPosition = index * itemHeight;
-
-        // Скроллим к позиции
-        _scrollController.animateTo(
-          targetPosition.clamp(0.0, maxScroll), // Ограничение для корректности
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-
-        // Обновляем текущую видимую дату
-        if (index >= 0 && index < state.messages.length) {
-          setState(() {
-            _currentDate = formatDate(
-              DateTime.parse(state.messages[index].createMessateTime),
-            );
-          });
-        }
-      }
+    if (messageIndex != -1) {
+      _scrollControllerMessage.scrollTo(
+        index: messageIndex,
+        duration: const Duration(milliseconds: 1),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      // Если сообщений для выбранной даты нет, покажите уведомление
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No messages found for ${formatDate(selectedDate)}')),
+      );
     }
   }
+}
 
   bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
@@ -689,7 +692,7 @@ Widget messageListUi() {
       }
 
         return Stack(
-        children: [
+          children: [
           GestureDetector(
             onTap: () {
               FocusScope.of(context).unfocus();
@@ -697,67 +700,107 @@ Widget messageListUi() {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ScrollablePositionedList.builder(
-                itemScrollController: _scrollControllerMessage, 
+                itemScrollController: _scrollControllerMessage,
                 itemCount: messages.length,
-                reverse: true, 
+                reverse: true,
                 itemBuilder: (context, index) {
                   final message = messages[index];
-                  return MessageItemWidget(
-                    message: message,
-                    chatId: widget.chatId,
-                    endPointInTab: widget.endPointInTab,
-                    apiServiceDownload: widget.apiServiceDownload,
-                    baseUrl: baseUrl,
-                    onReplyTap: _scrollToMessageReply,
-                    highlightedMessageId: _highlightedMessageId,
-                    onMenuStateChanged: (isOpen) {
-                      setState(() {
-                        _isMenuOpen = isOpen;
-                      });
-                    },
-                    focusNode: _focusNode,
-                    isRead: message.isRead,
+                  final messageDate = DateTime.parse(message.createMessateTime);
+
+                  bool shouldShowDate = false;
+                  if (index == messages.length - 1) {
+                    shouldShowDate = true;
+                  } else {
+                    final previousMessage = messages[index + 1];
+                    final previousMessageDate = DateTime.parse(previousMessage.createMessateTime);
+                    shouldShowDate = !isSameDay(messageDate, previousMessageDate);
+                  }
+
+                  List<Widget> widgets = [];
+
+                  if (shouldShowDate) {
+                    widgets.add(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                        child: GestureDetector(
+                          onTap: () => _showDatePicker(context, messages),
+                          child: Center(
+                            child: Text(
+                              formatDate(messageDate),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: "Gilroy",
+                                fontWeight: FontWeight.w400,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  widgets.add(
+                    MessageItemWidget(
+                      message: message,
+                      chatId: widget.chatId,
+                      endPointInTab: widget.endPointInTab,
+                      apiServiceDownload: widget.apiServiceDownload,
+                      baseUrl: baseUrl,
+                      onReplyTap: _scrollToMessageReply,
+                      highlightedMessageId: _highlightedMessageId,
+                      onMenuStateChanged: (isOpen) {
+                        setState(() {
+                          _isMenuOpen = isOpen;
+                        });
+                      },
+                      focusNode: _focusNode,
+                      isRead: message.isRead,
+                    ),
+                  );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: widgets,
                   );
                 },
               ),
             ),
           ),
-          if (pinnedMessages.isNotEmpty)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: PinnedMessageWidget(
-                      message: pinnedMessages.last.text,
-                      onUnpin: () {
-                        context.read<MessagingCubit>().unpinMessage(pinnedMessages.last);
-                      },
-                      onTap: () {
-                        _scrollToMessageReply(pinnedMessages.last.id);  
-                        if (pinnedMessages.isNotEmpty) {
-                          final updatedPinnedMessages = List<Message>.from(pinnedMessages);
-                          final firstPinnedMessage = updatedPinnedMessages.removeAt(0);
-                          updatedPinnedMessages.add(firstPinnedMessage);
-                          context.read<MessagingCubit>().updatePinnedMessages(updatedPinnedMessages);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+    if (pinnedMessages.isNotEmpty)
+      Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        child: Column(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: PinnedMessageWidget(
+                message: pinnedMessages.last.text,
+                onUnpin: () {
+                  context.read<MessagingCubit>().unpinMessage(pinnedMessages.last);
+                },
+                onTap: () {
+                  _scrollToMessageReply(pinnedMessages.last.id);
+                  if (pinnedMessages.isNotEmpty) {
+                    final updatedPinnedMessages = List<Message>.from(pinnedMessages);
+                    final firstPinnedMessage = updatedPinnedMessages.removeAt(0);
+                    updatedPinnedMessages.add(firstPinnedMessage);
+                    context.read<MessagingCubit>().updatePinnedMessages(updatedPinnedMessages);
+                  }
+                },
               ),
             ),
-          if (_isMenuOpen)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.3),
-              ),
-            ),
-        ],
-      );
+          ],
+        ),
+      ),
+    if (_isMenuOpen)
+      Positioned.fill(
+        child: Container(
+          color: Colors.black.withOpacity(0.3),
+        ),
+      ),
+  ],
+);
     }
     return Container();
   });

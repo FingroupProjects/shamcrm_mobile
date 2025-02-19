@@ -120,7 +120,7 @@ Widget build(BuildContext context) {
                           width: 1,
                           color: field.hasError 
                               ? Colors.red 
-                              : const Color(0xFFE5E7EB),
+                              : Colors.white,
                         ),
                       ),
                       child: CustomDropdown<TaskStatus>.search(

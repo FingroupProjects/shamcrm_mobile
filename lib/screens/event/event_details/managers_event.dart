@@ -214,11 +214,11 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                 } else {
                                   newSelection.add(manager.id);
                                 }
+                                FocusScope.of(context).unfocus();
                                 widget.onSelectManagers(newSelection);
                               },
                               child: Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     bottom: BorderSide(

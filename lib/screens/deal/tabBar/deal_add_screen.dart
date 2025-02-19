@@ -180,10 +180,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
           }
         },
         child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                },
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -291,6 +295,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   ),
                 ),
               ),
+            ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
@@ -304,7 +309,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         textColor: Colors.black,
                         onPressed: () {
                           Navigator.pop(context, widget.statusId);
-                          context.read<DealBloc>().add(FetchDealStatuses());
+                          // context.read<DealBloc>().add(FetchDealStatuses());
                         },
                       ),
                     ),
