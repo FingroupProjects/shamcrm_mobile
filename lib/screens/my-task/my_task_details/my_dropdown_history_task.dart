@@ -239,7 +239,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
         }
         try {
           DateTime date = DateTime.parse(dateString);
-          return DateFormat('dd/MM/yyyy').format(date);
+          return DateFormat('dd.MM.yyyy').format(date);
         } catch (e) {
           return    AppLocalizations.of(context)!.translate('not_specified');
         }

@@ -315,6 +315,5 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
       );
     }
   }
-
   }
 

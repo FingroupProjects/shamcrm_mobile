@@ -78,6 +78,7 @@ class CustomAppBar extends StatefulWidget {
   final bool? initialManagerLeadHasNotices;
   final bool? initialManagerLeadHasContact;
   final bool? initialManagerLeadHasChat;
+  final bool? initialManagerLeadHasDeal;
   final int? initialManagerLeadDaysWithoutActivity;
 
   final List? initialManagersDeal;
@@ -137,6 +138,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerLeadHasNotices,
     this.initialManagerLeadHasContact,
     this.initialManagerLeadHasChat,
+    this.initialManagerLeadHasDeal,
     this.initialManagerLeadDaysWithoutActivity,
     this.initialManagersDeal,
     this.initialManagerDealStatuses,
@@ -1043,6 +1045,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         initialHasNotices: widget.initialManagerLeadHasNotices,
         initialHasContact: widget.initialManagerLeadHasContact,
         initialHasChat: widget.initialManagerLeadHasChat,
+        initialHasDeal: widget.initialManagerLeadHasDeal,
         initialDaysWithoutActivity: widget.initialManagerLeadDaysWithoutActivity,
         onResetFilters: widget.onLeadResetFilters,
       ),

@@ -79,7 +79,7 @@ Set<int> expandedDealIds = {};
       ),
       child: Row(
         children: [
-          _buildTab('Лиды', 0),
+          _buildTab('Лид', 0),
           _buildTab('Заметки', 1),
           _buildTab('Сделки', 2),
         ],
@@ -182,16 +182,16 @@ Set<int> expandedDealIds = {};
 
   // Словарь переводов ключей
   final Map<String, String> translations = {
-    "name": "Имя",
+    "name": "Название",
     "phone": "Телефон",
     "email": "Email",
     "region": "Регион",
     "manager": "Менеджер",
-    "tg_nick": "Ник в Telegram",
+    "tg_nick": "Telegram",
     "birthday": "День рождения",
     "description": "Описание",
-    "insta_login": "Логин в Instagram",
-    "facebook_login": "Логин в Facebook",
+    "insta_login": "Instagram",
+    "facebook_login": "Facebook",
     "lead_status": "Статус"
   };
 
@@ -252,15 +252,16 @@ Set<int> expandedDealIds = {};
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+        color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: Colors.black.withOpacity(0.05),
+          //     blurRadius: 4,
+          //     offset: const Offset(0, 2),
+          //   ),
+          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,15 +489,15 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+        color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: Colors.black.withOpacity(0.05),
+          //     blurRadius: 4,
+          //     offset: const Offset(0, 2),
+          //   ),
+          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,15 +551,15 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+        color: const Color(0xFFF4F7FD),
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: Colors.black.withOpacity(0.05),
+          //     blurRadius: 4,
+          //     offset: const Offset(0, 2),
+          //   ),
+          // ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,10 +613,11 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
 
   // Словарь переводов ключей
   final Map<String, String> translations = {
-    'body': 'Содержание',
+    'body': 'Описание',
     'date': 'Дата',
     'lead': 'Лид',
-    'title': 'Заголовок',
+    'title': 'Тематика',
+    'notifications_sent':'Отправить PUSH-уведомление'
   };
 
   String formatDateIfNeeded(String key, dynamic value) {
@@ -637,7 +639,7 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
         return value.toString();
       }
     }
-    return value?.toString() ?? '-';
+    return value?.toString() ?? 'Не указано';
   }
 
   return body.entries.map((entry) {
