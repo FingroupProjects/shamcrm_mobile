@@ -3,7 +3,6 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/contact_list_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -13,12 +12,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class LeadColumn extends StatefulWidget {
   final int statusId;
   final String title;
-  final Function(int) onStatusId; 
+  final Function(int) onStatusId; // Callback to notify status change
+  final int? managerId; // Добавляем параметр managerId
 
   LeadColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
+    this.managerId, // Добавляем в конструктор
   });
 
   @override
@@ -36,6 +37,7 @@ class _LeadColumnState extends State<LeadColumn> {
     _leadBloc = LeadBloc(_apiService)
       ..add(FetchLeads(
         widget.statusId,
+        managerIds: widget.managerId != null ? [widget.managerId!] : null,
       ));
     _checkPermission();
   }
@@ -56,7 +58,7 @@ class _LeadColumnState extends State<LeadColumn> {
   Future<void> _onRefresh() async {
     BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
 
-    _leadBloc.add(FetchLeads( widget.statusId,
+    _leadBloc.add(FetchLeads( widget.statusId, managerIds: widget.managerId != null ? [widget.managerId!] : null,
     ));
 
     return Future.delayed(Duration(milliseconds: 1));
@@ -96,12 +98,14 @@ class _LeadColumnState extends State<LeadColumn> {
                   ),
                 );
               }
+
               final ScrollController _scrollController = ScrollController();
               _scrollController.addListener(() {
                 if (_scrollController.position.pixels ==
                         _scrollController.position.maxScrollExtent &&
                     !_leadBloc.allLeadsFetched) {
-                  _leadBloc.add(FetchMoreLeads(widget.statusId, state.currentPage));
+                  _leadBloc
+                      .add(FetchMoreLeads(widget.statusId, state.currentPage));
                 }
               });
 
@@ -111,14 +115,16 @@ class _LeadColumnState extends State<LeadColumn> {
                 onRefresh: _onRefresh,
                 child: Column(
                   children: [
-                    SizedBox(height: 8),
+                    SizedBox(height: 15),
                     Expanded(
                       child: ListView.builder(
                         controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
                         itemCount: leads.length,
                         itemBuilder: (context, index) {
-                          return Padding( padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             child: LeadCard(
                               lead: leads[index],
                               title: widget.title,
@@ -142,7 +148,7 @@ class _LeadColumnState extends State<LeadColumn> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), 
+                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                         style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -166,94 +172,20 @@ class _LeadColumnState extends State<LeadColumn> {
         floatingActionButton: _hasPermissionToAddLead
             ? FloatingActionButton(
                 onPressed: () {
-                  showModalBottomSheet(
-                    backgroundColor: Colors.white,
-                    context: context,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          LeadAddScreen(statusId: widget.statusId),
                     ),
-                    builder: (BuildContext context) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Добавить нового лида',
-                                    style: TextStyle(
-                                      color: Color(0xff1E2E52),
-                                      fontSize: 16,
-                                      fontFamily: "Gilroy",
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.add,
-                                    color: Color(0xff1E2E52),
-                                    size: 25,
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LeadAddScreen(statusId: widget.statusId),
-                                  ),
-                                ).then((_) => _leadBloc.add(FetchLeads(widget.statusId)));
-                              },
-                            ),
-                            ListTile(
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Импорт из контакты',
-                                    style: TextStyle(
-                                      color: Color(0xff1E2E52),
-                                      fontSize: 16,
-                                      fontFamily: "Gilroy",
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.contacts,
-                                    color: Color(0xff1E2E52),
-                                    size: 25,
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                Navigator.pop(context);
-                               Navigator.push(
-                                 context,
-                                 MaterialPageRoute(
-                                   builder: (context) =>ContactsScreen(),
-                                 ),
-                               );
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                  ).then((_) => _leadBloc.add(FetchLeads(widget.statusId)));
                 },
                 backgroundColor: Color(0xff1E2E52),
-                child: Image.asset(
-                  'assets/icons/tabBar/add.png',
-                  width: 24,
-                  height: 24,
-                ),
+                child: Image.asset('assets/icons/tabBar/add.png',
+                    width: 24, height: 24),
               )
             : null,
       ),
     );
   }
 }
-

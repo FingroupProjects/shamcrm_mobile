@@ -369,6 +369,11 @@ class Message {
       forwardedMessage: forwardedMessage,
       isRead: json['is_read'] ?? false,
       readStatus: readStatus, 
+      duration: Duration(
+      seconds: json['voice_duration'] != null
+          ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
+          : 20,
+    )
     );
   }
 

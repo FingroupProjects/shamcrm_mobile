@@ -3762,7 +3762,7 @@ Future<ProjectTaskDataResponse> getTaskProject() async {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result'] != null) {
-        print('Parsed data: ${data['result']}'); // Печать результата парсинга
+        // print('Parsed data: ${data['result']}'); // Печать результата парсинга
         return PaginationDTO<Chats>.fromJson(data['result'], (e) {
           return Chats.fromJson(e);
         });
