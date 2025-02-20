@@ -169,6 +169,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
     }
   }
 }
+  
 Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) async {
   if (allTasksFetched) return;
 
@@ -179,10 +180,10 @@ Future<void> _fetchMoreTasks(FetchMoreTasks event, Emitter<TaskState> emit) asyn
 
   try {
     final tasks = await apiService.getTasks(event.statusId, page: event.currentPage + 1);
-    if (tasks.isEmpty) {
-      allTasksFetched = true; // Обновляем флаг, если задач больше нет
-      return;
-    }
+   if (tasks.isEmpty) {
+        allTasksFetched = true; // Если пришли пустые данные, устанавливаем флаг
+        return; // Выходим, так как данных больше нет
+      }
     if (state is TaskDataLoaded) {
       final currentState = state as TaskDataLoaded;
       emit(currentState.merge(tasks));

@@ -704,7 +704,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         'value': task.description ?? ''
       },
       {
-        'label': AppLocalizations.of(context)!.translate('deadline'),
+        'label': AppLocalizations.of(context)!.translate('deadLine'),
         'value': task.endDate != null
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''

@@ -212,7 +212,7 @@
     "confirm_delete_task": "Вы уверены, что хотите удалить эту задачу?",
     "task_deleted_successfully": "Задача успешно удалена!",
     "invalid_format": "Неверный формат",
-    "task_name": "Название задачи:",
+    "task_name": "Название:",
     "from_details": "От:",
     "to_details": "До:",
     "project_details": "Проект:",
@@ -421,7 +421,7 @@
     "enter_name_field": "Введите название поля",
     "lead_deal_card": "Лид: ",
     "no_deal_in_selected_status": "Нет сделок для выбранного статуса",
-    "name_deal_details": "Название сделки:",
+    "name_deal_details": "Название:",
     "start_date_details": "Дата начало:",
     "end_date_details": "Дата завершения:",
     "summa_details": "Сумма:",
@@ -626,5 +626,7 @@
       "with_note": "С заметкой",
       "with_contacts": "С контактами",
       "with_chat": "С чатом",
-      "days_without_activity": "Количество дней без активности"
+      "days_without_activity": "Количество дней без активности",
+      "file_size_too_large":"Слишком большой объем файлов!",
+      "withoutDeal":"Без сделки"
   }

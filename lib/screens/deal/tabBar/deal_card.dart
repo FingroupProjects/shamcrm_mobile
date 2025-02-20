@@ -275,7 +275,7 @@ if (widget.deal.dealStatus?.isSuccess == true &&
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '${widget.deal.manager?.name ?? ""}',
+                        '${widget.deal.manager?.name ?? "Система"}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
