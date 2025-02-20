@@ -166,7 +166,7 @@ controller?.dispose();
 
           print('Декодированная строка: $decodedString');
 
-          String cleanedResult = decodedString.replaceAll('?back?', '?');
+          String cleanedResult = decodedString.replaceAll('-back?', '?');
           List<String> qrParts = cleanedResult.split('?');
 
           String token = qrParts[0];
