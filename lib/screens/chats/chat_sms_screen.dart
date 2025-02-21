@@ -1331,7 +1331,9 @@ class MessageItemWidget extends StatelessWidget {
       onError: (err) {
         /// do something on error
       },
-      maxDuration: Duration(minutes: 5),
+      maxDuration: message.duration.inSeconds > 0
+        ? message.duration
+        : const Duration(seconds: 5),
       isFile: false,
     );
     return Container(
