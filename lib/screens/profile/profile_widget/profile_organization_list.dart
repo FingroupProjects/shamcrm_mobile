@@ -161,12 +161,15 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 ),
                 dropdownColor: Colors.white,
                 icon: Padding(
-                  padding:
-                      EdgeInsets.only( right: 0), // Сдвиг вправо на 8 пикселей
-                  child: Image.asset(
-                    'assets/icons/arrow-right.png',
-                    width: 16,
-                    height: 16,
+                  padding: EdgeInsets.only(right: 0),
+                  child: Transform.rotate(
+                    angle: 90 *
+                        (3.1415926535897932 / 180), // Поворот на 90 градусов
+                    child: Image.asset(
+                      'assets/icons/arrow-right.png',
+                      width: 16,
+                      height: 16,
+                    ),
                   ),
                 ),
               ),

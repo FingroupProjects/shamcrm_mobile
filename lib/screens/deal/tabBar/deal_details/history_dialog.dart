@@ -350,7 +350,7 @@ Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
       child: Text(
         'Нет данных для отображения',
         style: const TextStyle(
-          fontSize: 16,
+          fontSize: 14,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
           color: Color(0xff8F9BB3),
@@ -420,7 +420,7 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
       child: Text(
         'Нет данных для отображения',
         style: const TextStyle(
-          fontSize: 16,
+          fontSize: 14,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
           color: Color(0xff8F9BB3),
