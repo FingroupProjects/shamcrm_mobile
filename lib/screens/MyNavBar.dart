@@ -23,7 +23,7 @@ class MyNavBar extends StatefulWidget {
 class _MyNavBarState extends State<MyNavBar> {
   late int currentIndex = widget.currentIndex; // Инициализируем значением по умолчанию
 
-  static const double _iconSize = 26;
+static const double _iconSize = 20;
 
   final TextStyle _titleStyle = const TextStyle(
     color: Colors.white,

@@ -289,7 +289,8 @@ class _MyTaskCardState extends State<MyTaskCard> {
                         // Используем ColorFiltered для изменения цвета иконки
                         ColorFiltered(
                           colorFilter: ColorFilter.mode(
-                            overdueDays > 0
+                            (widget.task.overdue != null &&
+                                    widget.task.overdue! > 0)
                                 ? const Color.fromARGB(255, 198, 40, 40)
                                 : const Color(
                                     0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
@@ -301,30 +302,32 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             height: 36,
                           ),
                         ),
-                        
-                          if (widget.task.overdue! > 0)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                left: MediaQuery.of(context).size.width * 0.52,
+
+                        if (widget.task.overdue != null &&
+                            widget.task.overdue! > 0)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              left: MediaQuery.of(context).size.width * 0.52,
+                            ),
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 253, 98, 87),
+                                shape: BoxShape.circle,
                               ),
-                              child: Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 253, 98, 87),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    widget.task.overdue.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
+                              child: Center(
+                                child: Text(
+                                  widget.task.overdue.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
                             ),
+                          ),
+
                         const SizedBox(
                             width: 4), // Отступ между иконкой и текстом
                         Text(
@@ -334,7 +337,8 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: overdueDays > 0
+                            color: (widget.task.overdue != null &&
+                                    widget.task.overdue! > 0)
                                 ? const Color.fromARGB(255, 198, 40, 40)
                                 : const Color(
                                     0xff99A4BA), // Красный цвет, если просрочено, иначе обычный

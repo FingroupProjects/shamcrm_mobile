@@ -60,6 +60,7 @@ dependencies:
   flutter_slidable: ^3.1.2
   scrollable_positioned_list: ^0.3.8
   contacts_service: ^0.6.3
+  auto_size_text: ^3.0.0
   flutter_sound: ^9.23.1
   
   # bottom_navy_bar: ^6.1.0

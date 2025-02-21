@@ -47,7 +47,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
-  List<int>? _selectedManagerIds; 
+  List<int>? _selectedManagerIds;
   int? _selectedManagerId;
   late final DealBloc _dealBloc;
 
@@ -56,25 +56,24 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   List<ManagerData> _selectedManagers = [];
   List<LeadData> _selectedLeads = [];
-  int? _selectedStatuses;  
+  int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
   int? _daysWithoutActivity;
   bool? _hasTasks = false;
 
-  List<ManagerData> _initialselectedManagers = []; 
-  List<LeadData> _initialselectedLeads = []; 
+  List<ManagerData> _initialselectedManagers = [];
+  List<LeadData> _initialselectedLeads = [];
   int? _initialSelStatus;
   DateTime? _intialFromDate;
   DateTime? _intialToDate;
   bool? _initialHasTasks;
   int? _initialDaysWithoutActivity;
 
-
   @override
   void initState() {
     super.initState();
-     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _scrollController = ScrollController();
     DealCache.getDealStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
@@ -133,151 +132,148 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _searchDeals(String query, int currentStatusId) async {
-  final dealBloc = BlocProvider.of<DealBloc>(context);
+    final dealBloc = BlocProvider.of<DealBloc>(context);
     await DealCache.clearAllDeals();
-  print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
-    dealBloc.add(FetchDeals(
-      currentStatusId,
-      query: query,
-      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-      leadIds: _selectedLeads.map((lead) => lead.id).toList(),
-      statusIds: _selectedStatuses,
-      fromDate: _fromDate,
-      toDate: _toDate,
-      daysWithoutActivity: _daysWithoutActivity,
-      hasTasks: _hasTasks
-    ));
-}
+    print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
+    dealBloc.add(FetchDeals(currentStatusId,
+        query: query,
+        managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+        leadIds: _selectedLeads.map((lead) => lead.id).toList(),
+        statusIds: _selectedStatuses,
+        fromDate: _fromDate,
+        toDate: _toDate,
+        daysWithoutActivity: _daysWithoutActivity,
+        hasTasks: _hasTasks));
+  }
 
-
-void _resetFilters() {
-  setState(() {
-    _showCustomTabBar = true;
-    _selectedManagers = [];
-    _selectedLeads=[];
-    _selectedStatuses = null;
-    _fromDate = null;
-    _hasTasks = false;
-    _daysWithoutActivity = null;
-    _toDate = null;
-    _initialselectedManagers = [];
-    _initialselectedLeads = [];
-    _initialSelStatus = null;
-    _intialFromDate = null;
-    _intialToDate = null;
-    _lastSearchQuery = '';
-    _searchController.clear();
-    _initialHasTasks = false;
-    _initialDaysWithoutActivity = null;
-  });
-   final leadBloc = BlocProvider.of<DealBloc>(context);
-   leadBloc.add(FetchDealStatuses());
-}
+  void _resetFilters() {
+    setState(() {
+      _showCustomTabBar = true;
+      _selectedManagers = [];
+      _selectedLeads = [];
+      _selectedStatuses = null;
+      _fromDate = null;
+      _hasTasks = false;
+      _daysWithoutActivity = null;
+      _toDate = null;
+      _initialselectedManagers = [];
+      _initialselectedLeads = [];
+      _initialSelStatus = null;
+      _intialFromDate = null;
+      _intialToDate = null;
+      _lastSearchQuery = '';
+      _searchController.clear();
+      _initialHasTasks = false;
+      _initialDaysWithoutActivity = null;
+    });
+    final leadBloc = BlocProvider.of<DealBloc>(context);
+    leadBloc.add(FetchDealStatuses());
+  }
 
   Future<void> _handleManagerSelected(Map managers) async {
     print(_initialHasTasks);
-        print("_initialHasTasks");
+    print("_initialHasTasks");
 
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedManagers = managers['managers'];
-    _selectedLeads = managers['leads'];
-    _selectedStatuses = managers['statuses'];
-    _fromDate = managers['fromDate'];
-    _toDate = managers['toDate'];
-    _hasTasks = managers['hasTask'];
-    _daysWithoutActivity = managers['daysWithoutActivity'];
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedManagers = managers['managers'];
+      _selectedLeads = managers['leads'];
+      _selectedStatuses = managers['statuses'];
+      _fromDate = managers['fromDate'];
+      _toDate = managers['toDate'];
+      _hasTasks = managers['hasTask'];
+      _daysWithoutActivity = managers['daysWithoutActivity'];
 
-    _initialHasTasks = managers['hasTask'];
-    _initialselectedLeads = managers['leads'];
-    _initialDaysWithoutActivity = managers['daysWithoutActivity'];
-    _initialselectedManagers = managers['managers'];
-    _initialSelStatus = managers['statuses'];
-    _intialFromDate = managers['fromDate'];
-    _intialToDate = managers['toDate'];
-    
-  });
+      _initialHasTasks = managers['hasTask'];
+      _initialselectedLeads = managers['leads'];
+      _initialDaysWithoutActivity = managers['daysWithoutActivity'];
+      _initialselectedManagers = managers['managers'];
+      _initialSelStatus = managers['statuses'];
+      _intialFromDate = managers['fromDate'];
+      _intialToDate = managers['toDate'];
+    });
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     final leadBloc = BlocProvider.of<DealBloc>(context);
     leadBloc.add(FetchDeals(
-    currentStatusId,
-    managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-    statusIds: _selectedStatuses, 
-    fromDate: _fromDate,
-    toDate: _toDate,
-    hasTasks: _hasTasks,
-    leadIds: _selectedLeads.map((lead) => lead.id).toList(),
-    daysWithoutActivity: _daysWithoutActivity,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
+      currentStatusId,
+      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      hasTasks: _hasTasks,
+      leadIds: _selectedLeads.map((lead) => lead.id).toList(),
+      daysWithoutActivity: _daysWithoutActivity,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
     ));
   }
-  
-Future _handleStatusSelected(int? selectedStatusId) async {
-  setState(() {
-     _showCustomTabBar = false;
-    _selectedStatuses = selectedStatusId;
-    
-    _initialSelStatus=selectedStatusId;
-  });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<DealBloc>(context);
-  taskBloc.add(FetchDeals(
-    currentStatusId,
-    statusIds: _selectedStatuses, 
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+  Future _handleStatusSelected(int? selectedStatusId) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedStatuses = selectedStatusId;
 
-Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
-  setState(() {
-     _showCustomTabBar = false;
-    _fromDate = fromDate;
-    _toDate = toDate;
-    
-    _intialFromDate = fromDate;
-    _intialToDate = toDate;
-    
-  });
+      _initialSelStatus = selectedStatusId;
+    });
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<DealBloc>(context);
-  taskBloc.add(FetchDeals(
-    currentStatusId,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
-Future _handleStatusAndDateSelected(int? selectedStatus,DateTime? fromDate, DateTime? toDate) async {
-  setState(() {
-    _showCustomTabBar = false;
-    _selectedStatuses=selectedStatus;
-    _fromDate = fromDate;
-    _toDate = toDate;
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<DealBloc>(context);
+    taskBloc.add(FetchDeals(
+      currentStatusId,
+      statusIds: _selectedStatuses,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
 
-    _initialSelStatus=selectedStatus;
-    _intialFromDate = fromDate;
-    _intialToDate = toDate;
-  });
+  Future _handleDateSelected(DateTime? fromDate, DateTime? toDate) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _fromDate = fromDate;
+      _toDate = toDate;
 
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  final taskBloc = BlocProvider.of<DealBloc>(context);
-  taskBloc.add(FetchDeals(
-    currentStatusId,
-    statusIds: selectedStatus,
-    fromDate: _fromDate,
-    toDate: _toDate,
-    query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-  ));
-}
+      _intialFromDate = fromDate;
+      _intialToDate = toDate;
+    });
 
-void _onSearch(String query) {
-  _lastSearchQuery = query; // Сохраняем последний поисковый запрос
-  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-  _searchDeals(query, currentStatusId);
-}
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<DealBloc>(context);
+    taskBloc.add(FetchDeals(
+      currentStatusId,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
+
+  Future _handleStatusAndDateSelected(
+      int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
+    setState(() {
+      _showCustomTabBar = false;
+      _selectedStatuses = selectedStatus;
+      _fromDate = fromDate;
+      _toDate = toDate;
+
+      _initialSelStatus = selectedStatus;
+      _intialFromDate = fromDate;
+      _intialToDate = toDate;
+    });
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final taskBloc = BlocProvider.of<DealBloc>(context);
+    taskBloc.add(FetchDeals(
+      currentStatusId,
+      statusIds: selectedStatus,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+    ));
+  }
+
+  void _onSearch(String query) {
+    _lastSearchQuery = query; // Сохраняем последний поисковый запрос
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    _searchDeals(query, currentStatusId);
+  }
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();
@@ -292,89 +288,103 @@ void _onSearch(String query) {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('appbar_deals'),
-          onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
-          },
-          onChangedSearchInput: (String value) {
-            if (value.isNotEmpty) {
+            title: isClickAvatarIcon
+                ? localizations!.translate('appbar_settings')
+                : localizations!.translate('appbar_deals'),
+            onClickProfileAvatar: () {
               setState(() {
-                _isSearching = true;
+                isClickAvatarIcon = !isClickAvatarIcon;
               });
-            }
-            _onSearch(value);
-          },
-          onManagersDealSelected: _handleManagerSelected,
-          onStatusDealSelected: _handleStatusSelected,
-          onDateRangeDealSelected: _handleDateSelected,
-          onStatusAndDateRangeDealSelected: _handleStatusAndDateSelected,
-          initialManagersDeal: _initialselectedManagers,
-          initialLeadsDeal: _initialselectedLeads,
-          initialManagerDealStatuses: _initialSelStatus,
-          initialManagerDealFromDate: _intialFromDate,
-          initialManagerDealToDate: _intialToDate,
-          initialManagerDealDaysWithoutActivity: _initialDaysWithoutActivity,
-          initialManagerDealHasTasks: _initialHasTasks,
-          onDealResetFilters: _resetFilters,
-          textEditingController: textEditingController,
-          focusNode: focusNode,
-          showMenuIcon: _showCustomTabBar,
-          showFilterIconOnSelectDeal: !_showCustomTabBar,
-          showFilterTaskIcon: false,
-          showFilterIcon: false,
-          showFilterIconDeal: true, 
-          showEvent: true,
-          clearButtonClick: (value) {
-                if (value == false) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _lastSearchQuery = '';
-                  });
+            },
+            onChangedSearchInput: (String value) {
+              if (value.isNotEmpty) {
+                setState(() {
+                  _isSearching = true;
+                });
+              }
+              _onSearch(value);
+            },
+            onManagersDealSelected: _handleManagerSelected,
+            onStatusDealSelected: _handleStatusSelected,
+            onDateRangeDealSelected: _handleDateSelected,
+            onStatusAndDateRangeDealSelected: _handleStatusAndDateSelected,
+            initialManagersDeal: _initialselectedManagers,
+            initialLeadsDeal: _initialselectedLeads,
+            initialManagerDealStatuses: _initialSelStatus,
+            initialManagerDealFromDate: _intialFromDate,
+            initialManagerDealToDate: _intialToDate,
+            initialManagerDealDaysWithoutActivity: _initialDaysWithoutActivity,
+            initialManagerDealHasTasks: _initialHasTasks,
+            onDealResetFilters: _resetFilters,
+            textEditingController: textEditingController,
+            focusNode: focusNode,
+            showMenuIcon: _showCustomTabBar,
+            showFilterIconOnSelectDeal: !_showCustomTabBar,
+            showFilterTaskIcon: false,
+            showFilterIcon: false,
+            showFilterIconDeal: true,
+            showEvent: true,
+            showMyTaskIcon: true,
+            clearButtonClick: (value) {
+              if (value == false) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _lastSearchQuery = '';
+                });
 
-              if (_searchController.text.isEmpty) {
-                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null && _selectedLeads.isEmpty&& _hasTasks == false && _daysWithoutActivity == null) {
-                  print("IF SEARCH EMPTY AND NO FILTERS");
-                  setState(() {
-                    _showCustomTabBar = true;
-                  });
-                  final taskBloc = BlocProvider.of<DealBloc>(context);
-                  taskBloc.add(FetchDealStatuses());
-                } else {
-                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
-                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                  final taskBloc = BlocProvider.of<DealBloc>(context);
-                  taskBloc.add(FetchDeals(
-                    currentStatusId,
-                    managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
-                    statusIds: _selectedStatuses,
-                    fromDate: _fromDate,
-                    toDate: _toDate,
-                    daysWithoutActivity: _daysWithoutActivity,
-                    hasTasks: _hasTasks,
-                    leadIds: _selectedLeads.isNotEmpty ? _selectedLeads.map((lead) => lead.id).toList() : null,
-                  ));
-                }
-                  } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-                    print("ELSE IF SEARCH NOT EMPTY");
-
+                if (_searchController.text.isEmpty) {
+                  if (_selectedManagers.isEmpty &&
+                      _selectedStatuses == null &&
+                      _fromDate == null &&
+                      _toDate == null &&
+                      _selectedLeads.isEmpty &&
+                      _hasTasks == false &&
+                      _daysWithoutActivity == null) {
+                    print("IF SEARCH EMPTY AND NO FILTERS");
+                    setState(() {
+                      _showCustomTabBar = true;
+                    });
+                    final taskBloc = BlocProvider.of<DealBloc>(context);
+                    taskBloc.add(FetchDealStatuses());
+                  } else {
+                    print("IF SEARCH EMPTY BUT FILTERS EXIST");
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<DealBloc>(context);
                     taskBloc.add(FetchDeals(
                       currentStatusId,
-                      managerIds: _selectedManagerIds,
-                      query: _searchController.text.isNotEmpty ? _searchController.text : null,
+                      managerIds: _selectedManagers.isNotEmpty
+                          ? _selectedManagers
+                              .map((manager) => manager.id)
+                              .toList()
+                          : null,
+                      statusIds: _selectedStatuses,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
+                      daysWithoutActivity: _daysWithoutActivity,
+                      hasTasks: _hasTasks,
+                      leadIds: _selectedLeads.isNotEmpty
+                          ? _selectedLeads.map((lead) => lead.id).toList()
+                          : null,
                     ));
                   }
+                } else if (_selectedManagerIds != null &&
+                    _selectedManagerIds!.isNotEmpty) {
+                  print("ELSE IF SEARCH NOT EMPTY");
+
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final taskBloc = BlocProvider.of<DealBloc>(context);
+                  taskBloc.add(FetchDeals(
+                    currentStatusId,
+                    managerIds: _selectedManagerIds,
+                    query: _searchController.text.isNotEmpty
+                        ? _searchController.text
+                        : null,
+                  ));
                 }
-              },
-                  clearButtonClickFiltr: (value) {
-                  }
-  ),
+              }
+            },
+            clearButtonClickFiltr: (value) {}),
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
