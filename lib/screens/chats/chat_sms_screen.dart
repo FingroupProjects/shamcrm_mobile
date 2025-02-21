@@ -824,6 +824,7 @@ Widget messageListUi() {
         String outputPath = await getOutputPath('converted_file.ogg');
 
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
+
         if (convertedFile != null) {
           String uploadUrl = '$baseUrl/chat/sendVoice/${widget.chatId}';
           await uploadFile(convertedFile, uploadUrl);
@@ -1191,7 +1192,7 @@ class MessageItemWidget extends StatelessWidget {
   final FocusNode focusNode; 
   final bool isRead;
 
-  const MessageItemWidget({
+   MessageItemWidget({
     super.key,
     required this.message,
     required this.endPointInTab,
@@ -1317,6 +1318,7 @@ class MessageItemWidget extends StatelessWidget {
       '',
     )}/storage/${message.filePath}';
 
+print('AUDIO URL:${audioUrl}');
     final audioController = VoiceController(
       audioSrc: audioUrl,
       onComplete: () {
@@ -1326,6 +1328,7 @@ class MessageItemWidget extends StatelessWidget {
         /// do something on pause
       },
       onPlaying: () {
+        print('PLAYING');
         /// do something on playing
       },
       onError: (err) {

@@ -10,10 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:social_media_recorder/audio_encoder_type.dart';
-import 'package:social_media_recorder/screen/social_media_recorder.dart';
-
 import 'package:flutter_sound/flutter_sound.dart';
 
 class InputField extends StatelessWidget {
@@ -336,23 +334,27 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
   Future<void> _initRecorder() async {
     await _audioRecorder.openRecorder();
   }
-
-  Future<void> _startRecording() async {
-    final dir = await getTemporaryDirectory();
-    final path = '${dir.path}/audio.aac';
-    await _audioRecorder.startRecorder(
-      toFile: path,
-      codec: Codec.aacADTS,
-    );
-    setState(() {
-      _isRecording = true;
-      _recordFilePath = path;
-      _startTime = DateTime.now();
-      _elapsedSeconds = 0;
-    });
-    _startTimer();
-  }
-
+Future<void> _startRecording() async {
+  final dir = await getTemporaryDirectory();
+  // Generate a timestamp for the filename
+  String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+  final path = '${dir.path}/audio_$timestamp.m4a'; 
+  print('start RECORDING PATH: $path');
+  
+  await _audioRecorder.startRecorder(
+    toFile: path,
+    codec: Codec.aacMP4,
+  );
+  
+  setState(() {
+    _isRecording = true;
+    _recordFilePath = path;
+    _startTime = DateTime.now();
+    _elapsedSeconds = 0;
+  });
+  
+  _startTimer();
+}
   void _startTimer() {
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -418,4 +420,5 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
     );
   }
 }
+
 
