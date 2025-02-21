@@ -72,6 +72,7 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         hasNotices: event.hasNotices,
         hasContact: event.hasContact,
         hasChat: event.hasChat,
+        hasDeal: event.hasDeal,
         daysWithoutActivity: event.daysWithoutActivity
 
       );

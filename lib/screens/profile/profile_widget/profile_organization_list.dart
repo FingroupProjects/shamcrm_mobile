@@ -46,7 +46,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               DropdownMenuItem(
                 value: null,
                 child: Text(
-                localizations.translate('no_organizations'),
+                  localizations.translate('no_organizations'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -134,7 +134,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               child: DropdownButtonFormField<String>(
                 value: selectedOrganization,
                 hint: Text(
-                localizations.translate('select_organizations'),
+                  localizations.translate('select_organizations'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -160,10 +160,17 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                   ),
                 ),
                 dropdownColor: Colors.white,
-                icon: Image.asset(
-                  'assets/icons/tabBar/dropdown.png',
-                  width: 16,
-                  height: 16,
+                icon: Padding(
+                  padding: EdgeInsets.only(right: 0),
+                  child: Transform.rotate(
+                    angle: 90 *
+                        (3.1415926535897932 / 180), // Поворот на 90 градусов
+                    child: Image.asset(
+                      'assets/icons/arrow-right.png',
+                      width: 16,
+                      height: 16,
+                    ),
+                  ),
                 ),
               ),
             ),

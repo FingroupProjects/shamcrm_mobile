@@ -313,28 +313,40 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      leading: IconButton(
-        icon: Image.asset(
-          'assets/icons/arrow-left.png',
-          width: 24,
-          height: 24,
-        ),
-        onPressed: () {
+     backgroundColor: Colors.white,
+    forceMaterialTransparency: true,
+    elevation: 0,
+    centerTitle: false,
+    leadingWidth: 40,
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 0),
+      child: Transform.translate(
+        offset: const Offset(0, -2),
+        child: IconButton(
+          icon: Image.asset(
+            'assets/icons/arrow-left.png',
+            width: 24,
+            height: 24,
+          ),
+          onPressed: () {
           Navigator.pop(context);
-        },
+          },
+        ),
       ),
-      title: Text(
+    ),
+    title: Transform.translate(
+      offset: const Offset(-10, 0),
+      child: Text(
         title,
-        style: TextStyle(
-          fontSize: 18,
+        style: const TextStyle(
+          fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
           color: Color(0xff1E2E52),
         ),
       ),
+      //в котор
+    ),
       actions: [
         if (_canEditNotice || _canDeleteNotice)
           Row(
