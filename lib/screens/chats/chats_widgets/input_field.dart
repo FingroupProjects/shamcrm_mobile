@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
@@ -10,9 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_sound/flutter_sound.dart';
+import 'package:social_media_recorder/audio_encoder_type.dart';
+import 'package:social_media_recorder/screen/social_media_recorder.dart';
 
 class InputField extends StatelessWidget {
   final Function onSend;
@@ -49,6 +47,7 @@ class InputField extends StatelessWidget {
 
     final String? replyMsgId = replyingToMessage?.id.toString();
 
+    // Устанавливаем текст редактируемого сообщения в поле ввода
     if (editingMessage != null && messageController.text.isEmpty) {
       messageController.text = editingMessage.text;
     }
@@ -58,6 +57,7 @@ class InputField extends StatelessWidget {
       padding: const EdgeInsets.only(left: 0, right: 0, top: 6, bottom: 20),
       child: Column(
         children: [
+          // Виджет отображения режима ответа
           if (replyingToMessage != null)
             Container(
               decoration: BoxDecoration(
@@ -150,7 +150,8 @@ class InputField extends StatelessWidget {
                   ),
                 ),
               ),
-              padding:const EdgeInsets.only(left: 20, right: 6, top: 0, bottom: 0),
+              padding:
+                  const EdgeInsets.only(left: 20, right: 6, top: 0, bottom: 0),
               margin: const EdgeInsets.only(bottom: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -257,8 +258,34 @@ class InputField extends StatelessWidget {
                         ),
                       ],
                     )
-                  : VoiceRecorderWidget(
-                      sendRequestFunction: sendRequestFunction,
+                  : MediaQuery(
+                      data: MediaQueryData(
+                        size: Size(300, 400),
+                      ),
+                      child: SocialMediaRecorder(
+                        startRecording: () {},
+                        stopRecording: (_time) {},
+                        sendRequestFunction: sendRequestFunction,
+                        cancelText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        cancelTextStyle: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500),
+                        slideToCancelText: AppLocalizations.of(context)!
+                            .translate('cancel_chat_sms'),
+                        slideToCancelTextStyle: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500),
+                        recordIconBackGroundColor: Color(0xfff4F40EC),
+                        counterTextStyle: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500),
+                        encode: AudioEncoderType.AAC,
+                        radius: BorderRadius.circular(12),
+                      ),
                     ),
               (context.watch<ListenSenderTextCubit>().state)
                   ? Row(
@@ -306,119 +333,3 @@ class InputField extends StatelessWidget {
     );
   }
 }
-
-class VoiceRecorderWidget extends StatefulWidget {
-  final Function(File soundFile, String time) sendRequestFunction;
-
-  const VoiceRecorderWidget({super.key, required this.sendRequestFunction});
-
-  @override
-  _VoiceRecorderWidgetState createState() => _VoiceRecorderWidgetState();
-}
-
-class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
-  late FlutterSoundRecorder _audioRecorder;
-  bool _isRecording = false;
-  String _recordFilePath = '';
-  DateTime? _startTime;
-  Timer? _timer;
-  int _elapsedSeconds = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _audioRecorder = FlutterSoundRecorder();
-    _initRecorder();
-  }
-
-  Future<void> _initRecorder() async {
-    await _audioRecorder.openRecorder();
-  }
-Future<void> _startRecording() async {
-  final dir = await getTemporaryDirectory();
-  // Generate a timestamp for the filename
-  String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-  final path = '${dir.path}/audio_$timestamp.m4a'; 
-  print('start RECORDING PATH: $path');
-  
-  await _audioRecorder.startRecorder(
-    toFile: path,
-    codec: Codec.aacMP4,
-  );
-  
-  setState(() {
-    _isRecording = true;
-    _recordFilePath = path;
-    _startTime = DateTime.now();
-    _elapsedSeconds = 0;
-  });
-  
-  _startTimer();
-}
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        _elapsedSeconds++;
-      });
-    });
-  }
-
-  Future<void> _stopRecording() async {
-    await _audioRecorder.stopRecorder();
-    _timer?.cancel();
-    final endTime = DateTime.now();
-    setState(() {
-      _isRecording = false;
-    });
-
-    if (_startTime != null) {
-      final duration = endTime.difference(_startTime!);
-      widget.sendRequestFunction(File(_recordFilePath), duration.toString());
-    }
-  }
-
-  @override
-  void dispose() {
-    _audioRecorder.closeRecorder();
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_isRecording)
-          Text(
-            '$_elapsedSeconds s',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy'),
-          ),
-        SizedBox(width: 4),
-        AnimatedContainer(
-          duration: Duration(milliseconds: 3),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: _isRecording ? Colors.redAccent : Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: IconButton(
-            icon: Icon(
-              _isRecording ? Icons.stop : Icons.mic,
-              color: _isRecording ? Colors.white : Colors.black,
-            ),
-            onPressed: () {
-              if (_isRecording) {
-                _stopRecording();
-              } else {
-                _startRecording();
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-

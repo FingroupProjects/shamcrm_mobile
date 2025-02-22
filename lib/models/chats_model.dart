@@ -72,11 +72,9 @@ class Chats {
                   : '',
       image: json['image'] ?? '',
       user: user,
-      createDate: json['task'] != null
-          ? json['task']['created_at'] ?? ''
-          : json['lead'] != null
-              ? json['lead']['created_at'] ?? ''
-              : '',
+      createDate: json['lastMessage'] != null
+      ? json['lastMessage']['created_at'] ?? ''
+      : '',
       unreadCount: json['unread_count'],
       taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
       taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',

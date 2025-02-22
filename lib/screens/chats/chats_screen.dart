@@ -465,7 +465,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
 
 
   void onLongPress(Chats chat) {
-    if (widget.endPointInTab == 'task') {
+    if (widget.endPointInTab == 'task' || widget.endPointInTab == 'lead') {
       return;
     }
 
