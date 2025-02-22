@@ -614,33 +614,36 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
   // Словарь переводов ключей
   final Map<String, String> translations = {
     'body': 'Описание',
-    'date': 'Дата',
+    'date': 'Напоминане',
     'lead': 'Лид',
     'title': 'Тематика',
     'notifications_sent':'Отправить PUSH-уведомление'
   };
 
   String formatDateIfNeeded(String key, dynamic value) {
-    if (key == 'date' && value != null && value.toString().isNotEmpty) {
-      try {
-        DateTime date;
-        String dateStr = value.toString();
-        
-        // Пробуем распарсить дату, даже если она в разных форматах
-        if (dateStr.contains('T')) {
-          date = DateTime.parse(dateStr);
-        } else {
-          // Для простых строк без времени
-          date = DateTime.parse(dateStr);
-        }
-        
-        return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-      } catch (e) {
-        return value.toString();
+  if (key == 'date' && value != null && value.toString().isNotEmpty) {
+    try {
+      DateTime date;
+      String dateStr = value.toString();
+      
+      // Парсим дату
+      if (dateStr.contains('T')) {
+        date = DateTime.parse(dateStr);
+      } else {
+        date = DateTime.parse(dateStr);
       }
+
+      return '${date.day.toString().padLeft(2, '0')}.'
+             '${date.month.toString().padLeft(2, '0')}.'
+             '${date.year} ${date.hour.toString().padLeft(2, '0')}:'
+             '${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return value.toString();
     }
-    return value?.toString() ?? 'Не указано';
   }
+  return value?.toString() ?? 'Не указано';
+}
+
 
   return body.entries.map((entry) {
     if (entry.value is Map) {

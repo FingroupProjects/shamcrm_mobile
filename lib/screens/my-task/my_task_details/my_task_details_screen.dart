@@ -703,18 +703,19 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('description_details'),
         'value': task.description ?? ''
       },
+          {
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': task.startDate != null
+            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
+            : ''
+      },
       {
         'label': AppLocalizations.of(context)!.translate('deadLine'),
         'value': task.endDate != null
             ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
             : ''
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': task.startDate != null
-            ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.startDate!))
-            : ''
-      },
+  
       if (task.files != null && task.files!.isNotEmpty)
         {
           'label': AppLocalizations.of(context)!.translate('files_details'),
@@ -781,119 +782,56 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       },
     );
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<MyTaskBloc, MyTaskState>(builder: (context, state) {
-      String? tasksNumber1 = '1';
-      if (state is MyTaskDataLoaded && state.tasks.isNotEmpty) {
-        // Ищем задачу по ID
-        final task = state.tasks.firstWhere(
-          (task) => task.id.toString() == widget.taskId,
-          // orElse: () => Task(),
+@override
+Widget build(BuildContext context) {
+  return BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
+    builder: (context, state) {
+      if (state is MyTaskByIdLoading) {
+        return Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+          ),
         );
-        tasksNumber1 = task.taskNumber?.toString() ?? '1';
-      }
-      print("-------------tasksNumber---------------------------");
-
-// print(tasksNumber);
-      return Scaffold(
-          appBar: _buildAppBar(context,
-              "${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber?.toString()}"),
-          backgroundColor: Colors.white,
-          body: BlocListener<MyTaskByIdBloc, MyTaskByIdState>(
-            listener: (context, state) {
-              if (state is MyTaskByIdLoaded) {
-                print("Задача Data: ${state.task.toString()}");
-              } else if (state is MyTaskByIdError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-            child: BlocBuilder<MyTaskByIdBloc, MyTaskByIdState>(
-              builder: (context, state) {
-                if (state is MyTaskByIdLoading) {
-                  return Center(
-                    child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                  );
-                } else if (state is MyTaskByIdLoaded) {
-                  if (state.task == null) {
-                    return Center(
-                        child: Text(
-                      AppLocalizations.of(context)!
-                          .translate('task_data_unavailable'),
-                    ));
-                  }
-                  MyTaskById task = state.task!;
-                  _updateDetails(task);
-
-                  return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8.0,
-                      ),
-                      child: ListView(
-                        children: [
-                          _buildDetailsList(),
-                          const SizedBox(height: 16),
-                          ActionHistoryWidgetMyTask(
-                              taskId: int.parse(widget.taskId)),
-                        ],
-                      ));
-                } else if (state is MyTaskByIdError) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${state.message}',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.red,
-                        elevation: 3,
-                        padding:
-                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
-                  });
-                }
-                return Center(child: Text(''));
-              },
+      } else if (state is MyTaskByIdLoaded) {
+        if (state.task == null) {
+          return Scaffold(
+            body: Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('task_data_unavailable'),
+              ),
             ),
-          ));
-    });
-  }
+          );
+        }
+        MyTaskById task = state.task!;
+        _updateDetails(task);
+
+        return Scaffold(
+          appBar: _buildAppBar(
+            context,
+            "${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ''}"
+          ),
+          backgroundColor: Colors.white,
+          body: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: ListView(
+              children: [
+                _buildDetailsList(),
+                const SizedBox(height: 16),
+                ActionHistoryWidgetMyTask(taskId: int.parse(widget.taskId)),
+              ],
+            )
+          ),
+        );
+      }
+      return Scaffold(
+        body: Center(child: Text('')),
+      );
+    },
+  );
+}
 
 AppBar _buildAppBar(BuildContext context, String title) {
   return AppBar(

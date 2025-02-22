@@ -160,8 +160,8 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                   ),
                 ),
                 dropdownColor: Colors.white,
-                icon: Padding(
-                  padding: EdgeInsets.only(right: 0),
+                icon: Transform.translate(
+                  offset: Offset(4, 0), // Смещение влево на 2 пикселя
                   child: Transform.rotate(
                     angle: 90 *
                         (3.1415926535897932 / 180), // Поворот на 90 градусов
