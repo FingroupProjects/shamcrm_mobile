@@ -23,7 +23,7 @@ class MyNavBar extends StatefulWidget {
 class _MyNavBarState extends State<MyNavBar> {
   late int currentIndex = widget.currentIndex; // Инициализируем значением по умолчанию
 
-static const double _iconSize = 20;
+  static const double _iconSize = 20;
 
   final TextStyle _titleStyle = const TextStyle(
     color: Colors.white,
@@ -50,20 +50,28 @@ static const double _iconSize = 20;
   BottomNavyBarItem _buildNavBarItem(
       int index, String title, String activeIconPath, String inactiveIconPath) {
     return BottomNavyBarItem(
-      icon: SizedBox(
-        width: _iconSize,
-        height: _iconSize,
-        child: Image.asset(
-          currentIndex == index ? activeIconPath : inactiveIconPath,
-        ),
+      icon: Row(
+        children: [
+          SizedBox(
+            width: _iconSize,
+            height: _iconSize,
+            child: Image.asset(
+              currentIndex == index ? activeIconPath : inactiveIconPath,
+            ),
+          ),
+          SizedBox(width: 3), // Горизонтальный отступ между иконкой и текстом
+        ],
       ),
-      title: Text(title, style: _titleStyle),
+      title: Transform.translate(
+        offset: Offset(2, -1), // Сдвигаем текст вверх на 4 пикселя
+        child: Text(title, style: _titleStyle),
+      ),
       activeColor: Color(0xff1E2E52),
       inactiveColor: Colors.grey,
     );
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     bool allItemsAvailable = widget.navBarTitles.length == widget.activeIcons.length &&
         widget.navBarTitles.length == widget.inactiveIcons.length;

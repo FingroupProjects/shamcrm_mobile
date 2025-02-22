@@ -99,7 +99,6 @@ class ApiService {
 
   Future<void> initialize() async {
     baseUrl = await getDynamicBaseUrl();
-
   }
 
   // Инициализация API с доменом из QR-кода
@@ -182,12 +181,8 @@ class ApiService {
     await prefs.remove('token'); // Удаляем токен
   }
 
-
-
   // Метод для логаута — очистка токена
   Future<void> logout() async {
-
-     
     // Сохраняем текущие значения domainChecked и enteredDomain
     // bool? domainChecked = prefs.getBool('domainChecked');
     // String? enteredDomain = prefs.getString('enteredDomain');
@@ -265,7 +260,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         if (token != null)
-        'Authorization': 'Bearer $token', // Добавляем токен, если он есть
+          'Authorization': 'Bearer $token', // Добавляем токен, если он есть
         'Device': 'mobile'
       },
       body: json.encode(body),
@@ -695,9 +690,9 @@ class ApiService {
     List<int>? managers,
     List<int>? regions,
     List<int>? sources,
-    int? statuses,  
-    DateTime? fromDate, 
-    DateTime? toDate, 
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
     bool? hasSuccessDeals,
     bool? hasInProgressDeals,
     bool? hasFailureDeals,
@@ -707,35 +702,33 @@ class ApiService {
     bool? hasDeal,
     int? daysWithoutActivity,
   }) async {
-      final organizationId = await getSelectedOrganization(); 
-  String path = '/lead?page=$page&per_page=$perPage'; 
-  path += '&organization_id=$organizationId'; 
+    final organizationId = await getSelectedOrganization();
+    String path = '/lead?page=$page&per_page=$perPage';
+    path += '&organization_id=$organizationId';
 
-  bool hasFilters =  
-    (search != null && search.isNotEmpty) || 
-    (managers != null && managers.isNotEmpty) || 
-    (regions != null && regions.isNotEmpty) || 
-    (sources != null && sources.isNotEmpty) || 
-    (fromDate != null) || 
-    (toDate != null) || 
-    (hasSuccessDeals == true) || 
-    (hasInProgressDeals == true) || 
-    (hasFailureDeals == true) || 
-    (hasNotices == true) || 
-    (hasContact == true) || 
-    (hasChat == true) || 
-    (hasDeal == true) || 
-    (daysWithoutActivity != null) || 
-    (statuses != null); 
+    bool hasFilters = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty) ||
+        (regions != null && regions.isNotEmpty) ||
+        (sources != null && sources.isNotEmpty) ||
+        (fromDate != null) ||
+        (toDate != null) ||
+        (hasSuccessDeals == true) ||
+        (hasInProgressDeals == true) ||
+        (hasFailureDeals == true) ||
+        (hasNotices == true) ||
+        (hasContact == true) ||
+        (hasChat == true) ||
+        (hasDeal == true) ||
+        (daysWithoutActivity != null) ||
+        (statuses != null);
 
+    if (leadStatusId != null && !hasFilters) {
+      path += '&lead_status_id=$leadStatusId';
+    }
 
- if (leadStatusId != null && !hasFilters) { 
-    path += '&lead_status_id=$leadStatusId'; 
-  } 
-
-  if (search != null && search.isNotEmpty) { 
-    path += '&search=$search'; 
-  } 
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
 
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
@@ -753,40 +746,39 @@ class ApiService {
       }
     }
 
-      if (statuses != null ) { 
-    path += '&lead_status_id=$statuses'; 
-  } 
- 
-  if (fromDate != null && toDate != null) { 
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
-    path += '&from=$formattedFromDate&to=$formattedToDate'; 
-  } 
+    if (statuses != null) {
+      path += '&lead_status_id=$statuses';
+    }
+
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&from=$formattedFromDate&to=$formattedToDate';
+    }
     if (hasSuccessDeals == true) {
-    path += '&hasSuccessDeals=1';
-  }
-  if (hasInProgressDeals == true) {
-    path += '&hasInProgressDeals=1';
-  }
-  if (hasFailureDeals == true) {
-    path += '&hasFailureDeals=1';
-  }
-  if (hasNotices == true) {
-    path += '&hasNotices=1';
-  }
-  if (hasContact == true) {
-    path += '&hasContact=1';
-  }
-  if (hasChat == true) {
-    path += '&hasChat=1';
-  }
-  if (hasDeal == true) {
-    path += '&withoutDeal=1';
-  }
-  if (daysWithoutActivity != null) {
-    path += '&lastUpdate=$daysWithoutActivity';
-  }
- 
+      path += '&hasSuccessDeals=1';
+    }
+    if (hasInProgressDeals == true) {
+      path += '&hasInProgressDeals=1';
+    }
+    if (hasFailureDeals == true) {
+      path += '&hasFailureDeals=1';
+    }
+    if (hasNotices == true) {
+      path += '&hasNotices=1';
+    }
+    if (hasContact == true) {
+      path += '&hasContact=1';
+    }
+    if (hasChat == true) {
+      path += '&hasChat=1';
+    }
+    if (hasDeal == true) {
+      path += '&withoutDeal=1';
+    }
+    if (daysWithoutActivity != null) {
+      path += '&lastUpdate=$daysWithoutActivity';
+    }
 
     final response = await _getRequest(path);
     if (response.statusCode == 200) {
@@ -1298,28 +1290,28 @@ class ApiService {
 
     return dataRegion;
   }
+
   //Метод для получения региона
 // In your ApiService
-Future<List<SourceData>> getAllSource() async {
-  final organizationId = await getSelectedOrganization();
+  Future<List<SourceData>> getAllSource() async {
+    final organizationId = await getSelectedOrganization();
 
-  final response = await _getRequest(
-      '/source${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/source${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data != null) {
-      List<SourceData> dataSource = List<SourceData>.from(
-        data.map((source) => SourceData.fromJson(source))
-      );
-      return dataSource;
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data != null) {
+        List<SourceData> dataSource = List<SourceData>.from(
+            data.map((source) => SourceData.fromJson(source)));
+        return dataSource;
+      } else {
+        throw Exception('Результат отсутствует в ответе');
+      }
     } else {
-      throw Exception('Результат отсутствует в ответе');
+      throw Exception('Ошибка при получении данных!');
     }
-  } else {
-    throw Exception('Ошибка при получении данных!');
   }
-}
 
   //Метод для получения Менеджера
   Future<ManagersDataResponse> getAllManager() async {
@@ -1343,11 +1335,11 @@ Future<List<SourceData>> getAllSource() async {
       throw Exception('Ошибка при получении данных!');
     }
 
-    if (kDebugMode) {
-    }
+    if (kDebugMode) {}
 
     return dataManager;
   }
+
 //Метод для получения Менеджера
   Future<LeadsMultiDataResponse> getAllLeadMulti() async {
     final organizationId = await getSelectedOrganization();
@@ -1370,8 +1362,7 @@ Future<List<SourceData>> getAllSource() async {
       throw Exception('Ошибка при получении данных!');
     }
 
-    if (kDebugMode) {
-    }
+    if (kDebugMode) {}
 
     return dataLead;
   }
@@ -1748,62 +1739,58 @@ Future<List<SourceData>> getAllSource() async {
     String? search,
     List<int>? managers,
     List<int>? leads,
-    int? statuses,  
-    DateTime? fromDate, 
-    DateTime? toDate, 
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
     int? daysWithoutActivity,
     bool? hasTasks,
-
   }) async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/deal?page=$page&per_page=$perPage';
+    path += '&organization_id=$organizationId';
 
-  final organizationId = await getSelectedOrganization(); 
-  String path = '/deal?page=$page&per_page=$perPage'; 
-  path += '&organization_id=$organizationId'; 
+    bool hasFilters = (search != null && search.isNotEmpty) ||
+        (managers != null && managers.isNotEmpty) ||
+        (leads != null && leads.isNotEmpty) ||
+        (fromDate != null) ||
+        (toDate != null) ||
+        (daysWithoutActivity != null) ||
+        (hasTasks == true) ||
+        (statuses != null);
 
-  bool hasFilters =  
-    (search != null && search.isNotEmpty) || 
-    (managers != null && managers.isNotEmpty) || 
-    (leads != null && leads.isNotEmpty) || 
-    (fromDate != null) || 
-    (toDate != null) || 
-    (daysWithoutActivity != null) || 
-    (hasTasks == true) || 
-    (statuses != null); 
+    if (dealStatusId != null && !hasFilters) {
+      path += '&deal_status_id=$dealStatusId';
+    }
 
- if (dealStatusId != null && !hasFilters) { 
-    path += '&deal_status_id=$dealStatusId'; 
-  } 
-
-  if (search != null && search.isNotEmpty) { 
-    path += '&search=$search'; 
-  } 
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
 
     if (managers != null && managers.isNotEmpty) {
       for (int i = 0; i < managers.length; i++) {
         path += '&managers[$i]=${managers[i]}';
       }
     }
-  if (leads != null && leads.isNotEmpty) {
+    if (leads != null && leads.isNotEmpty) {
       for (int i = 0; i < leads.length; i++) {
         path += '&clients[$i]=${leads[i]}';
       }
     }
-     if (daysWithoutActivity != null) {
-    path += '&lastUpdate=$daysWithoutActivity';
-  }
+    if (daysWithoutActivity != null) {
+      path += '&lastUpdate=$daysWithoutActivity';
+    }
     if (hasTasks == true) {
-    path += '&withTasks=1';
-  }
-      if (statuses != null ) { 
-    path += '&deal_status_id=$statuses'; 
-  } 
- 
-  if (fromDate != null && toDate != null) { 
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
-    path += '&created_from=$formattedFromDate&created_to=$formattedToDate'; 
-  } 
- 
+      path += '&withTasks=1';
+    }
+    if (statuses != null) {
+      path += '&deal_status_id=$statuses';
+    }
+
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+    }
 
     final response = await _getRequest(path);
 
@@ -1839,7 +1826,6 @@ Future<List<SourceData>> getAllSource() async {
               prefs.getString('cachedDealStatuses_$organizationId');
           if (cachedStatuses != null) {
             final decodedData = json.decode(cachedStatuses);
-  
           }
 
           // Обновляем кэш новыми данными
@@ -2212,90 +2198,101 @@ Future<List<SourceData>> getAllSource() async {
     }
   }
 
- // API Service
-Future<List<Task>> getTasks(
-  int? taskStatusId, {
-  int page = 1,
-  int perPage = 20,
-  String? search,
-  List<int>? users,
-  int? statuses,
-  DateTime? fromDate,
-  DateTime? toDate,
-  bool? overdue,
-  bool? hasFile,
-  bool? hasDeal,
-  bool? urgent,
-   DateTime? deadlinefromDate,
-  DateTime? deadlinetoDate,
-  String? project,
- final List<String>?authors }) async {
-  final organizationId = await getSelectedOrganization();
-  String path = '/task?page=$page&per_page=$perPage';
-  path += '&organization_id=$organizationId';
-  bool hasFilters = (search != null && search.isNotEmpty) || (users != null && users.isNotEmpty) ||(fromDate != null) ||(toDate != null) || (statuses != null) || overdue == true ||hasFile == true ||hasDeal == true ||urgent == true ||(deadlinefromDate != null) ||(deadlinetoDate != null) ||
-      (project != null && project.isNotEmpty) ||
-      (authors != null && authors.isNotEmpty);
-  if (taskStatusId != null && !hasFilters) {
-    path += '&task_status_id=$taskStatusId';
-  }
-  if (search != null && search.isNotEmpty) {
-    path += '&search=$search';
-  }
-  if (users != null && users.isNotEmpty) {
-    for (int i = 0; i < users.length; i++) {
-      path += '&users[$i]=${users[i]}';
+  // API Service
+  Future<List<Task>> getTasks(int? taskStatusId,
+      {int page = 1,
+      int perPage = 20,
+      String? search,
+      List<int>? users,
+      int? statuses,
+      DateTime? fromDate,
+      DateTime? toDate,
+      bool? overdue,
+      bool? hasFile,
+      bool? hasDeal,
+      bool? urgent,
+      DateTime? deadlinefromDate,
+      DateTime? deadlinetoDate,
+      String? project,
+      final List<String>? authors}) async {
+    final organizationId = await getSelectedOrganization();
+    String path = '/task?page=$page&per_page=$perPage';
+    path += '&organization_id=$organizationId';
+    bool hasFilters = (search != null && search.isNotEmpty) ||
+        (users != null && users.isNotEmpty) ||
+        (fromDate != null) ||
+        (toDate != null) ||
+        (statuses != null) ||
+        overdue == true ||
+        hasFile == true ||
+        hasDeal == true ||
+        urgent == true ||
+        (deadlinefromDate != null) ||
+        (deadlinetoDate != null) ||
+        (project != null && project.isNotEmpty) ||
+        (authors != null && authors.isNotEmpty);
+    if (taskStatusId != null && !hasFilters) {
+      path += '&task_status_id=$taskStatusId';
     }
-  }
-  if (statuses != null) {
-    path += '&task_status_id=$statuses';
-  }
-  if (fromDate != null && toDate != null) {
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
-    path += '&from=$formattedFromDate&to=$formattedToDate';
-  }
-  // Add new filter parameters with 1/0 instead of true/false
-  if (overdue == true) {
-    path += '&overdue=1';
-  }
-  if (hasFile == true) {
-    path += '&hasFile=1';
-  }
-  if (hasDeal == true) {
-    path += '&hasDeal=1';
-  }
-  if (urgent == true) {
-    path += '&urgent=1';
-  }
- if (deadlinefromDate != null && deadlinetoDate != null) {
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(deadlinefromDate);
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
-    path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
-  }
-  if (project != null && project.isNotEmpty) {
-    path += '&project=$project';
-  }
- if (authors != null && authors.isNotEmpty) {
-  for (int i = 0; i < authors.length; i++) {
-    path += '&authors[$i]=${authors[i]}';
-  }
-}
-  final response = await _getRequest(path);
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data['result']['data'] != null) {
-      return (data['result']['data'] as List)
-          .map((json) => Task.fromJson(json, taskStatusId ?? -1))
-          .toList();
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+    if (users != null && users.isNotEmpty) {
+      for (int i = 0; i < users.length; i++) {
+        path += '&users[$i]=${users[i]}';
+      }
+    }
+    if (statuses != null) {
+      path += '&task_status_id=$statuses';
+    }
+    if (fromDate != null && toDate != null) {
+      final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+      path += '&from=$formattedFromDate&to=$formattedToDate';
+    }
+    // Add new filter parameters with 1/0 instead of true/false
+    if (overdue == true) {
+      path += '&overdue=1';
+    }
+    if (hasFile == true) {
+      path += '&hasFile=1';
+    }
+    if (hasDeal == true) {
+      path += '&hasDeal=1';
+    }
+    if (urgent == true) {
+      path += '&urgent=1';
+    }
+    if (deadlinefromDate != null && deadlinetoDate != null) {
+      final formattedFromDate =
+          DateFormat('yyyy-MM-dd').format(deadlinefromDate);
+      final formattedToDate = DateFormat('yyyy-MM-dd').format(deadlinetoDate);
+      path += '&deadline_from=$formattedFromDate&deadline_to=$formattedToDate';
+    }
+    if (project != null && project.isNotEmpty) {
+      path += '&project=$project';
+    }
+    if (authors != null && authors.isNotEmpty) {
+      for (int i = 0; i < authors.length; i++) {
+        path += '&authors[$i]=${authors[i]}';
+      }
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['result']['data'] != null) {
+        return (data['result']['data'] as List)
+            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .toList();
+      } else {
+        throw Exception('Нет данных о задачах в ответе');
+      }
     } else {
-      throw Exception('Нет данных о задачах в ответе');
+      print('Error response! - ${response.body}');
+      throw Exception('Ошибка загрузки задач!');
     }
-  } else {
-    print('Error response! - ${response.body}');
-    throw Exception('Ошибка загрузки задач!');
   }
-}
+
 // Метод для получения статусов задач
   Future<List<TaskStatus>> getTaskStatuses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -3160,36 +3157,36 @@ Future<List<Task>> getTasks(
   }
 
 // Метод для получения Проекта
-Future<ProjectTaskDataResponse> getTaskProject() async {
-  final organizationId = await getSelectedOrganization();
+  Future<ProjectTaskDataResponse> getTaskProject() async {
+    final organizationId = await getSelectedOrganization();
 
-  final response = await _getRequest(
-      '/task/get/projects${organizationId != null ? '?organization_id=$organizationId' : ''}');
+    final response = await _getRequest(
+        '/task/get/projects${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-  late ProjectTaskDataResponse dataProject;
+    late ProjectTaskDataResponse dataProject;
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
 
-    if (data['result'] != null) {
-      dataProject = ProjectTaskDataResponse.fromJson(data);
+      if (data['result'] != null) {
+        dataProject = ProjectTaskDataResponse.fromJson(data);
+      } else {
+        throw ('Результат отсутствует в ответе');
+      }
+    } else if (response.statusCode == 404) {
+      throw ('Ресурс не найден');
+    } else if (response.statusCode == 500) {
+      throw ('Внутренняя ошибка сервера');
     } else {
-      throw ('Результат отсутствует в ответе');
+      throw ('Ошибка при получении данных!');
     }
-  } else if (response.statusCode == 404) {
-    throw ('Ресурс не найден');
-  } else if (response.statusCode == 500) {
-    throw ('Внутренняя ошибка сервера');
-  } else {
-    throw ('Ошибка при получении данных!');
-  }
 
-  if (kDebugMode) {
-    print('getAll project!');
-  }
+    if (kDebugMode) {
+      print('getAll project!');
+    }
 
-  return dataProject;
-}
+    return dataProject;
+  }
 
   // Метод для получение Пользователя
   Future<List<UserTask>> getUserTask() async {
@@ -4603,12 +4600,11 @@ Future<ProjectTaskDataResponse> getTaskProject() async {
     await prefs.remove('selectedOrganization'); // Удаляем токен
   }
 
-        Future<void> logoutAccount() async {
+  Future<void> logoutAccount() async {
     final organizationId = await getSelectedOrganization();
-    final response = await _postRequest('/logout${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {
-
-        });
+    final response = await _postRequest(
+        '/logout${organizationId != null ? '?organization_id=$organizationId' : ''}',
+        {});
 
     if (response.statusCode != 200) {
       throw Exception('Ошибка logout аккаунта!');
@@ -5603,17 +5599,16 @@ Future<Map<String, dynamic>> createMyTask({
     int perPage = 20,
     String? search,
     List<int>? managers,
-    int? statuses,  
-    DateTime? fromDate, 
-    DateTime? toDate, 
-    DateTime? noticefromDate, 
-    DateTime? noticetoDate, 
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    DateTime? noticefromDate,
+    DateTime? noticetoDate,
   }) async {
     try {
-        final organizationId = await getSelectedOrganization(); 
-  String path = '/notices?page=$page&per_page=$perPage'; 
-  path += '&organization_id=$organizationId'; 
-
+      final organizationId = await getSelectedOrganization();
+      String path = '/notices?page=$page&per_page=$perPage';
+      path += '&organization_id=$organizationId';
 
       if (search != null && search.isNotEmpty) {
         path += '&search=$search';
@@ -5625,22 +5620,22 @@ Future<Map<String, dynamic>> createMyTask({
         }
       }
 
-        if (statuses != null ) { 
-    path += '&event_status_id=$statuses'; 
-  } 
- 
-  if (fromDate != null && toDate != null) { 
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate); 
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate); 
-    path += '&created_from=$formattedFromDate&created_to=$formattedToDate'; 
-  } 
+      if (statuses != null) {
+        path += '&event_status_id=$statuses';
+      }
 
-  if (noticefromDate != null && noticetoDate != null) { 
-    final formattedFromDate = DateFormat('yyyy-MM-dd').format(noticefromDate); 
-    final formattedToDate = DateFormat('yyyy-MM-dd').format(noticetoDate); 
-    path += '&push_from=$formattedFromDate&push_to=$formattedToDate'; 
-  } 
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+        path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+      }
 
+      if (noticefromDate != null && noticetoDate != null) {
+        final formattedFromDate =
+            DateFormat('yyyy-MM-dd').format(noticefromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(noticetoDate);
+        path += '&push_from=$formattedFromDate&push_to=$formattedToDate';
+      }
 
       final response = await _getRequest(path);
 
@@ -5699,7 +5694,7 @@ Future<Map<String, dynamic>> createMyTask({
       'title': title ?? '', // Используем пустую строку, если title == null
       'body': body,
       'lead_id': leadId,
-      'date': date?.toIso8601String(),
+      'date': date != null ? DateFormat('yyyy-MM-dd HH:mm').format(date) : null,
       'send_notification': sendNotification,
       'users': users,
       'organization_id': organizationId ?? '2'
@@ -5734,15 +5729,16 @@ Future<Map<String, dynamic>> createMyTask({
       'title': title,
       'body': body,
       'lead_id': leadId,
-      'date': date?.toIso8601String(),
+      'date': date != null ? DateFormat('yyyy-MM-dd HH:mm').format(date) : null,
       'send_notification': sendNotification,
       'users': users,
       'organization_id': organizationId ?? '2'
     };
 
     final response = await _patchRequest(
-        '/notices/$noticeId?organization_id=${organizationId ?? "2"}',
-        requestBody);
+      '/notices/$noticeId?organization_id=${organizationId ?? "2"}',
+      requestBody,
+    );
 
     if (response.statusCode == 200) {
       return {'success': true, 'message': '111'};
@@ -5830,7 +5826,6 @@ Future<Map<String, dynamic>> createMyTask({
 
     return dataAuthor;
   }
-
 
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }

@@ -448,6 +448,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
       },
       {
+        'label': AppLocalizations.of(context)!.translate('body'),
+        'value': notice.body
+      },
+      {
         'label': AppLocalizations.of(context)!.translate('date'),
         'value': notice.date != null
             ? formatDate(notice.date.toString())
@@ -473,10 +477,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ? AppLocalizations.of(context)!.translate('finished')
             : AppLocalizations.of(context)!.translate('in_progress'),
       },
-      {
-        'label': AppLocalizations.of(context)!.translate('body'),
-        'value': notice.body
-      },
+ 
     ];
 
     return ListView.builder(

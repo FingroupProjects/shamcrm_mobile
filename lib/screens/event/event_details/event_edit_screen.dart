@@ -45,7 +45,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     bodyController = TextEditingController(text: widget.notice.body);
     dateController = TextEditingController(
       text: widget.notice.date != null
-          ? DateFormat('dd/MM/yyyy HH:mm').format(widget.notice.date!)
+          ? DateFormat('dd/MM/yyyy HH:mm')
+              .format(widget.notice.date!.add(Duration(hours: 5)))
           : '',
     );
 
@@ -57,13 +58,11 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-            appBar: AppBar(
+      appBar: AppBar(
         forceMaterialTransparency: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -139,74 +138,73 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
           }
         },
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SubjectSelectionWidget(
-                        selectedSubject: selectedSubject,
-                        onSelectSubject: (String subject) {
-                          setState(() {
-                            selectedSubject = subject;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      LeadRadioGroupWidget(
-                        selectedLead: selectedLead,
-                        onSelectLead: (LeadData selectedLeadData) {
-                          setState(() {
-                            selectedLead = selectedLeadData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: bodyController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        maxLines: 5,
-                                                keyboardType: TextInputType.multiline,
-
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: dateController,
-                        label: AppLocalizations.of(context)!
-                            .translate('reminder_date'),
-                        withTime: true,
-                      ),
-                      const SizedBox(height: 8),
-                      ManagerMultiSelectWidget(
-                        selectedManagers: selectedManagers,
-                        onSelectManagers: (List<int> managers) {
-                          setState(() {
-                            selectedManagers = managers;
-                          });
-                        },
-                      ),
-                    ],
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SubjectSelectionWidget(
+                          selectedSubject: selectedSubject,
+                          onSelectSubject: (String subject) {
+                            setState(() {
+                              selectedSubject = subject;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        LeadRadioGroupWidget(
+                          selectedLead: selectedLead,
+                          onSelectLead: (LeadData selectedLeadData) {
+                            setState(() {
+                              selectedLead = selectedLeadData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: bodyController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('description_list'),
+                          label: AppLocalizations.of(context)!
+                              .translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: dateController,
+                          label: AppLocalizations.of(context)!
+                              .translate('reminder_date'),
+                          withTime: true,
+                        ),
+                        const SizedBox(height: 8),
+                        ManagerMultiSelectWidget(
+                          selectedManagers: selectedManagers,
+                          onSelectManagers: (List<int> managers) {
+                            setState(() {
+                              selectedManagers = managers;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               ),
               Container(
                 padding:
@@ -320,5 +318,4 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
       );
     }
   }
-  }
-
+}

@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -48,7 +49,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
+                  AutoSizeText(
                     'Добро пожаловать!',
                     style: TextStyle(
                       fontSize: 30,
@@ -56,9 +57,13 @@ class _EmptyScreenState extends State<EmptyScreen> {
                       fontFamily: 'Gilroy',
                       color: Colors.black,
                     ),
+                    maxLines: 1,
+                    minFontSize: 12,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 10),
-                Image.asset('assets/icons/shamCRM.jpg', height: 80),
+                  Image.asset('assets/icons/shamCRM.jpg', height: 80),
                 ],
               ),
             ),
