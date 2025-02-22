@@ -47,7 +47,7 @@ class ChatListItem extends StatelessWidget {
             ),
             child: _buildAvatar(chatItem.avatar),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,7 +59,7 @@ class ChatListItem extends StatelessWidget {
                       width: 20,
                       height: 20,
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         chatItem.name.isNotEmpty
@@ -71,13 +71,51 @@ class ChatListItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatChatTime(chatItem.time),
+                      style: AppStyles.chatTimeStyle,
+                    ),
                   ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  chatItem.message,
-                  style: AppStyles.chatMessageStyle,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        chatItem.message,
+                        style: AppStyles.chatMessageStyle,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    // Фиксированное пространство для индикатора новых сообщений
+                    SizedBox(
+                      width: 33,
+                      height: 33,
+                      child: chatItem.unreadCount > 0
+                          ? Container(
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                chatItem.unreadCount <= 9
+                                    ? '${chatItem.unreadCount}'
+                                    : '+9',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy',
+                                ),
+                              ),
+                            )
+                          : const SizedBox(), // Пустой SizedBox сохраняет размер
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -115,13 +153,14 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
+
   Widget _buildAvatar(String avatar) {
     if (avatar.contains('<svg')) {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
         return Container(
-          width: 48,
-          height: 48,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             image: DecorationImage(
@@ -136,8 +175,8 @@ class ChatListItem extends StatelessWidget {
 
         if (text != null && backgroundColor != null) {
           return Container(
-            width: 48,
-            height: 48,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: backgroundColor,
@@ -161,8 +200,8 @@ class ChatListItem extends StatelessWidget {
         } else {
           return SvgPicture.string(
             avatar,
-            width: 48,
-            height: 48,
+            width: 52,
+            height: 52,
             placeholderBuilder: (context) => CircularProgressIndicator(),
           );
         }

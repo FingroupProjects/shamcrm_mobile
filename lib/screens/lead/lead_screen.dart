@@ -66,6 +66,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _hasNotices = false;
   bool? _hasContact = false;
   bool? _hasChat = false;
+  bool? _hasDeal = false;
   int? _daysWithoutActivity;
 
   List<ManagerData> _initialselectedManagers = []; 
@@ -80,6 +81,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasNotices;
   bool? _initialHasContact;
   bool? _initialHasChat;
+  bool? _initialHasDeal;
   int? _initialDaysWithoutActivity;
   List<int>? _selectedManagerIds;
 
@@ -154,6 +156,7 @@ Future<void> _searchLeads(String query, int currentStatusId) async {
     hasNotices: _hasNotices,
     hasContact: _hasContact,
     hasChat: _hasChat,
+    hasDeal: _hasDeal,
     daysWithoutActivity: _daysWithoutActivity,
   ));
 }
@@ -173,6 +176,7 @@ void _resetFilters() {
     _hasNotices = false;
     _hasContact = false;
     _hasChat = false;
+    _hasDeal = false;
     _daysWithoutActivity = null;
     _initialselectedManagers = [];
     _initialselectedRegions = [];
@@ -186,6 +190,7 @@ void _resetFilters() {
     _initialHasNotices = false;
     _initialHasContact = false;
     _initialHasChat = false;
+    _initialHasDeal = false;
     _initialDaysWithoutActivity = null;
     _lastSearchQuery = '';
     _searchController.clear();
@@ -210,6 +215,7 @@ void _resetFilters() {
     _hasNotices=managers['hasNotices'];
     _hasContact=managers['hasContact'];
     _hasChat=managers['hasChat'];
+    _hasDeal=managers['hasDeal'];
     _daysWithoutActivity=managers['daysWithoutActivity'];
 
     _initialselectedManagers = managers['managers'];
@@ -224,6 +230,7 @@ void _resetFilters() {
     _initialHasNotices = managers['hasNotices'];
     _initialHasContact = managers['hasContact'];
     _initialHasChat = managers['hasChat'];
+    _initialHasDeal = managers['hasDeal'];
     _initialDaysWithoutActivity = managers['daysWithoutActivity'];
   });
 
@@ -243,6 +250,7 @@ void _resetFilters() {
     hasNotices: _hasNotices,
     hasContact: _hasContact,
     hasChat: _hasChat,
+    hasDeal: _hasDeal,
     daysWithoutActivity: _daysWithoutActivity,
     query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null, 
     ));
@@ -308,6 +316,7 @@ void _resetFilters() {
           initialManagerLeadHasNotices: _initialHasNotices,
           initialManagerLeadHasContact: _initialHasContact,
           initialManagerLeadHasChat: _initialHasChat,
+          initialManagerLeadHasDeal: _initialHasDeal,
           initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
           onLeadResetFilters: _resetFilters,
           textEditingController: textEditingController,
@@ -328,7 +337,7 @@ void _resetFilters() {
               if (_searchController.text.isEmpty) {
                 if (_selectedManagers.isEmpty && _selectedRegions.isEmpty && _selectedSources.isEmpty && _selectedStatuses == null && _fromDate == null
                 && _toDate == null  && _hasSuccessDeals == false && _hasInProgressDeals == false && _hasFailureDeals == false
-                && _hasNotices == false && _hasContact == false && _hasChat == false ) {
+                && _hasNotices == false && _hasContact == false && _hasChat == false  && _hasDeal == false ) {
                   print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
@@ -353,6 +362,7 @@ void _resetFilters() {
                     hasNotices: _hasNotices,
                     hasContact: _hasContact,
                     hasChat: _hasChat,
+                    hasDeal: _hasDeal,
                     daysWithoutActivity: _daysWithoutActivity,
                   ));
                 }

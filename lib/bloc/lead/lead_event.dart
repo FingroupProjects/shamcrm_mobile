@@ -19,6 +19,7 @@ class FetchLeads extends LeadEvent {
   final bool? hasNotices;
   final bool? hasContact;
   final bool? hasChat;
+  final bool? hasDeal;
   final int? daysWithoutActivity;
 
 
@@ -37,6 +38,7 @@ class FetchLeads extends LeadEvent {
     this.hasNotices,
     this.hasContact,
     this.hasChat,
+    this.hasDeal,
     this.daysWithoutActivity,
   });
 }

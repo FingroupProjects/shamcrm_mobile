@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
@@ -89,7 +90,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow( AppLocalizations.of(context)!.translate('contacts')),
+        _buildTitleRow(AppLocalizations.of(context)!.translate('contacts')),
         SizedBox(height: 8),
         if (contactPerson.isEmpty)
           Padding(
@@ -156,27 +157,112 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                         '${contactPerson.name}',
                         style: TaskCardStyles.titleStyle,
                       ),
-                      GestureDetector(
-                        onTap: () => _makePhoneCall(contactPerson.phone),
-                        child: Text(
-                          '${AppLocalizations.of(context)!.translate('phone_use')} ${contactPerson.phone}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF1E2E52),
-                            decoration: TextDecoration.underline,
+                      Row(
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.translate('phone_use')} ',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1E2E52),
+                            ),
                           ),
-                        ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => _makePhoneCall(contactPerson.phone),
+                              child: Text(
+                                '${contactPerson.phone}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF1E2E52),
+                                  decoration: TextDecoration.underline,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('position_contact')} ${contactPerson.position ?? ""}',
+                      Row(
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.translate('position_contact')} ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1E2E52),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${contactPerson.position ?? ""}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF1E2E52),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('author_contact')} ${contactPerson.author?.name ?? ""}',
+                      Row(
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.translate('author_contact')} ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1E2E52),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${contactPerson.author?.name ?? ""}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF1E2E52),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${AppLocalizations.of(context)!.translate('created_at_contact')}${contactPerson.formattedDate}',
+                      Row(
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.translate('created_at_contact')}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1E2E52),
+                            ),
+                          ),
+                          Expanded(
+                            child: AutoSizeText(
+                              '${contactPerson.formattedDate}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF1E2E52),
+                              ),
+                              minFontSize:
+                                  12, // Уменьшится до 12, если не влезает
+                              maxLines: 1, // Всегда в одну строку
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

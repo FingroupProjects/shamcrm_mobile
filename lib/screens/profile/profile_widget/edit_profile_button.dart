@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_details.dart';

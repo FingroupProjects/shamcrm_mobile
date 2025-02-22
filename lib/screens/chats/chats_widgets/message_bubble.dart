@@ -154,19 +154,22 @@ class MessageBubble extends StatelessWidget {
   }
 
   
-  Widget _buildMessageWithLinks(BuildContext context, String text) {
-    final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
-    final matches = linkRegExp.allMatches(text);
-
-    if (matches.isEmpty) {
-      return Text(
-        text,
-        style: isSender
-            ? ChatSmsStyles.senderMessageTextStyle
-            : ChatSmsStyles.receiverMessageTextStyle,
-      );
-    }
-
+ Widget _buildMessageWithLinks(BuildContext context, String text) {
+  final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+  final matches = linkRegExp.allMatches(text);
+  
+  // Определяем максимальную ширину сообщения - можно настроить в соответствии с вашими требованиями
+  final double maxWidth = MediaQuery.of(context).size.width * 0.75; // 75% ширины экрана
+  
+  Widget textWidget;
+  if (matches.isEmpty) {
+    textWidget = Text(
+      text,
+      style: isSender
+          ? ChatSmsStyles.senderMessageTextStyle
+          : ChatSmsStyles.receiverMessageTextStyle,
+    );
+  } else {
     List<TextSpan> spans = [];
     int start = 0;
     for (final match in matches) {
@@ -183,77 +186,70 @@ class MessageBubble extends StatelessWidget {
             decoration: TextDecoration.underline,
             fontSize: 14,
           ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () async {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            } 
-          ..onTap = () {
-            final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-            final RenderBox messageBox = context.findRenderObject() as RenderBox;
-            final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
-        
-            showMenu(
-              context: context,
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-              position: RelativeRect.fromLTRB(
-                position.dx + messageBox.size.width / 2.5,
-                position.dy,
-                position.dx + messageBox.size.width / 2 + 1,
-                position.dy + messageBox.size.height,
-              ),
-              items: [
-                _buildMenuItem(
-                  icon: 'assets/icons/chats/menu_icons/open.svg',
-                  text: "Открыть",
-                  iconColor: Colors.black,
-                  textColor: Colors.black,
-                  onTap: () async {
-                    Navigator.pop(context);
-                    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                  },
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+              final RenderBox messageBox = context.findRenderObject() as RenderBox;
+              final Offset position = messageBox.localToGlobal(Offset.zero, ancestor: overlay);
+          
+              showMenu(
+                context: context,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                _buildMenuItem(
-                  icon: 'assets/icons/chats/menu_icons/copy.svg',
-                  text: "Копировать",
-                  iconColor: Colors.black,
-                  textColor: Colors.black,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Clipboard.setData(ClipboardData(text: url));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!.translate('Ссылка скопировано!'), 
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                position: RelativeRect.fromLTRB(
+                  position.dx + messageBox.size.width / 2.5,
+                  position.dy,
+                  position.dx + messageBox.size.width / 2 + 1,
+                  position.dy + messageBox.size.height,
+                ),
+                items: [
+                  _buildMenuItem(
+                    icon: 'assets/icons/chats/menu_icons/open.svg',
+                    text: "Открыть",
+                    iconColor: Colors.black,
+                    textColor: Colors.black,
+                    onTap: () async {
+                      Navigator.pop(context);
+                      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: 'assets/icons/chats/menu_icons/copy.svg',
+                    text: "Копировать",
+                    iconColor: Colors.black,
+                    textColor: Colors.black,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Clipboard.setData(ClipboardData(text: url));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context)!.translate('Ссылка скопировано!'), 
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
                           ),
+                          behavior: SnackBarBehavior.floating,
+                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.green,
+                          elevation: 3,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
                         ),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.green,
-                        elevation: 3,
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        duration: Duration(seconds: 3),
-                      ),
                       );
-                  },
-                ),
-              ],
-            );
-          },
-
+                    },
+                  ),
+                ],
+              );
+            },
         ),
       );
       start = match.end;
@@ -261,7 +257,7 @@ class MessageBubble extends StatelessWidget {
     if (start < text.length) {
       spans.add(TextSpan(text: text.substring(start)));
     }
-    return RichText(
+    textWidget = RichText(
       text: TextSpan(
         style: isSender
             ? ChatSmsStyles.senderMessageTextStyle
@@ -271,6 +267,14 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  // Оборачиваем текст в контейнер с ограничением ширины
+  return Container(
+    constraints: BoxConstraints(
+      maxWidth: maxWidth,
+    ),
+    child: textWidget,
+  );
+}
   
   PopupMenuItem _buildMenuItem({
   required String icon,
