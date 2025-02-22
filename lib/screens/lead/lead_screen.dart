@@ -92,7 +92,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
    _scrollController = ScrollController();
-    // Попытка получить данные из кеша
+    
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {    

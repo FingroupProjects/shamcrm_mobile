@@ -591,8 +591,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   focusNode: focusNode,
                   onChanged: widget.onChangedSearchInput,
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!
-                        .translate('search_appbar'),
+                    hintText: AppLocalizations.of(context)!.translate('search_appbar'),
                     border: InputBorder.none,
                   ),
                   style: TextStyle(fontSize: 16),
@@ -697,13 +696,24 @@ class _CustomAppBarState extends State<CustomAppBar>
                           width: 24,
                           height: 24,
                         ),
-                  onPressed: () {
-                    _toggleSearch();
+                   onPressed: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) {
+                        _searchController.clear();
+                        FocusScope.of(context).unfocus(); 
+                      }
+                    });
+
                     widget.clearButtonClick(_isSearching);
+
                     if (_isSearching) {
-                      FocusScope.of(context).requestFocus(focusNode);
+                      Future.delayed(Duration(milliseconds: 100), () {
+                        FocusScope.of(context).requestFocus(focusNode);
+                      });
                     }
                   },
+
                 ),
               ),
             ),

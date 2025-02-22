@@ -120,6 +120,34 @@ class ChatListItem extends StatelessWidget {
               ],
             ),
           ),
+          SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text( formatChatTime(chatItem.time),
+                style: AppStyles.chatTimeStyle,
+              ),
+              if (chatItem.unreadCount != null && chatItem.unreadCount! > 0)
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    chatItem.unreadCount! <= 9
+                        ? '${chatItem.unreadCount}'
+                        : '+9',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -187,19 +215,22 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
-  String formatChatTime(String time) {
-    if (time.isEmpty) {
-      return '';
-    }
-
-    try {
-      DateTime parsedTime = DateTime.parse(time);
-      return DateFormat('dd.MM.yyyy').format(parsedTime);
-    } catch (e) {
-      print("Ошибка парсинга даты!");
-      return '';
-    }
+ String formatChatTime(String time) {
+  if (time.isEmpty) {
+    return '';
   }
+
+  try {
+    DateTime parsedTime = DateTime.parse(time);
+    print('parsedTime: $parsedTime'); // Вывод полной даты и времени
+    print('Formatted Date: ${DateFormat('dd.MM.yyyy').format(parsedTime)}'); // Вывод отформатированной даты
+    print('Formatted Time: ${DateFormat('HH:mm:ss').format(parsedTime)}'); // Вывод отформатированного времени
+    return DateFormat('dd.MM.yyyy').format(parsedTime);
+  } catch (e) {
+    print("Ошибка парсинга даты: $e");
+    return '';
+  }
+}
 
   String? extractImageUrlFromSvg(String svg) {
     if (svg.contains('href="')) {
