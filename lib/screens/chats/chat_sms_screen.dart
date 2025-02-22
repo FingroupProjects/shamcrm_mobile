@@ -529,10 +529,8 @@ Widget build(BuildContext context) {
               child: Center(
                 child: Text(
                   widget.canSendMessage
-                      ? AppLocalizations.of(context)!
-                          .translate('not_premission_to_send_sms')
-                      : AppLocalizations.of(context)!
-                          .translate('24_hour_leads'),
+                      ? AppLocalizations.of(context)!.translate('not_premission_to_send_sms')
+                      : AppLocalizations.of(context)!.translate('24_hour_leads'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -587,7 +585,7 @@ void _scrollToMessageReply(int messageId) {
 Widget messageListUi() {
   return BlocBuilder<MessagingCubit, MessagingState>(builder: (context, state) {
     if (state is MessagesErrorState) {
-      return Center(child: Text("An error occurred"));
+      return Center(child: Text("Ошибка!"));
     }
     if (state is MessagesLoadingState) {
       return Center(child: CircularProgressIndicator.adaptive());
@@ -1406,7 +1404,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
       items: [
         _buildMenuItem(
           icon: 'assets/icons/chats/menu_icons/copy.svg',
-          text: "Копировать",
+          text: AppLocalizations.of(context)!.translate('copy'),
           iconColor: Colors.black,
           textColor: Colors.black,
           onTap: () {
@@ -1444,8 +1442,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
                       children: [
                         Icon(Icons.arrow_back, color: Colors.black),  
                         const SizedBox(width: 10),
-                        Text(
-                          "Назад",
+                        Text( AppLocalizations.of(context)!.translate('back'),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -1474,7 +1471,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
         for (var user in message.readStatus?.read ?? []) {
           String formattedTime = user.readAt != null
               ? DateFormat('HH:mm').format(user.readAt!)
-              : "Неизвестное время";
+              : AppLocalizations.of(context)!.translate('unknown_time');
           menuItems.add(
             _buildMenuItemWithAvatar(
               avatarSvg: user.image,
@@ -1500,7 +1497,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
                         email: selectedUser.email,
                         phone: selectedUser.phone,
                         login: selectedUser.login,
-                        lastSeen: selectedUser.lastSeen?.toString() ?? "Неизвестно",
+                        lastSeen: selectedUser.lastSeen?.toString() ?? AppLocalizations.of(context)!.translate('unknow'),
                         buttonChat: true,
                       ),
                     ),
@@ -1541,7 +1538,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
       User reader = message.readStatus!.read.first;
       String formattedTime = reader.readAt != null
           ? DateFormat('HH:mm').format(reader.readAt!)
-          : "Неизвестное время";
+          : AppLocalizations.of(context)!.translate('unknown_time');
       menuItems.add(
         PopupMenuItem(
           child: Row(
@@ -1549,7 +1546,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
               const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
               const SizedBox(width: 10),
               Text(
-                "${reader.name} прочитано в $formattedTime",
+                "${reader.name} ${AppLocalizations.of(context)!.translate('read_at')} $formattedTime",
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -1578,7 +1575,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
                   const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
                   const SizedBox(width: 10),
                   Text(
-                    "${message.readStatus!.read.length} просмотров",
+                    "${message.readStatus!.read.length} ${AppLocalizations.of(context)!.translate('views')}",
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -1600,8 +1597,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
           children: [
             const Icon(Icons.done, color: Colors.grey),
             const SizedBox(width: 10),
-            const Text(
-              "Не прочитано",
+            Text(AppLocalizations.of(context)!.translate('not_read_at'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -1619,7 +1615,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
     menuItems.add(
       _buildMenuItem(
         icon: 'assets/icons/chats/menu_icons/reply.svg',
-        text: "Ответить",
+        text: AppLocalizations.of(context)!.translate('reply'),
         iconColor: Colors.black,
         textColor: Colors.black,
         onTap: () {
@@ -1633,7 +1629,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
     menuItems.add(
       _buildMenuItem(
         icon: 'assets/icons/chats/menu_icons/pin.svg',
-        text: message.isPinned ? "Открепить" : "Закрепить",
+        text: message.isPinned ? AppLocalizations.of(context)!.translate('un_pin') : AppLocalizations.of(context)!.translate('pin'),
         iconColor: Colors.black,
         textColor: Colors.black,
         onTap: () {
@@ -1646,7 +1642,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
       menuItems.add(
       _buildMenuItem(
         icon: 'assets/icons/chats/menu_icons/copy.svg',
-        text: "Копировать",
+        text: AppLocalizations.of(context)!.translate('copy'),
         iconColor: Colors.black,
         textColor: Colors.black,
         onTap: () {
@@ -1660,7 +1656,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
       menuItems.add(
         _buildMenuItem(
           icon: 'assets/icons/chats/menu_icons/edit.svg',
-          text: "Изменить",
+          text: AppLocalizations.of(context)!.translate('edit'),
           iconColor: Colors.black,
           textColor: Colors.black,
           onTap: () {
@@ -1674,7 +1670,7 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
       menuItems.add(
         _buildMenuItem(
           icon: 'assets/icons/chats/menu_icons/delete-red.svg',
-          text: "Удалить",
+          text: AppLocalizations.of(context)!.translate('delete'),
           iconColor: Colors.red,
           textColor: Colors.red,
           onTap: () {
@@ -1711,7 +1707,7 @@ void _copyMessageToClipboard(BuildContext context, String messageText) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate('Сообщение скопировано!'), 
+                  AppLocalizations.of(context)!.translate('copy_message'), 
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,

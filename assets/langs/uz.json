@@ -623,5 +623,16 @@
     "with_note": "Eslatma bilan",
     "with_contacts": "Kontaktlar bilan",
     "with_chat": "Chat bilan",
-    "days_without_activity": "Faoliyatsiz o‘tgan kunlar soni"
+    "days_without_activity": "Faoliyatsiz o‘tgan kunlar soni",
+    "copy": "Nusxa olish",
+    "unknown_time": "Noma'lum vaqt",
+    "read_at": "O'qilgan vaqt",
+    "not_read_at": "O'qilmagan",
+    "views": "ko'rishlar",
+    "reply": "Javob berish",
+    "un_pin": "Yopishtirishni bekor qilish",
+    "pin": "Yopishtirish",
+    "edit": "Tahrirlash",
+    "copy_message": "Xabar nusxalandi!"
+
 }

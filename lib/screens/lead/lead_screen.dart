@@ -81,7 +81,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool? _initialHasContact;
   bool? _initialHasChat;
   int? _initialDaysWithoutActivity;
-    List<int>? _selectedManagerIds;
+  List<int>? _selectedManagerIds;
 
   @override
   void initState() {
@@ -90,7 +90,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
    _scrollController = ScrollController();
-    // Попытка получить данные из кеша
+    
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {    

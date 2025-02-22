@@ -113,8 +113,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                   width: 18,
                                   height: 18,
                                   decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Color(0xff1E2E52), width: 1),
+                                    border: Border.all(color: Color(0xff1E2E52), width: 1),
                                     color: isSelected
                                         ? Color(0xff1E2E52)
                                         : Colors.transparent,
@@ -125,7 +124,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       : null,
                                 ),
                                 const SizedBox(width: 10),
-                                Text(item.name!,
+                                Text('${item.name} ${item.lastname ?? ''}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
