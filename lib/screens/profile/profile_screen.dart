@@ -6,6 +6,7 @@ import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -114,6 +115,7 @@ void _openSupportChat() async {
                         const LanguageButtonWidget(),
                         const PinChangeWidget(),
                         const LogoutButtonWidget(),
+                        const ToggleFeatureButton(),
                         UpdateWidget1C(organization: selectedOrg),
                       ],
                     );

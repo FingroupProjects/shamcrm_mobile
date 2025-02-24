@@ -8,7 +8,6 @@ import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/placeholder_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
-import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -73,14 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
       hasAvailableScreens = true;
     }
 
-    // Чаты
-    widgets.add(ChatsScreen());
-    titleKeys.add('appbar_chats');
-    navBarTitleKeys.add('appbar_chats');
-    activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
-    inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
-    hasAvailableScreens = true;
-
     // Сделки
     if (await _apiService.hasPermission('deal.read')) {
       widgets.add(DealScreen());
@@ -90,6 +81,16 @@ class _HomeScreenState extends State<HomeScreen> {
       inactiveIcons.add('assets/icons/MyNavBar/deal_OFF.png');
       hasAvailableScreens = true;
     }
+    
+    // Чаты
+    widgets.add(ChatsScreen());
+    titleKeys.add('appbar_chats');
+    navBarTitleKeys.add('appbar_chats');
+    activeIcons.add('assets/icons/MyNavBar/chats_ON.png');
+    inactiveIcons.add('assets/icons/MyNavBar/chats_OFF.png');
+    hasAvailableScreens = true;
+
+
 
     if (mounted) {
       setState(() {

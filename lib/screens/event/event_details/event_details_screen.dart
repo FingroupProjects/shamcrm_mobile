@@ -47,7 +47,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  void _showFinishDialog(int noticeId) {
+ void _showFinishDialog(int noticeId) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,

@@ -638,5 +638,11 @@
       "edit": "Изменить",
       "copy_message": "Сообщение скопировано!",
       "file_size_too_large":"Слишком большой объем файлов!",
-      "withoutDeal":"Без сделки"
+      "withoutDeal":"Без сделки",
+      "contact_added_successfully": "Контакт успешно добавлен",
+      "contact_permission_denied": "Разрешение на доступ к контактам не предоставлено",
+      "contact_add_failed": "Не удалось добавить контакт",
+      "export_contact": "Экспорт контакта",
+      "confirm_export_contact": "Подтвердите экспорт контакта",
+      "export": "Экспорт"
   }

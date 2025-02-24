@@ -1,8 +1,14 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:contacts_service/contacts_service.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
 class ContactsScreen extends StatefulWidget {
+  final int statusId;
+
+  ContactsScreen({
+    required this.statusId,
+  });
+
   @override
   _ContactsScreenState createState() => _ContactsScreenState();
 }
@@ -10,6 +16,8 @@ class ContactsScreen extends StatefulWidget {
 class _ContactsScreenState extends State<ContactsScreen> {
   List<Contact> contacts = [];
   List<Contact> filteredContacts = [];
+  Set<Contact> selectedContacts = Set();
+  final apiService = ApiService();
   bool isSearching = false;
   TextEditingController searchController = TextEditingController();
 
@@ -20,235 +28,354 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Future<void> _requestPermissionAndLoadContacts() async {
-    var status = await Permission.contacts.status;
-
-    if (status.isDenied || status.isRestricted) {
-      status = await Permission.contacts.request();
-    }
-
-    if (status.isGranted) {
+    if (await FlutterContacts.requestPermission()) {
       _getContacts();
     } else {
-      _showPermissionDeniedMessage();
+      _showSnackBar("Нет разрешения на доступ к контактам", Colors.red);
     }
   }
 
   Future<void> _getContacts() async {
     try {
-      List<Contact> fetchedContacts = await ContactsService.getContacts();
+      List<Contact> fetchedContacts = await FlutterContacts.getContacts(withProperties: true, withPhoto: true);
+      fetchedContacts = fetchedContacts.where((contact) {
+        return (contact.displayName != null && contact.displayName!.isNotEmpty) &&
+            (contact.phones.isNotEmpty);
+      }).toList();
+
       setState(() {
         contacts = fetchedContacts;
-        filteredContacts = contacts; 
+        filteredContacts = contacts;
       });
     } catch (e) {
       print("Ошибка при загрузке контактов: $e");
     }
   }
 
-  void _showPermissionDeniedMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Нет разрешения на доступ к контактам")),
-    );
-  }
-
-  void _showContactDetails(Contact contact) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+ void _showContactDetails(Contact contact) {
+  showModalBottomSheet(
+    context: context,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Container(
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+          Center(
+            child: CircleAvatar(
+              backgroundColor: Colors.black,
+              radius: 50,
+              backgroundImage: contact.photo != null
+                  ? MemoryImage(contact.photo!)
+                  : null,
+              child: contact.photo == null
+                  ? Icon(Icons.person, size: 50, color: Colors.white) 
+                  : null,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Center(
-                child: CircleAvatar(
-                  backgroundColor: Colors.black,
-                  radius: 50,
-                  child: Icon(Icons.person, size: 50, color: Colors.white),
-                ),
-              ),
-              SizedBox(height: 16),
-              Center(
-                child: Text(
-                  contact.displayName ?? 'Без имени',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Телефоны:',
+            SizedBox(height: 16),
+            Center(
+              child: Text(
+                contact.displayName,
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700, 
                   fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
                 ),
               ),
-              ...contact.phones!.map((phone) {
-                String phoneLabel = phone.label ?? 'Неизвестный номер';
-                return Text('$phoneLabel: ${phone.value ?? ''}');
-              }).toList(),
-              SizedBox(height: 16),
-              Text(
-                'Emails:',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                ),
+            ),
+            Divider(color: Color(0xff1E2E52)), 
+            SizedBox(height: 16),
+            Text('Телефоны:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600, 
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
               ),
-              ...contact.emails!
-                  .map((email) => Text(email.value ?? ''))
-                  .toList(),
-              SizedBox(height: 16),
-              Text(
-                'Адрес:',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
+            ),
+            ...contact.phones.map((phone) {
+              final uniquePhone = phone.number.replaceAll(RegExp(r'\s+'), '');
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.phone, color: Color(0xff1E2E52),),
+                    SizedBox(width: 8),
+                    Text( uniquePhone,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ],
                 ),
+              );
+            }).toSet(),
+            SizedBox(height: 16),
+            Text('Emails:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
               ),
-              ...contact.postalAddresses!
-                  .map((address) => Text(address.street ?? ''))
-                  .toList(),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+            ...contact.emails.map((email) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.email, color: Color(0xff1E2E52),), 
+                    SizedBox(width: 8),
+                    Text(
+                      email.address,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            SizedBox(height: 16),
+            Text(
+              'Адрес:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            ),
+            ...contact.addresses.map((address) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, color: Color(0xff1E2E52),),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        address.street,
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      );
+    },
+  );
+}
 
-  @override
+
   void _filterContacts(String query) {
     setState(() {
       if (query.isEmpty) {
         filteredContacts = contacts;
       } else {
         filteredContacts = contacts.where((contact) {
-          return contact.displayName
-                  ?.toLowerCase()
-                  .contains(query.toLowerCase()) ??
-              false;
+          return contact.displayName?.toLowerCase().contains(query.toLowerCase()) ?? false;
         }).toList();
       }
     });
+  }
+
+  void _toggleContactSelection(Contact contact) {
+    setState(() {
+      if (selectedContacts.contains(contact)) {
+        selectedContacts.remove(contact);
+      } else {
+        selectedContacts.add(contact);
+      }
+    });
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: backgroundColor,
+        elevation: 3,
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        titleSpacing: 2,
-        title: isSearching
-            ? TextField(
-                controller: searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Поиск...',
-                  border: InputBorder.none,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          titleSpacing: 0, 
+          title: isSearching
+              ? TextField(
+                  controller: searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Поиск...',
+                    border: InputBorder.none,
+                  ),
+                  onChanged: _filterContacts,
+                )
+              : Row(
+                  children: [
+                    Text(
+                      'Контакты телефона',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                onChanged: _filterContacts,
-              )
-            : Text(
-                'Контакты телефона',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: Image.asset(
+                  isSearching
+                      ? 'assets/icons/AppBar/close.png'
+                      : 'assets/icons/AppBar/search.png',
+                  width: 24,
+                  height: 24,
                 ),
+                onPressed: () {
+                  setState(() {
+                    if (isSearching) {
+                      isSearching = false;
+                      searchController.clear();
+                      _filterContacts('');
+                    } else {
+                      isSearching = true;
+                    }
+                  });
+                },
               ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Image.asset(
-                isSearching
-                    ? 'assets/icons/AppBar/close.png'
-                    : 'assets/icons/AppBar/search.png',
-                width: 24,
-                height: 24,
+            ),
+          ],
+          leading: Padding(
+            padding: const EdgeInsets.only(right: 0),
+            child: Transform.translate(
+              offset: const Offset(0, -2),
+              child: IconButton(
+                icon: Image.asset(
+                  'assets/icons/arrow-left.png',
+                  width: 24,
+                  height: 24,
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
               ),
-              onPressed: () {
-                setState(() {
-                  if (isSearching) {
-                    isSearching = false;
-                    searchController.clear();
-                    _filterContacts('');
-                  } else {
-                    isSearching = true;
-                  }
-                });
-              },
             ),
           ),
-        ],
-        leading: Padding(
-          padding: const EdgeInsets.only(right: 0),
-          child: Transform.translate(
-            offset: const Offset(0, -2),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
+          leadingWidth: 50,
         ),
-        leadingWidth: 50,
-      ),
-      body: contacts.isEmpty
-          ? Center(
-              child:
-                  CircularProgressIndicator()) // Показать загрузку, если контакты еще не загружены
-          : filteredContacts.isEmpty
-              ? Center(
-                  child:
-                      Text('Нечего не найдено', style: TextStyle(fontSize: 18)))
-              : ListView.builder(
-                  itemCount: filteredContacts.length,
-                  itemBuilder: (context, index) {
-                    Contact contact = filteredContacts[index];
-                    return Card(
-                      color: const Color(0xffF4F7FD),
-                      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                      elevation: 0,
-                      child: ListTile(
+      body: Container(
+        color: Colors.white,
+        child: contacts.isEmpty
+            ? Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
+            : filteredContacts.isEmpty
+                ? Center(child: Text('Нечего не найдено'))
+                : ListView.builder(
+                    itemCount: filteredContacts.length,
+                    itemBuilder: (context, index) {
+                      Contact contact = filteredContacts[index];
+                      return Container(
+                        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF4F7FD),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.black,
-                          child: Icon(Icons.person, color: Colors.white),
+                          backgroundImage: contact.photo != null
+                              ? MemoryImage(contact.photo!) 
+                              : null,
+                          child: contact.photo == null
+                              ? Icon(Icons.person, color: Colors.white) 
+                              : null,
                         ),
-                        title: Text(
-                          contact.displayName ?? 'Без имени',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          title: Text(
+                            contact.displayName,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : 'Нет номера'),
+                          trailing: Transform.scale(
+                            scale: 1.1,
+                            child: Checkbox(
+                              activeColor: Color(0xff1E2E52),
+                              value: selectedContacts.contains(contact),
+                              onChanged: (bool? value) {
+                                _toggleContactSelection(contact);
+                              },
+                            ),
+                          ),
+                          onTap: () => _showContactDetails(contact),
                         ),
-                        subtitle: Text(
-                          contact.phones!.isNotEmpty
-                              ? contact.phones!.first.value ?? ''
-                              : 'Нет номера',
-                        ),
-                        onTap: () => _showContactDetails(contact),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+      ),
+      floatingActionButton: selectedContacts.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: () async {
+                try {
+                  List<Map<String, dynamic>> contactsToSend = [];
+                  for (var contact in selectedContacts) {
+                    if (contact.phones.isNotEmpty) {
+                      contactsToSend.add({
+                        'name': contact.displayName,
+                        'phone': contact.phones.first.number,
+                      });
+                    }
+                  }
+                  await apiService.addLeadsFromContacts(widget.statusId, contactsToSend);
+                  _showSnackBar('Контакты отправлены успешно!', Colors.green);
+                  setState(() {
+                    selectedContacts.clear();
+                  });
+                } catch (e) {
+                  _showSnackBar('Ошибка при отправке контактов!', Colors.red);
+                }
+              },
+              backgroundColor: Color(0xff1E2E52),
+              child: Icon(
+                Icons.send,
+                color: Colors.white,
+                size: 26,
+              ),
+            )
+          : null,
     );
   }
 }
