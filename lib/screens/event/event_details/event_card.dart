@@ -34,16 +34,16 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
-      Color getStatusBackgroundColor() {
-      return widget.event.isFinished 
+    Color getStatusBackgroundColor() {
+      return widget.event.isFinished
           ? Color(0x1F18C964) // #18C9641F для "Успешно"
-          : Color(0xFFE9EDF5) ;// #1E3A8A1F для "В процессе"
+          : Color(0x1F3B82F6); // #3B82F61F для "В процессе"
     }
 
     Color getStatusTextColor() {
-      return widget.event.isFinished 
+      return widget.event.isFinished
           ? Color(0xFF22C55E) // #22c55e для "Успешно"
-          : Color(0xFF3B82F6) ;// #3b82f6 для "В процессе"
+          : Color(0xFF3B82F6); // #3b82f6 для "В процессе"
     }
 
     String? extractImageUrlFromSvg(String svg) {
@@ -294,7 +294,8 @@ class _EventCardState extends State<EventCard> {
                   child: Row(
                     children: [
                       Text(
-                        AppLocalizations.of(context)!.translate('author_contact'),
+                        AppLocalizations.of(context)!
+                            .translate('author_contact'),
                         style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
@@ -327,9 +328,10 @@ class _EventCardState extends State<EventCard> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    widget.event.isFinished 
-                      ? AppLocalizations.of(context)!.translate('finished')
-                      : AppLocalizations.of(context)!.translate('in_progress'),
+                    widget.event.isFinished
+                        ? AppLocalizations.of(context)!.translate('finished')
+                        : AppLocalizations.of(context)!
+                            .translate('in_progress'),
                     style: TextStyle(
                       fontSize: 12,
                       fontFamily: 'Gilroy',
@@ -342,7 +344,7 @@ class _EventCardState extends State<EventCard> {
                 ),
               ],
             ),
-                ],
+          ],
         ),
       ),
     );
