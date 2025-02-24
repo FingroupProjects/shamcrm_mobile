@@ -120,34 +120,34 @@ class ChatListItem extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text( formatChatTime(chatItem.time),
-                style: AppStyles.chatTimeStyle,
-              ),
-              if (chatItem.unreadCount != null && chatItem.unreadCount! > 0)
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    chatItem.unreadCount! <= 9
-                        ? '${chatItem.unreadCount}'
-                        : '+9',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          // SizedBox(width: 16),
+          // Column(
+          //   crossAxisAlignment: CrossAxisAlignment.end,
+          //   children: [
+          //     Text( formatChatTime(chatItem.time),
+          //       style: AppStyles.chatTimeStyle,
+          //     ),
+          //     if (chatItem.unreadCount != null && chatItem.unreadCount! > 0)
+          //       Container(
+          //         padding: EdgeInsets.all(8),
+          //         decoration: BoxDecoration(
+          //           color: Colors.blue,
+          //           shape: BoxShape.circle,
+          //         ),
+          //         child: Text(
+          //           chatItem.unreadCount! <= 9
+          //               ? '${chatItem.unreadCount}'
+          //               : '+9',
+          //           style: TextStyle(
+          //             color: Colors.white,
+          //             fontSize: 14,
+          //             fontWeight: FontWeight.w500,
+          //             fontFamily: 'Gilroy',
+          //           ),
+          //         ),
+          //       ),
+          //   ],
+          // ),
         ],
       ),
     );

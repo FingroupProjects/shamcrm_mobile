@@ -34,6 +34,18 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
+      Color getStatusBackgroundColor() {
+      return widget.event.isFinished 
+          ? Color(0x1F18C964) // #18C9641F для "Успешно"
+          : Color(0xFFE9EDF5) ;// #1E3A8A1F для "В процессе"
+    }
+
+    Color getStatusTextColor() {
+      return widget.event.isFinished 
+          ? Color(0xFF22C55E) // #22c55e для "Успешно"
+          : Color(0xFF3B82F6) ;// #3b82f6 для "В процессе"
+    }
+
     String? extractImageUrlFromSvg(String svg) {
       if (svg.contains('href="')) {
         final start = svg.indexOf('href="') + 6;
@@ -276,31 +288,61 @@ class _EventCardState extends State<EventCard> {
             ),
             const SizedBox(height: 5),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('author_contact'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('author_contact'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          widget.event.author.name,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Expanded(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: getStatusBackgroundColor(),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                   child: Text(
-                    widget.event.author.name,
+                    widget.event.isFinished 
+                      ? AppLocalizations.of(context)!.translate('finished')
+                      : AppLocalizations.of(context)!.translate('in_progress'),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: getStatusTextColor(),
                     ),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ],
+                ],
         ),
       ),
     );

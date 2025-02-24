@@ -58,14 +58,28 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            title: Text(
-              AppLocalizations.of(context)!
-                  .translate('finish_event_confirmation'),
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.bold,
+            titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+            title: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.8,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!
+                        .translate('finish_event_confirmation'),
+                    style: const TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
               ),
             ),
             content: ConstrainedBox(
@@ -92,18 +106,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('confirm'),
                         onPressed: () {
-                          // Close the confirmation dialog
                           Navigator.of(context).pop();
-
-                          // Add the finish event
                           context.read<EventBloc>().add(
                                 FinishNotice(
                                   noticeId,
                                   AppLocalizations.of(context)!,
                                 ),
                               );
-
-                          // Show success snackbar
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
@@ -129,13 +138,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                               duration: const Duration(seconds: 2),
                             ),
                           );
-
-                          // Close details screen after a short delay
                           Future.delayed(const Duration(milliseconds: 1), () {
                             if (mounted) {
-                              // Обновляем список событий перед закрытием
                               context.read<EventBloc>().add(FetchEvents());
-                              // Закрываем экран деталей
                               Navigator.of(context).pop();
                             }
                           });
@@ -153,7 +158,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
     });
   }
-
   Widget _buildFinishButton(Notice notice) {
     if (notice.isFinished) {
       return const SizedBox.shrink();

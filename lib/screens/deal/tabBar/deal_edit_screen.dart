@@ -114,28 +114,38 @@ class _DealEditScreenState extends State<DealEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-          appBar: AppBar(
+      appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
+        title: Transform.translate(
+          offset: const Offset(-10, 0),
+          child: Text(
+            AppLocalizations.of(context)!.translate('edit_deal'),
+            style: const TextStyle(
+              fontSize: 20,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
+            ),
+          ),
+        ),
         centerTitle: false,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () => Navigator.pop(context, null),
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.translate('edit_deal'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Transform.translate(
+            offset: const Offset(0, -2),
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/arrow-left.png',
+                width: 24,
+                height: 24,
+              ),
+              onPressed: () => Navigator.pop(context, null),
+            ),
           ),
         ),
+        leadingWidth: 40,
       ),
       body: BlocListener<DealBloc, DealState>(
         listener: (context, state) {
@@ -191,114 +201,116 @@ class _DealEditScreenState extends State<DealEditScreen> {
           }
         },
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('name_list'),
-                        validator: (value) => value!.isEmpty
-                            ? AppLocalizations.of(context)!
-                                .translate('field_required')
-                            : null,
-                      ),
-                      const SizedBox(height: 8),
-                      LeadRadioGroupWidget(
-                        selectedLead: selectedLead,
-                        onSelectLead: (LeadData selectedRegionData) {
-                          setState(() {
-                            selectedLead = selectedRegionData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ManagerRadioGroupWidget(
-                        selectedManager: selectedManager,
-                        onSelectManager: (ManagerData selectedManagerData) {
-                          setState(() {
-                            selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!
-                            .translate('start_date'),
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('end_date'),
-                        hasError: isEndDateInvalid,
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: sumController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_summ'),
-                        label: AppLocalizations.of(context)!.translate('summ'),
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //    return AppLocalizations.of(context)!.translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_description'),
-                        label: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-                      ),
-                      const SizedBox(height: 20),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!
-                            .translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                    ],
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomTextField(
+                          controller: titleController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_name_list'),
+                          label: AppLocalizations.of(context)!
+                              .translate('name_list'),
+                          validator: (value) => value!.isEmpty
+                              ? AppLocalizations.of(context)!
+                                  .translate('field_required')
+                              : null,
+                        ),
+                        const SizedBox(height: 8),
+                        LeadRadioGroupWidget(
+                          selectedLead: selectedLead,
+                          onSelectLead: (LeadData selectedRegionData) {
+                            setState(() {
+                              selectedLead = selectedRegionData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        ManagerRadioGroupWidget(
+                          selectedManager: selectedManager,
+                          onSelectManager: (ManagerData selectedManagerData) {
+                            setState(() {
+                              selectedManager =
+                                  selectedManagerData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: startDateController,
+                          label: AppLocalizations.of(context)!
+                              .translate('start_date'),
+                          withTime: false,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: endDateController,
+                          label: AppLocalizations.of(context)!
+                              .translate('end_date'),
+                          hasError: isEndDateInvalid,
+                          withTime: false,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: sumController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_summ'),
+                          label:
+                              AppLocalizations.of(context)!.translate('summ'),
+                          // validator: (value) {
+                          //   if (value == null || value.isEmpty) {
+                          //    return AppLocalizations.of(context)!.translate('field_required');
+                          //   }
+                          //   return null;
+                          // },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_description'),
+                          label: AppLocalizations.of(context)!
+                              .translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 20),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               ),
               Container(
                 padding:

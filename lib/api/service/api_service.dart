@@ -5621,7 +5621,7 @@ Future<Map<String, dynamic>> createMyTask({
       }
 
       if (statuses != null) {
-        path += '&event_status_id=$statuses';
+        path += 'is_finished=$statuses';
       }
 
       if (fromDate != null && toDate != null) {
