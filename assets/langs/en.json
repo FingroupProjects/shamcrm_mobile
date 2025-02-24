@@ -634,6 +634,13 @@
       "un_pin": "Unpin",
       "pin": "Pin",
       "edit": "Edit",
-      "copy_message": "Message copied!"
+      "copy_message": "Message copied!",
+      "contact_added_successfully": "Contact added successfully",
+      "contact_permission_denied": "Permission to access contacts denied",
+      "contact_add_failed": "Failed to add contact",
+      "export_contact": "Export contact",
+      "confirm_export_contact": "Confirm export contact",
+      "export": "Export"
+
 
 }

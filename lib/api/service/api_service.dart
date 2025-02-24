@@ -1703,6 +1703,23 @@ class ApiService {
     }
   }
 
+
+
+Future<void> addLeadsFromContacts(int statusId, List<Map<String, dynamic>> contacts) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/contacts/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'lead_status_id': statusId,
+      'contacts': contacts, // Отправляем массив контактов
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка отправки контактов!');
+  }
+}
+
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//

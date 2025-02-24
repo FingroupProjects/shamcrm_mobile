@@ -633,6 +633,14 @@
     "un_pin": "Yopishtirishni bekor qilish",
     "pin": "Yopishtirish",
     "edit": "Tahrirlash",
-    "copy_message": "Xabar nusxalandi!"
+    "copy_message": "Xabar nusxalandi!",
+    "contact_added_successfully": "Kontakt muvaffaqiyatli qo'shildi",
+    "contact_permission_denied": "Kontaktlarga kirish uchun ruxsat berilmadi",
+    "contact_add_failed": "Kontakt qo'shishda xato",
+    "export_contact": "Kontaktni eksport qilish",
+    "confirm_export_contact": "Kontaktni eksport qilishni tasdiqlang",
+    "export": "Eksport"
+
+
 
 }

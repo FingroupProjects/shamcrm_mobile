@@ -177,8 +177,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
-      authors:
-          _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
+      authors: _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
     ));
   }
 
@@ -582,16 +581,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   _searchController.clear();
                   _lastSearchQuery = '';
                 });
-
                 if (_searchController.text.isEmpty) {
                   if (_selectedUsers.isEmpty &&
+                      _selectedAuthors.isEmpty &&
                       _selectedStatuses == null &&
+                      _hasDeal == false &&
+                      _hasFile == false &&
                       _fromDate == null &&
                       _toDate == null &&
-                      _initialOverdue == null &&
-                      _initialHasFile == null &&
-                      _initialHasDeal == null &&
-                      _initialUrgent == null &&
                       _deadlinefromDate == null &&
                       _deadlinetoDate == null) {
                     print("IF SEARCH EMPTY AND NO FILTERS");
@@ -618,6 +615,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       urgent: _initialUrgent,
                       deadlinefromDate: _fromDate,
                       deadlinetoDate: _toDate,
+                      authors: _selectedAuthors, 
                     ));
                   }
                 } else if (_selectedUserIds != null &&

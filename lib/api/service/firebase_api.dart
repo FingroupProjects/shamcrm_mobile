@@ -92,10 +92,10 @@ class FirebaseApi {
     bool hasTaskRead = await _apiService.hasPermission('task.read');
 
         if (hasDashboard && hasLeadRead && hasDealRead && hasTaskRead){
-          screenIndex = 3;
+          screenIndex = 4;
           await navigateToScreen(screenIndex, id, 'message', message);
         } else if (hasDashboard && hasTaskRead && hasLeadRead || hasDealRead) {
-          screenIndex = 3;
+          screenIndex = 4;
           await navigateToScreen(screenIndex, id, 'message', message);
         } else {
           screenIndex = 2;
@@ -119,7 +119,7 @@ class FirebaseApi {
 
       case 'dealDeadLineNotification':
         print('Переход на экран сделки с ID: $id');
-        screenIndex = 4;
+        screenIndex = 3;
         await navigateToScreen(
             screenIndex, id, 'dealDeadLineNotification', message);
         break;
