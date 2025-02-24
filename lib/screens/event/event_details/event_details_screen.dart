@@ -63,7 +63,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   .translate('finish_event_confirmation'),
               style: const TextStyle(
                 color: Color(0xff1E2E52),
-                fontSize: 18,
+                fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.bold,
               ),

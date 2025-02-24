@@ -811,6 +811,7 @@ Widget messageListUi() {
       onSend: _onSendInButton,
       onAttachFile: _onPickFilePressed,
       focusNode: _focusNode, 
+      isLeadChat: widget.endPointInTab == 'lead',
       onRecordVoice: () {
         debugPrint('Record voice triggered');
       },
@@ -1554,13 +1555,17 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
             children: [
               const Icon(Icons.done_all, color: ChatSmsStyles.messageBubbleSenderColor),
               const SizedBox(width: 10),
-              Text(
-                "${reader.name} ${AppLocalizations.of(context)!.translate('read_at')} $formattedTime",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: ChatSmsStyles.messageBubbleSenderColor,
+              Expanded( 
+                child: Text("${reader.name} ${AppLocalizations.of(context)!.translate('read_at')} $formattedTime",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: ChatSmsStyles.messageBubbleSenderColor,
+                  ),
+                  softWrap: true, 
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis, 
                 ),
               ),
             ],

@@ -19,6 +19,7 @@ class InputField extends StatelessWidget {
   final TextEditingController messageController;
   final Function(File soundFile, String time) sendRequestFunction;
   final FocusNode focusNode;
+  final bool isLeadChat;
 
   const InputField({
     super.key,
@@ -28,6 +29,7 @@ class InputField extends StatelessWidget {
     required this.messageController,
     required this.sendRequestFunction,
     required this.focusNode,
+    required this.isLeadChat,
   });
 
   @override
@@ -247,46 +249,50 @@ class InputField extends StatelessWidget {
               ),
               SizedBox(width: 8),
               (context.watch<ListenSenderVoiceCubit>().state)
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(
-                              color: Color(0xff1E2E52)),
-                        ),
-                      ],
-                    )
-                  : MediaQuery(
-                      data: MediaQueryData(
-                        size: Size(300, 400),
-                      ),
-                      child: SocialMediaRecorder(
-                        startRecording: () {},
-                        stopRecording: (_time) {},
-                        sendRequestFunction: sendRequestFunction,
-                        cancelText:
-                            AppLocalizations.of(context)!.translate('cancel'),
-                        cancelTextStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500),
-                        slideToCancelText: AppLocalizations.of(context)!
-                            .translate('cancel_chat_sms'),
-                        slideToCancelTextStyle: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500),
-                        recordIconBackGroundColor: Color(0xfff4F40EC),
-                        counterTextStyle: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500),
-                        encode: AudioEncoderType.AAC,
-                        radius: BorderRadius.circular(12),
-                      ),
-                    ),
+    ? Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(
+                color: Color(0xff1E2E52)),
+          ),
+        ],
+      )
+    : isLeadChat // Проверяем, является ли чат Лидом
+        ? SizedBox.shrink() // Скрываем кнопку голосового сообщения
+        : MediaQuery(
+            data: MediaQueryData(
+              size: Size(300, 400),
+            ),
+            child: SocialMediaRecorder(
+              maxRecordTimeInSecond: 180,
+              startRecording: () {},
+              stopRecording: (_time) {},
+              sendRequestFunction: sendRequestFunction,
+              cancelText:
+                  AppLocalizations.of(context)!.translate('cancel'),
+              cancelTextStyle: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500),
+              slideToCancelText: AppLocalizations.of(context)!
+                  .translate('cancel_chat_sms'),
+              slideToCancelTextStyle: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500),
+              recordIconBackGroundColor: Color(0xfff4F40EC),
+              counterTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500),
+              encode: AudioEncoderType.AAC,
+              radius: BorderRadius.circular(12),
+            ),
+          ),
+
               (context.watch<ListenSenderTextCubit>().state)
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.end,

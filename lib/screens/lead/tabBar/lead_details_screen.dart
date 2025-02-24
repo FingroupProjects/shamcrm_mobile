@@ -11,6 +11,7 @@ import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/history_dialog.dart';
+import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_delete.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
@@ -22,6 +23,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
@@ -595,8 +597,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ],
     );
   }
-
-  // Построение списка деталей лида
+ Future<void> _addContact(String name, String phone) async {
+  showDialog(
+    context: context,
+    builder: (context) => ExportContactDialog(
+      leadName: name,
+      phoneNumber: phone,
+    ),
+  );
+}
   Widget _buildDetailsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -614,7 +623,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Построение одной строки с деталями лида
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -650,57 +658,71 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-  // Модифицируем функцию построения значения
-  Widget _buildValue(String value) {
-    if (value.isEmpty) return Container();
+Widget _buildValue(String value) {
+  if (value.isEmpty) return Container();
 
-    // Проверяем, является ли это телефонным номером
-    if (details.any((detail) =>
-        detail['label'] ==
-            AppLocalizations.of(context)!.translate('phone_use') &&
-        detail['value'] == value)) {
-      return GestureDetector(
-        onTap: () => _makePhoneCall(value),
-        child: Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
+  if (details.any((detail) =>
+      detail['label'] ==
+          AppLocalizations.of(context)!.translate('phone_use') &&
+      detail['value'] == value)) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        GestureDetector(
+          onTap: () => _makePhoneCall(value),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1E2E52),
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _addContact(widget.leadName, value),
+          child: Icon(
+            Icons.contacts,
+            size: 24,
             color: Color(0xFF1E2E52),
-            decoration: TextDecoration.underline,
           ),
         ),
-      );
-    }
-
-    // Добавляем проверку на WhatsApp
-    if (details.any((detail) =>
-        detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
-      return GestureDetector(
-        onTap: () => _openWhatsApp(value),
-        child: Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1E2E52), // Цвет WhatsApp
-            decoration: TextDecoration.underline,
-          ),
-        ),
-      );
-    }
-
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
-      ),
-      overflow: TextOverflow.visible,
+      ],
     );
   }
+
+  if (details.any((detail) =>
+      detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
+    return GestureDetector(
+      onTap: () => _openWhatsApp(value),
+      child: Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF1E2E52),
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  return Text(
+    value,
+    style: TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: Color(0xFF1E2E52),
+    ),
+    overflow: TextOverflow.visible,
+  );
+}
+
+
+  
+
 }
