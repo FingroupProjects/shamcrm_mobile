@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 
@@ -31,7 +32,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     if (await FlutterContacts.requestPermission()) {
       _getContacts();
     } else {
-      _showSnackBar("Нет разрешения на доступ к контактам", Colors.red);
+      _showSnackBar(AppLocalizations.of(context)!.translate('no_permession_to_access_contacts'), Colors.red);
     }
   }
 
@@ -95,7 +96,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
             ),
             Divider(color: Color(0xff1E2E52)), 
             SizedBox(height: 16),
-            Text('Телефоны:',
+            Text(AppLocalizations.of(context)!.translate('phones'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600, 
@@ -143,8 +144,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               );
             }).toList(),
             SizedBox(height: 16),
-            Text(
-              'Адрес:',
+            Text( AppLocalizations.of(context)!.translate('address'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -235,15 +235,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   controller: searchController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Поиск...',
+                    hintText: AppLocalizations.of(context)!.translate('search_appbar'),
                     border: InputBorder.none,
                   ),
                   onChanged: _filterContacts,
                 )
               : Row(
                   children: [
-                    Text(
-                      'Контакты телефона',
+                    Text(AppLocalizations.of(context)!.translate('phone_contacts'),
                       style: TextStyle(
                         color: Colors.black,
                         fontFamily: 'Gilroy',
@@ -300,7 +299,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         child: contacts.isEmpty
             ? Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
             : filteredContacts.isEmpty
-                ? Center(child: Text('Нечего не найдено'))
+                ? Center(child: Text(AppLocalizations.of(context)!.translate('no_result')))
                 : ListView.builder(
                     itemCount: filteredContacts.length,
                     itemBuilder: (context, index) {
@@ -329,7 +328,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : 'Нет номера'),
+                          subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : AppLocalizations.of(context)!.translate('no_number')),
                           trailing: Transform.scale(
                             scale: 1.1,
                             child: Checkbox(
@@ -360,12 +359,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     }
                   }
                   await apiService.addLeadsFromContacts(widget.statusId, contactsToSend);
-                  _showSnackBar('Контакты отправлены успешно!', Colors.green);
+                  _showSnackBar( AppLocalizations.of(context)!.translate('contacts_sent'), Colors.green);
                   setState(() {
                     selectedContacts.clear();
                   });
                 } catch (e) {
-                  _showSnackBar('Ошибка при отправке контактов!', Colors.red);
+                  _showSnackBar(AppLocalizations.of(context)!.translate('error_contacts_sent'), Colors.red);
                 }
               },
               backgroundColor: Color(0xff1E2E52),

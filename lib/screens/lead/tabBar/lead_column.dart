@@ -181,8 +181,7 @@ class _LeadColumnState extends State<LeadColumn> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Добавить для текушего статуса:',
+                              Text(AppLocalizations.of(context)!.translate('add_for_current_status'), 
                                 style: TextStyle(
                                   color: Color(0xff1E2E52),
                                   fontSize: 20,
@@ -196,8 +195,7 @@ class _LeadColumnState extends State<LeadColumn> {
                                 title: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Нового лида',
+                                    Text(AppLocalizations.of(context)!.translate('new_lead_in_switch'),
                                       style: TextStyle(
                                         color: Color(0xff1E2E52),
                                         fontSize: 16,
@@ -226,8 +224,7 @@ class _LeadColumnState extends State<LeadColumn> {
                                 title: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Импортировать из контакты',
+                                    Text(AppLocalizations.of(context)!.translate('import_contact'),
                                       style: TextStyle(
                                         color: Color(0xff1E2E52),
                                         fontSize: 16,

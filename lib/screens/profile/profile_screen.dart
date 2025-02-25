@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
@@ -14,6 +17,7 @@ import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_organization_list.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_logout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -25,12 +29,58 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _selectedOrganization;
+  final ApiService _apiService = ApiService();
+  bool _hasPermissionToAddLeadAndSwitch = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSelectedOrganization();
+
+Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
+  await prefs.setString('cached_organizations', jsonList);
+}
+
+Future<List<Organization>> _getOrganizationsFromCache() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString('cached_organizations');
+  if (jsonString != null) {
+    final List<dynamic> jsonList = jsonDecode(jsonString);
+    return jsonList.map((data) => Organization.fromJson(data)).toList();
+  }
+  return [];
+}
+
+Future<void> _loadOrganizations() async {
+  final cachedOrganizations = await _getOrganizationsFromCache();
+  final currentState = context.read<OrganizationBloc>().state;
+
+  if (currentState is OrganizationLoaded) {
+    final newOrganizations = currentState.organizations;
+    
+    if (jsonEncode(newOrganizations) != jsonEncode(cachedOrganizations)) {
+      await _saveOrganizationsToCache(newOrganizations);
+      setState(() {
+        _selectedOrganization = newOrganizations.isNotEmpty ? newOrganizations.first.id.toString() : null;
+      });
+    }
+  } else {
     context.read<OrganizationBloc>().add(FetchOrganizations());
+  }
+}
+
+@override
+void initState() {
+  super.initState();
+  _loadSelectedOrganization();
+  _checkPermission();
+  _loadOrganizations();
+}
+
+
+  Future<void> _checkPermission() async {
+    bool hasPermission = await _apiService.hasPermission('lead.create');
+    setState(() {
+      _hasPermissionToAddLeadAndSwitch = hasPermission;
+    });
   }
 
   Future<void> _loadSelectedOrganization() async {
@@ -114,14 +164,14 @@ void _openSupportChat() async {
                         const ProfileEdit(),
                         const LanguageButtonWidget(),
                         const PinChangeWidget(),
-                        const LogoutButtonWidget(),
+                        if(_hasPermissionToAddLeadAndSwitch)
                         const ToggleFeatureButton(),
+                        const LogoutButtonWidget(),
                         UpdateWidget1C(organization: selectedOrg),
                       ],
                     );
                   } else if (state is OrganizationError) {
-                    if (state.message.contains(
-                        localizations.translate("unauthorized_access"))) {
+                    if (state.message.contains( localizations.translate("unauthorized_access"))) {
                       ApiService().logout().then((_) {
                         Navigator.pushAndRemoveUntil(
                           context,
