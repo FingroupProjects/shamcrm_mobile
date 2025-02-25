@@ -5610,85 +5610,70 @@ Future<Map<String, dynamic>> createMyTask({
 
   //_________________________________ START_____API_SCREEN__EVENT____________________________________________//a
 
+  Future<List<NoticeEvent>> getEvents({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    List<int>? managers,
+    int? statuses,
+    DateTime? fromDate,
+    DateTime? toDate,
+    DateTime? noticefromDate,
+    DateTime? noticetoDate,
+  }) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      String path = '/notices?page=$page&per_page=$perPage';
+      path += '&organization_id=$organizationId'; // organization_id в URL
 
-String _buildQueryParameters(Map<String, dynamic> params) {
-  final queryParams = params.entries.map((entry) {
-    final key = entry.key;
-    final value = entry.value;
-
-    if (value is bool) {
-      return '$key=$value'; // Передаем булево значение без кавычек
-    } else if (value is List) {
-      return value.map((item) => '$key[]=$item').join('&');
-    } else {
-      return '$key=$value';
-    }
-  }).join('&');
-
-  return queryParams;
-}
-
-Future<List<NoticeEvent>> getEvents({
-  int page = 1,
-  int perPage = 20,
-  String? search,
-  List<int>? managers,
-  int? statuses,
-  DateTime? fromDate,
-  DateTime? toDate,
-  DateTime? noticefromDate,
-  DateTime? noticetoDate,
-}) async {
-  try {
-    final organizationId = await getSelectedOrganization();
-    final Map<String, dynamic> queryParams = {
-      'page': page,
-      'per_page': perPage,
-      'organization_id': organizationId,
-    };
-
-    if (search != null && search.isNotEmpty) {
-      queryParams['search'] = search;
-    }
-
-    if (managers != null && managers.isNotEmpty) {
-      queryParams['managers'] = managers;
-    }
-
-    if (statuses != null) {
-      queryParams['event_status_id'] = statuses;
-      bool isFinished = statuses == 2;
-      queryParams['isFinished'] = isFinished; 
-    }
-
-    if (fromDate != null && toDate != null) {
-      queryParams['created_from'] = DateFormat('yyyy-MM-dd').format(fromDate);
-      queryParams['created_to'] = DateFormat('yyyy-MM-dd').format(toDate);
-    }
-
-    if (noticefromDate != null && noticetoDate != null) {
-      queryParams['push_from'] = DateFormat('yyyy-MM-dd').format(noticefromDate);
-      queryParams['push_to'] = DateFormat('yyyy-MM-dd').format(noticetoDate);
-    }
-
-    final queryString = _buildQueryParameters(queryParams);
-    final response = await _getRequest('/notices?$queryString');
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != null && data['result']['data'] != null) {
-        return (data['result']['data'] as List)
-            .map((json) => NoticeEvent.fromJson(json))
-            .toList();
-      } else {
-        throw ('Нет данных о событиях в ответе');
+      if (search != null && search.isNotEmpty) {
+        path += '&search=$search';
       }
-    } else {
-      throw ('Ошибка загрузки событий!');
+
+      if (managers != null && managers.isNotEmpty) {
+        for (int i = 0; i < managers.length; i++) {
+          path += '&managers[$i]=${managers[i]}';
+        }
+      }
+
+      if (statuses != null) {
+        path += '&event_status_id=$statuses';
+        bool isFinished = statuses == 2;
+        path +=
+            '&isFinished=${isFinished ? '1' : '0'}'; // Передаем 1 или 0 вместо true/false
+      }
+
+      if (fromDate != null && toDate != null) {
+        final formattedFromDate = DateFormat('yyyy-MM-dd').format(fromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(toDate);
+        path += '&created_from=$formattedFromDate&created_to=$formattedToDate';
+      }
+
+      if (noticefromDate != null && noticetoDate != null) {
+        final formattedFromDate =
+            DateFormat('yyyy-MM-dd').format(noticefromDate);
+        final formattedToDate = DateFormat('yyyy-MM-dd').format(noticetoDate);
+        path += '&push_from=$formattedFromDate&push_to=$formattedToDate';
+      }
+
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['result'] != null && data['result']['data'] != null) {
+          return (data['result']['data'] as List)
+              .map((json) => NoticeEvent.fromJson(json))
+              .toList();
+        } else {
+          throw ('Нет данных о событиях в ответе');
+        }
+      } else {
+        throw ('Ошибка загрузки событий!');
+      }
+    } catch (e) {
+      throw ('Ошибка загрузки событий');
     }
-  } catch (e) {
-    throw ('Ошибка загрузки событий');
   }
-}
+
   Future<Notice> getNoticeById(int noticeId) async {
     try {
       final organizationId = await getSelectedOrganization();
