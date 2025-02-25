@@ -1,14 +1,11 @@
 import 'dart:io';
 
-import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/auth/auth_screen.dart';
-import 'dart:ui' as ui; // Добавьте этот импорт
 
 class LogoutButtonWidget extends StatelessWidget {
   const LogoutButtonWidget({super.key});

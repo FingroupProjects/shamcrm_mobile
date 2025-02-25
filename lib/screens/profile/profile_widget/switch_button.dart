@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,8 +55,8 @@ class _ToggleFeatureButtonState extends State<ToggleFeatureButton> {
             Expanded(
               child: Text(
                 _isFeatureEnabled
-                    ? 'Функция импорта из контакта включена'
-                    : 'Функция импорта из контакта выключена',
+                    ? AppLocalizations.of(context)!.translate('import_contact_on') 
+                    : AppLocalizations.of(context)!.translate('import_contact_off'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,

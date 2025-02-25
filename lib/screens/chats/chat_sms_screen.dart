@@ -368,7 +368,8 @@ Widget build(BuildContext context) {
     child: Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        forceMaterialTransparency: true,
+        forceMaterialTransparency: false,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: false,
         leadingWidth: 40,

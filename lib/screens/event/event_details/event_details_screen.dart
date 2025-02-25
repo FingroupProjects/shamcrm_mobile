@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_delete.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_edit_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -296,12 +297,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             } else if (state is NoticeLoaded) {
               Notice notice = state.notice;
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: ListView(
                   children: [
                     _buildDetailsList(notice),
                     _buildFinishButton(notice),
+                    NoticeHistorySection(leadId: notice.lead!.id),
                   ],
                 ),
               );

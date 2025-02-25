@@ -639,7 +639,22 @@
     "contact_add_failed": "Kontakt qo'shishda xato",
     "export_contact": "Kontaktni eksport qilish",
     "confirm_export_contact": "Kontaktni eksport qilishni tasdiqlang",
-    "export": "Eksport"
+    "export": "Eksport",
+    "import_contact_on": "Kontaktlardan import yoqilgan",
+    "import_contact_off": "Kontaktlardan import o‘chirilgan",
+    "no_permession_to_access_contacts": "Kontaktlarga kirish uchun ruxsat yo‘q",
+    "contacts_sent": "Kontaktlar muvaffaqiyatli yuborildi!",
+    "error_contacts_sent": "Kontaktlarni yuborishda xato!",
+    "phones": "Telefonlar:",
+    "address": "Manzil:",
+    "phone_contacts": "Telefon kontaktlari",
+    "no_result": "Hech narsa topilmadi",
+    "no_number": "Raqam yo‘q",
+    "add_for_current_status": "Joriy holat uchun qo‘shish:",
+    "new_lead_in_switch": "Yangi lead",
+    "import_contact": "Kontaktlardan import qilish"
+
+
 
 
 

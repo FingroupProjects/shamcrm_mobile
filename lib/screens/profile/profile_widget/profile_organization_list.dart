@@ -100,7 +100,6 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
 
         String? selectedOrganization = widget.selectedOrganization;
 
-        // Если выбранная организация не в списке, выбираем первую
         if (selectedOrganization != null &&
             !dropdownItems.any((item) => item.value == selectedOrganization)) {
           selectedOrganization =
@@ -123,7 +122,6 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
             ),
 
-            // Выпадающий список организаций
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(8),
@@ -133,8 +131,7 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               ),
               child: DropdownButtonFormField<String>(
                 value: selectedOrganization,
-                hint: Text(
-                  localizations.translate('select_organizations'),
+                hint: Text( "",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
