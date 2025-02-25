@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 
 class TaskById {
@@ -12,6 +14,7 @@ class TaskById {
   final TaskStatusById? taskStatus;
   final String? color;
   final Project? project;
+  final DealById? deal;
   final List<UserById>? user;
   final int priority;
   final ChatById? chat;
@@ -33,6 +36,7 @@ class TaskById {
     this.taskStatus,
     this.color,
     this.project,
+    this.deal,
     this.user,
     required this.priority,
     this.chat, // Инициализация нового поля
@@ -77,6 +81,9 @@ class TaskById {
           ? (json['users'] as List)
               .map((userJson) => UserById.fromJson(userJson))
               .toList()
+          : null,
+      deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
+          ? DealById.fromJson(json['deal'], 0)
           : null,
       color: json['color'] is String ? json['color'] : null,
       taskFile: json['file'],

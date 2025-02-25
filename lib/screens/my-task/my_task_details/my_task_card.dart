@@ -205,7 +205,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 0),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Text(
@@ -276,7 +276,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(0), // Отступы
+                padding: const EdgeInsets.all(2), // Отступы
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment
                       .spaceBetween, // Пространство между элементами

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 
@@ -12,6 +14,7 @@ class Task {
   final TaskStatus? taskStatus;
   final String? color;
   final Project? project;
+  final Deal? deal;
   final UserData? user;
   final List<UserTaskImage>? usersImage;
   final TaskFile? file;
@@ -21,7 +24,7 @@ class Task {
 
   Task({
     required this.id,
-   this.taskNumber,
+    this.taskNumber,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -36,6 +39,7 @@ class Task {
     required this.priority,
     required this.taskCustomFields,
     this.overdue,
+    this.deal,
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -71,6 +75,9 @@ class Task {
         user: json['user'] != null && json['user'] is Map<String, dynamic>
             ? UserData.fromJson(json['user'])
             : null,
+          deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
+          ? Deal.fromJson(json['deal'], 0)
+          : null,
         color: json['color'] is String ? json['color'] : null,
         file: json['file'] != null
             ? (json['file'] is Map<String, dynamic>

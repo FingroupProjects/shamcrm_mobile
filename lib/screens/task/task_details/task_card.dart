@@ -229,34 +229,44 @@ class _TaskCardState extends State<TaskCard> {
         child: Container(
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-          decoration:
-              TaskCardStyles.taskCardDecoration, 
+          decoration: TaskCardStyles.taskCardDecoration,
           child: Stack(
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start, 
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Check if task has a deal and show client icon
+                    if (widget.task.deal != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6, top: 3),
+                        child: Image.asset(
+                          'assets/icons/MyNavBar/clients_OFF.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                      ),
                     Expanded(
                       child: RichText(
-                       maxLines: 2,
-                       overflow: TextOverflow.ellipsis,
-                       text: TextSpan(
-                         text: widget.task.name,
-                         style: TaskCardStyles.titleStyle,
-                         children: const <TextSpan>[
-                           TextSpan(
-                             text: '\n\u200B',
-                             style: TaskCardStyles.titleStyle,
-                           ),
-                         ],
-                       ),
-                     ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          text: widget.task.name,
+                          style: TaskCardStyles.titleStyle,
+                          children: const <TextSpan>[
+                            TextSpan(
+                              text: '\n\u200B',
+                              style: TaskCardStyles.titleStyle,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 2), 
+                      padding: const EdgeInsets.only(top: 2),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color:
                               _getPriorityBackgroundColor(widget.task.priority),
@@ -275,7 +285,10 @@ class _TaskCardState extends State<TaskCard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 0, width: 4,),
+                const SizedBox(
+                  height: 0,
+                  width: 4,
+                ),
                 Text(
                   widget.task.project?.name ??
                       AppLocalizations.of(context)!.translate('no_project'),
@@ -485,12 +498,14 @@ class _TaskCardState extends State<TaskCard> {
                                 ),
                                 child: Image.asset(
                                   'assets/icons/tabBar/date.png', // Иконка даты
-                               width: 18,
-                              height: 20,
+                                  width: 18,
+                                  height: 20,
                                 ),
                               ),
                               const SizedBox(
-                                  width: 4, height: 14,), // Отступ между иконкой и текстом
+                                width: 4,
+                                height: 14,
+                              ), // Отступ между иконкой и текстом
                               Text(
                                 formatDate(widget.task.endDate ??
                                     DateTime.now().toString()),
