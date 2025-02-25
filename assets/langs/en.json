@@ -640,7 +640,20 @@
       "contact_add_failed": "Failed to add contact",
       "export_contact": "Export contact",
       "confirm_export_contact": "Confirm export contact",
-      "export": "Export"
+      "export": "Export",
+      "import_contact_on": "Import from contacts is enabled",
+      "import_contact_off": "Import from contacts is disabled",
+      "no_permession_to_access_contacts": "No permission to access contacts",
+      "contacts_sent": "Contacts sent successfully!",
+      "error_contacts_sent": "Error sending contacts!",
+      "phones": "Phones:",
+      "address": "Address:",
+      "phone_contacts": "Phone contacts",
+      "no_result": "Nothing found",
+      "no_number": "No number",
+      "add_for_current_status": "Add for the current status:",
+      "new_lead_in_switch": "New lead",
+      "import_contact": "Import from contacts"
 
 
 }

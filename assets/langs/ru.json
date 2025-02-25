@@ -639,11 +639,26 @@
       "copy_message": "Сообщение скопировано!",
       "file_size_too_large":"Слишком большой объем файлов!",
       "withoutDeal":"Без сделки",
-      "contact_added_successfully": "Контакт успешно добавлен",
+      "contact_added_successfully": "Контакт успешно добавлен!",
       "contact_permission_denied": "Разрешение на доступ к контактам не предоставлено",
       "contact_add_failed": "Не удалось добавить контакт",
       "export_contact": "Экспорт контакта",
       "confirm_export_contact": "Подтвердите экспорт контакта",
       "export": "Экспорт",
       "task_by_deal":"Сделка:"
+      "import_contact_on": "Импорт из контактов включен",
+      "import_contact_off": "Импорт из контактов выключена",
+      "no_permession_to_access_contacts": "Нет разрешения на доступ к контактам",
+      "contacts_sent": "Контакты отправлены успешно!",
+      "error_contacts_sent": "Ошибка при отправке контактов!",
+      "phones": "Телефоны:",
+      "address": "Адрес:",
+      "phone_contacts": "Контакты телефона",
+      "no_result": "Нечего не найдено",
+      "no_number": "Нет номера",
+      "add_for_current_status": "Добавить для текушего статуса:",
+      "new_lead_in_switch": "Нового лида",
+      "import_contact": "Импортировать из контакты"
+
+    
   }

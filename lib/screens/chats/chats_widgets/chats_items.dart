@@ -192,9 +192,6 @@ class ChatListItem extends StatelessWidget {
 
   try {
     DateTime parsedTime = DateTime.parse(time);
-    print('parsedTime: $parsedTime'); // Вывод полной даты и времени
-    print('Formatted Date: ${DateFormat('dd.MM.yyyy').format(parsedTime)}'); // Вывод отформатированной даты
-    print('Formatted Time: ${DateFormat('HH:mm:ss').format(parsedTime)}'); // Вывод отформатированного времени
     return DateFormat('dd.MM.yyyy').format(parsedTime);
   } catch (e) {
     print("Ошибка парсинга даты: $e");
