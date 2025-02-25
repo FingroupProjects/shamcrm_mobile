@@ -9,8 +9,10 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
@@ -319,6 +321,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'label':
             AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(task.createdAt)
+      },
+    if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
+      {
+        'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+        'value': task.deal!.name!
       },
       if (task.files != null && task.files!.isNotEmpty)
         {
@@ -891,7 +898,6 @@ Widget build(BuildContext context) {
         ),
       );
     }
-
     if (label == AppLocalizations.of(context)!.translate('files_details')) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1005,7 +1011,47 @@ Widget build(BuildContext context) {
         ],
       );
     }
-
+ if (label == AppLocalizations.of(context)!.translate('task_by_deal')) {
+      return GestureDetector(
+        onTap: () {
+          if (currentTask?.deal?.id != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => DealDetailsScreen(
+                  dealId: currentTask!.deal!.id.toString(),
+                  dealName: value,
+                  dealStatus: "",
+                  statusId: 0, sum: '', dealCustomFields: [],
+                ),
+              ),
+            );
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                  decoration: value.isNotEmpty && currentTask?.deal?.id != null 
+                      ? TextDecoration.underline 
+                      : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -156,6 +156,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                       Text(
                         '${contactPerson.name}',
                         style: TaskCardStyles.titleStyle,
+                        maxLines: 2,
                       ),
                       Row(
                         children: [
@@ -167,6 +168,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontWeight: FontWeight.w500,
                               color: Color(0xFF1E2E52),
                             ),
+                            maxLines: 1,
                           ),
                           Expanded(
                             child: GestureDetector(

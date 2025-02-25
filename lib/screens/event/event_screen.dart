@@ -334,253 +334,176 @@ Future _handleDateNoticeAndDateSelected(DateTime? noticefromDate, DateTime? noti
 
 
 
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
+@override
+Widget build(BuildContext context) {
+  final localizations = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: CustomAppBar(
-          title: isClickAvatarIcon
-              ? localizations!.translate('appbar_settings')
-              : localizations!.translate('events'),
-          onClickProfileAvatar: () {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      forceMaterialTransparency: true,
+      title: CustomAppBar(
+        title: isClickAvatarIcon
+            ? localizations!.translate('appbar_settings')
+            : localizations!.translate('events'),
+        onClickProfileAvatar: () {
+          setState(() {
+            isClickAvatarIcon = !isClickAvatarIcon;
+          });
+        },
+        onChangedSearchInput: (String value) {
+          if (value.isNotEmpty) {
             setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
+              _isSearching = true;
             });
-          },
-          onChangedSearchInput: (String value) {
-            if (value.isNotEmpty) {
-              setState(() {
-                _isSearching = true;
-              });
+          }
+          _onSearch(value);
+        },
+        onManagersEventSelected: _handleManagerSelected,
+        onStatusEventSelected: _handleStatusSelected,
+        onDateRangeEventSelected: _handleDateSelected,
+        onNoticeDateRangeEventSelected: _handleNoticeDateSelected,
+        onStatusAndDateRangeEventSelected: _handleStatusAndDateSelected,
+        onNoticeStatusAndDateRangeEventSelected: _handleNoticeStatusAndDateSelected,
+        onDateNoticeStatusAndDateRangeSelected: _handleDateNoticeStatusAndDateSelected,
+        onDateNoticeAndDateRangeSelected: _handleDateNoticeAndDateSelected,
+        initialManagersEvent: _initialselectedManagers,
+        initialManagerEventStatuses: _initialSelStatus,
+        initialManagerEventFromDate: _intialFromDate,
+        initialManagerEventToDate: _intialToDate,
+        initialNoticeManagerEventFromDate: _intialNoticeFromDate,
+        initialNoticeManagerEventToDate: _intialNoticeToDate,
+        onEventResetFilters: _resetFilters,
+        textEditingController: textEditingController,
+        focusNode: focusNode,
+        showFilterTaskIcon: false,
+        showMyTaskIcon: false,
+        showEvent: false,
+        showMenuIcon: false,
+        showNotification: false,
+        showSeparateFilter: true,
+        showFilterIconEvent: true,
+        clearButtonClick: (value) {
+          if (value == false) {
+            setState(() {
+              _isSearching = false;
+              _searchController.clear();
+              _lastSearchQuery = '';
+            });
+
+            if (_searchController.text.isEmpty) {
+              if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null && _NoticefromDate == null && _NoticetoDate == null) {
+                print("IF SEARCH EMPTY AND NO FILTERS");
+                setState(() {
+                  _showCustomTabBar = true;
+                });
+                final eventBloc = BlocProvider.of<EventBloc>(context);
+                eventBloc.add(FetchEvents());
+              } else {
+                print("IF SEARCH EMPTY BUT FILTERS EXIST");
+                final taskBloc = BlocProvider.of<EventBloc>(context);
+                taskBloc.add(FetchEvents(
+                  managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
+                  statusIds: _selectedStatuses,
+                  fromDate: _fromDate,
+                  toDate: _toDate,
+                  noticefromDate: _NoticefromDate,
+                  noticetoDate: _NoticetoDate,
+                ));
+              }
+            } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
+              print("ELSE IF SEARCH NOT EMPTY");
+              final taskBloc = BlocProvider.of<EventBloc>(context);
+              taskBloc.add(FetchEvents(
+                managerIds: _selectedManagerIds,
+                query: _searchController.text.isNotEmpty ? _searchController.text : null,
+              ));
             }
-            _onSearch(value);
-          },
-          onManagersEventSelected: _handleManagerSelected,
-          onStatusEventSelected: _handleStatusSelected,
-          onDateRangeEventSelected: _handleDateSelected,
-          onNoticeDateRangeEventSelected: _handleNoticeDateSelected,
-          onStatusAndDateRangeEventSelected: _handleStatusAndDateSelected,
-          onNoticeStatusAndDateRangeEventSelected: _handleNoticeStatusAndDateSelected,
-          onDateNoticeStatusAndDateRangeSelected: _handleDateNoticeStatusAndDateSelected,
-          onDateNoticeAndDateRangeSelected: _handleDateNoticeAndDateSelected,
-          initialManagersEvent: _initialselectedManagers,
-          initialManagerEventStatuses: _initialSelStatus,
-          initialManagerEventFromDate: _intialFromDate,
-          initialManagerEventToDate: _intialToDate,
-          initialNoticeManagerEventFromDate: _intialNoticeFromDate,
-          initialNoticeManagerEventToDate: _intialNoticeToDate,
-          onEventResetFilters: _resetFilters,
-          textEditingController: textEditingController,
-          focusNode: focusNode,
-          showFilterTaskIcon: false,
-          showMyTaskIcon: false,
-          showEvent: false,
-          showMenuIcon: false,
-          showNotification: false,
-          showSeparateFilter: true,
-          showFilterIconEvent:true,
-       clearButtonClick: (value) {
-                if (value == false) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _lastSearchQuery = '';
-                  });
-
-              if (_searchController.text.isEmpty) {
-                if (_selectedManagers.isEmpty && _selectedStatuses == null && _fromDate == null && _toDate == null && _NoticefromDate == null && _NoticetoDate == null) {
-                  print("IF SEARCH EMPTY AND NO FILTERS");
-                  setState(() {
-                    _showCustomTabBar = true;
-                  });
-                    final eventBloc = BlocProvider.of<EventBloc>(context);
-                    eventBloc.add(FetchEvents());
-                } else {
-                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
-                  final taskBloc = BlocProvider.of<EventBloc>(context);
-                  taskBloc.add(FetchEvents(
-                    managerIds: _selectedManagers.isNotEmpty ? _selectedManagers.map((manager) => manager.id).toList() : null,
-                    statusIds: _selectedStatuses,
-                    fromDate: _fromDate,
-                    toDate: _toDate,
-                    noticefromDate: _NoticefromDate,
-                    noticetoDate: _NoticetoDate,
-                  ));
-                }
-                  } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-                    print("ELSE IF SEARCH NOT EMPTY");
-                    final taskBloc = BlocProvider.of<EventBloc>(context);
-                    taskBloc.add(FetchEvents(
-                      managerIds: _selectedManagerIds,
-                      query: _searchController.text.isNotEmpty ? _searchController.text : null,
-                    ));
-                  }
-                }
-              },
-        clearButtonClickFiltr: (value) {
- 
+          }
         },
-        ),
+        clearButtonClickFiltr: (value) {},
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => NoticeAddScreen(),
-            ),
-          ).then((_) => _loadEvents());
-        },
-        backgroundColor: Color(0xff1E2E52),
-        child: Image.asset(
-          'assets/icons/tabBar/add.png',
-          width: 24,
-          height: 24,
-        ),
-      ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Column(
-              children: [
-                const SizedBox(height: 15),
-                if (!_isSearching &&
-                    _selectedManagerIds == null &&
-                    _showCustomTabBar)
-                  _buildCustomTabBar(),
-                Expanded(
-                  child: _selectedManagerIds != null &&
-                          _selectedManagerIds!.isNotEmpty
-                      ? RefreshIndicator(
-                          color: Color(0xff1E2E52),
-                          backgroundColor: Colors.white,
-                          onRefresh: () async {
-                            _loadEvents();
-                            return Future.delayed(Duration(milliseconds: 300));
-                          },
-                          child: BlocBuilder<EventBloc, EventState>(
-                            builder: (context, state) {
-                              if (state is EventLoading) {
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xff1E2E52),
-                                  ),
-                                );
-                              }
-                              if (state is EventDataLoaded) {
-                                return _buildEventsList(state.events);
-                              }
-                              if (state is EventError) {
-                                return Center(
-                                  child: Text(
-                                    state.message,
-                                    style: TextStyle(
-                                      color: Color(0xff99A4BA),
-                                      fontSize: 14,
-                                      fontFamily: 'Gilroy',
-                                    ),
-                                  ),
-                                );
-                              }
-                              return Container();
-                            },
-                          ),
-                        )
-                      // If no manager filter, show tab view as before
-                      : TabBarView(
-                          controller: _tabController,
-                          children: _tabTitles.map((status) {
-                            return RefreshIndicator(
-                              color: Color(0xff1E2E52),
-                              backgroundColor: Colors.white,
-                              onRefresh: () async {
-                                _loadEvents();
-                                return Future.delayed(
-                                    Duration(milliseconds: 300));
-                              },
-                              child: BlocBuilder<EventBloc, EventState>(
-                                builder: (context, state) {
-                                  if (state is EventLoading) {
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        color: Color(0xff1E2E52),
-                                      ),
-                                    );
-                                  }
-                                  if (state is EventDataLoaded) {
-                                    return _buildEventsList(state.events);
-                                  }
-                                  if (state is EventError) {
-                                    return Center(
-                                      child: Text(
-                                        state.message,
-                                        style: TextStyle(
-                                          color: Color(0xff99A4BA),
-                                          fontSize: 14,
-                                          fontFamily: 'Gilroy',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return Container();
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                ),
-              ],
-            ),
-    );
-  }
-
-    Widget _buildEventsList(List<NoticeEvent> events) {
-    final localizations = AppLocalizations.of(context);
-
-    if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
-      if (events.isEmpty) {
-        return Center(
-          child: Text(
-            localizations?.translate('no_events') ?? 'Нет событий',
-            style: TextStyle(
-              color: Color(0xff99A4BA),
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-            ),
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NoticeAddScreen(),
           ),
-        );
-      }
+        ).then((_) => _loadEvents());
+      },
+      backgroundColor: Color(0xff1E2E52),
+      child: Image.asset(
+        'assets/icons/tabBar/add.png',
+        width: 24,
+        height: 24,
+      ),
+    ),
+    body: isClickAvatarIcon
+        ? ProfileScreen()
+        : Column(
+            children: [
+              const SizedBox(height: 15),
+              if (!_isSearching &&
+                  _selectedManagers.isEmpty &&
+                  _selectedStatuses == null &&
+                  _fromDate == null &&
+                  _toDate == null &&
+                  _NoticefromDate == null &&
+                  _NoticetoDate == null &&
+                  _showCustomTabBar)
+                _buildCustomTabBar(),
+              Expanded(
+                child: RefreshIndicator(
+                  color: Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  onRefresh: () async {
+                    _loadEvents();
+                    return Future.delayed(Duration(milliseconds: 300));
+                  },
+                  child: BlocBuilder<EventBloc, EventState>(
+                    builder: (context, state) {
+                      if (state is EventLoading) {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xff1E2E52),
+                          ),
+                        );
+                      }
+                      if (state is EventDataLoaded) {
+                        return _buildEventsList(state.events);
+                      }
+                      if (state is EventError) {
+                        return Center(
+                          child: Text(
+                            state.message,
+                            style: TextStyle(
+                              color: Color(0xff99A4BA),
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                        );
+                      }
+                      return Container();
+                    },
+                  ),
+                ),
+        )],
+          ),
+  );
+}
 
-      return ListView.builder(
-        controller: _tabScrollController, // Используем отдельный контроллер
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: EventCard(
-              event: events[index],
-              onStatusUpdated: () {
-                _loadEvents();
-              },
-            ),
-          );
-        },
-      );
-    }
+Widget _buildEventsList(List<NoticeEvent> events) {
+  final localizations = AppLocalizations.of(context);
 
-    final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
-
-    if (filteredEvents.isEmpty) {
+  // Если активен поиск или фильтр, отображаем все события без разделения на вкладки
+  if (_isSearching || _selectedManagers.isNotEmpty || _selectedStatuses != null || _fromDate != null || _toDate != null || _NoticefromDate != null || _NoticetoDate != null) {
+    if (events.isEmpty) {
       return Center(
         child: Text(
-          localizations?.translate('no_events_in_section')?.replaceAll(
-                  '{section}', _tabTitles[_currentTabIndex]['title']) ??
-              'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
+          localizations?.translate('no_events') ?? 'Нет событий',
           style: TextStyle(
             color: Color(0xff99A4BA),
             fontSize: 14,
@@ -591,15 +514,15 @@ Future _handleDateNoticeAndDateSelected(DateTime? noticefromDate, DateTime? noti
     }
 
     return ListView.builder(
-      controller: _listScrollController, // Используем отдельный контроллер
+      controller: _listScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: filteredEvents.length,
+      itemCount: events.length,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: EventCard(
-            event: filteredEvents[index],
+            event: events[index],
             onStatusUpdated: () {
               _loadEvents();
             },
@@ -609,6 +532,42 @@ Future _handleDateNoticeAndDateSelected(DateTime? noticefromDate, DateTime? noti
     );
   }
 
+  // Иначе разделяем события на вкладки
+  final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
+
+  if (filteredEvents.isEmpty) {
+    return Center(
+      child: Text(
+        localizations?.translate('no_events_in_section')?.replaceAll(
+                '{section}', _tabTitles[_currentTabIndex]['title']) ??
+            'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
+        style: TextStyle(
+          color: Color(0xff99A4BA),
+          fontSize: 14,
+          fontFamily: 'Gilroy',
+        ),
+      ),
+    );
+  }
+
+  return ListView.builder(
+    controller: _listScrollController,
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.all(16),
+    itemCount: filteredEvents.length,
+    itemBuilder: (context, index) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: EventCard(
+          event: filteredEvents[index],
+          onStatusUpdated: () {
+            _loadEvents();
+          },
+        ),
+      );
+    },
+  );
+}
   @override
   void dispose() {
     _tabScrollController.dispose(); // Не забудьте освободить ресурсы
