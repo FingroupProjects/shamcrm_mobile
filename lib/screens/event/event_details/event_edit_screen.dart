@@ -4,6 +4,8 @@ import 'package:crm_task_manager/bloc/event/event_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
+import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -143,8 +145,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                 ),
               ),
             );
-            Navigator.pop(
-                context, true); // Закрываем экран после успешного обновления
+            Navigator.pop(context, true); // Закрываем экран после успешного обновления
+               context.read<NotesBloc>().add(FetchNotes(widget.notice.lead!.id));
           }
         },
         child: Form(

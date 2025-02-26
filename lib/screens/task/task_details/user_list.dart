@@ -100,6 +100,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     ),
                       listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return ListTile(
+                         onTap: () {
+                           onItemSelect();
+                           WidgetsBinding.instance.addPostFrameCallback((_) {
+                             FocusScope.of(context).unfocus();
+                           });
+                           WidgetsBinding.instance.addPostFrameCallback((_) {
+                             FocusScope.of(context).unfocus();
+                           });
+                         },
                           minTileHeight: 1,
                           minVerticalPadding: 2,
                           contentPadding: EdgeInsets.zero,
@@ -134,10 +143,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               ],
                             ),
                           ),
-                          onTap: () {
-                            FocusScope.of(context).unfocus();  
-                            onItemSelect(); 
-                          },
+                       
                         );
                       },
                     headerListBuilder: (context, hint, enabled) {
@@ -169,9 +175,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         selectedUsersData = values;
                       });
                       field.didChange(values);
-                      
                       // FocusScope.of(context).unfocus();
-                      
                     },
                   );
                 },
