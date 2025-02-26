@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
@@ -30,7 +31,7 @@ Widget build(BuildContext context) {
   return BlocBuilder<HistoryLeadsBloc, HistoryState>(
     builder: (context, state) {
       return _buildExpandableNoticeContainer(
-        'История заметок',
+            AppLocalizations.of(context)!.translate('event_history'),
         state is NoticeHistoryLoaded ? _buildNoticeHistoryItems(state.history, widget.noteId) : [],
         isExpanded,
         () {

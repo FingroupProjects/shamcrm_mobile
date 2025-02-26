@@ -652,8 +652,14 @@
     "no_number": "Raqam yo‘q",
     "add_for_current_status": "Joriy holat uchun qo‘shish:",
     "new_lead_in_switch": "Yangi lead",
-    "import_contact": "Kontaktlardan import qilish"
-
+    "import_contact": "Kontaktlardan import qilish",
+    "withoutDeal": "Bitimsiz",
+    "event_history": "Voqealar tarixi",
+    "sum": "Summasi",
+    "notifications_sent": "PUSH xabarnomani yuborish",
+    "tab_lead": "Lid",
+    "tab_notices": "Eslatmalar",
+    "tab_deals": "Bitimlar"
 
 
 

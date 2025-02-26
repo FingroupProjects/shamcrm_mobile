@@ -658,7 +658,13 @@
       "no_number": "Нет номера",
       "add_for_current_status": "Добавить для текушего статуса:",
       "new_lead_in_switch": "Нового лида",
-      "import_contact": "Импортировать из контакты"
+      "import_contact": "Импортировать из контакты",
+      "event_history": "История событий",
+      "sum": "Сумма",
+      "notifications_sent": "Отправить PUSH-уведомление",
+      "tab_lead": "Лид",
+      "tab_notices": "Заметки",
+      "tab_deals": "Сделки"
 
     
   }
