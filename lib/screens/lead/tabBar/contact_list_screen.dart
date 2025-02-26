@@ -1,4 +1,9 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -20,7 +25,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Set<Contact> selectedContacts = Set();
   final apiService = ApiService();
   bool isSearching = false;
+  bool isFiltersExpanded = false; // To track if filters section is expanded
   TextEditingController searchController = TextEditingController();
+  
+  // Added state variables for the new fields
+  String selectedRegion = "";
+  String selectedManager = "";
+  String? selectedSourceLead;
 
   @override
   void initState() {
@@ -296,54 +307,140 @@ class _ContactsScreenState extends State<ContactsScreen> {
         ),
       body: Container(
         color: Colors.white,
-        child: contacts.isEmpty
-            ? Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
-            : filteredContacts.isEmpty
-                ? Center(child: Text(AppLocalizations.of(context)!.translate('no_result')))
-                : ListView.builder(
-                    itemCount: filteredContacts.length,
-                    itemBuilder: (context, index) {
-                      Contact contact = filteredContacts[index];
-                      return Container(
-                        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xffF4F7FD),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.black,
-                          backgroundImage: contact.photo != null
-                              ? MemoryImage(contact.photo!) 
-                              : null,
-                          child: contact.photo == null
-                              ? Icon(Icons.person, color: Colors.white) 
-                              : null,
-                        ),
-                          title: Text(
-                            contact.displayName,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : AppLocalizations.of(context)!.translate('no_number')),
-                          trailing: Transform.scale(
-                            scale: 1.1,
-                            child: Checkbox(
-                              activeColor: Color(0xff1E2E52),
-                              value: selectedContacts.contains(contact),
-                              onChanged: (bool? value) {
-                                _toggleContactSelection(contact);
-                              },
-                            ),
-                          ),
-                          onTap: () => _showContactDetails(contact),
-                        ),
-                      );
-                    },
+        child: Column(
+          children: [
+            // Add a filter button and collapsible filter section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    isFiltersExpanded = !isFiltersExpanded;
+                  });
+                },
+                child: Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xffF4F7FD),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)?.translate('Выберите данные') ?? 'Filters',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff1E2E52),
+                          fontSize: 16,
+                        ),
+                      ),
+                      Icon(
+                        isFiltersExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Color(0xff1E2E52),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Collapsible filters section
+            AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              height: isFiltersExpanded ? null : 0,
+              child: isFiltersExpanded ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    RegionRadioGroupWidget(
+                      selectedRegion: selectedRegion,
+                      onSelectRegion: (RegionData selectedRegionData) {
+                        setState(() {
+                          selectedRegion = selectedRegionData.id.toString();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    ManagerRadioGroupWidget(
+                      selectedManager: selectedManager,
+                      onSelectManager: (ManagerData selectedManagerData) {
+                        setState(() {
+                          selectedManager = selectedManagerData.id.toString();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    SourceLeadWidget(
+                      selectedSourceLead: selectedSourceLead,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedSourceLead = newValue;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ) : SizedBox(),
+            ),
+            
+            // Contact list
+            Expanded(
+              child: contacts.isEmpty
+                  ? Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
+                  : filteredContacts.isEmpty
+                      ? Center(child: Text(AppLocalizations.of(context)!.translate('no_result')))
+                      : ListView.builder(
+                          itemCount: filteredContacts.length,
+                          itemBuilder: (context, index) {
+                            Contact contact = filteredContacts[index];
+                            return Container(
+                              margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF4F7FD),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.black,
+                                backgroundImage: contact.photo != null
+                                    ? MemoryImage(contact.photo!) 
+                                    : null,
+                                child: contact.photo == null
+                                    ? Icon(Icons.person, color: Colors.white) 
+                                    : null,
+                              ),
+                                title: Text(
+                                  contact.displayName,
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : AppLocalizations.of(context)!.translate('no_number')),
+                                trailing: Transform.scale(
+                                  scale: 1.1,
+                                  child: Checkbox(
+                                    activeColor: Color(0xff1E2E52),
+                                    value: selectedContacts.contains(contact),
+                                    onChanged: (bool? value) {
+                                      _toggleContactSelection(contact);
+                                    },
+                                  ),
+                                ),
+                                onTap: () => _showContactDetails(contact),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: selectedContacts.isNotEmpty
           ? FloatingActionButton(
@@ -355,6 +452,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       contactsToSend.add({
                         'name': contact.displayName,
                         'phone': contact.phones.first.number,
+                        'region_id': selectedRegion,
+                        'manager_id': selectedManager,
+                        'source_id': selectedSourceLead,
                       });
                     }
                   }
