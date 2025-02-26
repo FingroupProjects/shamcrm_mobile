@@ -653,7 +653,14 @@
       "no_number": "No number",
       "add_for_current_status": "Add for the current status:",
       "new_lead_in_switch": "New lead",
-      "import_contact": "Import from contacts"
-
+      "import_contact": "Import from contacts",
+      "withoutDeal": "Without a deal",
+      "event_history": "Event history",
+      "sum": "Sum",
+      "notifications_sent": "Send PUSH notification",
+      "tab_lead": "Lead",
+      "tab_notices": "Notices",
+      "tab_deals": "Deals"
+  
 
 }

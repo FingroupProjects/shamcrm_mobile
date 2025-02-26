@@ -164,9 +164,9 @@ void _openSupportChat() async {
                         const ProfileEdit(),
                         const LanguageButtonWidget(),
                         const PinChangeWidget(),
-                        if(_hasPermissionToAddLeadAndSwitch)
-                        // const ToggleFeatureButton(),
                         const LogoutButtonWidget(),
+                          if(_hasPermissionToAddLeadAndSwitch)
+                        const ToggleFeatureButton(),
                         UpdateWidget1C(organization: selectedOrg),
                       ],
                     );
