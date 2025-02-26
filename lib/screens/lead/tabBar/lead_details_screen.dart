@@ -87,10 +87,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
     context.read<OrganizationBloc>().add(FetchOrganizations());
 
-    _loadSelectedOrganization(); // Загружаем выбранную организацию
+    _loadSelectedOrganization(); 
 
-    context
-        .read<LeadByIdBloc>()
+    context.read<LeadByIdBloc>()
         .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
   }
 

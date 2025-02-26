@@ -65,22 +65,16 @@ class TaskByIdScreen extends StatelessWidget {
               String priorityLevelText;
               switch (task.priority_level) {
                 case '1':
-                  priorityLevelText =
-                      AppLocalizations.of(context)!.translate('normal');
+                  priorityLevelText = AppLocalizations.of(context)!.translate('normal');
                   break;
                 case '2':
-                  priorityLevelText =
-                      AppLocalizations.of(context)!.translate('urgent');
-
+                  priorityLevelText = AppLocalizations.of(context)!.translate('urgent');
                   break;
                 case '3':
-                  priorityLevelText =
-                      AppLocalizations.of(context)!.translate('important');
-
+                  priorityLevelText = AppLocalizations.of(context)!.translate('urgent');
                   break;
                 default:
-                  priorityLevelText =
-                      AppLocalizations.of(context)!.translate('not_specified');
+                  priorityLevelText = AppLocalizations.of(context)!.translate('not_specified');
               }
 
               return SingleChildScrollView(

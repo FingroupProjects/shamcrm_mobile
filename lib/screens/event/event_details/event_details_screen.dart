@@ -4,6 +4,8 @@ import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
+import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
+import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -36,6 +38,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   void initState() {
     super.initState();
     context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
+    
   }
 
   String formatDate(String? dateString) {
@@ -302,7 +305,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   children: [
                     _buildDetailsList(notice),
                     _buildFinishButton(notice),
-                    NoticeHistorySection(leadId: notice.lead!.id),
+                    NoticeHistorySection(leadId: notice.lead!.id, noteId: notice.id),
+
                   ],
                 ),
               );
@@ -399,10 +403,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           );
 
                           if (shouldUpdate == true) {
-                            context
-                                .read<NoticeBloc>()
-                                .add(FetchNoticeEvent(noticeId: notice.id));
+                            context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: notice.id));
                             context.read<EventBloc>().add(FetchEvents());
+                            context.read<HistoryLeadsBloc>().add(FetchNoticeHistory(notice.lead!.id));
+
                           }
                         },
                       );
