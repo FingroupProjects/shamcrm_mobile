@@ -455,6 +455,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                         'region_id': selectedRegion,
                         'manager_id': selectedManager,
                         'source_id': selectedSourceLead,
+                        'lead_status_id': widget.statusId,
                       });
                     }
                   }

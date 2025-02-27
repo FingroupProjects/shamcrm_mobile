@@ -1707,10 +1707,9 @@ class ApiService {
       int statusId, List<Map<String, dynamic>> contacts) async {
     final organizationId = await getSelectedOrganization();
     final response = await _postRequest(
-      '/contacts/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      '/lead/insert/${organizationId != null ? '?organization_id=$organizationId' : ''}',
       {
-        'lead_status_id': statusId,
-        'contacts': contacts, // Отправляем массив контактов
+        'leads': contacts, 
       },
     );
 
