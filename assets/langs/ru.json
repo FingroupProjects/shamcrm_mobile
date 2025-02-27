@@ -650,7 +650,7 @@
       "import_contact_off": "Импорт из контактов выключена",
       "no_permession_to_access_contacts": "Нет разрешения на доступ к контактам",
       "contacts_sent": "Контакты отправлены успешно!",
-      "error_contacts_sent": "Ошибка при отправке контактов!",
+      "error_contacts_sent": "Такой лид уже существует!",
       "phones": "Телефоны:",
       "address": "Адрес:",
       "phone_contacts": "Контакты телефона",
@@ -664,7 +664,9 @@
       "notifications_sent": "Отправить PUSH-уведомление",
       "tab_lead": "Лид",
       "tab_notices": "Заметки",
-      "tab_deals": "Сделки"
+      "tab_deals": "Сделки",
+      "specify_lead_data": "Укажите данные лида"
+
 
     
   }

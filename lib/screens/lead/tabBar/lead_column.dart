@@ -36,138 +36,153 @@ class _LeadColumnState extends State<LeadColumn> {
 final GlobalKey keyLeadCard = GlobalKey();
 final GlobalKey keyFloatingActionButton = GlobalKey();
   List<TargetFocus> targets = [];
-  bool _isTutorialShown = false; 
-
-
+  
+  bool _isLeadCardTutorialShown = false; 
+  bool _isFabTutorialShown = false; 
 
 
 
 @override
 void initState() {
   super.initState();
-  _leadBloc = LeadBloc(_apiService)
-    ..add(FetchLeads(widget.statusId));
+  _leadBloc = LeadBloc(_apiService)..add(FetchLeads(widget.statusId));
   _checkPermission();
   _loadFeatureState();
-  
 
-  targets.add(
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    setState(() {
+      _initTutorialTargets();
+    });
+  });
+}
+
+void _initTutorialTargets() {
+  targets = [
     TargetFocus(
       identify: "LeadCard",
       keyTarget: keyLeadCard,
       contents: [
         TargetContent(
           align: ContentAlign.bottom,
-          child: Container(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: 150),
-                Text("Карточка лида",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    fontSize: 20.0,
-                    fontFamily: 'Gilroy'
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+              Text(
+                "Карточка лида",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontFamily: 'Gilroy',
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text("Это картчока лида. Здесь вы можете просматривать и управлять лидами",
-                    style: TextStyle(
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 10.0),
+                child: Text(
+                  "Это карточка лида. Здесь вы можете просматривать и управлять лидами.",
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                     fontSize: 18,
-                    fontFamily: 'Gilroy'
-                    ),
+                    fontFamily: 'Gilroy',
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
     ),
-  );
-
-  targets.add(
     TargetFocus(
       identify: "FloatingActionButton",
       keyTarget: keyFloatingActionButton,
       contents: [
         TargetContent(
-          align: ContentAlign.bottom,
-          child: Container(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  "Добавить лида",
+          align: ContentAlign.top,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+              Text(
+                "Добавить лида",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 10.0),
+                child: Text(
+                  "Нажмите «Добавить клиента» и заполните основные данные: имя, телефон, источник лида и ответственного менеджера. Чем больше информации — тем проще работать с клиентом.",
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontSize: 20.0,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text("Нажмите здесь, чтобы добавить нового лида.",
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
     ),
-  );
+  ];
 }
 
-void showTutorial() async {
+
+Future<void> _loadFeatureState() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownLeadColumn') ?? false;
+  setState(() {
+    _isSwitch = prefs.getBool('switchContact') ?? false;
+    _isLeadCardTutorialShown = prefs.getBool('isLeadCardTutorialShow') ?? false;
+    _isFabTutorialShown = prefs.getBool('isFabTutorialShow') ?? false;
+  });
+}
 
-        await Future.delayed(const Duration(seconds: 1));
+bool _isLeadCardTutorialInProgress = false;
+bool _isFabTutorialInProgress = false;
 
-  if (!isTutorialShown) {
+void showTutorial(String tutorialType) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+      await Future.delayed(const Duration(seconds: 1));
+
+  if (tutorialType == "LeadCard" && !_isLeadCardTutorialShown && !_isLeadCardTutorialInProgress) {
+    _isLeadCardTutorialInProgress = true; 
     TutorialCoachMark(
-      targets: targets,
+      targets: [targets.firstWhere((t) => t.identify == "LeadCard")],
       textSkip: 'Пропустить',
       colorShadow: Color(0xff1E2E52),
-      onClickTarget: (target) {
-        print(target);
-      },
-      onClickTargetWithTapPosition: (target, tapDetails) {
-        print("target: $target");
-        print("clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}");
-      },
-      onClickOverlay: (target) {
-        print(target);
-      },
-      onSkip: () {
-        
-        print("Пропустить");
-        return true;
-      },
       onFinish: () {
-        print("finish");
-        prefs.setBool('isTutorialShownLeadColumn', true); 
+        prefs.setBool('isLeadCardTutorialShow', true);
+        setState(() {
+          _isLeadCardTutorialShown = true;
+        });
+        _isLeadCardTutorialInProgress = false;
       },
-    )..show(context: context);
+    ).show(context: context);
+  } else if (tutorialType == "FloatingActionButton" && !_isFabTutorialShown && !_isFabTutorialInProgress) {
+    _isFabTutorialInProgress = true;
+    TutorialCoachMark(
+      targets: [targets.firstWhere((t) => t.identify == "FloatingActionButton")],
+      textSkip: 'Пропустить',
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        prefs.setBool('isFabTutorialShow', true);
+        setState(() {
+          _isFabTutorialShown = true;
+        });
+        _isFabTutorialInProgress = false; 
+      },
+    ).show(context: context);
   }
 }
-
-  Future<void> _loadFeatureState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isSwitch = prefs.getBool('switchContact') ?? false; 
-    });
-  }
 
   @override
   void dispose() {
@@ -216,13 +231,9 @@ Widget build(BuildContext context) {
                 }
               });
 
-              if (!_isTutorialShown) {
+              if (!_isLeadCardTutorialShown) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                 targets = targets.where((t) => t.identify == "LeadCard").toList();
-                  showTutorial();
-                  setState(() {
-                    _isTutorialShown = true;
-                  });
+                  showTutorial("LeadCard");
                 });
               }
 
@@ -262,15 +273,13 @@ Widget build(BuildContext context) {
               );
             } 
             else {
-              if (!_isTutorialShown) {
+
+               if (!_isFabTutorialShown) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  targets = targets.where((t) => t.identify == "FloatingActionButton").toList();
-                  showTutorial();
-                  setState(() {
-                    _isTutorialShown = true;
-                  });
+                  showTutorial("FloatingActionButton");
                 });
               }
+
               return RefreshIndicator(
                 backgroundColor: Colors.white,
                 color: Color(0xff1E2E52),

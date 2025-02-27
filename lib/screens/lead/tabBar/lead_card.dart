@@ -14,17 +14,18 @@ class LeadCard extends StatefulWidget {
   final void Function(int newStatusId) onStatusId;
 
   LeadCard({
-    Key? key, // Добавьте Key как необязательный параметр
+    Key? key, 
     required this.lead,
     required this.title,
     required this.statusId,
     required this.onStatusUpdated,
     required this.onStatusId,
-  }) : super(key: key); // Передайте key в super
+  }) : super(key: key);
 
   @override
   _LeadCardState createState() => _LeadCardState();
 }
+
 
 class _LeadCardState extends State<LeadCard> {
   late String dropdownValue;

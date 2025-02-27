@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'dart:ui' as ui;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -80,18 +81,168 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
 
+  final GlobalKey keyLeadNavigateChat = GlobalKey();
+  final GlobalKey keyLeadHistory = GlobalKey();
+  final GlobalKey keyLeadNotice = GlobalKey();
+  final GlobalKey keyLeadDeal = GlobalKey();
+  final GlobalKey keyLeadContactPerson = GlobalKey();
+
+  List<TargetFocus> targets = [];
+  
+  bool _isLeadTutorialShown = false; 
+  bool _isLeadHistoryTutorialShown = false; 
+  bool _isLeadTutorialInProgress = false;
+  bool _isLeadHistoryTutorialInProgress = false;
+
+final List<String> tutorialOrder = ["LeadNavigateChat", "LeadHistory"];
+int currentTutorialIndex = 0;
+
   @override
+
   void initState() {
-    super.initState();
-    _checkPermissions();
+  super.initState();
+  _checkPermissions();
     // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
     context.read<OrganizationBloc>().add(FetchOrganizations());
-
     _loadSelectedOrganization(); 
+    context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
 
-    context.read<LeadByIdBloc>()
-        .add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
+   _loadFeatureState();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets();
+    showTutorial(); 
+  });
   }
+
+  void _initTutorialTargets() {
+  targets = [
+    TargetFocus(
+      identify: "LeadNavigateChat",
+      keyTarget: keyLeadNavigateChat,
+      contents: [
+        TargetContent(
+          align: ContentAlign.top, 
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                "Чат с лидом",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.3),
+                child: Text(
+                  "Если подключены интеграции (WhatsApp, Telegram, Instagram, Эл. адрес), общайтесь с клиентом прямо в CRM. Вся переписка сохранится в карточке клиента.",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+    TargetFocus(
+      identify: "LeadHistory",
+      keyTarget: keyLeadHistory,
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom, 
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text( "История взаимодействий",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+                child: Text( "История действий (клиента, связанных с ним заметок, сделок).",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  ];
+}
+
+
+
+Future<void> _loadFeatureState() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _isLeadTutorialShown = prefs.getBool('isLeadNavigateChatTutorialShow') ?? false;
+    _isLeadHistoryTutorialShown = prefs.getBool('isLeadHistoryTutorialShow') ?? false;
+  });
+}
+
+
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await Future.delayed(const Duration(milliseconds: 500));
+
+  if (currentTutorialIndex < tutorialOrder.length) {
+    String tutorialType = tutorialOrder[currentTutorialIndex];
+
+    if (tutorialType == "LeadNavigateChat" && !_isLeadTutorialShown && !_isLeadTutorialInProgress) {
+      _isLeadTutorialInProgress = true;
+      TutorialCoachMark(
+        targets: [targets.firstWhere((t) => t.identify == "LeadNavigateChat")],
+        textSkip: 'Пропустить',
+        colorShadow: Color(0xff1E2E52),
+        onFinish: () {
+          prefs.setBool('isLeadNavigateChatTutorialShow', true);
+          setState(() {
+            _isLeadTutorialShown = true;
+          });
+          _isLeadTutorialInProgress = false;
+          currentTutorialIndex++; 
+          showTutorial(); 
+        },
+      ).show(context: context);
+    } else if (tutorialType == "LeadHistory" && !_isLeadHistoryTutorialShown && !_isLeadHistoryTutorialInProgress) {
+      _isLeadHistoryTutorialInProgress = true;
+      TutorialCoachMark(
+        targets: [targets.firstWhere((t) => t.identify == "LeadHistory")],
+        textSkip: 'Пропустить',
+        colorShadow: Color(0xff1E2E52),
+        onFinish: () {
+          prefs.setBool('isLeadHistoryTutorialShow', true);
+          setState(() {
+            _isLeadHistoryTutorialShown = true;
+          });
+          _isLeadHistoryTutorialInProgress = false;
+          currentTutorialIndex++; 
+          showTutorial();
+        },
+      ).show(context: context);
+    }
+  }
+}
+
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -363,7 +514,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: _buildAppBar(
-            context, AppLocalizations.of(context)!.translate('view_lead')),
+        context, AppLocalizations.of(context)!.translate('view_lead')),
         backgroundColor: Colors.white,
         body: BlocListener<LeadByIdBloc, LeadByIdState>(
           listener: (context, state) {
@@ -373,8 +524,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      AppLocalizations.of(context)!
-                          .translate(state.message), // Локализация сообщения
+                      AppLocalizations.of(context)!.translate(state.message), 
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
@@ -412,6 +562,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       _buildDetailsList(),
                       const SizedBox(height: 8),
                       LeadNavigateToChat(
+                        key: keyLeadNavigateChat,
                         leadId: int.parse(widget.leadId),
                         leadName: widget.leadName,
                       ),
@@ -437,8 +588,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               } else if (state is LeadByIdError) {
                 return Center(
                   child: Text(
-                    AppLocalizations.of(context)!
-                        .translate(state.message), // Локализация сообщения
+                    AppLocalizations.of(context)!.translate(state.message), 
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -492,6 +642,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       ),
       actions: [
         IconButton(
+          key: keyLeadHistory,
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(),
           icon: Icon(
@@ -724,3 +875,4 @@ Widget _buildValue(String value) {
   
 
 }
+
