@@ -311,7 +311,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
           children: [
             // Add a filter button and collapsible filter section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: InkWell(
                 onTap: () {
                   setState(() {
