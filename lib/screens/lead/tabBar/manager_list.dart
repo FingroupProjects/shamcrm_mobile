@@ -8,9 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ManagerRadioGroupWidget extends StatefulWidget {
   final String? selectedManager;
   final Function(ManagerData) onSelectManager;
+  final String? currentUserId; // Added parameter for current user ID
 
   ManagerRadioGroupWidget(
-      {super.key, required this.onSelectManager, this.selectedManager});
+      {super.key, required this.onSelectManager, this.selectedManager,     this.currentUserId, // Optional parameter
+});
 
   @override
   State<ManagerRadioGroupWidget> createState() =>

@@ -309,7 +309,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
         color: Colors.white,
         child: Column(
           children: [
-            // Add a filter button and collapsible filter section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: InkWell(
@@ -345,9 +344,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 ),
               ),
             ),
-            
-            // Collapsible filters section
-            AnimatedContainer(
+                        AnimatedContainer(
               duration: Duration(milliseconds: 300),
               height: isFiltersExpanded ? null : 0,
               child: isFiltersExpanded ? Padding(
@@ -387,9 +384,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 ),
               ) : SizedBox(),
             ),
-            
-            // Contact list
-            Expanded(
+                        Expanded(
               child: contacts.isEmpty
                   ? Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
                   : filteredContacts.isEmpty
