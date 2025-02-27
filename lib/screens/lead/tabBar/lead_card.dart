@@ -14,12 +14,13 @@ class LeadCard extends StatefulWidget {
   final void Function(int newStatusId) onStatusId;
 
   LeadCard({
+    Key? key, // Добавьте Key как необязательный параметр
     required this.lead,
     required this.title,
     required this.statusId,
     required this.onStatusUpdated,
     required this.onStatusId,
-  });
+  }) : super(key: key); // Передайте key в super
 
   @override
   _LeadCardState createState() => _LeadCardState();

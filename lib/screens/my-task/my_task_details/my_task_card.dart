@@ -282,38 +282,51 @@ class _MyTaskCardState extends State<MyTaskCard> {
                       .spaceBetween, // Пространство между элементами
                   children: [
                     // Иконка и текст даты
+                    // Replace the date row (around line 280) with this:
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment
-                          .center, // Выровнять по центру по вертикали
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Используем ColorFiltered для изменения цвета иконки
+                        // Date icon
                         ColorFiltered(
                           colorFilter: ColorFilter.mode(
                             (widget.task.overdue != null &&
                                     widget.task.overdue! > 0)
                                 ? const Color.fromARGB(255, 198, 40, 40)
-                                : const Color(
-                                    0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
+                                : const Color(0xff99A4BA),
                             BlendMode.srcIn,
                           ),
                           child: Image.asset(
-                            'assets/icons/tabBar/date.png', // Иконка даты
+                            'assets/icons/tabBar/date.png',
                             width: 24,
                             height: 36,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        Text(
+                          formatDate(
+                              widget.task.endDate ?? DateTime.now().toString()),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: (widget.task.overdue != null &&
+                                    widget.task.overdue! > 0)
+                                ? const Color.fromARGB(255, 198, 40, 40)
+                                : const Color(0xff99A4BA),
+                          ),
+                        ),
 
+                        // Then overdue indicator with flexible spacing
                         if (widget.task.overdue != null &&
                             widget.task.overdue! > 0)
                           Padding(
-                            padding: EdgeInsets.only(
-                              left: MediaQuery.of(context).size.width * 0.52,
-                            ),
+                            padding: const EdgeInsets.only(
+                                left: 200), // Увеличиваем расстояние до 16
                             child: Container(
                               width: 24,
                               height: 24,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 253, 98, 87),
+                              decoration: const BoxDecoration(
+                                color: Color.fromARGB(255, 253, 98, 87),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
@@ -327,23 +340,6 @@ class _MyTaskCardState extends State<MyTaskCard> {
                               ),
                             ),
                           ),
-
-                        const SizedBox(
-                            width: 4), // Отступ между иконкой и текстом
-                        Text(
-                          formatDate(
-                              widget.task.endDate ?? DateTime.now().toString()),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: (widget.task.overdue != null &&
-                                    widget.task.overdue! > 0)
-                                ? const Color.fromARGB(255, 198, 40, 40)
-                                : const Color(
-                                    0xff99A4BA), // Красный цвет, если просрочено, иначе обычный
-                          ),
-                        ),
                       ],
                     ),
                   ],

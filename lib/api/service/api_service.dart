@@ -1707,18 +1707,20 @@ class ApiService {
       int statusId, List<Map<String, dynamic>> contacts) async {
     final organizationId = await getSelectedOrganization();
     final response = await _postRequest(
-      '/contacts/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      '/lead/insert/${organizationId != null ? '?organization_id=$organizationId' : ''}',
       {
-        'lead_status_id': statusId,
-        'contacts': contacts, // Отправляем массив контактов
+        'leads': contacts,
       },
     );
+
+    if (response.statusCode == 422) {
+      throw Exception('Такой лид уже существует');
+    }
 
     if (response.statusCode != 200) {
       throw Exception('Ошибка отправки контактов!');
     }
   }
-
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -5332,119 +5334,112 @@ Future<Map<String, dynamic>> createMyTask({
     };
   }
 }*/
-  Future<Map<String, dynamic>> updateMyTask({
-    required int taskId,
-    required String name,
-    required int? taskStatusId,
-    DateTime? startDate,
-    DateTime? endDate,
-    String? description,
-    List<String>? filePaths,
-    required bool setPush,
-    List<MyTaskFiles>? existingFiles,
-  }) async {
-    try {
-      final token = await getToken();
-      final organizationId = await getSelectedOrganization();
-      var uri = Uri.parse(
-          '${baseUrl}/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
+ Future<Map<String, dynamic>> updateMyTask({
+  required int taskId,
+  required String name,
+  required int? taskStatusId,
+  DateTime? startDate,
+  DateTime? endDate,
+  String? description,
+  List<String>? filePaths,
+  required bool setPush,
+  List<MyTaskFiles>? existingFiles,
+}) async {
+  try {
+    final token = await getToken();
+    final organizationId = await getSelectedOrganization();
+    var uri = Uri.parse(
+        '${baseUrl}/my-task/$taskId${organizationId != null ? '?organization_id=$organizationId' : ''}');
 
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', uri);
+    // Создаем multipart request
+    var request = http.MultipartRequest('POST', uri);
 
-      // Добавляем заголовки с токеном
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Device': 'mobile'
-      });
+    // Добавляем заголовки с токеном
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile'
+    });
 
-      // Добавляем все поля в формате form-data
-      request.fields['name'] = name;
-      request.fields['task_status_id'] = taskStatusId.toString();
-      request.fields['send_notification'] = setPush ? '1' : '0';
-      // request.fields['_method'] = 'PUT'; // Добавляем метод PUT для обновления
+    // Добавляем все поля в формате form-data
+    request.fields['name'] = name;
+    request.fields['task_status_id'] = taskStatusId.toString();
+    request.fields['send_notification'] = setPush ? '1' : '0';
 
-      // if (startDate != null) {
-      //   request.fields['from'] = startDate.toIso8601String();
-      // }
-      if (endDate != null) {
-        request.fields['to'] = endDate.toIso8601String();
+    if (endDate != null) {
+      request.fields['to'] = '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+    }
+    if (description != null) {
+      request.fields['description'] = description;
+    }
+
+    // Добавляем новые файлы, если они есть
+    if (filePaths != null && filePaths.isNotEmpty) {
+      for (var filePath in filePaths) {
+        final file = await http.MultipartFile.fromPath('files[]', filePath);
+        request.files.add(file);
       }
-      if (description != null) {
-        request.fields['description'] = description;
+    }
+
+    // Добавляем информацию о существующих файлах
+    if (existingFiles != null && existingFiles.isNotEmpty) {
+      List<Map<String, dynamic>> existingFilesList = existingFiles
+          .map((file) => {'id': file.id, 'name': file.name, 'path': file.path})
+          .toList();
+
+      request.fields['existing_files'] = json.encode(existingFilesList);
+    }
+
+    // Отправляем запрос
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      return {
+        'success': true,
+        'message': 'Задача успешно обновлена',
+        'data': responseData,
+      };
+    } else {
+      String errorMessage;
+      switch (response.statusCode) {
+        case 400:
+          errorMessage = 'Неверные данные запроса';
+          break;
+        case 401:
+          errorMessage = 'Необходима авторизация';
+          break;
+        case 403:
+          errorMessage = 'Недостаточно прав для обновления задачи';
+          break;
+        case 404:
+          errorMessage = 'Ресурс не найден';
+          break;
+        case 409:
+          errorMessage = 'Конфликт при обновлении задачи';
+          break;
+        case 500:
+          errorMessage = 'Внутренняя ошибка сервера';
+          break;
+        default:
+          errorMessage = 'Произошла ошибка при обновлении задачи';
       }
-
-      // Добавляем новые файлы, если они есть
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var filePath in filePaths) {
-          final file = await http.MultipartFile.fromPath('files[]', filePath);
-          request.files.add(file);
-        }
-      }
-
-      // Добавляем информацию о существующих файлах
-      if (existingFiles != null && existingFiles.isNotEmpty) {
-        List<Map<String, dynamic>> existingFilesList = existingFiles
-            .map(
-                (file) => {'id': file.id, 'name': file.name, 'path': file.path})
-            .toList();
-
-        request.fields['existing_files'] = json.encode(existingFilesList);
-      }
-
-      // Отправляем запрос
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        return {
-          'success': true,
-          'message': 'Задача успешно обновлена',
-          'data': responseData,
-        };
-      } else {
-        // Обрабатываем различные коды ошибок
-        String errorMessage;
-        switch (response.statusCode) {
-          case 400:
-            errorMessage = 'Неверные данные запроса';
-            break;
-          case 401:
-            errorMessage = 'Необходима авторизация';
-            break;
-          case 403:
-            errorMessage = 'Недостаточно прав для обновления задачи';
-            break;
-          case 404:
-            errorMessage = 'Ресурс не найден';
-            break;
-          case 409:
-            errorMessage = 'Конфликт при обновлении задачи';
-            break;
-          case 500:
-            errorMessage = 'Внутренняя ошибка сервера';
-            break;
-          default:
-            errorMessage = 'Произошла ошибка при обновлении задачи';
-        }
-        return {
-          'success': false,
-          'message': '$errorMessage!',
-          'statusCode': response.statusCode,
-        };
-      }
-    } catch (e) {
-      print('Detailed error: $e');
       return {
         'success': false,
-        'message': 'Ошибка при выполнении запроса!',
-        'error': e.toString(),
+        'message': '$errorMessage!',
+        'statusCode': response.statusCode,
       };
     }
+  } catch (e) {
+    print('Detailed error: $e');
+    return {
+      'success': false,
+      'message': 'Ошибка при выполнении запроса!',
+      'error': e.toString(),
+    };
   }
-
+}
 // Метод для получения Истории Задачи
   Future<List<MyTaskHistory>> getMyTaskHistory(int taskId) async {
     try {
