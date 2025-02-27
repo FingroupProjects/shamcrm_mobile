@@ -15,7 +15,11 @@ class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
   final String leadName;
 
-  LeadNavigateToChat({required this.leadId, required this.leadName});
+  LeadNavigateToChat({
+    Key? key, 
+    required this.leadId, 
+    required this.leadName
+    }) : super(key: key);
 
   @override
   _LeadNavigateToChatDialogState createState() =>
