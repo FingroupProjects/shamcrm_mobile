@@ -4,29 +4,82 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ManagerRadioGroupWidget extends StatefulWidget {
   final String? selectedManager;
   final Function(ManagerData) onSelectManager;
+  final String? currentUserId;
 
-  ManagerRadioGroupWidget(
-      {super.key, required this.onSelectManager, this.selectedManager});
+  ManagerRadioGroupWidget({
+    super.key, 
+    required this.onSelectManager, 
+    this.selectedManager,
+    this.currentUserId,
+  });
 
   @override
-  State<ManagerRadioGroupWidget> createState() =>
-      _ManagerRadioGroupWidgetState();
+  State<ManagerRadioGroupWidget> createState() => _ManagerRadioGroupWidgetState();
 }
-
 class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   List<ManagerData> managersList = [];
   ManagerData? selectedManagerData;
+  String? currentUserId;
+  bool _autoSelectionPerformed = false;
 
-  @override
-  void initState() {
-    super.initState();
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+@override
+void initState() {
+  super.initState();
+  print('ManagerRadioGroupWidget initState: currentUserId = ${widget.currentUserId}'); // Логируем значение
+  if (widget.currentUserId != null) {
+    currentUserId = widget.currentUserId;
+  } else {
+    _loadCurrentUserId();
+  }
+  context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+}
+
+  Future<void> _loadCurrentUserId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      
+      if (mounted) {
+        setState(() {
+          currentUserId = userId;
+        });
+      }
+      print('Current userID: $userId');
+    } catch (e) {
+      print('Error getting current user ID: $e');
+    }
   }
 
+void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
+  print('Auto-selecting manager...'); // Логируем начало процесса
+  if (currentUserId == null || currentUserId!.isEmpty || _autoSelectionPerformed) {
+    print('Skipping auto-selection: currentUserId = $currentUserId, _autoSelectionPerformed = $_autoSelectionPerformed');
+    return;
+  }
+  
+  for (var manager in managers) {
+    print('Checking manager: ${manager.id} - ${manager.name} ${manager.lastname}'); // Логируем каждого менеджера
+    if (manager.id.toString() == currentUserId) {
+      print('Found matching manager: ${manager.name} ${manager.lastname}'); // Логируем найденного менеджера
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            selectedManagerData = manager;
+            _autoSelectionPerformed = true;
+          });
+          widget.onSelectManager(manager);
+          print('Auto-selected manager: ${manager.name} ${manager.lastname}');
+        }
+      });
+      break;
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -35,6 +88,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
           builder: (context, state) {
             // Обработка ошибок
             if (state is GetAllManagerError) {
+              
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -63,15 +117,21 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
             // Обновление данных при успешной загрузке
             if (state is GetAllManagerSuccess) {
               managersList = state.dataManager.result ?? [];
+                    print('Managers loaded: ${state.dataManager.result?.length}'); // Логируем количество менеджеров
+      managersList = state.dataManager.result ?? [];
+      _autoSelectCurrentUserAsManager(managersList);
+              // Если у нас уже есть выбранный менеджер от пользователя, используем его
               if (widget.selectedManager != null && managersList.isNotEmpty) {
                 try {
                   selectedManagerData = managersList.firstWhere(
-                    (manager) =>
-                        manager.id.toString() == widget.selectedManager,
+                    (manager) => manager.id.toString() == widget.selectedManager,
                   );
                 } catch (e) {
                   selectedManagerData = null;
                 }
+              } 
+              else if (selectedManagerData == null && !_autoSelectionPerformed) {
+                _autoSelectCurrentUserAsManager(managersList);
               }
             }
 
@@ -113,7 +173,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return Text(
-                        '${item.name!} ${item.lastname ?? ''}', // Добавляем фамилию
+                        '${item.name!} ${item.lastname ?? ''}',
                         style: TextStyle(
                           color: Color(0xff1E2E52),
                           fontSize: 14,
@@ -126,15 +186,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       if (state is GetAllManagerLoading) {
                         return Row(
                           children: [
-                            SizedBox(
-                                // width: 16,
-                                // height: 16,
-                                // child: CircularProgressIndicator(
-                                //   strokeWidth: 2,
-                                //   valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                                // ),
-                                ),
-                            // SizedBox(width: 8),
+                            SizedBox(),
                             Text(
                               AppLocalizations.of(context)!
                                   .translate('select_manager'),

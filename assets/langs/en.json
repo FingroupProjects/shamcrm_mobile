@@ -660,7 +660,9 @@
       "notifications_sent": "Send PUSH notification",
       "tab_lead": "Lead",
       "tab_notices": "Notices",
-      "tab_deals": "Deals"
+      "tab_deals": "Deals",
+      "specify_lead_data": "Specify lead data"
+
   
 
 }
