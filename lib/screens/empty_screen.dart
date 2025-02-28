@@ -50,7 +50,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   AutoSizeText(
-                    'Добро пожаловать!',
+            AppLocalizations.of(context)!.translate('welcome'),
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w600,

@@ -53,7 +53,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _requestPermissionAndLoadContacts();
   }
-  
+
   Future<void> _loadCurrentUserId() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -62,27 +62,33 @@ class _ContactsScreenState extends State<ContactsScreen> {
       if (mounted) {
         setState(() {
           currentUserId = userId;
-          print('State updated: currentUserId = $currentUserId'); // Логируем обновление состояния
+          print(
+              'State updated: currentUserId = $currentUserId'); // Логируем обновление состояния
         });
       }
     } catch (e) {
       print('Error loading current user ID: $e');
     }
   }
-  
+
   Future<void> _requestPermissionAndLoadContacts() async {
     if (await FlutterContacts.requestPermission()) {
       _getContacts();
     } else {
-      _showSnackBar(AppLocalizations.of(context)!.translate('no_permession_to_access_contacts'), Colors.red);
+      _showSnackBar(
+          AppLocalizations.of(context)!
+              .translate('no_permession_to_access_contacts'),
+          Colors.red);
     }
   }
 
   Future<void> _getContacts() async {
     try {
-      List<Contact> fetchedContacts = await FlutterContacts.getContacts(withProperties: true, withPhoto: true);
+      List<Contact> fetchedContacts = await FlutterContacts.getContacts(
+          withProperties: true, withPhoto: true);
       fetchedContacts = fetchedContacts.where((contact) {
-        return (contact.displayName != null && contact.displayName!.isNotEmpty) &&
+        return (contact.displayName != null &&
+                contact.displayName!.isNotEmpty) &&
             (contact.phones.isNotEmpty);
       }).toList();
 
@@ -120,7 +126,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ? MemoryImage(contact.photo!)
                       : null,
                   child: contact.photo == null
-                      ? Icon(Icons.person, size: 50, color: Colors.white) 
+                      ? Icon(Icons.person, size: 50, color: Colors.white)
                       : null,
                 ),
               ),
@@ -130,18 +136,19 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   contact.displayName,
                   style: TextStyle(
                     fontSize: 24,
-                    fontWeight: FontWeight.w700, 
+                    fontWeight: FontWeight.w700,
                     fontFamily: 'Gilroy',
                     color: Color(0xff1E2E52),
                   ),
                 ),
               ),
-              Divider(color: Color(0xff1E2E52)), 
+              Divider(color: Color(0xff1E2E52)),
               SizedBox(height: 16),
-              Text(AppLocalizations.of(context)!.translate('phones'),
+              Text(
+                AppLocalizations.of(context)!.translate('phones'),
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w600, 
+                  fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
                   color: Color(0xff1E2E52),
                 ),
@@ -152,9 +159,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Row(
                     children: [
-                      Icon(Icons.phone, color: Color(0xff1E2E52),),
+                      Icon(
+                        Icons.phone,
+                        color: Color(0xff1E2E52),
+                      ),
                       SizedBox(width: 8),
-                      Text( uniquePhone,
+                      Text(
+                        uniquePhone,
                         style: TextStyle(color: Colors.black54),
                       ),
                     ],
@@ -162,7 +173,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 );
               }).toSet(),
               SizedBox(height: 16),
-              Text('Emails:',
+              Text(
+                'Emails:',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -175,7 +187,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Row(
                     children: [
-                      Icon(Icons.email, color: Color(0xff1E2E52),), 
+                      Icon(
+                        Icons.email,
+                        color: Color(0xff1E2E52),
+                      ),
                       SizedBox(width: 8),
                       Text(
                         email.address,
@@ -186,7 +201,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 );
               }).toList(),
               SizedBox(height: 16),
-              Text( AppLocalizations.of(context)!.translate('address'),
+              Text(
+                AppLocalizations.of(context)!.translate('address'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -199,7 +215,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Row(
                     children: [
-                      Icon(Icons.location_on, color: Color(0xff1E2E52),),
+                      Icon(
+                        Icons.location_on,
+                        color: Color(0xff1E2E52),
+                      ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -224,7 +243,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
         filteredContacts = contacts;
       } else {
         filteredContacts = contacts.where((contact) {
-          return contact.displayName?.toLowerCase().contains(query.toLowerCase()) ?? false;
+          return contact.displayName
+                  ?.toLowerCase()
+                  .contains(query.toLowerCase()) ??
+              false;
         }).toList();
       }
     });
@@ -264,6 +286,336 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
+void _showFailedContactsDialog(
+    List<Map<String, dynamic>> failedContacts, int totalContacts) {
+  // Calculate successfully added contacts
+  int successfulContacts = totalContacts - failedContacts.length;
+
+  showDialog(
+    context: context,
+    barrierColor: Colors.black.withOpacity(0.5),
+    builder: (BuildContext context) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xff1E2E52).withOpacity(0.15),
+                spreadRadius: 3,
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with gradient
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                width: double.infinity,
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('failed_contacts_title') ??
+                        'Failed Contacts',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
+              
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Statistics card
+                      Container(
+                        margin: EdgeInsets.only(bottom: 20),
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildStatRow(
+                              context,
+                              AppLocalizations.of(context)!.translate('total_contacts') ?? 'Total contacts',
+                              totalContacts.toString(),
+                              Color(0xff1E2E52),
+                              Icons.people_alt_rounded,
+                            ),
+                            Divider(height: 20, thickness: 1, color: Color(0xffF4F7FD)),
+                            _buildStatRow(
+                              context,
+                              AppLocalizations.of(context)!.translate('successfully_added') ?? 'Successfully added',
+                              successfulContacts.toString(),
+                              Colors.green.shade700,
+                              Icons.check_circle_rounded,
+                            ),
+                            Divider(height: 20, thickness: 1, color: Color(0xffF4F7FD)),
+                            _buildStatRow(
+                              context,
+                              AppLocalizations.of(context)!.translate('failed_to_add') ?? 'Failed to add',
+                              failedContacts.length.toString(),
+                              Colors.red.shade700,
+                              Icons.error_rounded,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Failed contacts section
+                      if (failedContacts.isNotEmpty) ...[
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 12, left: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: Color(0xff1E2E52),
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                AppLocalizations.of(context)!.translate('contacts_with_errors') ??
+                                    'Contacts with errors:',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xff1E2E52),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Failed contacts list
+                        ListView.separated(
+                          physics: NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: failedContacts.length,
+                          separatorBuilder: (context, index) => SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final contact = failedContacts[index];
+                            final name = contact['name'] ?? '';
+                            final errors = (contact['errors'] as List);
+
+                            return Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Color(0xffF8F9FC),
+                                border: Border.all(color: Colors.red.shade100),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: Color(0xff1E2E52).withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xff1E2E52),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          name,
+                                          style: TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  ...errors.map((error) => Padding(
+                                    padding: EdgeInsets.only(bottom: 6),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.error_outline_rounded,
+                                          color: Colors.red.shade700,
+                                          size: 16,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            error.toString(),
+                                            style: TextStyle(
+                                              color: Colors.red.shade700,
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )).toList(),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Action buttons
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      spreadRadius: 0,
+                      blurRadius: 10,
+                      offset: Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          // If at least one contact was added successfully, close the contacts screen
+                          if (successfulContacts > 0) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xff1E2E52),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('ok') ?? 'OK',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// Helper method to create statistic rows
+Widget _buildStatRow(BuildContext context, String label, String value, Color color, IconData icon) {
+  return Row(
+    children: [
+      Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+        ),
+      ),
+      SizedBox(width: 12),
+      Expanded(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+      Text(
+        value,
+        style: TextStyle(
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          color: color,
+        ),
+      ),
+    ],
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -285,14 +637,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 controller: searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
+                  hintText:
+                      AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
                 onChanged: _filterContacts,
               )
             : Row(
                 children: [
-                  Text(AppLocalizations.of(context)!.translate('phone_contacts'),
+                  Text(
+                    AppLocalizations.of(context)!.translate('phone_contacts'),
                     style: TextStyle(
                       color: Colors.black,
                       fontFamily: 'Gilroy',
@@ -327,8 +681,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
           ),
           IconButton(
             icon: Icon(
-              selectedContacts.length == contacts.length ? Icons.check_box : Icons.check_box_outline_blank,
-              color: selectedContacts.length == contacts.length ? Color(0xff1E2E52) : Colors.black,
+              selectedContacts.length == contacts.length
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+              color: selectedContacts.length == contacts.length
+                  ? Color(0xff1E2E52)
+                  : Colors.black,
             ),
             onPressed: () {
               setState(() {
@@ -382,7 +740,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        AppLocalizations.of(context)?.translate('specify_lead_data') ?? 'Filters',
+                        AppLocalizations.of(context)
+                                ?.translate('specify_lead_data') ??
+                            'Filters',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
@@ -391,7 +751,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
                         ),
                       ),
                       Icon(
-                        isFiltersExpanded ? Icons.expand_less : Icons.expand_more,
+                        isFiltersExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
                         color: Color(0xff1E2E52),
                       ),
                     ],
@@ -402,55 +764,65 @@ class _ContactsScreenState extends State<ContactsScreen> {
             AnimatedContainer(
               duration: Duration(milliseconds: 300),
               height: isFiltersExpanded ? null : 0,
-              child: isFiltersExpanded ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    RegionRadioGroupWidget(
-                      selectedRegion: selectedRegion,
-                      onSelectRegion: (RegionData selectedRegionData) {
-                        setState(() {
-                          selectedRegion = selectedRegionData.id.toString();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    ManagerRadioGroupWidget(
-                      selectedManager: selectedManager,
-                      currentUserId: currentUserId, // Передаем currentUserId
-                      onSelectManager: (ManagerData selectedManagerData) {
-                        setState(() {
-                          selectedManager = selectedManagerData.id.toString();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    SourceLeadWidget(
-                      selectedSourceLead: selectedSourceLead,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedSourceLead = newValue;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              ) : SizedBox(),
+              child: isFiltersExpanded
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          RegionRadioGroupWidget(
+                            selectedRegion: selectedRegion,
+                            onSelectRegion: (RegionData selectedRegionData) {
+                              setState(() {
+                                selectedRegion =
+                                    selectedRegionData.id.toString();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          ManagerRadioGroupWidget(
+                            selectedManager: selectedManager,
+                            currentUserId:
+                                currentUserId, // Передаем currentUserId
+                            onSelectManager: (ManagerData selectedManagerData) {
+                              setState(() {
+                                selectedManager =
+                                    selectedManagerData.id.toString();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          SourceLeadWidget(
+                            selectedSourceLead: selectedSourceLead,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedSourceLead = newValue;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    )
+                  : SizedBox(),
             ),
             Expanded(
               child: contacts.isEmpty
-                  ? Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)))
+                  ? Center(
+                      child:
+                          CircularProgressIndicator(color: Color(0xff1E2E52)))
                   : filteredContacts.isEmpty
-                      ? Center(child: Text(AppLocalizations.of(context)!.translate('no_result')))
+                      ? Center(
+                          child: Text(AppLocalizations.of(context)!
+                              .translate('no_result')))
                       : ListView.builder(
                           itemCount: filteredContacts.length,
                           itemBuilder: (context, index) {
                             Contact contact = filteredContacts[index];
                             return Container(
-                              margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              margin: EdgeInsets.symmetric(
+                                  vertical: 4, horizontal: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xffF4F7FD),
                                 borderRadius: BorderRadius.circular(12),
@@ -459,10 +831,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                 leading: CircleAvatar(
                                   backgroundColor: Colors.black,
                                   backgroundImage: contact.photo != null
-                                      ? MemoryImage(contact.photo!) 
+                                      ? MemoryImage(contact.photo!)
                                       : null,
                                   child: contact.photo == null
-                                      ? Icon(Icons.person, color: Colors.white) 
+                                      ? Icon(Icons.person, color: Colors.white)
                                       : null,
                                 ),
                                 title: Text(
@@ -473,7 +845,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                subtitle: Text(contact.phones.isNotEmpty ? contact.phones.first.number : AppLocalizations.of(context)!.translate('no_number')),
+                                subtitle: Text(contact.phones.isNotEmpty
+                                    ? contact.phones.first.number
+                                    : AppLocalizations.of(context)!
+                                        .translate('no_number')),
                                 trailing: Transform.scale(
                                   scale: 1.1,
                                   child: Checkbox(
@@ -495,12 +870,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
       ),
       floatingActionButton: selectedContacts.isNotEmpty
           ? FloatingActionButton(
+              // Replace the onPressed method of your FloatingActionButton with this:
               onPressed: () async {
                 try {
-                  // Создаем список контактов для отправки на сервер и сохраняем их индексы
+                  // Создаем список контактов для отправки на сервер
                   List<Map<String, dynamic>> contactsToSend = [];
                   List<Contact> orderedContacts = selectedContacts.toList();
-                  
+
                   for (var contact in orderedContacts) {
                     if (contact.phones.isNotEmpty) {
                       contactsToSend.add({
@@ -513,66 +889,64 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       });
                     }
                   }
-                  
-                  try {
-                    await apiService.addLeadsFromContacts(widget.statusId, contactsToSend);
-                    _showSnackBar(AppLocalizations.of(context)!.translate('contacts_sent'), Colors.green);
-                    setState(() {
-                      selectedContacts.clear();
-                    });
-                  } catch (e) {
-                    // Обработка ошибок сервера
-                    if (e.toString().contains('response')) {
-                      try {
-                        // Извлекаем и парсим сообщение об ошибке из ответа сервера
-                        String errorBody = e.toString();
-                        // Находим начало и конец JSON в строке ошибки
-                        int startIndex = errorBody.indexOf('{');
-                        int endIndex = errorBody.lastIndexOf('}') + 1;
-                        
-                        if (startIndex != -1 && endIndex != -1) {
-                          String jsonStr = errorBody.substring(startIndex, endIndex);
-                          Map<String, dynamic> errorData = json.decode(jsonStr);
-                          
-                          if (errorData.containsKey('errors')) {
-                            Map<String, dynamic> errors = errorData['errors'];
-                            List<String> errorMessages = [];
-                            
-                            // Обработка каждой ошибки и нахождение соответствующего контакта
-                            errors.forEach((key, value) {
-                              // Извлекаем индекс из ключа, например, 'leads.0.phone' -> '0'
-                              RegExp regExp = RegExp(r'leads\.(\d+)\.phone');
-                              var match = regExp.firstMatch(key);
-                              
-                              if (match != null) {
-                                int contactIndex = int.parse(match.group(1)!);
-                                if (contactIndex < orderedContacts.length) {
-                                  String contactName = orderedContacts[contactIndex].displayName;
-                                  String errorMessage = value is List ? value.first : value.toString();
-                                  errorMessages.add('$contactName: $errorMessage');
-                                }
-                              }
-                            });
-                            
-                            if (errorMessages.isNotEmpty) {
-                              _showSnackBar(
-                                '${AppLocalizations.of(context)!.translate('error_contacts_sent')}\n${errorMessages.join('\n')}',
-                                Colors.red
-                              );
-                              return;
-                            }
-                          }
-                        }
-                      } catch (parseError) {
-                        print('Error parsing server response: $parseError');
+
+                  // Store the total number of contacts we're trying to add
+                  int totalContacts = contactsToSend.length;
+
+                  // Call the API and get the response data
+                  final responseData = await apiService.addLeadsFromContacts(
+                      widget.statusId, contactsToSend);
+
+                  // Check if there are errors in the result array
+                  if (responseData.containsKey('result') &&
+                      responseData['result'] is List) {
+                    List<dynamic> results = responseData['result'];
+                    List<Map<String, dynamic>> failedContacts = [];
+
+                    // Filter contacts with errors
+                    for (var item in results) {
+                      if (item is Map<String, dynamic> &&
+                          item.containsKey('errors') &&
+                          item['errors'] is List &&
+                          (item['errors'] as List).isNotEmpty) {
+                        failedContacts.add(item);
                       }
                     }
-                    
-                    // Если не удалось обработать ошибку конкретно, показываем общее сообщение
-                    _showSnackBar(AppLocalizations.of(context)!.translate('error_contacts_sent'), Colors.red);
+
+                    if (failedContacts.isNotEmpty) {
+                      // There are failed contacts, show the error dialog with summary
+                      _showFailedContactsDialog(failedContacts, totalContacts);
+                    } else {
+                      // All contacts were processed successfully
+                      _showSnackBar(
+                          AppLocalizations.of(context)!
+                              .translate('contacts_sent'),
+                          Colors.green);
+
+                      // Close the page after successful submission
+                      Future.delayed(Duration(seconds: 1), () {
+                        Navigator.of(context).pop();
+                      });
+                    }
+                  } else {
+                    // If response structure is unexpected, just show success and close the page
+                    _showSnackBar(
+                        AppLocalizations.of(context)!
+                            .translate('contacts_sent'),
+                        Colors.green);
+
+                    // Close the page after successful submission
+                    Future.delayed(Duration(seconds: 1), () {
+                      Navigator.of(context).pop();
+                    });
                   }
                 } catch (e) {
-                  _showSnackBar(AppLocalizations.of(context)!.translate('error_contacts_sent'), Colors.red);
+                  // Handle exceptions
+                  _showSnackBar(
+                      AppLocalizations.of(context)!
+                          .translate('error_contacts_sent'),
+                      Colors.red);
+                  print('Error sending contacts: $e');
                 }
               },
               backgroundColor: Color(0xff1E2E52),

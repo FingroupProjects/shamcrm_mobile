@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
@@ -35,6 +36,8 @@ class _EventScreenState extends State<EventScreen>
   int? _selectedManagerId;
   bool _showCustomTabBar = true;
   final TextEditingController _searchController = TextEditingController();
+  bool _hasPermissionToAddEvent = true;
+  final ApiService _apiService = ApiService();
 
   List<ManagerData> _selectedManagers = [];
   int? _selectedStatuses;  
@@ -84,7 +87,12 @@ void initState() {
     }
   });
 }
-
+  Future<void> _checkPermission() async {
+    bool hasPermission = await _apiService.hasPermission('notice.create');
+    setState(() {
+      _hasPermissionToAddEvent = hasPermission;
+    });
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -424,22 +432,24 @@ Widget build(BuildContext context) {
         clearButtonClickFiltr: (value) {},
       ),
     ),
-    floatingActionButton: FloatingActionButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NoticeAddScreen(),
-          ),
-        ).then((_) => _loadEvents());
-      },
-      backgroundColor: Color(0xff1E2E52),
-      child: Image.asset(
-        'assets/icons/tabBar/add.png',
-        width: 24,
-        height: 24,
-      ),
-    ),
+ floatingActionButton: _hasPermissionToAddEvent
+    ? FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NoticeAddScreen(),
+            ),
+          ).then((_) => _loadEvents());
+        },
+        backgroundColor: Color(0xff1E2E52),
+        child: Image.asset(
+          'assets/icons/tabBar/add.png',
+          width: 24,
+          height: 24,
+        ),
+      )
+    : null, // Если нет разрешения, просто null
     body: isClickAvatarIcon
         ? ProfileScreen()
         : Column(
