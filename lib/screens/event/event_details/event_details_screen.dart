@@ -63,159 +63,156 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  void _showFinishDialog(int noticeId) {
-    // Clear the controller before showing dialog
-    conclusionController.clear();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-        return AlertDialog(
-  backgroundColor: Colors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
-  ),
-  // Remove title completely and handle it manually in the content
-  titlePadding: EdgeInsets.zero,
-  title: null,
-  contentPadding: const EdgeInsets.all(24),
-  content: ConstrainedBox(
-    constraints: const BoxConstraints(
-      maxWidth: 300,
-      minWidth: 280,
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('conclusion'),
-          style: const TextStyle(
-            color: Color(0xff1E2E52),
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
+void _showFinishDialog(int noticeId) {
+  conclusionController.clear();
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        // TextField with no spacing
-        Container(
-          margin: EdgeInsets.zero,
-          padding: EdgeInsets.zero,
-          child: CustomTextField(
-            controller: conclusionController,
-            hintText: AppLocalizations.of(context)!.translate('write_conclusion'),
-            maxLines: 5,
-            keyboardType: TextInputType.multiline,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return AppLocalizations.of(context)!.translate('field_required');
-              }
-              return null;
-            },
-            label: '', // Empty label
+        titlePadding: EdgeInsets.zero,
+        title: null,
+        contentPadding: const EdgeInsets.all(24),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 300,
+            minWidth: 280,
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                onPressed: () => Navigator.of(context).pop(),
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.translate('conclusion'),
+                style: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('confirm'),
-    onPressed: () {
-                              if (conclusionController.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('field_required'),
-                                      style: const TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              Navigator.of(context).pop();
-                              context.read<EventBloc>().add(
-                                    FinishNotice(
-                                      noticeId,
-                                      conclusionController.text,
-                                      AppLocalizations.of(context)!,
-                                    ),
-                                  );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate(
-                                        'event_completed_successfully'),
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor: Colors.green,
-                                  elevation: 3,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                              Future.delayed(const Duration(milliseconds: 1),
-                                  () {
-                                if (mounted) {
-                                  context.read<EventBloc>().add(FetchEvents());
-                                  Navigator.of(context).pop();
-                                }
-                              });
-                            },
-                  buttonColor: const Color(0xff1E2E52),
-                  textColor: Colors.white,
+              Container(
+                margin: EdgeInsets.zero,
+                padding: EdgeInsets.zero,
+                child: CustomTextField(
+                  controller: conclusionController,
+                  hintText: AppLocalizations.of(context)!
+                      .translate('write_conclusion'),
+                  maxLines: 5,
+                  keyboardType: TextInputType.multiline,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return AppLocalizations.of(context)!
+                          .translate('field_required');
+                    }
+                    return null;
+                  },
+                  label: '', // Empty label
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  ),
-); },
-      );
-    });
-  }
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: CustomButton(
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('cancel'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      buttonColor: Colors.red,
+                      textColor: Colors.white,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: CustomButton(
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('confirm'),
+                        onPressed: () {
+                          if (conclusionController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('field_required'),
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
 
+                          Navigator.of(context).pop();
+                          context.read<EventBloc>().add(
+                                FinishNotice(
+                                  noticeId,
+                                  conclusionController.text,
+                                  AppLocalizations.of(context)!,
+                                ),
+                              );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(context)!.translate(
+                                    'event_completed_successfully'),
+                                style: const TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.green,
+                              elevation: 3,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                          Future.delayed(const Duration(milliseconds: 1), () {
+                            if (mounted) {
+                              context.read<EventBloc>().add(FetchEvents());
+                              Navigator.of(context).pop();
+                            }
+                          });
+                        },
+                        buttonColor: const Color(0xff1E2E52),
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
   Widget _buildFinishButton(Notice notice) {
     if (notice.isFinished) {
       return const SizedBox.shrink();

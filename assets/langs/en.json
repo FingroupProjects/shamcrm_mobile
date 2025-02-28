@@ -671,7 +671,11 @@
       "write_conclusion": "Write a conclusion",
       "111111": "",
       "welcome": "Welcome!",
-      "conclusions": "Conclusion:"
+      "conclusions": "Conclusion:",
+          "notes": "Notes",
+    "deals": "Deals",
+    "history": "History"
+
 
 
   
