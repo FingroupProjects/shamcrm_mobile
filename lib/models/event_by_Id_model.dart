@@ -8,12 +8,12 @@ class Notice {
   final String body;
   final DateTime? date; // Поле может быть null
   final NoticeLead? lead;
-  final NoticeAuthor? author;  // Изменено на nullable
+  final NoticeAuthor? author; // Изменено на nullable
   final List<UserEvent> users;
   final bool sendNotification;
   final DateTime createdAt;
   final bool canFinish;
-
+  final String? conclusion;
   Notice({
     required this.id,
     required this.isFinished,
@@ -21,7 +21,8 @@ class Notice {
     required this.body,
     this.date,
     this.lead,
-    this.author,  // Убрали required
+    this.conclusion,
+    this.author, // Убрали required
     required this.users,
     required this.sendNotification,
     required this.createdAt,
@@ -33,7 +34,7 @@ class Notice {
     List<UserEvent> parseUsers(dynamic usersJson) {
       if (usersJson == null) return [];
       if (usersJson is! List) return [];
-      
+
       return List<UserEvent>.from(
         (usersJson as List).map((userJson) {
           if (userJson is Map<String, dynamic>) {
@@ -50,13 +51,20 @@ class Notice {
         isFinished: json['is_finished'] as bool? ?? false,
         title: json['title'] as String? ?? '',
         body: json['body'] as String? ?? '',
-        date: json['date'] != null ? DateTime.parse(json['date'].toString()) : null,
-        lead: json['lead'] != null ? NoticeLead.fromJson(json['lead'] as Map<String, dynamic>) : null,
-        author: json['author'] != null ? NoticeAuthor.fromJson(json['author'] as Map<String, dynamic>) : null,
+        date: json['date'] != null
+            ? DateTime.parse(json['date'].toString())
+            : null,
+        lead: json['lead'] != null
+            ? NoticeLead.fromJson(json['lead'] as Map<String, dynamic>)
+            : null,
+        author: json['author'] != null
+            ? NoticeAuthor.fromJson(json['author'] as Map<String, dynamic>)
+            : null,
         users: parseUsers(json['users']),
         sendNotification: (json['send_notification'] as num?)?.toInt() == 1,
         createdAt: DateTime.parse(json['created_at'].toString()),
         canFinish: json['can_finish'] as bool? ?? false,
+        conclusion: json['conclusion'] as String? ?? '',
       );
     } catch (e) {
       print('Error parsing Notice: $e');
@@ -64,6 +72,7 @@ class Notice {
     }
   }
 }
+
 class UserEvent {
   final int id;
   final String name;
@@ -104,8 +113,11 @@ class UserEvent {
       email: json['email'],
       phone: json['phone'],
       image: json['image'],
-      lastSeen: json['last_seen'] != null ? DateTime.parse(json['last_seen']) : null,
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at']) : null,
+      lastSeen:
+          json['last_seen'] != null ? DateTime.parse(json['last_seen']) : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'])
+          : null,
       telegramUserId: json['telegram_user_id'],
       jobTitle: json['job_title'],
       online: json['online'],

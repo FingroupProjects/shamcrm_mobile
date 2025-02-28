@@ -82,7 +82,8 @@ class DeleteNotice extends EventEvent {
 }
 class FinishNotice extends EventEvent {
   final int noticeId;
+  final String conclusion;
   final AppLocalizations localizations;
 
-  FinishNotice(this.noticeId, this.localizations);
+  FinishNotice(this.noticeId, this.conclusion, this.localizations);
 }

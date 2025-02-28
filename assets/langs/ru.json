@@ -665,8 +665,17 @@
       "tab_lead": "Лид",
       "tab_notices": "Заметки",
       "tab_deals": "Сделки",
-      "specify_lead_data": "Укажите данные лида"
-
+      "failed_contacts_title": "Контакты с ошибками",
+      "contacts_with_errors": "Контакты с ошибками",
+      "failed_to_add": "Не удалось добавить",
+      "successfully_added": "Успешно добавлено",
+      "total_contacts": "Всего контактов",
+      "specify_lead_data": "Укажите данные лида",
+      "conclusion": "Заключение",
+      "write_conclusion": "Напишите заключение",
+      "111111": "",
+      "welcome": "Добро пожаловать!",
+      "conclusions":"Заключение:"
 
     
   }

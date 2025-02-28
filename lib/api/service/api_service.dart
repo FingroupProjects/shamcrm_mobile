@@ -1703,24 +1703,28 @@ class ApiService {
     }
   }
 
-  Future<void> addLeadsFromContacts(
-      int statusId, List<Map<String, dynamic>> contacts) async {
-    final organizationId = await getSelectedOrganization();
-    final response = await _postRequest(
-      '/lead/insert/${organizationId != null ? '?organization_id=$organizationId' : ''}',
-      {
-        'leads': contacts,
-      },
-    );
-
-    if (response.statusCode == 422) {
-      throw Exception('Такой лид уже существует');
-    }
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка отправки контактов!');
-    }
+Future<Map<String, dynamic>> addLeadsFromContacts(
+    int statusId, List<Map<String, dynamic>> contacts) async {
+  final organizationId = await getSelectedOrganization();
+  final response = await _postRequest(
+    '/lead/insert/${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      'leads': contacts,
+    },
+  );
+  
+  // Parse the response body
+  final responseData = json.decode(response.body);
+  
+  // If status code is not 200, throw an exception with the response data
+  if (response.statusCode != 200) {
+    throw Exception(response.body);
   }
+  
+  // Return the response data even for 200 status code
+  // since it may contain partial errors
+  return responseData;
+}
   //_________________________________ END_____API__SCREEN__LEAD____________________________________________//
 
   //_________________________________ START___API__SCREEN__DEAL____________________________________________//
@@ -5777,19 +5781,22 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<Map<String, dynamic>> finishNotice(int noticeId) async {
-    final organizationId = await getSelectedOrganization();
+Future<Map<String, dynamic>> finishNotice(int noticeId, String conclusion) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _patchRequest(
-        '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {});
+  final response = await _patchRequest(
+      '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        "conclusion": conclusion,
+        "organization_id": organizationId
+      });
 
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw ('Failed to finish notice!');
-    }
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw ('Failed to finish notice!');
   }
+}
 
   Future<SubjectDataResponse> getAllSubjects() async {
     final organizationId = await getSelectedOrganization();

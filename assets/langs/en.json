@@ -661,7 +661,18 @@
       "tab_lead": "Lead",
       "tab_notices": "Notices",
       "tab_deals": "Deals",
-      "specify_lead_data": "Specify lead data"
+      "specify_lead_data": "Specify lead data",
+      "failed_contacts_title": "Contacts with errors",
+      "contacts_with_errors": "Contacts with errors",
+      "failed_to_add": "Failed to add",
+      "successfully_added": "Successfully added",
+      "total_contacts": "Total contacts",
+      "conclusion": "Conclusion",
+      "write_conclusion": "Write a conclusion",
+      "111111": "",
+      "welcome": "Welcome!",
+      "conclusions": "Conclusion:"
+
 
   
 

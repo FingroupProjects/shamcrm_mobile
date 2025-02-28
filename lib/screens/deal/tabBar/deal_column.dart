@@ -8,18 +8,20 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class DealColumn extends StatefulWidget {
   final int statusId;
   final String title;
   final Function(int) onStatusId;
-  final int? managerId; // Добавляем параметр managerId
+  final int? managerId;
 
   DealColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
-    this.managerId, // Добавляем в конструктор
+    this.managerId,
   });
 
   @override
@@ -32,14 +34,230 @@ class _DealColumnState extends State<DealColumn> {
   late DealBloc _dealBloc;
   late ScrollController _scrollController;
 
+  // Добавляем ключи для подсказок
+  final GlobalKey keyDealCard = GlobalKey();
+  final GlobalKey keyFloatingActionButton = GlobalKey();
+  List<TargetFocus> targets = [];
+  final GlobalKey keyDropdown = GlobalKey(); // Добавляем ключ для dropdown
+
+  // Состояние подсказок
+  bool _isDealCardTutorialShown = false;
+  bool _isFabTutorialShown = false;
+  bool _isDropdownTutorialShown = false;
+
+  // Флаги для отслеживания текущего состояния подсказок
+  bool _isDealCardTutorialInProgress = false;
+  bool _isFabTutorialInProgress = false;
+  bool _isDropdownTutorialInProgress = false;
+
   @override
   void initState() {
     super.initState();
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-
     _checkCreatePermission();
+    _loadFeatureState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _initTutorialTargets();
+      });
+    });
+  }
+
+  // Инициализация подсказок
+  void _initTutorialTargets() {
+    targets = [
+      TargetFocus(
+        identify: "DealCard",
+        keyTarget: keyDealCard,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                Text(
+                  "Карточка сделки",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Text(
+                    "Это карточка сделки. Здесь вы можете просматривать и управлять сделками.",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Dropdown",
+        keyTarget: keyDropdown, // Используем ключ для dropdown
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                Text(
+                  "Управление статусами сделок",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Text(
+                    "Перемещение сделки по статусам (например, "
+                    "Новая"
+                    " → "
+                    "В работе"
+                    " → "
+                    "Успешная"
+                    ").",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "FloatingActionButton",
+        keyTarget: keyFloatingActionButton,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                Text(
+                  "Добавить сделку",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Text(
+                    "Нажмите «Добавить сделку» и заполните основные данные: название, сумму, описание и ответственного менеджера. Чем больше информации — тем проще работать с клиентом.",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  // Загрузка состояния подсказок
+  Future<void> _loadFeatureState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDealCardTutorialShown =
+          prefs.getBool('isDealCardTutorialShow') ?? false;
+      _isFabTutorialShown = prefs.getBool('isDealFabTutorialShow') ?? false;
+      _isDropdownTutorialShown = prefs.getBool('isDropdownTutorialShow') ??
+          false;
+    });
+  }
+
+  // Показ подсказок
+  void showTutorial(String tutorialType) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (tutorialType == "DealCard" &&
+        !_isDealCardTutorialShown &&
+        !_isDealCardTutorialInProgress) {
+      _isDealCardTutorialInProgress = true;
+      TutorialCoachMark(
+        targets: [targets.firstWhere((t) => t.identify == "DealCard")],
+        textSkip: 'Пропустить',
+        colorShadow: Color(0xff1E2E52),
+        onFinish: () {
+          prefs.setBool('isDealCardTutorialShow', true);
+          setState(() {
+            _isDealCardTutorialShown = true;
+          });
+          _isDealCardTutorialInProgress = false;
+        },
+      ).show(context: context);
+    } else if (tutorialType == "Dropdown" &&
+        !_isDropdownTutorialShown &&
+        !_isDropdownTutorialInProgress) {
+      _isDropdownTutorialInProgress = true;
+      TutorialCoachMark(
+        targets: [targets.firstWhere((t) => t.identify == "Dropdown")],
+        textSkip: 'Пропустить',
+        colorShadow: Color(0xff1E2E52),
+        onFinish: () {
+          prefs.setBool('isDropdownTutorialShow', true);
+          setState(() {
+            _isDropdownTutorialShown = true;
+          });
+          _isDropdownTutorialInProgress = false;
+        },
+      ).show(context: context);
+    } else if (tutorialType == "FloatingActionButton" &&
+        !_isFabTutorialShown &&
+        !_isFabTutorialInProgress) {
+      _isFabTutorialInProgress = true;
+      TutorialCoachMark(
+        targets: [
+          targets.firstWhere((t) => t.identify == "FloatingActionButton")
+        ],
+        textSkip: 'Пропустить',
+        colorShadow: Color(0xff1E2E52),
+        onFinish: () {
+          prefs.setBool('isDealFabTutorialShow', true);
+          setState(() {
+            _isFabTutorialShown = true;
+          });
+          _isFabTutorialInProgress = false;
+        },
+      ).show(context: context);
+    }
   }
 
   @override
@@ -57,29 +275,25 @@ class _DealColumnState extends State<DealColumn> {
   }
 
   Future<void> _onRefresh() async {
-            BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-
-    // final dealBloc = BlocProvider.of<DealBloc>(context);
-    // dealBloc.add(FetchDealStatuses());
-
+    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
     _dealBloc.add(FetchDeals(widget.statusId));
-
     return Future.delayed(Duration(milliseconds: 1));
   }
 
- void _onScroll() {
-  if (_scrollController.position.pixels ==
-      _scrollController.position.maxScrollExtent) {
-    final currentState = _dealBloc.state;
-    if (currentState is DealDataLoaded) {
-      final hasMoreDeals = currentState.deals.length < (currentState.dealCounts[widget.statusId] ?? 0);
-      if (hasMoreDeals) {
-        _dealBloc.add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      final currentState = _dealBloc.state;
+      if (currentState is DealDataLoaded) {
+        final hasMoreDeals = currentState.deals.length <
+            (currentState.dealCounts[widget.statusId] ?? 0);
+        if (hasMoreDeals) {
+          _dealBloc
+              .add(FetchMoreDeals(widget.statusId, currentState.currentPage));
+        }
       }
     }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +314,66 @@ class _DealColumnState extends State<DealColumn> {
               final deals = state.deals
                   .where((deal) => deal.statusId == widget.statusId)
                   .toList();
-              if (deals.isEmpty) {
+
+              if (deals.isNotEmpty) {
+                if (!_isDealCardTutorialShown) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showTutorial("DealCard");
+                  });
+                } else if (!_isDropdownTutorialShown) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showTutorial("Dropdown");
+                  });
+                }
+
+                return RefreshIndicator(
+                  color: Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  onRefresh: _onRefresh,
+                  child: Column(
+                    children: [
+                      SizedBox(height: 15),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          physics: AlwaysScrollableScrollPhysics(),
+                          itemCount: deals.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: DealCard(
+                                key: index == 0
+                                    ? keyDealCard
+                                    : null, // Добавляем ключ для первой карточки
+                                dropdownKey: index == 0
+                                    ? keyDropdown
+                                    : null, // Передавайте ключ только для первой карточки
+                                deal: deals[index],
+                                title: widget.title,
+                                statusId: widget.statusId,
+                                onStatusUpdated: () {
+                                  _dealBloc.add(FetchDeals(widget.statusId));
+                                },
+                                onStatusId: (StatusDealId) {
+                                  widget.onStatusId(StatusDealId);
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                // Если нет сделок, показываем подсказку для кнопки добавления
+                if (!_isFabTutorialShown) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showTutorial("FloatingActionButton");
+                  });
+                }
+
                 return RefreshIndicator(
                   backgroundColor: Colors.white,
                   color: Color(0xff1E2E52),
@@ -110,71 +383,43 @@ class _DealColumnState extends State<DealColumn> {
                     children: [
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4),
-                      Center(child: Text(AppLocalizations.of(context)!.translate('no_deal_in_selected_status'))),
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('no_deal_in_selected_status'),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Gilroy'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 );
               }
-
-              final ScrollController _scrollController = ScrollController();
-              _scrollController.addListener(() {
-                if (_scrollController.position.pixels ==
-                        _scrollController.position.maxScrollExtent &&
-                    !_dealBloc.allDealsFetched) {
-                  _dealBloc
-                      .add(FetchMoreDeals(widget.statusId, state.currentPage));
-                }
-              });
-
-              return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: Column(
-                  children: [
-                    SizedBox(height: 15),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: deals.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: DealCard(
-                              deal: deals[index],
-                              title: widget.title,
-                              statusId: widget.statusId,
-                              onStatusUpdated: () {
-                                _dealBloc.add(FetchDeals(widget.statusId));
-                              },
-                              onStatusId: (StatusDealId) {
-                                widget.onStatusId(StatusDealId);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
             } else if (state is DealError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
-                        style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white)),
+                      AppLocalizations.of(context)!.translate(state.message),
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     backgroundColor: Colors.red,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -188,6 +433,7 @@ class _DealColumnState extends State<DealColumn> {
         ),
         floatingActionButton: _canCreateDeal
             ? FloatingActionButton(
+                key: keyFloatingActionButton, // Добавляем ключ для кнопки
                 onPressed: () {
                   Navigator.push(
                     context,
