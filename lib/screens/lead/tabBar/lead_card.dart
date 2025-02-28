@@ -12,6 +12,7 @@ class LeadCard extends StatefulWidget {
   final int statusId;
   final VoidCallback onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
+  final GlobalKey? dropdownStatusKey;
 
   LeadCard({
     Key? key, 
@@ -20,6 +21,7 @@ class LeadCard extends StatefulWidget {
     required this.statusId,
     required this.onStatusUpdated,
     required this.onStatusId,
+    this.dropdownStatusKey,
   }) : super(key: key);
 
   @override
@@ -128,8 +130,7 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath =
-        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
+    String iconPath = sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -211,6 +212,7 @@ class _LeadCardState extends State<LeadCard> {
                           child: Row(
                             children: [
                               Container(
+                                key: widget.dropdownStatusKey,
                                 constraints: BoxConstraints(maxWidth: 200),
                                 child: Text(
                                   dropdownValue,

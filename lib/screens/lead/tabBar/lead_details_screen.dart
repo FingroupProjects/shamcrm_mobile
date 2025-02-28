@@ -21,6 +21,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -86,162 +87,139 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   final GlobalKey keyLeadNotice = GlobalKey();
   final GlobalKey keyLeadDeal = GlobalKey();
   final GlobalKey keyLeadContactPerson = GlobalKey();
+    late ScrollController _scrollController;
+
 
   List<TargetFocus> targets = [];
-  
-  bool _isLeadTutorialShown = false; 
-  bool _isLeadHistoryTutorialShown = false; 
-  bool _isLeadTutorialInProgress = false;
-  bool _isLeadHistoryTutorialInProgress = false;
-
-final List<String> tutorialOrder = ["LeadNavigateChat", "LeadHistory"];
-int currentTutorialIndex = 0;
+  bool _isTutorialShown = false; 
 
   @override
 
   void initState() {
   super.initState();
+
+   _scrollController = ScrollController(); 
+
   _checkPermissions();
-    // context.read<LeadBloc>().add(FetchLeads(widget.statusId));
     context.read<OrganizationBloc>().add(FetchOrganizations());
     _loadSelectedOrganization(); 
     context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
 
-   _loadFeatureState();
-
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets();
-    showTutorial(); 
+    _initTutorialTargets(); 
   });
   }
 
-  void _initTutorialTargets() {
-  targets = [
-    TargetFocus(
-      identify: "LeadNavigateChat",
-      keyTarget: keyLeadNavigateChat,
-      contents: [
-        TargetContent(
-          align: ContentAlign.top, 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                "Чат с лидом",
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                  fontSize: 20.0,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.3),
-                child: Text(
-                  "Если подключены интеграции (WhatsApp, Telegram, Instagram, Эл. адрес), общайтесь с клиентом прямо в CRM. Вся переписка сохранится в карточке клиента.",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-    TargetFocus(
+void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
       identify: "LeadHistory",
       keyTarget: keyLeadHistory,
-      contents: [
-        TargetContent(
-          align: ContentAlign.bottom, 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text( "История взаимодействий",
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                  fontSize: 20.0,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
-                child: Text( "История действий (клиента, связанных с ним заметок, сделок).",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      title: "История взаимодействий",
+      description: "История действий (клиента, связанных с ним заметок, сделок)",
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
     ),
-  ];
-}
-
-
-
-Future<void> _loadFeatureState() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  setState(() {
-    _isLeadTutorialShown = prefs.getBool('isLeadNavigateChatTutorialShow') ?? false;
-    _isLeadHistoryTutorialShown = prefs.getBool('isLeadHistoryTutorialShow') ?? false;
-  });
+    createTarget(
+      identify: "keyNavigateChat",
+      keyTarget: keyLeadNavigateChat,
+      title: "Чат с лидом",
+      description: "Если подключены интеграции (WhatsApp, Telegram, Instagram, Эл. адрес), общайтесь с клиентом прямо в CRM. Вся переписка сохранится в карточке клиента",
+      align: ContentAlign.top,
+      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+      context: context,
+    ),
+    createTarget(
+      identify: "keyLeadNotice",
+      keyTarget: keyLeadNotice,
+      title: "Добавление событий (заметок)",
+      description: "Фиксируйте важные события (звонки, встречи, договоренности) в карточке клиента. Это поможет отслеживать историю взаимодействий",
+      align: ContentAlign.top,
+      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "keyLeadDeal",
+      keyTarget: keyLeadDeal,
+      title: "Создание сделки прямо из карточки клиента",
+      description: "Нажмите «Создать сделку» в карточке клиента, чтобы быстро оформить сделку и связать её с клиентом. И заполните данные и нажмите добавить",
+      align: ContentAlign.top,
+      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "keyLeadContactPerson",
+      keyTarget: keyLeadContactPerson,
+      title: "Просмотр и редактирование данных клиента",
+      description: "Контактная информация (имя, телефон, email)",
+      align: ContentAlign.top,
+      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+  ]);
 }
 
 
 
 void showTutorial() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  await Future.delayed(const Duration(milliseconds: 500));
+  bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
 
-  if (currentTutorialIndex < tutorialOrder.length) {
-    String tutorialType = tutorialOrder[currentTutorialIndex];
+  await Future.delayed(const Duration(seconds: 1));
 
-    if (tutorialType == "LeadNavigateChat" && !_isLeadTutorialShown && !_isLeadTutorialInProgress) {
-      _isLeadTutorialInProgress = true;
-      TutorialCoachMark(
-        targets: [targets.firstWhere((t) => t.identify == "LeadNavigateChat")],
-        textSkip: 'Пропустить',
-        colorShadow: Color(0xff1E2E52),
-        onFinish: () {
-          prefs.setBool('isLeadNavigateChatTutorialShow', true);
-          setState(() {
-            _isLeadTutorialShown = true;
-          });
-          _isLeadTutorialInProgress = false;
-          currentTutorialIndex++; 
-          showTutorial(); 
-        },
-      ).show(context: context);
-    } else if (tutorialType == "LeadHistory" && !_isLeadHistoryTutorialShown && !_isLeadHistoryTutorialInProgress) {
-      _isLeadHistoryTutorialInProgress = true;
-      TutorialCoachMark(
-        targets: [targets.firstWhere((t) => t.identify == "LeadHistory")],
-        textSkip: 'Пропустить',
-        colorShadow: Color(0xff1E2E52),
-        onFinish: () {
-          prefs.setBool('isLeadHistoryTutorialShow', true);
-          setState(() {
-            _isLeadHistoryTutorialShown = true;
-          });
-          _isLeadHistoryTutorialInProgress = false;
-          currentTutorialIndex++; 
-          showTutorial();
-        },
-      ).show(context: context);
-    }
+  if (!isTutorialShown) {
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: 'Пропустить',
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onClickTarget: (target) {
+        print(target);
+          if (target.identify == "keyNavigateChat") {
+          _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+      },
+      onClickTargetWithTapPosition: (target, tapDetails) {
+        print("target: $target");
+        print("clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}");
+      },
+      onClickOverlay: (target) {
+        print(target);
+      },
+      onSkip: () {
+        print("Пропустить");
+        return true;
+      },
+      onFinish: () {
+        print("finish");
+        prefs.setBool('isTutorialShownLeadDetails', true);
+      },
+    ).show(context: context);
   }
 }
+
+
+@override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
 
   void _showFullTextDialog(String title, String content) {
@@ -512,6 +490,14 @@ void showTutorial() async {
 
   @override
   Widget build(BuildContext context) {
+             if (!_isTutorialShown) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showTutorial();
+              setState(() {
+                _isTutorialShown = true; 
+              });
+            });
+          }
     return Scaffold(
         appBar: _buildAppBar(
         context, AppLocalizations.of(context)!.translate('view_lead')),
@@ -558,6 +544,7 @@ void showTutorial() async {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListView(
+                    controller: _scrollController,
                     children: [
                       _buildDetailsList(),
                       const SizedBox(height: 8),
@@ -576,12 +563,12 @@ void showTutorial() async {
                       ActionHistoryWidget(leadId: int.parse(widget.leadId)),
                       const SizedBox(height: 8),
                       if (_canReadNotes)
-                        NotesWidget(leadId: int.parse(widget.leadId)),
+                        NotesWidget(leadId: int.parse(widget.leadId), key: keyLeadNotice),
                       // const SizedBox(height: 16),
                       if (_canReadDeal)
-                        DealsWidget(leadId: int.parse(widget.leadId)),
+                        DealsWidget(leadId: int.parse(widget.leadId), key: keyLeadDeal),
                       // const SizedBox(height: 16),
-                      ContactPersonWidget(leadId: int.parse(widget.leadId)),
+                      ContactPersonWidget(leadId: int.parse(widget.leadId), key: keyLeadContactPerson),
                     ],
                   ),
                 );
