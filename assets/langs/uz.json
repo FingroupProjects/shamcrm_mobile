@@ -660,7 +660,17 @@
     "tab_lead": "Lid",
     "tab_notices": "Eslatmalar",
     "tab_deals": "Bitimlar",
-    "specify_lead_data": "Lid ma'lumotlarini kiriting"
+    "specify_lead_data": "Lid ma'lumotlarini kiriting",
+    "failed_contacts_title": "Xatolik bilan kontaktlar",
+    "contacts_with_errors": "Xatolik bilan kontaktlar",
+    "failed_to_add": "Qo'shib bo'lmadi",
+    "successfully_added": "Muvaffaqiyatli qo'shildi",
+    "total_contacts": "Jami kontaktlar",
+    "conclusion": "Xulosa",
+    "write_conclusion": "Xulosani yozing",
+    "111111": "",
+    "welcome": "Xush kelibsiz!",
+    "conclusions": "Xulosa:"
 
 
 
