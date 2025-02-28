@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_noti
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_state.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,8 +55,8 @@ Set<int> expandedDealIds = {};
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'История',
+         Text(
+            AppLocalizations.of(context)!.translate('history'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
@@ -79,9 +80,9 @@ Set<int> expandedDealIds = {};
       ),
       child: Row(
         children: [
-          _buildTab('Лид', 0),
-          _buildTab('Заметки', 1),
-          _buildTab('Сделки', 2),
+          _buildTab(AppLocalizations.of(context)!.translate('lead'), 0),
+          _buildTab(AppLocalizations.of(context)!.translate('notes'), 1),
+          _buildTab(AppLocalizations.of(context)!.translate('deals'), 2),
         ],
       ),
     );
