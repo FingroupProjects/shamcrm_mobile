@@ -5777,20 +5777,22 @@ Future<Map<String, dynamic>> createMyTask({
     }
   }
 
-  Future<Map<String, dynamic>> finishNotice(int noticeId) async {
-    final organizationId = await getSelectedOrganization();
+Future<Map<String, dynamic>> finishNotice(int noticeId, String conclusion) async {
+  final organizationId = await getSelectedOrganization();
 
-    final response = await _patchRequest(
-        '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',
-        {});
+  final response = await _patchRequest(
+      '/notices/finish/$noticeId${organizationId != null ? '?organization_id=$organizationId' : ''}',
+      {
+        "conclusion": conclusion,
+        "organization_id": organizationId
+      });
 
-    if (response.statusCode == 200) {
-      return {'result': 'Success'};
-    } else {
-      throw ('Failed to finish notice!');
-    }
+  if (response.statusCode == 200) {
+    return {'result': 'Success'};
+  } else {
+    throw ('Failed to finish notice!');
   }
-
+}
   Future<SubjectDataResponse> getAllSubjects() async {
     final organizationId = await getSelectedOrganization();
 

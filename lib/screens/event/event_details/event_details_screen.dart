@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -33,12 +34,23 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       true; // You should get this from your permissions system
   bool _canDeleteNotice =
       true; // You should get this from your permissions system
+  final TextEditingController conclusionController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
-    
+  }
+
+  // Метод для проверки разрешений
+  Future<void> _checkPermissions() async {
+    final canEdit = await _apiService.hasPermission('notice.update');
+    final canDelete = await _apiService.hasPermission('notice.delete');
+
+    setState(() {
+      _canEditNotice = canEdit;
+      _canDeleteNotice = canDelete;
+    });
   }
 
   String formatDate(String? dateString) {
@@ -51,117 +63,159 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
- void _showFinishDialog(int noticeId) {
+  void _showFinishDialog(int noticeId) {
+    // Clear the controller before showing dialog
+    conclusionController.clear();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        return AlertDialog(
+  backgroundColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+  ),
+  // Remove title completely and handle it manually in the content
+  titlePadding: EdgeInsets.zero,
+  title: null,
+  contentPadding: const EdgeInsets.all(24),
+  content: ConstrainedBox(
+    constraints: const BoxConstraints(
+      maxWidth: 300,
+      minWidth: 280,
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('conclusion'),
+          style: const TextStyle(
+            color: Color(0xff1E2E52),
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        // TextField with no spacing
+        Container(
+          margin: EdgeInsets.zero,
+          padding: EdgeInsets.zero,
+          child: CustomTextField(
+            controller: conclusionController,
+            hintText: AppLocalizations.of(context)!.translate('write_conclusion'),
+            maxLines: 5,
+            keyboardType: TextInputType.multiline,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return AppLocalizations.of(context)!.translate('field_required');
+              }
+              return null;
+            },
+            label: '', // Empty label
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: CustomButton(
+                buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+                buttonColor: Colors.red,
+                textColor: Colors.white,
+              ),
             ),
-            titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-            title: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.8,
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('finish_event_confirmation'),
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                  ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('confirm'),
+    onPressed: () {
+                              if (conclusionController.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('field_required'),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.of(context).pop();
+                              context.read<EventBloc>().add(
+                                    FinishNotice(
+                                      noticeId,
+                                      conclusionController.text,
+                                      AppLocalizations.of(context)!,
+                                    ),
+                                  );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(context)!.translate(
+                                        'event_completed_successfully'),
+                                    style: const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  elevation: 3,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                              Future.delayed(const Duration(milliseconds: 1),
+                                  () {
+                                if (mounted) {
+                                  context.read<EventBloc>().add(FetchEvents());
+                                  Navigator.of(context).pop();
+                                }
+                              });
+                            },
+                  buttonColor: const Color(0xff1E2E52),
+                  textColor: Colors.white,
                 ),
               ),
             ),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 300,
-                minWidth: 280,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('cancel'),
-                      onPressed: () => Navigator.of(context).pop(),
-                      buttonColor: Colors.red,
-                      textColor: Colors.white,
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: CustomButton(
-                        buttonText:
-                            AppLocalizations.of(context)!.translate('confirm'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          context.read<EventBloc>().add(
-                                FinishNotice(
-                                  noticeId,
-                                  AppLocalizations.of(context)!,
-                                ),
-                              );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!
-                                    .translate('event_completed_successfully'),
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Colors.green,
-                              elevation: 3,
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 16),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                          Future.delayed(const Duration(milliseconds: 1), () {
-                            if (mounted) {
-                              context.read<EventBloc>().add(FetchEvents());
-                              Navigator.of(context).pop();
-                            }
-                          });
-                        },
-                        buttonColor: const Color(0xff1E2E52),
-                        textColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+          ],
+        ),
+      ],
+    ),
+  ),
+); },
       );
     });
   }
+
   Widget _buildFinishButton(Notice notice) {
     if (notice.isFinished) {
       return const SizedBox.shrink();
@@ -300,13 +354,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             } else if (state is NoticeLoaded) {
               Notice notice = state.notice;
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: ListView(
                   children: [
                     _buildDetailsList(notice),
                     _buildFinishButton(notice),
-                    NoticeHistorySection(leadId: notice.lead!.id, noteId: notice.id),
-
+                    NoticeHistorySection(
+                        leadId: notice.lead!.id, noteId: notice.id),
                   ],
                 ),
               );
@@ -322,40 +377,40 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
-     backgroundColor: Colors.white,
-    forceMaterialTransparency: true,
-    elevation: 0,
-    centerTitle: false,
-    leadingWidth: 40,
-    leading: Padding(
-      padding: const EdgeInsets.only(left: 0),
-      child: Transform.translate(
-        offset: const Offset(0, -2),
-        child: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+      backgroundColor: Colors.white,
+      forceMaterialTransparency: true,
+      elevation: 0,
+      centerTitle: false,
+      leadingWidth: 40,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 0),
+        child: Transform.translate(
+          offset: const Offset(0, -2),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
-          onPressed: () {
-          Navigator.pop(context);
-          },
         ),
       ),
-    ),
-    title: Transform.translate(
-      offset: const Offset(-10, 0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+      title: Transform.translate(
+        offset: const Offset(-10, 0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: Color(0xff1E2E52),
+          ),
         ),
+        //в котор
       ),
-      //в котор
-    ),
       actions: [
         if (_canEditNotice || _canDeleteNotice)
           Row(
@@ -403,10 +458,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           );
 
                           if (shouldUpdate == true) {
-                            context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: notice.id));
+                            context
+                                .read<NoticeBloc>()
+                                .add(FetchNoticeEvent(noticeId: notice.id));
                             context.read<EventBloc>().add(FetchEvents());
-                            context.read<HistoryLeadsBloc>().add(FetchNoticeHistory(notice.lead!.id));
-
+                            context
+                                .read<HistoryLeadsBloc>()
+                                .add(FetchNoticeHistory(notice.lead!.id));
                           }
                         },
                       );
@@ -486,8 +544,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ? AppLocalizations.of(context)!.translate('finished')
             : AppLocalizations.of(context)!.translate('in_progress'),
       },
- 
     ];
+    if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('conclusions'),
+        'value':
+            notice.conclusion!, // Use non-null assertion since we checked above
+      });
+    }
 
     return ListView.builder(
       shrinkWrap: true,
@@ -595,7 +659,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
-                      decoration: TextDecoration.underline, // Добавляем подчеркивание
+                      decoration:
+                          TextDecoration.underline, // Добавляем подчеркивание
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -674,7 +739,32 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           );
         }
-
+        if (label == AppLocalizations.of(context)!.translate('conclusions')) {
+          return GestureDetector(
+            onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xff1E2E52),
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -154,21 +154,20 @@ Future<void> _onFetchEvents(
     }
   }
 
-  Future<void> _finishNotice(
-      FinishNotice event, Emitter<EventState> emit) async {
-    emit(EventLoading());
+Future<void> _finishNotice(
+    FinishNotice event, Emitter<EventState> emit) async {
+  emit(EventLoading());
 
-    try {
-      final response = await apiService.finishNotice(event.noticeId);
-      if (response['result'] == 'Success') {
-        emit(EventSuccess(
-            event.localizations.translate('notice_finished_successfully')));
-        add(FetchEvents());
-      } else {
-        emit(EventError(event.localizations.translate('error_finish_notice')));
-      }
-    } catch (e) {
+  try {
+    final response = await apiService.finishNotice(event.noticeId, event.conclusion);
+    if (response['result'] == 'Success') {
+      emit(EventSuccess(
+          event.localizations.translate('notice_finished_successfully')));
+      add(FetchEvents());
+    } else {
       emit(EventError(event.localizations.translate('error_finish_notice')));
     }
+  } catch (e) {
+    emit(EventError(event.localizations.translate('error_finish_notice')));
   }
-}
+}}
