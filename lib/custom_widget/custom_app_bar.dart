@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomAppBar extends StatefulWidget {
+  final GlobalKey? menuIconKey;
   String title;
   Function() onClickProfileAvatar;
   FocusNode focusNode;
@@ -115,6 +116,7 @@ class CustomAppBar extends StatefulWidget {
 
   CustomAppBar({
     super.key,
+    this.menuIconKey,
     required this.title,
     required this.onClickProfileAvatar,
     required this.onChangedSearchInput,
@@ -222,7 +224,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   late Animation<double> _blinkAnimation;
   bool _hasOverdueTasks = false;
 
-    Color _iconColor = Colors.red;
+  Color _iconColor = Colors.red;
   late Timer _timer;
 
   @override
@@ -876,6 +878,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             Transform.translate(
               offset: const Offset(8, 0), 
               child: PopupMenuButton<String>(
+                key: widget.menuIconKey,
                 padding: EdgeInsets.zero,
                 position: PopupMenuPosition.under,
                 icon: Stack(
@@ -973,8 +976,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                         children: [
                           Icon(Icons.event),
                           SizedBox(width: 8), 
-                          Text(AppLocalizations.of(context)!
-                              .translate('events')),
+                          Text(AppLocalizations.of(context)!.translate('events')),
                         ],
                       ),
                     ),
@@ -991,8 +993,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   height: 24,
                                 ),
                           SizedBox(width: 8),
-                          Text(
-                              AppLocalizations.of(context)!.translate('filtr')),
+                          Text(AppLocalizations.of(context)!.translate('filtr')),
                         ],
                       ),
                     ),

@@ -21,11 +21,12 @@ import 'package:intl/intl.dart';
 class DealsWidget extends StatefulWidget {
   final int leadId;
 
-  DealsWidget({required this.leadId});
+  const DealsWidget({Key? key, required this.leadId}) : super(key: key);
 
   @override
   _DealsWidgetState createState() => _DealsWidgetState();
 }
+
 
 class _DealsWidgetState extends State<DealsWidget> {
   List<LeadDeal> deals = [];
