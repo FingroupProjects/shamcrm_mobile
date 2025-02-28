@@ -72,69 +72,73 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-        return AlertDialog(
-  backgroundColor: Colors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
-  ),
-  // Remove title completely and handle it manually in the content
-  titlePadding: EdgeInsets.zero,
-  title: null,
-  contentPadding: const EdgeInsets.all(24),
-  content: ConstrainedBox(
-    constraints: const BoxConstraints(
-      maxWidth: 300,
-      minWidth: 280,
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.translate('conclusion'),
-          style: const TextStyle(
-            color: Color(0xff1E2E52),
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        // TextField with no spacing
-        Container(
-          margin: EdgeInsets.zero,
-          padding: EdgeInsets.zero,
-          child: CustomTextField(
-            controller: conclusionController,
-            hintText: AppLocalizations.of(context)!.translate('write_conclusion'),
-            maxLines: 5,
-            keyboardType: TextInputType.multiline,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return AppLocalizations.of(context)!.translate('field_required');
-              }
-              return null;
-            },
-            label: '', // Empty label
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                onPressed: () => Navigator.of(context).pop(),
-                buttonColor: Colors.red,
-                textColor: Colors.white,
-              ),
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('confirm'),
-    onPressed: () {
+            // Remove title completely and handle it manually in the content
+            titlePadding: EdgeInsets.zero,
+            title: null,
+            contentPadding: const EdgeInsets.all(24),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 300,
+                minWidth: 280,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.translate('conclusion'),
+                    style: const TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  // TextField with no spacing
+                  Container(
+                    margin: EdgeInsets.zero,
+                    padding: EdgeInsets.zero,
+                    child: CustomTextField(
+                      controller: conclusionController,
+                      hintText: AppLocalizations.of(context)!
+                          .translate('write_conclusion'),
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!
+                              .translate('field_required');
+                        }
+                        return null;
+                      },
+                      label: '', // Empty label
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          buttonText:
+                              AppLocalizations.of(context)!.translate('cancel'),
+                          onPressed: () => Navigator.of(context).pop(),
+                          buttonColor: Colors.red,
+                          textColor: Colors.white,
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: CustomButton(
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('confirm'),
+                            onPressed: () {
                               if (conclusionController.text.isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -201,17 +205,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 }
                               });
                             },
-                  buttonColor: const Color(0xff1E2E52),
-                  textColor: Colors.white,
-                ),
+                            buttonColor: const Color(0xff1E2E52),
+                            textColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ],
-    ),
-  ),
-); },
+          );
+        },
       );
     });
   }
