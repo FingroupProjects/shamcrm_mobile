@@ -64,8 +64,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "LeadCard",
       keyTarget: keyLeadCard,
-      title: "Карточкт лида",
-      description: "История действий (клиента, связанных с ним заметок, сделок)",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_card_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_card_description'),
       align: ContentAlign.bottom,
       extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -73,8 +73,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "FloatingActionButton",
       keyTarget: keyFloatingActionButton,
-      title: "Добавить лида",
-      description: "Нажмите «Добавить клиента» и заполните основные данные: имя, телефон, источник лида и ответственного менеджера. Чем больше информации — тем проще работать с клиентом",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_button_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_button_description'),
       align: ContentAlign.top,
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3), 
       context: context,
@@ -82,8 +82,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "StatusDropdown",
       keyTarget: keyStatusDropdown,
-      title: "Управление статусами клиентов",
-      description: "Передвигайте карточки клиентов по статусам (Например: \"Новый\" → \"В работе\" → \"Клиент\")",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_status_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_status_description'),
       align: ContentAlign.bottom,
       extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -120,7 +120,7 @@ void showTutorial(String tutorialType) async {
         targets.firstWhere((t) => t.identify == "LeadCard"),
         targets.firstWhere((t) => t.identify == "StatusDropdown"),
       ],
-      textSkip: 'Пропустить',
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
         color: Colors.white,
         fontFamily: 'Gilroy',
@@ -149,7 +149,7 @@ void showTutorial(String tutorialType) async {
     _isFabTutorialInProgress = true;
     TutorialCoachMark(
       targets: [targets.firstWhere((t) => t.identify == "FloatingActionButton")],
-      textSkip: 'Пропустить',
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
         color: Colors.white,
         fontFamily: 'Gilroy',

@@ -89,24 +89,24 @@ void _initTargets() {
     createTarget(
       identify: 'keyDealEdit',
       keyTarget: keyDealEdit,
-      title: 'Управление сделками',
-      description: 'Редактирование: Можно изменять сделку для актуальности данных.                               Удаление: Важный инструмент для порядка в базе.',
+      title: AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_deal_edit_description'),
       align: ContentAlign.bottom,
       context: context,
     ),
     createTarget(
       identify: 'keyDealTasks',
       keyTarget: keyDealTasks,
-      title: 'Задачи на основе сделки',
-      description: 'Привязка задач к сделке (например, "Отправить КП", "Заключить договор").                         Отслеживание выполнения задач по сделке.',
+      title: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_description'),
       align: ContentAlign.top,
       context: context,
     ),
     createTarget(
       identify: 'keyDealHistory',
       keyTarget: keyDealHistory,
-      title: 'История сделки',
-      description: 'Здесь вы можете просмотреть историю изменений сделки',
+      title: AppLocalizations.of(context)!.translate('tutorial_deal_history_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_deal_history_description'),
       align: ContentAlign.top,
       context: context,
     ),
@@ -119,11 +119,11 @@ void showTutorial() async {
 
   await Future.delayed(const Duration(seconds: 1));
 
-  // if (!isTutorialShown)
+  if (!isTutorialShown)
   {
     TutorialCoachMark(
       targets: targets,
-      textSkip: 'Пропустить',
+      textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
       textStyleSkip: TextStyle(
         color: Colors.white,
         fontFamily: 'Gilroy',
@@ -148,7 +148,7 @@ void showTutorial() async {
         print("Overlay clicked: \${target.identify}");
       },
       onSkip: () {
-        print("Пропустить");
+        print(AppLocalizations.of(context)!.translate('tutorial_skip'));
         return true;
       },
       onFinish: () {
@@ -224,6 +224,7 @@ TargetFocus createTarget({
     ],
   );
 }
+
 
   void _showFullTextDialog(String title, String content) {
     showDialog(

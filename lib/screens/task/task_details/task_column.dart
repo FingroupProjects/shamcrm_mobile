@@ -6,20 +6,26 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class TaskColumn extends StatefulWidget {
   final int statusId;
   final String name;
   final Function(int) onStatusId;
   final int? userId; // Добавляем параметр managerId
+  final bool isTaskScreenTutorialCompleted;
+
 
   TaskColumn({
     required this.statusId,
     required this.name,
     required this.onStatusId,
     this.userId,
+    required this.isTaskScreenTutorialCompleted,
   });
 
   @override
@@ -28,18 +34,144 @@ class TaskColumn extends StatefulWidget {
 
 class _TaskColumnState extends State<TaskColumn> {
   bool _hasPermissionToAddTask = false;
-  // Флаг для блокировки повторных вызовов пагинации, пока данные не загрузятся
   bool _isFetchingMore = false;
   final ApiService _apiService = ApiService();
   late TaskBloc _taskBloc;
   final ScrollController _scrollController = ScrollController();
+
+  List<TargetFocus> targets = [];
+
+final GlobalKey keyTaskCard = GlobalKey();
+final GlobalKey keyStatusDropdown = GlobalKey();
+final GlobalKey keyFloatingActionButton = GlobalKey();
+  
+bool _isTaskCardTutorialShown = false; 
+bool _isStatusTutorialShown = false; 
+bool _isFabTutorialShown = false; 
+
+bool _isFabTutorialInProgress = false;
 
 @override
 void initState() {
   super.initState();
   _taskBloc = TaskBloc(_apiService)..add(FetchTasks(widget.statusId));
   _checkPermission();
-  _scrollController.addListener(_onScroll); // Добавляем слушатель только здесь
+  _scrollController.addListener(_onScroll); 
+
+    _loadFeatureState();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    setState(() {
+      _initTutorialTargets();
+    });
+  });
+}
+
+void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
+      identify: "TaskCard",
+      keyTarget: keyTaskCard,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_card_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_task_card_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "TaskFloatingActionButton",
+      keyTarget: keyFloatingActionButton,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_button_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_task_button_description'),
+      align: ContentAlign.top,
+      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3), 
+      context: context,
+    ),
+    createTarget(
+      identify: "TaskStatusDropdown",
+      keyTarget: keyStatusDropdown,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_status_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_task_status_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+  ]);
+}
+
+Future<void> _loadFeatureState() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _isTaskCardTutorialShown = prefs.getBool('isTaskCardTutorialShow') ?? false;
+    _isStatusTutorialShown = prefs.getBool('isStatusTaskTutorialShown') ?? false;
+    _isFabTutorialShown = prefs.getBool('isFabTaskTutorialShow') ?? false;
+  });
+}
+
+void showTutorial(String tutorialType) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  if (widget.isTaskScreenTutorialCompleted && tutorialType == "TaskCardAndStatusDropdown" && !_isTaskCardTutorialShown && !_isStatusTutorialShown) {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    TutorialCoachMark(
+      targets: [
+        targets.firstWhere((t) => t.identify == "TaskCard"),
+        targets.firstWhere((t) => t.identify == "TaskStatusDropdown"),
+      ],
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        prefs.setBool('isTaskCardTutorialShow', true);
+        prefs.setBool('isStatusTaskTutorialShown', true);
+        setState(() {
+          _isTaskCardTutorialShown = true;
+          _isStatusTutorialShown = true;
+        });
+      },
+    ).show(context: context);
+  } else if (tutorialType == "TaskFloatingActionButton" &&  !_isFabTutorialShown && !_isFabTutorialInProgress) {
+        await Future.delayed(const Duration(milliseconds: 500));
+
+    _isFabTutorialInProgress = true;
+    TutorialCoachMark(
+      targets: [targets.firstWhere((t) => t.identify == "TaskFloatingActionButton")],
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        prefs.setBool('isFabTaskTutorialShow', true);
+        setState(() {
+          _isFabTutorialShown = true;
+        });
+        _isFabTutorialInProgress = false; 
+      },
+    ).show(context: context);
+ 
+  }
 }
 
   @override
@@ -102,10 +234,14 @@ Widget build(BuildContext context) {
               ),
             );
           } else if (state is TaskDataLoaded) {
-            final tasks = state.tasks
-                .where((task) => task.statusId == widget.statusId)
-                .toList();
-
+            final tasks = state.tasks.where((task) => task.statusId == widget.statusId).toList();
+    
+            if (tasks.isEmpty && !_isFabTutorialShown ) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                showTutorial("TaskFloatingActionButton");
+              });
+            }
+              
             if (tasks.isEmpty) {
               return RefreshIndicator(
                 backgroundColor: Colors.white,
@@ -123,6 +259,11 @@ Widget build(BuildContext context) {
                 ),
               );
             }
+               if (!_isTaskCardTutorialShown) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  showTutorial("TaskCardAndStatusDropdown");
+                });
+              }
 
             return RefreshIndicator(
               color: Color(0xff1E2E52),
@@ -141,6 +282,8 @@ Widget build(BuildContext context) {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           child: TaskCard(
+                            key: index == 0 ? keyTaskCard : null,
+                            dropdownStatusKey: index == 0 ? keyStatusDropdown : null,
                             task: tasks[index],
                             name: widget.name,
                             statusId: widget.statusId,
@@ -163,8 +306,7 @@ Widget build(BuildContext context) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                      AppLocalizations.of(context)!
-                          .translate(state.message), // Локализация сообщения
+                      AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
                       style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
@@ -187,6 +329,7 @@ Widget build(BuildContext context) {
       ),
       floatingActionButton: _hasPermissionToAddTask
           ? FloatingActionButton(
+            key: keyFloatingActionButton,
               onPressed: () {
                 Navigator.push(
                   context,

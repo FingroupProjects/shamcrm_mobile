@@ -6,7 +6,7 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
-import 'package:crm_task_manager/custom_widget/custom_text_conclusion.dart';
+import 'package:crm_task_manager/custom_widget/custom_textf.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
