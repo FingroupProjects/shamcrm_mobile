@@ -96,7 +96,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        AppLocalizations.of(context)!.translate('go_to_chat'),
+                        AppLocalizations.of(context)!.translate('go_to_chat_list'),
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       Icon(

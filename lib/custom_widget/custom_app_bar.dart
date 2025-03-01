@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomAppBar extends StatefulWidget {
   final GlobalKey? menuIconKey;
+  final GlobalKey? SearchIconKey;
   String title;
   Function() onClickProfileAvatar;
   FocusNode focusNode;
@@ -117,6 +118,7 @@ class CustomAppBar extends StatefulWidget {
   CustomAppBar({
     super.key,
     this.menuIconKey,
+    this.SearchIconKey,
     required this.title,
     required this.onClickProfileAvatar,
     required this.onChangedSearchInput,
@@ -699,6 +701,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   color: Colors.black,
                 ),
                 child: IconButton(
+                  key: widget.SearchIconKey,
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(),
                   icon: _isSearching
@@ -994,10 +997,6 @@ class _CustomAppBarState extends State<CustomAppBar>
                           Icon(Icons.event),
                           SizedBox(width: 8), 
                           Text(AppLocalizations.of(context)!.translate('events')),
-                          SizedBox(width: 8),
-                          Text(AppLocalizations.of(context)!
-                              .translate('events')),
-
                         ],
                       ),
                     ),

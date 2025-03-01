@@ -334,11 +334,7 @@ class _LeadCardState extends State<LeadCard> {
                         color: Color(0xFFE9EDF5),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        '${widget.lead.manager?.name ?? {
-                              AppLocalizations.of(context)!
-                                  .translate('system_text')
-                            }}',
+                      child: Text(widget.lead.manager?.name ?? AppLocalizations.of(context)!.translate('system_text'),
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',

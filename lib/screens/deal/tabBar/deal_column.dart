@@ -388,8 +388,7 @@ class _DealColumnState extends State<DealColumn> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('no_deal_in_selected_status'),
+                              AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
                               style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
