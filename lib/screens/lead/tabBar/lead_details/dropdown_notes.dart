@@ -14,11 +14,12 @@ import 'package:intl/intl.dart';
 class NotesWidget extends StatefulWidget {
   final int leadId;
 
-  NotesWidget({required this.leadId});
+  NotesWidget({Key? key, required this.leadId}) : super(key: key);
 
   @override
   _NotesWidgetState createState() => _NotesWidgetState();
 }
+
 
 class _NotesWidgetState extends State<NotesWidget> {
   List<Notes> notes = [];

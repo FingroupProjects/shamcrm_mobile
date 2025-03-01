@@ -15,7 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 class ContactPersonWidget extends StatefulWidget {
   final int leadId;
 
-  ContactPersonWidget({required this.leadId});
+  ContactPersonWidget({Key? key,required this.leadId}) : super(key: key);
 
   @override
   _ContactPersonWidgetState createState() => _ContactPersonWidgetState();
