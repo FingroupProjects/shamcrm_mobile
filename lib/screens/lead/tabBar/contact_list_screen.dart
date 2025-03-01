@@ -316,7 +316,6 @@ void _showFailedContactsDialog(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header with gradient
               Container(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
