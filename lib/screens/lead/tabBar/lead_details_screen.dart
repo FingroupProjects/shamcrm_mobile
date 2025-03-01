@@ -82,12 +82,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
 
-  final GlobalKey keyLeadNavigateChat = GlobalKey();
   final GlobalKey keyLeadHistory = GlobalKey();
+  final GlobalKey keyLeadEdit = GlobalKey();
+  final GlobalKey keyLeadDelete = GlobalKey();
+  final GlobalKey keyLeadNavigateChat = GlobalKey();
   final GlobalKey keyLeadNotice = GlobalKey();
   final GlobalKey keyLeadDeal = GlobalKey();
   final GlobalKey keyLeadContactPerson = GlobalKey();
-    late ScrollController _scrollController;
+  late ScrollController _scrollController;
 
 
   List<TargetFocus> targets = [];
@@ -115,8 +117,26 @@ void _initTutorialTargets() {
     createTarget(
       identify: "LeadHistory",
       keyTarget: keyLeadHistory,
-      title: "История взаимодействий",
-      description: "История действий (клиента, связанных с ним заметок, сделок)",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "LeadEdit",
+      keyTarget: keyLeadEdit,
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "LeadDelete",
+      keyTarget: keyLeadDelete,
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
       align: ContentAlign.bottom,
       extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -124,8 +144,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "keyNavigateChat",
       keyTarget: keyLeadNavigateChat,
-      title: "Чат с лидом",
-      description: "Если подключены интеграции (WhatsApp, Telegram, Instagram, Эл. адрес), общайтесь с клиентом прямо в CRM. Вся переписка сохранится в карточке клиента",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_chat_description'),
       align: ContentAlign.top,
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3),
       context: context,
@@ -133,8 +153,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "keyLeadNotice",
       keyTarget: keyLeadNotice,
-      title: "Добавление событий (заметок)",
-      description: "Фиксируйте важные события (звонки, встречи, договоренности) в карточке клиента. Это поможет отслеживать историю взаимодействий",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_notice_description'),
       align: ContentAlign.top,
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -142,8 +162,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "keyLeadDeal",
       keyTarget: keyLeadDeal,
-      title: "Создание сделки прямо из карточки клиента",
-      description: "Нажмите «Создать сделку» в карточке клиента, чтобы быстро оформить сделку и связать её с клиентом. И заполните данные и нажмите добавить",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_deal_description'),
       align: ContentAlign.top,
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -151,8 +171,8 @@ void _initTutorialTargets() {
     createTarget(
       identify: "keyLeadContactPerson",
       keyTarget: keyLeadContactPerson,
-      title: "Просмотр и редактирование данных клиента",
-      description: "Контактная информация (имя, телефон, email)",
+      title: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_contact_description'),
       align: ContentAlign.top,
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -166,7 +186,7 @@ void showTutorial() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
 
-  await Future.delayed(const Duration(seconds: 1));
+  await Future.delayed(const Duration(milliseconds: 700));
 
   if (!isTutorialShown) {
     TutorialCoachMark(
@@ -194,13 +214,6 @@ void showTutorial() async {
           curve: Curves.easeInOut,
         );
       }
-      },
-      onClickTargetWithTapPosition: (target, tapDetails) {
-        print("target: $target");
-        print("clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}");
-      },
-      onClickOverlay: (target) {
-        print(target);
       },
       onSkip: () {
         print("Пропустить");
@@ -253,7 +266,6 @@ void showTutorial() async {
                   child: Text(
                     content,
                     textAlign: TextAlign.justify, // Выровнять текст по ширине
-
                     style: TextStyle(
                       color: Color(0xff1E2E52),
                       fontSize: 16,
@@ -652,6 +664,7 @@ void showTutorial() async {
             children: [
               if (_canEditLead)
                 IconButton(
+                  key: keyLeadEdit,
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(),
                   icon: Image.asset(
@@ -713,6 +726,7 @@ void showTutorial() async {
                 ),
               if (_canDeleteLead)
                 IconButton(
+                  key: keyLeadDelete,
                   padding: EdgeInsets.only(right: 8),
                   constraints: BoxConstraints(),
                   icon: Image.asset(

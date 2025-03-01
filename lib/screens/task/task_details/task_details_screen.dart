@@ -16,6 +16,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/task/task_details/task_delete.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +24,7 @@ import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'dropdown_history_task.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -79,6 +81,7 @@ class FileCacheManager {
   late SharedPreferences _prefs;
   final Map<int, String> _cachedFiles = {};
   bool _initialized = false;
+ 
 
   Future<void> init() async {
     if (_initialized) return;
@@ -160,14 +163,92 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   bool _isLoading = false;
   bool _isDownloading = false;
   Map<int, double> _downloadProgress = {};
+
+  final GlobalKey keyTaskEdit = GlobalKey();
+  final GlobalKey keyTaskDelete = GlobalKey();
+  final GlobalKey keyTaskNavigateChat = GlobalKey();
+
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false; 
+
   @override
   void initState() {
     super.initState();
     _checkPermissions();
-    context
-        .read<TaskByIdBloc>()
-        .add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+  });
   }
+
+  void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
+      identify: "TaskEdit",
+      keyTarget: keyTaskEdit,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "TaskDelete",
+      keyTarget: keyTaskDelete,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "TaskNavigateChat",
+      keyTarget: keyTaskNavigateChat,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
+      description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+  ]);
+}
+
+
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownTaskDetails') ?? false;
+
+  await Future.delayed(const Duration(seconds: 1));
+
+  if (isTutorialShown) {
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        return true;
+      },
+      onFinish: () {
+        print("finish");
+        prefs.setBool('isTutorialShownTaskDetails', true);
+      },
+    ).show(context: context);
+  }
+}
+
 
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
@@ -342,6 +423,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
 @override
 Widget build(BuildContext context) {
+               if (!_isTutorialShown) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showTutorial();
+              setState(() {
+                _isTutorialShown = true; 
+              });
+            });
+          }
   return BlocListener<TaskByIdBloc, TaskByIdState>(
     listener: (context, state) {
       if (state is TaskByIdLoaded) {
@@ -409,6 +498,7 @@ Widget build(BuildContext context) {
                   Row(
                     children: [
                       Expanded(
+                        key: keyTaskNavigateChat,
                         flex: task.isFinished == 1 ? 100 : 55,
                         child: TaskNavigateToChat(
                           chatId: task.chat!.id,
@@ -732,6 +822,7 @@ Widget build(BuildContext context) {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
+            key: keyTaskEdit,
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(),
             icon: Image.asset(
@@ -787,6 +878,7 @@ Widget build(BuildContext context) {
                 ),
               if (_canDeleteTask)
                 IconButton(
+                  key: keyTaskDelete,
                   padding: EdgeInsets.only(right: 8),
                   constraints: BoxConstraints(),
                   icon: Image.asset(

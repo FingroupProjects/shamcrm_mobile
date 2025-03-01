@@ -18,8 +18,10 @@ class TaskCard extends StatefulWidget {
   final int? userId; // ID пользователя, создавшего задачу (опционально)
   final List<UserTaskImage>? usersImage;
   final void Function(int newStatusId) onStatusId;
+   final GlobalKey? dropdownStatusKey;
 
   TaskCard({
+    Key? key,
     required this.task,
     required this.name,
     required this.statusId,
@@ -30,7 +32,8 @@ class TaskCard extends StatefulWidget {
     this.usersImage,
     this.userId,
     required this.onStatusId,
-  });
+    this.dropdownStatusKey,
+  }) : super(key: key);
 
   @override
   _TaskCardState createState() => _TaskCardState();
@@ -341,6 +344,7 @@ class _TaskCardState extends State<TaskCard> {
                           child: Row(
                             children: [
                               Container(
+                               key: widget.dropdownStatusKey,
                                 constraints: BoxConstraints(
                                     maxWidth:
                                         200), //Размер колонки Выбора Статуса
