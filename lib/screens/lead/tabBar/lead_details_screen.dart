@@ -188,7 +188,8 @@ void showTutorial() async {
 
   await Future.delayed(const Duration(milliseconds: 700));
 
-  if (!isTutorialShown) {
+  if (!isTutorialShown) 
+  {
     TutorialCoachMark(
       targets: targets,
       textSkip: 'Пропустить',
@@ -225,6 +226,8 @@ void showTutorial() async {
       },
     ).show(context: context);
   }
+
+  
 }
 
 
