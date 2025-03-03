@@ -475,201 +475,264 @@ Widget build(BuildContext context) {
                                         ),
                                         SizedBox(width: 16),
                                         Expanded(
-                                          child: StatefulBuilder(
-                                            builder: (BuildContext context,
-                                                StateSetter setState) {
-                                              return TextButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : () async {
-                                                        setState(() {
-                                                          _isLoading = true;
-                                                        });
+                                            child: StatefulBuilder(
+                                              builder: (BuildContext context,
+                                                  StateSetter setState) {
+                                                return TextButton(
+                                                  onPressed: _isLoading
+                                                      ? null
+                                                      : () async {
+                                                          // Existing functionality code stays the same
+                                                          setState(() {
+                                                            _isLoading = true;
+                                                          });
 
-                                                        final taskId =
-                                                            int.parse(widget.taskId);
-                                                        try {
-                                                          final result =
-                                                              await context
-                                                                  .read<ApiService>()
-                                                                  .finishTask(taskId);
+                                                          final taskId =
+                                                              int.parse(widget
+                                                                  .taskId);
+                                                          try {
+                                                            final result =
+                                                                await context
+                                                                    .read<
+                                                                        ApiService>()
+                                                                    .finishTask(
+                                                                        taskId);
 
-                                                          if (result['success'] == true) {
-                                                            Navigator.pop(dialogContext);
-                                                            ScaffoldMessenger.of(context)
+                                                            if (result[
+                                                                    'success'] ==
+                                                                true) {
+                                                              Navigator.pop(
+                                                                  dialogContext);
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .showSnackBar(
+                                                                SnackBar(
+                                                                  content: Text(
+                                                                    result['message'] ??
+                                                                        '',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontFamily:
+                                                                          'Gilroy',
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w500,
+                                                                      color: Colors
+                                                                          .white,
+                                                                    ),
+                                                                  ),
+                                                                  behavior:
+                                                                      SnackBarBehavior
+                                                                          .floating,
+                                                                  margin: EdgeInsets
+                                                                      .symmetric(
+                                                                    horizontal:
+                                                                        16,
+                                                                    vertical: 8,
+                                                                  ),
+                                                                  shape:
+                                                                      RoundedRectangleBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            12),
+                                                                  ),
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .green,
+                                                                  elevation: 3,
+                                                                  padding:
+                                                                      EdgeInsets
+                                                                          .symmetric(
+                                                                    vertical:
+                                                                        12,
+                                                                    horizontal:
+                                                                        16,
+                                                                  ),
+                                                                  duration:
+                                                                      Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                ),
+                                                              );
+                                                              context
+                                                                  .read<
+                                                                      TaskBloc>()
+                                                                  .add(
+                                                                      FetchTaskStatuses());
+                                                            } else {
+                                                              Navigator.pop(
+                                                                  dialogContext);
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .showSnackBar(
+                                                                SnackBar(
+                                                                  content: Text(
+                                                                    result['message'] ??
+                                                                        '',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontFamily:
+                                                                          'Gilroy',
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w500,
+                                                                      color: Colors
+                                                                          .white,
+                                                                    ),
+                                                                  ),
+                                                                  behavior:
+                                                                      SnackBarBehavior
+                                                                          .floating,
+                                                                  margin: EdgeInsets
+                                                                      .symmetric(
+                                                                    horizontal:
+                                                                        16,
+                                                                    vertical: 8,
+                                                                  ),
+                                                                  shape:
+                                                                      RoundedRectangleBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            12),
+                                                                  ),
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .red,
+                                                                  elevation: 3,
+                                                                  padding:
+                                                                      EdgeInsets
+                                                                          .symmetric(
+                                                                    vertical:
+                                                                        12,
+                                                                    horizontal:
+                                                                        16,
+                                                                  ),
+                                                                  duration:
+                                                                      Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                ),
+                                                              );
+                                                            }
+                                                          } catch (e) {
+                                                            Navigator.pop(
+                                                                dialogContext);
+                                                            ScaffoldMessenger
+                                                                    .of(context)
                                                                 .showSnackBar(
                                                               SnackBar(
                                                                 content: Text(
-                                                                  result['message'] ?? '',
-                                                                  style: TextStyle(
-                                                                    fontFamily: 'Gilroy',
-                                                                    fontSize: 16,
+                                                                  e.toString(),
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontFamily:
+                                                                        'Gilroy',
+                                                                    fontSize:
+                                                                        16,
                                                                     fontWeight:
-                                                                        FontWeight.w500,
-                                                                    color: Colors.white,
+                                                                        FontWeight
+                                                                            .w500,
+                                                                    color: Colors
+                                                                        .white,
                                                                   ),
-                                                                ),
-                                                                behavior: SnackBarBehavior
-                                                                    .floating,
-                                                                margin: EdgeInsets
-                                                                    .symmetric(
-                                                                  horizontal: 16,
-                                                                  vertical: 8,
-                                                                ),
-                                                                shape:
-                                                                    RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(12),
-                                                                ),
-                                                                backgroundColor:
-                                                                    Colors.green,
-                                                                elevation: 3,
-                                                                padding: EdgeInsets
-                                                                    .symmetric(
-                                                                  vertical: 12,
-                                                                  horizontal: 16,
-                                                                ),
-                                                                duration:
-                                                                    Duration(seconds: 2),
-                                                              ),
-                                                            );
-                                                            context.read<TaskBloc>().add(
-                                                                FetchTaskStatuses());
-                                                          } else {
-                                                            Navigator.pop(dialogContext);
-                                                            ScaffoldMessenger.of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                content: Text(
-                                                                  result['message'] ?? '',
-                                                                  style: TextStyle(
-                                                                    fontFamily: 'Gilroy',
-                                                                    fontSize: 16,
-                                                                    fontWeight:
-                                                                        FontWeight.w500,
-                                                                    color: Colors.white,
-                                                                  ),
-                                                                ),
-                                                                behavior: SnackBarBehavior
-                                                                    .floating,
-                                                                margin: EdgeInsets
-                                                                    .symmetric(
-                                                                  horizontal: 16,
-                                                                  vertical: 8,
-                                                                ),
-                                                                shape:
-                                                                    RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(12),
                                                                 ),
                                                                 backgroundColor:
                                                                     Colors.red,
-                                                                elevation: 3,
-                                                                padding: EdgeInsets
-                                                                    .symmetric(
-                                                                  vertical: 12,
-                                                                  horizontal: 16,
-                                                                ),
-                                                                duration:
-                                                                    Duration(seconds: 2),
                                                               ),
                                                             );
+                                                          } finally {
+                                                            setState(() {
+                                                              _isLoading =
+                                                                  false;
+                                                            });
                                                           }
-                                                        } catch (e) {
-                                                          Navigator.pop(dialogContext);
-                                                          ScaffoldMessenger.of(context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                e.toString(),
-                                                                style: TextStyle(
-                                                                  fontFamily: 'Gilroy',
-                                                                  fontSize: 16,
-                                                                  fontWeight:
-                                                                      FontWeight.w500,
-                                                                  color: Colors.white,
-                                                                ),
-                                                              ),
-                                                              backgroundColor: Colors.red,
+                                                        },
+                                                  child: _isLoading
+                                                      ? SizedBox(
+                                                          width: 20,
+                                                          height: 20,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            color: Colors.white,
+                                                            strokeWidth: 2,
+                                                          ),
+                                                        )
+                                                      : FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            AppLocalizations.of(
+                                                                    context)!
+                                                                .translate(
+                                                                    'confirm'),
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontFamily:
+                                                                  'Gilroy',
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
                                                             ),
-                                                          );
-                                                        } finally {
-                                                          setState(() {
-                                                            _isLoading = false;
-                                                          });
-                                                        }
-                                                      },
-                                                child: _isLoading
-                                                    ? SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
+                                                          ),
                                                         ),
-                                                      )
-                                                    : Text(
-                                                        AppLocalizations.of(context)!
-                                                            .translate('confirm'),
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontFamily: 'Gilroy',
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff1E2E52),
-                                                  minimumSize: Size(130, 48),
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(8),
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor:
+                                                        Color(0xff1E2E52),
+                                                    minimumSize: Size(130, 48),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 16),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
                                                   ),
-                                                ),
-                                              );
-                                            },
+                                                );
+                                              },
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
+                                    ),
+                                    backgroundColor:
+                                        Color.fromARGB(255, 255, 255, 255),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  backgroundColor:
-                                      Color.fromARGB(255, 255, 255, 255),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: Color(0xFF1E2E52),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: Color(0xFF1E2E52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ),
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('for_review'),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .translate('for_review'),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Gilroy',
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
                   ActionHistoryWidgetTask(taskId: int.parse(widget.taskId)),
                 ],
               ),

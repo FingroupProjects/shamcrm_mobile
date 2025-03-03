@@ -243,8 +243,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       const SizedBox(height: 8),
                       CustomTextField(
                         controller: sumController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_summ'),
+                        hintText: AppLocalizations.of(context)!.translate('enter_summ'),
                         label: AppLocalizations.of(context)!.translate('summ'),
                         keyboardType: TextInputType.number,
                         inputFormatters: [

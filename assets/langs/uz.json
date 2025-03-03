@@ -671,7 +671,16 @@
     "111111": "",
     "welcome": "Xush kelibsiz!",
     "conclusions": "Xulosa:",
-        "notes": "Eslatmalar",
+    "notes": "Eslatmalar",
     "deals": "Bitimlar",
-    "history": "Tarix"
+    "history": "Tarix",
+    "send_push_notification": "PUSH-xabarnoma yuborish",
+    "amount": "Summa",
+    "status": "Holat",
+    "notice_history": "Bildirishnomalar: ",
+    "prev_notice_history": "Oldingi bildirishnomalar: ",
+    "title_history": "Mavzu: ",
+    "notice_title_history": "Eslatma: ",
+    "lead_history_notice": "Lead: ",
+    "description_history_notice": "Tavsif: "
 }

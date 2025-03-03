@@ -76,6 +76,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canDeleteLead = false;
   bool _canReadNotes = false;
   bool _canReadDeal = false;
+  bool _canExportContact = false;
 
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
@@ -247,12 +248,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final canDelete = await _apiService.hasPermission('lead.delete');
     final canReadNotes = await _apiService.hasPermission('notice.read');
     final canReadDeal = await _apiService.hasPermission('deal.read');
+    final canExportContact = await _apiService.hasPermission('lead.create');
 
     setState(() {
       _canEditLead = canEdit;
       _canDeleteLead = canDelete;
       _canReadNotes = canReadNotes;
       _canReadDeal = canReadDeal;
+      _canExportContact = canExportContact;
     });
   }
 
@@ -635,7 +638,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       label.contains(AppLocalizations.of(context)!
                           .translate('description_list')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value),
+                  : _buildValue(value,label),
             ),
           ],
         );
@@ -656,13 +659,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
-Widget _buildValue(String value) {
+Widget _buildValue(String value, String label) {
   if (value.isEmpty) return Container();
 
-  if (details.any((detail) =>
-      detail['label'] ==
-          AppLocalizations.of(context)!.translate('phone_use') &&
-      detail['value'] == value)) {
+  if (label == AppLocalizations.of(context)!.translate('phone_use')) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -679,20 +679,20 @@ Widget _buildValue(String value) {
             ),
           ),
         ),
-        GestureDetector(
-          onTap: () => _addContact(widget.leadName, value),
-          child: Icon(
-            Icons.contacts,
-            size: 24,
-            color: Color(0xFF1E2E52),
+        if (_canExportContact)
+          GestureDetector(
+            onTap: () => _addContact(widget.leadName, value),
+            child: Icon(
+              Icons.contacts,
+              size: 24,
+              color: Color(0xFF1E2E52),
+            ),
           ),
-        ),
       ],
     );
   }
 
-  if (details.any((detail) =>
-      detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
+  if (label == 'WhatsApp:') {
     return GestureDetector(
       onTap: () => _openWhatsApp(value),
       child: Text(
@@ -719,6 +719,7 @@ Widget _buildValue(String value) {
     overflow: TextOverflow.visible,
   );
 }
+
 
 
   

@@ -31,7 +31,7 @@ Widget build(BuildContext context) {
   return BlocBuilder<HistoryLeadsBloc, HistoryState>(
     builder: (context, state) {
       return _buildExpandableNoticeContainer(
-            AppLocalizations.of(context)!.translate('event_history'),
+            AppLocalizations.of(context)?.translate('event_history') ?? '',
         state is NoticeHistoryLoaded ? _buildNoticeHistoryItems(state.history, widget.noteId) : [],
         isExpanded,
         () {
@@ -202,23 +202,23 @@ List<String> _buildNoticeHistoryItems(List<NoticeHistory> history, int noteId) {
               change.body.forEach((key, value) {
                 if (value is Map) {
                   if (key == "notifications_sent") {
-                    actionDetail += '\nУведомления: ${_parseNotifications(value["new_value"])}';
+                    actionDetail += '\n${AppLocalizations.of(context)!.translate('notice_history')}${_parseNotifications(value["new_value"])}';
                     if (value["previous_value"] != null) {
-                      actionDetail += '\nПредыдущие уведомления: ${_parseNotifications(value["previous_value"])}';
+                      actionDetail += '\n${AppLocalizations.of(context)!.translate('prev_notice_history')}${_parseNotifications(value["previous_value"])}';
                     }
                   } else if (key == "title") {
-                    actionDetail += '\nТематика: ${value["previous_value"]} > ${value["new_value"]}';
+                    actionDetail += '\n${AppLocalizations.of(context)!.translate('title_history')}${value["previous_value"]} > ${value["new_value"]}';
                   } else if (key == "date") {
                     DateTime previousDate = DateTime.parse(value["previous_value"]);
                     DateTime newDate = DateTime.parse(value["new_value"]);
                     String formattedPreviousDate = DateFormat('dd.MM.yyyy HH:mm').format(previousDate);
                     String formattedNewDate = DateFormat('dd.MM.yyyy HH:mm').format(newDate);
 
-                    actionDetail += '\nНапоминание: $formattedPreviousDate > $formattedNewDate';
+                    actionDetail += '\n${AppLocalizations.of(context)!.translate('notice_title_history')}$formattedPreviousDate > $formattedNewDate';
                   } else if (key == "lead") {
-                    actionDetail += '\nЛид: ${value["previous_value"]} > ${value["new_value"]}';
+                    actionDetail += '\n${AppLocalizations.of(context)!.translate('lead_history_notice')}${value["previous_value"]} > ${value["new_value"]}';
                   } else if (key == "body") {
-                    actionDetail += '\nОписание: ${value["previous_value"]} > ${value["new_value"]}';
+                    actionDetail += '\n${AppLocalizations.of(context)!.translate('description_history_notice')}${value["previous_value"]} > ${value["new_value"]}';
                   } else {
                     // actionDetail += '\nИзменения по $key: Новое значение: ${value["new_value"]}, Предыдущее значение: ${value["previous_value"]}';
                   }

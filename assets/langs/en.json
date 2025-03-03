@@ -672,9 +672,18 @@
       "111111": "",
       "welcome": "Welcome!",
       "conclusions": "Conclusion:",
-          "notes": "Notes",
+     "notes": "Notes",
     "deals": "Deals",
-    "history": "History"
+    "history": "History",
+    "send_push_notification": "Send PUSH notification",
+    "amount": "Amount",
+    "status": "Status",
+    "notice_history": "Notifications: ",
+    "prev_notice_history": "Previous notifications: ",
+    "title_history": "Topic: ",
+    "notice_title_history": "Reminder: ",
+    "lead_history_notice": "Lead: ",
+    "description_history_notice": "Description: "
 
 
 

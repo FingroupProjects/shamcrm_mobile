@@ -678,7 +678,17 @@
       "conclusions":"Заключение:",
       "notes":"Заметки",
       "deals":"Сделки",
-      "history":"История"
+      "history":"История",
+      "send_push_notification": "Отправить PUSH-уведомление",
+      "amount": "Сумма",
+      "status": "Статус",
+      "notice_history": "Уведомления: ",
+      "prev_notice_history": "Предыдущие уведомления: ",
+      "title_history": "Тематика: ",
+      "notice_title_history": "Напоминание: ",
+      "lead_history_notice": "Лид: ",
+      "description_history_notice": "Описание: "
+
 
     
   }
