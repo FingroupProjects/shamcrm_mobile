@@ -713,18 +713,21 @@
     "tutorial_task_details_chat_title": "Vazifa ichidagi ichki chat",
     "tutorial_task_details_chat_description": "Vazifa tafsilotlarini hamkasblaringiz bilan bevosita sharhlarda muhokama qiling. Yozishmalar tarixi saqlanadi va barcha ma'lumotlar doim qo‘l ostingizda bo‘ladi",
     "tutorial_deal_edit_title": "Bitimlarni boshqarish",
-    "tutorial_deal_edit_description": "Tahrirlash: Ma'lumotlar dolzarbligini ta'minlash uchun bitimni o'zgartirish mumkin. O'chirish: Bazadagi tartibni saqlash uchun muhim vosita.",
+    "tutorial_deal_edit_description": "Tahrirlash: Bitim ma'lumotlarini dolzarbligini ta'minlash uchun o'zgartirish mumkin. O'chirish: Bazadagi tartibni saqlash uchun muhim vosita.",
     "tutorial_deal_tasks_title": "Bitim asosida vazifalar",
     "tutorial_deal_tasks_description": "Bitimga vazifalarni bog'lash (masalan, 'Tijorat taklifini yuborish', 'Shartnoma tuzish'). Bitim bo'yicha vazifalarni bajarilishini kuzatish.",
     "tutorial_deal_history_title": "Bitim tarixi",
     "tutorial_deal_history_description": "Bu yerda bitim o'zgartirishlar tarixini ko'rishingiz mumkin.",
     "tutorial_skip": "O'tkazib yuborish",
-    "dealCard": "Bitim kartasi",
-    "dealCardDescription": "Bu bitim kartasi. Bu yerda bitimlarni ko'rishingiz va boshqarishingiz mumkin.",
-    "statusManagement": "Bitim statuslarini boshqarish",
-    "statusManagementDescription": "Bitimni statuslar bo'yicha ko'chirish (masalan, \"Yangi\" → \"Jarayonda\" → \"Muvaffaqiyatli\").",
+    "dealCard": "Bitim kartochkasi",
+    "dealCardDescription": "Bu yerda siz bitim ma'lumotlarini ko'rishingiz va boshqarishingiz mumkin.",
+    "statusManagement": "Bitim holatlarini boshqarish",
+    "statusManagementDescription": "Bitimni holatlar bo'yicha o'tkazish (masalan, 'Yangi' → 'Ish jarayonida' → 'Muvaffaqiyatli').",
     "addDeal": "Bitim qo'shish",
-    "addDealDescription": "\"Bitim qo'shish\" tugmasini bosing va asosiy ma'lumotlarni kiriting: nomi, summasi, tavsifi va mas'ul menejer. Ma'lumot qanchalik ko'p bo'lsa, mijoz bilan ishlash shunchalik oson bo'ladi."
+    "addDealDescription": "«Bitim qo'shish» tugmasini bosing va asosiy ma'lumotlarni kiriting: nom, summa, tavsif va mas'ul menejer. Ma'lumot qanchalik ko'p bo'lsa, mijoz bilan ishlash shunchalik oson.",
+    "send_push_notification": "PUSH-xabarnoma yuborish",
+    "amount": "Summa",
+    "status": "Holat"
 
 
 

@@ -611,49 +611,43 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
 List<Widget> _buildNoticeChanges(ChangesLead changes) {
   final Map<String, dynamic> body = changes.body;
   if (body.isEmpty) return [];
-
-  // Словарь переводов ключей
+  
   final Map<String, String> translations = {
-    'body': 'Описание',
-    'date': 'Напоминане',
-    'lead': 'Лид',
-    'title': 'Тематика',
-    'notifications_sent':'Отправить PUSH-уведомление'
+    'body': AppLocalizations.of(context)!.translate('description'),
+    'date': AppLocalizations.of(context)!.translate('reminder'),
+    'lead': AppLocalizations.of(context)!.translate('lead'),
+    'title': AppLocalizations.of(context)!.translate('subject'),
+    'notifications_sent': AppLocalizations.of(context)!.translate('send_push_notification')
   };
-
+  
   String formatDateIfNeeded(String key, dynamic value) {
-  if (key == 'date' && value != null && value.toString().isNotEmpty) {
-    try {
-      DateTime date;
-      String dateStr = value.toString();
-      
-      // Парсим дату
-      if (dateStr.contains('T')) {
-        date = DateTime.parse(dateStr);
-      } else {
-        date = DateTime.parse(dateStr);
+    if (key == 'date' && value != null && value.toString().isNotEmpty) {
+      try {
+        DateTime date;
+        String dateStr = value.toString();
+       
+        if (dateStr.contains('T')) {
+          date = DateTime.parse(dateStr);
+        } else {
+          date = DateTime.parse(dateStr);
+        }
+        return '${date.day.toString().padLeft(2, '0')}.'
+               '${date.month.toString().padLeft(2, '0')}.'
+               '${date.year} ${date.hour.toString().padLeft(2, '0')}:'
+               '${date.minute.toString().padLeft(2, '0')}';
+      } catch (e) {
+        return value.toString();
       }
-
-      return '${date.day.toString().padLeft(2, '0')}.'
-             '${date.month.toString().padLeft(2, '0')}.'
-             '${date.year} ${date.hour.toString().padLeft(2, '0')}:'
-             '${date.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return value.toString();
     }
+    return value?.toString() ?? AppLocalizations.of(context)!.translate('not_specified');
   }
-  return value?.toString() ?? 'Не указано';
-}
-
-
+  
   return body.entries.map((entry) {
     if (entry.value is Map) {
       final changeMap = Map<String, dynamic>.from(entry.value as Map);
       final String translatedKey = translations[entry.key] ?? entry.key;
-
       final formattedPreviousValue = formatDateIfNeeded(entry.key, changeMap['previous_value']);
       final formattedNewValue = formatDateIfNeeded(entry.key, changeMap['new_value']);
-
       return Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Text(
@@ -671,21 +665,21 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
   }).toList();
 }
 
- List<Widget> _buildDealChanges(ChangesLead changes) {
+List<Widget> _buildDealChanges(ChangesLead changes) {
   final Map<String, dynamic> body = changes.body;
   if (body.isEmpty) return [];
-  // Словарь переводов ключей
-  final Map<String, String> translations = {
-    'sum': 'Сумма',
-    'name': 'Название',
-    'manager': 'Менеджер',
-    'description': 'Описание',
-    'end_date': 'Дата завершения',
-    'start_date': 'Дата начала',
-    'deal_status': 'Статус',
-    'lead': 'Лид',
-  };
   
+  final Map<String, String> translations = {
+    'sum': AppLocalizations.of(context)!.translate('amount'),
+    'name': AppLocalizations.of(context)!.translate('name'),
+    'manager': AppLocalizations.of(context)!.translate('manager'),
+    'description': AppLocalizations.of(context)!.translate('description'),
+    'end_date': AppLocalizations.of(context)!.translate('end_date'),
+    'start_date': AppLocalizations.of(context)!.translate('start_date'),
+    'deal_status': AppLocalizations.of(context)!.translate('status'),
+    'lead': AppLocalizations.of(context)!.translate('lead'),
+  };
+ 
   String formatDateIfNeeded(String key, dynamic value) {
     if ((key == 'end_date' || key == 'start_date') && value != null && value.toString().isNotEmpty) {
       try {
@@ -697,15 +691,15 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
     }
     return value?.toString() ?? '-';
   }
-  
+ 
   return body.entries.map((entry) {
     if (entry.value is Map) {
       final changeMap = Map<String, dynamic>.from(entry.value as Map);
       final String translatedKey = translations[entry.key] ?? entry.key;
-      
+     
       final formattedPreviousValue = formatDateIfNeeded(entry.key, changeMap['previous_value']);
       final formattedNewValue = formatDateIfNeeded(entry.key, changeMap['new_value']);
-      
+     
       return Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Text(
@@ -722,7 +716,8 @@ List<Widget> _buildNoticeChanges(ChangesLead changes) {
     return const SizedBox.shrink();
   }).toList();
 }
+
 String _formatDate(DateTime date) {
- return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+  return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
 }
 }

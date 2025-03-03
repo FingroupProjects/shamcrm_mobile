@@ -91,7 +91,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-    appBar: AppBar(
+      appBar: AppBar(
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
@@ -117,7 +117,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
               ),
               onPressed: () {
                 Navigator.pop(context, widget.statusId);
-            context.read<DealBloc>().add(FetchDealStatuses());
+                context.read<DealBloc>().add(FetchDealStatuses());
               },
             ),
           ),
@@ -180,122 +180,125 @@ class _DealAddScreenState extends State<DealAddScreen> {
           }
         },
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: titleController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('name_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      LeadRadioGroupWidget(
-                        selectedLead: selectedLead,
-                        onSelectLead: (LeadData selectedRegionData) {
-                          setState(() {
-                            selectedLead = selectedRegionData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ManagerRadioGroupWidget(
-                        selectedManager: selectedManager,
-                        onSelectManager: (ManagerData selectedManagerData) {
-                          setState(() {
-                            selectedManager = selectedManagerData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: startDateController,
-                        label: AppLocalizations.of(context)!
-                            .translate('start_date'),
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('end_date'),
-                        hasError: isEndDateInvalid,
-                        withTime: false,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: sumController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_summ'),
-                        label: AppLocalizations.of(context)!.translate('summ'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        // validator: (value) {
-                        //   if (value == null || value.isEmpty) {
-                        //    return AppLocalizations.of(context)!.translate('field_required');
-                        //   }
-                        //   return null;
-                        // },
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_description'),
-                        label: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-                      ),
-                      const SizedBox(height: 8),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: customFields.length,
-                        itemBuilder: (context, index) {
-                          return CustomFieldWidget(
-                            fieldName: customFields[index].fieldName,
-                            valueController: customFields[index].controller,
-                            onRemove: () {
-                              setState(() {
-                                customFields.removeAt(index);
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      CustomButton(
-                        buttonText: AppLocalizations.of(context)!
-                            .translate('add_field'),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
-                        onPressed: _showAddFieldDialog,
-                      ),
-                    ],
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomTextField(
+                          controller: titleController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_name_list'),
+                          label: AppLocalizations.of(context)!
+                              .translate('name_list'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        LeadRadioGroupWidget(
+                          selectedLead: selectedLead,
+                          onSelectLead: (LeadData selectedRegionData) {
+                            setState(() {
+                              selectedLead = selectedRegionData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        ManagerRadioGroupWidget(
+                          selectedManager: selectedManager,
+                          onSelectManager: (ManagerData selectedManagerData) {
+                            setState(() {
+                              selectedManager =
+                                  selectedManagerData.id.toString();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: startDateController,
+                          label: AppLocalizations.of(context)!
+                              .translate('start_date'),
+                          withTime: false,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: endDateController,
+                          label: AppLocalizations.of(context)!
+                              .translate('end_date'),
+                          hasError: isEndDateInvalid,
+                          withTime: false,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: sumController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_summ'),
+                          label:
+                              AppLocalizations.of(context)!.translate('summ'),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[0-9\.,]')),
+                          ],
+                          // validator: (value) {
+                          //   if (value == null || value.isEmpty) {
+                          //    return AppLocalizations.of(context)!.translate('field_required');
+                          //   }
+                          //   return null;
+                          // },
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_description'),
+                          label: AppLocalizations.of(context)!
+                              .translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: customFields.length,
+                          itemBuilder: (context, index) {
+                            return CustomFieldWidget(
+                              fieldName: customFields[index].fieldName,
+                              valueController: customFields[index].controller,
+                              onRemove: () {
+                                setState(() {
+                                  customFields.removeAt(index);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        CustomButton(
+                          buttonText: AppLocalizations.of(context)!
+                              .translate('add_field'),
+                          buttonColor: Color(0xff1E2E52),
+                          textColor: Colors.white,
+                          onPressed: _showAddFieldDialog,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
