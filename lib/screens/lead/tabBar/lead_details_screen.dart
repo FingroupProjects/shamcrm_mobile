@@ -78,6 +78,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canDeleteLead = false;
   bool _canReadNotes = false;
   bool _canReadDeal = false;
+  bool _canExportContact = false;
 
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
@@ -136,7 +137,7 @@ void _initTutorialTargets() {
       identify: "LeadDelete",
       keyTarget: keyLeadDelete,
       title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_description'),
       align: ContentAlign.bottom,
       extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
@@ -188,8 +189,7 @@ void showTutorial() async {
 
   await Future.delayed(const Duration(milliseconds: 700));
 
-  if (!isTutorialShown) 
-  {
+  if (!isTutorialShown) {
     TutorialCoachMark(
       targets: targets,
       textSkip: 'Пропустить',
@@ -230,190 +230,26 @@ void showTutorial() async {
   
 }
 
-
-@override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-
-  void _showFullTextDialog(String title, String content) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Container(
-                constraints: BoxConstraints(maxHeight: 400),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SingleChildScrollView(
-                  child: Text(
-                    content,
-                    textAlign: TextAlign.justify, // Выровнять текст по ширине
-                    style: TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: CustomButton(
-                  buttonText: AppLocalizations.of(context)!.translate('close'),
-                  onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _loadSelectedOrganization() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      selectedOrganization = prefs.getString('selectedOrganization');
-    });
-  }
-
-  // Добавьте эту функцию для совершения звонка
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (!await launchUrl(launchUri)) {
-      throw Exception('Could not launch $launchUri');
-    }
-  }
-
-  Future<void> _openWhatsApp(String phoneNumber) async {
-    // Убираем все не числовые символы из номера телефона
-    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-
-    // Если номер начинается с '8', заменяем на '+7'
-    if (cleanNumber.startsWith('8')) {
-      cleanNumber = '+7${cleanNumber.substring(1)}';
-    }
-    // Если номер начинается с '7', добавляем '+'
-    else if (cleanNumber.startsWith('7')) {
-      cleanNumber = '+$cleanNumber';
-    }
-
-    try {
-      Uri whatsappUri;
-      if (Platform.isIOS) {
-        // Для iOS используем другую схему URL
-        whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
-      } else {
-        // Для Android оставляем прежнюю схему
-        whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
-      }
-
-      if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
-        // Если не удалось открыть, показываем сообщение
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      // Обработка ошибок
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('lead.update');
     final canDelete = await _apiService.hasPermission('lead.delete');
     final canReadNotes = await _apiService.hasPermission('notice.read');
     final canReadDeal = await _apiService.hasPermission('deal.read');
+    final canExportContact = await _apiService.hasPermission('lead.create');
 
     setState(() {
       _canEditLead = canEdit;
       _canDeleteLead = canDelete;
       _canReadNotes = canReadNotes;
       _canReadDeal = canReadDeal;
+      _canExportContact = canExportContact;
     });
-  }
-
-  // Функция для форматирования даты
-  String formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return '';
-    try {
-      final parsedDate = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy').format(parsedDate);
-    } catch (e) {
-      return AppLocalizations.of(context)!.translate('invalid_format');
-    }
   }
 
   // Обновление данных лида
   void _updateDetails(LeadById lead) {
-    currentLead = lead; // Сохраняем актуального лида
+    currentLead = lead; 
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('name_details'),
@@ -790,13 +626,26 @@ void showTutorial() async {
                       label.contains(AppLocalizations.of(context)!
                           .translate('description_list')))
                   ? _buildExpandableText(label, value, constraints.maxWidth)
-                  : _buildValue(value),
+                  : _buildValue(value,label),
             ),
           ],
         );
       },
     );
   }
+
+  
+  // Функция для форматирования даты
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return '';
+    try {
+      final parsedDate = DateTime.parse(dateString);
+      return DateFormat('dd/MM/yyyy').format(parsedDate);
+    } catch (e) {
+      return AppLocalizations.of(context)!.translate('invalid_format');
+    }
+  }
+
 
   // Построение метки
   Widget _buildLabel(String label) {
@@ -811,13 +660,10 @@ void showTutorial() async {
     );
   }
 
-Widget _buildValue(String value) {
+Widget _buildValue(String value, String label) {
   if (value.isEmpty) return Container();
 
-  if (details.any((detail) =>
-      detail['label'] ==
-          AppLocalizations.of(context)!.translate('phone_use') &&
-      detail['value'] == value)) {
+  if (label == AppLocalizations.of(context)!.translate('phone_use')) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -834,20 +680,20 @@ Widget _buildValue(String value) {
             ),
           ),
         ),
-        GestureDetector(
-          onTap: () => _addContact(widget.leadName, value),
-          child: Icon(
-            Icons.contacts,
-            size: 24,
-            color: Color(0xFF1E2E52),
+        if (_canExportContact)
+          GestureDetector(
+            onTap: () => _addContact(widget.leadName, value),
+            child: Icon(
+              Icons.contacts,
+              size: 24,
+              color: Color(0xFF1E2E52),
+            ),
           ),
-        ),
       ],
     );
   }
 
-  if (details.any((detail) =>
-      detail['label'] == 'WhatsApp:' && detail['value'] == value)) {
+  if (label == 'WhatsApp:') {
     return GestureDetector(
       onTap: () => _openWhatsApp(value),
       child: Text(
@@ -875,7 +721,159 @@ Widget _buildValue(String value) {
   );
 }
 
+@override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
+
+  void _showFullTextDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: BoxConstraints(maxHeight: 400),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.justify, // Выровнять текст по ширине
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('close'),
+                  onPressed: () => Navigator.pop(context),
+                  buttonColor: Color(0xff1E2E52),
+                  textColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _loadSelectedOrganization() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedOrganization = prefs.getString('selectedOrganization');
+    });
+  }
+
+  // Добавьте эту функцию для совершения звонка
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    // Убираем все не числовые символы из номера телефона
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+    // Если номер начинается с '8', заменяем на '+7'
+    if (cleanNumber.startsWith('8')) {
+      cleanNumber = '+7${cleanNumber.substring(1)}';
+    }
+    // Если номер начинается с '7', добавляем '+'
+    else if (cleanNumber.startsWith('7')) {
+      cleanNumber = '+$cleanNumber';
+    }
+
+    try {
+      Uri whatsappUri;
+      if (Platform.isIOS) {
+        // Для iOS используем другую схему URL
+        whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
+      } else {
+        // Для Android оставляем прежнюю схему
+        whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
+      }
+
+      if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+        // Если не удалось открыть, показываем сообщение
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 3,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      // Обработка ошибок
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.red,
+          elevation: 3,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
   
 
 }

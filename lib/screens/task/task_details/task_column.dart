@@ -142,7 +142,7 @@ void showTutorial(String tutorialType) async {
         });
       },
     ).show(context: context);
-  } else if (tutorialType == "TaskFloatingActionButton" &&  !_isFabTutorialShown && !_isFabTutorialInProgress) {
+  } else if (widget.isTaskScreenTutorialCompleted && tutorialType== "TaskFloatingActionButton" &&  !_isFabTutorialShown && !_isFabTutorialInProgress) {
         await Future.delayed(const Duration(milliseconds: 500));
 
     _isFabTutorialInProgress = true;
