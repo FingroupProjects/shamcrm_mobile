@@ -530,7 +530,7 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
             ),
             const SizedBox(height: 8),
             Text(
-              item.user.name,
+              item.user!.name,
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
@@ -592,7 +592,7 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
             ),
             const SizedBox(height: 8),
             Text(
-              item.user.name,
+              item.user!.name,
               style: const TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',

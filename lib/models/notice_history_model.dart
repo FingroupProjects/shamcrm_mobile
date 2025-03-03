@@ -52,14 +52,14 @@ class DealHistoryLead {
 
 class HistoryItem {
   final int id;
-  final User user;
+  final User? user;
   final String status;
   final DateTime date;
   final List<ChangesLead> changes;  // используем ChangesLead для сделок
 
   HistoryItem({
     required this.id,
-    required this.user,
+    this.user,
     required this.status,
     required this.date,
     required this.changes,
