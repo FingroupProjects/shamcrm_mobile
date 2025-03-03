@@ -197,6 +197,7 @@ class _LeadCardState extends State<LeadCard> {
                         );
                       },
                       child: Container(
+                        key: widget.dropdownStatusKey,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         child: Container(
@@ -212,7 +213,6 @@ class _LeadCardState extends State<LeadCard> {
                           child: Row(
                             children: [
                               Container(
-                                key: widget.dropdownStatusKey,
                                 constraints: BoxConstraints(maxWidth: 200),
                                 child: Text(
                                   dropdownValue,

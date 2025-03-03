@@ -10,7 +10,8 @@ import 'package:intl/intl.dart';
 class ActionHistoryWidgetTask extends StatefulWidget {
   final int taskId;
 
-  ActionHistoryWidgetTask({required this.taskId});
+  ActionHistoryWidgetTask({Key? key,required this.taskId  }) : super(key: key);
+
 
   @override
   _ActionHistoryWidgetState createState() => _ActionHistoryWidgetState();
