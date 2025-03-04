@@ -63,9 +63,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   DealById? currentDeal;
   bool _canEditDeal = false;
   bool _canDeleteDeal = false;
+  bool _canReadTasks = false;
+
   final ApiService _apiService = ApiService();
   final GlobalKey keyDealEdit = GlobalKey();
   final GlobalKey keyDealTasks = GlobalKey();
+  final GlobalKey keyDealDelete = GlobalKey(); // Новый ключ для кнопки удаления
+
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
 
@@ -83,148 +87,181 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       showTutorial();
     });
   }
+
 // Перемещаем инициализацию целей после построения виджета
-void _initTargets() {
-  targets = [
-    createTarget(
-      identify: 'keyDealEdit',
-      keyTarget: keyDealEdit,
-      title: AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_deal_edit_description'),
-      align: ContentAlign.bottom,
-      context: context,
-    ),
-    createTarget(
-      identify: 'keyDealTasks',
-      keyTarget: keyDealTasks,
-      title: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_description'),
-      align: ContentAlign.top,
-      context: context,
-    ),
-    createTarget(
-      identify: 'keyDealHistory',
-      keyTarget: keyDealHistory,
-      title: AppLocalizations.of(context)!.translate('tutorial_deal_history_title'),
-      description: AppLocalizations.of(context)!.translate('tutorial_deal_history_description'),
-      align: ContentAlign.top,
-      context: context,
-    ),
-  ];
-}
+  void _initTargets() {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double boxHeight = screenHeight * 0.1;
 
-void showTutorial() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
-
-  await Future.delayed(const Duration(seconds: 1));
-
-  if (!isTutorialShown)
-  {
-    TutorialCoachMark(
-      targets: targets,
-      textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+    targets = [
+      createTarget(
+        identify: 'keyDealEdit',
+        keyTarget: keyDealEdit,
+        title:
+            AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_edit_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      createTarget(
+        identify: 'keyDealDelete',
+        keyTarget: keyDealDelete,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_deal_delete_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_delete_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      // Обновленная конфигурация для keyDealTasks с увеличенным радиусом и отступом
+      TargetFocus(
+        identify: 'keyDealTasks',
+        keyTarget: keyDealTasks,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(
+                  top:
+                      120), // Добавляем отступ сверху, чтобы подсказка была за пределами кружка
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  SizedBox(height: boxHeight),
+                  Text(
+                      AppLocalizations.of(context)!
+                          .translate('tutorial_deal_tasks_title'),
+                      style: _titleStyle),
+                  Padding(
+                    padding: EdgeInsets.zero,
+                    child: Text(
+                        AppLocalizations.of(context)!
+                            .translate('tutorial_deal_tasks_description'),
+                        style: _descriptionStyle),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
+        shape: ShapeLightFocus.Circle,
+        radius: 40, // Уменьшаем радиус кружка
+        paddingFocus: 10, // Уменьшаем внутренний отступ фокуса
       ),
-      colorShadow: Color(0xff1E2E52),
-      hideSkip: false,
-      alignSkip: Alignment.bottomRight,
-      focusAnimationDuration: Duration(milliseconds: 300),
-      pulseAnimationDuration: Duration(milliseconds: 500),
-      onClickTarget: (target) {
-        print("Target clicked: \${target.identify}");
-      },
-      onClickOverlay: (target) {
-        print("Overlay clicked: \${target.identify}");
-      },
-      onSkip: () {
-        print(AppLocalizations.of(context)!.translate('tutorial_skip'));
-        return true;
-      },
-      onFinish: () {
-        print("Tutorial finished");
-        prefs.setBool('isTutorialShownDealDetails', true);
-      },
-    ).show(context: context);
+      createTarget(
+        identify: 'keyDealHistory',
+        keyTarget: keyDealHistory,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_deal_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_deal_history_description'),
+        align: ContentAlign.top,
+        context: context,
+      ),
+    ];
   }
-}
 
-TargetFocus createTarget({
-  required String identify,
-  required GlobalKey keyTarget,
-  required String title,
-  required String description,
-  required ContentAlign align,
-  EdgeInsets? extraPadding,
-  SizedBox? extraSpacing,
-  required BuildContext context,
-}) {
-  return TargetFocus(
-    identify: identify,
-    keyTarget: keyTarget,
-    alignSkip: Alignment.bottomRight,
-    enableOverlayTab: true,
-    shape: ShapeLightFocus.Circle,
-    radius: 100,
-    paddingFocus: 8,
-    contents: [
-      TargetContent(
-        align: align,
-        builder: (context, controller) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Gilroy',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  shadows: [
-                    Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-                    Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-                    Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-                    Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-                  ],
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                description,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  shadows: [
-                    Shadow(offset: Offset(-1, -1), color: Colors.black),
-                    Shadow(offset: Offset(1, -1), color: Colors.black),
-                    Shadow(offset: Offset(1, 1), color: Colors.black),
-                    Shadow(offset: Offset(-1, 1), color: Colors.black),
-                  ],
-                ),
-              ),
-              extraSpacing ?? SizedBox(height: 20),
-            ],
-          );
+  void showTutorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!isTutorialShown)
+    {
+      TutorialCoachMark(
+        targets: targets,
+        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
+        textStyleSkip: TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          shadows: [
+            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          ],
+        ),
+        colorShadow: Color(0xff1E2E52),
+        hideSkip: false,
+        alignSkip: Alignment.bottomRight,
+        focusAnimationDuration: Duration(milliseconds: 300),
+        pulseAnimationDuration: Duration(milliseconds: 500),
+        onClickTarget: (target) {
+          print("Target clicked: \${target.identify}");
         },
-      ),
-    ],
-  );
-}
+        onClickOverlay: (target) {
+          print("Overlay clicked: \${target.identify}");
+        },
+        onSkip: () {
+          print(AppLocalizations.of(context)!.translate('tutorial_skip'));
+          return true;
+        },
+        onFinish: () {
+          print("Tutorial finished");
+          prefs.setBool('isTutorialShownDealDetails', true);
+        },
+      ).show(context: context);
+    }
+  }
 
+  TargetFocus createTarget({
+    required String identify,
+    required GlobalKey keyTarget,
+    required String title,
+    required String description,
+    required ContentAlign align,
+    EdgeInsets? extraPadding,
+    Widget? extraSpacing,
+    required BuildContext context,
+  }) {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double boxHeight = screenHeight * 0.1;
+
+    return TargetFocus(
+      identify: identify,
+      keyTarget: keyTarget,
+      contents: [
+        TargetContent(
+          align: align,
+          child: Container(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(height: boxHeight),
+                Text(title, style: _titleStyle),
+                Padding(
+                  padding: extraPadding ?? EdgeInsets.zero,
+                  child: Text(description, style: _descriptionStyle),
+                ),
+                if (extraSpacing != null) extraSpacing,
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+// Стили для подсказок
+  TextStyle _titleStyle = TextStyle(
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+    fontSize: 20,
+    fontFamily: 'Gilroy',
+  );
+
+  TextStyle _descriptionStyle = TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.w500,
+    fontSize: 16,
+    fontFamily: 'Gilroy',
+  );
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -286,10 +323,12 @@ TargetFocus createTarget({
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
+    final canReadTasks = await _apiService.hasPermission('task.read');
 
     setState(() {
       _canEditDeal = canEdit;
       _canDeleteDeal = canDelete;
+      _canReadTasks = canReadTasks;
     });
   }
 
@@ -439,10 +478,11 @@ TargetFocus createTarget({
                     const SizedBox(height: 8),
                     ActionHistoryWidget(dealId: int.parse(widget.dealId)),
                     const SizedBox(height: 16),
-                    Container(
-                      key: keyDealTasks,
-                      child: TasksWidget(dealId: int.parse(widget.dealId)),
-                    ),
+                    if (_canReadTasks)
+                      Container(
+                        key: keyDealTasks,
+                        child: TasksWidget(dealId: int.parse(widget.dealId)),
+                      ),
                   ],
                 ),
               );
@@ -492,95 +532,88 @@ TargetFocus createTarget({
             color: Color(0xff1E2E52),
           ),
         ),
-        //в котор
       ),
       actions: [
-        if (_canEditDeal || _canDeleteDeal)
-          Row(
-            key: keyDealEdit, // Add the key for the tutorial target
+        if (_canEditDeal)
+          IconButton(
+            key: keyDealEdit, // Ключ только для кнопки редактирования
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () async {
+              // Код обработчика нажатия
+              if (currentDeal != null) {
+                final startDateString = currentDeal!.startDate != null &&
+                        currentDeal!.startDate!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.startDate!))
+                    : null;
+                final endDateString = currentDeal!.endDate != null &&
+                        currentDeal!.endDate!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.endDate!))
+                    : null;
+                final createdAtDateString = currentDeal!.createdAt != null &&
+                        currentDeal!.createdAt!.isNotEmpty
+                    ? DateFormat('dd/MM/yyyy')
+                        .format(DateTime.parse(currentDeal!.createdAt!))
+                    : null;
 
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_canEditDeal)
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/edit.png',
-                    width: 24,
-                    height: 24,
+                final shouldUpdate = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DealEditScreen(
+                      dealId: currentDeal!.id,
+                      dealName: currentDeal!.name,
+                      statusId: currentDeal!.statusId,
+                      manager: currentDeal!.manager != null
+                          ? currentDeal!.manager!.id.toString()
+                          : '',
+                      lead: currentDeal!.lead != null
+                          ? currentDeal!.lead!.id.toString()
+                          : '',
+                      startDate: startDateString,
+                      endDate: endDateString,
+                      createdAt: createdAtDateString,
+                      sum: currentDeal!.sum.toString(),
+                      description: currentDeal!.description ?? '',
+                      dealCustomFields: currentDeal!.dealCustomFields,
+                    ),
                   ),
-                  onPressed: () async {
-                    if (currentDeal != null) {
-                      final startDateString = currentDeal!.startDate != null &&
-                              currentDeal!.startDate!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentDeal!.startDate!))
-                          : null;
-                      final endDateString = currentDeal!.endDate != null &&
-                              currentDeal!.endDate!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentDeal!.endDate!))
-                          : null;
-                      final createdAtDateString = currentDeal!.createdAt !=
-                                  null &&
-                              currentDeal!.createdAt!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentDeal!.createdAt!))
-                          : null;
+                );
 
-                      final shouldUpdate = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DealEditScreen(
-                            dealId: currentDeal!.id,
-                            dealName: currentDeal!.name,
-                            statusId: currentDeal!.statusId,
-                            manager: currentDeal!.manager != null
-                                ? currentDeal!.manager!.id.toString()
-                                : '',
-                            lead: currentDeal!.lead != null
-                                ? currentDeal!.lead!.id.toString()
-                                : '',
-                            startDate: startDateString,
-                            endDate: endDateString,
-                            createdAt: createdAtDateString,
-                            sum: currentDeal!.sum.toString(),
-                            description: currentDeal!.description ?? '',
-                            dealCustomFields: currentDeal!.dealCustomFields,
-                          ),
-                        ),
-                      );
-
-                      if (shouldUpdate == true) {
-                        context
-                            .read<DealByIdBloc>()
-                            .add(FetchDealByIdEvent(dealId: currentDeal!.id));
-                        context.read<DealBloc>().add(FetchDealStatuses());
-                      }
-                    }
-                  },
+                if (shouldUpdate == true) {
+                  context
+                      .read<DealByIdBloc>()
+                      .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                  context.read<DealBloc>().add(FetchDealStatuses());
+                }
+              }
+            },
+          ),
+        if (_canDeleteDeal)
+          IconButton(
+            key: keyDealDelete, // Отдельный ключ для кнопки удаления
+            padding: EdgeInsets.only(right: 8),
+            constraints: BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/delete.png',
+              width: 24,
+              height: 24,
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DeleteDealDialog(
+                  dealId: currentDeal!.id,
+                  leadId: currentDeal!.lead!.id,
                 ),
-              if (_canDeleteDeal)
-                IconButton(
-                  padding: EdgeInsets.only(right: 8),
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => DeleteDealDialog(
-                        dealId: currentDeal!.id,
-                        leadId: currentDeal!.lead!.id,
-                      ),
-                    );
-                  },
-                ),
-            ],
+              );
+            },
           ),
       ],
     );

@@ -2,7 +2,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-
 class ExportContactDialog extends StatelessWidget {
   final String leadName;
   final String phoneNumber;
@@ -11,13 +10,20 @@ class ExportContactDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    double titleFontSize = screenWidth * 0.05;
+    double contentFontSize = screenWidth * 0.034;
+
     return AlertDialog(
       backgroundColor: Colors.white,
       title: Center(
         child: Text(
           AppLocalizations.of(context)!.translate('export_contact'),
           style: TextStyle(
-            fontSize: 20,
+            fontSize: titleFontSize, 
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
             color: Color(0xff1E2E52),
@@ -27,7 +33,7 @@ class ExportContactDialog extends StatelessWidget {
       content: Text(
         AppLocalizations.of(context)!.translate('confirm_export_contact'),
         style: TextStyle(
-          fontSize: 16,
+          fontSize: contentFontSize,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
           color: Color(0xff1E2E52),
@@ -39,7 +45,7 @@ class ExportContactDialog extends StatelessWidget {
           children: [
             Expanded(
               child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                buttonText: AppLocalizations.of(context)!.translate('no'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -50,7 +56,7 @@ class ExportContactDialog extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('export'),
+                buttonText: AppLocalizations.of(context)!.translate('yes'),
                 onPressed: () async {
                   try {
                     if (await FlutterContacts.requestPermission()) {
@@ -90,7 +96,8 @@ class ExportContactDialog extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            AppLocalizations.of(context)!.translate('contact_permission_denied'),
+                            AppLocalizations.of(context)!
+                                .translate('contact_permission_denied'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -149,5 +156,4 @@ class ExportContactDialog extends StatelessWidget {
       ],
     );
   }
-  
 }

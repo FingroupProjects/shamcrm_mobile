@@ -81,7 +81,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFFFEBEE); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFE8F5E9); // Цвет для сложного приоритета
+        return const Color(0xFFFFEBEE); // Цвет для сложного приоритета
       default:
         return const Color(0xFFE8F5E9); // Цвет по умолчанию
     }
@@ -95,7 +95,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFC62828); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFF2E7D32); // Цвет для сложного приоритета
+        return const Color(0xFFC62828); // Цвет для сложного приоритета
       default:
         return const Color(0xFF2E7D32); // Цвет по умолчанию
     }
@@ -109,7 +109,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return AppLocalizations.of(context)!.translate('urgent');
       case 2:
-        return AppLocalizations.of(context)!.translate('normal');
+        return AppLocalizations.of(context)!.translate('urgent');
       default:
         return AppLocalizations.of(context)!.translate('normal');
     }
@@ -212,17 +212,14 @@ class _TaskCardState extends State<TaskCard> {
                 taskId: widget.task.id
                     .toString(), // ID задачи для детального экрана
                 taskNumber: widget.task.taskNumber,
-                taskName: widget.task.name ??
-                    AppLocalizations.of(context)!
-                        .translate('no_name'), // Название задачи
+                taskName: widget.task.name ?? AppLocalizations.of(context)!.translate('no_name'), // Название задачи
                 startDate: widget.task.startDate, // Дата начала задачи
                 endDate: widget.task.endDate, // Дата окончания задачи
                 taskStatus: dropdownValue, // Текущий статус задачи
                 statusId: widget.statusId, // ID статуса задачи
                 priority: widget.task.priority, // Приоритет задачи
                 description: widget.task.description, // Описание задачи
-                project: widget.task.project?.name ??
-                    widget.project ??
+                project: widget.task.project?.name ?? widget.project ??
                     AppLocalizations.of(context)!.translate('no_project'),
                 taskCustomFields: widget.task.taskCustomFields,
               ),
@@ -271,8 +268,7 @@ class _TaskCardState extends State<TaskCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color:
-                              _getPriorityBackgroundColor(widget.task.priority),
+                          color: _getPriorityBackgroundColor(widget.task.priority),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
@@ -293,8 +289,7 @@ class _TaskCardState extends State<TaskCard> {
                   width: 4,
                 ),
                 Text(
-                  widget.task.project?.name ??
-                      AppLocalizations.of(context)!.translate('no_project'),
+                  widget.task.project?.name ?? AppLocalizations.of(context)!.translate('no_project'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
@@ -332,6 +327,7 @@ class _TaskCardState extends State<TaskCard> {
                           );
                         },
                         child: Container(
+                          key: widget.dropdownStatusKey,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: const Color(0xff1E2E52),
@@ -339,15 +335,12 @@ class _TaskCardState extends State<TaskCard> {
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric( horizontal: 8, vertical: 4),
                           child: Row(
                             children: [
                               Container(
-                               key: widget.dropdownStatusKey,
                                 constraints: BoxConstraints(
-                                    maxWidth:
-                                        200), //Размер колонки Выбора Статуса
+                                maxWidth: 200), 
                                 child: Text(
                                   dropdownValue,
                                   style: const TextStyle(

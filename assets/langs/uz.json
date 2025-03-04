@@ -639,7 +639,7 @@
     "contact_permission_denied": "Kontaktlarga kirish uchun ruxsat berilmadi",
     "contact_add_failed": "Kontakt qo'shishda xato",
     "export_contact": "Kontaktni eksport qilish",
-    "confirm_export_contact": "Kontaktni eksport qilishni tasdiqlang",
+    "confirm_export_contact": "Kontaktlar roʻyxati saqlansinmi?",
     "export": "Eksport",
     "import_contact_on": "Kontaktlardan import yoqilgan",
     "import_contact_off": "Kontaktlardan import o‘chirilgan",
@@ -676,25 +676,25 @@
     "deals": "Bitimlar",
     "history": "Tarix",
     "tutorial_lead_card_title": "Lead kartasi",
-    "tutorial_lead_card_description": "Bu lead kartasi. Bu yerda siz leadlarni ko‘rishingiz va boshqarishingiz mumkin",
+    "tutorial_lead_card_description": "Bu yerda siz yetakchi maʼlumotlarni koʻrishingiz va boshqarishingiz mumkin",
     "tutorial_lead_button_title": "Lead qo‘shish",
     "tutorial_lead_button_description": "‘Mijoz qo‘shish’ tugmasini bosing va asosiy ma’lumotlarni kiriting: ism, telefon, lead manbai va mas’ul menejer. Qanchalik ko‘p ma’lumot bersangiz, mijoz bilan ishlash shunchalik oson bo‘ladi",
     "tutorial_lead_status_title": "Mijoz holatini boshqarish",
     "tutorial_lead_status_description": "Mijoz kartalarini holatlar bo‘ylab harakatlantiring (Masalan: 'Yangi' → 'Ish jarayonida' → 'Mijoz')",
     "skip": "O‘tkazib yuborish",
-    "tutorial_lead_details_history_title": "O‘zaro aloqalar tarixi",
+    "tutorial_lead_details_history_title": "Etakchi holatini boshqarish",
     "tutorial_lead_details_history_description": "Harakatlar tarixi (mijoz, unga oid eslatmalar, bitimlar)",
     "tutorial_lead_details_edit_title": "Tahrirlash",
     "tutorial_lead_details_edit_description": "Bu yerda leadni o‘zgartirish mumkin",
     "tutorial_lead_details_delete_title": "O‘chirish",
     "tutorial_lead_details_delete_description": "Bu yerda leadni o‘chirish mumkin",
-    "tutorial_lead_details_chat_title": "Lead bilan chat",
+    "tutorial_lead_details_chat_title": "Lead chat",
     "tutorial_lead_details_chat_description": "Agar integratsiyalar (WhatsApp, Telegram, Instagram, Email) ulangan bo‘lsa, mijoz bilan CRM ichida bevosita muloqot qiling. Barcha yozishmalar mijoz kartasida saqlanadi",
     "tutorial_lead_details_notice_title": "Hodisalar (eslatmalar) qo‘shish",
     "tutorial_lead_details_notice_description": "Muhim hodisalarni (qo‘ng‘iroqlar, uchrashuvlar, kelishuvlar) mijoz kartasida qayd eting. Bu o‘zaro aloqalar tarixini kuzatishda yordam beradi",
     "tutorial_lead_details_deal_title": "Mijoz kartasidan bevosita bitim yaratish",
     "tutorial_lead_details_deal_description": "Mijoz kartasida 'Bitim yaratish' tugmasini bosing, bitimni tezda rasmiylashtiring va mijoz bilan bog‘lang. Ma’lumotlarni to‘ldiring va qo‘shish tugmasini bosing",
-    "tutorial_lead_details_contact_title": "Mijoz ma'lumotlarini ko‘rish va tahrirlash",
+    "tutorial_lead_details_contact_title": "Aloqa shaxsini qo'shish",
     "tutorial_lead_details_contact_description": "Kontakt ma'lumotlari (ism, telefon, email)",
     "tutorial_task_card_title": "Vazifa kartasi",
     "tutorial_task_card_description": "Bu vazifa kartasi. Bu yerda siz vazifalarni ko‘rishingiz va boshqarishingiz mumkin",
@@ -704,8 +704,8 @@
     "tutorial_task_status_description": "Vazifalarni holatlar bo‘ylab harakatlantirish mumkin (Masalan: 'Ish jarayonida' → 'Tekshiruvda' → 'Tayyor'). Bu progressni kuzatishda yordam beradi",
     "tutorial_task_screen_search_title": "Qidiruv",
     "tutorial_task_screen_search_description": "Qidiruv panelidan foydalanib, mijozni ismi, telefon raqami yoki kompaniyasi bo‘yicha tezda toping",
-    "tutorial_task_screen_menu_title": "Filtr",
-    "tutorial_task_screen_menu_description": "Filtrlar mijozlarni menejer, holat, yaratish sanasi va bit",
+    "tutorial_task_screen_menu_title": "Qo'shimcha funktsiyalar",
+    "tutorial_task_screen_menu_description": "Bu yerda siz Filtrni va 'Mening vazifalarim' bo'limini topasiz. Vazifalarni tugash sanasi, holati, ustuvorligi va tayinlangan shaxs bo'yicha topish uchun filtrlardan foydalaning. Shunday qilib, kerakli vazifani tezda topishingiz mumkin. 'Mening vazifalarim' bo'limida bu siz yaratgan vazifalar",
     "tutorial_task_details_edit_title": "Tahrirlash",
     "tutorial_task_details_edit_description": "Bu yerda vazifani o‘zgartirish mumkin",
     "tutorial_task_details_delete_title": "O‘chirish",
@@ -724,16 +724,14 @@
     "statusManagement": "Bitim holatlarini boshqarish",
     "statusManagementDescription": "Bitimni holatlar bo'yicha o'tkazish (masalan, 'Yangi' → 'Ish jarayonida' → 'Muvaffaqiyatli').",
     "addDeal": "Bitim qo'shish",
+    "tutorial_task_details_review_title": "Tekshiruvga yuborish",
+    "tutorial_task_details_review_description": "Bu yerda vazifani tekshiruvga yuborish mumkin",
+    "tutorial_task_details_history_title": "Harakatlar tarixi",
+    "tutorial_task_details_history_description": "Bu yerda vazifa bo‘yicha harakatlar tarixini ko‘rish mumkin",
     "addDealDescription": "«Bitim qo'shish» tugmasini bosing va asosiy ma'lumotlarni kiriting: nom, summa, tavsif va mas'ul menejer. Ma'lumot qanchalik ko'p bo'lsa, mijoz bilan ishlash shunchalik oson.",
     "send_push_notification": "PUSH-xabarnoma yuborish",
     "amount": "Summa",
     "status": "Holat"
-
-
-
-
-
-
 
 
 

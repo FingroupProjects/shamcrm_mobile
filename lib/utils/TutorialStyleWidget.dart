@@ -27,8 +27,7 @@ TargetFocus createTarget({
             children: <Widget>[
               SizedBox(height: boxHeight),
               Text(title, style: _titleStyle),
-              Padding(
-                padding: extraPadding ?? EdgeInsets.zero,
+              Padding( padding: extraPadding ?? EdgeInsets.zero,
                 child: Text(description, style: _descriptionStyle),
               ),
               if (extraSpacing != null) extraSpacing,
