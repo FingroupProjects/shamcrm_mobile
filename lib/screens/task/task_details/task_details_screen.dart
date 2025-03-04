@@ -236,12 +236,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
 
 void showTutorial() async {
+  if (!mounted) return; 
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownTaskDetails') ?? false;
+  bool isTutorialShown = prefs.getBool('isTutorialShownTasksDetailsss') ?? false;
 
-  await Future.delayed(const Duration(milliseconds: 700));
+  await Future.delayed(const Duration(milliseconds: 1000));
 
-  if (!isTutorialShown) {
+  if (!isTutorialShown && mounted) {
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -258,9 +259,14 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+        onSkip: () {
+        print("Пропустить");
+        prefs.setBool('isTutorialShownTasksDetailsss', true);
+        return true;
+      },
       onFinish: () {
         print("finish");
-        prefs.setBool('isTutorialShownTaskDetails', true);
+        prefs.setBool('isTutorialShownTasksDetailsss', true);
       },
     ).show(context: context);
   }

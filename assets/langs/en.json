@@ -743,19 +743,18 @@
       "tutorial_dashboard_notification_description": "Here you can find notifications about new messages, tasks, deals, etc.",
       "tutorial_dashboard_mytask_title": "My Tasks",
       "tutorial_dashboard_mytask_description": "Here are the tasks you have created",
-      "tutorial_dashboard_lead_conversion_title": "Lead Conversion",
-      "tutorial_dashboard_lead_conversion_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_lead_conversion_title": "Conversion",
+      "tutorial_dashboard_lead_conversion_description": "The chart displays the percentage of leads from inquiries that became clients. These are clients who contacted and gradually moved from the 'Unknown' status to the 'Client' status.",
       "tutorial_dashboard_task_completion_title": "Goal Completion",
-      "tutorial_dashboard_task_completion_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_task_completion_description": "The graph shows task completion rates for all your employees. It reflects the percentage of completed tasks for each employee.",
       "tutorial_dashboard_task_chart_title": "Tasks",
-      "tutorial_dashboard_task_chart_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
-      "tutorial_dashboard_graphics_title": "Clients",
-      "tutorial_dashboard_graphics_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_task_chart_description": "The chart is divided into three parts:\n🔵 Blue – tasks in progress.\n🔴 Red – overdue tasks.\n🟢 Green – completed tasks.\nPay attention to the red zone to respond to overdue tasks on time.",
+      "tutorial_dashboard_graphics_title": "Client",
+      "tutorial_dashboard_graphics_description": "The graph allows you to see client dynamics for each month. It visualizes client statuses set in the 'Counterparties' section, helping to analyze changes in the client base over time.",
       "tutorial_dashboard_lead_process_speed_title": "Processing Speed",
-      "tutorial_dashboard_lead_process_speed_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
-      "tutorial_dashboard_deal_stats_title": "Deal Statistics",
-      "tutorial_dashboard_deal_stats_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text"
-
-
+      "tutorial_dashboard_lead_process_speed_description": "The graph visualizes the speed and quality of client processing. Determine at what level your client interactions are: from slow to highly active.",
+      "tutorial_dashboard_deal_stats_title": "Deals",
+      "tutorial_dashboard_deal_stats_description": "The graph is divided into two parts:\n🔵 Blue: shows total deal amounts for the month.\n🟢 Green: shows the amount of successful deals.\nMonitor monthly sales volume. Analyze performance and plan future actions."
+      
 
 }
