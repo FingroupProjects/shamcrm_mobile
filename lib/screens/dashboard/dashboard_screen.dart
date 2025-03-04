@@ -40,9 +40,11 @@ import 'package:crm_task_manager/screens/dashboard_for_manager/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/users_chart.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -55,11 +57,163 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   bool isRefreshing = false;
 
+  final GlobalKey keyNotificationIcon = GlobalKey(); 
+  final GlobalKey keyMyTaskIcon = GlobalKey(); 
+  final GlobalKey keyAdminLeadConversion = GlobalKey(); 
+  final GlobalKey keyAdminTaskComplietion = GlobalKey(); 
+  final GlobalKey keyAdminTaskChart = GlobalKey(); 
+  final GlobalKey keyAdminGraphics = GlobalKey(); 
+  final GlobalKey keyAdminProcessSpeed = GlobalKey(); 
+  final GlobalKey keyAdminDealStats = GlobalKey(); 
+
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
+  bool _isTaskScreenTutorialCompleted = false;
+  
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _initializeData();
+         WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+  });
   }
+
+  
+void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
+      identify: "dashboardNotificationIcon",
+      keyTarget: keyNotificationIcon,
+      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_description'), 
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "dashboardMyTaskIcon",
+      keyTarget: keyMyTaskIcon,
+      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_description'), 
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "dashboardAdminLeadConversion",
+      keyTarget: keyAdminLeadConversion,
+      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_conversion_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_conversion_description'), 
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    // createTarget(
+    //   identify: "dashboardAdminTaskComplietion",
+    //   keyTarget: keyAdminTaskComplietion,
+    //   title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_complietion_title'), 
+    //   description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_complietion_description'), 
+    //   align: ContentAlign.bottom,
+    //   extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+    //   context: context,
+    // ),
+    // createTarget(
+    //   identify: "dashboardAdminTaskChart",
+    //   keyTarget: keyAdminTaskChart,
+    //   title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'), 
+    //   description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'), 
+    //   align: ContentAlign.bottom,
+    //   extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+    //   context: context,
+    // ),
+    // createTarget(
+    //   identify: "dashboardAdminGraphics",
+    //   keyTarget: keyAdminGraphics,
+    //   title: AppLocalizations.of(context)!.translate('tutorial_dashboard_graphics_title'), 
+    //   description: AppLocalizations.of(context)!.translate('tutorial_dashboard_graphics_description'), 
+    //   align: ContentAlign.bottom,
+    //   // extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.1),
+    //   context: context,
+    // ),
+    // createTarget(
+    //   identify: "dashboardAdminProcessSpeed",
+    //   keyTarget: keyAdminProcessSpeed,
+    //   title: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_process_speed_title'), 
+    //   description: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_process_speed_description'), 
+    //   align: ContentAlign.bottom,
+    //   extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+    //   context: context,
+    // ),
+    // createTarget(
+    //   identify: "dashboardAdminDealStats",
+    //   keyTarget: keyAdminDealStats,
+    //   title: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_title'), 
+    //   description: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_description'), 
+    //   align: ContentAlign.top,
+    //   // extraPadding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.8),
+    //   context: context,
+    // ),
+  ]);
+}
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
+
+  if (!isTutorialShown) {
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        print("finish");
+        prefs.setBool('isTutorialShownDashboard', true);
+        setState(() {
+          _isTaskScreenTutorialCompleted = true;
+        });
+      },
+     onClickTarget: (target) async {
+  int currentIndex = targets.indexWhere((t) => t.identify == target.identify);
+  if (currentIndex < targets.length - 1) {
+    final nextTarget = targets[currentIndex + 1];
+
+    if (nextTarget.keyTarget != null) {
+      await Future.delayed(Duration(milliseconds: 300));
+      _scrollToTarget(nextTarget.keyTarget!);
+    }
+  }
+},
+    ).show(context: context);
+  }
+}
+
+void _scrollToTarget(GlobalKey key) {
+  final RenderObject? renderObject = key.currentContext?.findRenderObject();
+  if (renderObject != null && renderObject is RenderBox) {
+    Scrollable.ensureVisible(
+      key.currentContext!,
+      duration: Duration(milliseconds: 500), 
+      curve: Curves.easeInOut,
+    );
+  } else {
+    print("Error: Unable to find render object for key");
+  }
+}
 
   Future<void> _initializeData() async {
     try {
@@ -158,24 +312,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Отправляем события для обновления всех блоков графиков
         context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
         context.read<DashboardChartBloc>().add(LoadLeadChartData());
-        context
-            .read<DashboardChartBlocManager>()
-            .add(LoadLeadChartDataManager());
+        context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
         context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
         context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
-        context
-            .read<DashboardConversionBlocManager>()
-            .add(LoadLeadConversionDataManager());
+        context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
         context.read<DealStatsBloc>().add(LoadDealStatsData());
         context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
         context.read<UserBlocManager>().add(LoadUserData());
         context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
-        context
-            .read<DashboardTaskChartBlocManager>()
-            .add(LoadTaskChartDataManager());
-        context
-            .read<ProcessSpeedBlocManager>()
-            .add(LoadProcessSpeedDataManager());
+        context.read<DashboardTaskChartBlocManager>() .add(LoadTaskChartDataManager());
+        context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
       }
     } catch (e) {
       if (mounted) {
@@ -188,6 +334,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+         if (!_isTutorialShown) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showTutorial();
+              setState(() {
+                _isTutorialShown = true; 
+              });
+            });
+          }
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
@@ -214,6 +368,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           showSeparateMyTasks: true,
           showMenuIcon: false,
           clearButtonClickFiltr: (bool) {},
+          NotificationIconKey: keyNotificationIcon,
+          MyTaskIconKey: keyMyTaskIcon,
         ),
       ),
       body: isClickAvatarIcon
@@ -225,6 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   backgroundColor: Colors.white,
                   onRefresh: _onRefresh,
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.all(16),
                     child: Column(
@@ -250,17 +407,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Widget> _buildDashboardContent() {
     if (userRoles.contains('admin')) {
       return [
-        LeadConversionChart(),
+        LeadConversionChart(key: keyAdminLeadConversion),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskCompletionChart(),
+        TaskCompletionChart(key: keyAdminTaskComplietion),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidget(),
+        TaskChartWidget(key: keyAdminTaskChart),
         Divider(thickness: 1, color: Colors.grey[300]),
-        GraphicsDashboard(),
+        GraphicsDashboard(lineChartKey: keyAdminGraphics),
         Divider(thickness: 1, color: Colors.grey[300]),
-        ProcessSpeedGauge(),
+        ProcessSpeedGauge(key: keyAdminProcessSpeed,),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChart(),
+        DealStatsChart(key: keyAdminDealStats,),
       ];
     } else if (userRoles.contains('manager')) {
       return [
