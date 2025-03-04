@@ -679,15 +679,15 @@ Widget _buildValue(String value, String label) {
             ),
           ),
         ),
-        if (_canExportContact)
-          GestureDetector(
-            onTap: () => _addContact(widget.leadName, value),
-            child: Icon(
-              Icons.contacts,
-              size: 24,
-              color: Color(0xFF1E2E52),
-            ),
-          ),
+        // if (_canExportContact)
+        //   GestureDetector(
+        //     onTap: () => _addContact(widget.leadName, value),
+        //     child: Icon(
+        //       Icons.contacts,
+        //       size: 24,
+        //       color: Color(0xFF1E2E52),
+        //     ),
+        //   ),
       ],
     );
   }

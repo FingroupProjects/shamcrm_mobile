@@ -337,7 +337,21 @@ Set<int> expandedDealIds = {};
     );
   }
 
-  Widget _buildLeadHistoryContent(List<LeadHistory> history) {
+ Widget _buildLeadHistoryContent(List<LeadHistory> history) {
+    if (history.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('no_data_to_display'),
+          style: const TextStyle(
+            fontSize: 14,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: Color(0xff8F9BB3),
+          ),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: history.map((item) => _buildHistoryItem(item)).toList(),
@@ -349,8 +363,8 @@ Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
   if (notices.isEmpty) {
     return Center(
       child: Text(
-        'Нет данных для отображения',
-        style: const TextStyle(
+        AppLocalizations.of(context)!.translate('no_data_to_display'),
+          style: const TextStyle(
           fontSize: 14,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
@@ -419,7 +433,7 @@ Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
   if (deals.isEmpty) {
     return Center(
       child: Text(
-        'Нет данных для отображения',
+        AppLocalizations.of(context)!.translate('no_data_to_display'),
         style: const TextStyle(
           fontSize: 14,
           fontFamily: 'Gilroy',
