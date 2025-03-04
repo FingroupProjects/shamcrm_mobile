@@ -224,7 +224,7 @@ void showTutorial() async {
         print("finish");
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
-          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг завершения
+          _isTaskScreenTutorialCompleted = true; 
         });
       },
     ).show(context: context);
@@ -444,7 +444,7 @@ void showTutorial() async {
 
   @override
   Widget build(BuildContext context) {
-                 if (!_isTutorialShown) {
+     if (!_isTutorialShown) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               showTutorial();
               setState(() {

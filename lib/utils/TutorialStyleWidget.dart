@@ -12,7 +12,7 @@ TargetFocus createTarget({
   required BuildContext context, 
 }) {
   double screenHeight = MediaQuery.of(context).size.height;
-  double boxHeight = screenHeight * 0.1; 
+  double boxHeight = screenHeight * 0.12; 
 
   return TargetFocus(
     identify: identify,
@@ -31,6 +31,7 @@ TargetFocus createTarget({
                 child: Text(description, style: _descriptionStyle),
               ),
               if (extraSpacing != null) extraSpacing,
+              SizedBox(height: 40),
             ],
           ),
         ),

@@ -45,11 +45,11 @@ final GlobalKey keyTaskCard = GlobalKey();
 final GlobalKey keyStatusDropdown = GlobalKey();
 final GlobalKey keyFloatingActionButton = GlobalKey();
   
-bool _isTaskCardTutorialShown = false; 
-bool _isStatusTutorialShown = false; 
-bool _isFabTutorialShown = false; 
-
+bool _isTaskCardTutorialShown = false;
+bool _isStatusTutorialShown = false;
+bool _isFabTutorialShown = false;
 bool _isFabTutorialInProgress = false;
+bool _isTutorialInProgress = false; 
 
 @override
 void initState() {
@@ -75,7 +75,7 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_task_card_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_card_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      // extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
     createTarget(
@@ -109,10 +109,18 @@ Future<void> _loadFeatureState() async {
 }
 
 void showTutorial(String tutorialType) async {
+    if (_isTutorialInProgress) {
+    return; 
+  }
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  if (widget.isTaskScreenTutorialCompleted && tutorialType == "TaskCardAndStatusDropdown" && !_isTaskCardTutorialShown && !_isStatusTutorialShown) {
-    await Future.delayed(const Duration(milliseconds: 300));
+  if (widget.isTaskScreenTutorialCompleted && 
+      tutorialType == "TaskCardAndStatusDropdown" && 
+      !_isTaskCardTutorialShown && 
+      !_isStatusTutorialShown) {
+    _isTutorialInProgress = true;
+    
+        await Future.delayed(const Duration(milliseconds: 500));
 
     TutorialCoachMark(
       targets: [
@@ -139,10 +147,15 @@ void showTutorial(String tutorialType) async {
         setState(() {
           _isTaskCardTutorialShown = true;
           _isStatusTutorialShown = true;
+           _isTutorialInProgress = false;
         });
       },
     ).show(context: context);
-  } else if (widget.isTaskScreenTutorialCompleted && tutorialType== "TaskFloatingActionButton" &&  !_isFabTutorialShown && !_isFabTutorialInProgress) {
+ } else if (widget.isTaskScreenTutorialCompleted && 
+             tutorialType == "TaskFloatingActionButton" && 
+             !_isFabTutorialShown && 
+             !_isFabTutorialInProgress) {
+    _isTutorialInProgress = true;
         await Future.delayed(const Duration(milliseconds: 500));
 
     _isFabTutorialInProgress = true;
@@ -155,10 +168,10 @@ void showTutorial(String tutorialType) async {
         fontSize: 20,
         fontWeight: FontWeight.w600,
         shadows: [
-          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
         ],
       ),
       colorShadow: Color(0xff1E2E52),
@@ -166,11 +179,11 @@ void showTutorial(String tutorialType) async {
         prefs.setBool('isFabTaskTutorialShow', true);
         setState(() {
           _isFabTutorialShown = true;
+           _isTutorialInProgress = false; 
         });
-        _isFabTutorialInProgress = false; 
+        _isFabTutorialInProgress = false;
       },
     ).show(context: context);
- 
   }
 }
 
@@ -236,12 +249,12 @@ Widget build(BuildContext context) {
           } else if (state is TaskDataLoaded) {
             final tasks = state.tasks.where((task) => task.statusId == widget.statusId).toList();
     
-            if (tasks.isEmpty && !_isFabTutorialShown ) {
+             if (tasks.isEmpty && !_isFabTutorialShown) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 showTutorial("TaskFloatingActionButton");
               });
             }
-              
+
             if (tasks.isEmpty) {
               return RefreshIndicator(
                 backgroundColor: Colors.white,
@@ -259,11 +272,12 @@ Widget build(BuildContext context) {
                 ),
               );
             }
-               if (!_isTaskCardTutorialShown) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showTutorial("TaskCardAndStatusDropdown");
-                });
-              }
+
+if (!_isTaskCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    showTutorial("TaskCardAndStatusDropdown");
+  });
+}
 
             return RefreshIndicator(
               color: Color(0xff1E2E52),

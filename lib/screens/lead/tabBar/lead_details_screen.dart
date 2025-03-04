@@ -193,7 +193,7 @@ void showTutorial() async {
   {
     TutorialCoachMark(
       targets: targets,
-      textSkip: 'Пропустить',
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
         color: Colors.white,
         fontFamily: 'Gilroy',
@@ -219,6 +219,7 @@ void showTutorial() async {
       },
       onSkip: () {
         print("Пропустить");
+        prefs.setBool('isTutorialShownLeadDetails', true);
         return true;
       },
       onFinish: () {

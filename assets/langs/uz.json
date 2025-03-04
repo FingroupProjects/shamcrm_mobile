@@ -731,7 +731,30 @@
     "addDealDescription": "«Bitim qo'shish» tugmasini bosing va asosiy ma'lumotlarni kiriting: nom, summa, tavsif va mas'ul menejer. Ma'lumot qanchalik ko'p bo'lsa, mijoz bilan ishlash shunchalik oson.",
     "send_push_notification": "PUSH-xabarnoma yuborish",
     "amount": "Summa",
-    "status": "Holat"
+    "status": "Holat",
+    "tutorial_chat_lead_title": "Lead",
+    "tutorial_chat_lead_description": "Leadlardan kelgan barcha xabarlar avtomatik ravishda bu yerda aks etadi. Uchinchi tomon ilovalarini ochmasdan xabarlarga bevosita tizimda javob berish imkoniyati mavjud",
+    "tutorial_chat_task_title": "Vazifa chatlari:",
+    "tutorial_chat_task_description": "Vazifa tafsilotlarini muhokama qilish, fayllarni almashish va boshqalar.",
+    "tutorial_chat_corporate_title": "Korporativ chat",
+    "tutorial_chat_corporate_description": "CRM tizimida xodimlarning ichki muloqoti uchun mo‘ljallangan. Jamoalar o‘rtasida o‘zaro aloqa o‘rnatish, ma’lumot almashish va ish masalalarini real vaqt rejimida muhokama qilish imkonini beradi",
+    "tutorial_dashboard_notification_title": "Bildirishnomalar",
+    "tutorial_dashboard_notification_description": "Bu yerda yangi xabarlar, vazifalar, bitimlar va boshqalar haqida bildirishnomalar mavjud",
+    "tutorial_dashboard_mytask_title": "Mening vazifalarim",
+    "tutorial_dashboard_mytask_description": "Bu yerda siz yaratgan vazifalar mavjud",
+    "tutorial_dashboard_lead_conversion_title": "Konversiya",
+    "tutorial_dashboard_lead_conversion_description": "Diagramma murojaatlardan mijozga aylangan leadlar foizini ko‘rsatadi. Bu – bog‘langan va bosqichma-bosqich 'Noma’lum' holatidan 'Mijoz' holatiga o‘tgan mijozlar.",
+    "tutorial_dashboard_task_completion_title": "Maqsadlarni bajarish",
+    "tutorial_dashboard_task_completion_description": "Grafik barcha xodimlaringiz tomonidan bajarilgan vazifalarni ko‘rsatadi. Har bir xodim bo‘yicha bajarilgan vazifalar foizi aks ettiriladi.",
+    "tutorial_dashboard_task_chart_title": "Vazifalar",
+    "tutorial_dashboard_task_chart_description": "Diagramma uch qismga bo‘lingan:\n🔵 Ko‘k – bajarilayotgan vazifalar.\n🔴 Qizil – muddati o‘tgan vazifalar.\n🟢 Yashil – bajarilgan vazifalar.\nQizil zonaga e’tibor bering, shunda muddati o‘tgan vazifalarga o‘z vaqtida javob bera olasiz.",
+    "tutorial_dashboard_graphics_title": "Mijoz",
+    "tutorial_dashboard_graphics_description": "Grafik har bir oy bo‘yicha mijozlar dinamikasini ko‘rishga imkon beradi. 'Kontragentlar' bo‘limida belgilangan mijoz holatlari vizuallashtiriladi, bu esa mijoz bazasining o‘zgarishini vaqt bo‘yicha tahlil qilishga yordam beradi.",
+    "tutorial_dashboard_lead_process_speed_title": "Ishlov berish tezligi",
+    "tutorial_dashboard_lead_process_speed_description": "Grafik mijozlarga xizmat ko‘rsatish tezligi va sifatini vizuallashtiradi. Mijozlar bilan ishlash darajangiz qayerda ekanligini aniqlang: sekin yoki yuqori faollik.",
+    "tutorial_dashboard_deal_stats_title": "Bitimlar",
+    "tutorial_dashboard_deal_stats_description": "Grafik ikki qismga bo‘lingan:\n🔵 Ko‘k: oy bo‘yicha umumiy bitim summalarini ko‘rsatadi.\n🟢 Yashil: muvaffaqiyatli bitimlarning umumiy summasini ko‘rsatadi.\nOylik savdo hajmini kuzatib boring. Natijalarni tahlil qiling va kelajakdagi harakatlarni rejalashtiring."
+
 
 
 
