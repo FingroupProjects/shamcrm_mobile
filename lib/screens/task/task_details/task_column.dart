@@ -75,7 +75,7 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_task_card_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_card_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      // extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
     createTarget(

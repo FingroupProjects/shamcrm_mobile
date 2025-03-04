@@ -147,10 +147,6 @@ void showTutorial() async {
       onClickOverlay: (target) {
         print("Overlay clicked: \${target.identify}");
       },
-      onSkip: () {
-        print(AppLocalizations.of(context)!.translate('tutorial_skip'));
-        return true;
-      },
       onFinish: () {
         print("Tutorial finished");
         prefs.setBool('isTutorialShownDealDetails', true);
