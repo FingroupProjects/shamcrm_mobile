@@ -15,7 +15,7 @@ class ExportContactDialog extends StatelessWidget {
     double screenHeight = MediaQuery.of(context).size.height;
 
     double titleFontSize = screenWidth * 0.05;
-    double contentFontSize = screenWidth * 0.04;
+    double contentFontSize = screenWidth * 0.034;
 
     return AlertDialog(
       backgroundColor: Colors.white,

@@ -19,6 +19,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final int noticeId;
@@ -36,13 +38,198 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool _canDeleteNotice =
       true; // You should get this from your permissions system
   final TextEditingController conclusionController = TextEditingController();
+  final GlobalKey keyNoticeEdit = GlobalKey();
+  final GlobalKey keyNoticeFinish = GlobalKey();
+  final GlobalKey keyNoticeDelete =
+      GlobalKey(); // Новый ключ для кнопки удаления
 
+  final GlobalKey keyDealHistory = GlobalKey();
+  List<TargetFocus> targets = [];
   @override
   void initState() {
     super.initState();
     context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initTargets();
+      showTutorial();
+    });
   }
 
+// Перемещаем инициализацию целей после построения виджета
+  void _initTargets() {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double boxHeight = screenHeight * 0.1;
+
+    targets = [
+      createTarget(
+        identify: 'keyNoticeEdit',
+        keyTarget: keyNoticeEdit,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_edit_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_edit_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      createTarget(
+        identify: 'keyNoticeDelete',
+        keyTarget: keyNoticeDelete,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_delete_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_delete_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      // Обновленная конфигурация для keyNoticeFinish с увеличенным радиусом и отступом
+      TargetFocus(
+        identify: 'keyNoticeFinish',
+        keyTarget: keyNoticeFinish,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              margin: EdgeInsets.only(
+                  top:
+                      120), // Добавляем отступ сверху, чтобы подсказка была за пределами кружка
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  SizedBox(height: boxHeight),
+                  Text(
+                      AppLocalizations.of(context)!
+                          .translate('tutorial_Notice_Finish_title'),
+                      style: _titleStyle),
+                  Padding(
+                    padding: EdgeInsets.zero,
+                    child: Text(
+                        AppLocalizations.of(context)!
+                            .translate('tutorial_Notice_Finish_description'),
+                        style: _descriptionStyle),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        shape: ShapeLightFocus.Circle,
+        radius: 40, // Уменьшаем радиус кружка
+        paddingFocus: 10, // Уменьшаем внутренний отступ фокуса
+      ),
+      // createTarget(
+      //   identify: 'keyNoticeHistory',
+      //   keyTarget: keyNoticeHistory,
+      //   title: AppLocalizations.of(context)!
+      //       .translate('tutorial_Notice_history_title'),
+      //   description: AppLocalizations.of(context)!
+      //       .translate('tutorial_Notice_history_description'),
+      //   align: ContentAlign.top,
+      //   context: context,
+      // ),
+    ];
+  }
+
+  void showTutorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown =
+        prefs.getBool('isTutorialShownNoticeDetails') ?? false;
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    // if (!isTutorialShown)
+     {
+      TutorialCoachMark(
+        targets: targets,
+        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
+        textStyleSkip: TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          shadows: [
+            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          ],
+        ),
+        colorShadow: Color(0xff1E2E52),
+        hideSkip: false,
+        alignSkip: Alignment.bottomRight,
+        focusAnimationDuration: Duration(milliseconds: 300),
+        pulseAnimationDuration: Duration(milliseconds: 500),
+        onClickTarget: (target) {
+          print("Target clicked: \${target.identify}");
+        },
+        onClickOverlay: (target) {
+          print("Overlay clicked: \${target.identify}");
+        },
+        onSkip: () {
+          print(AppLocalizations.of(context)!.translate('tutorial_skip'));
+          return true;
+        },
+        onFinish: () {
+          print("Tutorial finished");
+          prefs.setBool('isTutorialShownNoticeDetails', true);
+        },
+      ).show(context: context);
+    }
+  }
+
+  TargetFocus createTarget({
+    required String identify,
+    required GlobalKey keyTarget,
+    required String title,
+    required String description,
+    required ContentAlign align,
+    EdgeInsets? extraPadding,
+    Widget? extraSpacing,
+    required BuildContext context,
+  }) {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double boxHeight = screenHeight * 0.1;
+
+    return TargetFocus(
+      identify: identify,
+      keyTarget: keyTarget,
+      contents: [
+        TargetContent(
+          align: align,
+          child: Container(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(height: boxHeight),
+                Text(title, style: _titleStyle),
+                Padding(
+                  padding: extraPadding ?? EdgeInsets.zero,
+                  child: Text(description, style: _descriptionStyle),
+                ),
+                if (extraSpacing != null) extraSpacing,
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+// Стили для подсказок
+  TextStyle _titleStyle = TextStyle(
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+    fontSize: 20,
+    fontFamily: 'Gilroy',
+  );
+
+  TextStyle _descriptionStyle = TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.w500,
+    fontSize: 16,
+    fontFamily: 'Gilroy',
+  );
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('notice.update');
@@ -64,21 +251,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
- void _showFinishDialog(int noticeId) {
-  // Clear the controller before showing dialog
-  conclusionController.clear();
-  
-  // Add a state variable to track validation errors
-  bool hasValidationError = false;
-  String? errorText;
+  void _showFinishDialog(int noticeId) {
+    // Clear the controller before showing dialog
+    conclusionController.clear();
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
+    // Add a state variable to track validation errors
+    bool hasValidationError = false;
+    String? errorText;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
@@ -135,8 +321,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                                AppLocalizations.of(context)!.translate('cancel'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('cancel'),
                             onPressed: () => Navigator.of(context).pop(),
                             buttonColor: Colors.red,
                             textColor: Colors.white,
@@ -195,7 +381,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 Future.delayed(const Duration(milliseconds: 1),
                                     () {
                                   if (mounted) {
-                                    context.read<EventBloc>().add(FetchEvents());
+                                    context
+                                        .read<EventBloc>()
+                                        .add(FetchEvents());
                                     Navigator.of(context).pop();
                                   }
                                 });
@@ -211,19 +399,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
               ),
             );
-          }
-        );
-      },
-    );
-  });
-}
+          });
+        },
+      );
+    });
+  }
 
-  Widget _buildFinishButton(Notice notice) {
+  Widget _buildFinishButton(Notice notice, {Key? key}) {
     if (notice.isFinished) {
       return const SizedBox.shrink();
     }
-
     return Padding(
+      key: key, // Передаем ключ в Padding
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: CustomButton(
         buttonText: AppLocalizations.of(context)!.translate('finish_event'),
@@ -361,7 +548,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(notice),
-                    _buildFinishButton(notice),
+                    _buildFinishButton(notice,
+                        key: keyNoticeFinish), // Передаем ключ здесь
                     NoticeHistorySection(
                         leadId: notice.lead!.id, noteId: notice.id),
                   ],
@@ -423,6 +611,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   builder: (context, state) {
                     if (state is NoticeLoaded) {
                       return IconButton(
+                        key:
+                            keyNoticeEdit, // Отдельный ключ для кнопки удаления
                         padding: EdgeInsets.zero,
                         constraints: BoxConstraints(),
                         icon: Image.asset(
@@ -479,6 +669,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   builder: (context, state) {
                     if (state is NoticeLoaded) {
                       return IconButton(
+                        key:
+                            keyNoticeDelete, // Отдельный ключ для кнопки удаления
                         padding: EdgeInsets.only(right: 8),
                         constraints: BoxConstraints(),
                         icon: Image.asset(

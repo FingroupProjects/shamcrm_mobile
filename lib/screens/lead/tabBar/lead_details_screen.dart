@@ -189,7 +189,8 @@ void showTutorial() async {
 
   await Future.delayed(const Duration(milliseconds: 700));
 
-  if (!isTutorialShown) {
+  // if (isTutorialShown) 
+  {
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -875,7 +876,5 @@ Widget _buildValue(String value, String label) {
       );
     }
   }
-  
-
 }
 
