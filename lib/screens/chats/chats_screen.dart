@@ -9,6 +9,7 @@ import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
@@ -21,6 +22,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_unfocuser/flutter_unfocuser.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
@@ -49,6 +51,16 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _isPermissionsChecked = false;
   bool _isSearching = false;
   String searchQuery = '';
+
+  
+    final GlobalKey keyChatLead = GlobalKey(); 
+    final GlobalKey keyChatTask = GlobalKey(); 
+    final GlobalKey keyChatCorporate = GlobalKey(); 
+
+    List<TargetFocus> targets = [];
+    bool _isTutorialShown = false;
+
+    bool _isTaskScreenTutorialCompleted = false;
 
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
@@ -96,7 +108,76 @@ class _ChatsScreenState extends State<ChatsScreen>
       }
       setUpServices();
     });
+         WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+  });
   }
+
+   void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
+      identify: "chatLead",
+      keyTarget: keyChatLead,
+      title: AppLocalizations.of(context)!.translate('tutorial_chat_lead_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_chat_lead_description'), 
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "chatTask",
+      keyTarget: keyChatTask,
+      title: AppLocalizations.of(context)!.translate('tutorial_chat_task_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_chat_task_description'), 
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+    createTarget(
+      identify: "chatCorporate",
+      keyTarget: keyChatCorporate,
+      title: AppLocalizations.of(context)!.translate('tutorial_chat_corporate_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_chat_corporate_description'), 
+      align: ContentAlign.bottom,
+      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
+      context: context,
+    ),
+  ]);
+}
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShowninChat') ?? false;
+
+  if (!isTutorialShown) {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        print("finish");
+        prefs.setBool('isTutorialShowninChat', true);
+        setState(() {
+          _isTaskScreenTutorialCompleted = true; 
+        });
+      },
+    ).show(context: context);
+  }
+}
 
   final PagingController<int, Chats> _pagingController =
       PagingController(firstPageKey: 0);
@@ -223,6 +304,14 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   @override
   Widget build(BuildContext context) {
+       if (!_isTutorialShown) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showTutorial();
+              setState(() {
+                _isTutorialShown = true; 
+              });
+            });
+          }
     final localizations = AppLocalizations.of(context);
     return Unfocuser(
       child: Scaffold(
@@ -242,9 +331,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                   } else if (selectTabIndex == 1) {
                     context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
                   } else if (selectTabIndex == 2) {
-                    context
-                        .read<ChatsBloc>()
-                        .add(FetchChats(endPoint: 'corporate'));
+                    context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
                   }
                 }
               });
@@ -339,52 +426,61 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _buildTabButton(int index) {
-    bool isActive = _tabController.index == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectTabIndex = index;
-        });
-        _tabController.animateTo(index);
+  bool isActive = _tabController.index == index;
+  GlobalKey? tabKey;
 
-        if (index == 0) {
-          endPointInTab = 'lead';
-          context.read<ChatsBloc>().add(ClearChats());
-        }
-        if (index == 1) {
-          endPointInTab = 'task';
-          context.read<ChatsBloc>().add(ClearChats());
-        }
-        if (index == 2) {
-          endPointInTab = 'corporate';
-          context.read<ChatsBloc>().add(ClearChats());
-          // context.read<GetAllClientBloc>().add(GetAnotherClientEv());
-        }
+  if (index == 0) {
+    tabKey = keyChatLead;
+  } else if (index == 1) {
+    tabKey = keyChatTask;
+  } else if (index == 2) {
+    tabKey = keyChatCorporate;
+  }
 
-        if (_debounce?.isActive ?? false) _debounce?.cancel();
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        selectTabIndex = index;
+      });
+      _tabController.animateTo(index);
 
-        _debounce = Timer(const Duration(seconds: 2), () {
-          final chatsBloc = context.read<ChatsBloc>();
-          chatsBloc.add(ClearChats());
+      if (index == 0) {
+        endPointInTab = 'lead';
+        context.read<ChatsBloc>().add(ClearChats());
+      }
+      if (index == 1) {
+        endPointInTab = 'task';
+        context.read<ChatsBloc>().add(ClearChats());
+      }
+      if (index == 2) {
+        endPointInTab = 'corporate';
+        context.read<ChatsBloc>().add(ClearChats());
+      }
 
-          chatsBloc.add(FetchChats(endPoint: endPointInTab));
-        });
-      },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Center(
-          child: Text(
-            _tabTitles[index],
-            style: TaskStyles.tabTextStyle.copyWith(
-              color:
-                  isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
-            ),
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+
+      _debounce = Timer(const Duration(seconds: 2), () {
+        final chatsBloc = context.read<ChatsBloc>();
+        chatsBloc.add(ClearChats());
+
+        chatsBloc.add(FetchChats(endPoint: endPointInTab));
+      });
+    },
+    child: Container(
+      key: tabKey, // Привязываем ключ к контейнеру таба
+      decoration: TaskStyles.tabButtonDecoration(isActive),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: Center(
+        child: Text(
+          _tabTitles[index],
+          style: TaskStyles.tabTextStyle.copyWith(
+            color: isActive ? TaskStyles.activeColor : TaskStyles.inactiveColor,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTabBarView() {
     return TabBarView(

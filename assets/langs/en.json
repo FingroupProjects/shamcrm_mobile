@@ -729,8 +729,33 @@
       "tutorial_task_details_review_title": "For review",
       "tutorial_task_details_review_description": "Here you can send the task for review",
       "tutorial_task_details_history_title": "Action history",
-      "tutorial_task_details_history_description": "Here you can view the task's action history"
+      "tutorial_task_details_history_description": "Here you can view the task's action history",
       "send_push_notification": "Send PUSH notification",
       "amount": "Amount",
-      "status": "Status"
+      "status": "Status",
+      "tutorial_chat_lead_title": "Lead",
+      "tutorial_chat_lead_description": "All incoming messages from leads are automatically displayed here. The ability to reply to messages directly in the system without the need to open third-party applications",
+      "tutorial_chat_task_title": "Task chats:",
+      "tutorial_chat_task_description": "Discussion of task details, file sharing, etc.",
+      "tutorial_chat_corporate_title": "Corporate chat",
+      "tutorial_chat_corporate_description": "Designed for internal employee communication within the CRM system. It allows teams to interact, share information, and discuss work-related issues in real time",
+      "tutorial_dashboard_notification_title": "Notifications",
+      "tutorial_dashboard_notification_description": "Here you can find notifications about new messages, tasks, deals, etc.",
+      "tutorial_dashboard_mytask_title": "My Tasks",
+      "tutorial_dashboard_mytask_description": "Here are the tasks you have created",
+      "tutorial_dashboard_lead_conversion_title": "Lead Conversion",
+      "tutorial_dashboard_lead_conversion_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_task_completion_title": "Goal Completion",
+      "tutorial_dashboard_task_completion_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_task_chart_title": "Tasks",
+      "tutorial_dashboard_task_chart_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_graphics_title": "Clients",
+      "tutorial_dashboard_graphics_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_lead_process_speed_title": "Processing Speed",
+      "tutorial_dashboard_lead_process_speed_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text",
+      "tutorial_dashboard_deal_stats_title": "Deal Statistics",
+      "tutorial_dashboard_deal_stats_description": "Text Text Text Text TextTextTextText Text Text Text Text Text Text Text Text Text Text Text Text Text Text"
+
+
+
 }

@@ -258,9 +258,6 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
-      onSkip: () {
-        return true;
-      },
       onFinish: () {
         print("finish");
         prefs.setBool('isTutorialShownTaskDetails', true);

@@ -218,6 +218,7 @@ void showTutorial() async {
       },
       onSkip: () {
         print("Пропустить");
+        prefs.setBool('isTutorialShownLeadDetails', true);
         return true;
       },
       onFinish: () {
