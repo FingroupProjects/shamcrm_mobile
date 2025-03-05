@@ -58,7 +58,7 @@ void initState() {
   _checkPermission();
   _scrollController.addListener(_onScroll); 
 
-    _loadFeatureState();
+  _loadFeatureState();
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     setState(() {
@@ -75,8 +75,9 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_task_card_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_card_description'),
       align: ContentAlign.bottom,
-      // extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.below,
+      contentPadding: EdgeInsets.only(top: 50),
     ),
     createTarget(
       identify: "TaskFloatingActionButton",
@@ -84,7 +85,6 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_task_button_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_button_description'),
       align: ContentAlign.top,
-      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3), 
       context: context,
     ),
     createTarget(
@@ -93,7 +93,6 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_task_status_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_status_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
   ]);
@@ -141,6 +140,16 @@ void showTutorial(String tutorialType) async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        prefs.setBool('isTaskCardTutorialShow', true);
+        prefs.setBool('isStatusTaskTutorialShown', true);
+        setState(() {
+          _isTaskCardTutorialShown = true;
+          _isStatusTutorialShown = true;
+           _isTutorialInProgress = false;
+        });
+        return true;
+      },
       onFinish: () {
         prefs.setBool('isTaskCardTutorialShow', true);
         prefs.setBool('isStatusTaskTutorialShown', true);
@@ -175,6 +184,15 @@ void showTutorial(String tutorialType) async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        prefs.setBool('isFabTaskTutorialShow', true);
+        setState(() {
+          _isFabTutorialShown = true;
+           _isTutorialInProgress = false; 
+        });
+        _isFabTutorialInProgress = false;
+        return true;
+      },
       onFinish: () {
         prefs.setBool('isFabTaskTutorialShow', true);
         setState(() {

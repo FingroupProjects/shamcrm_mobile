@@ -168,6 +168,14 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        print("Пропустить");
+        prefs.setBool('isTutorialShowninChat', true);
+          setState(() {
+          _isTaskScreenTutorialCompleted = true;
+        });
+        return true;
+      },
       onFinish: () {
         print("finish");
         prefs.setBool('isTutorialShowninChat', true);

@@ -175,6 +175,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     String UUID = prefs.getString('userID') ?? 'Не найдено';
     String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
     String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
+    print('URoleName+_+_+_+_+___++_+__++_++__++_+_+_+_+_+');
+    print(URoleName);
 
     setState(() {
       userController.text = UUID;

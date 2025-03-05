@@ -105,6 +105,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                           children: [
                             LineChart(
                               _buildEmptyChartData(),
+                              key: widget.lineChartKey,
                             ),
                             Center(
                               child: Container(
