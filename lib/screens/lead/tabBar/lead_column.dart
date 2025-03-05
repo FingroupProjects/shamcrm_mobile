@@ -67,8 +67,9 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_lead_card_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_lead_card_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.below,
+      contentPadding: EdgeInsets.only(top: 50),
     ),
     createTarget(
       identify: "FloatingActionButton",
@@ -76,7 +77,6 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_lead_button_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_lead_button_description'),
       align: ContentAlign.top,
-      extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3), 
       context: context,
     ),
     createTarget(
@@ -85,7 +85,6 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_lead_status_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_lead_status_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
   ]);

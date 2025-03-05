@@ -87,6 +87,7 @@ Future<void> _loadUserRoleId() async {
   try {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String userId = prefs.getString('userID') ?? '';
+    
     if (userId.isEmpty) {
       if (mounted) { // Проверяем, mounted ли виджет
         setState(() {
@@ -95,6 +96,7 @@ Future<void> _loadUserRoleId() async {
       }
       return;
     }
+    await prefs.remove('userRoles');
 
     // Получение ИД РОЛЯ через API
     UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));

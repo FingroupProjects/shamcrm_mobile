@@ -24,4 +24,12 @@ class DealStatsCacheManager {
     final List<dynamic> rawList = jsonDecode(jsonData);
     return rawList.map((e) => MonthData.fromJson(e)).toList();
   }
+
+  /// Удаление данных из кеша
+static Future<void> clearDealStatsCache() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_cacheKey);
+}
+
+
 }
