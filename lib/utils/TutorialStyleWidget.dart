@@ -31,7 +31,7 @@ TargetFocus createTarget({
         child: Text(description, style: _descriptionStyle.copyWith(fontSize: descriptionFontSize)),
       ),
       if (extraSpacing != null) extraSpacing,
-      SizedBox(height: 40),
+      SizedBox(height: 20),
     ],
     SizedBox(height: boxHeight),
     if (contentPosition == ContentPosition.below) ...[
@@ -41,7 +41,7 @@ TargetFocus createTarget({
         child: Text(description, style: _descriptionStyle.copyWith(fontSize: descriptionFontSize)),
       ),
       if (extraSpacing != null) extraSpacing,
-      SizedBox(height: 40),
+      SizedBox(height: 20),
     ],
   ];
 

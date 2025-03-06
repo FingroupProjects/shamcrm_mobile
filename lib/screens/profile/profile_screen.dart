@@ -65,6 +65,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return [];
   }
 
+
+
   Future<void> _loadOrganizations() async {
     final cachedOrganizations = await _getOrganizationsFromCache();
     final currentState = context.read<OrganizationBloc>().state;
@@ -83,6 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       context.read<OrganizationBloc>().add(FetchOrganizations());
     }
+   
   }
 
   @override
@@ -93,9 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadOrganizations();
 
     // Инициализируем подсказки после построения виджетов
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initTutorialTargets();
-    });
+ 
   }
 
 // В _initTutorialTargets() добавляем ToggleFeatureButton безусловно
@@ -192,7 +193,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         contentPosition: ContentPosition.above,
       ),
     ]);
-    _showTutorialIfNeeded();
   }
 
   // Вспомогательная функция для создания целей подсказки
@@ -251,6 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Показать подсказку, если нужно
   void _showTutorialIfNeeded() {
+      _initTutorialTargets();
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorial();
@@ -265,8 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
 
-    // if (!isTutorialShown)
-    {
+    if (!isTutorialShown) {
       // Фильтруем targets, чтобы исключить ToggleFeatureButton, если у пользователя нет прав
       List<TargetFocus> visibleTargets = targets.where((target) {
         // Если это не ToggleFeatureButton, то оставляем
@@ -347,7 +347,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (firstOrganization != null) {
         _onOrganizationChanged(firstOrganization);
       }
+      
     }
+    
   }
 
   Future<String?> _getFirstOrganization() async {
@@ -380,6 +382,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: Padding(
@@ -407,6 +410,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             orElse: () => state.organizations.first,
                           )
                         : state.organizations.first;
+                      
+                       _showTutorialIfNeeded();
+
                     return Column(
                       children: [
                         OrganizationWidget(
