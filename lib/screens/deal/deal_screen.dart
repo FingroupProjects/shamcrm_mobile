@@ -14,12 +14,15 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class DealScreen extends StatefulWidget {
   final int? initialStatusId;
@@ -69,6 +72,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   DateTime? _intialToDate;
   bool? _initialHasTasks;
   int? _initialDaysWithoutActivity;
+
+    final GlobalKey keySearchIcon = GlobalKey(); 
+    final GlobalKey keyMenuIcon = GlobalKey(); 
+
+    List<TargetFocus> targets = [];
+    bool _isTutorialShown = false;
+
+    bool _isDealScreenTutorialCompleted = false;
 
   @override
   void initState() {
@@ -121,6 +132,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       _canCreateDealStatus = canCreate;
       _canDeleteDealStatus = canDelete;
     });
+     WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+        if (!_isTutorialShown) {
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+         showTutorial();
+         setState(() {
+           _isTutorialShown = true; 
+         });
+       });
+      }
+  });
   }
 
   @override
@@ -130,6 +152,69 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     _searchController.dispose();
     super.dispose();
   }
+
+void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
+      identify: "DealSearchIcon",
+      keyTarget: keySearchIcon,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_deal_screen_search_description'), 
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+    ),
+    createTarget(
+      identify: "DealMenuIcon",
+      keyTarget: keyMenuIcon,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_deal_screen_menu_description'), 
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+    ),
+  ]);
+}
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
+
+  if (!isTutorialShown) {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
+          setState(() {
+          _isDealScreenTutorialCompleted = true;
+        });
+        return true;
+      },
+      onFinish: () {
+        prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
+        setState(() {
+          _isDealScreenTutorialCompleted = true; 
+        });
+      },
+    ).show(context: context);
+  }
+}
 
   Future<void> _searchDeals(String query, int currentStatusId) async {
     final dealBloc = BlocProvider.of<DealBloc>(context);
@@ -288,6 +373,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
+          SearchIconKey: keySearchIcon,
+          menuIconKey: keyMenuIcon,
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
                 : localizations!.translate('appbar_deals'),
@@ -1007,6 +1094,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
                 return DealColumn(
+                  isDealScreenTutorialCompleted: _isDealScreenTutorialCompleted,
                   statusId: statusId,
                   title: title,
                   managerId: _selectedManagerId, // Передаем ID менеджера

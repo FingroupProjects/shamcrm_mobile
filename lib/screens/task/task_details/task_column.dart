@@ -94,6 +94,8 @@ void _initTutorialTargets() {
       description: AppLocalizations.of(context)!.translate('tutorial_task_status_description'),
       align: ContentAlign.bottom,
       context: context,
+      contentPosition: ContentPosition.below,
+      contentPadding: EdgeInsets.only(top: 30),
     ),
   ]);
 }
@@ -267,9 +269,17 @@ Widget build(BuildContext context) {
           } else if (state is TaskDataLoaded) {
             final tasks = state.tasks.where((task) => task.statusId == widget.statusId).toList();
     
-             if (tasks.isEmpty && !_isFabTutorialShown) {
+            // Показываем подсказку для кнопки добавления, если карточек нет
+            if (tasks.isEmpty && !_isFabTutorialShown && !_isTutorialInProgress) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 showTutorial("TaskFloatingActionButton");
+              });
+            }
+
+            // Показываем подсказку для карточки и статуса, если карточки есть
+            if (tasks.isNotEmpty && !_isTaskCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                showTutorial("TaskCardAndStatusDropdown");
               });
             }
 
@@ -291,11 +301,11 @@ Widget build(BuildContext context) {
               );
             }
 
-if (!_isTaskCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    showTutorial("TaskCardAndStatusDropdown");
-  });
-}
+// if (!_isTaskCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
+//   WidgetsBinding.instance.addPostFrameCallback((_) {
+//     showTutorial("TaskCardAndStatusDropdown");
+//   });
+// }
 
             return RefreshIndicator(
               color: Color(0xff1E2E52),

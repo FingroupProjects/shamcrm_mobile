@@ -694,9 +694,9 @@
       "tutorial_lead_details_notice_title": "Adding events (notes)",
       "tutorial_lead_details_notice_description": "Record important events (calls, meetings, agreements) in the client’s card. This helps track interaction history",
       "tutorial_lead_details_deal_title": "Creating a deal directly from the client’s card",
-      "tutorial_lead_details_deal_description": "Click 'Create a deal' in the client’s card to quickly process a deal and link it to the client",
+      "tutorial_lead_details_deal_description": "Click 'Add' in the client’s card to quickly process a deal and link it to the client",
       "tutorial_lead_details_contact_title": "Adding a contact person",
-      "tutorial_lead_details_contact_description": "Contact information (name, phone, email)",
+      "tutorial_lead_details_contact_description": "Contact information (name, phone, degree)",
       "tutorial_task_card_title": "Task card",
       "tutorial_task_card_description": "Here you can view details and manage tasks",
       "tutorial_task_button_title": "Creating a new task",
@@ -740,7 +740,7 @@
       "tutorial_chat_corporate_title": "Corporate chat",
       "tutorial_chat_corporate_description": "Designed for internal employee communication within the CRM system. It allows teams to interact, share information, and discuss work-related issues in real time",
       "tutorial_dashboard_notification_title": "Notifications",
-      "tutorial_dashboard_notification_description": "Here you can find notifications about new messages, tasks, deals, etc.",
+      "tutorial_dashboard_notification_description": "Here you can find notifications about new messages from clients, tasks, deals",
       "tutorial_dashboard_mytask_title": "My Tasks",
       "tutorial_dashboard_mytask_description": "Here are the tasks you have created",
       "tutorial_dashboard_lead_conversion_title": "Conversion",
@@ -748,13 +748,13 @@
       "tutorial_dashboard_task_completion_title": "Goal Completion",
       "tutorial_dashboard_task_completion_description": "The graph shows task completion rates for all your employees. It reflects the percentage of completed tasks for each employee.",
       "tutorial_dashboard_task_chart_title": "Tasks",
-      "tutorial_dashboard_task_chart_description": "The chart is divided into three parts:\n🔵 Blue – tasks in progress.\n🔴 Red – overdue tasks.\n✅ Green – completed tasks.\nPay attention to the red zone to respond to overdue tasks on time.",
+      "tutorial_dashboard_task_chart_description": "The chart is divided into three parts:\n🔵 Blue – tasks in progress.\n🔴 Red – overdue tasks.\n🟢 Green – completed tasks.\nPay attention to the red zone to respond to overdue tasks on time.",
       "tutorial_dashboard_graphics_title": "Client",
       "tutorial_dashboard_graphics_description": "The graph allows you to see client dynamics for each month. It visualizes client statuses set in the 'Counterparties' section, helping to analyze changes in the client base over time.",
       "tutorial_dashboard_lead_process_speed_title": "Processing Speed",
       "tutorial_dashboard_lead_process_speed_description": "The graph visualizes the speed and quality of client processing. Determine at what level your client interactions are: from slow to highly active.",
       "tutorial_dashboard_deal_stats_title": "Deals",
-      "tutorial_dashboard_deal_stats_description": "The graph is divided into two parts:\n🔵 Blue: shows total deal amounts for the month.\n✅ Green: shows the amount of successful deals.\nMonitor monthly sales volume. Analyze performance and plan future actions.",
+      "tutorial_dashboard_deal_stats_description": "The graph is divided into two parts:\n🔵 Blue: shows total deal amounts for the month.\n🟢 Green: shows the amount of successful deals.\nMonitor monthly sales volume. Analyze performance and plan future actions.",
       "tutorial_dashboard_user_goal_completion_title": "Goal Completion",
       "tutorial_dashboard_user_goal_completion_description": "The graph shows the completion of your tasks. It reflects the percentage of tasks you have completed.",
       "tutorial_profile_organization_title": "Organization",
@@ -772,7 +772,12 @@
       "tutorial_profile_update_1c_title": "1C Data Update",
       "tutorial_profile_update_1c_description": "You can update data from the 1C system.",
       "tutorial_profile_support_chat_title": "Support Chat",
-      "tutorial_profile_support_chat_description": "You can ask a question to support service via chat."
+      "tutorial_profile_support_chat_description": "You can ask a question to support service via chat.",
+      "tutorial_lead_screen_search_description": "Use the search bar to quickly find a lead by name, phone number, email, or contacts.",
+      "tutorial_lead_screen_menu_description": "Here you will find a filter to sort clients. The 'Events' section (notes related to the client) and the 'My Tasks' section are highlighted separately. The 'My Tasks' section contains tasks created by you.",
+      "tutorial_deal_screen_search_description": "Use the search bar to quickly find a deal by name, phone number, or lead name.",
+      "tutorial_deal_screen_menu_description": "Here you will find a filter to sort deals. The 'Events' section (notes related to the client) and the 'My Tasks' section are highlighted separately. The 'My Tasks' section contains tasks created by you."
+
 
       
 

@@ -17,11 +17,13 @@ class LeadColumn extends StatefulWidget {
   final int statusId;
   final String title;
   final Function(int) onStatusId;
+  final bool isLeadScreenTutorialCompleted;
 
   LeadColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
+    required this.isLeadScreenTutorialCompleted,
   });
 
   @override
@@ -40,9 +42,11 @@ final GlobalKey keyLeadCard = GlobalKey();
 final GlobalKey keyStatusDropdown = GlobalKey();
 final GlobalKey keyFloatingActionButton = GlobalKey();
   
-bool _isLeadCardTutorialShown = false; 
-bool _isStatusTutorialShown = false; 
-bool _isFabTutorialShown = false; 
+bool _isLeadCardTutorialShown = false;
+bool _isStatusTutorialShown = false;
+bool _isFabTutorialShown = false;
+bool _isFabTutorialInProgress = false;
+bool _isTutorialInProgress = false; 
 
 
 
@@ -102,17 +106,19 @@ Future<void> _loadFeatureState() async {
   });
 }
 
-bool _isLeadCardTutorialInProgress = false;
-bool _isFabTutorialInProgress = false;
-bool _isStatusTutorialInProgress = false;
-
 void showTutorial(String tutorialType) async {
+    if (_isTutorialInProgress) {
+    return; 
+  }
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  
-      await Future.delayed(const Duration(milliseconds: 500));
-  if (tutorialType == "LeadCardAndStatusDropdown" && !_isLeadCardTutorialShown && !_isStatusTutorialShown && !_isLeadCardTutorialInProgress && !_isStatusTutorialInProgress) {
-    _isLeadCardTutorialInProgress = true;
-    _isStatusTutorialInProgress = true;
+
+  if (widget.isLeadScreenTutorialCompleted && 
+      tutorialType == "LeadCardAndStatusDropdown" && 
+      !_isLeadCardTutorialShown && 
+      !_isStatusTutorialShown) {
+    _isTutorialInProgress = true;
+    
+        await Future.delayed(const Duration(milliseconds: 500));
 
     TutorialCoachMark(
       targets: [
@@ -133,18 +139,33 @@ void showTutorial(String tutorialType) async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        prefs.setBool('isLeadCardTutorialShow', true);
+        prefs.setBool('isStatusTutorialShown', true);
+        setState(() {
+          _isLeadCardTutorialShown = true;
+          _isStatusTutorialShown = true;
+           _isTutorialInProgress = false;
+        });
+        return true;
+      },
       onFinish: () {
         prefs.setBool('isLeadCardTutorialShow', true);
         prefs.setBool('isStatusTutorialShown', true);
         setState(() {
           _isLeadCardTutorialShown = true;
           _isStatusTutorialShown = true;
+           _isTutorialInProgress = false;
         });
-        _isLeadCardTutorialInProgress = false;
-        _isStatusTutorialInProgress = false;
       },
     ).show(context: context);
-  } else if (tutorialType == "FloatingActionButton" && !_isFabTutorialShown && !_isFabTutorialInProgress) {
+ } else if (widget.isLeadScreenTutorialCompleted && 
+             tutorialType == "FloatingActionButton" && 
+             !_isFabTutorialShown && 
+             !_isFabTutorialInProgress) {
+    _isTutorialInProgress = true;
+        await Future.delayed(const Duration(milliseconds: 500));
+
     _isFabTutorialInProgress = true;
     TutorialCoachMark(
       targets: [targets.firstWhere((t) => t.identify == "FloatingActionButton")],
@@ -155,22 +176,31 @@ void showTutorial(String tutorialType) async {
         fontSize: 20,
         fontWeight: FontWeight.w600,
         shadows: [
-          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        prefs.setBool('isFabTutorialShow', true);
+        setState(() {
+          _isFabTutorialShown = true;
+           _isTutorialInProgress = false; 
+        });
+        _isFabTutorialInProgress = false;
+        return true;
+      },
       onFinish: () {
         prefs.setBool('isFabTutorialShow', true);
         setState(() {
           _isFabTutorialShown = true;
+           _isTutorialInProgress = false; 
         });
-        _isFabTutorialInProgress = false; 
+        _isFabTutorialInProgress = false;
       },
     ).show(context: context);
- 
   }
 }
 
@@ -221,7 +251,7 @@ Widget build(BuildContext context) {
                 }
               });
 
-              if (!_isLeadCardTutorialShown) {
+            if (leads.isNotEmpty && !_isLeadCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   showTutorial("LeadCardAndStatusDropdown");
                 });
@@ -265,7 +295,7 @@ Widget build(BuildContext context) {
             } 
             else {
 
-               if (!_isFabTutorialShown) {
+            if (leads.isEmpty && !_isFabTutorialShown && !_isTutorialInProgress) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   showTutorial("FloatingActionButton");
                 });
