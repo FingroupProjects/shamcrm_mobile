@@ -747,13 +747,13 @@
     "tutorial_dashboard_task_completion_title": "Maqsadlarni bajarish",
     "tutorial_dashboard_task_completion_description": "Grafik barcha xodimlaringiz tomonidan bajarilgan vazifalarni ko‘rsatadi. Har bir xodim bo‘yicha bajarilgan vazifalar foizi aks ettiriladi.",
     "tutorial_dashboard_task_chart_title": "Vazifalar",
-    "tutorial_dashboard_task_chart_description": "Diagramma uch qismga bo‘lingan:\n🟦 Ko‘k – bajarilayotgan vazifalar.\n🟥 Qizil – muddati o‘tgan vazifalar.\n🟩 Yashil – bajarilgan vazifalar.\nQizil zonaga e’tibor bering, shunda muddati o‘tgan vazifalarga o‘z vaqtida javob bera olasiz.",
+    "tutorial_dashboard_task_chart_description": "Diagramma uch qismga bo‘lingan:\n🔵 Ko‘k – bajarilayotgan vazifalar.\n🔴 Qizil – muddati o‘tgan vazifalar.\n✅ Yashil – bajarilgan vazifalar.\nQizil zonaga e’tibor bering, shunda muddati o‘tgan vazifalarga o‘z vaqtida javob bera olasiz.",
     "tutorial_dashboard_graphics_title": "Mijoz",
     "tutorial_dashboard_graphics_description": "Grafik har bir oy bo‘yicha mijozlar dinamikasini ko‘rishga imkon beradi. 'Kontragentlar' bo‘limida belgilangan mijoz holatlari vizuallashtiriladi, bu esa mijoz bazasining o‘zgarishini vaqt bo‘yicha tahlil qilishga yordam beradi.",
     "tutorial_dashboard_lead_process_speed_title": "Ishlov berish tezligi",
     "tutorial_dashboard_lead_process_speed_description": "Grafik mijozlarga xizmat ko‘rsatish tezligi va sifatini vizuallashtiradi. Mijozlar bilan ishlash darajangiz qayerda ekanligini aniqlang: sekin yoki yuqori faollik.",
     "tutorial_dashboard_deal_stats_title": "Bitimlar",
-    "tutorial_dashboard_deal_stats_description": "Grafik ikki qismga bo‘lingan:\n🟦 Ko‘k: oy bo‘yicha umumiy bitim summalarini ko‘rsatadi.\n🟩 Yashil: muvaffaqiyatli bitimlarning umumiy summasini ko‘rsatadi.\nOylik savdo hajmini kuzatib boring. Natijalarni tahlil qiling va kelajakdagi harakatlarni rejalashtiring.",
+    "tutorial_dashboard_deal_stats_description": "Grafik ikki qismga bo‘lingan:\n🔵 Ko‘k: oy bo‘yicha umumiy bitim summalarini ko‘rsatadi.\n✅ Yashil: muvaffaqiyatli bitimlarning umumiy summasini ko‘rsatadi.\nOylik savdo hajmini kuzatib boring. Natijalarni tahlil qiling va kelajakdagi harakatlarni rejalashtiring.",
     "tutorial_dashboard_user_goal_completion_title": "Maqsadlarni bajarish",
     "tutorial_dashboard_user_goal_completion_description": "Grafik sizning vazifalaringiz bajarilganligini ko‘rsatadi. Bajarilgan vazifalar foizi aks ettiriladi."
 
