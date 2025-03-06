@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
@@ -6,6 +7,7 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
+import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/main.dart';
@@ -21,6 +23,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:voice_message_package/voice_message_package.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final int noticeId;
@@ -42,9 +45,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final GlobalKey keyNoticeFinish = GlobalKey();
   final GlobalKey keyNoticeDelete =
       GlobalKey(); // Новый ключ для кнопки удаления
-
+// Переменные для управления аудиоплеером
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false; // Статус воспроизведения
+  Duration _duration = Duration.zero; // Общая длительность записи
+  Duration _position = Duration.zero; // Текущая позиция воспроизведения
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
+  final String baseUrl = 'https://fingroupcrm-back.shamcrm.com';
   @override
   void initState() {
     super.initState();
@@ -52,7 +60,39 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initTargets();
       showTutorial();
+      _setupAudioPlayer(); // Инициализируем слушатели для аудиоплеера
     });
+  }
+
+  void _setupAudioPlayer() {
+    // Слушаем изменения длительности аудио
+    _audioPlayer.onDurationChanged.listen((Duration d) {
+      setState(() {
+        _duration = d;
+      });
+    });
+
+    // Слушаем изменения позиции воспроизведения
+    _audioPlayer.onPositionChanged.listen((Duration p) {
+      setState(() {
+        _position = p;
+      });
+    });
+
+    // Слушаем завершение воспроизведения
+    _audioPlayer.onPlayerComplete.listen((event) {
+      setState(() {
+        _isPlaying = false;
+        _position = Duration.zero; // Сбрасываем позицию
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    conclusionController.dispose();
+    super.dispose();
   }
 
 // Перемещаем инициализацию целей после построения виджета
@@ -137,8 +177,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    if (!isTutorialShown)
-     {
+    if (!isTutorialShown) {
       TutorialCoachMark(
         targets: targets,
         textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
@@ -404,7 +443,78 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
     });
   }
-
+Widget _buildVoicePlayer(String? recordPath) {
+  if (recordPath == null || recordPath.isEmpty) {
+    return const Text('Запись не найдена',
+        style: TextStyle(color: Color(0xFFE53935)));
+  }
+  String audioUrl = '${baseUrl.replaceAll('/api', '')}/storage/$recordPath';
+  print('AUDIO URL: $audioUrl');
+  bool isLoading = false;
+  final audioController = VoiceController(
+    audioSrc: audioUrl,
+    onComplete: () => print('Audio completed'),
+    onPause: () => print('Audio paused'),
+    onPlaying: () => print('Audio playing'),
+    onError: (err) {
+      print('Audio error: $err');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $err'), backgroundColor: const Color(0xFFE53935)),
+      );
+    },
+    maxDuration: const Duration(seconds: 300),
+    isFile: false,
+  );
+  
+  return StatefulBuilder(
+    builder: (context, setState) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8, bottom: 8),
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: isLoading
+                ? null
+                : () async {
+                    setState(() => isLoading = true);
+                    try {
+                      await audioController.play();
+                    } catch (e) {
+                      print('Play error: $e');
+                    } finally {
+                      setState(() => isLoading = false);
+                    }
+                  },
+              child: VoiceMessageView(
+                innerPadding: 8,
+                backgroundColor: ChatSmsStyles.messageBubbleSenderColor,
+                activeSliderColor: Colors.white,
+                circlesColor: Colors.white.withOpacity(.2),
+                controller: audioController,
+                counterTextStyle: const TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '', // Time would go here if available
+              style: TextStyle(
+                fontSize: 12,
+                color: ChatSmsStyles.appBarTitleColor,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            )
+          ],
+        ),
+      );
+    },
+  );
+}
   Widget _buildFinishButton(Notice notice, {Key? key}) {
     if (notice.isFinished) {
       return const SizedBox.shrink();
@@ -726,7 +836,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       },
       {
         'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': '${notice.author?.name} ${notice.author?.lastname ?? ''}',
+        'value': notice.author != null
+            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
+            : AppLocalizations.of(context)!.translate('not_specified'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('created_at_details'),
@@ -739,17 +851,48 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             : AppLocalizations.of(context)!.translate('in_progress'),
       },
     ];
+
+    // Добавляем информацию о звонке, если она есть
+    if (notice.call != null) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('caller'),
+        'value': notice.call!.caller,
+      });
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('internal_number'),
+        'value': notice.call!.internalNumber ??
+            AppLocalizations.of(context)!.translate('not_specified'),
+      });
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('call_duration'),
+        'value': notice.call!.callDuration != null
+            ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+            : AppLocalizations.of(context)!.translate('not_specified'),
+      });
+      details.add({
+        'label':
+            AppLocalizations.of(context)!.translate('call_ringing_duration'),
+        'value': notice.call!.callRingingDuration != null
+            ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+            : AppLocalizations.of(context)!.translate('not_specified'),
+      });
+      // Добавляем поле для записи звонка (будет отдельный виджет)
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('call_recording'),
+        'value': '',
+      });
+    }
+
     if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
       details.add({
         'label': AppLocalizations.of(context)!.translate('conclusions'),
-        'value':
-            notice.conclusion!, // Use non-null assertion since we checked above
+        'value': notice.conclusion!,
       });
     }
 
     return ListView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: details.length,
       itemBuilder: (context, index) {
         return Padding(
@@ -757,7 +900,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           child: _buildDetailItem(
             details[index]['label']!,
             details[index]['value']!,
-            leadId, // Передаем leadId
+            leadId,
+            notice, // Передаем объект notice для доступа к call
+            index, // Передаем индекс для проверки, является ли это записью звонка
           ),
         );
       },
@@ -826,14 +971,281 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value, int leadId) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        if (label == AppLocalizations.of(context)!.translate('assignee') &&
-            value.contains(',')) {
-          label = AppLocalizations.of(context)!.translate('assignees');
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
+ Widget _buildDetailItem(
+    String label, String value, int leadId, Notice notice, int index) {
+  return LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints constraints) {
+      if (label == AppLocalizations.of(context)!.translate('assignee') &&
+          value.contains(',')) {
+        label = AppLocalizations.of(context)!.translate('assignees');
+      }
+
+      if (notice.call != null &&
+          (label == AppLocalizations.of(context)!.translate('caller') ||
+              label ==
+                  AppLocalizations.of(context)!.translate('internal_number') ||
+              label ==
+                  AppLocalizations.of(context)!.translate('call_duration') ||
+              label ==
+                  AppLocalizations.of(context)!
+                      .translate('call_ringing_duration'))) {
+        bool isMissed = notice.call!.missed ?? false;
+        bool isIncoming = notice.call!.incoming ?? false;
+        Color statusColor;
+        String statusText;
+
+        if (!isMissed && isIncoming) {
+          statusColor = const Color(0xffE6F4EA);
+          statusText = AppLocalizations.of(context)!.translate('incoming_call');
+        } else if (isMissed && isIncoming) {
+          statusColor = const Color(0xffFEE6E6);
+          statusText = AppLocalizations.of(context)!.translate('missed_call');
+        } else {
+          statusColor = const Color(0xffE6F4EA);
+          statusText = AppLocalizations.of(context)!
+              .translate('outgoing_call_unanswered');
         }
 
+        if (label == AppLocalizations.of(context)!.translate('caller')) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xffF5F7FA),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Text(
+                //   AppLocalizations.of(context)!.translate('phone_call'),
+                //   style: const TextStyle(
+                //     fontSize: 16,
+                //     fontFamily: 'Gilroy',
+                //     fontWeight: FontWeight.w600,
+                //     color: Color(0xff1E2E52),
+                //   ),
+                // ),
+                // const SizedBox(height: 12),
+                //   const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xff1E2E52),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.phone,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Лид: ',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          notice.call!.caller,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xff1E2E52),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Код менеджера: ',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                      Text(
+                        notice.call!.internalNumber ?? '1003',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Call Duration
+                  Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xff1E2E52),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.timer,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppLocalizations.of(context)!
+                                .translate('call_duration') +
+                            ': ',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                      Text(
+                        notice.call!.callDuration != null
+                            ? _formatDuration(
+                                Duration(seconds: notice.call!.callDuration!))
+                            : '00:00',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xff1E2E52),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.notifications,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppLocalizations.of(context)!
+                                .translate('call_ringing_duration') +
+                            ': ',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xff99A4BA),
+                        ),
+                      ),
+                      Text(
+                        notice.call!.callRingingDuration != null
+                            ? _formatDuration(Duration(
+                                seconds: notice.call!.callRingingDuration!))
+                            : '00:00',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Status Bar
+                  Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info,
+                        color: statusColor == const Color(0xffFEE6E6)
+                            ? Colors.red
+                            : Colors.green,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: statusColor == const Color(0xffFEE6E6)
+                              ? Colors.red
+                              : Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Условный рендеринг проигрывателя
+                if (notice.call!.callRecordPath != null &&
+                    !notice.call!.missed &&
+                    (notice.call!.callDuration ?? 0) > 0)
+                  _buildVoicePlayer(notice.call!.callRecordPath),
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      }
         if (label == AppLocalizations.of(context)!.translate('assignees')) {
           return GestureDetector(
             onTap: () => _showUsersDialog(value),
@@ -841,20 +1253,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel(label),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     value.split(',').take(3).join(', ') +
                         (value.split(',').length > 3
                             ? ' и еще ${value.split(',').length - 3}...'
                             : ''),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
-                      decoration:
-                          TextDecoration.underline, // Добавляем подчеркивание
+                      decoration: TextDecoration.underline,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -864,7 +1275,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           );
         }
 
-        // Добавим переход на экран для 'title'
         if (label == AppLocalizations.of(context)!.translate('lead_name')) {
           return GestureDetector(
             onTap: () {
@@ -873,12 +1283,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               navigatorKey.currentState?.push(
                 MaterialPageRoute(
                   builder: (context) => LeadDetailsScreen(
-                    leadId: leadId.toString(), // передаем leadId
-                    leadName:
-                        value, // Можно передать value, если это название лида
-                    leadStatus:
-                        "", // Здесь можно указать статус лида, если есть
-                    statusId: 1, // Пример статуса
+                    leadId: leadId.toString(),
+                    leadName: value,
+                    leadStatus: "",
+                    statusId: 1,
                   ),
                 ),
               );
@@ -887,17 +1295,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel(label),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     value,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color: Color(0xff1E2E52),
-                      decoration:
-                          TextDecoration.underline, // Добавляем подчеркивание
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -906,7 +1313,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           );
         }
 
-        // Обработка длинных текстов
         if (label == AppLocalizations.of(context)!.translate('body')) {
           return GestureDetector(
             onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
@@ -914,11 +1320,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel(label),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     value,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -933,6 +1339,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           );
         }
+
         if (label == AppLocalizations.of(context)!.translate('conclusions')) {
           return GestureDetector(
             onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
@@ -940,11 +1347,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel(label),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     value,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -959,11 +1366,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           );
         }
+
+        // Default rendering for other fields
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel(label),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildValue(value),
             ),

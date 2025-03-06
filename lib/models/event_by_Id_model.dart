@@ -77,6 +77,7 @@ class Notice {
     }
   }
 }
+
 class Call {
   final int id;
   final String linkedId;
@@ -112,26 +113,27 @@ class Call {
     required this.updatedAt,
   });
 
-  factory Call.fromJson(Map<String, dynamic> json) {
-    return Call(
-      id: json['id'] as int? ?? 0,
-      linkedId: json['linked_id'] as String? ?? '',
-      caller: json['caller'] as String? ?? '',
-      trunk: json['trunk'] as String? ?? '',
-      organizationId: json['organization_id'] as int? ?? 0,
-      leadId: json['lead_id'] as int? ?? 0,
-      callRecordPath: json['call_record_path'] as String? ?? '',
-      userId: json['user_id'] as int?,
-      internalNumber: json['internal_number'] as String?,
-      callDuration: json['call_duration'] as int?,
-      callRingingDuration: json['call_ringing_duration'] as int?,
-      missed: json['missed'] as bool? ?? false,
-      incoming: json['incoming'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'].toString()),
-      updatedAt: DateTime.parse(json['updated_at'].toString()),
-    );
-  }
+ factory Call.fromJson(Map<String, dynamic> json) {
+  return Call(
+    id: json['id'] as int? ?? 0,
+    linkedId: json['linked_id'] as String? ?? '',
+    caller: json['caller'] as String? ?? '',
+    trunk: json['trunk'] as String? ?? '',
+    organizationId: json['organization_id'] as int? ?? 0,
+    leadId: json['lead_id'] as int? ?? 0,
+    callRecordPath: json['call_record_path'] as String? ?? '',
+    userId: json['user_id'] as int?,
+    internalNumber: json['internal_number']?.toString(), // Convert int to String safely
+    callDuration: json['call_duration'] as int?,
+    callRingingDuration: json['call_ringing_duration'] as int?,
+    missed: json['missed'] as bool? ?? false,
+    incoming: json['incoming'] as bool? ?? false,
+    createdAt: DateTime.parse(json['created_at'].toString()),
+    updatedAt: DateTime.parse(json['updated_at'].toString()),
+  );
 }
+}
+
 class UserEvent {
   final int id;
   final String name;
@@ -183,5 +185,4 @@ class UserEvent {
       fullName: json['full_name'],
     );
   }
-
 }

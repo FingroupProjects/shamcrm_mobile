@@ -91,10 +91,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadSelectedOrganization();
     _checkPermission();
     _loadOrganizations();
-
-    // Инициализируем подсказки после построения виджетов
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initTutorialTargets();
+      _showTutorialIfNeeded(); 
     });
   }
 
@@ -265,15 +265,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
 
-    // if (!isTutorialShown)
+    if (!isTutorialShown)
     {
-      // Фильтруем targets, чтобы исключить ToggleFeatureButton, если у пользователя нет прав
       List<TargetFocus> visibleTargets = targets.where((target) {
-        // Если это не ToggleFeatureButton, то оставляем
         if (target.identify != "profileToggleFeature") {
           return true;
         }
-        // Если это ToggleFeatureButton, то проверяем наличие прав
         return _hasPermissionToAddLeadAndSwitch;
       }).toList();
 
