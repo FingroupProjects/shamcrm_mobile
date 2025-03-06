@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details/history_dialog
 import 'package:crm_task_manager/screens/deal/tabBar/deal_edit_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -68,7 +69,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   final ApiService _apiService = ApiService();
   final GlobalKey keyDealEdit = GlobalKey();
   final GlobalKey keyDealTasks = GlobalKey();
-  final GlobalKey keyDealDelete = GlobalKey(); // Новый ключ для кнопки удаления
+  final GlobalKey keyDealDelete = GlobalKey(); 
 
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
@@ -77,11 +78,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    context
-        .read<DealByIdBloc>()
-        .add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
+    context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
 
-    // Отложим инициализацию подсказок до построения виджета
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initTargets();
       showTutorial();
@@ -89,76 +87,46 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   void _initTargets() {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double boxHeight = screenHeight * 0.1;
-
     targets = [
       createTarget(
         identify: 'keyDealEdit',
         keyTarget: keyDealEdit,
-        title:
-            AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_deal_edit_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_deal_edit_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_deal_edit_description'),
         align: ContentAlign.bottom,
+        contentPosition: ContentPosition.above,
         context: context,
       ),
       createTarget(
         identify: 'keyDealDelete',
         keyTarget: keyDealDelete,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_deal_delete_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_deal_delete_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_deal_delete_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_deal_delete_description'),
         align: ContentAlign.bottom,
+        contentPosition: ContentPosition.above,
         context: context,
-      ),
-      // Обновленная конфигурация для keyDealTasks с увеличенным радиусом и отступом
-      TargetFocus(
-        identify: 'keyDealTasks',
-        keyTarget: keyDealTasks,
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Container(
-              margin: EdgeInsets.only(
-                  top:
-                      120), // Добавляем отступ сверху, чтобы подсказка была за пределами кружка
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  SizedBox(height: boxHeight),
-                  Text(
-                      AppLocalizations.of(context)!
-                          .translate('tutorial_deal_tasks_title'),
-                      style: _titleStyle),
-                  Padding(
-                    padding: EdgeInsets.zero,
-                    child: Text(
-                        AppLocalizations.of(context)!
-                            .translate('tutorial_deal_tasks_description'),
-                        style: _descriptionStyle),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        shape: ShapeLightFocus.Circle,
-        radius: 40, // Уменьшаем радиус кружка
-        paddingFocus: 10, // Уменьшаем внутренний отступ фокуса
       ),
       createTarget(
         identify: 'keyDealHistory',
         keyTarget: keyDealHistory,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_deal_history_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_deal_history_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_deal_history_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_deal_history_description'),
         align: ContentAlign.top,
+        contentPosition: ContentPosition.above,
+        extraPadding: EdgeInsets.only(bottom: 70),
         context: context,
       ),
+      createTarget(
+        identify: 'keyDealTasks',
+        keyTarget: keyDealTasks,
+        title: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_deal_tasks_description'),
+        align: ContentAlign.top,
+        contentPosition: ContentPosition.above,
+        extraPadding: EdgeInsets.only(bottom: 50),
+        context: context,
+      ),
+
     ];
   }
 
@@ -166,10 +134,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
 
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 500));
 
-    if (!isTutorialShown)
-    {
+    if (!isTutorialShown) {
       TutorialCoachMark(
         targets: targets,
         textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
@@ -186,81 +153,16 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           ],
         ),
         colorShadow: Color(0xff1E2E52),
-        hideSkip: false,
-        alignSkip: Alignment.bottomRight,
-        focusAnimationDuration: Duration(milliseconds: 300),
-        pulseAnimationDuration: Duration(milliseconds: 500),
-        onClickTarget: (target) {
-          print("Target clicked: \${target.identify}");
-        },
-        onClickOverlay: (target) {
-          print("Overlay clicked: \${target.identify}");
-        },
         onSkip: () {
-          print(AppLocalizations.of(context)!.translate('tutorial_skip'));
+          prefs.setBool('isTutorialShownDealDetails', true);
           return true;
         },
         onFinish: () {
-          print("Tutorial finished");
           prefs.setBool('isTutorialShownDealDetails', true);
         },
       ).show(context: context);
     }
   }
-
-  TargetFocus createTarget({
-    required String identify,
-    required GlobalKey keyTarget,
-    required String title,
-    required String description,
-    required ContentAlign align,
-    EdgeInsets? extraPadding,
-    Widget? extraSpacing,
-    required BuildContext context,
-  }) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double boxHeight = screenHeight * 0.1;
-
-    return TargetFocus(
-      identify: identify,
-      keyTarget: keyTarget,
-      contents: [
-        TargetContent(
-          align: align,
-          child: Container(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: boxHeight),
-                Text(title, style: _titleStyle),
-                Padding(
-                  padding: extraPadding ?? EdgeInsets.zero,
-                  child: Text(description, style: _descriptionStyle),
-                ),
-                if (extraSpacing != null) extraSpacing,
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-// Стили для подсказок
-  TextStyle _titleStyle = TextStyle(
-    fontWeight: FontWeight.w600,
-    color: Colors.white,
-    fontSize: 20,
-    fontFamily: 'Gilroy',
-  );
-
-  TextStyle _descriptionStyle = TextStyle(
-    color: Colors.white,
-    fontWeight: FontWeight.w500,
-    fontSize: 16,
-    fontFamily: 'Gilroy',
-  );
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -475,7 +377,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   children: [
                     _buildDetailsList(),
                     const SizedBox(height: 8),
-                    ActionHistoryWidget(dealId: int.parse(widget.dealId)),
+                    ActionHistoryWidget(dealId: int.parse(widget.dealId),key: keyDealHistory),
                     const SizedBox(height: 16),
                     if (_canReadTasks)
                       Container(
@@ -586,9 +488,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 );
 
                 if (shouldUpdate == true) {
-                  context
-                      .read<DealByIdBloc>()
-                      .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                  context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: currentDeal!.id));
                   context.read<DealBloc>().add(FetchDealStatuses());
                 }
               }
