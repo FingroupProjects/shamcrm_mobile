@@ -8,7 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GraphicsDashboard extends StatefulWidget {
-  const GraphicsDashboard({Key? key}) : super(key: key);
+  final Key? lineChartKey;
+
+  const GraphicsDashboard({
+    Key? key,
+    this.lineChartKey, 
+  }) : super(key: key);
 
   @override
   _GraphicsDashboardState createState() => _GraphicsDashboardState();
@@ -100,6 +105,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                           children: [
                             LineChart(
                               _buildEmptyChartData(),
+                              key: widget.lineChartKey,
                             ),
                             Center(
                               child: Container(
@@ -123,6 +129,7 @@ class _GraphicsDashboardState extends State<GraphicsDashboard> {
                         )
                       : LineChart(
                           _buildChartData(state.chartData),
+                          key: widget.lineChartKey,
                         ),
                 ),
                 _buildStatsList(paginatedData[currentPage]),

@@ -178,9 +178,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     super.initState();
     _checkPermissions();
     context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-  });
   }
 
   void _initTutorialTargets() {
@@ -191,17 +188,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
+  if (_canDeleteTask)
     createTarget(
       identify: "TaskDelete",
       keyTarget: keyTaskDelete,
       title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
     createTarget(
       identify: "TaskNavigateChat",
@@ -209,7 +207,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
     createTarget(
@@ -218,7 +215,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
     createTarget(
@@ -227,8 +223,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
       align: ContentAlign.top,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
+      contentPadding: EdgeInsets.only(bottom: 70)
     ),
   ]);
 }
@@ -236,12 +233,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
 
 void showTutorial() async {
+
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownTaskDetails') ?? false;
+  bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
 
-  await Future.delayed(const Duration(milliseconds: 700));
+  await Future.delayed(const Duration(milliseconds: 500));
 
-  if (!isTutorialShown) {
+
+  if (!isTutorialShown)  {
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -258,12 +257,12 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
-      onSkip: () {
+        onSkip: () {
+        prefs.setBool('isTutorialShownTasksDet', true);
         return true;
       },
       onFinish: () {
-        print("finish");
-        prefs.setBool('isTutorialShownTaskDetails', true);
+        prefs.setBool('isTutorialShownTasksDet', true);
       },
     ).show(context: context);
   }
@@ -274,10 +273,18 @@ void showTutorial() async {
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('task.update');
     final canDelete = await _apiService.hasPermission('task.delete');
+    
     setState(() {
       _canEditTask = canEdit;
       _canDeleteTask = canDelete;
     });
+
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+  });
+
+
   }
 
   // Обновление данных задачи
@@ -345,18 +352,9 @@ void showTutorial() async {
 
 @override
 Widget build(BuildContext context) {
-  if (!_isTutorialShown) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showTutorial();
-      setState(() {
-        _isTutorialShown = true; 
-      });
-    });
-  }
   return BlocListener<TaskByIdBloc, TaskByIdState>(
     listener: (context, state) {
       if (state is TaskByIdLoaded) {
-        print("Задача Data: ${state.task.toString()}");
       } else if (state is TaskByIdError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -671,6 +669,14 @@ Widget build(BuildContext context) {
 }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+       if (!_isTutorialShown) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showTutorial();
+              setState(() {
+                _isTutorialShown = true; 
+              });
+            });
+          }
   return AppBar(
     backgroundColor: Colors.white,
     forceMaterialTransparency: true, // Добавлено

@@ -164,12 +164,12 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     ),
                     excludeSelected: false,
                     initialItem: selectedRegionData,
-                    validator: (value) {
-                      if (value == null) {
-                        return AppLocalizations.of(context)!.translate('field_required_project');
-                      }
-                      return null;
-                    },
+                    // validator: (value) {
+                    //   if (value == null) {
+                    //     return AppLocalizations.of(context)!.translate('field_required_project');
+                    //   }
+                    //   return null;
+                    // },
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectRegion(value);

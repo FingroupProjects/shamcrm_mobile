@@ -100,17 +100,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   void initState() {
   super.initState();
-
    _scrollController = ScrollController(); 
-
   _checkPermissions();
     context.read<OrganizationBloc>().add(FetchOrganizations());
     _loadSelectedOrganization(); 
     context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-  });
   }
 
 void _initTutorialTargets() {
@@ -121,26 +115,28 @@ void _initTutorialTargets() {
       title: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_lead_details_history_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
+  if (_canEditLead)
     createTarget(
       identify: "LeadEdit",
       keyTarget: keyLeadEdit,
       title: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_lead_details_edit_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
+  if (_canDeleteLead)
     createTarget(
       identify: "LeadDelete",
       keyTarget: keyLeadDelete,
       title: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_title'),
       description: AppLocalizations.of(context)!.translate('tutorial_lead_details_delete_description'),
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
     createTarget(
       identify: "keyNavigateChat",
@@ -151,6 +147,7 @@ void _initTutorialTargets() {
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.3),
       context: context,
     ),
+  if (_canReadNotes)
     createTarget(
       identify: "keyLeadNotice",
       keyTarget: keyLeadNotice,
@@ -160,6 +157,7 @@ void _initTutorialTargets() {
       extraSpacing: SizedBox(height: MediaQuery.of(context).size.height * 0.2),
       context: context,
     ),
+  if (_canReadDeal)
     createTarget(
       identify: "keyLeadDeal",
       keyTarget: keyLeadDeal,
@@ -182,18 +180,16 @@ void _initTutorialTargets() {
 }
 
 
-
 void showTutorial() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
 
   await Future.delayed(const Duration(milliseconds: 700));
 
-  // if (isTutorialShown) 
-  {
+  if (!isTutorialShown) {
     TutorialCoachMark(
       targets: targets,
-      textSkip: 'Пропустить',
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
         color: Colors.white,
         fontFamily: 'Gilroy',
@@ -208,7 +204,6 @@ void showTutorial() async {
       ),
       colorShadow: Color(0xff1E2E52),
       onClickTarget: (target) {
-        print(target);
           if (target.identify == "keyNavigateChat") {
           _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -218,11 +213,10 @@ void showTutorial() async {
       }
       },
       onSkip: () {
-        print("Пропустить");
+        prefs.setBool('isTutorialShownLeadDetails', true);
         return true;
       },
       onFinish: () {
-        print("finish");
         prefs.setBool('isTutorialShownLeadDetails', true);
       },
     ).show(context: context);
@@ -246,6 +240,10 @@ void showTutorial() async {
       _canReadDeal = canReadDeal;
       _canExportContact = canExportContact;
     });
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+  });
   }
 
   // Обновление данных лида

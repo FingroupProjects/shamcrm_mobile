@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_but
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -18,6 +19,7 @@ import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_organization_list.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_logout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -32,49 +34,300 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   bool _hasPermissionToAddLeadAndSwitch = false;
 
+  // Добавляем переменные для подсказок
+  final GlobalKey keyOrganizationWidget = GlobalKey();
+  final GlobalKey keyProfileEdit = GlobalKey();
+  final GlobalKey keyLanguageButton = GlobalKey();
+  final GlobalKey keyPinChange = GlobalKey();
+  final GlobalKey keyLogoutButton = GlobalKey();
+  final GlobalKey keyToggleFeature = GlobalKey();
+  final GlobalKey keyUpdateWidget1C = GlobalKey();
+  final GlobalKey keySupportChat = GlobalKey();
 
-Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
-  final prefs = await SharedPreferences.getInstance();
-  final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
-  await prefs.setString('cached_organizations', jsonList);
-}
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
 
-Future<List<Organization>> _getOrganizationsFromCache() async {
-  final prefs = await SharedPreferences.getInstance();
-  final jsonString = prefs.getString('cached_organizations');
-  if (jsonString != null) {
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((data) => Organization.fromJson(data)).toList();
+  Future<void> _saveOrganizationsToCache(
+      List<Organization> organizations) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList =
+        jsonEncode(organizations.map((org) => org.toJson()).toList());
+    await prefs.setString('cached_organizations', jsonList);
   }
-  return [];
-}
 
-Future<void> _loadOrganizations() async {
-  final cachedOrganizations = await _getOrganizationsFromCache();
-  final currentState = context.read<OrganizationBloc>().state;
+  Future<List<Organization>> _getOrganizationsFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('cached_organizations');
+    if (jsonString != null) {
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      return jsonList.map((data) => Organization.fromJson(data)).toList();
+    }
+    return [];
+  }
 
-  if (currentState is OrganizationLoaded) {
-    final newOrganizations = currentState.organizations;
-    
-    if (jsonEncode(newOrganizations) != jsonEncode(cachedOrganizations)) {
-      await _saveOrganizationsToCache(newOrganizations);
-      setState(() {
-        _selectedOrganization = newOrganizations.isNotEmpty ? newOrganizations.first.id.toString() : null;
+  Future<void> _loadOrganizations() async {
+    final cachedOrganizations = await _getOrganizationsFromCache();
+    final currentState = context.read<OrganizationBloc>().state;
+
+    if (currentState is OrganizationLoaded) {
+      final newOrganizations = currentState.organizations;
+
+      if (jsonEncode(newOrganizations) != jsonEncode(cachedOrganizations)) {
+        await _saveOrganizationsToCache(newOrganizations);
+        setState(() {
+          _selectedOrganization = newOrganizations.isNotEmpty
+              ? newOrganizations.first.id.toString()
+              : null;
+        });
+      }
+    } else {
+      context.read<OrganizationBloc>().add(FetchOrganizations());
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedOrganization();
+    _checkPermission();
+    _loadOrganizations();
+
+    // Инициализируем подсказки после построения виджетов
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initTutorialTargets();
+    });
+  }
+
+// В _initTutorialTargets() добавляем ToggleFeatureButton безусловно
+  void _initTutorialTargets() {
+    targets.addAll([
+      createTarget(
+        identify: "profileOrganizationWidget",
+        keyTarget: keyOrganizationWidget,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_organization_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_organization_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "profileEditButton",
+        keyTarget: keyProfileEdit,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_edit_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_edit_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "profileLanguageButton",
+        keyTarget: keyLanguageButton,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_language_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_language_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "profilePinChange",
+        keyTarget: keyPinChange,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_pin_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_pin_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "profileLogoutButton",
+        keyTarget: keyLogoutButton,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_logout_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_logout_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      // Добавляем ToggleFeatureButton всегда, но проверяем его видимость при показе
+      createTarget(
+        identify: "profileToggleFeature",
+        keyTarget: keyToggleFeature,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_toggle_feature_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_toggle_feature_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "profileUpdateWidget1C",
+        keyTarget: keyUpdateWidget1C,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_update_1c_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_update_1c_description'),
+        // Изменяем здесь расположение подсказки
+        align: ContentAlign.top,
+        context: context,
+        contentPosition: ContentPosition.below,
+      ),
+      createTarget(
+        identify: "profileSupportChat",
+        keyTarget: keySupportChat,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_profile_support_chat_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_profile_support_chat_description'),
+        align: ContentAlign.top,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+    ]);
+    _showTutorialIfNeeded();
+  }
+
+  // Вспомогательная функция для создания целей подсказки
+  TargetFocus createTarget({
+    required String identify,
+    required GlobalKey keyTarget,
+    required String title,
+    required String description,
+    required ContentAlign align,
+    required BuildContext context,
+    required ContentPosition contentPosition,
+    EdgeInsets contentPadding = EdgeInsets.zero,
+  }) {
+    return TargetFocus(
+      identify: identify,
+      keyTarget: keyTarget,
+      contents: [
+        TargetContent(
+          align: align,
+          child: Container(
+            padding: contentPadding,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+      shape: ShapeLightFocus.RRect,
+      radius: 5,
+    );
+  }
+
+  // Показать подсказку, если нужно
+  void _showTutorialIfNeeded() {
+    if (!_isTutorialShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showTutorial();
+        setState(() {
+          _isTutorialShown = true;
+        });
       });
     }
-  } else {
-    context.read<OrganizationBloc>().add(FetchOrganizations());
   }
-}
 
-@override
-void initState() {
-  super.initState();
-  _loadSelectedOrganization();
-  _checkPermission();
-  _loadOrganizations();
-}
+  void showTutorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
 
+    // if (!isTutorialShown)
+    {
+      // Фильтруем targets, чтобы исключить ToggleFeatureButton, если у пользователя нет прав
+      List<TargetFocus> visibleTargets = targets.where((target) {
+        // Если это не ToggleFeatureButton, то оставляем
+        if (target.identify != "profileToggleFeature") {
+          return true;
+        }
+        // Если это ToggleFeatureButton, то проверяем наличие прав
+        return _hasPermissionToAddLeadAndSwitch;
+      }).toList();
+
+      TutorialCoachMark(
+        targets: visibleTargets,
+        textSkip: AppLocalizations.of(context)!.translate('skip'),
+        textStyleSkip: TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          shadows: [
+            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          ],
+        ),
+        colorShadow: Color(0xff1E2E52),
+        onSkip: () {
+          prefs.setBool('isTutorialShownProfile', true);
+          return true;
+        },
+        onFinish: () {
+          prefs.setBool('isTutorialShownProfile', true);
+        },
+        onClickTarget: (target) async {
+          int currentIndex =
+              visibleTargets.indexWhere((t) => t.identify == target.identify);
+          if (currentIndex < visibleTargets.length - 1) {
+            final nextTarget = visibleTargets[currentIndex + 1];
+
+            if (nextTarget.keyTarget != null) {
+              await Future.delayed(Duration(milliseconds: 300));
+              _scrollToTarget(nextTarget.keyTarget!);
+            }
+          }
+        },
+      ).show(context: context);
+    }
+  }
+
+  void _scrollToTarget(GlobalKey key) {
+    final RenderObject? renderObject = key.currentContext?.findRenderObject();
+    if (renderObject != null && renderObject is RenderBox) {
+      Scrollable.ensureVisible(
+        key.currentContext!,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      print("Error: Unable to find render object for key");
+    }
+  }
 
   Future<void> _checkPermission() async {
     bool hasPermission = await _apiService.hasPermission('lead.create');
@@ -114,17 +367,16 @@ void initState() {
     }
   }
 
-void _openSupportChat() async {
-  const tgUrl = 'https://t.me/shamcrm_bot';
-  const webUrl = 'https://t.me/shamcrm_bot';
+  void _openSupportChat() async {
+    const tgUrl = 'https://t.me/shamcrm_bot';
+    const webUrl = 'https://t.me/shamcrm_bot';
 
-  if (await canLaunchUrl(Uri.parse(tgUrl))) {
-    await launchUrl(Uri.parse(tgUrl), mode: LaunchMode.externalApplication);
-  } else {
-    await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(Uri.parse(tgUrl))) {
+      await launchUrl(Uri.parse(tgUrl), mode: LaunchMode.externalApplication);
+    } else {
+      await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -158,20 +410,23 @@ void _openSupportChat() async {
                     return Column(
                       children: [
                         OrganizationWidget(
+                          key: keyOrganizationWidget,
                           selectedOrganization: _selectedOrganization,
                           onChanged: _onOrganizationChanged,
                         ),
-                        const ProfileEdit(),
-                        const LanguageButtonWidget(),
-                        const PinChangeWidget(),
-                        const LogoutButtonWidget(),
-                          if(_hasPermissionToAddLeadAndSwitch)
-                        const ToggleFeatureButton(),
-                        UpdateWidget1C(organization: selectedOrg),
+                        ProfileEdit(key: keyProfileEdit),
+                        LanguageButtonWidget(key: keyLanguageButton),
+                        PinChangeWidget(key: keyPinChange),
+                        LogoutButtonWidget(key: keyLogoutButton),
+                        if (_hasPermissionToAddLeadAndSwitch)
+                          ToggleFeatureButton(key: keyToggleFeature),
+                        UpdateWidget1C(
+                            key: keyUpdateWidget1C, organization: selectedOrg),
                       ],
                     );
                   } else if (state is OrganizationError) {
-                    if (state.message.contains( localizations.translate("unauthorized_access"))) {
+                    if (state.message.contains(
+                        localizations.translate("unauthorized_access"))) {
                       ApiService().logout().then((_) {
                         Navigator.pushAndRemoveUntil(
                           context,
@@ -204,6 +459,7 @@ void _openSupportChat() async {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        key: keySupportChat,
         onPressed: _openSupportChat,
         backgroundColor: Color(0xff1E2E52),
         child: Image.asset(

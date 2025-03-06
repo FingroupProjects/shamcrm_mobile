@@ -182,8 +182,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
       description: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_description'), 
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
     createTarget(
       identify: "TaskMenuIcon",
@@ -191,8 +191,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
       description: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_description'), 
       align: ContentAlign.bottom,
-      extraPadding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.2),
       context: context,
+      contentPosition: ContentPosition.above,
     ),
   ]);
 }
@@ -201,7 +201,7 @@ void showTutorial() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
 
-  if (!isTutorialShown) {
+  if (!isTutorialShown)  {
     await Future.delayed(const Duration(milliseconds: 500));
 
     TutorialCoachMark(
@@ -220,11 +220,19 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        print("Пропустить");
+        prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
+          setState(() {
+          _isTaskScreenTutorialCompleted = true;
+        });
+        return true;
+      },
       onFinish: () {
         print("finish");
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
-          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг завершения
+          _isTaskScreenTutorialCompleted = true; 
         });
       },
     ).show(context: context);
@@ -444,7 +452,7 @@ void showTutorial() async {
 
   @override
   Widget build(BuildContext context) {
-                 if (!_isTutorialShown) {
+     if (!_isTutorialShown) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               showTutorial();
               setState(() {

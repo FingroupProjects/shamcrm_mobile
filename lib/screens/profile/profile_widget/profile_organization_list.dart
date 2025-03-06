@@ -7,11 +7,13 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 class OrganizationWidget extends StatefulWidget {
   final String? selectedOrganization;
   final ValueChanged<String?> onChanged;
+  final Key? key;
 
   OrganizationWidget({
+    this.key,
     required this.selectedOrganization,
     required this.onChanged,
-  });
+  }) : super(key: key);
 
   @override
   _OrganizationWidgetState createState() => _OrganizationWidgetState();

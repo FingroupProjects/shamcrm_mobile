@@ -135,9 +135,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     bool isTutorialShown =
         prefs.getBool('isTutorialShownNoticeDetails') ?? false;
 
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 500));
 
-    // if (!isTutorialShown)
+    if (!isTutorialShown)
      {
       TutorialCoachMark(
         targets: targets,

@@ -88,7 +88,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     });
   }
 
-// Перемещаем инициализацию целей после построения виджета
   void _initTargets() {
     double screenHeight = MediaQuery.of(context).size.height;
     double boxHeight = screenHeight * 0.1;

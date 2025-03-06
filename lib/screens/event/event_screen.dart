@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_add_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_card.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -73,173 +74,55 @@ class _EventScreenState extends State<EventScreen>
   bool _isCompletedTabTutorialInProgress = false;
 
   void _initTutorialTargets() {
-    targets = [
-      TargetFocus(
-        identify: "EventCard",
-        keyTarget: keyEventCard,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  AppLocalizations.of(context)!.translate('EventCard'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('evetnCardDescription'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      // Remove the dropdown target since it doesn't exist
-      TargetFocus(
-        identify: "FloatingActionButton",
-        keyTarget: keyFloatingActionButton,
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  AppLocalizations.of(context)!.translate('addEvent'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('addEventDescription'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      // Add tab tutorials - one for each tab
-      TargetFocus(
-        identify: "InProgressTab",
-        keyTarget: _tabKeys[0], // Use the first tab key
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  "События в процессе",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    "Здесь хранятся события, которые находятся в процессе выполнения",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      TargetFocus(
-        identify: "CompletedTab",
-        keyTarget: _tabKeys[1], // Use the second tab key
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  "Завершенные события",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    "Здесь хранятся события, которые уже завершены",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ];
+      targets.addAll([
+    createTarget(
+      identify: "EventCard",
+      keyTarget: keyEventCard,
+      title: AppLocalizations.of(context)!.translate('EventCard'),
+      description: AppLocalizations.of(context)!.translate('evetnCardDescription'),
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.below,
+      contentPadding: EdgeInsets.only(top: 50),
+    ),
+    createTarget(
+      identify: "FloatingActionButton",
+      keyTarget: keyFloatingActionButton,
+      title: AppLocalizations.of(context)!.translate('addEvent'),
+      description: AppLocalizations.of(context)!.translate('addEventDescription'),
+      align: ContentAlign.top,
+      context: context,
+    ),
+    createTarget(
+      identify: "InProgressTab",
+      keyTarget: _tabKeys[0],
+      title: AppLocalizations.of(context)!.translate('События в процессе'),
+      description: AppLocalizations.of(context)!.translate('Здесь хранятся события, которые находятся в процессе выполнения'),
+      align: ContentAlign.bottom,
+      context: context,
+    ),
+    createTarget(
+      identify: "CompletedTab",
+      keyTarget: _tabKeys[1],
+      title: AppLocalizations.of(context)!.translate('Завершенные события'),
+      description: AppLocalizations.of(context)!.translate('Здесь хранятся события, которые уже завершены'),
+      align: ContentAlign.bottom,
+      context: context,
+    ),
+  ]);
   }
 
 // Загрузка состояния подсказок
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      // _isEventCardTutorialShown =
-      //     prefs.getBool('isNoticeCardTutorialShow') ?? false;
-      // _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
-      // _isInProgressTabTutorialShown =
-      //     prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
-      // _isCompletedTabTutorialShown =
-      //     prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
+      _isEventCardTutorialShown =
+          prefs.getBool('isNoticeCardTutorialShow') ?? false;
+      _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
+      _isInProgressTabTutorialShown =
+          prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
+      _isCompletedTabTutorialShown =
+          prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
     });
   }
 

@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,195 +68,141 @@ class _DealColumnState extends State<DealColumn> {
   }
 
 // Инициализация подсказок
-  void _initTutorialTargets() {
-    targets = [
-      TargetFocus(
-        identify: "DealCard",
-        keyTarget: keyDealCard,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  AppLocalizations.of(context)!.translate('dealCard'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('dealCardDescription'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      TargetFocus(
-        identify: "Dropdown",
-        keyTarget: keyDropdown, // Используем ключ для dropdown
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  AppLocalizations.of(context)!.translate('statusManagement'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    fontSize: 20.0,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('statusManagementDescription'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      TargetFocus(
-        identify: "FloatingActionButton",
-        keyTarget: keyFloatingActionButton,
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                Text(
-                  AppLocalizations.of(context)!.translate('addDeal'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    fontSize: 20.0,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('addDealDescription'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ];
-  }
+void _initTutorialTargets() {
+   targets.addAll([
+    createTarget(
+      identify: "DealCard",
+      keyTarget: keyDealCard,
+      title: AppLocalizations.of(context)!.translate('dealCard'), 
+      description: AppLocalizations.of(context)!.translate('dealCardDescription'), 
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.below,
+      contentPadding: EdgeInsets.only(top: 50),
+    ),
+    createTarget(
+      identify: "Dropdown",
+      keyTarget: keyDropdown,
+      title: AppLocalizations.of(context)!.translate('statusManagement'), 
+      description: AppLocalizations.of(context)!.translate('statusManagementDescription'), 
+      align: ContentAlign.bottom,
+      context: context,
+    ),
+    createTarget(
+      identify: "FloatingActionButton",
+      keyTarget: keyFloatingActionButton,
+      title: AppLocalizations.of(context)!.translate('addDeal'), 
+      description: AppLocalizations.of(context)!.translate('addDealDescription'), 
+      align: ContentAlign.top,
+      context: context,
+    ),
+  ]);
+}
 
 // Загрузка состояния подсказок
-  Future<void> _loadFeatureState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isDealCardTutorialShown =
-          prefs.getBool('isDealCardTutorialShow') ?? false;
-      _isFabTutorialShown = prefs.getBool('isDealFabTutorialShow') ?? false;
-      _isDropdownTutorialShown =
-          prefs.getBool('isDropdownTutorialShow') ?? false;
-    });
-  }
+Future<void> _loadFeatureState() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _isDealCardTutorialShown = prefs.getBool('isDealCardTutorialShow') ?? false;
+    _isFabTutorialShown = prefs.getBool('isDealFabTutorialShow') ?? false;
+    _isDropdownTutorialShown = prefs.getBool('isDropdownTutorialShow') ?? false;
+  });
+}
 
 // Показ подсказок
-  void showTutorial(String tutorialType) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+void showTutorial(String tutorialType) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    await Future.delayed(const Duration(seconds: 1));
+  await Future.delayed(const Duration(milliseconds: 500));
 
-    if (tutorialType == "DealCard" &&
-        !_isDealCardTutorialShown &&
-        !_isDealCardTutorialInProgress) {
-      _isDealCardTutorialInProgress = true;
-      TutorialCoachMark(
-        targets: [targets.firstWhere((t) => t.identify == "DealCard")],
-        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
-        colorShadow: Color(0xff1E2E52),
-        onFinish: () {
-          prefs.setBool('isDealCardTutorialShow', true);
-          setState(() {
-            _isDealCardTutorialShown = true;
-          });
-          _isDealCardTutorialInProgress = false;
-        },
-      ).show(context: context);
-    } else if (tutorialType == "Dropdown" &&
-        !_isDropdownTutorialShown &&
-        !_isDropdownTutorialInProgress) {
-      _isDropdownTutorialInProgress = true;
-      TutorialCoachMark(
-        targets: [targets.firstWhere((t) => t.identify == "Dropdown")],
-        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
-        colorShadow: Color(0xff1E2E52),
-        onFinish: () {
-          prefs.setBool('isDropdownTutorialShow', true);
-          setState(() {
-            _isDropdownTutorialShown = true;
-          });
-          _isDropdownTutorialInProgress = false;
-        },
-      ).show(context: context);
-    } else if (tutorialType == "FloatingActionButton" &&
-        !_isFabTutorialShown &&
-        !_isFabTutorialInProgress) {
-      _isFabTutorialInProgress = true;
-      TutorialCoachMark(
-        targets: [
-          targets.firstWhere((t) => t.identify == "FloatingActionButton")
+  if (tutorialType == "DealCard" &&
+      !_isDealCardTutorialShown &&
+      !_isDealCardTutorialInProgress) {
+    _isDealCardTutorialInProgress = true;
+    TutorialCoachMark(
+      targets: [targets.firstWhere((t) => t.identify == "DealCard")],
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
         ],
-        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
-        colorShadow: Color(0xff1E2E52),
-        onFinish: () {
-          prefs.setBool('isDealFabTutorialShow', true);
-          setState(() {
-            _isFabTutorialShown = true;
-          });
-          _isFabTutorialInProgress = false;
-        },
-      ).show(context: context);
-    }
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        prefs.setBool('isDealCardTutorialShow', true);
+        setState(() {
+          _isDealCardTutorialShown = true;
+        });
+        _isDealCardTutorialInProgress = false;
+      },
+    ).show(context: context);
+  } else if (tutorialType == "Dropdown" &&
+      !_isDropdownTutorialShown &&
+      !_isDropdownTutorialInProgress) {
+    _isDropdownTutorialInProgress = true;
+    TutorialCoachMark(
+      targets: [targets.firstWhere((t) => t.identify == "Dropdown")],
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        prefs.setBool('isDropdownTutorialShow', true);
+        setState(() {
+          _isDropdownTutorialShown = true;
+        });
+        _isDropdownTutorialInProgress = false;
+      },
+    ).show(context: context);
+  } else if (tutorialType == "FloatingActionButton" &&
+      !_isFabTutorialShown &&
+      !_isFabTutorialInProgress) {
+    _isFabTutorialInProgress = true;
+    TutorialCoachMark(
+      targets: [
+        targets.firstWhere((t) => t.identify == "FloatingActionButton")
+      ],
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onFinish: () {
+        prefs.setBool('isDealFabTutorialShow', true);
+        setState(() {
+          _isFabTutorialShown = true;
+        });
+        _isFabTutorialInProgress = false;
+      },
+    ).show(context: context);
   }
+}
 
   @override
   void dispose() {
@@ -385,8 +332,7 @@ class _DealColumnState extends State<DealColumn> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!
-                                  .translate('no_deal_in_selected_status'),
+                              AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
                               style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
