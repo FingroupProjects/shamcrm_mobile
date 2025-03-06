@@ -94,9 +94,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadSelectedOrganization();
     _checkPermission();
     _loadOrganizations();
-
-    // Инициализируем подсказки после построения виджетов
- 
   }
 
 // В _initTutorialTargets() добавляем ToggleFeatureButton безусловно
@@ -269,11 +266,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!isTutorialShown) {
       // Фильтруем targets, чтобы исключить ToggleFeatureButton, если у пользователя нет прав
       List<TargetFocus> visibleTargets = targets.where((target) {
-        // Если это не ToggleFeatureButton, то оставляем
         if (target.identify != "profileToggleFeature") {
           return true;
         }
-        // Если это ToggleFeatureButton, то проверяем наличие прав
         return _hasPermissionToAddLeadAndSwitch;
       }).toList();
 

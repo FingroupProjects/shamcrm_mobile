@@ -345,9 +345,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void showTutorial() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-
-    // if (!isTutorialShown)
-     {
+    
+    if (!isTutorialShown)  {
       TutorialCoachMark(
         targets: targets,
         textSkip: AppLocalizations.of(context)!.translate('skip'),

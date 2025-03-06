@@ -5846,9 +5846,9 @@ Future<Map<String, dynamic>> finishNotice(int noticeId, String conclusion) async
 
     return dataAuthor;
   }
-String getRecordingUrl(String recordPath) {
-    return recordPath.startsWith('/call-recordings/')
-        ? '$baseUrl$recordPath'
-        : recordPath;}
+// String getRecordingUrl(String recordPath) {
+//     return recordPath.startsWith('/call-recordings/')
+//         ? '$baseUrl$recordPath'
+//         : recordPath;}
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }
