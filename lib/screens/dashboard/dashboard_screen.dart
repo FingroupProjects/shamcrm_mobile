@@ -354,7 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
 
-    // if (!isTutorialShown)
+    if (!isTutorialShown)
     {
       TutorialCoachMark(
         targets: targets,

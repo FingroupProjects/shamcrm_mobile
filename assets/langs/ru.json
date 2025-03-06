@@ -789,7 +789,14 @@
       "tutorial_profile_update_1c_title": "Обновление данных 1С",
       "tutorial_profile_update_1c_description": "Вы можете обновить данные из системы 1С.",
       "tutorial_profile_support_chat_title": "Чат поддержки",
-      "tutorial_profile_support_chat_description": "Вы можете задать вопрос службе поддержки через чат."
+      "tutorial_profile_support_chat_description": "Вы можете задать вопрос службе поддержки через чат.",
+      "call_recording": "",
+      "phone_call": "",
+      "call_duration": "Продолжительность звонка",
+      "call_ringing_duration": "Продолжительность гудка",
+      "outgoing_call_unanswered": "Исходящий звонок без ответа",
+      "missed_call": "Пропущенный звонок",
+      "incoming_call": "Входящий звонок"
 
       
   }
