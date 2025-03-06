@@ -10,7 +10,9 @@ import 'package:intl/intl.dart';
 class ActionHistoryWidget extends StatefulWidget {
   final int dealId;
 
-  ActionHistoryWidget({required this.dealId});
+  ActionHistoryWidget({
+    Key? key,
+    required this.dealId}) : super(key: key) ;
 
   @override
   _ActionHistoryWidgetState createState() => _ActionHistoryWidgetState();
