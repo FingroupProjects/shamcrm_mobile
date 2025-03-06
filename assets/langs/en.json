@@ -756,7 +756,23 @@
       "tutorial_dashboard_deal_stats_title": "Deals",
       "tutorial_dashboard_deal_stats_description": "The graph is divided into two parts:\n🔵 Blue: shows total deal amounts for the month.\n✅ Green: shows the amount of successful deals.\nMonitor monthly sales volume. Analyze performance and plan future actions.",
       "tutorial_dashboard_user_goal_completion_title": "Goal Completion",
-      "tutorial_dashboard_user_goal_completion_description": "The graph shows the completion of your tasks. It reflects the percentage of tasks you have completed."
+      "tutorial_dashboard_user_goal_completion_description": "The graph shows the completion of your tasks. It reflects the percentage of tasks you have completed.",
+      "tutorial_profile_organization_title": "Organization",
+      "tutorial_profile_organization_description": "If you have multiple organizations, you can switch between them.",
+      "tutorial_profile_edit_title": "Profile",
+      "tutorial_profile_edit_description": "The 'Profile' section allows users to view and edit their personal information, as well as their role in the system.",
+      "tutorial_profile_language_title": "Language",
+      "tutorial_profile_language_description": "You can choose the interface language that is convenient for you.",
+      "tutorial_profile_pin_title": "Change PIN code",
+      "tutorial_profile_pin_description": "You can change the PIN code.",
+      "tutorial_profile_logout_title": "\"Logout\" button",
+      "tutorial_profile_logout_description": "When pressed, application data is cleared and the account is logged out.",
+      "tutorial_profile_toggle_feature_title": "Import and Export Contacts",
+      "tutorial_profile_toggle_feature_description": "You can add leads from your phone book and export leads to your address book.",
+      "tutorial_profile_update_1c_title": "1C Data Update",
+      "tutorial_profile_update_1c_description": "You can update data from the 1C system.",
+      "tutorial_profile_support_chat_title": "Support Chat",
+      "tutorial_profile_support_chat_description": "You can ask a question to support service via chat."
 
       
 

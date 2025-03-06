@@ -57,21 +57,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   bool isRefreshing = false;
 
-  final GlobalKey keyNotificationIcon = GlobalKey(); 
-  final GlobalKey keyMyTaskIcon = GlobalKey(); 
-  final GlobalKey keyAdminLeadConversion = GlobalKey(); 
-  final GlobalKey keyAdminTaskComplietion = GlobalKey(); 
-  final GlobalKey keyAdminTaskChart = GlobalKey(); 
-  final GlobalKey keyAdminGraphics = GlobalKey(); 
-  final GlobalKey keyAdminProcessSpeed = GlobalKey(); 
-  final GlobalKey keyAdminDealStats = GlobalKey(); 
+  final GlobalKey keyNotificationIcon = GlobalKey();
+  final GlobalKey keyMyTaskIcon = GlobalKey();
+  final GlobalKey keyAdminLeadConversion = GlobalKey();
+  final GlobalKey keyAdminTaskComplietion = GlobalKey();
+  final GlobalKey keyAdminTaskChart = GlobalKey();
+  final GlobalKey keyAdminGraphics = GlobalKey();
+  final GlobalKey keyAdminProcessSpeed = GlobalKey();
+  final GlobalKey keyAdminDealStats = GlobalKey();
 
-  final GlobalKey keyManagerGoalComplietion = GlobalKey(); 
+  final GlobalKey keyManagerGoalComplietion = GlobalKey();
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
   bool _isTaskScreenTutorialCompleted = false;
-  
+
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -80,296 +80,339 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _initializeData();
   }
 
-void _initTutorialTargets() {
-  if (userRoles.contains('admin')) {
-    _initAdminTutorialTargets();
-  } else if (userRoles.contains('manager')) {
-    _initTutorialTargetsManagers();
-  } else {
-    _initTutorialTargetsUsers();
+  void _initTutorialTargets() {
+    if (userRoles.contains('admin')) {
+      _initAdminTutorialTargets();
+    } else if (userRoles.contains('manager')) {
+      _initTutorialTargetsManagers();
+    } else {
+      _initTutorialTargetsUsers();
+    }
+
+    _showTutorialIfNeeded();
   }
 
-  _showTutorialIfNeeded();
-}
-
-void _showTutorialIfNeeded() {
-  if (!_isTutorialShown) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showTutorial();
-      setState(() {
-        _isTutorialShown = true;
-      });
-    });
-  }
-}
-
-  
-void _initAdminTutorialTargets() {
-  targets.addAll([
-    createTarget(
-      identify: "dashboardNotificationIcon",
-      keyTarget: keyNotificationIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "dashboardMyTaskIcon",
-      keyTarget: keyMyTaskIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "dashboardAdminLeadConversion",
-      keyTarget: keyAdminLeadConversion,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_conversion_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_conversion_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "dashboardAdminTaskComplietion",
-      keyTarget: keyAdminTaskComplietion,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_completion_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_completion_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "dashboardAdminTaskChart",
-      keyTarget: keyAdminTaskChart,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 30),
-    ),
-    createTarget(
-      identify: "dashboardAdminGraphics",
-      keyTarget: keyAdminGraphics,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_graphics_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_graphics_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 80),
-    ),
-    createTarget(
-      identify: "dashboardAdminProcessSpeed",
-      keyTarget: keyAdminProcessSpeed,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_process_speed_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_process_speed_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 80),
-    ),
-    createTarget(
-      identify: "dashboardAdminDealStats",
-      keyTarget: keyAdminDealStats,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_description'), 
-      align: ContentAlign.top,
-      context: context,
-      contentPosition: ContentPosition.below,
-    ),
-  ]);
-}
-void _initTutorialTargetsManagers() {
-  targets.addAll([
-    createTarget(
-      identify: "dashboardNotificationIcon",
-      keyTarget: keyNotificationIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "dashboardMyTaskIcon",
-      keyTarget: keyMyTaskIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "dashboardAdminLeadConversion",
-      keyTarget: keyAdminLeadConversion,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_conversion_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_conversion_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "dashboardManagerGoalComplietion",
-      keyTarget: keyManagerGoalComplietion,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "dashboardAdminGraphics",
-      keyTarget: keyAdminGraphics,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_graphics_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_graphics_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 80),
-    ),
-    createTarget(
-      identify: "dashboardAdminTaskChart",
-      keyTarget: keyAdminTaskChart,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 30),
-    ),
-    createTarget(
-      identify: "dashboardAdminProcessSpeed",
-      keyTarget: keyAdminProcessSpeed,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_process_speed_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_lead_process_speed_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 80),
-    ),
-    createTarget(
-      identify: "dashboardAdminDealStats",
-      keyTarget: keyAdminDealStats,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_description'), 
-      align: ContentAlign.top,
-      context: context,
-      contentPosition: ContentPosition.below,
-    ),
-  ]);
-}
-void _initTutorialTargetsUsers() {
-  targets.addAll([
-    createTarget(
-      identify: "dashboardNotificationIcon",
-      keyTarget: keyNotificationIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_notification_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "dashboardMyTaskIcon",
-      keyTarget: keyMyTaskIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_mytask_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "dashboardUserGoalComplietion",
-      keyTarget: keyManagerGoalComplietion,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "dashboardUserTaskChart",
-      keyTarget: keyAdminTaskChart,
-      title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'), 
-      align: ContentAlign.top,
-      context: context,
-      contentPosition: ContentPosition.below,
-      contentPadding: EdgeInsets.only(bottom: 30),
-    ),
-  ]);
-}
-
-void showTutorial() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-
-  if (!isTutorialShown) {
-    TutorialCoachMark(
-      targets: targets,
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-      onSkip: () {
-        prefs.setBool('isTutorialShownDashboard', true);
-          setState(() {
-          _isTaskScreenTutorialCompleted = true;
-        });
-        return true;
-      },
-      onFinish: () {
-        prefs.setBool('isTutorialShownDashboard', true);
+  void _showTutorialIfNeeded() {
+    if (!_isTutorialShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showTutorial();
         setState(() {
-          _isTaskScreenTutorialCompleted = true;
+          _isTutorialShown = true;
         });
-      },
-     onClickTarget: (target) async {
-  int currentIndex = targets.indexWhere((t) => t.identify == target.identify);
-  if (currentIndex < targets.length - 1) {
-    final nextTarget = targets[currentIndex + 1];
-
-    if (nextTarget.keyTarget != null) {
-      await Future.delayed(Duration(milliseconds: 300));
-      _scrollToTarget(nextTarget.keyTarget!);
+      });
     }
   }
-},
-    ).show(context: context);
-  }
-}
 
-void _scrollToTarget(GlobalKey key) {
-  final RenderObject? renderObject = key.currentContext?.findRenderObject();
-  if (renderObject != null && renderObject is RenderBox) {
-    Scrollable.ensureVisible(
-      key.currentContext!,
-      duration: Duration(milliseconds: 500), 
-      curve: Curves.easeInOut,
-    );
-  } else {
-    print("Error: Unable to find render object for key");
+  void _initAdminTutorialTargets() {
+    targets.addAll([
+      createTarget(
+        identify: "dashboardNotificationIcon",
+        keyTarget: keyNotificationIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_notification_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_notification_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "dashboardMyTaskIcon",
+        keyTarget: keyMyTaskIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_mytask_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_mytask_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "dashboardAdminLeadConversion",
+        keyTarget: keyAdminLeadConversion,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_conversion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_conversion_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "dashboardAdminTaskComplietion",
+        keyTarget: keyAdminTaskComplietion,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_completion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_completion_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "dashboardAdminTaskChart",
+        keyTarget: keyAdminTaskChart,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 30),
+      ),
+      createTarget(
+        identify: "dashboardAdminGraphics",
+        keyTarget: keyAdminGraphics,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_graphics_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_graphics_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 80),
+      ),
+      createTarget(
+        identify: "dashboardAdminProcessSpeed",
+        keyTarget: keyAdminProcessSpeed,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_process_speed_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_process_speed_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 80),
+      ),
+      createTarget(
+        identify: "dashboardAdminDealStats",
+        keyTarget: keyAdminDealStats,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_description'),
+        align: ContentAlign.top,
+        context: context,
+        contentPosition: ContentPosition.below,
+      ),
+    ]);
   }
-}
+
+  void _initTutorialTargetsManagers() {
+    targets.addAll([
+      createTarget(
+        identify: "dashboardNotificationIcon",
+        keyTarget: keyNotificationIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_notification_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_notification_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "dashboardMyTaskIcon",
+        keyTarget: keyMyTaskIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_mytask_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_mytask_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "dashboardAdminLeadConversion",
+        keyTarget: keyAdminLeadConversion,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_conversion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_conversion_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "dashboardManagerGoalComplietion",
+        keyTarget: keyManagerGoalComplietion,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "dashboardAdminGraphics",
+        keyTarget: keyAdminGraphics,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_graphics_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_graphics_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 80),
+      ),
+      createTarget(
+        identify: "dashboardAdminTaskChart",
+        keyTarget: keyAdminTaskChart,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 30),
+      ),
+      createTarget(
+        identify: "dashboardAdminProcessSpeed",
+        keyTarget: keyAdminProcessSpeed,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_process_speed_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_lead_process_speed_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 80),
+      ),
+      createTarget(
+        identify: "dashboardAdminDealStats",
+        keyTarget: keyAdminDealStats,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_description'),
+        align: ContentAlign.top,
+        context: context,
+        contentPosition: ContentPosition.below,
+      ),
+    ]);
+  }
+
+  void _initTutorialTargetsUsers() {
+    targets.addAll([
+      createTarget(
+        identify: "dashboardNotificationIcon",
+        keyTarget: keyNotificationIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_notification_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_notification_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "dashboardMyTaskIcon",
+        keyTarget: keyMyTaskIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_mytask_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_mytask_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "dashboardUserGoalComplietion",
+        keyTarget: keyManagerGoalComplietion,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "dashboardUserTaskChart",
+        keyTarget: keyAdminTaskChart,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_description'),
+        align: ContentAlign.top,
+        context: context,
+        contentPosition: ContentPosition.below,
+        contentPadding: EdgeInsets.only(bottom: 30),
+      ),
+    ]);
+  }
+
+  void showTutorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
+
+    // if (!isTutorialShown)
+    {
+      TutorialCoachMark(
+        targets: targets,
+        textSkip: AppLocalizations.of(context)!.translate('skip'),
+        textStyleSkip: TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          shadows: [
+            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          ],
+        ),
+        colorShadow: Color(0xff1E2E52),
+        onSkip: () {
+          prefs.setBool('isTutorialShownDashboard', true);
+          setState(() {
+            _isTaskScreenTutorialCompleted = true;
+          });
+          return true;
+        },
+        onFinish: () {
+          prefs.setBool('isTutorialShownDashboard', true);
+          setState(() {
+            _isTaskScreenTutorialCompleted = true;
+          });
+        },
+        onClickTarget: (target) async {
+          int currentIndex =
+              targets.indexWhere((t) => t.identify == target.identify);
+          if (currentIndex < targets.length - 1) {
+            final nextTarget = targets[currentIndex + 1];
+
+            if (nextTarget.keyTarget != null) {
+              await Future.delayed(Duration(milliseconds: 300));
+              _scrollToTarget(nextTarget.keyTarget!);
+            }
+          }
+        },
+      ).show(context: context);
+    }
+  }
+
+  void _scrollToTarget(GlobalKey key) {
+    final RenderObject? renderObject = key.currentContext?.findRenderObject();
+    if (renderObject != null && renderObject is RenderBox) {
+      Scrollable.ensureVisible(
+        key.currentContext!,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      print("Error: Unable to find render object for key");
+    }
+  }
 
   Future<void> _initializeData() async {
     try {
@@ -441,9 +484,9 @@ void _scrollToTarget(GlobalKey key) {
       }
       // await Future.delayed(Duration(milliseconds: 900));
 
-WidgetsBinding.instance.addPostFrameCallback((_) {
-_initTutorialTargets();
-  });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initTutorialTargets();
+      });
     } catch (e) {
       print('Error loading user roles!');
       if (mounted) {
@@ -473,16 +516,24 @@ _initTutorialTargets();
         // Отправляем события для обновления всех блоков графиков
         context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
         context.read<DashboardChartBloc>().add(LoadLeadChartData());
-        context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
+        context
+            .read<DashboardChartBlocManager>()
+            .add(LoadLeadChartDataManager());
         context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
         context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
-        context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+        context
+            .read<DashboardConversionBlocManager>()
+            .add(LoadLeadConversionDataManager());
         context.read<DealStatsBloc>().add(LoadDealStatsData());
         context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
         context.read<UserBlocManager>().add(LoadUserData());
         context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
-        context.read<DashboardTaskChartBlocManager>() .add(LoadTaskChartDataManager());
-        context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+        context
+            .read<DashboardTaskChartBlocManager>()
+            .add(LoadTaskChartDataManager());
+        context
+            .read<ProcessSpeedBlocManager>()
+            .add(LoadProcessSpeedDataManager());
       }
     } catch (e) {
       if (mounted) {
@@ -568,29 +619,49 @@ _initTutorialTargets();
         Divider(thickness: 1, color: Colors.grey[300]),
         GraphicsDashboard(lineChartKey: keyAdminGraphics),
         Divider(thickness: 1, color: Colors.grey[300]),
-        ProcessSpeedGauge(key: keyAdminProcessSpeed,),
+        ProcessSpeedGauge(
+          key: keyAdminProcessSpeed,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChart(key: keyAdminDealStats,),
+        DealStatsChart(
+          key: keyAdminDealStats,
+        ),
       ];
     } else if (userRoles.contains('manager')) {
       return [
-        LeadConversionChartManager(key: keyAdminLeadConversion,),
+        LeadConversionChartManager(
+          key: keyAdminLeadConversion,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        GoalCompletionChart(key: keyManagerGoalComplietion,),
+        GoalCompletionChart(
+          key: keyManagerGoalComplietion,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        GraphicsDashboardManager(lineChartKey: keyAdminGraphics,),
+        GraphicsDashboardManager(
+          lineChartKey: keyAdminGraphics,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(key: keyAdminTaskChart,),
+        TaskChartWidgetManager(
+          key: keyAdminTaskChart,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        ProcessSpeedGaugeManager(key: keyAdminProcessSpeed,),
+        ProcessSpeedGaugeManager(
+          key: keyAdminProcessSpeed,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChartManager(key: keyAdminDealStats,),
+        DealStatsChartManager(
+          key: keyAdminDealStats,
+        ),
       ];
     } else {
       return [
-        GoalCompletionChart(key: keyManagerGoalComplietion,),
+        GoalCompletionChart(
+          key: keyManagerGoalComplietion,
+        ),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(key: keyAdminTaskChart,),
+        TaskChartWidgetManager(
+          key: keyAdminTaskChart,
+        ),
       ];
     }
   }

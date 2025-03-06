@@ -203,30 +203,29 @@ class _EventScreenState extends State<EventScreen>
         break;
     }
 
-TutorialCoachMark(
-  targets: [targetFocus],
-  textSkip: AppLocalizations.of(context)!.translate('skip'),
-  textStyleSkip: TextStyle(
-    color: Colors.white,
-    fontFamily: 'Gilroy',
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-    shadows: [
-      Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-      Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-      Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-      Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-    ],
-  ),
-  colorShadow: Color(0xff1E2E52),
-  alignSkip: Alignment.bottomLeft, // Перемещаем кнопку в левый нижний угол
-  onFinish: () {
-    if (onFinish != null) {
-      onFinish();
-    }
-  },
-).show(context: context);
-
+    TutorialCoachMark(
+      targets: [targetFocus],
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      alignSkip: Alignment.bottomLeft, // Перемещаем кнопку в левый нижний угол
+      onFinish: () {
+        if (onFinish != null) {
+          onFinish();
+        }
+      },
+    ).show(context: context);
   }
 
   @override

@@ -755,7 +755,23 @@
     "tutorial_dashboard_deal_stats_title": "Bitimlar",
     "tutorial_dashboard_deal_stats_description": "Grafik ikki qismga bo‘lingan:\n🔵 Ko‘k: oy bo‘yicha umumiy bitim summalarini ko‘rsatadi.\n✅ Yashil: muvaffaqiyatli bitimlarning umumiy summasini ko‘rsatadi.\nOylik savdo hajmini kuzatib boring. Natijalarni tahlil qiling va kelajakdagi harakatlarni rejalashtiring.",
     "tutorial_dashboard_user_goal_completion_title": "Maqsadlarni bajarish",
-    "tutorial_dashboard_user_goal_completion_description": "Grafik sizning vazifalaringiz bajarilganligini ko‘rsatadi. Bajarilgan vazifalar foizi aks ettiriladi."
+    "tutorial_dashboard_user_goal_completion_description": "Grafik sizning vazifalaringiz bajarilganligini ko‘rsatadi. Bajarilgan vazifalar foizi aks ettiriladi.",
+    "tutorial_profile_organization_title": "Tashkilot",
+    "tutorial_profile_organization_description": "Agar sizda bir nechta tashkilot bo'lsa, ular orasida almashishingiz mumkin.",
+    "tutorial_profile_edit_title": "Profil",
+    "tutorial_profile_edit_description": "Profil bo'limi foydalanuvchiga shaxsiy ma'lumotlarini va tizimdagi rolini ko'rish va tahrirlash imkonini beradi.",
+    "tutorial_profile_language_title": "Til",
+    "tutorial_profile_language_description": "Siz o'zingiz uchun qulay interfeys tilini tanlashingiz mumkin.",
+    "tutorial_profile_pin_title": "PIN-kodni o'zgartirish",
+    "tutorial_profile_pin_description": "Siz PIN-kodni o'zgartirishingiz mumkin.",
+    "tutorial_profile_logout_title": "\"Chiqish\" tugmasi",
+    "tutorial_profile_logout_description": "Bosganda, ilova ma'lumotlari tozalanadi va hisobdan chiqiladi.",
+    "tutorial_profile_toggle_feature_title": "Kontaktlarni import va eksport qilish",
+    "tutorial_profile_toggle_feature_description": "Siz telefon kitobingizdan mijozlarni qo'shishingiz yoki ularni yozuvlar kitobiga eksport qilishingiz mumkin.",
+    "tutorial_profile_update_1c_title": "1C ma'lumotlarini yangilash",
+    "tutorial_profile_update_1c_description": "1C tizimidan ma'lumotlarni yangilashingiz mumkin.",
+    "tutorial_profile_support_chat_title": "Qo'llab-quvvatlash chati",
+    "tutorial_profile_support_chat_description": "Siz qo'llab-quvvatlash xizmatiga chat orqali savol berishingiz mumkin."
 
 
 
