@@ -18,8 +18,8 @@ TargetFocus createTarget({
   double screenHeight = MediaQuery.of(context).size.height;
   double screenWidth = MediaQuery.of(context).size.width;
 
-  double titleFontSize = screenWidth < 600 ? 19 : 21;
-  double descriptionFontSize = screenWidth < 600 ? 15 : 17;
+  double titleFontSize = screenWidth < 600 ? 18 : 20;
+  double descriptionFontSize = screenWidth < 600 ? 16 : 18;
 
   double boxHeight = screenHeight * 0.12;
 
