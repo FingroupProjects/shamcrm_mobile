@@ -10,13 +10,15 @@ import 'package:intl/intl.dart';
 
 class NoticeHistorySection extends StatefulWidget {
   final int leadId;
-  final int noteId; 
+  final int noteId;
 
-  const NoticeHistorySection({Key? key, required this.leadId, required this.noteId}) : super(key: key);
+  const NoticeHistorySection({Key? key, required this.leadId, required this.noteId})
+      : super(key: key);
 
   @override
   _NoticeHistorySectionState createState() => _NoticeHistorySectionState();
 }
+
 class _NoticeHistorySectionState extends State<NoticeHistorySection> {
   bool isExpanded = false;
 
@@ -26,59 +28,61 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
     context.read<HistoryLeadsBloc>().add(FetchNoticeHistory(widget.leadId));
   }
 
-@override
-Widget build(BuildContext context) {
-  return BlocBuilder<HistoryLeadsBloc, HistoryState>(
-    builder: (context, state) {
-      return _buildExpandableNoticeContainer(
-            AppLocalizations.of(context)!.translate('event_history'),
-        state is NoticeHistoryLoaded ? _buildNoticeHistoryItems(state.history, widget.noteId) : [],
-        isExpanded,
-        () {
-          setState(() {
-            isExpanded = !isExpanded;
-          });
-        },
-      );
-    },
-  );
-}
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<HistoryLeadsBloc, HistoryState>(
+      builder: (context, state) {
+        return _buildExpandableNoticeContainer(
+          AppLocalizations.of(context)!.translate('event_history'),
+          state is NoticeHistoryLoaded
+              ? _buildNoticeHistoryItems(state.history, widget.noteId)
+              : [],
+          isExpanded,
+          () {
+            setState(() {
+              isExpanded = !isExpanded;
+            });
+          },
+        );
+      },
+    );
+  }
 
-Widget _buildExpandableNoticeContainer(
-  String title,
-  List<String> items,
-  bool isExpanded,
-  VoidCallback onTap,
-) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
-      decoration: BoxDecoration(
-        color: Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
+  Widget _buildExpandableNoticeContainer(
+    String title,
+    List<String> items,
+    bool isExpanded,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F7FD),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTitleRow(title),
+            const SizedBox(height: 8),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              child: isExpanded
+                  ? SizedBox(
+                      height: 250,
+                      child: SingleChildScrollView(
+                        child: _buildItemList(items),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTitleRow(title),
-          SizedBox(height: 8),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            child: isExpanded
-                ? SizedBox(
-                    height: 250,
-                    child: SingleChildScrollView(
-                      child: _buildItemList(items),
-                    ),
-                  )
-                : SizedBox.shrink(),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Row _buildTitleRow(String title) {
     return Row(
@@ -86,11 +90,11 @@ Widget _buildExpandableNoticeContainer(
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xfff1E2E52),
+            color: Color(0xff1E2E52), // Исправлен цвет
           ),
         ),
         Image.asset(
@@ -105,9 +109,7 @@ Widget _buildExpandableNoticeContainer(
   Column _buildItemList(List<String> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) {
-        return _buildNoticeItem(item);
-      }).toList(),
+      children: items.map((item) => _buildNoticeItem(item)).toList(),
     );
   }
 
@@ -123,7 +125,7 @@ Widget _buildExpandableNoticeContainer(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStatusRow(status, userName),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           if (additionalDetails.isNotEmpty) _buildAdditionalDetails(additionalDetails),
         ],
       ),
@@ -137,24 +139,24 @@ Widget _buildExpandableNoticeContainer(
         Expanded(
           child: Text(
             status,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
+              color: Color(0xff1E2E52), // Исправлен цвет
             ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Flexible(
           child: Text(
             userName,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
+              color: Color(0xff1E2E52), // Исправлен цвет
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
@@ -174,7 +176,7 @@ Widget _buildExpandableNoticeContainer(
             Expanded(
               child: Text(
                 detail,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
@@ -189,71 +191,77 @@ Widget _buildExpandableNoticeContainer(
       }).toList(),
     );
   }
-List<String> _buildNoticeHistoryItems(List<NoticeHistory> history, int noteId) {
-  return history.expand((entry) {
-    if (entry.id == noteId) {
-      return entry.history.map((historyItem) {
-        final formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(historyItem.date.toLocal());
-        String actionDetail = '${historyItem.status}\n${historyItem.user?.name ?? "Unknown"} $formattedDate';
 
-        if (historyItem.changes.isNotEmpty) {
-          for (var change in historyItem.changes) {
-            if (change.body.isNotEmpty && change.body is Map) {
-              change.body.forEach((key, value) {
-                if (value is Map) {
-                  if (key == "notifications_sent") {
-                    actionDetail += '\nУведомления: ${_parseNotifications(value["new_value"])}';
-                    if (value["previous_value"] != null) {
-                      actionDetail += '\nПредыдущие уведомления: ${_parseNotifications(value["previous_value"])}';
+  List<String> _buildNoticeHistoryItems(List<NoticeHistory> history, int noteId) {
+    return history.expand((entry) {
+      if (entry.id == noteId) {
+        return entry.history.map((historyItem) {
+          final formattedDate =
+              DateFormat('dd.MM.yyyy HH:mm').format(historyItem.date.toLocal());
+          String actionDetail =
+              '${historyItem.status ?? "Неизвестный статус"}\n${historyItem.user?.name ?? "Unknown"} $formattedDate';
+
+          if (historyItem.changes.isNotEmpty) {
+            for (var change in historyItem.changes) {
+              if (change.body.isNotEmpty && change.body is Map) {
+                change.body.forEach((key, value) {
+                  if (value is Map) {
+                    final newValue = value["new_value"]?.toString() ?? "Не указано";
+                    final previousValue =
+                        value["previous_value"]?.toString() ?? "Не указано";
+
+                    if (key == "notifications_sent") {
+                      actionDetail +=
+                          '\nУведомления: ${_parseNotifications(newValue)}';
+                      if (value["previous_value"] != null) {
+                        actionDetail +=
+                            '\nПредыдущие уведомления: ${_parseNotifications(previousValue)}';
+                      }
+                    } else if (key == "title") {
+                      actionDetail += '\nТематика: $previousValue > $newValue';
+                    } else if (key == "date") {
+                      final previousDate = DateTime.tryParse(previousValue) ?? DateTime.now();
+                      final newDate = DateTime.tryParse(newValue) ?? DateTime.now();
+                      final formattedPreviousDate =
+                          DateFormat('dd.MM.yyyy HH:mm').format(previousDate);
+                      final formattedNewDate =
+                          DateFormat('dd.MM.yyyy HH:mm').format(newDate);
+                      actionDetail +=
+                          '\nНапоминание: $formattedPreviousDate > $formattedNewDate';
+                    } else if (key == "body") {
+                      actionDetail += '\nОписание: $previousValue > $newValue';
                     }
-                  } else if (key == "title") {
-                    actionDetail += '\nТематика: ${value["previous_value"]} > ${value["new_value"]}';
-                  } else if (key == "date") {
-                    DateTime previousDate = DateTime.parse(value["previous_value"]);
-                    DateTime newDate = DateTime.parse(value["new_value"]);
-                    String formattedPreviousDate = DateFormat('dd.MM.yyyy HH:mm').format(previousDate);
-                    String formattedNewDate = DateFormat('dd.MM.yyyy HH:mm').format(newDate);
-
-                    actionDetail += '\nНапоминание: $formattedPreviousDate > $formattedNewDate';
-                  } else if (key == "lead") {
-                    actionDetail += '\nЛид: ${value["previous_value"]} > ${value["new_value"]}';
-                  } else if (key == "body") {
-                    actionDetail += '\nОписание: ${value["previous_value"]} > ${value["new_value"]}';
-                  } else {
-                    // actionDetail += '\nИзменения по $key: Новое значение: ${value["new_value"]}, Предыдущее значение: ${value["previous_value"]}';
                   }
-                }
-              });
-            } else {
-              // actionDetail += '\nИзменения: ${change.body}';
+                });
+              }
             }
           }
-        }
-
-        return actionDetail;
-      });
-    } else {
-      return <String>[];
-    }
-  }).toList();
-}
-
-String _parseNotifications(dynamic notifications) {
-  if (notifications is String) {
-    try {
-      List<dynamic> parsed = jsonDecode(notifications);
-      return parsed.map((n) {
-        switch (n) {
-          case "morning_reminder":
-            return "утреннее напоминание";
-          default:
-            return n;
-        }
-      }).join(", ");
-    } catch (e) {
-      return notifications;
-    }
+          return actionDetail;
+        });
+      } else {
+        return <String>[];
+      }
+    }).toList();
   }
-  return notifications.toString();
-}
+
+  String _parseNotifications(dynamic notifications) {
+    if (notifications is String) {
+      try {
+        List<dynamic> parsed = jsonDecode(notifications);
+        return parsed.map((n) {
+          switch (n) {
+            case "morning_reminder":
+              return "утреннее напоминание";
+            case "two_hours_before":
+              return "за два часа";
+            default:
+              return n.toString();
+          }
+        }).join(", ");
+      } catch (e) {
+        return notifications;
+      }
+    }
+    return notifications?.toString() ?? "Не указано";
+  }
 }

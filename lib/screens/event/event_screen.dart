@@ -61,76 +61,106 @@ class _EventScreenState extends State<EventScreen>
   List<TargetFocus> targets = [];
   // final GlobalKey keyDropdown = GlobalKey(); // Добавляем ключ для dropdown
 
-// Состояние подсказок
   bool _isEventCardTutorialShown = false;
   bool _isFabTutorialShown = false;
   bool _isInProgressTabTutorialShown = false;
   bool _isCompletedTabTutorialShown = false;
+  bool _isSearchIconTutorialShown = false; // Добавлено для поиска
+  bool _isFiltrIconTutorialShown = false; // Добавлено для фильтра
 
-// Флаги для отслеживания текущего состояния подсказок
+  // Флаги для отслеживания текущего состояния подсказок
   bool _isEventCardTutorialInProgress = false;
   bool _isFabTutorialInProgress = false;
   bool _isInProgressTabTutorialInProgress = false;
   bool _isCompletedTabTutorialInProgress = false;
+  bool _isSearchIconTutorialInProgress = false; // Добавлено для поиска
+  bool _isFiltrIconTutorialInProgress = false; // Добавлено для фильтра
+
+  final GlobalKey keySearchIcon = GlobalKey();
+  final GlobalKey keyFiltrIcon = GlobalKey();
 
   void _initTutorialTargets() {
-      targets.addAll([
-    createTarget(
-      identify: "EventCard",
-      keyTarget: keyEventCard,
-      title: AppLocalizations.of(context)!.translate('EventCard'),
-      description: AppLocalizations.of(context)!.translate('evetnCardDescription'),
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.below,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "FloatingActionButton",
-      keyTarget: keyFloatingActionButton,
-      title: AppLocalizations.of(context)!.translate('addEvent'),
-      description: AppLocalizations.of(context)!.translate('addEventDescription'),
-      align: ContentAlign.top,
-      context: context,
-    ),
-    createTarget(
-      identify: "InProgressTab",
-      keyTarget: _tabKeys[0],
-      title: AppLocalizations.of(context)!.translate('События в процессе'),
-      description: AppLocalizations.of(context)!.translate('Здесь хранятся события, которые находятся в процессе выполнения'),
-      align: ContentAlign.bottom,
-      context: context,
-    ),
-    createTarget(
-      identify: "CompletedTab",
-      keyTarget: _tabKeys[1],
-      title: AppLocalizations.of(context)!.translate('Завершенные события'),
-      description: AppLocalizations.of(context)!.translate('Здесь хранятся события, которые уже завершены'),
-      align: ContentAlign.bottom,
-      context: context,
-    ),
-  ]);
+    targets.addAll([
+      createTarget(
+        identify: "EventCard",
+        keyTarget: keyEventCard,
+        title: AppLocalizations.of(context)!.translate('EventCard'),
+        description:
+            AppLocalizations.of(context)!.translate('evetnCardDescription'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.below,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "FloatingActionButton",
+        keyTarget: keyFloatingActionButton,
+        title: AppLocalizations.of(context)!.translate('addEvent'),
+        description:
+            AppLocalizations.of(context)!.translate('addEventDescription'),
+        align: ContentAlign.top,
+        context: context,
+      ),
+      createTarget(
+        identify: "InProgressTab",
+        keyTarget: _tabKeys[0],
+        title: AppLocalizations.of(context)!.translate('events_in_progress'),
+        description: AppLocalizations.of(context)!.translate(
+            'events_in_progress_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      createTarget(
+        identify: "CompletedTab",
+        keyTarget: _tabKeys[1],
+        title: AppLocalizations.of(context)!.translate('completed_events'),
+        description: AppLocalizations.of(context)!
+            .translate('completed_events_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      createTarget(
+        identify: "EventSearchIcon",
+        keyTarget: keySearchIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_event_screen_search_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "EventFiltrIcon",
+        keyTarget: keyFiltrIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_menu_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_lead_screen_menu_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+    ]);
   }
 
 // Загрузка состояния подсказок
-  Future<void> _loadFeatureState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isEventCardTutorialShown =
-          prefs.getBool('isNoticeCardTutorialShow') ?? false;
-      _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
-      _isInProgressTabTutorialShown =
-          prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
-      _isCompletedTabTutorialShown =
-          prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
-    });
-  }
-
+Future<void> _loadFeatureState() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  setState(() {
+    _isEventCardTutorialShown = prefs.getBool('isNoticeCardTutorialShow') ?? false;
+    _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
+    _isInProgressTabTutorialShown = prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
+    _isCompletedTabTutorialShown = prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
+    _isSearchIconTutorialShown = prefs.getBool('isSearchIconTutorialShown') ?? false; // Добавлено
+    _isFiltrIconTutorialShown = prefs.getBool('isFiltrIconTutorialShown') ?? false; // Добавлено
+  });
+}
 // Показ подсказок
   void showTutorial(String tutorialType) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 500));
 
     // Определение целевого объекта для подсказки
     TargetFocus? targetFocus;
@@ -155,7 +185,7 @@ class _EventScreenState extends State<EventScreen>
         if (isShown || isInProgress) return;
         _isEventCardTutorialInProgress = true;
         onFinish = () {
-          prefs.setBool('isNoticeCardTutorialShows', true);
+          prefs.setBool('isNoticeCardTutorialShow', true);
           setState(() {
             _isEventCardTutorialShown = true;
           });
@@ -173,6 +203,32 @@ class _EventScreenState extends State<EventScreen>
             _isFabTutorialShown = true;
           });
           _isFabTutorialInProgress = false;
+        };
+        break;
+      case "EventSearchIcon":
+        isShown = _isSearchIconTutorialShown;
+        isInProgress = _isSearchIconTutorialInProgress;
+        if (isShown || isInProgress) return;
+        _isSearchIconTutorialInProgress = true;
+        onFinish = () {
+          prefs.setBool('isSearchIconTutorialShown', true);
+          setState(() {
+            _isSearchIconTutorialShown = true;
+          });
+          _isSearchIconTutorialInProgress = false;
+        };
+        break;
+      case "EventFiltrIcon":
+        isShown = _isFiltrIconTutorialShown;
+        isInProgress = _isFiltrIconTutorialInProgress;
+        if (isShown || isInProgress) return;
+        _isFiltrIconTutorialInProgress = true;
+        onFinish = () {
+          prefs.setBool('isFiltrIconTutorialShown', true);
+          setState(() {
+            _isFiltrIconTutorialShown = true;
+          });
+          _isFiltrIconTutorialInProgress = false;
         };
         break;
       case "InProgressTab":
@@ -561,6 +617,8 @@ class _EventScreenState extends State<EventScreen>
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
+          SearchIconKey: keySearchIcon,
+          menuIconKey: keyFiltrIcon,
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
               : localizations!.translate('events'),

@@ -33,7 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _selectedOrganization;
   final ApiService _apiService = ApiService();
   bool _hasPermissionToAddLeadAndSwitch = false;
-
+  bool _hasPermissionForOneC = false; // Новая переменная для lead.oneC
   // Добавляем переменные для подсказок
   final GlobalKey keyOrganizationWidget = GlobalKey();
   final GlobalKey keyProfileEdit = GlobalKey();
@@ -65,8 +65,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return [];
   }
 
-
-
   Future<void> _loadOrganizations() async {
     final cachedOrganizations = await _getOrganizationsFromCache();
     final currentState = context.read<OrganizationBloc>().state;
@@ -85,7 +83,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       context.read<OrganizationBloc>().add(FetchOrganizations());
     }
-   
   }
 
   @override
@@ -162,10 +159,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .translate('tutorial_profile_toggle_feature_title'),
         description: AppLocalizations.of(context)!
             .translate('tutorial_profile_toggle_feature_description'),
-        align: ContentAlign.bottom,
+        // Изменяем расположение подсказки на верхнее
+        align: ContentAlign.top,
         context: context,
-        contentPosition: ContentPosition.above,
+        contentPosition: ContentPosition.below,
       ),
+
       createTarget(
         identify: "profileUpdateWidget1C",
         keyTarget: keyUpdateWidget1C,
@@ -248,7 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Показать подсказку, если нужно
   void _showTutorialIfNeeded() {
-      _initTutorialTargets();
+    _initTutorialTargets();
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorial();
@@ -263,13 +262,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
 
-    if (!isTutorialShown) {
-      // Фильтруем targets, чтобы исключить ToggleFeatureButton, если у пользователя нет прав
+    if (!isTutorialShown)
+     {
+      // Фильтруем targets, исключая ToggleFeatureButton и UpdateWidget1C, если условий для их отображения нет
       List<TargetFocus> visibleTargets = targets.where((target) {
-        if (target.identify != "profileToggleFeature") {
-          return true;
+        // Проверка для ToggleFeatureButton
+        if (target.identify == "profileToggleFeature") {
+          return _hasPermissionToAddLeadAndSwitch;
         }
-        return _hasPermissionToAddLeadAndSwitch;
+        // Проверка для UpdateWidget1C
+        if (target.identify == "profileUpdateWidget1C") {
+          return _hasPermissionForOneC; // Показываем только если есть lead.oneC
+        }
+        // Все остальные targets отображаются всегда
+        return true;
       }).toList();
 
       TutorialCoachMark(
@@ -300,7 +306,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               visibleTargets.indexWhere((t) => t.identify == target.identify);
           if (currentIndex < visibleTargets.length - 1) {
             final nextTarget = visibleTargets[currentIndex + 1];
-
             if (nextTarget.keyTarget != null) {
               await Future.delayed(Duration(milliseconds: 300));
               _scrollToTarget(nextTarget.keyTarget!);
@@ -325,9 +330,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _checkPermission() async {
-    bool hasPermission = await _apiService.hasPermission('lead.create');
+    bool hasLeadCreatePermission =
+        await _apiService.hasPermission('lead.create');
+    bool hasLeadOneCPermission = await _apiService.hasPermission('lead.oneC');
     setState(() {
-      _hasPermissionToAddLeadAndSwitch = hasPermission;
+      _hasPermissionToAddLeadAndSwitch = hasLeadCreatePermission;
+      _hasPermissionForOneC = hasLeadOneCPermission;
     });
   }
 
@@ -342,9 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (firstOrganization != null) {
         _onOrganizationChanged(firstOrganization);
       }
-      
     }
-    
   }
 
   Future<String?> _getFirstOrganization() async {
@@ -377,7 +383,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: Padding(
@@ -405,8 +410,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             orElse: () => state.organizations.first,
                           )
                         : state.organizations.first;
-                      
-                       _showTutorialIfNeeded();
+
+                    _showTutorialIfNeeded();
 
                     return Column(
                       children: [
@@ -421,8 +426,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         LogoutButtonWidget(key: keyLogoutButton),
                         if (_hasPermissionToAddLeadAndSwitch)
                           ToggleFeatureButton(key: keyToggleFeature),
-                        UpdateWidget1C(
-                            key: keyUpdateWidget1C, organization: selectedOrg),
+                        if (_hasPermissionForOneC) // Условие для UpdateWidget1C
+                          UpdateWidget1C(
+                            key: keyUpdateWidget1C,
+                            organization: selectedOrg,
+                          ),
                       ],
                     );
                   } else if (state is OrganizationError) {
