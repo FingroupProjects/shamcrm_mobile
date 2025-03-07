@@ -798,8 +798,13 @@
       "phone_call": "",
       "call_duration": "Продолжительность звонка",
       "call_ringing_duration": "Продолжительность гудка",
-      "outgoing_call_unanswered": "Исходящий звонок без ответа",
+      "outgoing_call_unanswered": "Исходящий звонок/Без ответа",
       "missed_call": "Пропущенный звонок",
-      "incoming_call": "Входящий звонок"
-      
-  }
+      "incoming_call": "Входящий звонок",
+      "outgoing_call":"Исходящий звонок",
+      "meneger_code": "Код менеджера: ",
+      "events_in_progress": "События в процессе",
+      "events_in_progress_description": "Здесь хранятся события, которые находятся в процессе выполнения",
+      "completed_events": "Завершенные события",
+      "completed_events_description": "Здесь хранятся события, которые уже завершены",
+      "tutorial_event_screen_search_description": "Используйте строку поиска, чтобы быстро найти заметки"  }

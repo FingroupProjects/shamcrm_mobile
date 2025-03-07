@@ -776,7 +776,22 @@
       "tutorial_lead_screen_search_description": "Use the search bar to quickly find a lead by name, phone number, email, or contacts.",
       "tutorial_lead_screen_menu_description": "Here you will find a filter to sort clients. The 'Events' section (notes related to the client) and the 'My Tasks' section are highlighted separately. The 'My Tasks' section contains tasks created by you.",
       "tutorial_deal_screen_search_description": "Use the search bar to quickly find a deal by name, phone number, or lead name.",
-      "tutorial_deal_screen_menu_description": "Here you will find a filter to sort deals. The 'Events' section (notes related to the client) and the 'My Tasks' section are highlighted separately. The 'My Tasks' section contains tasks created by you."
+      "tutorial_deal_screen_menu_description": "Here you will find a filter to sort deals. The 'Events' section (notes related to the client) and the 'My Tasks' section are highlighted separately. The 'My Tasks' section contains tasks created by you.",
+      "call_recording": "",
+      "phone_call": "",
+      "call_duration": "Call duration",
+      "call_ringing_duration": "Ringing duration",
+      "outgoing_call_unanswered": "Outgoing call/Unanswered",
+      "missed_call": "Missed call",
+      "incoming_call": "Incoming call",
+      "outgoing_call": "Outgoing call",
+      "meneger_code": "Manager code: ",
+      "events_in_progress": "Events in progress",
+      "events_in_progress_description": "Here are stored events that are in progress",
+      "completed_events": "Completed events",
+      "completed_events_description": "Here are stored events that have already been completed",
+      "tutorial_event_screen_search_description": "Use the search bar to quickly find notes"
+
 
 
       

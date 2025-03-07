@@ -52,7 +52,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Duration _position = Duration.zero; // Текущая позиция воспроизведения
   final GlobalKey keyDealHistory = GlobalKey();
   List<TargetFocus> targets = [];
-  final String baseUrl = 'https://fingroupcrm-back.shamcrm.com';
+  final ApiService apiService =
+      ApiService(); // Создаем экземпляр здесь или получаем через провайдер
   @override
   void initState() {
     super.initState();
@@ -443,78 +444,121 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
     });
   }
-Widget _buildVoicePlayer(String? recordPath) {
-  if (recordPath == null || recordPath.isEmpty) {
-    return const Text('Запись не найдена',
-        style: TextStyle(color: Color(0xFFE53935)));
-  }
-  String audioUrl = '${baseUrl.replaceAll('/api', '')}/storage/$recordPath';
-  print('AUDIO URL: $audioUrl');
-  bool isLoading = false;
-  final audioController = VoiceController(
-    audioSrc: audioUrl,
-    onComplete: () => print('Audio completed'),
-    onPause: () => print('Audio paused'),
-    onPlaying: () => print('Audio playing'),
-    onError: (err) {
-      print('Audio error: $err');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: $err'), backgroundColor: const Color(0xFFE53935)),
+
+  Widget _buildVoicePlayer(
+      String? recordPath, int? callDuration, ApiService apiService) {
+    if (recordPath == null || recordPath.isEmpty) {
+      return const Text(
+        'Запись не найдена',
+        style: TextStyle(color: Color(0xFFE53935)),
       );
-    },
-    maxDuration: const Duration(seconds: 300),
-    isFile: false,
-  );
-  
-  return StatefulBuilder(
-    builder: (context, setState) {
-      return Container(
-        margin: const EdgeInsets.only(top: 8, bottom: 8),
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: isLoading
-                ? null
-                : () async {
-                    setState(() => isLoading = true);
-                    try {
-                      await audioController.play();
-                    } catch (e) {
-                      print('Play error: $e');
-                    } finally {
-                      setState(() => isLoading = false);
-                    }
-                  },
-              child: VoiceMessageView(
-                innerPadding: 8,
-                backgroundColor: ChatSmsStyles.messageBubbleSenderColor,
-                activeSliderColor: Colors.white,
-                circlesColor: Colors.white.withOpacity(.2),
-                controller: audioController,
-                counterTextStyle: const TextStyle(
-                  color: Colors.white,
+    }
+
+    String audioUrl = apiService.getRecordingUrl(recordPath);
+    print('AUDIO URL: $audioUrl');
+
+    // Format the duration for display
+    String formatDuration(Duration duration) {
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final minutes = twoDigits(duration.inMinutes.remainder(60));
+      final seconds = twoDigits(duration.inSeconds.remainder(60));
+      return '$minutes:$seconds';
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 2,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  if (_isPlaying) {
+                    await _audioPlayer.pause();
+                    setState(() {
+                      _isPlaying = false;
+                    });
+                  } else {
+                    await _audioPlayer.setSourceUrl(audioUrl);
+                    await _audioPlayer.resume();
+                    setState(() {
+                      _isPlaying = true;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: Colors.blue,
+                    size: 24,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              '', // Time would go here if available
-              style: TextStyle(
-                fontSize: 12,
-                color: ChatSmsStyles.appBarTitleColor,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
+              const SizedBox(width: 12),
+              Text(
+                formatDuration(_position),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xff1E2E52),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                ),
               ),
-            )
-          ],
-        ),
-      );
-    },
-  );
-}
+              const SizedBox(width: 8),
+              Expanded(
+                child: Slider(
+                  value: _position.inSeconds.toDouble(),
+                  min: 0.0,
+                  max: _duration.inSeconds > 0
+                      ? _duration.inSeconds.toDouble()
+                      : (callDuration ?? 0).toDouble(),
+                  activeColor: Colors.blue,
+                  inactiveColor: Colors.grey[300],
+                  onChanged: (value) async {
+                    final newPosition = Duration(seconds: value.toInt());
+                    await _audioPlayer.seek(newPosition);
+                    setState(() {
+                      _position = newPosition;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                formatDuration(Duration(seconds: callDuration ?? 0)),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xff1E2E52),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildFinishButton(Notice notice, {Key? key}) {
     if (notice.isFinished) {
       return const SizedBox.shrink();
@@ -587,27 +631,27 @@ Widget _buildVoicePlayer(String? recordPath) {
     );
   }
 
-  Widget _buildExpandableText(String label, String value, double maxWidth) {
-    final TextStyle style = TextStyle(
-      fontSize: 16,
-      fontFamily: 'Gilroy',
-      fontWeight: FontWeight.w500,
-      color: Color(0xff1E2E52),
-      backgroundColor: Colors.white,
-    );
+  // Widget _buildExpandableText(String label, String value, double maxWidth) {
+  //   final TextStyle style = TextStyle(
+  //     fontSize: 16,
+  //     fontFamily: 'Gilroy',
+  //     fontWeight: FontWeight.w500,
+  //     color: Color(0xff1E2E52),
+  //     backgroundColor: Colors.white,
+  //   );
 
-    return GestureDetector(
-      onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-      child: Text(
-        value,
-        style: style.copyWith(
-          decoration: TextDecoration.underline,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
+  //   return GestureDetector(
+  //     onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+  //     child: Text(
+  //       value,
+  //       style: style.copyWith(
+  //         decoration: TextDecoration.underline,
+  //       ),
+  //       maxLines: 1,
+  //       overflow: TextOverflow.ellipsis,
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -826,7 +870,7 @@ Widget _buildVoicePlayer(String? recordPath) {
         'label': AppLocalizations.of(context)!.translate('date'),
         'value': notice.date != null
             ? formatDate(notice.date.toString())
-            : AppLocalizations.of(context)!.translate('not_specified'),
+            : AppLocalizations.of(context)!.translate('call_recording'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),
@@ -838,7 +882,7 @@ Widget _buildVoicePlayer(String? recordPath) {
         'label': AppLocalizations.of(context)!.translate('author_details'),
         'value': notice.author != null
             ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
+            : AppLocalizations.of(context)!.translate('call_recording'),
       },
       {
         'label': AppLocalizations.of(context)!.translate('created_at_details'),
@@ -890,22 +934,34 @@ Widget _buildVoicePlayer(String? recordPath) {
       });
     }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: details.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _buildDetailItem(
-            details[index]['label']!,
-            details[index]['value']!,
-            leadId,
-            notice, // Передаем объект notice для доступа к call
-            index, // Передаем индекс для проверки, является ли это записью звонка
-          ),
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: details.length,
+          itemBuilder: (context, index) {
+            // Apply padding to all items except the last one if it's a call recording
+            bool isLastItemCallRecording = notice.call != null &&
+                index == details.length - 1 &&
+                details[index]['label'] ==
+                    AppLocalizations.of(context)!.translate('call_recording');
+            return Padding(
+              padding: !isLastItemCallRecording
+                  ? const EdgeInsets.symmetric(vertical: 6)
+                  : EdgeInsets.zero,
+              child: _buildDetailItem(
+                details[index]['label']!,
+                details[index]['value']!,
+                leadId,
+                notice,
+                index,
+              ),
+            );
+          },
+        )
+      ],
     );
   }
 
@@ -978,62 +1034,69 @@ Widget _buildVoicePlayer(String? recordPath) {
     return '$minutes:$seconds';
   }
 
- Widget _buildDetailItem(
-    String label, String value, int leadId, Notice notice, int index) {
-  return LayoutBuilder(
-    builder: (BuildContext context, BoxConstraints constraints) {
-      if (label == AppLocalizations.of(context)!.translate('assignee') &&
-          value.contains(',')) {
-        label = AppLocalizations.of(context)!.translate('assignees');
-      }
-
-      if (notice.call != null &&
-          (label == AppLocalizations.of(context)!.translate('caller') ||
-              label ==
-                  AppLocalizations.of(context)!.translate('internal_number') ||
-              label ==
-                  AppLocalizations.of(context)!.translate('call_duration') ||
-              label ==
-                  AppLocalizations.of(context)!
-                      .translate('call_ringing_duration'))) {
-        bool isMissed = notice.call!.missed ?? false;
-        bool isIncoming = notice.call!.incoming ?? false;
-        Color statusColor;
-        String statusText;
-
-        if (!isMissed && isIncoming) {
-          statusColor = const Color(0xffE6F4EA);
-          statusText = AppLocalizations.of(context)!.translate('incoming_call');
-        } else if (isMissed && isIncoming) {
-          statusColor = const Color(0xffFEE6E6);
-          statusText = AppLocalizations.of(context)!.translate('missed_call');
-        } else {
-          statusColor = const Color(0xffE6F4EA);
-          statusText = AppLocalizations.of(context)!
-              .translate('outgoing_call_unanswered');
+  Widget _buildDetailItem(
+      String label, String value, int leadId, Notice notice, int index) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (label == AppLocalizations.of(context)!.translate('assignee') &&
+            value.contains(',')) {
+          label = AppLocalizations.of(context)!.translate('assignees');
         }
 
-        if (label == AppLocalizations.of(context)!.translate('caller')) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xffF5F7FA),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Text(
-                //   AppLocalizations.of(context)!.translate('phone_call'),
-                //   style: const TextStyle(
-                //     fontSize: 16,
-                //     fontFamily: 'Gilroy',
-                //     fontWeight: FontWeight.w600,
-                //     color: Color(0xff1E2E52),
-                //   ),
-                // ),
-                // const SizedBox(height: 12),
-                //   const SizedBox(height: 12),
+        if (notice.call != null &&
+            (label == AppLocalizations.of(context)!.translate('caller') ||
+                label ==
+                    AppLocalizations.of(context)!
+                        .translate('internal_number') ||
+                label ==
+                    AppLocalizations.of(context)!.translate('call_duration') ||
+                label ==
+                    AppLocalizations.of(context)!
+                        .translate('call_ringing_duration'))) {
+          bool isMissed = notice.call!.missed ?? false;
+          bool isIncoming = notice.call!.incoming ?? false;
+          Color statusColor;
+          String statusText;
+
+          if (!isMissed && isIncoming) {
+            statusColor = const Color(0xffE6F4EA);
+            statusText =
+                AppLocalizations.of(context)!.translate('incoming_call');
+          } else if (isMissed && isIncoming) {
+            statusColor = const Color(0xffFEE6E6);
+            statusText = AppLocalizations.of(context)!.translate('missed_call');
+          } else if (!isMissed && !isIncoming) {
+            statusColor = const Color(
+                0xffE6F4EA); // Можно выбрать другой цвет, если нужно
+            statusText =
+                AppLocalizations.of(context)!.translate('outgoing_call');
+          } else {
+            statusColor = const Color(0xffFEE6E6);
+            statusText = AppLocalizations.of(context)!
+                .translate('outgoing_call_unanswered');
+          }
+
+          if (label == AppLocalizations.of(context)!.translate('caller')) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xffF5F7FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Text(
+                  //   AppLocalizations.of(context)!.translate('phone_call'),
+                  //   style: const TextStyle(
+                  //     fontSize: 16,
+                  //     fontFamily: 'Gilroy',
+                  //     fontWeight: FontWeight.w600,
+                  //     color: Color(0xff1E2E52),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 12),
+                  //   const SizedBox(height: 12),
                   Row(
                     children: [
                       Container(
@@ -1053,7 +1116,8 @@ Widget _buildVoicePlayer(String? recordPath) {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Лид: ',
+                        AppLocalizations.of(context)!
+                            .translate('lead_deal_card'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
@@ -1094,7 +1158,7 @@ Widget _buildVoicePlayer(String? recordPath) {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Код менеджера: ',
+                        AppLocalizations.of(context)!.translate('meneger_code'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
@@ -1103,7 +1167,7 @@ Widget _buildVoicePlayer(String? recordPath) {
                         ),
                       ),
                       Text(
-                        notice.call!.internalNumber ?? '1003',
+                        notice.call!.internalNumber ?? '',
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
@@ -1205,47 +1269,52 @@ Widget _buildVoicePlayer(String? recordPath) {
                   const SizedBox(height: 12),
                   // Status Bar
                   Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info,
-                        color: statusColor == const Color(0xffFEE6E6)
-                            ? Colors.red
-                            : Colors.green,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        statusText,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info,
                           color: statusColor == const Color(0xffFEE6E6)
                               ? Colors.red
                               : Colors.green,
+                          size: 16,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: statusColor == const Color(0xffFEE6E6)
+                                ? Colors.red
+                                : Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                // Условный рендеринг проигрывателя
-                if (notice.call!.callRecordPath != null &&
-                    !notice.call!.missed &&
-                    (notice.call!.callDuration ?? 0) > 0)
-                  _buildVoicePlayer(notice.call!.callRecordPath),
-              ],
-            ),
-          );
+                  // Условный рендеринг проигрывателя
+                  if (notice.call!.callRecordPath != null &&
+                      !notice.call!.missed &&
+                      (notice.call!.callDuration ?? 0) > 0)
+                    _buildVoicePlayer(
+                      notice.call!.callRecordPath,
+                      notice.call!.callDuration,
+                      apiService, // Добавляем третий аргумент
+                    ),
+                ],
+              ),
+            );
+          }
+          return const SizedBox.shrink();
         }
-        return const SizedBox.shrink();
-      }
         if (label == AppLocalizations.of(context)!.translate('assignees')) {
           return GestureDetector(
             onTap: () => _showUsersDialog(value),

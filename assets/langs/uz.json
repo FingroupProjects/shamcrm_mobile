@@ -775,8 +775,22 @@
     "tutorial_lead_screen_search_description": "Qidiruv maydonidan foydalanib, leadni ism, telefon raqami, email yoki kontaktlar bo‘yicha tezda toping.",
     "tutorial_lead_screen_menu_description": "Bu yerda mijozlarni saralash uchun filtr mavjud. 'Voqealar' bo‘limi (mijoz bilan bog‘liq eslatmalar) va 'Mening vazifalarim' bo‘limi alohida ajratilgan. 'Mening vazifalarim' bo‘limida siz yaratgan vazifalar joylashgan.",
     "tutorial_deal_screen_search_description": "Qidiruv maydonidan foydalanib, bitimni ism, telefon raqami yoki lead nomi bo‘yicha tezda toping.",
-    "tutorial_deal_screen_menu_description": "Bu yerda bitimlarni saralash uchun filtr mavjud. 'Voqealar' bo‘limi (mijoz bilan bog‘liq eslatmalar) va 'Mening vazifalarim' bo‘limi alohida ajratilgan. 'Mening vazifalarim' bo‘limida siz yaratgan vazifalar joylashgan."
+    "tutorial_deal_screen_menu_description": "Bu yerda bitimlarni saralash uchun filtr mavjud. 'Voqealar' bo‘limi (mijoz bilan bog‘liq eslatmalar) va 'Mening vazifalarim' bo‘limi alohida ajratilgan. 'Mening vazifalarim' bo‘limida siz yaratgan vazifalar joylashgan.",
+    "call_recording": "",
+    "phone_call": "T",
+    "call_duration": "Qo'ng'iroq davomiyligi",
+    "call_ringing_duration": "Qo'ng'iroq g'udog'i davomiyligi",
+    "outgoing_call_unanswered": "Chiqayotgan qo'ng'iroq / Javobsiz",
+    "missed_call": "O'tkazib yuborilgan qo'ng'iroq",
+    "incoming_call": "Kirish qo'ng'irog'i",
+    "outgoing_call": "Chiqayotgan qo'ng'iroq",
+    "meneger_code": "Menejer kodi: ",
+    "events_in_progress": "Jarayondagi voqealar",
+    "events_in_progress_description": "Bu yerda bajarilayotgan voqealar saqlanadi",
+    "completed_events": "Tugallangan voqealar",
+    "completed_events_description": "Bu yerda allaqachon tugallangan voqealar saqlanadi",
+    "tutorial_event_screen_search_description": "Tezda eslatmalarni topish uchun qidiruv satridan foydalaning"
+  }
 
 
 
-}
