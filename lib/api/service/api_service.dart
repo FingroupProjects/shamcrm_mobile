@@ -5846,9 +5846,19 @@ Future<Map<String, dynamic>> finishNotice(int noticeId, String conclusion) async
 
     return dataAuthor;
   }
-// String getRecordingUrl(String recordPath) {
-//     return recordPath.startsWith('/call-recordings/')
-//         ? '$baseUrl$recordPath'
-//         : recordPath;}
+String getRecordingUrl(String recordPath) {
+    if (recordPath.isEmpty) return '';
+    
+    // Если путь уже содержит полный URL, возвращаем его
+    if (recordPath.startsWith('http://') || recordPath.startsWith('https://')) {
+      return recordPath;
+    }
+    
+    // Убираем '/api' из baseUrl и добавляем путь к записи
+    String cleanBaseUrl = baseUrl?.replaceAll('/api', '') ?? '';
+    return recordPath.startsWith('/call-recordings/') 
+        ? '$cleanBaseUrl$recordPath'
+        : '$cleanBaseUrl/storage/$recordPath';
+  }
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 }

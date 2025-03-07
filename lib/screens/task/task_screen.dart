@@ -133,9 +133,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     });
     _checkPermissions();
-     WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-  });
   }
 
   Future<void> _loadUserRoles() async {
@@ -442,6 +439,19 @@ void showTutorial() async {
       // Логика отображения фильтра зависит от разрешения на создание задачи
       showFilter = hasPermission;
     });
+
+         WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+        if (!_isTutorialShown) {
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+         showTutorial();
+         setState(() {
+           _isTutorialShown = true; 
+         });
+       });
+      }
+  });
+
   }
 
   FocusNode focusNode = FocusNode();
@@ -452,14 +462,6 @@ void showTutorial() async {
 
   @override
   Widget build(BuildContext context) {
-     if (!_isTutorialShown) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showTutorial();
-              setState(() {
-                _isTutorialShown = true; 
-              });
-            });
-          }
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,

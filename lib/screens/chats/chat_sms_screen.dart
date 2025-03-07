@@ -1374,20 +1374,34 @@ print('AUDIO URL:${audioUrl}');
                   : ChatSmsStyles.messageBubbleSenderColor,
             ),
           ),
-          SizedBox(height: 4),
-          Text(
-            time(message.createMessateTime),
-            style: const TextStyle(
-              fontSize: 12,
-              color: ChatSmsStyles.appBarTitleColor,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-            ),
-          )
-        ],
-      ),
-    );
-  }
+        SizedBox(height: 4), 
+        Row( 
+          mainAxisSize: MainAxisSize.min, 
+          children: [ 
+            Text( 
+              time(message.createMessateTime), 
+              style: const TextStyle( 
+                fontSize: 12, 
+                color: ChatSmsStyles.appBarTitleColor, 
+                fontWeight: FontWeight.w500, 
+                fontFamily: 'Gilroy', 
+              ), 
+            ), 
+            const SizedBox(width: 3), 
+            if (message.isMyMessage) 
+              Icon( 
+                message.isRead ? Icons.done_all : Icons.done_all, 
+                size: 18, 
+                color: message.isRead 
+                    ? const Color.fromARGB(255, 45, 28, 235) 
+                    : Colors.grey.shade400, 
+              ), 
+          ], 
+        ), 
+      ], 
+    ), 
+  ); 
+}
 
 void _showMessageContextMenu(BuildContext context, Message message, FocusNode focusNode) {
   final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;

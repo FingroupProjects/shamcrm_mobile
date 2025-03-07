@@ -137,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 50),
+        contentPadding: EdgeInsets.only(top: 30),
       ),
       createTarget(
         identify: "dashboardAdminTaskComplietion",
@@ -148,8 +148,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .translate('tutorial_dashboard_task_completion_description'),
         align: ContentAlign.bottom,
         context: context,
-        contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 50),
+        contentPosition: ContentPosition.below,
+        contentPadding: EdgeInsets.only(top: 10),
       ),
       createTarget(
         identify: "dashboardAdminTaskChart",
@@ -161,7 +161,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 30),
       ),
       createTarget(
         identify: "dashboardAdminGraphics",
@@ -190,10 +189,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardAdminDealStats",
         keyTarget: keyAdminDealStats,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_dashboard_deal_stats_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_dashboard_deal_stats_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -235,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 50),
+        contentPadding: EdgeInsets.only(top: 30),
       ),
       createTarget(
         identify: "dashboardManagerGoalComplietion",
@@ -246,8 +243,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .translate('tutorial_dashboard_user_goal_completion_description'),
         align: ContentAlign.bottom,
         context: context,
-        contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 50),
+        contentPosition: ContentPosition.below,
+        contentPadding: EdgeInsets.only(top: 10),
       ),
       createTarget(
         identify: "dashboardAdminGraphics",
@@ -326,10 +323,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardUserGoalComplietion",
         keyTarget: keyManagerGoalComplietion,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_dashboard_user_goal_completion_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_dashboard_user_goal_completion_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -338,14 +333,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardUserTaskChart",
         keyTarget: keyAdminTaskChart,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_dashboard_task_chart_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_dashboard_task_chart_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
-        contentPadding: EdgeInsets.only(bottom: 30),
       ),
     ]);
   }
@@ -353,9 +345,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void showTutorial() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-
-    if (!isTutorialShown)
-    {
+    
+    if (!isTutorialShown)  {
       TutorialCoachMark(
         targets: targets,
         textSkip: AppLocalizations.of(context)!.translate('skip'),

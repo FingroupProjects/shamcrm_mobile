@@ -17,12 +17,15 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_column.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_status_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class LeadScreen extends StatefulWidget {
   final int? initialStatusId;
@@ -85,6 +88,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _initialDaysWithoutActivity;
   List<int>? _selectedManagerIds;
 
+      final GlobalKey keySearchIcon = GlobalKey(); 
+    final GlobalKey keyMenuIcon = GlobalKey(); 
+
+    List<TargetFocus> targets = [];
+    bool _isTutorialShown = false;
+
+    bool _isLeadScreenTutorialCompleted = false;
+
   @override
   void initState() {
     super.initState();
@@ -125,7 +136,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     });
     // Проверка разрешений
     _checkPermissions();
-  }
+
+    }
 
   @override
   void dispose() {
@@ -134,6 +146,69 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _searchController.dispose();
     super.dispose();
   }
+
+  void _initTutorialTargets() {
+  targets.addAll([
+    createTarget(
+      identify: "LeadSearchIcon",
+      keyTarget: keySearchIcon,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_search_description'), 
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+    ),
+    createTarget(
+      identify: "LeadMenuIcon",
+      keyTarget: keyMenuIcon,
+      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
+      description: AppLocalizations.of(context)!.translate('tutorial_lead_screen_menu_description'), 
+      align: ContentAlign.bottom,
+      context: context,
+      contentPosition: ContentPosition.above,
+    ),
+  ]);
+}
+
+void showTutorial() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
+
+  if (!isTutorialShown)  {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onSkip: () {
+        prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
+          setState(() {
+          _isLeadScreenTutorialCompleted = true;
+        });
+        return true;
+      },
+      onFinish: () {
+        prefs.setBool('isTutorialShownLeadSearchIconAppBar', true);
+        setState(() {
+          _isLeadScreenTutorialCompleted = true; 
+        });
+      },
+    ).show(context: context);
+  }
+}
   
 Future<void> _searchLeads(String query, int currentStatusId) async {
   final leadBloc = BlocProvider.of<LeadBloc>(context);
@@ -272,6 +347,19 @@ void _resetFilters() {
       _canCreateLeadStatus = canCreate;
       _canDeleteLeadStatus = canDelete;
     });
+
+     WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initTutorialTargets(); 
+        if (!_isTutorialShown) {
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+         showTutorial();
+         setState(() {
+           _isTutorialShown = true; 
+         });
+       });
+      }
+  });
+
   }
 
   FocusNode focusNode = FocusNode();
@@ -281,12 +369,15 @@ void _resetFilters() {
   bool isClickAvatarIcon = false;
   @override
   Widget build(BuildContext context) {
+
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
+          SearchIconKey: keySearchIcon,
+          menuIconKey: keyMenuIcon,
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
               : localizations!.translate('appbar_leads'),
@@ -888,6 +979,7 @@ void _showStatusOptions(BuildContext context, int index) {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
                 return LeadColumn(
+                  isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
                   statusId: statusId,
                   title: title,
                   onStatusId: (newStatusId) {

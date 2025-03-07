@@ -87,62 +87,72 @@ class _GraphicsDashboardStateManager extends State<GraphicsDashboardManager> {
 
           List<List<ChartDataManager>> paginatedData = _paginateData(state.chartData);
 
-          return Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localizations.translate('clients'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+   return Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+              key: widget.lineChartKey,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localizations.translate('clients'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 300,
-                  child: _isAllZeros(state.chartData)
-                      ? Stack(
-                          children: [
-                            LineChart(
-                              _buildEmptyChartData(),
-                              key: widget.lineChartKey,
-                            ),
-                            Center(
-                              child: Container(
-                                padding: EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(0, 0, 0, 0).withOpacity(0),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                localizations.translate('no_data_to_display'),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: "Gilroy",
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 300,
+                    child: _isAllZeros(state.chartData)
+                        ? Stack(
+                            children: [
+                              LineChart(
+                                _buildEmptyChartData(),
+                              ),
+                              Center(
+                                child: Container(
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromARGB(0, 0, 0, 0).withOpacity(0),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                  localizations.translate('no_data_to_display'),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: "Gilroy",
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black54,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        )
-                      : LineChart(
-                          _buildChartData(state.chartData),
-                          key: widget.lineChartKey,
-                        ),
+                            ],
+                          )
+                        : LineChart(
+                            _buildChartData(state.chartData),
+                          ),
+                  ),
+                ],
+              ),
+              Container(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatsList(paginatedData[currentPage]),
+                    _buildPagination(paginatedData),
+                  ],
                 ),
-                _buildStatsList(paginatedData[currentPage]),
-                _buildPagination(paginatedData),
-              ],
-            ),
-          );
-        }
-
+              ),
+            ],
+          ),
+        );
+      }
         return const Center(
           child: Text(
             '',

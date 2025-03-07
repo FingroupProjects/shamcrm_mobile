@@ -15,7 +15,7 @@ class LeadCard extends StatefulWidget {
   final GlobalKey? dropdownStatusKey;
 
   LeadCard({
-    Key? key, 
+    Key? key,
     required this.lead,
     required this.title,
     required this.statusId,
@@ -27,7 +27,6 @@ class LeadCard extends StatefulWidget {
   @override
   _LeadCardState createState() => _LeadCardState();
 }
-
 
 class _LeadCardState extends State<LeadCard> {
   late String dropdownValue;
@@ -89,14 +88,14 @@ class _LeadCardState extends State<LeadCard> {
     'WhatsApp': 'assets/icons/leads/whatsapp.png',
     'Facebook': 'assets/icons/leads/facebook.png',
     'Инстаграм': 'assets/icons/leads/instagram.png',
+    'Телефон': 'assets/icons/leads/telefon.png',
+    'Электронная почта': 'assets/icons/leads/email.png'
   };
   Widget _buildHourglassIcon() {
-    // Если leadStatus.isSuccess равен true, возвращаем пустой контейнер
     if (widget.lead.leadStatus?.isSuccess ?? false) {
       return Container();
     }
 
-    // В противном случае показываем иконку с таймером и отступом
     return Row(
       children: [
         Container(
@@ -130,7 +129,8 @@ class _LeadCardState extends State<LeadCard> {
 
   @override
   Widget build(BuildContext context) {
-    String iconPath = sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
+    String iconPath =
+        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -334,7 +334,10 @@ class _LeadCardState extends State<LeadCard> {
                         color: Color(0xFFE9EDF5),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(widget.lead.manager?.name ?? AppLocalizations.of(context)!.translate('system_text'),
+                      child: Text(
+                        widget.lead.manager?.name ??
+                            AppLocalizations.of(context)!
+                                .translate('system_text'),
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
