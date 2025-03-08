@@ -297,7 +297,7 @@ void showTutorial() async {
 
     final Map<int, String> priorityLevels = {
       1: AppLocalizations.of(context)!.translate('normal'),
-      2: AppLocalizations.of(context)!.translate('urgent'),
+      2: AppLocalizations.of(context)!.translate('normal'),
       3: AppLocalizations.of(context)!.translate('urgent'),
     };
 
@@ -1050,50 +1050,38 @@ Widget build(BuildContext context) {
   }
 
   Color _getPriorityBackgroundColor(String priority) {
-    // Создаем Map для сопоставления приоритетов и цветов
     final priorityColors = {
-      AppLocalizations.of(context)!.translate('urgent'):
-          Color(0xFFFFEBEE), // Срочный
-      AppLocalizations.of(context)!.translate('normal'):
-          Color(0xFFE8F5E9), // Важный
-      AppLocalizations.of(context)!.translate('normal'):
-          Color(0xFFE8F5E9), // Обычный
+
+      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), 
+      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9), 
+      AppLocalizations.of(context)!.translate('urgent'): Color(0xFFFFEBEE), 
     };
-    // Возвращаем цвет из Map, либо цвет по умолчанию
     return priorityColors[priority] ?? Color(0xFFE8F5E9);
   }
 
   Color _getPriorityBorderColor(String priority) {
-    // Map для сопоставления приоритетов и цветов рамки
     final priorityBorderColors = {
-      AppLocalizations.of(context)!.translate('urgent'): Colors.red, // Срочный
-      AppLocalizations.of(context)!.translate('normal'): Colors.green, // Важный
-      AppLocalizations.of(context)!.translate('normal'):
-          Colors.green, // Обычный
+      AppLocalizations.of(context)!.translate('normal'): Colors.green, 
+      AppLocalizations.of(context)!.translate('normal'): Colors.green, 
+      AppLocalizations.of(context)!.translate('urgent'): Colors.red, 
+
     };
-    // Возвращаем цвет из Map, либо цвет по умолчанию
     return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
   }
 
   Color _getPriorityColor(String priority) {
-    // Map для сопоставления приоритетов и основных цветов
     final priorityColors = {
-      AppLocalizations.of(context)!.translate('urgent'):
-          Color(0xFFC62828), // Срочный
-      AppLocalizations.of(context)!.translate('normal'):
-          Color(0xFF2E7D32), // Важный
-      AppLocalizations.of(context)!.translate('normal'):
-          Color(0xFF2E7D32), // Обычный
+
+      AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32),
+      AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32),
+      AppLocalizations.of(context)!.translate('urgent'): Color(0xFFC62828),
     };
-    // Возвращаем цвет из Map, либо цвет по умолчанию
     return priorityColors[priority] ?? Color(0xFF2E7D32);
   }
 
   Future<void> _showFile(String fileUrl, int fileId) async {
     try {
       if (_isDownloading) return;
-
-      // Проверяем наличие файла в постоянном кэше
       final cachedFilePath = await FileCacheManager().getCachedFilePath(fileId);
       if (cachedFilePath != null) {
         final result = await OpenFile.open(cachedFilePath);
@@ -1113,18 +1101,15 @@ Widget build(BuildContext context) {
       String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
       String? enteredDomain = enteredDomainMap['enteredDomain'];
 
-      final fullUrl = Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
+      final fullUrl = Uri.parse('https://$enteredDomain-back.$enteredMainDomain/storage/$fileUrl');
 
-      // Создаём постоянную директорию для файлов
       final appDir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${appDir.path}/cached_files');
       if (!await cacheDir.exists()) {
         await cacheDir.create(recursive: true);
       }
 
-      final fileName =
-          '${fileId}_${fileUrl.split('/').last}'; // Добавляем fileId к имени файла
+      final fileName = '${fileId}_${fileUrl.split('/').last}';
       final filePath = '${cacheDir.path}/$fileName';
 
       final dio = Dio();
@@ -1137,7 +1122,6 @@ Widget build(BuildContext context) {
         }
       });
 
-      // Сохраняем информацию о файле в постоянном кэше
       await FileCacheManager().cacheFile(fileId, filePath);
 
       setState(() {
@@ -1147,8 +1131,7 @@ Widget build(BuildContext context) {
 
       final result = await OpenFile.open(filePath);
       if (result.type == ResultType.error) {
-        _showErrorSnackBar(
-            AppLocalizations.of(context)!.translate('failed_to_open_file'));
+        _showErrorSnackBar(AppLocalizations.of(context)!.translate('failed_to_open_file'));
       }
     } catch (e) {
       setState(() {
@@ -1156,8 +1139,7 @@ Widget build(BuildContext context) {
         _isDownloading = false;
       });
 
-      _showErrorSnackBar(AppLocalizations.of(context)!
-          .translate('file_download_or_open_error'));
+      _showErrorSnackBar(AppLocalizations.of(context)!.translate('file_download_or_open_error'));
     }
   }
 
@@ -1185,9 +1167,7 @@ Widget build(BuildContext context) {
   }
 
   void _showUsersDialog(String users) {
-    List<String> userList =
-        users.split(',').map((user) => user.trim()).toList();
-
+    List<String> userList = users.split(',').map((user) => user.trim()).toList();
     showDialog(
       context: context,
       builder: (BuildContext context) {

@@ -27,6 +27,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,6 +83,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   bool _isSearching = false;
   String? _searchQuery;
+
+    final AudioPlayer _audioPlayer = AudioPlayer();
+
 
  void _onSearchChanged(String query) {
     setState(() {
@@ -948,6 +952,12 @@ Widget messageListUi() {
     setState(() {
       context.read<MessagingCubit>().updateMessageFromSocket(msg);
     });
+
+        if (!msg.isMyMessage) {
+      await _audioPlayer.setAsset('assets/get.mp3');
+      await _audioPlayer.play();
+    }
+
     _scrollToBottom();
   });
     myPresenceChannel.bind('chat.messageEdited').listen((event) async {
@@ -1071,32 +1081,36 @@ myPresenceChannel.bind('chat.read').listen((event) async {
   }
 
 Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
-  // context.read<ListenSenderTextCubit>().updateValue(true);
+
+  if (replyMessageId != null) {
+    context.read<ListenSenderTextCubit>().updateValue(true);
+  }
 
   if (messageText.trim().isNotEmpty) {
     try {
-      // Создаем локальное сообщение с временным ID
       final localMessage = Message(
-        id: -DateTime.now().millisecondsSinceEpoch, // Временный отрицательный ID
+        id: -DateTime.now().millisecondsSinceEpoch, 
         text: messageText,
         type: 'text',
         createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
         isMyMessage: true,
-        senderName: '', // Или имя текущего пользователя
+        senderName: '', 
       );
 
-      // Добавляем локальное сообщение в список
       context.read<MessagingCubit>().addLocalMessage(localMessage);
 
-      // Очищаем поле ввода
+      await _audioPlayer.setAsset('assets/send.mp3');
+      await _audioPlayer.play();
+
       _messageController.clear();
 
-      // Отправляем сообщение на сервер в фоновом режиме
       await widget.apiService.sendMessage(
         widget.chatId,
         messageText.trim(),
         replyMessageId: replyMessageId,
       );
+
+
 
       context.read<ListenSenderTextCubit>().updateValue(false);
     } catch (e) {
