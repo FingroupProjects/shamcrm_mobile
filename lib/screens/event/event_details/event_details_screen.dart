@@ -27,9 +27,8 @@ import 'package:voice_message_package/voice_message_package.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final int noticeId;
-
-  EventDetailsScreen({required this.noticeId});
-
+final String? source; // Новый параметр для источника входа
+EventDetailsScreen({required this.noticeId, this.source});
   @override
   _EventDetailsScreenState createState() => _EventDetailsScreenState();
 }
@@ -653,7 +652,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   //   );
   // }
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(
@@ -664,26 +663,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           if (state is NoticeError) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
+                SnackBar(content: Text(state.message)),
               );
             });
           }
@@ -702,10 +682,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 child: ListView(
                   children: [
                     _buildDetailsList(notice),
-                    _buildFinishButton(notice,
-                        key: keyNoticeFinish), // Передаем ключ здесь
-                    NoticeHistorySection(
-                        leadId: notice.lead!.id, noteId: notice.id),
+                    _buildFinishButton(notice, key: keyNoticeFinish),
+                    // Условный рендеринг NoticeHistorySection
+                    if (widget.source != 'Lead')
+                      NoticeHistorySection(
+                        leadId: notice.lead!.id,
+                        noteId: notice.id,
+                      ),
                   ],
                 ),
               );
@@ -718,7 +701,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       ),
     );
   }
-
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -852,118 +834,120 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildDetailsList(Notice notice) {
-    late final int leadId = notice.lead!.id; // Получаем leadId
-    final List<Map<String, String>> details = [
-      {
-        'label': AppLocalizations.of(context)!.translate('title'),
-        'value': notice.title
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('lead_name'),
-        'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('body'),
-        'value': notice.body
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('date'),
-        'value': notice.date != null
-            ? formatDate(notice.date.toString())
-            : AppLocalizations.of(context)!.translate('call_recording'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('assignee'),
-        'value': notice.users
-            .map((user) => '${user.name} ${user.lastname ?? ''}')
-            .join(', '),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('author_details'),
-        'value': notice.author != null
-            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-            : AppLocalizations.of(context)!.translate('call_recording'),
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('created_at_details'),
-        'value': formatDate(notice.createdAt.toString())
-      },
-      {
-        'label': AppLocalizations.of(context)!.translate('is_finished'),
-        'value': notice.isFinished
-            ? AppLocalizations.of(context)!.translate('finished')
-            : AppLocalizations.of(context)!.translate('in_progress'),
-      },
-    ];
+  late final int leadId = notice.lead!.id;
+  final List<Map<String, String>> details = [
+    {
+      'label': AppLocalizations.of(context)!.translate('title'),
+      'value': notice.title
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('lead_name'),
+      'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('body'),
+      'value': notice.body
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('date'),
+      'value': notice.date != null
+          ? formatDate(notice.date.toString())
+          : AppLocalizations.of(context)!.translate('call_recording'),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('assignee'),
+      'value': notice.users
+          .map((user) => '${user.name} ${user.lastname ?? ''}')
+          .join(', '),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('author_details'),
+      'value': notice.author != null
+          ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
+          : AppLocalizations.of(context)!.translate('call_recording'),
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('created_at_details'),
+      'value': formatDate(notice.createdAt.toString())
+    },
+    {
+      'label': AppLocalizations.of(context)!.translate('is_finished'),
+      'value': notice.isFinished
+          ? AppLocalizations.of(context)!.translate('finished')
+          : AppLocalizations.of(context)!.translate('in_progress'),
+    },
+  ];
 
-    // Добавляем информацию о звонке, если она есть
-    if (notice.call != null) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('caller'),
-        'value': notice.call!.caller,
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('internal_number'),
-        'value': notice.call!.internalNumber ??
-            AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('call_duration'),
-        'value': notice.call!.callDuration != null
-            ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      details.add({
-        'label':
-            AppLocalizations.of(context)!.translate('call_ringing_duration'),
-        'value': notice.call!.callRingingDuration != null
-            ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate('not_specified'),
-      });
-      // Добавляем поле для записи звонка (будет отдельный виджет)
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('call_recording'),
-        'value': '',
-      });
-    }
-
-    if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
-      details.add({
-        'label': AppLocalizations.of(context)!.translate('conclusions'),
-        'value': notice.conclusion!,
-      });
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: details.length,
-          itemBuilder: (context, index) {
-            // Apply padding to all items except the last one if it's a call recording
-            bool isLastItemCallRecording = notice.call != null &&
-                index == details.length - 1 &&
-                details[index]['label'] ==
-                    AppLocalizations.of(context)!.translate('call_recording');
-            return Padding(
-              padding: !isLastItemCallRecording
-                  ? const EdgeInsets.symmetric(vertical: 6)
-                  : EdgeInsets.zero,
-              child: _buildDetailItem(
-                details[index]['label']!,
-                details[index]['value']!,
-                leadId,
-                notice,
-                index,
-              ),
-            );
-          },
-        )
-      ],
-    );
+  if (notice.call != null) {
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('caller'),
+      'value': notice.call!.caller,
+    });
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('internal_number'),
+      'value': notice.call!.internalNumber ??
+          AppLocalizations.of(context)!.translate('not_specified'),
+    });
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('call_duration'),
+      'value': notice.call!.callDuration != null
+          ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+          : AppLocalizations.of(context)!.translate('not_specified'),
+    });
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('call_ringing_duration'),
+      'value': notice.call!.callRingingDuration != null
+          ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+          : AppLocalizations.of(context)!.translate('not_specified'),
+    });
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('call_recording'),
+      'value': '',
+    });
   }
+
+  if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
+    details.add({
+      'label': AppLocalizations.of(context)!.translate('conclusions'),
+      'value': notice.conclusion!,
+    });
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: details.length,
+        itemBuilder: (context, index) {
+          // Устанавливаем одинаковый отступ для всех элементов, кроме блока звонка
+          if (notice.call != null && index >= details.length - 5) {
+            // Предполагаем, что последние 5 элементов — это поля звонка
+            return _buildDetailItem(
+              details[index]['label']!,
+              details[index]['value']!,
+              leadId,
+              notice,
+              index,
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: _buildDetailItem(
+              details[index]['label']!,
+              details[index]['value']!,
+              leadId,
+              notice,
+              index,
+            ),
+          );
+        },
+      ),
+      const SizedBox(height: 0), // Убираем лишнее пространство после списка
+    ],
+  );
+}
 
   void _showUsersDialog(String users) {
     List<String> userList =

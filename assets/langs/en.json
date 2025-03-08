@@ -790,7 +790,9 @@
       "events_in_progress_description": "Here are stored events that are in progress",
       "completed_events": "Completed events",
       "completed_events_description": "Here are stored events that have already been completed",
-      "tutorial_event_screen_search_description": "Use the search bar to quickly find notes"
+      "tutorial_event_screen_search_description": "Use the search bar to quickly find notes",
+        "tutorial_event_screen_filtr_title": "Filter",
+  "tutorial_event_screen_filtr_description": "Adjust filters to narrow down the list of events."
 
 
 

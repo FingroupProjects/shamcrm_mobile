@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CustomAppBar extends StatefulWidget {
   final GlobalKey? menuIconKey;
   final GlobalKey? SearchIconKey;
+  final GlobalKey? FiltrEventIconKey;
   final GlobalKey? NotificationIconKey;
   final GlobalKey? MyTaskIconKey;
   String title;
@@ -121,6 +122,7 @@ class CustomAppBar extends StatefulWidget {
     super.key,
     this.menuIconKey,
     this.SearchIconKey,
+    this.FiltrEventIconKey,
     this.NotificationIconKey,
     this.MyTaskIconKey,
     required this.title,
@@ -230,7 +232,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   late Animation<double> _blinkAnimation;
   bool _hasOverdueTasks = false;
 
-  bool _canReadNotice =true; 
+  bool _canReadNotice = true;
   Color _iconColor = Colors.red;
   late Timer _timer;
 
@@ -377,6 +379,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadNotice = canReadNotice;
     });
   }
+
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -756,6 +759,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                 color: Colors.black,
               ),
               child: IconButton(
+                key: widget.FiltrEventIconKey,
                 icon: Image.asset(
                   'assets/icons/AppBar/filter.png',
                   width: 24,
@@ -1001,8 +1005,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                       child: Row(
                         children: [
                           Icon(Icons.event),
-                          SizedBox(width: 8), 
-                          Text(AppLocalizations.of(context)!.translate('events')),
+                          SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!
+                              .translate('events')),
                         ],
                       ),
                     ),
@@ -1019,7 +1024,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   height: 24,
                                 ),
                           SizedBox(width: 8),
-                          Text(AppLocalizations.of(context)!.translate('filtr')),
+                          Text(
+                              AppLocalizations.of(context)!.translate('filtr')),
                         ],
                       ),
                     ),

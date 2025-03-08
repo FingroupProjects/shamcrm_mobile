@@ -789,7 +789,9 @@
     "events_in_progress_description": "Bu yerda bajarilayotgan voqealar saqlanadi",
     "completed_events": "Tugallangan voqealar",
     "completed_events_description": "Bu yerda allaqachon tugallangan voqealar saqlanadi",
-    "tutorial_event_screen_search_description": "Tezda eslatmalarni topish uchun qidiruv satridan foydalaning"
+    "tutorial_event_screen_search_description": "Tezda eslatmalarni topish uchun qidiruv satridan foydalaning",
+      "tutorial_event_screen_filtr_title": "Filtr",
+  "tutorial_event_screen_filtr_description": "Voqealar ro'yxatini toraytirish uchun filtrlarni sozlang."
   }
 
 

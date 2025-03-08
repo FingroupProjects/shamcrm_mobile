@@ -214,7 +214,7 @@ class MyTaskBloc extends Bloc<MyTaskEvent, MyTaskState> {
         name: event.name,
         statusId: event.statusId,
         taskStatusId: event.taskStatusId,
-        // startDate: event.startDate,
+        startDate: event.startDate,
         endDate: event.endDate,
         description: event.description,
         filePaths: event.filePaths,

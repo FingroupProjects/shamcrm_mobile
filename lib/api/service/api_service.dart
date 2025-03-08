@@ -5171,9 +5171,9 @@ Future<Map<String, dynamic>> addLeadsFromContacts(
       request.fields['position'] = position.toString();
       request.fields['send_notification'] = setPush ? '1' : '0';
 
-      // if (startDate != null) {
-      //   request.fields['from'] = startDate.toIso8601String();
-      // }
+      if (startDate != null) {
+        request.fields['from'] = startDate.toIso8601String();
+      }
       if (endDate != null) {
         request.fields['to'] = endDate.toIso8601String();
       }
@@ -5861,4 +5861,40 @@ String getRecordingUrl(String recordPath) {
         : '$cleanBaseUrl/storage/$recordPath';
   }
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
+
+    //_________________________________ START_____API_SCREEN__TUTORIAL____________________________________________//a
+// В ApiService замените метод на этот
+Future<Map<String, dynamic>> getTutorialProgress() async {
+  final organizationId = await getSelectedOrganization();
+  
+  final response = await _getRequest(
+    '/tutorials/getProgress${organizationId != null ? '?organization_id=$organizationId' : ''}',
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data;
+  } else {
+    throw Exception('Failed to get tutorial progress: ${response.statusCode}');
+  }
+}
+
+Future<void> markPageCompleted(String section, String pageType) async {
+  final organizationId = await getSelectedOrganization();
+  
+  final response = await _postRequest(
+    '/tutorials/markPageCompleted${organizationId != null ? '?organization_id=$organizationId' : ''}',
+    {
+      "section": section,
+      "page_type": pageType,
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to mark page completed: ${response.statusCode}');
+  }
+}
+    //_________________________________ END_____API_SCREEN__TUTORIAL____________________________________________//a
+
+
 }

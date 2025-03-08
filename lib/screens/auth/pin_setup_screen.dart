@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
@@ -34,6 +36,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   late Animation<double> _shakeAnimation;
   int? userRoleId;
   bool isPermissionsLoaded = false;
+  Map<String, dynamic>? tutorialProgress; // Для хранения прогресса туториалов
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -41,12 +45,42 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
     _loadUserRoleId();
+    _fetchTutorialProgress(); // Загружаем прогресс туториалов
+    
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
     _shakeAnimation = Tween<double>(begin: 0, end: 10).chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
+  }
+
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Проверяем, был ли пользователь уже зарегистрирован
+      bool isNewUser = prefs.getString('user_pin') == null;
+      
+      if (isNewUser) {
+        // Если новый пользователь - получаем прогресс туториалов
+        final progress = await _apiService.getTutorialProgress();
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+        // Сохраняем прогресс в SharedPreferences
+        await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      } else {
+        // Если старый пользователь - берем прогресс из SharedPreferences
+        final savedProgress = prefs.getString('tutorial_progress');
+        if (savedProgress != null) {
+          setState(() {
+            tutorialProgress = json.decode(savedProgress);
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+    }
   }
 
   @override
@@ -84,8 +118,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     setState(() {
       _pin = '';
       _confirmPin = '';
-      _pinsDoNotMatch = false; // Сбросим ошибку, если была
-      _isConfirming = false; // Сбросим процесс подтверждения
+      _pinsDoNotMatch = false;
+      _isConfirming = false;
     });
   }
 
@@ -110,9 +144,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      // Получение ИД РОЛЯ через API
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
       setState(() {
         userRoleId = userProfile.role!.first.id;
       });
@@ -120,8 +152,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       await prefs.setInt('userRoleId', userRoleId!);
       await prefs.setString('userRoleName', userProfile.role![0].name);
 
-      // Выводим данные в консоль
-      // context.read<PermissionsBloc>().add(FetchPermissionsEvent());
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
@@ -131,7 +161,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         isPermissionsLoaded = true;
       });
     } catch (e) {
-      print('Error loading user role!');
+      print('Error loading user role: $e');
       setState(() {
         userRoleId = 0;
       });
@@ -200,13 +230,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 animation: _shakeAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0,
-                        0), // Эффект "шатания".
+                    offset: Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0, 0),
                     child: Column(
                       children: [
                         _buildPinRow(_pin),
-                        if (_isConfirming)
-                          const SizedBox(height: 16), // Отступ между рядами.
+                        if (_isConfirming) const SizedBox(height: 16),
                         if (_isConfirming) _buildPinRow(_confirmPin),
                       ],
                     ),
@@ -224,8 +252,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       onPressed: () => _onNumberPressed(i.toString()),
                       child: Text(
                         i.toString(),
-                        style:
-                            const TextStyle(fontSize: 24, color: Colors.black),
+                        style: const TextStyle(fontSize: 24, color: Colors.black),
                       ),
                     ),
                   TextButton(
@@ -239,13 +266,13 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       style: TextStyle(fontSize: 24, color: Colors.black),
                     ),
                   ),
-                  const SizedBox(), // Пустое место для сетки.
+                  const SizedBox(),
                 ],
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _onClear, // Очистить оба пин-кода
-                child:  Text(
+                onPressed: _onClear,
+                child: Text(
                   AppLocalizations.of(context)!.translate('clear'),
                   style: TextStyle(color: Colors.white),
                 ),

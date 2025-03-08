@@ -571,7 +571,7 @@
       "new_notice":"Добавление заметки",
       "enter_notice_title":"Введите название",
       "notice_title":"Тематика",
-      "reminder_date":"Напоминание",
+      "reminder_date":"ание",
       "delete_notice":"Удалить заметку",
       "confirm_delete_notice":"Хотите удалить заметку?",
       "notice_deleted_successfully":"События успешно удален",
@@ -793,7 +793,7 @@
       "tutorial_lead_screen_search_description": "Используйте строку поиска, чтобы быстро найти лида по имени, телефону, email или контактам",
       "tutorial_lead_screen_menu_description": "Здесь находиться Фильтр для сортировки клиентов, отдельно выделен раздел 'События' (заметки связанные с клиентом) и раздел 'Мои задачи'.  В разделе 'Мои задачи', находятся созданные вами задачи.",
       "tutorial_deal_screen_search_description": "Используйте строку поиска, чтобы быстро найти сделку по имени, телефону или названию лида",
-      "tutorial_deal_screen_menu_description": "Здесь находиться Фильтр для сортировки сделки, отдельно выделен раздел 'События' (заметки связанные с клиентом) и раздел 'Мои задачи'.  В разделе 'Мои задачи', находятся созданные вами задачи.",
+      "tutorial_deal_screen_menu_description": "Здесь находиться Фильтр для сортировки сделки, отдельно выделен раздел 'События' (заметки связанные с клиентом).",
       "call_recording": "",
       "phone_call": "",
       "call_duration": "Продолжительность звонка",
@@ -807,4 +807,11 @@
       "events_in_progress_description": "Здесь хранятся события, которые находятся в процессе выполнения",
       "completed_events": "Завершенные события",
       "completed_events_description": "Здесь хранятся события, которые уже завершены",
-      "tutorial_event_screen_search_description": "Используйте строку поиска, чтобы быстро найти заметки"  }
+      "tutorial_event_screen_search_description": "Используйте строку поиска, чтобы быстро найти заметки",
+      "tutorial_event_screen_filtr_title":"Фильтр",
+      "tutorial_event_screen_filtr_description":"Настройте фильтры, чтобы сузить список событий."
+
+    
+    
+    
+    }
