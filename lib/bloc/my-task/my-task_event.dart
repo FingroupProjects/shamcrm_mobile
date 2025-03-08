@@ -26,7 +26,7 @@ class CreateMyTask extends MyTaskEvent {
   final String name;
   final int statusId;
   final int? taskStatusId;
-  // final DateTime? startDate;
+  final DateTime? startDate;
   final DateTime? endDate;
   final String? description;
   final List<String>? filePaths; // Изменено на список путей к файлам
@@ -38,7 +38,7 @@ class CreateMyTask extends MyTaskEvent {
     required this.name,
     required this.statusId,
     required this.taskStatusId,
-    // this.startDate,
+    this.startDate,
     this.endDate,
     this.description,
     this.customFields,
