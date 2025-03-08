@@ -45,8 +45,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _shakeAnimation = Tween<double>(begin: 0, end: 10)
-        .chain(CurveTween(curve: Curves.elasticIn))
+    _shakeAnimation = Tween<double>(begin: 0, end: 10).chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
   }
 
