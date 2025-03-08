@@ -75,6 +75,7 @@ class _EventScreenState extends State<EventScreen>
   bool _isCompletedTabTutorialInProgress = false;
   bool _isSearchIconTutorialInProgress = false; // Добавлено для поиска
   bool _isFiltrIconTutorialInProgress = false; // Добавлено для фильтра
+  bool _isEventScreenTutorialCompleted = false;
 
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyFiltrIcon = GlobalKey();
@@ -105,8 +106,8 @@ class _EventScreenState extends State<EventScreen>
         identify: "InProgressTab",
         keyTarget: _tabKeys[0],
         title: AppLocalizations.of(context)!.translate('events_in_progress'),
-        description: AppLocalizations.of(context)!.translate(
-            'events_in_progress_description'),
+        description: AppLocalizations.of(context)!
+            .translate('events_in_progress_description'),
         align: ContentAlign.bottom,
         context: context,
       ),
@@ -134,9 +135,9 @@ class _EventScreenState extends State<EventScreen>
         identify: "EventFiltrIcon",
         keyTarget: keyFiltrIcon,
         title: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_menu_title'),
+            .translate('tutorial_event_screen_filtr_title'),
         description: AppLocalizations.of(context)!
-            .translate('tutorial_lead_screen_menu_description'),
+            .translate('tutorial_event_screen_filtr_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -145,24 +146,25 @@ class _EventScreenState extends State<EventScreen>
   }
 
 // Загрузка состояния подсказок
-Future<void> _loadFeatureState() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  setState(() {
-    _isEventCardTutorialShown = prefs.getBool('isNoticeCardTutorialShow') ?? false;
-    _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
-    _isInProgressTabTutorialShown = prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
-    _isCompletedTabTutorialShown = prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
-    _isSearchIconTutorialShown = prefs.getBool('isSearchIconTutorialShown') ?? false; // Добавлено
-    _isFiltrIconTutorialShown = prefs.getBool('isFiltrIconTutorialShown') ?? false; // Добавлено
-  });
-}
+  Future<void> _loadFeatureState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isEventCardTutorialShown = prefs.getBool('isNoticeCardTutorialShow') ?? false;
+      _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
+      _isInProgressTabTutorialShown = prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
+      _isCompletedTabTutorialShown = prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
+      _isSearchIconTutorialShown = prefs.getBool('isSearchIconTutorialShown') ?? false;
+      _isFiltrIconTutorialShown = prefs.getBool('isFiltrIconTutorialShown') ?? false;
+      _isEventScreenTutorialCompleted = prefs.getBool('isEventScreenTutorialCompleted') ?? false;
+    });
+  }
+
 // Показ подсказок
   void showTutorial(String tutorialType) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Определение целевого объекта для подсказки
     TargetFocus? targetFocus;
     for (var target in targets) {
       if (target.identify == tutorialType) {
@@ -173,7 +175,6 @@ Future<void> _loadFeatureState() async {
 
     if (targetFocus == null) return;
 
-    // Определение флагов для каждого типа подсказки
     bool isShown = false;
     bool isInProgress = false;
     Function()? onFinish = () {};
@@ -188,8 +189,8 @@ Future<void> _loadFeatureState() async {
           prefs.setBool('isNoticeCardTutorialShow', true);
           setState(() {
             _isEventCardTutorialShown = true;
+            _isEventCardTutorialInProgress = false;
           });
-          _isEventCardTutorialInProgress = false;
         };
         break;
       case "FloatingActionButton":
@@ -201,8 +202,8 @@ Future<void> _loadFeatureState() async {
           prefs.setBool('isNoticeFabTutorialShow', true);
           setState(() {
             _isFabTutorialShown = true;
+            _isFabTutorialInProgress = false;
           });
-          _isFabTutorialInProgress = false;
         };
         break;
       case "EventSearchIcon":
@@ -214,8 +215,11 @@ Future<void> _loadFeatureState() async {
           prefs.setBool('isSearchIconTutorialShown', true);
           setState(() {
             _isSearchIconTutorialShown = true;
+            _isSearchIconTutorialInProgress = false;
           });
-          _isSearchIconTutorialInProgress = false;
+          if (!_isFiltrIconTutorialShown && !_isFiltrIconTutorialInProgress) {
+            showTutorial("EventFiltrIcon");
+          }
         };
         break;
       case "EventFiltrIcon":
@@ -227,8 +231,12 @@ Future<void> _loadFeatureState() async {
           prefs.setBool('isFiltrIconTutorialShown', true);
           setState(() {
             _isFiltrIconTutorialShown = true;
+            _isFiltrIconTutorialInProgress = false;
+            _isEventScreenTutorialCompleted = true;
           });
-          _isFiltrIconTutorialInProgress = false;
+          // Instead of directly accessing events, call the check method
+          // which will handle obtaining the events properly
+          _checkAndRedirectAfterTutorial();
         };
         break;
       case "InProgressTab":
@@ -275,15 +283,60 @@ Future<void> _loadFeatureState() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
-      alignSkip: Alignment.bottomLeft, // Перемещаем кнопку в левый нижний угол
+      alignSkip: Alignment.bottomLeft,
       onFinish: () {
-        if (onFinish != null) {
-          onFinish();
-        }
+        if (onFinish != null) onFinish();
+      },
+      onSkip: () {
+        // Пропускаем все подсказки
+        prefs.setBool('isNoticeCardTutorialShow', true);
+        prefs.setBool('isNoticeFabTutorialShow', true);
+        prefs.setBool('isInProgressTabTutorialShowNotice', true);
+        prefs.setBool('isCompletedTabTutorialShowNotice', true);
+        prefs.setBool('isSearchIconTutorialShown', true);
+        prefs.setBool('isFiltrIconTutorialShown', true);
+
+        setState(() {
+          _isEventCardTutorialShown = true;
+          _isFabTutorialShown = true;
+          _isInProgressTabTutorialShown = true;
+          _isCompletedTabTutorialShown = true;
+          _isSearchIconTutorialShown = true;
+          _isFiltrIconTutorialShown = true;
+          _isEventScreenTutorialCompleted = true;
+
+          _isEventCardTutorialInProgress = false;
+          _isFabTutorialInProgress = false;
+          _isInProgressTabTutorialInProgress = false;
+          _isCompletedTabTutorialInProgress = false;
+          _isSearchIconTutorialInProgress = false;
+          _isFiltrIconTutorialInProgress = false;
+        });
+        _checkAndRedirectAfterTutorial();
+        return true;
       },
     ).show(context: context);
   }
 
+void _checkAndRedirectAfterTutorial() {
+  if (_isEventScreenTutorialCompleted) {
+    // Use a post-frame callback to ensure state is updated
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_eventBloc.state is EventDataLoaded) {
+        final events = (_eventBloc.state as EventDataLoaded).events;
+        
+        // Если есть карточки, показываем только подсказку карточки
+        if (events.isNotEmpty && !_isEventCardTutorialShown && !_isEventCardTutorialInProgress) {
+          showTutorial("EventCard");
+        } 
+        // Только если карточек нет, показываем подсказку FAB
+        else if (events.isEmpty && !_isFabTutorialShown && !_isFabTutorialInProgress && _hasPermissionToAddEvent) {
+          showTutorial("FloatingActionButton");
+        }
+      }
+    });
+  }
+}
   @override
   void initState() {
     super.initState();
@@ -319,24 +372,17 @@ Future<void> _loadFeatureState() async {
         }
       }
     });
-    if (!_isEventCardTutorialShown && _currentTabIndex == 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial("EventCard");
-      });
-    }
-    if (!_isFabTutorialShown &&
-        _hasPermissionToAddEvent &&
-        _eventBloc.state is EventDataLoaded &&
-        (_eventBloc.state as EventDataLoaded).events.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial("FloatingActionButton");
-      });
-    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Инициализация целей подсказок
       setState(() {
         _initTutorialTargets();
       });
+
+      // Показываем подсказку поиска при первом запуске
+      if (!_isSearchIconTutorialShown && !_isSearchIconTutorialInProgress) {
+        showTutorial("EventSearchIcon");
+      }
     });
   }
 
@@ -617,8 +663,8 @@ Future<void> _loadFeatureState() async {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
+          FiltrEventIconKey: keyFiltrIcon,
           SearchIconKey: keySearchIcon,
-          menuIconKey: keyFiltrIcon,
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
               : localizations!.translate('events'),
@@ -788,67 +834,36 @@ Future<void> _loadFeatureState() async {
             ),
     );
   }
+Widget _buildEventsList(List<NoticeEvent> events) {
+  final localizations = AppLocalizations.of(context);
 
-  Widget _buildEventsList(List<NoticeEvent> events) {
-    final localizations = AppLocalizations.of(context);
-    if (events.isEmpty &&
-        _currentTabIndex == 0 &&
-        !_isFabTutorialShown &&
-        _hasPermissionToAddEvent) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+  // Единая логика проверки для показа подсказок
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Только если предыдущие подсказки (поиск и фильтр) уже показаны
+    if (_isSearchIconTutorialShown && _isFiltrIconTutorialShown) {
+      // Если есть карточки, показываем только подсказку карточки
+      if (events.isNotEmpty && !_isEventCardTutorialShown && !_isEventCardTutorialInProgress) {
+        showTutorial("EventCard");
+      } 
+      // Только если карточек нет, показываем подсказку FAB
+      else if (events.isEmpty && !_isFabTutorialShown && !_isFabTutorialInProgress && _hasPermissionToAddEvent) {
         showTutorial("FloatingActionButton");
-      });
-    }
-    // Если активен поиск или фильтр, отображаем все события без разделения на вкладки
-    if (_isSearching ||
-        _selectedManagers.isNotEmpty ||
-        _selectedStatuses != null ||
-        _fromDate != null ||
-        _toDate != null ||
-        _NoticefromDate != null ||
-        _NoticetoDate != null) {
-      if (events.isEmpty) {
-        return Center(
-          child: Text(
-            localizations?.translate('no_events') ?? 'Нет событий',
-            style: TextStyle(
-              color: Color(0xff99A4BA),
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-            ),
-          ),
-        );
       }
-
-      return ListView.builder(
-        controller: _listScrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: EventCard(
-              key: index == 0 ? keyEventCard : null,
-              event: events[index],
-              onStatusUpdated: () {
-                _loadEvents();
-              },
-            ),
-          );
-        },
-      );
     }
+  });
 
-    // Иначе разделяем события на вкладки
-    final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
-
-    if (filteredEvents.isEmpty) {
+  // Если активен поиск или фильтр, отображаем все события без разделения на вкладки
+  if (_isSearching ||
+      _selectedManagers.isNotEmpty ||
+      _selectedStatuses != null ||
+      _fromDate != null ||
+      _toDate != null ||
+      _NoticefromDate != null ||
+      _NoticetoDate != null) {
+    if (events.isEmpty) {
       return Center(
         child: Text(
-          localizations?.translate('no_events_in_section')?.replaceAll(
-                  '{section}', _tabTitles[_currentTabIndex]['title']) ??
-              'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
+          localizations?.translate('no_events') ?? 'Нет событий',
           style: TextStyle(
             color: Color(0xff99A4BA),
             fontSize: 14,
@@ -857,18 +872,18 @@ Future<void> _loadFeatureState() async {
         ),
       );
     }
-
+ 
     return ListView.builder(
       controller: _listScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: filteredEvents.length,
+      itemCount: events.length,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: EventCard(
             key: index == 0 ? keyEventCard : null,
-            event: filteredEvents[index],
+            event: events[index],
             onStatusUpdated: () {
               _loadEvents();
             },
@@ -878,6 +893,43 @@ Future<void> _loadFeatureState() async {
     );
   }
 
+  // Иначе разделяем события на вкладки
+  final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
+
+  if (filteredEvents.isEmpty) {
+    return Center(
+      child: Text(
+        localizations?.translate('no_events_in_section')?.replaceAll(
+                '{section}', _tabTitles[_currentTabIndex]['title']) ??
+            'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
+        style: TextStyle(
+          color: Color(0xff99A4BA),
+          fontSize: 14,
+          fontFamily: 'Gilroy',
+        ),
+      ),
+    );
+  }
+
+  return ListView.builder(
+    controller: _listScrollController,
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.all(16),
+    itemCount: filteredEvents.length,
+    itemBuilder: (context, index) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: EventCard(
+          key: index == 0 ? keyEventCard : null,
+          event: filteredEvents[index],
+          onStatusUpdated: () {
+            _loadEvents();
+          },
+        ),
+      );
+    },
+  );
+}
   @override
   void dispose() {
     _tabScrollController.dispose(); // Не забудьте освободить ресурсы

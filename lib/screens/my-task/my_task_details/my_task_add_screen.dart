@@ -47,10 +47,9 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   }
 
   void _setDefaultValues() {
-    // Устанавливаем приоритет по умолчанию (Обычный)
-    // Устанавливаем текущую дату в поле "От"
-    // final now = DateTime.now();
-    // startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+    final now = DateTime.now();
+    startDateController.text =
+        DateFormat('dd/MM/yyyy').format(now); // Устанавливаем текущую дату
   }
 
   // Функция выбора файла
@@ -355,62 +354,38 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
           }
         },
         child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomTextField(
-                        controller: nameController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_name_list'),
-                        label: AppLocalizations.of(context)!
-                            .translate('name_list'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                      // const SizedBox(height: 8),
-                      // CustomTextFieldDate(
-                      //   controller: startDateController,
-                      //   label: AppLocalizations.of(context)!
-                      //       .translate('from_list'),
-                      // validator: (value) {
-                      //   if (value == null || value.isEmpty) {
-                      //     return AppLocalizations.of(context)!
-                      //         .translate('field_required');
-                      //   }
-                      //   return null;
-                      // },
-                      // ),
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_description'),
-                        label: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-                      ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldDate(
-                        controller: endDateController,
-                        label:
-                            AppLocalizations.of(context)!.translate('deadline'),
-                        hasError: isEndDateInvalid,
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomTextField(
+                          controller: nameController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_name_list'),
+                          label: AppLocalizations.of(context)!
+                              .translate('name_list'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            return null;
+                          },
+                        ),
+                        // const SizedBox(height: 8),
+                        // CustomTextFieldDate(
+                        //   controller: startDateController,
+                        //   label: AppLocalizations.of(context)!
+                        //       .translate('from_list'),
                         // validator: (value) {
                         //   if (value == null || value.isEmpty) {
                         //     return AppLocalizations.of(context)!
@@ -418,30 +393,54 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
                         //   }
                         //   return null;
                         // },
-                      ),
-                      const SizedBox(height: 16),
+                        // ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: descriptionController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_description'),
+                          label: AppLocalizations.of(context)!
+                              .translate('description_list'),
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextFieldDate(
+                          controller: endDateController,
+                          label: AppLocalizations.of(context)!
+                              .translate('deadline'),
+                          hasError: isEndDateInvalid,
+                          // validator: (value) {
+                          //   if (value == null || value.isEmpty) {
+                          //     return AppLocalizations.of(context)!
+                          //         .translate('field_required');
+                          //   }
+                          //   return null;
+                          // },
+                        ),
+                        const SizedBox(height: 16),
 
-                      if (!_showAdditionalFields)
-                        CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('additionally'),
-                          buttonColor: Color(0xff1E2E52),
-                          textColor: Colors.white,
-                          onPressed: () {
-                            setState(() {
-                              _showAdditionalFields = true;
-                            });
-                          },
-                        )
-                      else ...[
-                        // const SizedBox(height: 16),
-                        _buildFileSelection(), // Добавляем виджет выбора файла
-                        _buildPushNotificationCheckbox(), // Add this line
+                        if (!_showAdditionalFields)
+                          CustomButton(
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('additionally'),
+                            buttonColor: Color(0xff1E2E52),
+                            textColor: Colors.white,
+                            onPressed: () {
+                              setState(() {
+                                _showAdditionalFields = true;
+                              });
+                            },
+                          )
+                        else ...[
+                          // const SizedBox(height: 16),
+                          _buildFileSelection(), // Добавляем виджет выбора файла
+                          _buildPushNotificationCheckbox(), // Add this line
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
               ),
               _buildActionButtons(context),
             ],
@@ -522,27 +521,13 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
 
   void _createMyTask() {
     final String name = nameController.text;
-    // final String? startDateString =
-    //     startDateController.text.isEmpty ? null : startDateController.text;
     final String? endDateString =
         endDateController.text.isEmpty ? null : endDateController.text;
     final String? description =
         descriptionController.text.isEmpty ? null : descriptionController.text;
 
-    // DateTime? startDate;
-    // if (startDateString != null && startDateString.isNotEmpty) {
-    //   try {
-    //     startDate = DateFormat('dd/MM/yyyy').parse(startDateString);
-    //   } catch (e) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(
-    //           content: Text(
-    //         AppLocalizations.of(context)!.translate('fill_required_fields'),
-    //       )),
-    //     );
-    //     return;
-    //   }
-    // }
+    // Всегда используем текущую дату как startDate
+    DateTime startDate = DateTime.now();
 
     DateTime? endDate;
     if (endDateString != null && endDateString.isNotEmpty) {
@@ -551,31 +536,15 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-            AppLocalizations.of(context)!.translate('enter_valid_date'),
-          )),
+            content: Text(
+              AppLocalizations.of(context)!.translate('enter_valid_date'),
+            ),
+          ),
         );
         return;
       }
     }
-    // if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-    //   setState(() {
-    //     isEndDateInvalid = true;
-    //   });
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(
-    //         AppLocalizations.of(context)!
-    //             .translate('start_date_after_end_date'),
-    //         style: TextStyle(
-    //           color: Colors.white,
-    //         ),
-    //       ),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
+
     List<MyTaskFile> files = [];
     for (int i = 0; i < selectedFiles.length; i++) {
       files.add(MyTaskFile(
@@ -583,17 +552,18 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         size: fileSizes[i],
       ));
     }
+
     final localizations = AppLocalizations.of(context)!;
 
     context.read<MyTaskBloc>().add(CreateMyTask(
           name: name,
           statusId: widget.statusId,
           taskStatusId: widget.statusId,
-          // startDate: startDate,
+          startDate: startDate, // Передаем текущую дату
           endDate: endDate,
           description: description,
-          filePaths: selectedFiles, // Передаем список путей к файлам
-          setPush: setPush, // Add this line
+          filePaths: selectedFiles,
+          setPush: setPush,
           localizations: localizations,
         ));
   }

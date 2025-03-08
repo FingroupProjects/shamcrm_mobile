@@ -33,8 +33,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _selectedOrganization;
   final ApiService _apiService = ApiService();
   bool _hasPermissionToAddLeadAndSwitch = false;
-  bool _hasPermissionForOneC = false; // Новая переменная для lead.oneC
-  // Добавляем переменные для подсказок
+  bool _hasPermissionForOneC = false;
+  Map<String, dynamic>? tutorialProgress; // Добавлено: Для хранения прогресса туториалов
+
+  // Ключи для подсказок
   final GlobalKey keyOrganizationWidget = GlobalKey();
   final GlobalKey keyProfileEdit = GlobalKey();
   final GlobalKey keyLanguageButton = GlobalKey();
@@ -47,12 +49,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
 
-  Future<void> _saveOrganizationsToCache(
-      List<Organization> organizations) async {
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedOrganization();
+    _checkPermission();
+    _loadOrganizations();
+    _fetchTutorialProgress(); // Добавлено: Загрузка прогресса туториалов
+  }
+
+  // Добавлено: Метод для получения прогресса туториалов
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
+      
+      if (!isTutorialShown) {
+        final progress = await _apiService.getTutorialProgress();
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+        await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      } else {
+        final savedProgress = prefs.getString('tutorial_progress');
+        if (savedProgress != null) {
+          setState(() {
+            tutorialProgress = json.decode(savedProgress);
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+    }
+  }
+
+  Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList =
-        jsonEncode(organizations.map((org) => org.toJson()).toList());
-    await prefs.setString('cached_organizations', jsonList);
+    final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
+    await prefs.setString(' 매organisations', jsonList);
   }
 
   Future<List<Organization>> _getOrganizationsFromCache() async {
@@ -85,15 +119,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSelectedOrganization();
-    _checkPermission();
-    _loadOrganizations();
-  }
-
-// В _initTutorialTargets() добавляем ToggleFeatureButton безусловно
   void _initTutorialTargets() {
     targets.addAll([
       createTarget(
@@ -151,7 +176,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         context: context,
         contentPosition: ContentPosition.above,
       ),
-      // Добавляем ToggleFeatureButton всегда, но проверяем его видимость при показе
       createTarget(
         identify: "profileToggleFeature",
         keyTarget: keyToggleFeature,
@@ -159,12 +183,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .translate('tutorial_profile_toggle_feature_title'),
         description: AppLocalizations.of(context)!
             .translate('tutorial_profile_toggle_feature_description'),
-        // Изменяем расположение подсказки на верхнее
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
       ),
-
       createTarget(
         identify: "profileUpdateWidget1C",
         keyTarget: keyUpdateWidget1C,
@@ -172,7 +194,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .translate('tutorial_profile_update_1c_title'),
         description: AppLocalizations.of(context)!
             .translate('tutorial_profile_update_1c_description'),
-        // Изменяем здесь расположение подсказки
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -191,7 +212,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
-  // Вспомогательная функция для создания целей подсказки
   TargetFocus createTarget({
     required String identify,
     required GlobalKey keyTarget,
@@ -245,10 +265,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Показать подсказку, если нужно
   void _showTutorialIfNeeded() {
     _initTutorialTargets();
-    if (!_isTutorialShown) {
+    if (!_isTutorialShown && tutorialProgress != null && tutorialProgress!['settings']?['index'] == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorial();
         setState(() {
@@ -262,19 +281,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
 
-    if (!isTutorialShown)
-     {
-      // Фильтруем targets, исключая ToggleFeatureButton и UpdateWidget1C, если условий для их отображения нет
+    if (!isTutorialShown) {
       List<TargetFocus> visibleTargets = targets.where((target) {
-        // Проверка для ToggleFeatureButton
         if (target.identify == "profileToggleFeature") {
           return _hasPermissionToAddLeadAndSwitch;
         }
-        // Проверка для UpdateWidget1C
         if (target.identify == "profileUpdateWidget1C") {
-          return _hasPermissionForOneC; // Показываем только если есть lead.oneC
+          return _hasPermissionForOneC;
         }
-        // Все остальные targets отображаются всегда
         return true;
       }).toList();
 
@@ -296,10 +310,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         colorShadow: Color(0xff1E2E52),
         onSkip: () {
           prefs.setBool('isTutorialShownProfile', true);
+          _apiService.markPageCompleted("settings", "index").catchError((e) {
+            print('Error marking page completed on skip: $e');
+          });
           return true;
         },
-        onFinish: () {
-          prefs.setBool('isTutorialShownProfile', true);
+        onFinish: () async {
+          await prefs.setBool('isTutorialShownProfile', true);
+          try {
+            await _apiService.markPageCompleted("settings", "index");
+          } catch (e) {
+            print('Error marking page completed on finish: $e');
+          }
         },
         onClickTarget: (target) async {
           int currentIndex =
@@ -426,7 +448,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         LogoutButtonWidget(key: keyLogoutButton),
                         if (_hasPermissionToAddLeadAndSwitch)
                           ToggleFeatureButton(key: keyToggleFeature),
-                        if (_hasPermissionForOneC) // Условие для UpdateWidget1C
+                        if (_hasPermissionForOneC)
                           UpdateWidget1C(
                             key: keyUpdateWidget1C,
                             organization: selectedOrg,

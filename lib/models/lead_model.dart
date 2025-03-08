@@ -176,7 +176,7 @@ class LeadStatus {
       leadsCount: json['leads_count'] ?? 0,
       isSuccess: json['is_success'] == true || json['is_success'] == 1,
       position: json['position'] ?? 0,
-      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
+      isFailure: json['isx`_failure'] == true || json['is_failure'] == 1,
       leads: (json['leads'] as List<dynamic>?)
               ?.map((lead) => Lead.fromJson(lead, json['id']))
               .toList() ??
