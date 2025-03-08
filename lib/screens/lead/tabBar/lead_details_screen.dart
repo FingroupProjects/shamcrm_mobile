@@ -79,6 +79,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canReadNotes = false;
   bool _canReadDeal = false;
   bool _canExportContact = false;
+  bool _isExportContactEnabled = false;
+
 
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
@@ -227,6 +229,8 @@ void showTutorial() async {
 
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
     final canEdit = await _apiService.hasPermission('lead.update');
     final canDelete = await _apiService.hasPermission('lead.delete');
     final canReadNotes = await _apiService.hasPermission('notice.read');
@@ -239,6 +243,7 @@ void showTutorial() async {
       _canReadNotes = canReadNotes;
       _canReadDeal = canReadDeal;
       _canExportContact = canExportContact;
+      _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -679,7 +684,7 @@ Widget _buildValue(String value, String label) {
             ),
           ),
         ),
-        if (_canExportContact)
+        if (_canExportContact && _isExportContactEnabled)
           GestureDetector(
             onTap: () => _addContact(widget.leadName, value),
             child: Icon(
