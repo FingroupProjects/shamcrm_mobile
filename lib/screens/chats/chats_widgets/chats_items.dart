@@ -62,16 +62,14 @@ class ChatListItem extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        chatItem.name.isNotEmpty
-                            ? chatItem.name : AppLocalizations.of(context)!.translate('no_name'),
+                        chatItem.name.isNotEmpty ? chatItem.name : AppLocalizations.of(context)!.translate('no_name'),
                         style: AppStyles.chatNameStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      formatChatTime(chatItem.time),
+                    Text(formatChatTime(chatItem.time),
                       style: AppStyles.chatTimeStyle,
                     ),
                   ],
@@ -87,7 +85,6 @@ class ChatListItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    // Фиксированное пространство для индикатора новых сообщений
                     SizedBox(
                       width: 33,
                       height: 33,

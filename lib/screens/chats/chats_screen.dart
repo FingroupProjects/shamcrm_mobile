@@ -34,10 +34,7 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen>
     with TickerProviderStateMixin {
   final ApiService apiService = ApiService();
-  bool isNavigating = false;
   late Future<List<Chats>> futureChats;
-  List<Chats> allChats = [];
-  List<Chats> filteredChats = [];
   TextEditingController searchController = TextEditingController();
   FocusNode focusNode = FocusNode();
   late TabController _tabController;
@@ -51,16 +48,14 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _isPermissionsChecked = false;
   bool _isSearching = false;
   String searchQuery = '';
-
   
-    final GlobalKey keyChatLead = GlobalKey(); 
-    final GlobalKey keyChatTask = GlobalKey(); 
-    final GlobalKey keyChatCorporate = GlobalKey(); 
+  final GlobalKey keyChatLead = GlobalKey(); 
+  final GlobalKey keyChatTask = GlobalKey(); 
+  final GlobalKey keyChatCorporate = GlobalKey(); 
 
-    List<TargetFocus> targets = [];
-    bool _isTutorialShown = false;
-
-    bool _isTaskScreenTutorialCompleted = false;
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
+  bool _isTaskScreenTutorialCompleted = false;
 
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
@@ -108,7 +103,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       }
       setUpServices();
     });
-         WidgetsBinding.instance.addPostFrameCallback((_) {
+   WidgetsBinding.instance.addPostFrameCallback((_) {
     _initTutorialTargets(); 
   });
   }
@@ -230,22 +225,19 @@ void showTutorial() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
-    final baseUrlSocket = await apiService.getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
     socketClient = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {},
-      minimumReconnectDelayDuration: const Duration(
-        seconds: 1,
+      minimumReconnectDelayDuration: const Duration(seconds: 1,
       ),
     );
     String userId = prefs.getString('userID').toString();
@@ -253,11 +245,8 @@ void showTutorial() async {
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+        authorizationEndpoint: Uri.parse('https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -348,7 +337,7 @@ void showTutorial() async {
             focusNode: focusNode,
             showFilterIcon: false,
             showFilterTaskIcon: false,
-            showMyTaskIcon: false, // Выключаем иконку My Tasks
+            showMyTaskIcon: false,
             showMenuIcon: false,
             onChangedSearchInput: (String value) {
               setState(() {
@@ -365,17 +354,11 @@ void showTutorial() async {
                     final chatsBloc = context.read<ChatsBloc>();
                     chatsBloc.add(ClearChats());
                     if (selectTabIndex == 0) {
-                      context
-                          .read<ChatsBloc>()
-                          .add(FetchChats(endPoint: 'lead'));
+                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'lead'));
                     } else if (selectTabIndex == 1) {
-                      context
-                          .read<ChatsBloc>()
-                          .add(FetchChats(endPoint: 'task'));
+                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'task'));
                     } else if (selectTabIndex == 2) {
-                      context
-                          .read<ChatsBloc>()
-                          .add(FetchChats(endPoint: 'corporate'));
+                      context.read<ChatsBloc>().add(FetchChats(endPoint: 'corporate'));
                     }
                   });
                 }
@@ -404,8 +387,7 @@ void showTutorial() async {
                               return Container();
                             }
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: _buildTabButton(index),
                             );
                           }),
@@ -475,7 +457,7 @@ void showTutorial() async {
       });
     },
     child: Container(
-      key: tabKey, // Привязываем ключ к контейнеру таба
+      key: tabKey,
       decoration: TaskStyles.tabButtonDecoration(isActive),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
       child: Center(
@@ -516,8 +498,9 @@ class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
   final String endPointInTab;
 
-  const _ChatItemsWidget(
-      {required this.updateChats, required this.endPointInTab});
+  const _ChatItemsWidget({
+  required this.updateChats, 
+  required this.endPointInTab});
 
   @override
   State<_ChatItemsWidget> createState() => _ChatItemsWidgetState();
@@ -525,7 +508,7 @@ class _ChatItemsWidget extends StatefulWidget {
 
 class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   final PagingController<int, Chats> _pagingController =
-      PagingController(firstPageKey: 0);
+  PagingController(firstPageKey: 0);
 
   @override
   void initState() {
@@ -591,16 +574,15 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         }
         if (state is ChatsLoaded) {
           if (state.chatsPagination.currentPage ==
-              state.chatsPagination.totalPage) {
+            state.chatsPagination.totalPage) {
             _pagingController.appendLastPage(state.chatsPagination.data);
           } else {
             _pagingController.appendPage(state.chatsPagination.data,
-                state.chatsPagination.currentPage + 1);
+            state.chatsPagination.currentPage + 1);
           }
         }
         if (state is ChatsError) {
-          if (state.message.contains(AppLocalizations.of(context)!
-              .translate('no_internet_connection'))) {
+          if (state.message.contains(AppLocalizations.of(context)!.translate('no_internet_connection'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -614,8 +596,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 ),
                 behavior: SnackBarBehavior.floating,
                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
                 ),
                 backgroundColor: Colors.red,
                 elevation: 3,
@@ -635,14 +616,11 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    AppLocalizations.of(context)!
-                        .translate('nothing_found_chat'),
-                    style:
-                        TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                    AppLocalizations.of(context)!.translate('nothing_found_chat'),
+                    style: TextStyle(fontSize: 18, color: AppColors.primaryBlue),
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.of(context)!.translate('list_empty_chat'),
+                  Text( AppLocalizations.of(context)!.translate('list_empty_chat'),
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],

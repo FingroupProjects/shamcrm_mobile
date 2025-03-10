@@ -809,7 +809,10 @@
       "completed_events_description": "Здесь хранятся события, которые уже завершены",
       "tutorial_event_screen_search_description": "Используйте строку поиска, чтобы быстро найти заметки",
       "tutorial_event_screen_filtr_title":"Фильтр",
-      "tutorial_event_screen_filtr_description":"Настройте фильтры, чтобы сузить список событий."
+      "tutorial_event_screen_filtr_description":"Настройте фильтры, чтобы сузить список событий.",
+      "open_url_source": "Открыть",
+      "copy_url_source_text": "Ссылка скопировано!",
+      "edited_sms": "Изменено"
 
     
     
