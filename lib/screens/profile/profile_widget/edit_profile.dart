@@ -109,7 +109,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           // Если размер больше 2 MB
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.translate('file_too_large'),),
+              content: Text(
+                AppLocalizations.of(context)!.translate('file_too_large'),
+              ),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -124,7 +126,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('image_selected_successfully'),),
+            content: Text(
+              AppLocalizations.of(context)!
+                  .translate('image_selected_successfully'),
+            ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -133,7 +138,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(AppLocalizations.of(context)!.translate('image_selection_error'),),
+          content: Text(
+            AppLocalizations.of(context)!.translate('image_selection_error'),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -169,50 +176,60 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-  Future<void> _loadUserPhone() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+Future<void> _loadUserPhone() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    String UUID = prefs.getString('userID') ?? 'Не найдено';
-    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
-    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
-    print('URoleName+_+_+_+_+___++_+__++_++__++_+_+_+_+_+');
-    print(URoleName);
+  String UUID = prefs.getString('userID') ?? 'Не найдено';
+  String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+  // Используем новое поле для всех ролей
+  String UAllRoles = prefs.getString('userAllRoles') ?? 'Не найдено';
+
+  setState(() {
+    userController.text = UUID;
+    loginController.text = ULogin;
+    roleController.text = UAllRoles; // Отображаем все роли
+  });
+
+  try {
+    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+    
+    // Обработка телефона
+    String phoneNumber = userProfile.phone ?? '';
+    String detectedDialCode = '+992';
+    String phoneWithoutCode = phoneNumber;
+
+    // Проверяем код страны в полученном номере
+    for (var country in countries) {
+      if (phoneNumber.startsWith(country.dialCode)) {
+        detectedDialCode = country.dialCode;
+        phoneWithoutCode = phoneNumber.substring(country.dialCode.length);
+        break;
+      }
+    }
+
+    // Обновляем роли из API, если они есть
+    if (userProfile.role != null && userProfile.role!.isNotEmpty) {
+      String allRoles = userProfile.role!.map((role) => role.name).join(', ');
+      setState(() {
+        roleController.text = allRoles;
+      });
+      // Обновляем SharedPreferences
+      await prefs.setString('userAllRoles', allRoles);
+    }
 
     setState(() {
-      userController.text = UUID;
-      loginController.text = ULogin;
-      roleController.text = URoleName;
+      NameController.text = userProfile.name;
+      SurnameController.text = userProfile.lastname;
+      PatronymicController.text = userProfile.Pname;
+      emailController.text = userProfile.email;
+      selectedDialCode = detectedDialCode;
+      phoneController.text = phoneWithoutCode;
+      _userImage = userProfile.image ?? '';
     });
-
-    try {
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
-      // Обработка телефона
-      String phoneNumber = userProfile.phone ?? '';
-      String detectedDialCode = '+992';
-      String phoneWithoutCode = phoneNumber;
-
-      // Проверяем код страны в полученном номере
-      for (var country in countries) {
-        if (phoneNumber.startsWith(country.dialCode)) {
-          detectedDialCode = country.dialCode;
-          phoneWithoutCode = phoneNumber.substring(country.dialCode.length);
-          break;
-        }
-      }
-      setState(() {
-        NameController.text = userProfile.name;
-        SurnameController.text = userProfile.lastname;
-        PatronymicController.text = userProfile.Pname;
-        emailController.text = userProfile.email;
-        selectedDialCode = detectedDialCode;
-        phoneController.text = phoneWithoutCode;
-        _userImage = userProfile.image ?? '';
-      });
-    } catch (e) {
-      print('Ошибка при загрузке данных из API: $e');
-    }
+  } catch (e) {
+    print('Ошибка при загрузке данных из API: $e');
   }
+}
 
   Future<void> _loadSelectedOrganization() async {
     final savedOrganization = await ApiService().getSelectedOrganization();
@@ -255,7 +272,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: Text(AppLocalizations.of(context)!.translate('gallery'),),
+              title: Text(
+                AppLocalizations.of(context)!.translate('gallery'),
+              ),
               onTap: () async {
                 // Показываем диалог загрузки
                 showDialog(
@@ -273,7 +292,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               color: Color(0xff1E2E52),
                             ),
                             const SizedBox(height: 16),
-                            Text(AppLocalizations.of(context)!.translate('checking_image'),
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('checking_image'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -302,10 +323,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.of(context).pop();
 
                     if (fileSize > 2 * 1024 * 1024) {
-                      Navigator.pop(context); 
+                      Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(
-                           content: Text(AppLocalizations.of(context)!.translate('file_size_limit'),),                      
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context)!
+                                .translate('file_size_limit'),
+                          ),
                           backgroundColor: Colors.red,
                           behavior: SnackBarBehavior.floating,
                           margin:
@@ -327,7 +351,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.translate('image_selected_successfully'),),                      
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('image_selected_successfully'),
+                        ),
                         backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
                         margin:
@@ -344,7 +371,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.translate('image_selection_error'),),                      
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('image_selection_error'),
+                        ),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -363,7 +393,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: Text(AppLocalizations.of(context)!.translate('camera'),),
+              title: Text(
+                AppLocalizations.of(context)!.translate('camera'),
+              ),
               onTap: () async {
                 // Показываем диалог загрузки
                 showDialog(
@@ -381,7 +413,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               color: Color(0xff1E2E52),
                             ),
                             const SizedBox(height: 16),
-                            Text(AppLocalizations.of(context)!.translate('checking_image'),
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('checking_image'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -413,7 +447,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       Navigator.pop(context); // Закрываем модальное окно выбора
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(AppLocalizations.of(context)!.translate('file_size_limit'),),
+                          content: Text(
+                            AppLocalizations.of(context)!
+                                .translate('file_size_limit'),
+                          ),
                           backgroundColor: Colors.red,
                           behavior: SnackBarBehavior.floating,
                           margin:
@@ -435,7 +472,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.translate('image_selected_successfully'),),
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('image_selected_successfully'),
+                        ),
                         backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
                         margin:
@@ -452,7 +492,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     Navigator.pop(context); // Закрываем модальное окно выбора
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.translate('image_selection_error'),),
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('image_selection_error'),
+                        ),
                         backgroundColor: Colors.red,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
@@ -548,7 +591,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
     }
 
- return Scaffold(
+    return Scaffold(
       key: _formKey,
       appBar: AppBar(
         title: Transform.translate(
@@ -627,7 +670,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                         backgroundImage:
                                             FileImage(_localImage!),
                                       )
-                                    : _userImage != AppLocalizations.of(context)!.translate('not_found') &&
+                                    : _userImage !=
+                                                AppLocalizations.of(context)!
+                                                    .translate('not_found') &&
                                             _userImage.isNotEmpty
                                         ? _userImage.contains('<svg')
                                             ? buildSvgAvatar(_userImage)
@@ -663,10 +708,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                     backgroundColor: const Color(0xff1E2E52),
                                   ),
                                   child: Text(
-                                    _userImage == AppLocalizations.of(context)!.translate('not_found') ||
+                                    _userImage ==
+                                                AppLocalizations.of(context)!
+                                                    .translate('not_found') ||
                                             _userImage.isEmpty
-                                        ? AppLocalizations.of(context)!.translate('change_photo')
-                                        : AppLocalizations.of(context)!.translate('change_photo'),
+                                        ? AppLocalizations.of(context)!
+                                            .translate('change_photo')
+                                        : AppLocalizations.of(context)!
+                                            .translate('change_photo'),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -680,8 +729,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: NameController,
-                          hintText: AppLocalizations.of(context)!.translate('enter_name'),
-                          label: AppLocalizations.of(context)!.translate('name'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_name'),
+                          label:
+                              AppLocalizations.of(context)!.translate('name'),
                           onChanged: (value) {
                             setState(() {
                               _nameError = null;
@@ -706,8 +757,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: SurnameController,
-                          hintText: AppLocalizations.of(context)!.translate('enter_surname'),
-                          label: AppLocalizations.of(context)!.translate('surname'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_surname'),
+                          label: AppLocalizations.of(context)!
+                              .translate('surname'),
                           onChanged: (value) {
                             setState(() {
                               _surnameError = null;
@@ -745,15 +798,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               }
                             }
                           },
-                          label: AppLocalizations.of(context)!.translate('phone'),
+                          label:
+                              AppLocalizations.of(context)!.translate('phone'),
                         ),
                         const SizedBox(height: 8),
                         Opacity(
                           opacity: 0.6, // Прозрачность для всего виджета
                           child: CustomTextField(
                             controller: roleController,
-                          hintText: AppLocalizations.of(context)!.translate('enter_role'),
-                          label: AppLocalizations.of(context)!.translate('role'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_role'),
+                            label:
+                                AppLocalizations.of(context)!.translate('role'),
                             readOnly: true,
                           ),
                         ),
@@ -762,16 +818,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           opacity: 0.6, // Прозрачность для всего виджета
                           child: CustomTextField(
                             controller: loginController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_login'),
-                        label: AppLocalizations.of(context)!.translate('login'),
+                            hintText: AppLocalizations.of(context)!
+                                .translate('enter_login'),
+                            label: AppLocalizations.of(context)!
+                                .translate('login'),
                             readOnly: true,
                           ),
                         ),
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: emailController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_email'),
-                        label: AppLocalizations.of(context)!.translate('email'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_email'),
+                          label:
+                              AppLocalizations.of(context)!.translate('email'),
                           keyboardType: TextInputType.emailAddress,
                           onChanged: (value) {
                             setState(() {
@@ -800,7 +860,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    AppLocalizations.of(context)!.translate('profile_updated_successfully'),
+                                    AppLocalizations.of(context)!.translate(
+                                        'profile_updated_successfully'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontFamily: 'Gilroy',
@@ -826,13 +887,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               String message;
 
                               if (state.message.contains('500')) {
-                                message = AppLocalizations.of(context)!.translate('server_error');
+                                message = AppLocalizations.of(context)!
+                                    .translate('server_error');
                               } else if (state.message.contains('422')) {
-                                message = AppLocalizations.of(context)!.translate('validation_error');
+                                message = AppLocalizations.of(context)!
+                                    .translate('validation_error');
                               } else if (state.message.contains('404')) {
-                                message = AppLocalizations.of(context)!.translate('resource_not_found');
+                                message = AppLocalizations.of(context)!
+                                    .translate('resource_not_found');
                               } else {
-                                message = AppLocalizations.of(context)!.translate('invalid_phone_number');
+                                message = AppLocalizations.of(context)!
+                                    .translate('invalid_phone_number');
                               }
 
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -904,14 +969,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                           if (NameController.text.trim().isEmpty) {
                             setState(() {
-                              _nameError = AppLocalizations.of(context)!.translate('name_required');
+                              _nameError = AppLocalizations.of(context)!
+                                  .translate('name_required');
                             });
                             isValid = false;
                           }
 
                           if (SurnameController.text.trim().isEmpty) {
                             setState(() {
-                              _surnameError = AppLocalizations.of(context)!.translate('surname_required'); 
+                              _surnameError = AppLocalizations.of(context)!
+                                  .translate('surname_required');
                             });
                             isValid = false;
                           }
@@ -919,7 +986,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           if (emailController.text.trim().isNotEmpty &&
                               !isValidEmail(emailController.text.trim())) {
                             setState(() {
-                              _emailError = AppLocalizations.of(context)!.translate('invalid_email'); 
+                              _emailError = AppLocalizations.of(context)!
+                                  .translate('invalid_email');
                             });
                             isValid = false;
                           }
@@ -937,7 +1005,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             }
 
                             String UserNameProfile = NameController.text;
-                            await prefs.setString('userNameProfile', UserNameProfile);
+                            await prefs.setString(
+                                'userNameProfile', UserNameProfile);
 
                             int userId = int.parse(UUID);
                             final image = _getImageToUpload();
@@ -950,7 +1019,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 image: image,
                                 pname: ''));
                           } catch (e) {
-                            _showErrorMessage(AppLocalizations.of(context)!.translate('profile_update_error'));
+                            _showErrorMessage(AppLocalizations.of(context)!
+                                .translate('profile_update_error'));
                           }
                         },
                         child: Text(
