@@ -1,4 +1,5 @@
 // lib/screens/auth/auth_screen.dart
+import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
@@ -32,8 +33,7 @@ class PinScreen extends StatefulWidget {
   _PinScreenState createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen>
-    with SingleTickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen> with SingleTickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   bool _isIosVersionAbove15 = false;
@@ -46,157 +46,171 @@ class _PinScreenState extends State<PinScreen>
   String _userNameProfile = '';
   String _userImage = '';
   int? userRoleId;
-  bool _isLoading = true; 
+  bool _isLoading = true;
   bool isPermissionsLoaded = false;
+  Map<String, dynamic>? tutorialProgress; // Добавлено
+  final ApiService _apiService = ApiService(); // Добавлено
 
- @override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
     context.read<PermissionsBloc>().add(FetchPermissionsEvent());
 
-  _loadUserPhone().then((_) {
-    if (mounted) {
+    _loadUserPhone().then((_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
+
+    _loadUserRoleId().then((_) {
+      _checkSavedPin();
+      _initBiometrics();
+    });
+
+    _fetchTutorialProgress(); // Добавлено
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
+    );
+
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _animationController.reset();
+      }
+    });
+  }
+
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
       setState(() {
-        _isLoading = false;
+        tutorialProgress = progress['result'];
       });
+      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      print('Tutorial progress updated from server: $tutorialProgress');
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+      final prefs = await SharedPreferences.getInstance();
+      final savedProgress = prefs.getString('tutorial_progress');
+      if (savedProgress != null) {
+        setState(() {
+          tutorialProgress = json.decode(savedProgress);
+        });
+        print('Tutorial progress loaded from cache: $tutorialProgress');
+      }
     }
-  });
+  }
 
-  _loadUserRoleId().then((_) {
-    _checkSavedPin();
-    _initBiometrics();
+  Future<void> _loadUserRoleId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      
+      if (userId.isEmpty) {
+        if (mounted) {
+          setState(() {
+            userRoleId = 0;
+          });
+        }
+        return;
+      }
+      await prefs.remove('userRoles');
 
-  });
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      if (mounted) {
+        setState(() {
+          userRoleId = userProfile.role!.first.id;
+        });
+      }
 
-  _animationController = AnimationController(
-    duration: const Duration(milliseconds: 500),
-    vsync: this,
-  );
+      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+      BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
 
-  _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
-    CurvedAnimation(parent: _animationController, curve: Curves.elasticIn),
-  );
-
-  _animationController.addStatusListener((status) {
-    if (status == AnimationStatus.completed) {
-      _animationController.reset();
-    }
-  });
-}
-Future<void> _loadUserRoleId() async {
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = prefs.getString('userID') ?? '';
-    
-    if (userId.isEmpty) {
-      if (mounted) { // Проверяем, mounted ли виджет
+      if (mounted) {
+        setState(() {
+          isPermissionsLoaded = true;
+        });
+      }
+    } catch (e) {
+      print('Error loading user role!');
+      if (mounted) {
         setState(() {
           userRoleId = 0;
         });
       }
-      return;
-    }
-    await prefs.remove('userRoles');
-
-    // Получение ИД РОЛЯ через API
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
-    if (mounted) { // Проверяем, mounted ли виджет
-      setState(() {
-        userRoleId = userProfile.role!.first.id;
-      });
-    }
-
-    // Выводим данные в консоль
-    BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
-    BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
-    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-    BlocProvider.of<MyTaskBloc>(context).add(FetchMyTaskStatuses());
-
-    if (mounted) { // Проверяем, mounted ли виджет
-      setState(() {
-        isPermissionsLoaded = true;
-      });
-    }
-  } catch (e) {
-    print('Error loading user role!');
-    if (mounted) { // Проверяем, mounted ли виджет
-      setState(() {
-        userRoleId = 0;
-      });
     }
   }
-}
 
-Future<void> _loadUserPhone() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-
-  String? savedUserName = prefs.getString('userName');
-  String? savedUserNameProfile = prefs.getString('userNameProfile');
-  String? savedUserImage = prefs.getString('userImage');
-
-  if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
-    if (mounted) { // Проверяем, mounted ли виджет
-      setState(() {
-        _userName = savedUserName;
-        _userNameProfile = savedUserNameProfile;
-        _userImage = savedUserImage;
-      });
-    }
-    return;
-  }
-
-  try {
-    // Инициализация SharedPreferences
+  Future<void> _loadUserPhone() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Получение userID из SharedPreferences
-    String UUID = prefs.getString('userID') ?? '';
-    print('userID : $UUID');
+    String? savedUserName = prefs.getString('userName');
+    String? savedUserNameProfile = prefs.getString('userNameProfile');
+    String? savedUserImage = prefs.getString('userImage');
 
-    // Преобразование UUID в число и вызов метода getUserById
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
-
-    // Сохранение данных пользователя в SharedPreferences
-    await prefs.setString('userName', userProfile.name);
-    await prefs.setString('userNameProfile', userProfile.name ?? '');
-    await prefs.setString('userImage', userProfile.image ?? '');
-
-    // Обновление состояния
-    if (mounted) { // Проверяем, mounted ли виджет
-      setState(() {
-        _userName = userProfile.name;
-        _userNameProfile = userProfile.name ?? '';
-        _userImage = userProfile.image ?? '';
-      });
+    if (savedUserName != null && savedUserNameProfile != null && savedUserImage != null) {
+      if (mounted) {
+        setState(() {
+          _userName = savedUserName;
+          _userNameProfile = savedUserNameProfile;
+          _userImage = savedUserImage;
+        });
+      }
+      return;
     }
-  } catch (e) {
-    // Обработка ошибок
-    print('Ошибка при загрузке данных с сервера: $e');
 
-    if (mounted) { // Проверяем, mounted ли виджет
-      setState(() {
-        _userName = 'Не найдено';
-        _userNameProfile = 'Не найдено';
-        _userImage = '';
-      });
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String UUID = prefs.getString('userID') ?? '';
+      print('userID : $UUID');
+
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+
+      await prefs.setString('userName', userProfile.name);
+      await prefs.setString('userNameProfile', userProfile.name ?? '');
+      await prefs.setString('userImage', userProfile.image ?? '');
+
+      if (mounted) {
+        setState(() {
+          _userName = userProfile.name;
+          _userNameProfile = userProfile.name ?? '';
+          _userImage = userProfile.image ?? '';
+        });
+      }
+    } catch (e) {
+      print('Ошибка при загрузке данных с сервера: $e');
+      if (mounted) {
+        setState(() {
+          _userName = 'Не найдено';
+          _userNameProfile = 'Не найдено';
+          _userImage = '';
+        });
+      }
     }
   }
 
-}
   Future<void> _initBiometrics() async {
     final localizations = AppLocalizations.of(context)!;
 
-   try {
+    try {
       _canCheckBiometrics = await _auth.canCheckBiometrics;
 
       if (_canCheckBiometrics) {
         _availableBiometrics = await _auth.getAvailableBiometrics();
         if (_availableBiometrics.isNotEmpty) {
-          if (Platform.isIOS &&
-              _availableBiometrics.contains(BiometricType.face)) {
+          if (Platform.isIOS && _availableBiometrics.contains(BiometricType.face)) {
             _authenticate();
-          } else if (Platform.isAndroid &&
-              _availableBiometrics.contains(BiometricType.strong)) {
+          } else if (Platform.isAndroid && _availableBiometrics.contains(BiometricType.strong)) {
             _authenticate();
           }
         }
@@ -204,7 +218,7 @@ Future<void> _loadUserPhone() async {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-            content: Text(localizations.translate('biometric_unavailable')), 
+              content: Text(localizations.translate('biometric_unavailable')),
             ),
           );
         }
@@ -214,39 +228,39 @@ Future<void> _loadUserPhone() async {
     }
   }
 
-Future<void> _authenticate() async {
-  final localizations = AppLocalizations.of(context)!;
+  Future<void> _authenticate() async {
+    final localizations = AppLocalizations.of(context)!;
 
-  try {
-    if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.translate('biometric_unavailable')),
-          ),
-        );
+    try {
+      if (!_canCheckBiometrics || _availableBiometrics.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.translate('biometric_unavailable')),
+            ),
+          );
+        }
+        return;
       }
-      return;
-    }
 
-    final bool didAuthenticate = await _auth.authenticate(
-      localizedReason: localizations.translate('confirm_identity'),
-      options: const AuthenticationOptions(
-        biometricOnly: true,
-        useErrorDialogs: true,
-        stickyAuth: true,
-      ),
-    );
+      final bool didAuthenticate = await _auth.authenticate(
+        localizedReason: localizations.translate('confirm_identity'),
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
+      );
 
-    if (didAuthenticate && mounted) {
-      _navigateToHome();
-    }
-  } on PlatformException catch (e) {
-    if (mounted) {
-      print('Ошибка биометрической аутентификации: $e');
+      if (didAuthenticate && mounted) {
+        _navigateToHome();
+      }
+    } on PlatformException catch (e) {
+      if (mounted) {
+        print('Ошибка биометрической аутентификации: $e');
+      }
     }
   }
-}
 
   Future<void> _checkSavedPin() async {
     final prefs = await SharedPreferences.getInstance();
@@ -259,42 +273,43 @@ Future<void> _authenticate() async {
   }
 
   void _onNumberPressed(String number) async {
-  if (_pin.length < 4) {
-    setState(() {
-      _pin += number;
-    });
-    
-    if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 50);
-    }
-    
-    if (_pin.length == 4) {
-      final prefs = await SharedPreferences.getInstance();
-      final savedPin = prefs.getString('user_pin');
-      
-      if (_pin == savedPin) {
-        if (mounted) {
-          _navigateToHome();
+    if (_pin.length < 4) {
+      setState(() {
+        _pin += number;
+      });
+
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: 50);
+      }
+
+      if (_pin.length == 4) {
+        final prefs = await SharedPreferences.getInstance();
+        final savedPin = prefs.getString('user_pin');
+
+        if (_pin == savedPin) {
+          if (mounted) {
+            _navigateToHome();
+          }
+        } else {
+          _triggerErrorEffect();
         }
-      } else {
-        _triggerErrorEffect();
       }
     }
   }
-}
 
-void _navigateToHome() {
-   Future.delayed(Duration(milliseconds: 10), () {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-
-  if (widget.initialMessage != null) {
-    handleMessage(widget.initialMessage!);
-  }
+  void _navigateToHome() {
+    Future.delayed(Duration(milliseconds: 10), () {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (tutorialProgress == null) {
+          await _fetchTutorialProgress();
+        }
+        if (widget.initialMessage != null) {
+          handleMessage(widget.initialMessage!);
+        }
+        Navigator.of(context).pushReplacementNamed('/home');
       });
-  });
-  Navigator.of(context).pushReplacementNamed('/home');
-}
-
+    });
+  }
 
   void _triggerErrorEffect() async {
     if (await Vibration.hasVibrator() ?? false) {
@@ -334,21 +349,20 @@ void _navigateToHome() {
     super.dispose();
   }
 
-String getGreetingMessage() {
-  final hour = DateTime.now().hour;
-  final localizations = AppLocalizations.of(context)!;
+  String getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    final localizations = AppLocalizations.of(context)!;
 
-  if (hour >= 5 && hour < 11) {
-    return '${localizations.translate('greeting_morning')}, $_userNameProfile!';
-  } else if (hour >= 11 && hour < 18) {
-    return '${localizations.translate('greeting_day')}, $_userNameProfile!';
-  } else if (hour >= 18 && hour < 22) {
-    return '${localizations.translate('greeting_evening')}, $_userNameProfile!';
-  } else {
-    return '${localizations.translate('greeting_night')}, $_userNameProfile!';
+    if (hour >= 5 && hour < 11) {
+      return '${localizations.translate('greeting_morning')}, $_userNameProfile!';
+    } else if (hour >= 11 && hour < 18) {
+      return '${localizations.translate('greeting_day')}, $_userNameProfile!';
+    } else if (hour >= 18 && hour < 22) {
+      return '${localizations.translate('greeting_evening')}, $_userNameProfile!';
+    } else {
+      return '${localizations.translate('greeting_night')}, $_userNameProfile!';
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -356,7 +370,6 @@ String getGreetingMessage() {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          // В виджете используйте _userImage для отображения
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -379,14 +392,14 @@ String getGreetingMessage() {
               ),
               const SizedBox(height: 8),
               Text(
-              _isWrongPin
-                  ? localizations.translate('wrong_pin')
-                  : localizations.translate('enter_pin'),
-              style: TextStyle(
-                fontSize: 16,
-                color: _isWrongPin ? Colors.red : Colors.grey,
+                _isWrongPin
+                    ? localizations.translate('wrong_pin')
+                    : localizations.translate('enter_pin'),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _isWrongPin ? Colors.red : Colors.grey,
+                ),
               ),
-            ),
               const SizedBox(height: 24),
               AnimatedBuilder(
                 animation: _shakeAnimation,
@@ -427,20 +440,19 @@ String getGreetingMessage() {
                         onPressed: () => _onNumberPressed(i.toString()),
                         child: Text(
                           i.toString(),
-                          style: const TextStyle(
-                              fontSize: 24, color: Colors.black),
+                          style: const TextStyle(fontSize: 24, color: Colors.black),
                         ),
                       ),
-                  TextButton(
-                    onPressed: _onExitPressed,
-                    child: Text(
-                      localizations.translate('exit'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color.fromARGB(255, 33, 41, 188),
+                    TextButton(
+                      onPressed: _onExitPressed,
+                      child: Text(
+                        localizations.translate('exit'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color.fromARGB(255, 33, 41, 188),
+                        ),
                       ),
                     ),
-                  ),
                     TextButton(
                       onPressed: () => _onNumberPressed('0'),
                       child: const Text(
@@ -468,10 +480,10 @@ String getGreetingMessage() {
                     builder: (context) => ForgotPinScreen(),
                   ));
                 },
-              child: Text(
-                localizations.translate('forgot_pin'),
-                style: const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
-              ),
+                child: Text(
+                  localizations.translate('forgot_pin'),
+                  style: const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
+                ),
               ),
             ],
           ),
