@@ -68,7 +68,7 @@ class TaskByIdScreen extends StatelessWidget {
                   priorityLevelText = AppLocalizations.of(context)!.translate('normal');
                   break;
                 case '2':
-                  priorityLevelText = AppLocalizations.of(context)!.translate('urgent');
+                  priorityLevelText = AppLocalizations.of(context)!.translate('normal');
                   break;
                 case '3':
                   priorityLevelText = AppLocalizations.of(context)!.translate('urgent');

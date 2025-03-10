@@ -27,6 +27,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,6 +83,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   bool _isSearching = false;
   String? _searchQuery;
+
+    final AudioPlayer _audioPlayer = AudioPlayer();
+
 
  void _onSearchChanged(String query) {
     setState(() {
@@ -896,81 +900,66 @@ Widget messageListUi() {
 
 
     socketClient.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-      chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
-        MessageSocketData mm = messageSocketDataFromJson(event.data);
-        print('=====================================');
-        print('==================EVENT DATA======START=============');
-        print(event.data);
-        print('==================EVENT DATA======END=============');
+  myPresenceChannel.subscribeIfNotUnsubscribed();
+  chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
+    MessageSocketData mm = messageSocketDataFromJson(event.data);
 
-        print('----sender');
-        print(mm.message?.text ?? 'No text');
-        print(mm.message?.sender?.name ?? 'Unknown sender');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String UUID = prefs.getString('userID') ?? '';
 
-            // Проверяем, не обрабатывалось ли это сообщение ранее
-    if (processedMessageIds.contains(mm.message?.id)) {
-      print('Duplicate message, skipping.');
-      return; // Пропускаем сообщение, если оно уже было обработано
+    Message msg;
+    if (mm.message?.type == 'voice' ||
+        mm.message?.type == 'file' ||
+        mm.message?.type == 'image' ||
+        mm.message?.type == 'document') {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        filePath: mm.message?.filePath.toString() ?? '',
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        duration: Duration(
+            seconds: (mm.message?.voiceDuration != null)
+                ? double.parse(mm.message!.voiceDuration.toString()).round()
+                : 20),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+      );
+    } else {
+      ForwardedMessage? forwardedMessage;
+      if (mm.message?.forwardedMessage != null) {
+        forwardedMessage = ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
+      }
+      msg = Message(
+        id: mm.message?.id ?? 0,
+        text: mm.message?.text ?? mm.message?.type ?? '',
+        type: mm.message?.type ?? '',
+        createMessateTime: mm.message?.createdAt?.toString() ?? '',
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
+            mm.message?.sender?.type == 'user'),
+        senderName: mm.message?.sender?.name ?? 'Unknown sender',
+        forwardedMessage: forwardedMessage,
+      );
     }
 
-    // Добавляем ID сообщения в множество
-    processedMessageIds.add(mm.message?.id ?? 0);
+    setState(() {
+      context.read<MessagingCubit>().updateMessageFromSocket(msg);
+    });
 
+        if (!msg.isMyMessage) {
+      await _audioPlayer.setAsset('assets/get.mp3');
+      await _audioPlayer.play();
+    }
 
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String UUID = prefs.getString('userID') ?? '';
-        print('userID : $UUID');
-
-        Message msg;
-        if (mm.message?.type == 'voice' ||
-            mm.message?.type == 'file' ||
-            mm.message?.type == 'image' ||
-            mm.message?.type == 'document') {
-          ForwardedMessage? forwardedMessage;
-          if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-          }
-
-          msg = Message(
-            id: mm.message?.id ?? 0,
-            filePath: mm.message?.filePath.toString() ?? '',
-            text: mm.message?.text ?? mm.message?.type ?? '',
-            type: mm.message?.type ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
-            createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            duration: Duration(
-                seconds: (mm.message?.voiceDuration != null)
-                    ? double.parse(mm.message!.voiceDuration.toString()).round()
-                    : 20),
-            senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage,
-          );
-        } else {
-          ForwardedMessage? forwardedMessage;
-          if (mm.message?.forwardedMessage != null) {
-            forwardedMessage =
-                ForwardedMessage.fromJson(mm.message!.forwardedMessage!);
-          }
-          msg = Message(
-            id: mm.message?.id ?? 0,
-            text: mm.message?.text ?? mm.message?.type ?? '',
-            type: mm.message?.type ?? '',
-            createMessateTime: mm.message?.createdAt?.toString() ?? '',
-            isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-                mm.message?.sender?.type == 'user'),
-            senderName: mm.message?.sender?.name ?? 'Unknown sender',
-            forwardedMessage: forwardedMessage,
-          );
-        }
-
-        setState(() {
-          context.read<MessagingCubit>().addMessageFormSocket(msg);
-        });
-        _scrollToBottom();
-      });
+    _scrollToBottom();
+  });
     myPresenceChannel.bind('chat.messageEdited').listen((event) async {
   print('==================MESSAGE EDITITING EVENT DATA======START=============');
   print(event.data);
@@ -1091,26 +1080,46 @@ myPresenceChannel.bind('chat.read').listen((event) async {
     }
   }
 
-  Future<void> _onSendInButton(
-      String messageText, String? replyMessageId) async {
-    context.read<ListenSenderTextCubit>().updateValue(true);
+Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
 
-    if (messageText.trim().isNotEmpty) {
-      try {
-        _messageController.clear();
-        await widget.apiService.sendMessage(
-          widget.chatId,
-          messageText.trim(),
-          replyMessageId: replyMessageId,
-        );
-        context.read<ListenSenderTextCubit>().updateValue(false);
-      } catch (e) {
-        debugPrint('Ошибка отправки сообщения через API!');
-      }
-    } else {
-      debugPrint('Сообщение пустое, отправка не выполнена');
-    }
+  if (replyMessageId != null) {
+    context.read<ListenSenderTextCubit>().updateValue(true);
   }
+
+  if (messageText.trim().isNotEmpty) {
+    try {
+      final localMessage = Message(
+        id: -DateTime.now().millisecondsSinceEpoch, 
+        text: messageText,
+        type: 'text',
+        createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
+        isMyMessage: true,
+        senderName: '', 
+      );
+
+      context.read<MessagingCubit>().addLocalMessage(localMessage);
+
+      await _audioPlayer.setAsset('assets/send.mp3');
+      await _audioPlayer.play();
+
+      _messageController.clear();
+
+      await widget.apiService.sendMessage(
+        widget.chatId,
+        messageText.trim(),
+        replyMessageId: replyMessageId,
+      );
+
+
+
+      context.read<ListenSenderTextCubit>().updateValue(false);
+    } catch (e) {
+      debugPrint('Ошибка отправки сообщения через API!');
+    }
+  } else {
+    debugPrint('Сообщение пустое, отправка не выполнена');
+  }
+}
 
   void _onPickFilePressed() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1121,8 +1130,7 @@ myPresenceChannel.bind('chat.read').listen((event) async {
       debugPrint(result.files.first.path!);
 
       context.read<ListenSenderFileCubit>().updateValue(true);
-      await widget.apiService
-          .sendChatFile(widget.chatId, result.files.first.path!);
+      await widget.apiService.sendChatFile(widget.chatId, result.files.first.path!);
       context.read<ListenSenderFileCubit>().updateValue(false);
     }
   }

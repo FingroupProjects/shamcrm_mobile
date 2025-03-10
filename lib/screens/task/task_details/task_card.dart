@@ -81,7 +81,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFFFEBEE); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFFFEBEE); // Цвет для сложного приоритета
+        return const Color(0xFFE8F5E9); // Цвет для сложного приоритета
       default:
         return const Color(0xFFE8F5E9); // Цвет по умолчанию
     }
@@ -95,7 +95,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return const Color(0xFFC62828); // Цвет для критического приоритета
       case 2:
-        return const Color(0xFFC62828); // Цвет для сложного приоритета
+        return const Color(0xFF2E7D32); // Цвет для сложного приоритета
       default:
         return const Color(0xFF2E7D32); // Цвет по умолчанию
     }
@@ -109,7 +109,7 @@ class _TaskCardState extends State<TaskCard> {
       case 3:
         return AppLocalizations.of(context)!.translate('urgent');
       case 2:
-        return AppLocalizations.of(context)!.translate('urgent');
+        return AppLocalizations.of(context)!.translate('normal');
       default:
         return AppLocalizations.of(context)!.translate('normal');
     }

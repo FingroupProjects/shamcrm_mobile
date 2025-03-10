@@ -34,6 +34,23 @@ class MessagingCubit extends Cubit<MessagingState> {
     }
   }
 
+void addLocalMessage(Message message) {
+  if (state is MessagesLoadedState) {
+    final currentState = state as MessagesLoadedState;
+    final messages = List<Message>.from(currentState.messages);
+    messages.insert(0, message);
+    emit(MessagesLoadedState(messages: messages));
+  } else if (state is PinnedMessagesState) {
+    final currentState = state as PinnedMessagesState;
+    final messages = List<Message>.from(currentState.messages);
+    messages.insert(0, message);
+    emit(PinnedMessagesState(
+      pinnedMessages: currentState.pinnedMessages, 
+      messages: messages,
+    ));
+  }
+}
+
   void addMessageFormSocket(Message message) {
     if (state is MessagesLoadedState) {
       final currentState = state as MessagesLoadedState;
@@ -49,30 +66,93 @@ class MessagingCubit extends Cubit<MessagingState> {
     }
   }
 
-  void updateMessageFromSocket(Message updatedMessage) {
-    if (state is MessagesLoadedState) {
-      final currentState = state as MessagesLoadedState;
-      final messages = currentState.messages;
+void updateMessageFromSocket(Message updatedMessage) {
+  if (state is MessagesLoadedState) {
+    final currentState = state as MessagesLoadedState;
+    final messages = List<Message>.from(currentState.messages);
+
+    // Ищем локальное сообщение с временным ID
+    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+
+    if (localMessageIndex != -1) {
+      // Заменяем локальное сообщение на реальное
+      messages[localMessageIndex] = updatedMessage;
+      emit(MessagesLoadedState(messages: messages));
+    } else {
+      // Если локального сообщения нет, проверяем, есть ли сообщение с таким же ID
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       if (index != -1) {
+        // Если сообщение уже существует, обновляем его
         messages[index] = updatedMessage;
         emit(MessagesLoadedState(messages: messages));
+      } else {
+        // Если сообщение новое, добавляем его в список
+        messages.insert(0, updatedMessage);
+        emit(MessagesLoadedState(messages: messages));
       }
-    } else if (state is PinnedMessagesState) {
-      final currentState = state as PinnedMessagesState;
-      final messages = currentState.messages;
+    }
+  } else if (state is PinnedMessagesState) {
+    final currentState = state as PinnedMessagesState;
+    final messages = List<Message>.from(currentState.messages);
+
+    // Ищем локальное сообщение с временным ID
+    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+
+    if (localMessageIndex != -1) {
+      // Заменяем локальное сообщение на реальное
+      messages[localMessageIndex] = updatedMessage;
+      emit(PinnedMessagesState(
+        pinnedMessages: currentState.pinnedMessages,
+        messages: messages,
+      ));
+    } else {
+      // Если локального сообщения нет, проверяем, есть ли сообщение с таким же ID
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       if (index != -1) {
+        // Если сообщение уже существует, обновляем его
         messages[index] = updatedMessage;
         emit(PinnedMessagesState(
-          pinnedMessages: currentState.pinnedMessages, messages: messages));
+          pinnedMessages: currentState.pinnedMessages,
+          messages: messages,
+        ));
+      } else {
+        // Если сообщение новое, добавляем его в список
+        messages.insert(0, updatedMessage);
+        emit(PinnedMessagesState(
+          pinnedMessages: currentState.pinnedMessages,
+          messages: messages,
+        ));
       }
-    } else if (state is EditingMessageState) {
-      final currentState = state as EditingMessageState;
-      final messages = currentState.messages;
+    }
+  } else if (state is EditingMessageState) {
+    final currentState = state as EditingMessageState;
+    final messages = List<Message>.from(currentState.messages);
+
+    // Ищем локальное сообщение с временным ID
+    final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
+
+    if (localMessageIndex != -1) {
+      // Заменяем локальное сообщение на реальное
+      messages[localMessageIndex] = updatedMessage;
+      emit(EditingMessageState(
+        editingMessage: currentState.editingMessage,
+        messages: messages,
+        pinnedMessages: currentState.pinnedMessages,
+      ));
+    } else {
+      // Если локального сообщения нет, проверяем, есть ли сообщение с таким же ID
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       if (index != -1) {
+        // Если сообщение уже существует, обновляем его
         messages[index] = updatedMessage;
+        emit(EditingMessageState(
+          editingMessage: currentState.editingMessage,
+          messages: messages,
+          pinnedMessages: currentState.pinnedMessages,
+        ));
+      } else {
+        // Если сообщение новое, добавляем его в список
+        messages.insert(0, updatedMessage);
         emit(EditingMessageState(
           editingMessage: currentState.editingMessage,
           messages: messages,
@@ -81,7 +161,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       }
     }
   }
-
+}
   void startEditingMessage(Message message) {
     _editingMessage = message;
     if (state is MessagesLoadedState) {
@@ -285,3 +365,4 @@ void unpinMessageFromSocket(int messageId) {
     }
   }
 }
+
