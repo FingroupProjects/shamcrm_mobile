@@ -84,29 +84,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _fetchTutorialProgress();
   }
 
-  Future<void> _fetchTutorialProgress() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-      
-      if (!isTutorialShown) {
-        final progress = await _apiService.getTutorialProgress();
-        setState(() {
-          tutorialProgress = progress['result'];
-        });
-        await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      } else {
-        final savedProgress = prefs.getString('tutorial_progress');
-        if (savedProgress != null) {
-          setState(() {
-            tutorialProgress = json.decode(savedProgress);
-          });
-        }
-      }
-    } catch (e) {
-      print('Error fetching tutorial progress: $e');
+Future<void> _fetchTutorialProgress() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    // Всегда получаем данные с сервера
+    final progress = await _apiService.getTutorialProgress();
+    setState(() {
+      tutorialProgress = progress['result'];
+    });
+    // Сохраняем актуальные данные в SharedPreferences
+    await prefs.setString('tutorial_progress', json.encode(progress['result']));
+    // Проверяем локальный флаг завершения туториала
+    bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
+    if (isTutorialShown) {
+      setState(() {
+        _isTutorialShown = true;
+      });
+    }
+  } catch (e) {
+    print('Error fetching tutorial progress: $e');
+    // В случае ошибки пытаемся загрузить из кэша
+    final prefs = await SharedPreferences.getInstance();
+    final savedProgress = prefs.getString('tutorial_progress');
+    if (savedProgress != null) {
+      setState(() {
+        tutorialProgress = json.decode(savedProgress);
+      });
     }
   }
+}
 
   void _initTutorialTargets() {
     if (userRoles.contains('admin')) {
@@ -121,7 +127,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showTutorialIfNeeded() {
-    if (!_isTutorialShown && tutorialProgress != null && tutorialProgress!['dashboard']?['index'] == true) {
+    if (!_isTutorialShown &&
+        tutorialProgress != null &&
+        tutorialProgress!['dashboard']?['index'] == false) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorial();
         setState(() {
@@ -217,8 +225,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardAdminDealStats",
         keyTarget: keyAdminDealStats,
-        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -351,8 +361,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardUserGoalComplietion",
         keyTarget: keyManagerGoalComplietion,
-        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -361,8 +373,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardUserTaskChart",
         keyTarget: keyAdminTaskChart,
-        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -370,63 +384,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ]);
   }
 
-void showTutorial() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-  
-  if (!isTutorialShown) {
-    TutorialCoachMark(
-      targets: targets,
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-      onSkip: () { // Изменено: убрано async, возвращаем bool напрямую
-        prefs.setBool('isTutorialShownDashboard', true);
-        _apiService.markPageCompleted("dashboard", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
-        });
-        setState(() {
-          _isTaskScreenTutorialCompleted = true;
-        });
-        return true;
-      },
-      onFinish: () async {
-        await prefs.setBool('isTutorialShownDashboard', true);
-        try {
-          await _apiService.markPageCompleted("dashboard", "index");
-        } catch (e) {
-          print('Error marking page completed on finish: $e');
-        }
-        setState(() {
-          _isTaskScreenTutorialCompleted = true;
-        });
-      },
-      onClickTarget: (target) async {
-        int currentIndex =
-            targets.indexWhere((t) => t.identify == target.identify);
-        if (currentIndex < targets.length - 1) {
-          final nextTarget = targets[currentIndex + 1];
+  void showTutorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
 
-          if (nextTarget.keyTarget != null) {
-            await Future.delayed(Duration(milliseconds: 300));
-            _scrollToTarget(nextTarget.keyTarget!);
+    if (!isTutorialShown) {
+      TutorialCoachMark(
+        targets: targets,
+        textSkip: AppLocalizations.of(context)!.translate('skip'),
+        textStyleSkip: TextStyle(
+          color: Colors.white,
+          fontFamily: 'Gilroy',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          shadows: [
+            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          ],
+        ),
+        colorShadow: Color(0xff1E2E52),
+        onSkip: () {
+          // Изменено: убрано async, возвращаем bool напрямую
+          prefs.setBool('isTutorialShownDashboard', true);
+          _apiService.markPageCompleted("dashboard", "index").catchError((e) {
+            print('Error marking page completed on skip: $e');
+          });
+          setState(() {
+            _isTaskScreenTutorialCompleted = true;
+          });
+          return true;
+        },
+        onFinish: () async {
+          await prefs.setBool('isTutorialShownDashboard', true);
+          try {
+            await _apiService.markPageCompleted("dashboard", "index");
+          } catch (e) {
+            print('Error marking page completed on finish: $e');
           }
-        }
-      },
-    ).show(context: context);
+          setState(() {
+            _isTaskScreenTutorialCompleted = true;
+          });
+        },
+        onClickTarget: (target) async {
+          int currentIndex =
+              targets.indexWhere((t) => t.identify == target.identify);
+          if (currentIndex < targets.length - 1) {
+            final nextTarget = targets[currentIndex + 1];
+
+            if (nextTarget.keyTarget != null) {
+              await Future.delayed(Duration(milliseconds: 300));
+              _scrollToTarget(nextTarget.keyTarget!);
+            }
+          }
+        },
+      ).show(context: context);
+    }
   }
-}
 
   void _scrollToTarget(GlobalKey key) {
     final RenderObject? renderObject = key.currentContext?.findRenderObject();
