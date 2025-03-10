@@ -15,6 +15,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_scree
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
@@ -39,7 +40,6 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
-import 'package:voice_message_package/voice_message_package.dart';
 
 class ChatSmsScreen extends StatefulWidget {
   final ChatItem chatItem;
@@ -64,23 +64,18 @@ class ChatSmsScreen extends StatefulWidget {
 class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ScrollController _scrollController = ScrollController();
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
-
-  String? _currentDate;
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode(); 
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
   late PusherChannelsClient socketClient;
-
-  late VoiceController audioController;
   final ApiService apiService = ApiService();
-  String? _visibleDate;
   late String baseUrl;
+  String? _currentDate;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
   int? _highlightedMessageId;
   bool _isMenuOpen = false;
-
   bool _isSearching = false;
   String? _searchQuery;
 
@@ -188,10 +183,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   onDateChanged: (date) {
                     final index = _findMessageIndexByDate(messages, date);
                     if (index != -1) {
-                      print(' +++_+_+__+_INDEX+_++__+_++_');
-                      print(index);
-                      print(' +++_+_+__DATE+_+_++__+_++_');
-                      print(date);
                       Navigator.pop(context);
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _scrollToMessageIndex(date);
@@ -209,22 +200,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   int _findMessageIndexByDate(List<Message> messages, DateTime targetDate) {
-    // Ищем последний индекс сообщения с указанной датой
     int lastIndex = -1;
     for (int i = 0; i < messages.length; i++) {
       final messageDate = DateTime.parse(messages[i].createMessateTime);
       if (isSameDay(messageDate, targetDate)) {
-        print('last INDEX');
-        print(lastIndex);
-        lastIndex = i; // Сохраняем последний найденный индекс
+        lastIndex = i; 
       }
     }
-          print('Return INDEX');
-        print(lastIndex);
     return lastIndex;
   }
 
-  // void _scrollToMessageIndex(int index) {
 void _scrollToMessageIndex(DateTime selectedDate) {
   final state = context.read<MessagingCubit>().state;
   if (state is MessagesLoadedState || state is PinnedMessagesState) {
@@ -244,7 +229,6 @@ void _scrollToMessageIndex(DateTime selectedDate) {
         curve: Curves.easeInOut,
       );
     } else {
-      // Если сообщений для выбранной даты нет, покажите уведомление
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('No messages found for ${formatDate(selectedDate)}')),
       );
@@ -632,7 +616,6 @@ Widget messageListUi() {
         );
       }
 
-      // Отображаем список сообщений
       List<Widget> messageWidgets = [];
       DateTime? currentDate;
       List<Widget> currentGroup = [];
@@ -641,7 +624,6 @@ Widget messageListUi() {
         final message = messages[i];
         final messageDate = DateTime.parse(message.createMessateTime);
 
-        // Логика группировки сообщений по датам
         if (currentDate == null || !isSameDay(currentDate, messageDate)) {
           if (currentGroup.isNotEmpty) {
             messageWidgets.addAll(currentGroup);
@@ -650,7 +632,7 @@ Widget messageListUi() {
 
           currentGroup.add(
             Padding(
-              padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+              padding: const EdgeInsets.only(top: 16, bottom: 8),
               child: GestureDetector(
                 onTap: () => _showDatePicker(context, messages),
                 child: Center(
@@ -724,7 +706,7 @@ Widget messageListUi() {
                   if (shouldShowDate) {
                     widgets.add(
                       Padding(
-                        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                        padding: const EdgeInsets.only(top: 16, bottom: 8),
                         child: GestureDetector(
                           onTap: () => _showDatePicker(context, messages),
                           child: Center(
@@ -822,9 +804,28 @@ Widget messageListUi() {
       },
       messageController: _messageController,
       sendRequestFunction: (File soundFile, String time) async {
-        context.read<ListenSenderVoiceCubit>().updateValue(true);
-        debugPrint("the current path is ${soundFile.path}");
-        String inputPath = '/path/to/recorded/file.mp4a';
+
+        Duration calculateDuration(String time) {
+          List<String> parts = time.split(':');
+          int minutes = int.parse(parts[0]);
+          int seconds = int.parse(parts[1]);
+          return Duration(minutes: minutes, seconds: seconds);
+        }
+
+        final tempMessage = Message(
+          id: -DateTime.now().millisecondsSinceEpoch, 
+          text: "Голосовое сообщение",
+          type: 'voice',
+          createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
+          isMyMessage: true,
+          senderName: "Вы",
+          filePath: soundFile.path,
+          duration: calculateDuration(time),
+        );
+
+        context.read<MessagingCubit>().addLocalMessage(tempMessage);
+
+        String inputPath = soundFile.path;
         String outputPath = await getOutputPath('converted_file.ogg');
 
         File? convertedFile = await convertAudioFile(inputPath, outputPath);
@@ -835,7 +836,6 @@ Widget messageListUi() {
         } else {
           debugPrint('Conversion failed');
         }
-
         try {
           await widget.apiService.sendChatAudioFile(widget.chatId, soundFile);
         } catch (e) {
@@ -845,6 +845,8 @@ Widget messageListUi() {
       },
     );
   }
+
+
 
   Future<String> getOutputPath(String fileName) async {
     final directory = await getTemporaryDirectory();
@@ -856,15 +858,13 @@ Widget messageListUi() {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
-    final baseUrlSocket = await apiService.getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
     
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
 
     final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
+      uriResolver: (metadata) => Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
@@ -881,11 +881,9 @@ Widget messageListUi() {
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-chat.${widget.chatId}',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate
+      .forPresenceChannel( authorizationEndpoint: Uri.parse(
+      'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back',
@@ -896,10 +894,7 @@ Widget messageListUi() {
       ),
     );
 
-    Set<int> processedMessageIds = {};
-
-
-    socketClient.onConnectionEstablished.listen((_) {
+ socketClient.onConnectionEstablished.listen((_) {
   myPresenceChannel.subscribeIfNotUnsubscribed();
   chatSubscribtion = myPresenceChannel.bind('chat.message').listen((event) async {
     MessageSocketData mm = messageSocketDataFromJson(event.data);
@@ -961,9 +956,6 @@ Widget messageListUi() {
     _scrollToBottom();
   });
     myPresenceChannel.bind('chat.messageEdited').listen((event) async {
-  print('==================MESSAGE EDITITING EVENT DATA======START=============');
-  print(event.data);
-  print('==================MESSAGE EDITITING--EVENT DATA======END=============');
 
   try {
     MessageSocketData mm = messageSocketDataFromJson(event.data);
@@ -986,11 +978,9 @@ Widget messageListUi() {
         filePath: mm.message?.filePath.toString() ?? '',
         text: mm.message?.text ?? mm.message?.type ?? '',
         type: mm.message?.type ?? '',
-        isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-            mm.message?.sender?.type == 'user'),
+        isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
         createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        duration: Duration(
-            seconds: (mm.message?.voiceDuration != null)
+        duration: Duration(seconds: (mm.message?.voiceDuration != null)
                 ? double.parse(mm.message!.voiceDuration.toString()).round()
                 : 20),
         senderName: mm.message?.sender?.name ?? 'Unknown sender',
@@ -1009,7 +999,7 @@ Widget messageListUi() {
         type: mm.message?.type ?? '',
         createMessateTime: mm.message?.createdAt?.toString() ?? '',
         isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
-            mm.message?.sender?.type == 'user'),
+        mm.message?.sender?.type == 'user'),
         senderName: mm.message?.sender?.name ?? 'Unknown sender',
         forwardedMessage: forwardedMessage,
         isChanged: mm.message?.isChanged ?? false, 
@@ -1028,9 +1018,6 @@ Widget messageListUi() {
  myPresenceChannel.bind('chat.pinned').listen((event) async {
   try {
     final data = jsonDecode(event.data);
-  print('==================MESSAGE PINNDE EVENT DATA======START=============');
-  print(event.data);
-  print('==================MESSAGE PINNED--EVENT DATA======END=============');
     final type = data['type']; 
     final messageData = data['message'];
     final message = Message.fromJson(messageData); 
@@ -1048,9 +1035,6 @@ Widget messageListUi() {
 
 myPresenceChannel.bind('chat.read').listen((event) async {
   final readData = jsonDecode(event.data);
-  print('================== MESSAGE CHAT EVENT DATA ====== START =============');
-  print(event.data);
-  print('================== MESSAGE CHAT EVENT DATA ====== END ===============');
   if (readData['messages'] is List) {
     context.read<MessagingCubit>().updateMessageReadStatusFromSocket(readData);
     setState(() {}); 
@@ -1058,8 +1042,7 @@ myPresenceChannel.bind('chat.read').listen((event) async {
     print('Error: Expected "messages" to be a List but found ${readData['messages']}');
   }
 });
-
-    });
+});
 
     try {
       await socketClient.connect();
@@ -1083,7 +1066,7 @@ myPresenceChannel.bind('chat.read').listen((event) async {
 Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
 
   if (replyMessageId != null) {
-    context.read<ListenSenderTextCubit>().updateValue(true);
+    // context.read<ListenSenderTextCubit>().updateValue(true);
   }
 
   if (messageText.trim().isNotEmpty) {
@@ -1109,8 +1092,6 @@ Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
         messageText.trim(),
         replyMessageId: replyMessageId,
       );
-
-
 
       context.read<ListenSenderTextCubit>().updateValue(false);
     } catch (e) {
@@ -1168,14 +1149,12 @@ void dispose() {
     chatSubscribtion?.cancel();
     chatSubscribtion = null;
   }
-
   
   _scrollController.removeListener(_onScroll);
   _scrollController.dispose();
   _messageController.dispose();
   socketClient.dispose();
   _focusNode.dispose(); 
-
   super.dispose();
 }
 }
@@ -1240,8 +1219,6 @@ class MessageItemWidget extends StatelessWidget {
   }
 
 
-
-
   Widget _buildMessageContent(BuildContext context) {
     switch (message.type) {
       case 'text':
@@ -1275,7 +1252,10 @@ class MessageItemWidget extends StatelessWidget {
           isRead: message.isRead,
         );
       case 'voice':
-        return voiceState();
+        return VoiceMessageWidget(
+          message: message,
+          baseUrl: baseUrl,
+        );
       default:
         return SizedBox();
     }
@@ -1319,97 +1299,6 @@ class MessageItemWidget extends StatelessWidget {
       isRead: message.isRead,
     );
   }
-
-  Widget voiceState() {
-    String audioUrl = '${baseUrl.replaceAll(
-      '/api',
-      '',
-    )}/storage/${message.filePath}';
-
-print('AUDIO URL:${audioUrl}');
-    final audioController = VoiceController(
-      audioSrc: audioUrl,
-      onComplete: () {
-        /// do something on complete
-      },
-      onPause: () {
-        /// do something on pause
-      },
-      onPlaying: () {
-        print('PLAYING');
-        /// do something on playing
-      },
-      onError: (err) {
-        /// do something on error
-      },
-      maxDuration: message.duration.inSeconds > 0
-        ? message.duration
-        : const Duration(seconds: 5),
-      isFile: false,
-    );
-    return Container(
-      margin: EdgeInsets.only(
-          top: 8,
-          bottom: 8,
-          right: message.isMyMessage == false ? 60 : 0,
-          left: message.isMyMessage ? 60 : 0),
-      child: Column(
-        crossAxisAlignment: message.isMyMessage
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 8),
-          if (message.isMyMessage == false)
-            Text(
-              message.senderName,
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          VoiceMessageView(
-            innerPadding: 8,
-            backgroundColor: message.isMyMessage
-                ? ChatSmsStyles.messageBubbleSenderColor
-                : ChatSmsStyles.messageBubbleReceiverColor,
-            activeSliderColor: message.isMyMessage
-                ? Colors.white
-                : ChatSmsStyles.messageBubbleSenderColor,
-            circlesColor: message.isMyMessage
-                ? Colors.white.withOpacity(.2)
-                : ChatSmsStyles.messageBubbleSenderColor,
-            controller: audioController,
-            counterTextStyle: TextStyle(
-              color: message.isMyMessage
-                  ? Colors.white
-                  : ChatSmsStyles.messageBubbleSenderColor,
-            ),
-          ),
-        SizedBox(height: 4), 
-        Row( 
-          mainAxisSize: MainAxisSize.min, 
-          children: [ 
-            Text( 
-              time(message.createMessateTime), 
-              style: const TextStyle( 
-                fontSize: 12, 
-                color: ChatSmsStyles.appBarTitleColor, 
-                fontWeight: FontWeight.w500, 
-                fontFamily: 'Gilroy', 
-              ), 
-            ), 
-            const SizedBox(width: 3), 
-            if (message.isMyMessage) 
-              Icon( 
-                message.isRead ? Icons.done_all : Icons.done_all, 
-                size: 18, 
-                color: message.isRead 
-                    ? const Color.fromARGB(255, 45, 28, 235) 
-                    : Colors.grey.shade400, 
-              ), 
-          ], 
-        ), 
-      ], 
-    ), 
-  ); 
-}
 
 void _showMessageContextMenu(BuildContext context, Message message, FocusNode focusNode) {
   final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
@@ -1497,7 +1386,6 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
             ),
           ),
         );
-        
         
         bool isUserNavigating = false; 
         
@@ -1741,32 +1629,29 @@ void _showMessageContextMenu(BuildContext context, Message message, FocusNode fo
 
 void _copyMessageToClipboard(BuildContext context, String messageText) {
   Clipboard.setData(ClipboardData(text: messageText));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.translate('copy_message'), 
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.green,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-              );
-        }
-
-
-
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        AppLocalizations.of(context)!.translate('copy_message'), 
+        style: TextStyle(
+          fontFamily: 'Gilroy',
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+      behavior: SnackBarBehavior.floating,
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      backgroundColor: Colors.green,
+      elevation: 3,
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      duration: Duration(seconds: 3),
+    ),
+    );
+ }
 
 PopupMenuItem _buildMenuItemWithAvatar({
   required String avatarSvg,
@@ -1849,19 +1734,12 @@ PopupMenuItem _buildMenuItem({
   );
 }
 
-
-
-
-  // Логика для удаления сообщения
   void _deleteMessage(BuildContext context) {
-    // Проверка, является ли сообщение отправленным текущим пользователем
     if (message.isMyMessage) {
       int messageId = message.id;
 
-      // Удаление сообщения с помощью блока
       context.read<DeleteMessageBloc>().add(DeleteMessage(messageId));
 
-      // Показ уведомления о успешном удалении
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1911,4 +1789,5 @@ PopupMenuItem _buildMenuItem({
     }
   }
 }
+
 

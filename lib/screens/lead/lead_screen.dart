@@ -88,13 +88,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _initialDaysWithoutActivity;
   List<int>? _selectedManagerIds;
 
-      final GlobalKey keySearchIcon = GlobalKey(); 
-    final GlobalKey keyMenuIcon = GlobalKey(); 
-
-    List<TargetFocus> targets = [];
-    bool _isTutorialShown = false;
-
-    bool _isLeadScreenTutorialCompleted = false;
+  final GlobalKey keySearchIcon = GlobalKey(); 
+  final GlobalKey keyMenuIcon = GlobalKey(); 
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
+  bool _isLeadScreenTutorialCompleted = false;
 
   @override
   void initState() {
@@ -107,13 +105,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     LeadCache.getLeadStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {    
-          _tabTitles = cachedStatuses
-              .map((status) => {'id': status['id'], 'title': status['title']})
-              .toList();
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
+          _tabTitles = cachedStatuses.map((status) => {'id': status['id'], 'title': status['title']}).toList();
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
           _tabController.index = _currentTabIndex;
-
           _tabController.addListener(() {
             setState(() {
               _currentTabIndex = _tabController.index;
@@ -122,7 +116,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           });
         });
       } else {
-        // Если статусов в кэше нет — запрос через API
         final leadBloc = BlocProvider.of<LeadBloc>(context);
         leadBloc.add(FetchLeadStatuses());
       }

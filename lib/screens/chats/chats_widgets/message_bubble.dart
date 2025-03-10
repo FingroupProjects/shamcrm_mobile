@@ -113,7 +113,7 @@ class MessageBubble extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          'Изменено',
+                          AppLocalizations.of(context)!.translate('edited_sms'),
                           style: TextStyle(
                             fontSize: 10,
                             color: isSender ? Colors.white70 : Colors.black54,
@@ -158,13 +158,11 @@ class MessageBubble extends StatelessWidget {
   final RegExp linkRegExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
   final matches = linkRegExp.allMatches(text);
   
-  // Определяем максимальную ширину сообщения - можно настроить в соответствии с вашими требованиями
-  final double maxWidth = MediaQuery.of(context).size.width * 0.75; // 75% ширины экрана
+  final double maxWidth = MediaQuery.of(context).size.width * 0.75; 
   
   Widget textWidget;
   if (matches.isEmpty) {
-    textWidget = Text(
-      text,
+    textWidget = Text( text,
       style: isSender
           ? ChatSmsStyles.senderMessageTextStyle
           : ChatSmsStyles.receiverMessageTextStyle,
@@ -207,7 +205,7 @@ class MessageBubble extends StatelessWidget {
                 items: [
                   _buildMenuItem(
                     icon: 'assets/icons/chats/menu_icons/open.svg',
-                    text: "Открыть",
+                    text: AppLocalizations.of(context)!.translate('open_url_source'),
                     iconColor: Colors.black,
                     textColor: Colors.black,
                     onTap: () async {
@@ -217,7 +215,7 @@ class MessageBubble extends StatelessWidget {
                   ),
                   _buildMenuItem(
                     icon: 'assets/icons/chats/menu_icons/copy.svg',
-                    text: "Копировать",
+                    text: AppLocalizations.of(context)!.translate('copy'),
                     iconColor: Colors.black,
                     textColor: Colors.black,
                     onTap: () {
@@ -226,7 +224,7 @@ class MessageBubble extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            AppLocalizations.of(context)!.translate('Ссылка скопировано!'), 
+                            AppLocalizations.of(context)!.translate('copy_url_source_text'), 
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -267,7 +265,6 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  // Оборачиваем текст в контейнер с ограничением ширины
   return Container(
     constraints: BoxConstraints(
       maxWidth: maxWidth,
@@ -300,8 +297,7 @@ class MessageBubble extends StatelessWidget {
               ),
             if (icon.isNotEmpty) const SizedBox(width: 10),
             Flexible(
-              child: Text(
-                text,
+              child: Text( text,
                 overflow: TextOverflow.ellipsis,  
                 style: TextStyle(
                   fontSize: 16,
