@@ -34,10 +34,17 @@ class LoginScreen extends StatelessWidget {
               await prefs.setString('userName', state.user.name.toString());
               await prefs.setString('userID', state.user.id.toString());
               await prefs.setString('userLogin', state.user.login.toString());
+
+              // Сохраняем первую роль как раньше для обратной совместимости
               if (state.user.role != null && state.user.role!.isNotEmpty) {
                 await prefs.setString('userRoleName', state.user.role![0].name);
+                // Сохраняем все роли в новое поле, соединяя их через запятую
+                String allRoles =
+                    state.user.role!.map((role) => role.name).join(', ');
+                await prefs.setString('userAllRoles', allRoles);
               } else {
                 await prefs.setString('userRoleName', 'No role assigned');
+                await prefs.setString('userAllRoles', 'No role assigned');
               }
 
               String? fcmToken = await FirebaseMessaging.instance.getToken();
@@ -45,7 +52,8 @@ class LoginScreen extends StatelessWidget {
                 await apiService.sendDeviceToken(fcmToken);
               }
 
-              final savedOrganization = await apiService.getSelectedOrganization();
+              final savedOrganization =
+                  await apiService.getSelectedOrganization();
               if (savedOrganization == null) {
                 final organizations = await apiService.getOrganization();
                 if (organizations.isNotEmpty) {
@@ -94,7 +102,7 @@ class LoginScreen extends StatelessWidget {
                 children: [
                   SizedBox(height: 75),
                   Text(
-                    localizations!.translate('login_title'), 
+                    localizations!.translate('login_title'),
                     style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w600,
@@ -103,7 +111,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    localizations.translate('login_subtitle'), 
+                    localizations.translate('login_subtitle'),
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xff99A4BA),
@@ -120,7 +128,7 @@ class LoginScreen extends StatelessWidget {
                   SizedBox(height: 16),
                   CustomTextField(
                     controller: passwordController,
-                    hintText: localizations.translate('login_password_hint'), 
+                    hintText: localizations.translate('login_password_hint'),
                     label: localizations.translate('login_password_label'),
                     isPassword: true,
                   ),
@@ -135,7 +143,7 @@ class LoginScreen extends StatelessWidget {
                   // Показываем кнопку только если состояние Initial или Error
                   else
                     CustomButton(
-                      buttonText: localizations.translate('login_button'), 
+                      buttonText: localizations.translate('login_button'),
                       buttonColor: Color(0xff4F40EC),
                       textColor: Colors.white,
                       onPressed: () {
@@ -144,12 +152,14 @@ class LoginScreen extends StatelessWidget {
                         if (login.isEmpty || password.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(localizations.translate('login_empty_fields_error')), 
+                              content: Text(localizations
+                                  .translate('login_empty_fields_error')),
                             ),
                           );
                           return;
                         }
-                        BlocProvider.of<LoginBloc>(context).add(CheckLogin(login, password));
+                        BlocProvider.of<LoginBloc>(context)
+                            .add(CheckLogin(login, password));
                       },
                     ),
                   SizedBox(height: 16),

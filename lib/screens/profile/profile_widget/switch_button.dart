@@ -38,7 +38,7 @@ class _ToggleFeatureButtonState extends State<ToggleFeatureButton> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      height: 72, // Increased height
+      height: 80, // Increased height
       decoration: BoxDecoration(
         color: const Color(0xFFF4F7FD),
         borderRadius: BorderRadius.circular(16),
@@ -65,7 +65,7 @@ class _ToggleFeatureButtonState extends State<ToggleFeatureButton> {
                 fontFamily: 'Gilroy',
                 color: Color(0xFF1E1E1E),
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),

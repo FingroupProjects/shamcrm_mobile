@@ -34,8 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   bool _hasPermissionToAddLeadAndSwitch = false;
   bool _hasPermissionForOneC = false;
-  Map<String, dynamic>?
-      tutorialProgress; // Добавлено: Для хранения прогресса туториалов
+  Map<String, dynamic>? tutorialProgress; // Добавлено: Для хранения прогресса туториалов
 
   // Ключи для подсказок
   final GlobalKey keyOrganizationWidget = GlobalKey();
@@ -60,40 +59,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Добавлено: Метод для получения прогресса туториалов
-Future<void> _fetchTutorialProgress() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    // Всегда получаем данные с сервера
-    final progress = await _apiService.getTutorialProgress();
-    setState(() {
-      tutorialProgress = progress['result'];
-    });
-    // Сохраняем актуальные данные в SharedPreferences
-    await prefs.setString('tutorial_progress', json.encode(progress['result']));
-    // Проверяем локальный флаг завершения туториала
-    bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
-    if (isTutorialShown) {
-      setState(() {
-        _isTutorialShown = true;
-      });
-    }
-  } catch (e) {
-    print('Error fetching tutorial progress: $e');
-    // В случае ошибки пытаемся загрузить из кэша
-    final prefs = await SharedPreferences.getInstance();
-    final savedProgress = prefs.getString('tutorial_progress');
-    if (savedProgress != null) {
-      setState(() {
-        tutorialProgress = json.decode(savedProgress);
-      });
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
+      
+      if (!isTutorialShown) {
+        final progress = await _apiService.getTutorialProgress();
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+        await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      } else {
+        final savedProgress = prefs.getString('tutorial_progress');
+        if (savedProgress != null) {
+          setState(() {
+            tutorialProgress = json.decode(savedProgress);
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
     }
   }
-}
-  Future<void> _saveOrganizationsToCache(
-      List<Organization> organizations) async {
+
+  Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList =
-        jsonEncode(organizations.map((org) => org.toJson()).toList());
+    final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
     await prefs.setString(' 매organisations', jsonList);
   }
 
@@ -275,9 +267,7 @@ Future<void> _fetchTutorialProgress() async {
 
   void _showTutorialIfNeeded() {
     _initTutorialTargets();
-    if (!_isTutorialShown &&
-        tutorialProgress != null &&
-        tutorialProgress!['settings']?['index'] == false) {
+    if (!_isTutorialShown && tutorialProgress != null && tutorialProgress!['settings']?['index'] == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showTutorial();
         setState(() {
