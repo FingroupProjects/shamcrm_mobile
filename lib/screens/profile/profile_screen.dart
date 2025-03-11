@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
@@ -34,9 +33,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   bool _hasPermissionToAddLeadAndSwitch = false;
   bool _hasPermissionForOneC = false;
-  Map<String, dynamic>? tutorialProgress; // Добавлено: Для хранения прогресса туториалов
+  Map<String, dynamic>? tutorialProgress;
+  bool _hasSettingsIndexPermission = false;
+  bool _isPermissionsChecked = false;
 
-  // Ключи для подсказок
   final GlobalKey keyOrganizationWidget = GlobalKey();
   final GlobalKey keyProfileEdit = GlobalKey();
   final GlobalKey keyLanguageButton = GlobalKey();
@@ -55,28 +55,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadSelectedOrganization();
     _checkPermission();
     _loadOrganizations();
-    _fetchTutorialProgress(); // Добавлено: Загрузка прогресса туториалов
+    _checkPermissionsAndTutorial();
   }
 
-  // Добавлено: Метод для получения прогресса туториалов
-  Future<void> _fetchTutorialProgress() async {
+  Future<void> _checkPermissionsAndTutorial() async {
+    if (_isPermissionsChecked) return;
+
+    _isPermissionsChecked = true;
+
     try {
       final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
+      setState(() {
+        tutorialProgress = progress['result'];
+        _hasSettingsIndexPermission = progress['result']['settings']?['index'] ?? false;
+      });
+      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+
       bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
-      
-      if (!isTutorialShown) {
-        final progress = await _apiService.getTutorialProgress();
-        setState(() {
-          tutorialProgress = progress['result'];
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      if (!isTutorialShown && !_hasSettingsIndexPermission && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _initTutorialTargets();
+            showTutorial();
+          }
         });
-        await prefs.setString('tutorial_progress', json.encode(progress['result']));
-      } else {
-        final savedProgress = prefs.getString('tutorial_progress');
-        if (savedProgress != null) {
-          setState(() {
-            tutorialProgress = json.decode(savedProgress);
-          });
-        }
       }
     } catch (e) {
       print('Error fetching tutorial progress: $e');
@@ -88,6 +95,7 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
   final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
   await prefs.setString('cached_organizations', jsonList);
 }
+
 
   Future<List<Organization>> _getOrganizationsFromCache() async {
     final prefs = await SharedPreferences.getInstance();
@@ -105,13 +113,10 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
 
     if (currentState is OrganizationLoaded) {
       final newOrganizations = currentState.organizations;
-
       if (jsonEncode(newOrganizations) != jsonEncode(cachedOrganizations)) {
         await _saveOrganizationsToCache(newOrganizations);
         setState(() {
-          _selectedOrganization = newOrganizations.isNotEmpty
-              ? newOrganizations.first.id.toString()
-              : null;
+          _selectedOrganization = newOrganizations.isNotEmpty ? newOrganizations.first.id.toString() : null;
         });
       }
     } else {
@@ -124,10 +129,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileOrganizationWidget",
         keyTarget: keyOrganizationWidget,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_organization_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_organization_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_organization_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_organization_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -135,10 +138,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileEditButton",
         keyTarget: keyProfileEdit,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_edit_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_edit_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_edit_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_edit_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -146,10 +147,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileLanguageButton",
         keyTarget: keyLanguageButton,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_language_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_language_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_language_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_language_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -157,10 +156,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profilePinChange",
         keyTarget: keyPinChange,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_pin_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_pin_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_pin_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_pin_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -168,10 +165,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileLogoutButton",
         keyTarget: keyLogoutButton,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_logout_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_logout_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_logout_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_logout_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -179,10 +174,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileToggleFeature",
         keyTarget: keyToggleFeature,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_toggle_feature_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_toggle_feature_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_toggle_feature_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_toggle_feature_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -190,10 +183,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileUpdateWidget1C",
         keyTarget: keyUpdateWidget1C,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_update_1c_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_update_1c_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_update_1c_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_update_1c_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -201,10 +192,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       createTarget(
         identify: "profileSupportChat",
         keyTarget: keySupportChat,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_profile_support_chat_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_profile_support_chat_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_profile_support_chat_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_profile_support_chat_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.above,
@@ -265,77 +254,70 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     );
   }
 
-  void _showTutorialIfNeeded() {
-    _initTutorialTargets();
-    if (!_isTutorialShown && tutorialProgress != null && tutorialProgress!['settings']?['index'] == true) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
-        setState(() {
-          _isTutorialShown = true;
-        });
-      });
-    }
-  }
-
   void showTutorial() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown = prefs.getBool('isTutorialShownProfile') ?? false;
 
-    if (!isTutorialShown) {
-      List<TargetFocus> visibleTargets = targets.where((target) {
-        if (target.identify == "profileToggleFeature") {
-          return _hasPermissionToAddLeadAndSwitch;
-        }
-        if (target.identify == "profileUpdateWidget1C") {
-          return _hasPermissionForOneC;
-        }
-        return true;
-      }).toList();
+    if (isTutorialShown || _hasSettingsIndexPermission) return;
 
-      TutorialCoachMark(
-        targets: visibleTargets,
-        textSkip: AppLocalizations.of(context)!.translate('skip'),
-        textStyleSkip: TextStyle(
-          color: Colors.white,
-          fontFamily: 'Gilroy',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          shadows: [
-            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-          ],
-        ),
-        colorShadow: Color(0xff1E2E52),
-        onSkip: () {
-          prefs.setBool('isTutorialShownProfile', true);
-          _apiService.markPageCompleted("settings", "index").catchError((e) {
-            print('Error marking page completed on skip: $e');
-          });
-          return true;
-        },
-        onFinish: () async {
-          await prefs.setBool('isTutorialShownProfile', true);
-          try {
-            await _apiService.markPageCompleted("settings", "index");
-          } catch (e) {
-            print('Error marking page completed on finish: $e');
+    List<TargetFocus> visibleTargets = targets.where((target) {
+      if (target.identify == "profileToggleFeature") {
+        return _hasPermissionToAddLeadAndSwitch;
+      }
+      if (target.identify == "profileUpdateWidget1C") {
+        return _hasPermissionForOneC;
+      }
+      return true;
+    }).toList();
+
+    TutorialCoachMark(
+      targets: visibleTargets,
+      textSkip: AppLocalizations.of(context)!.translate('skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      onSkip: ()  {
+                print("Tutorial skipped");
+
+         prefs.setBool('isTutorialShownProfile', true);
+        _apiService.markPageCompleted("settings", "index").catchError((e) {
+          print('Error marking page completed on skip: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+        });
+        return true;
+      },
+      onFinish: () async {
+        await prefs.setBool('isTutorialShownProfile', true);
+        await _apiService.markPageCompleted("settings", "index").catchError((e) {
+          print('Error marking page completed on finish: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+        });
+      },
+      onClickTarget: (target) async {
+        int currentIndex = visibleTargets.indexWhere((t) => t.identify == target.identify);
+        if (currentIndex < visibleTargets.length - 1) {
+          final nextTarget = visibleTargets[currentIndex + 1];
+          if (nextTarget.keyTarget != null) {
+            await Future.delayed(Duration(milliseconds: 300));
+            _scrollToTarget(nextTarget.keyTarget!);
           }
-        },
-        onClickTarget: (target) async {
-          int currentIndex =
-              visibleTargets.indexWhere((t) => t.identify == target.identify);
-          if (currentIndex < visibleTargets.length - 1) {
-            final nextTarget = visibleTargets[currentIndex + 1];
-            if (nextTarget.keyTarget != null) {
-              await Future.delayed(Duration(milliseconds: 300));
-              _scrollToTarget(nextTarget.keyTarget!);
-            }
-          }
-        },
-      ).show(context: context);
-    }
+        }
+      },
+    ).show(context: context);
   }
 
   void _scrollToTarget(GlobalKey key) {
@@ -346,14 +328,11 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
         duration: Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
-    } else {
-      print("Error: Unable to find render object for key");
     }
   }
 
   Future<void> _checkPermission() async {
-    bool hasLeadCreatePermission =
-        await _apiService.hasPermission('lead.create');
+    bool hasLeadCreatePermission = await _apiService.hasPermission('lead.create');
     bool hasLeadOneCPermission = await _apiService.hasPermission('lead.oneC');
     setState(() {
       _hasPermissionToAddLeadAndSwitch = hasLeadCreatePermission;
@@ -395,7 +374,6 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
   void _openSupportChat() async {
     const tgUrl = 'https://t.me/shamcrm_bot';
     const webUrl = 'https://t.me/shamcrm_bot';
-
     if (await canLaunchUrl(Uri.parse(tgUrl))) {
       await launchUrl(Uri.parse(tgUrl), mode: LaunchMode.externalApplication);
     } else {
@@ -433,8 +411,6 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
                           )
                         : state.organizations.first;
 
-                    _showTutorialIfNeeded();
-
                     return Column(
                       children: [
                         OrganizationWidget(
@@ -456,13 +432,11 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
                       ],
                     );
                   } else if (state is OrganizationError) {
-                    if (state.message.contains(
-                        localizations.translate("unauthorized_access"))) {
+                    if (state.message.contains(localizations.translate("unauthorized_access"))) {
                       ApiService().logout().then((_) {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => LoginScreen()),
+                          MaterialPageRoute(builder: (context) => LoginScreen()),
                           (Route<dynamic> route) => false,
                         );
                       });
