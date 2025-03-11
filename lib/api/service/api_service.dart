@@ -3448,32 +3448,6 @@ Future<Map<String, dynamic>> addLeadsFromContacts(
 
   //_________________________________ START_____API_SCREEN__DASHBOARD____________________________________________//
 
-  /// Получение статистики для дашборда
-
-  Future<DashboardStats> getDashboardStats() async {
-    final organizationId = await getSelectedOrganization();
-
-    String path =
-        '/dashboard/getTopStats${organizationId != null ? '?organization_id=$organizationId' : ''}';
-
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['result'] != null) {
-          return DashboardStats.fromJson(data);
-        } else {
-          throw ('Нет данных о статистике в ответе');
-        }
-      } else {
-        throw ('Ошибка загрузки статистики!');
-      }
-    } catch (e) {
-      throw ('Ошибка при получении статистики!');
-    }
-  }
-
   /// Получение данных графика для дашборда
   Future<List<ChartData>> getLeadChart() async {
     final organizationId = await getSelectedOrganization();
@@ -3567,28 +3541,6 @@ Future<Map<String, dynamic>> addLeadsFromContacts(
       }
     } catch (e) {
       throw ('Ошибка получения данных!');
-    }
-  }
-
-  // Метод для получения графика Проект
-  Future<ProjectChartResponse> getProjectChartData() async {
-    final organizationId = await getSelectedOrganization();
-    String path =
-        '/dashboard/projects-chart${organizationId != null ? '?organization_id=$organizationId' : ''}';
-    try {
-      final response = await _getRequest(path);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        final result = ProjectChartResponse.fromJson(jsonData);
-        return result;
-      } else if (response.statusCode == 500) {
-        throw ('Ошибка сервера!');
-      } else {
-        throw ('Ошибка загрузки данных проектов!');
-      }
-    } catch (e) {
-      throw ('');
     }
   }
 

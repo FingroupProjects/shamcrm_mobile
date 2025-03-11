@@ -98,6 +98,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _isPermissionsChecked = false;
   bool _isTutorialShown = false;
 
+
   @override
   void initState() {
     super.initState();
@@ -114,8 +115,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               .toList();
           _tabController =
               TabController(length: _tabTitles.length, vsync: this);
-          _tabController.index = _currentTabIndex;
 
+          _tabController.index = _currentTabIndex;
           _tabController.addListener(() {
             setState(() {
               _currentTabIndex = _tabController.index;

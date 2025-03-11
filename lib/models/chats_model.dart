@@ -133,17 +133,11 @@ class Chats {
     if (group != null) {
       avatar = "assets/images/GroupChat.png";
     } else if (chatUsers.isNotEmpty) {
-      // Получаем ID текущего пользователя из поля user
       int currentUserId = user?.id ?? 0;
-      print('Current user ID: $currentUserId'); // для отладки
-
       if (chatUsers.length > 1) {
         if (chatUsers[1].id == currentUserId) {
-          // Если первый пользователь - это текущий пользователь,
-          // показываем аватар второго
           avatar = chatUsers[1].image;
         } else {
-          // Иначе показываем аватар первого
           avatar = chatUsers[0].image;
         }
       } else {

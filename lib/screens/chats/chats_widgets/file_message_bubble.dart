@@ -8,8 +8,8 @@ class FileMessageBubble extends StatelessWidget {
   final String fileName;
   final String senderName;
   final Function(String) onTap;
-  final bool isHighlighted; // Add this line
-  final bool isRead; // Added isRead property
+  final bool isHighlighted; 
+  final bool isRead;
 
   const FileMessageBubble({
     Key? key,
@@ -19,8 +19,8 @@ class FileMessageBubble extends StatelessWidget {
     required this.fileName,
     required this.onTap,
     required this.senderName,
-    this.isHighlighted = false, // Add this line
-    required this.isRead, // Add isRead to constructor
+    this.isHighlighted = false,
+    required this.isRead, 
   }) : super(key: key);
 
   @override
@@ -81,8 +81,7 @@ class FileMessageBubble extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: isHighlighted
-            ? [
-                BoxShadow(
+            ? [ BoxShadow(
                   color: Colors.grey.withOpacity(0.3),
                   blurRadius: 5,
                   spreadRadius: 2,
@@ -94,14 +93,11 @@ class FileMessageBubble extends StatelessWidget {
       child: Align(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
-          crossAxisAlignment:
-              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             if (!isSender)
-              Text(
-                senderName,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+              Text( senderName, style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             GestureDetector(
               onTap: () => onTap(filePath),
@@ -134,8 +130,7 @@ class FileMessageBubble extends StatelessWidget {
                     Flexible(
                       child: Text(
                         fileName,
-                        style: TextStyle(
-                            color: isSender ? Colors.white : Colors.black),
+                        style: TextStyle( color: isSender ? Colors.white : Colors.black),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -143,12 +138,9 @@ class FileMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Row( mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  time,
-                  style: const TextStyle(
+                Text(time, style: const TextStyle(
                     fontSize: 12,
                     color: ChatSmsStyles.appBarTitleColor,
                     fontWeight: FontWeight.w400,
@@ -157,8 +149,8 @@ class FileMessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 if (isSender)
-                  Icon(
-                    isRead ? Icons.done_all : Icons.done_all,
+
+                  Icon(isRead ? Icons.done_all : Icons.done_all,
                     size: 18,
                     color: isRead
                         ? const Color.fromARGB(255, 45, 28, 235)
