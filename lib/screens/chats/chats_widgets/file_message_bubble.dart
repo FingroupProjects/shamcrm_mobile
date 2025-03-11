@@ -33,16 +33,32 @@ class FileMessageBubble extends StatelessWidget {
         iconPath = 'assets/icons/chats/pdf.png';
         break;
       case 'jpg':
+        iconPath = 'assets/icons/files/jpg.png';
+        break;
       case 'jpeg':
+        iconPath = 'assets/icons/files/jpg.png';
+        break;
       case 'png':
         iconPath = 'assets/icons/chats/jpg-file.png';
         break;
       case 'doc':
+        iconPath = 'assets/icons/files/doc.png';
+        break;
       case 'docx':
+        iconPath = 'assets/icons/files/doc.png';
+        break;
+      case 'pptx':
+        iconPath = 'assets/icons/files/pptx.png';
+        break;
+      case 'ppt':
+        iconPath = 'assets/icons/files/ppt.png';
+        break;
       case 'document':
         iconPath = 'assets/icons/chats/doc.png';
         break;
       case 'xls':
+        iconPath = 'assets/icons/chats/xls.png';
+        break;
       case 'xlsx':
         iconPath = 'assets/icons/chats/xls.png';
         break;
@@ -52,8 +68,14 @@ class FileMessageBubble extends StatelessWidget {
       case 'svg':
         iconPath = 'assets/icons/chats/svg-file.png';
         break;
+      case 'mp4':
+        iconPath = 'assets/icons/chats/mp4.png';
+        break;
+      case 'mp3':
+        iconPath = 'assets/icons/chats/mp3.png';
+        break;
       default:
-        iconPath = 'assets/icons/chats/file.png';
+        iconPath = 'assets/icons/files/file.png';
     }
 
     return DecoratedBox(
@@ -97,9 +119,14 @@ class FileMessageBubble extends StatelessWidget {
                   ],
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // Центрируем по вертикали
                   children: [
                     Image.asset(iconPath, width: 32, height: 32),
+                    const SizedBox(
+                        width: 10), // Add this line to create spacing
+
                     Flexible(
                       child: Text(
                         fileName,
@@ -122,6 +149,7 @@ class FileMessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 if (isSender)
+
                   Icon(isRead ? Icons.done_all : Icons.done_all,
                     size: 18,
                     color: isRead

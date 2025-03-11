@@ -23,6 +23,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+import 'dart:convert';
+
 class TaskScreen extends StatefulWidget {
   final int? initialStatusId;
 
@@ -83,15 +85,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   List<String> _selectedAuthors = []; // Add this
   List<String> _initialSelectedAuthors = []; // Add this
 
-    final GlobalKey keySearchIcon = GlobalKey(); 
-    final GlobalKey keyMenuIcon = GlobalKey(); 
+  final GlobalKey keySearchIcon = GlobalKey();
+  final GlobalKey keyMenuIcon = GlobalKey();
 
-    List<TargetFocus> targets = [];
-    bool _isTutorialShown = false;
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
 
-    bool _isTaskScreenTutorialCompleted = false;
+  bool _isTaskScreenTutorialCompleted = false;
 
-  
+  Map<String, dynamic>? tutorialProgress; // Для хранения прогресса туториалов
+  bool _isPermissionsChecked = false; // Флаг проверки прав
+  bool _hasTaskIndexPermission = false; // Право на tasks.index
 
   @override
   void initState() {
@@ -133,6 +137,63 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     });
     _checkPermissions();
+    _checkPermissionsAndTutorial(); // Обновленный метод
+  }
+
+  Future<void> _checkPermissionsAndTutorial() async {
+    if (_isPermissionsChecked) {
+      print('Permissions already checked, skipping');
+      return;
+    }
+
+    _isPermissionsChecked = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
+      print('Tutorial Progress from server: $progress');
+
+      setState(() {
+        tutorialProgress = progress['result'];
+        _hasTaskIndexPermission =
+            progress['result']['tasks']?['index'] ?? false;
+      });
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
+
+      // Считываем состояние туториала и обновляем _isTutorialShown
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+      print('isTutorialShown from prefs: $isTutorialShown');
+
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      // Показываем туториал только если он еще не был показан
+      if (!_isTutorialShown &&
+          tutorialProgress != null &&
+          !_hasTaskIndexPermission &&
+          mounted) {
+        print('Scheduling tutorial display');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _initTutorialTargets();
+            showTutorial();
+          } else {
+            print('Widget not mounted, skipping tutorial');
+          }
+        });
+      } else {
+        print('Tutorial not shown. Reasons:');
+        print('isTutorialShown: $_isTutorialShown');
+        print('tutorialProgress: $tutorialProgress');
+        print('hasTaskIndexPermission: $_hasTaskIndexPermission');
+        print('mounted: $mounted');
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+    }
   }
 
   Future<void> _loadUserRoles() async {
@@ -171,36 +232,55 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-    void _initTutorialTargets() {
-  targets.addAll([
-    createTarget(
-      identify: "TaskSearchIcon",
-      keyTarget: keySearchIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-    createTarget(
-      identify: "TaskMenuIcon",
-      keyTarget: keyMenuIcon,
-      title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'), 
-      description: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_description'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.above,
-    ),
-  ]);
-}
+  void _initTutorialTargets() {
+    targets.addAll([
+      createTarget(
+        identify: "TaskSearchIcon",
+        keyTarget: keySearchIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_search_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "TaskMenuIcon",
+        keyTarget: keyMenuIcon,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_menu_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_task_screen_menu_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+    ]);
+  }
 
-void showTutorial() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+  void showTutorial() async {
+    if (_isTutorialShown) {
+      print('Tutorial already shown, skipping');
+      return;
+    }
 
-  if (!isTutorialShown)  {
+    print('Showing tutorial');
     await Future.delayed(const Duration(milliseconds: 500));
 
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown =
+        prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+
+    if (isTutorialShown ||
+        tutorialProgress == null ||
+        _hasTaskIndexPermission) {
+      print('Tutorial not shown in showTutorial for tasks');
+      return;
+    }
+
+    print('Showing tutorial for leads');
+    await Future.delayed(const Duration(milliseconds: 500));
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -218,24 +298,30 @@ void showTutorial() async {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Пропустить");
+        print("Tutorial skipped");
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
-          setState(() {
-          _isTaskScreenTutorialCompleted = true;
+        _apiService.markPageCompleted("tasks", "index").catchError((e) {
+          print('Error marking page completed on skip: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
         });
         return true;
       },
-      onFinish: () {
-        print("finish");
-        prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
+      onFinish: () async {
+        print("Tutorial finished");
+        await prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
+        try {
+          await _apiService.markPageCompleted("tasks", "index");
+        } catch (e) {
+          print('Error marking page completed on finish: $e');
+        }
         setState(() {
-          _isTaskScreenTutorialCompleted = true; 
+          _isTutorialShown = true;
         });
       },
     ).show(context: context);
   }
-}
-
 
   Future<void> _searchTasks(String query, int currentStatusId) async {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -256,7 +342,8 @@ void showTutorial() async {
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
-      authors: _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
+      authors:
+          _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
     ));
   }
 
@@ -395,8 +482,8 @@ void showTutorial() async {
       _hasDeal = false;
       _isUrgent = false;
       _deadlinefromDate = null;
-      _deadlinetoDate = null;    
-        _selectedProject = null;
+      _deadlinetoDate = null;
+      _selectedProject = null;
       _selectedAuthors = []; // Add this
 
       // Сбрасываем начальные значения
@@ -440,18 +527,17 @@ void showTutorial() async {
       showFilter = hasPermission;
     });
 
-         WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-        if (!_isTutorialShown) {
-       WidgetsBinding.instance.addPostFrameCallback((_) {
-         showTutorial();
-         setState(() {
-           _isTutorialShown = true; 
-         });
-       });
-      }
-  });
-
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _initTutorialTargets();
+    //   if (!_isTutorialShown) {
+    //     WidgetsBinding.instance.addPostFrameCallback((_) {
+    //       showTutorial();
+    //       setState(() {
+    //         _isTutorialShown = true;
+    //       });
+    //     });
+    //   }
+    // });
   }
 
   FocusNode focusNode = FocusNode();
@@ -468,8 +554,8 @@ void showTutorial() async {
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
-          SearchIconKey: keySearchIcon,
-          menuIconKey: keyMenuIcon,
+            SearchIconKey: keySearchIcon,
+            menuIconKey: keyMenuIcon,
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
                 : localizations!.translate('appbar_tasks'),
@@ -552,7 +638,7 @@ void showTutorial() async {
                       urgent: _initialUrgent,
                       deadlinefromDate: _fromDate,
                       deadlinetoDate: _toDate,
-                      authors: _selectedAuthors, 
+                      authors: _selectedAuthors,
                     ));
                   }
                 } else if (_selectedUserIds != null &&
@@ -1030,7 +1116,7 @@ void showTutorial() async {
                 final statusId = _tabTitles[index]['id'];
                 final title = _tabTitles[index]['title'];
                 return TaskColumn(
-                  isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted, 
+                  isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted,
                   statusId: statusId,
                   name: title,
                   userId: _selectedUserId,

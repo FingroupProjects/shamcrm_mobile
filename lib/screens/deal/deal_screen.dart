@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -75,11 +77,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     final GlobalKey keySearchIcon = GlobalKey(); 
     final GlobalKey keyMenuIcon = GlobalKey(); 
-
-    List<TargetFocus> targets = [];
-    bool _isTutorialShown = false;
-
-    bool _isDealScreenTutorialCompleted = false;
+List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
+  Map<String, dynamic>? tutorialProgress;
+  bool _hasDealIndexPermission = false;
+  bool _isPermissionsChecked = false;
+  bool _isDealScreenTutorialCompleted = false;
 
   @override
   void initState() {
@@ -119,6 +122,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     });
 
     _checkPermissions();
+    _checkPermissionsAndTutorial(); // Replace _checkPermissions with this
   }
 
   // Метод для проверки разрешений
@@ -132,17 +136,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       _canCreateDealStatus = canCreate;
       _canDeleteDealStatus = canDelete;
     });
-     WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-        if (!_isTutorialShown) {
-       WidgetsBinding.instance.addPostFrameCallback((_) {
-         showTutorial();
-         setState(() {
-           _isTutorialShown = true; 
-         });
-       });
-      }
-  });
+  //    WidgetsBinding.instance.addPostFrameCallback((_) {
+  //   _initTutorialTargets(); 
+  //       if (!_isTutorialShown) {
+  //      WidgetsBinding.instance.addPostFrameCallback((_) {
+  //        showTutorial();
+  //        setState(() {
+  //          _isTutorialShown = true; 
+  //        });
+  //      });
+  //     }
+  // });
   }
 
   @override
@@ -175,12 +179,68 @@ void _initTutorialTargets() {
     ),
   ]);
 }
+Future<void> _checkPermissionsAndTutorial() async {
+    if (_isPermissionsChecked) {
+      print('Permissions already checked for deals, skipping');
+      return;
+    }
 
+    _isPermissionsChecked = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
+      print('Tutorial Progress for deals: $progress');
+
+      setState(() {
+        tutorialProgress = progress['result'];
+        _hasDealIndexPermission = progress['result']['deals']?['index'] ?? false;
+      });
+      await prefs.setString('tutorial_progress', json.encode(progress['result']));
+
+      bool isTutorialShown = prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
+      print('isTutorialShown for deals: $isTutorialShown');
+
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      if (!isTutorialShown && tutorialProgress != null && !_hasDealIndexPermission && mounted) {
+        print('Scheduling tutorial display for deals');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _initTutorialTargets();
+            showTutorial();
+          } else {
+            print('Widget not mounted, skipping tutorial for deals');
+          }
+        });
+      } else {
+        print('Tutorial not shown for deals. Reasons:');
+        print('isTutorialShown: $isTutorialShown');
+        print('tutorialProgress: $tutorialProgress');
+        print('hasDealIndexPermission: $_hasDealIndexPermission');
+        print('mounted: $mounted');
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress for deals: $e');
+    }
+  }
 void showTutorial() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
+    if (_isTutorialShown) {
+      print('Tutorial already shown for deals, skipping');
+      return;
+    }
 
-  if (!isTutorialShown) {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
+
+    if (isTutorialShown || tutorialProgress == null || _hasDealIndexPermission) {
+      print('Tutorial not shown in showTutorial for deals');
+      return;
+    }
+
+    print('Showing tutorial for deals');
     await Future.delayed(const Duration(milliseconds: 500));
 
     TutorialCoachMark(
@@ -199,22 +259,31 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
-      onSkip: () {
-        prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
-          setState(() {
-          _isDealScreenTutorialCompleted = true;
+      onSkip: ()  {
+        print("Tutorial skipped for deals");
+         prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
+        _apiService.markPageCompleted("deals", "index").catchError((e) {
+          print('Error marking page completed on skip for deals: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
         });
         return true;
       },
-      onFinish: () {
-        prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
+      onFinish: () async {
+        print("Tutorial finished for deals");
+        await prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
+        try {
+          await _apiService.markPageCompleted("deals", "index");
+        } catch (e) {
+          print('Error marking page completed on finish for deals: $e');
+        }
         setState(() {
-          _isDealScreenTutorialCompleted = true; 
+          _isTutorialShown = true;
         });
       },
     ).show(context: context);
   }
-}
 
   Future<void> _searchDeals(String query, int currentStatusId) async {
     final dealBloc = BlocProvider.of<DealBloc>(context);
