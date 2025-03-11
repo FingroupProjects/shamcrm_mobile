@@ -140,8 +140,9 @@ flutter:
     - assets/icons/files/file.png
     - assets/icons/files/ppt.png
     - assets/icons/files/pptx.png
-    - assets/send.mp3
-    - assets/get.mp3
+    # - assets/audio/send.mp3
+    # - assets/audio/get.mp3
+    - assets/audio/
 
   #   - images/a_dot_ham.jpeg
   # An image asset can refer to one or more resolution-specific "variants", see

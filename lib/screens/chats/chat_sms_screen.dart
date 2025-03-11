@@ -65,6 +65,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ScrollController _scrollController = ScrollController();
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
   final TextEditingController _messageController = TextEditingController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   final FocusNode _focusNode = FocusNode(); 
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
@@ -78,8 +79,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   bool _isMenuOpen = false;
   bool _isSearching = false;
   String? _searchQuery;
-
-    final AudioPlayer _audioPlayer = AudioPlayer();
 
 
  void _onSearchChanged(String query) {
@@ -129,11 +128,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   //   }
   // }
 
+    Future<void> _playSound() async {
+  try {
+    await _audioPlayer.setAsset('assets/audio/send.mp3');
+    await _audioPlayer.play();
+  } catch (e) {
+    print('Error playing sound: $e');
+  }
+}
+
   Future<void> _fetchBaseUrl() async {
     baseUrl = await apiService.getDynamicBaseUrl();
   }
 
-  // Обновляем показ календаря
   void _showDatePicker(BuildContext context, List<Message> messages) {
     showDialog(
       context: context,
@@ -247,9 +254,7 @@ void _scrollToMessageIndex(DateTime selectedDate) {
   }
 
   Widget _buildAvatar(String avatar) {
-    // Проверяем, содержит ли SVG
     if (avatar.contains('<svg')) {
-      // Проверяем, есть ли в SVG тег `<image>` с URL
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
         return Container(
@@ -264,10 +269,8 @@ void _scrollToMessageIndex(DateTime selectedDate) {
           ),
         );
       } else {
-        // Проверяем на наличие текста в SVG
         final text = extractTextFromSvg(avatar);
         final backgroundColor = extractBackgroundColorFromSvg(avatar);
-
         if (text != null && backgroundColor != null) {
           return Container(
             width: ChatSmsStyles.avatarRadius * 2,
@@ -293,7 +296,6 @@ void _scrollToMessageIndex(DateTime selectedDate) {
             ),
           );
         } else {
-          // Рендерим сам SVG
           return SvgPicture.string(
             avatar,
             width: ChatSmsStyles.avatarRadius * 2,
@@ -303,8 +305,6 @@ void _scrollToMessageIndex(DateTime selectedDate) {
         }
       }
     }
-
-    // Если это не SVG, предполагаем, что это локальное изображение
     return CircleAvatar(
       backgroundImage: AssetImage(avatar),
       radius: ChatSmsStyles.avatarRadius,
@@ -331,7 +331,6 @@ void _scrollToMessageIndex(DateTime selectedDate) {
     if (fillMatch != null) {
       final colorHex = fillMatch.group(1);
       if (colorHex != null) {
-        // Конвертируем hex в Color
         final hex = colorHex.replaceAll('#', '');
         return Color(int.parse('FF$hex', radix: 16));
       }
@@ -345,7 +344,6 @@ Widget build(BuildContext context) {
     listener: (context, state) {
       if (state is DeleteMessageSuccess) {
         context.read<MessagingCubit>().getMessages(widget.chatId);
-
         if (widget.endPointInTab == 'task' || widget.endPointInTab == 'corporate') {
           final chatsBloc = context.read<ChatsBloc>();
           chatsBloc.add(ClearChats());
@@ -411,7 +409,6 @@ Widget build(BuildContext context) {
                     setState(() {
                       _isRequestInProgress = true;
                     });
-
                     try {
                       if (widget.endPointInTab == 'lead') {
                         Navigator.push(
@@ -430,21 +427,15 @@ Widget build(BuildContext context) {
                           ),
                         );
                       } else if (widget.endPointInTab == 'corporate') {
-                        final getChatById =
-                            await ApiService().getChatById(widget.chatId);
-                        if (getChatById.chatUsers.length == 2 &&
-                            getChatById.group == null) {
+                        final getChatById = await ApiService().getChatById(widget.chatId);
+                        if (getChatById.chatUsers.length == 2 && getChatById.group == null) {
                           String userIdCheck = '';
-                          SharedPreferences prefs =
-                              await SharedPreferences.getInstance();
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
                           userIdCheck = prefs.getString('userID') ?? '';
-                          final participant = getChatById.chatUsers
-                              .firstWhere((user) =>
-                                  user.participant.id.toString() != userIdCheck)
-                              .participant;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
+                          final participant = getChatById.chatUsers .firstWhere((user) => 
+                          user.participant.id.toString() != userIdCheck).participant;
+                          Navigator.push(context, 
+                          MaterialPageRoute(
                               builder: (context) => ParticipantProfileScreen(
                                 userId: participant.id.toString(),
                                 image: participant.image,
@@ -458,8 +449,7 @@ Widget build(BuildContext context) {
                             ),
                           );
                         } else {
-                          Navigator.push(
-                            context,
+                          Navigator.push( context,
                             MaterialPageRoute(
                               builder: (context) => CorporateProfileScreen(
                                 chatId: widget.chatId,
@@ -547,7 +537,6 @@ Widget build(BuildContext context) {
 
 
 void _scrollToMessageReply(int messageId) {
-
   final state = context.read<MessagingCubit>().state;
   if (state is MessagesLoadedState || state is PinnedMessagesState) {
     final messages = state is MessagesLoadedState
@@ -750,42 +739,41 @@ Widget messageListUi() {
               ),
             ),
           ),
-    if (pinnedMessages.isNotEmpty)
-      Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        child: Column(
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: PinnedMessageWidget(
-                message: pinnedMessages.last.text,
-                onUnpin: () {
-                  context.read<MessagingCubit>().unpinMessage(pinnedMessages.last);
-                },
-                onTap: () {
-                  _scrollToMessageReply(pinnedMessages.last.id);
-                  if (pinnedMessages.isNotEmpty) {
-                    final updatedPinnedMessages = List<Message>.from(pinnedMessages);
-                    final firstPinnedMessage = updatedPinnedMessages.removeAt(0);
-                    updatedPinnedMessages.add(firstPinnedMessage);
-                    context.read<MessagingCubit>().updatePinnedMessages(updatedPinnedMessages);
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    if (_isMenuOpen)
-      Positioned.fill(
-        child: Container(
-          color: Colors.black.withOpacity(0.3),
-        ),
-      ),
-  ],
-);
+         if (pinnedMessages.isNotEmpty)
+           Positioned(
+             top: 0,
+             left: 0,
+             right: 0,
+             child: Column(
+               children: [
+                 Material(
+                   color: Colors.transparent,
+                   child: PinnedMessageWidget(
+                     message: pinnedMessages.last.text,
+                     onUnpin: () {
+                       context.read<MessagingCubit>().unpinMessage(pinnedMessages.last);
+                     },
+                     onTap: () {
+                       _scrollToMessageReply(pinnedMessages.last.id);
+                       if (pinnedMessages.isNotEmpty) {
+                         final updatedPinnedMessages = List<Message>.from(pinnedMessages);
+                         final firstPinnedMessage = updatedPinnedMessages.removeAt(0);
+                         updatedPinnedMessages.add(firstPinnedMessage);
+                         context.read<MessagingCubit>().updatePinnedMessages(updatedPinnedMessages);
+                       }
+                     },
+                   ),
+                 ),
+               ],
+             ),
+           ),
+       if (_isMenuOpen)
+         Positioned.fill(
+           child: Container(color: Colors.black.withOpacity(0.3),
+           ),
+         ),
+        ],
+      );
     }
     return Container();
   });
@@ -824,6 +812,8 @@ Widget messageListUi() {
         );
 
         context.read<MessagingCubit>().addLocalMessage(tempMessage);
+      
+        await _playSound();
 
         String inputPath = soundFile.path;
         String outputPath = await getOutputPath('converted_file.ogg');
@@ -920,10 +910,9 @@ Widget messageListUi() {
         isMyMessage: (UUID == mm.message?.sender?.id.toString() &&
             mm.message?.sender?.type == 'user'),
         createMessateTime: mm.message?.createdAt?.toString() ?? '',
-        duration: Duration(
-            seconds: (mm.message?.voiceDuration != null)
-                ? double.parse(mm.message!.voiceDuration.toString()).round()
-                : 20),
+        duration: Duration( seconds: (mm.message?.voiceDuration != null)
+           ? double.parse(mm.message!.voiceDuration.toString()).round()
+           : 20),
         senderName: mm.message?.sender?.name ?? 'Unknown sender',
         forwardedMessage: forwardedMessage,
       );
@@ -948,8 +937,8 @@ Widget messageListUi() {
       context.read<MessagingCubit>().updateMessageFromSocket(msg);
     });
 
-        if (!msg.isMyMessage) {
-      await _audioPlayer.setAsset('assets/get.mp3');
+      if (!msg.isMyMessage) {
+      await _audioPlayer.setAsset('assets/audio/get.mp3');
       await _audioPlayer.play();
     }
 
@@ -981,8 +970,8 @@ Widget messageListUi() {
         isMyMessage: (UUID == mm.message?.sender?.id.toString() && mm.message?.sender?.type == 'user'),
         createMessateTime: mm.message?.createdAt?.toString() ?? '',
         duration: Duration(seconds: (mm.message?.voiceDuration != null)
-                ? double.parse(mm.message!.voiceDuration.toString()).round()
-                : 20),
+          ? double.parse(mm.message!.voiceDuration.toString()).round()
+          : 20),
         senderName: mm.message?.sender?.name ?? 'Unknown sender',
         forwardedMessage: forwardedMessage,
         isChanged: mm.message?.isChanged ?? false,
@@ -1065,10 +1054,6 @@ myPresenceChannel.bind('chat.read').listen((event) async {
 
 Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
 
-  if (replyMessageId != null) {
-    // context.read<ListenSenderTextCubit>().updateValue(true);
-  }
-
   if (messageText.trim().isNotEmpty) {
     try {
       final localMessage = Message(
@@ -1082,8 +1067,7 @@ Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
 
       context.read<MessagingCubit>().addLocalMessage(localMessage);
 
-      await _audioPlayer.setAsset('assets/send.mp3');
-      await _audioPlayer.play();
+      await _playSound();
 
       _messageController.clear();
 
@@ -1103,29 +1087,41 @@ Future<void> _onSendInButton(String messageText, String? replyMessageId) async {
 }
 
   void _onPickFilePressed() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: false,
-    );
-    if (result != null) {
-      debugPrint('------------------ select file');
-      debugPrint(result.files.first.path!);
+  FilePickerResult? result = await FilePicker.platform.pickFiles(
+    allowMultiple: false,
+  );
+  if (result != null) {
+    debugPrint('------------------ select file');
+    debugPrint(result.files.first.path!);
 
-      context.read<ListenSenderFileCubit>().updateValue(true);
-      await widget.apiService.sendChatFile(widget.chatId, result.files.first.path!);
-      context.read<ListenSenderFileCubit>().updateValue(false);
-    }
+    final localMessage = Message(
+      id: -DateTime.now().millisecondsSinceEpoch, 
+      text: result.files.first.name,
+      type: 'file',
+      createMessateTime: DateTime.now().add(Duration(hours: -5)).toString(),
+      isMyMessage: true,
+      senderName: "Вы",
+      filePath: result.files.first.path!,
+    );
+
+    context.read<MessagingCubit>().addLocalMessage(localMessage);
+
+    await _playSound();
+
+    // context.read<ListenSenderFileCubit>().updateValue(true);
+    await widget.apiService.sendChatFile(widget.chatId, result.files.first.path!);
+
+    // Обновляем состояние после отправки
+    context.read<ListenSenderFileCubit>().updateValue(false);
   }
+}
+
 
   void _onScroll() {
     if (_scrollController.hasClients) {
-      print("Scroll position: ${_scrollController.position.pixels}");
-
-      // Получаем видимые элементы
       final position = _scrollController.position;
       final viewportOffset = position.pixels;
       final viewportExtent = position.viewportDimension;
-
-      // Проверяем позиции сообщений
       for (final entry in _messagePositions.entries) {
         if (viewportOffset < entry.value &&
             entry.value < viewportOffset + viewportExtent) {
@@ -1149,7 +1145,6 @@ void dispose() {
     chatSubscribtion?.cancel();
     chatSubscribtion = null;
   }
-  
   _scrollController.removeListener(_onScroll);
   _scrollController.dispose();
   _messageController.dispose();
@@ -1164,7 +1159,6 @@ extension on Key? {
   get currentContext => null;
 }
 
-// Храним позиции сообщений и их даты
 final Map<String, double> _messagePositions = {};
 
 class MessageItemWidget extends StatelessWidget {
@@ -1265,11 +1259,10 @@ class MessageItemWidget extends StatelessWidget {
     String? replyMessageText;
     if (message.forwardedMessage != null &&
         message.forwardedMessage!.type == 'voice') {
-      replyMessageText = "Голосовое сообщение";
+        replyMessageText = "Голосовое сообщение";
     } else {
       replyMessageText = message.forwardedMessage?.text;
     }
-
     return MessageBubble(
       message: message.text,
       time: time(message.createMessateTime),

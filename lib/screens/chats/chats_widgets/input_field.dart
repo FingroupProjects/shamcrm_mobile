@@ -83,7 +83,7 @@ class InputField extends StatelessWidget {
                       const SizedBox(width: 6),
                       RichText(
                         text: TextSpan(
-                          text: "В ответ ",
+                          text: AppLocalizations.of(context)!.translate('in_answer'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -110,7 +110,7 @@ class InputField extends StatelessWidget {
                       Expanded(
                         child: Text(
                           replyingToMessage.type == 'voice'
-                              ? 'Голосовое сообщение'
+                              ? AppLocalizations.of(context)!.translate('voice_message')
                               : replyingToMessage.text,
                           style: TextStyle(
                             fontSize: 14,
@@ -163,7 +163,7 @@ class InputField extends StatelessWidget {
                       const SizedBox(width: 6),
                       RichText(
                         text: TextSpan(
-                          text: "Редактирование сообщения",
+                          text: AppLocalizations.of(context)!.translate('edit_message'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,

@@ -83,11 +83,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
-    await prefs.setString(' 매organisations', jsonList);
-  }
+Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
+  await prefs.setString('cached_organizations', jsonList);
+}
 
   Future<List<Organization>> _getOrganizationsFromCache() async {
     final prefs = await SharedPreferences.getInstance();

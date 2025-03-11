@@ -54,16 +54,15 @@ Map<String, dynamic>? tutorialProgress; // Добавлено: Для хране
   bool _isPermissionsChecked = false;
   bool _isSearching = false;
   String searchQuery = '';
-
   
-    final GlobalKey keyChatLead = GlobalKey(); 
-    final GlobalKey keyChatTask = GlobalKey(); 
-    final GlobalKey keyChatCorporate = GlobalKey(); 
+  final GlobalKey keyChatLead = GlobalKey(); 
+  final GlobalKey keyChatTask = GlobalKey(); 
+  final GlobalKey keyChatCorporate = GlobalKey(); 
+  List<TargetFocus> targets = [];
+  bool _isTutorialShown = false;
+  bool _isTaskScreenTutorialCompleted = false;
 
-    List<TargetFocus> targets = [];
-    bool _isTutorialShown = false;
 
-bool _isTaskScreenTutorialCompleted = false;
 
   Future<void> _checkPermissions() async {
     final LeadChat = await apiService.hasPermission('chat.read');
@@ -288,7 +287,7 @@ void showTutorial() async {
     });
   }
 
-  void updateFromSocket() {
+  Future<void> updateFromSocket() async {
     context.read<ChatsBloc>().add(UpdateChatsFromSocket());
   }
 
@@ -297,7 +296,6 @@ void showTutorial() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
-    final baseUrlSocket = await apiService.getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
@@ -320,11 +318,8 @@ void showTutorial() async {
 
     final myPresenceChannel = socketClient.presenceChannel(
       'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
+      authorizationDelegate: EndpointAuthorizableChannelTokenAuthorizationDelegate.forPresenceChannel(
+        authorizationEndpoint: Uri.parse( 'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
         headers: {
           'Authorization': 'Bearer $token',
           'X-Tenant': '$enteredDomain-back'
@@ -349,7 +344,8 @@ void showTutorial() async {
         updateFromSocket();
       });
 
-      chatSubscribtion = myPresenceChannel.bind('chat.updated').listen((event) {
+      chatSubscribtion = myPresenceChannel.bind('chat.updated').listen((event) async {
+
         if (kDebugMode) {
           print(event.data);
           print(event.channelName);
@@ -358,6 +354,8 @@ void showTutorial() async {
           print('--------');
         }
         updateFromSocket();
+        
+
       });
     });
 
@@ -369,6 +367,7 @@ void showTutorial() async {
       }
     }
   }
+
 
   void updateChats() {
     // context.read<ChatsBloc>().add(RefreshChats());
