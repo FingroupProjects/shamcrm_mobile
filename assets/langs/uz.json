@@ -794,7 +794,13 @@
     "tutorial_event_screen_filtr_description": "Voqealar ro'yxatini toraytirish uchun filtrlarni sozlang.",
     "open_url_source": "Ochish",
     "copy_url_source_text": "Havola nusxalandi!",
-    "edited_sms": "Tahrirlandi"
+    "edited_sms": "Tahrirlandi",
+    "voice_message": "Ovozli xabar",
+    "edit_message": "Xabarni tahrirlash",
+    "in_answer": "Javob sifatida",
+    "pinned_message": "Mahkamlangan xabar"
+
+
 
   }
 

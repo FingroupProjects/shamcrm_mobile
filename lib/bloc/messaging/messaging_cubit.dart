@@ -71,22 +71,17 @@ void updateMessageFromSocket(Message updatedMessage) {
     final currentState = state as MessagesLoadedState;
     final messages = List<Message>.from(currentState.messages);
 
-    // Ищем локальное сообщение с временным ID
     final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
     if (localMessageIndex != -1) {
-      // Заменяем локальное сообщение на реальное
       messages[localMessageIndex] = updatedMessage;
       emit(MessagesLoadedState(messages: messages));
     } else {
-      // Если локального сообщения нет, проверяем, есть ли сообщение с таким же ID
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       if (index != -1) {
-        // Если сообщение уже существует, обновляем его
         messages[index] = updatedMessage;
         emit(MessagesLoadedState(messages: messages));
       } else {
-        // Если сообщение новое, добавляем его в список
         messages.insert(0, updatedMessage);
         emit(MessagesLoadedState(messages: messages));
       }
@@ -95,28 +90,23 @@ void updateMessageFromSocket(Message updatedMessage) {
     final currentState = state as PinnedMessagesState;
     final messages = List<Message>.from(currentState.messages);
 
-    // Ищем локальное сообщение с временным ID
     final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
     if (localMessageIndex != -1) {
-      // Заменяем локальное сообщение на реальное
       messages[localMessageIndex] = updatedMessage;
       emit(PinnedMessagesState(
         pinnedMessages: currentState.pinnedMessages,
         messages: messages,
       ));
     } else {
-      // Если локального сообщения нет, проверяем, есть ли сообщение с таким же ID
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       if (index != -1) {
-        // Если сообщение уже существует, обновляем его
         messages[index] = updatedMessage;
         emit(PinnedMessagesState(
           pinnedMessages: currentState.pinnedMessages,
           messages: messages,
         ));
       } else {
-        // Если сообщение новое, добавляем его в список
         messages.insert(0, updatedMessage);
         emit(PinnedMessagesState(
           pinnedMessages: currentState.pinnedMessages,
@@ -128,11 +118,9 @@ void updateMessageFromSocket(Message updatedMessage) {
     final currentState = state as EditingMessageState;
     final messages = List<Message>.from(currentState.messages);
 
-    // Ищем локальное сообщение с временным ID
     final localMessageIndex = messages.indexWhere((msg) => msg.id < 0);
 
     if (localMessageIndex != -1) {
-      // Заменяем локальное сообщение на реальное
       messages[localMessageIndex] = updatedMessage;
       emit(EditingMessageState(
         editingMessage: currentState.editingMessage,
@@ -140,10 +128,8 @@ void updateMessageFromSocket(Message updatedMessage) {
         pinnedMessages: currentState.pinnedMessages,
       ));
     } else {
-      // Если локального сообщения нет, проверяем, есть ли сообщение с таким же ID
       final index = messages.indexWhere((msg) => msg.id == updatedMessage.id);
       if (index != -1) {
-        // Если сообщение уже существует, обновляем его
         messages[index] = updatedMessage;
         emit(EditingMessageState(
           editingMessage: currentState.editingMessage,
@@ -151,7 +137,6 @@ void updateMessageFromSocket(Message updatedMessage) {
           pinnedMessages: currentState.pinnedMessages,
         ));
       } else {
-        // Если сообщение новое, добавляем его в список
         messages.insert(0, updatedMessage);
         emit(EditingMessageState(
           editingMessage: currentState.editingMessage,
@@ -213,7 +198,7 @@ void setReplyMessage(Message message) {
         : (state as PinnedMessagesState).messages;
     final pinnedMessages = (state is PinnedMessagesState)
         ? (state as PinnedMessagesState).pinnedMessages
-        : <Message>[]; // Явное указание типа List<Message>
+        : <Message>[];
     emit(
       ReplyingToMessageState(
         replyingMessage: message,
