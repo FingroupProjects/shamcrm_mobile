@@ -66,68 +66,159 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey keyAdminGraphics = GlobalKey();
   final GlobalKey keyAdminProcessSpeed = GlobalKey();
   final GlobalKey keyAdminDealStats = GlobalKey();
-
   final GlobalKey keyManagerGoalComplietion = GlobalKey();
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
-  bool _isTaskScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
-  final ApiService _apiService = ApiService();
+  bool _hasDashboardIndexPermission = false;
+  bool _isPermissionsChecked = false;
 
   final ScrollController _scrollController = ScrollController();
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _initializeData();
-    _fetchTutorialProgress();
   }
 
-  Future<void> _fetchTutorialProgress() async {
+  Future<void> _initializeData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-      
-      if (!isTutorialShown) {
-        final progress = await _apiService.getTutorialProgress();
-        setState(() {
-          tutorialProgress = progress['result'];
-        });
-        await prefs.setString('tutorial_progress', json.encode(progress['result']));
+      setState(() {
+        isLoading = true;
+      });
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+
+      if (isFirstTime) {
+        await Future.wait([
+          _loadUserRoles(),
+          _checkPermissionsAndTutorial(),
+          Future.delayed(const Duration(seconds: 3)),
+        ]);
+        await prefs.setBool('isFirstTime', false);
       } else {
-        final savedProgress = prefs.getString('tutorial_progress');
-        if (savedProgress != null) {
-          setState(() {
-            tutorialProgress = json.decode(savedProgress);
-          });
-        }
+        await _loadUserRoles();
+        await _checkPermissionsAndTutorial();
+      }
+
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
       }
     } catch (e) {
-      print('Error fetching tutorial progress: $e');
+      print('Error in initialization: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadUserRoles() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+
+      if (userId.isEmpty) {
+        setState(() {
+          userRoles = ['No user ID found'];
+        });
+        return;
+      }
+
+      String? storedRoles = prefs.getString('userRoles');
+      if (storedRoles != null) {
+        setState(() {
+          userRoles = storedRoles.split(',');
+        });
+        return;
+      }
+
+      UserByIdProfile userProfile =
+          await _apiService.getUserById(int.parse(userId));
+      if (mounted) {
+        setState(() {
+          userRoles = userProfile.role?.map((role) => role.name).toList() ??
+              ['No role assigned'];
+        });
+        await prefs.setString('userRoles', userRoles.join(','));
+      }
+    } catch (e) {
+      print('Error loading user roles: $e');
+      if (mounted) {
+        setState(() {
+          userRoles = ['Error loading roles'];
+        });
+      }
+    }
+  }
+
+  Future<void> _checkPermissionsAndTutorial() async {
+    if (_isPermissionsChecked) {
+      print('Permissions already checked for dashboard, skipping');
+      return;
+    }
+
+    _isPermissionsChecked = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
+      print('Tutorial Progress for dashboard: $progress');
+
+      setState(() {
+        tutorialProgress = progress['result'];
+        _hasDashboardIndexPermission =
+            progress['result']['dashboard']?['index'] ?? false;
+      });
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
+
+      bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
+      print('isTutorialShown for dashboard: $isTutorialShown');
+
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      if (!isTutorialShown &&
+          tutorialProgress != null &&
+          !_hasDashboardIndexPermission &&
+          mounted) {
+        print('Scheduling tutorial display for dashboard');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _initTutorialTargets();
+            showTutorial();
+          } else {
+            print('Widget not mounted, skipping tutorial for dashboard');
+          }
+        });
+      } else {
+        print('Tutorial not shown for dashboard. Reasons:');
+        print('isTutorialShown: $isTutorialShown');
+        print('tutorialProgress: $tutorialProgress');
+        print('hasDashboardIndexPermission: $_hasDashboardIndexPermission');
+        print('mounted: $mounted');
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress for dashboard: $e');
     }
   }
 
   void _initTutorialTargets() {
+    targets.clear();
     if (userRoles.contains('admin')) {
       _initAdminTutorialTargets();
     } else if (userRoles.contains('manager')) {
       _initTutorialTargetsManagers();
     } else {
       _initTutorialTargetsUsers();
-    }
-
-    _showTutorialIfNeeded();
-  }
-
-  void _showTutorialIfNeeded() {
-    if (!_isTutorialShown && tutorialProgress != null && tutorialProgress!['dashboard']?['index'] == true) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTutorial();
-        setState(() {
-          _isTutorialShown = true;
-        });
-      });
     }
   }
 
@@ -217,8 +308,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardAdminDealStats",
         keyTarget: keyAdminDealStats,
-        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_deal_stats_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_deal_stats_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -351,8 +444,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardUserGoalComplietion",
         keyTarget: keyManagerGoalComplietion,
-        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_user_goal_completion_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_user_goal_completion_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -361,8 +456,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       createTarget(
         identify: "dashboardUserTaskChart",
         keyTarget: keyAdminTaskChart,
-        title: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_title'),
-        description: AppLocalizations.of(context)!.translate('tutorial_dashboard_task_chart_description'),
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_dashboard_task_chart_description'),
         align: ContentAlign.top,
         context: context,
         contentPosition: ContentPosition.below,
@@ -370,11 +467,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ]);
   }
 
-void showTutorial() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
-  
-  if (!isTutorialShown) {
+  void showTutorial() async {
+    if (_isTutorialShown) {
+      print('Tutorial already shown for dashboard, skipping');
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownDashboard') ?? false;
+
+    if (isTutorialShown ||
+        tutorialProgress == null ||
+        _hasDashboardIndexPermission) {
+      print('Tutorial not shown in showTutorial for dashboard');
+      return;
+    }
+
+    print('Showing tutorial for dashboard');
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -391,25 +500,28 @@ void showTutorial() async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
-      onSkip: () { // Изменено: убрано async, возвращаем bool напрямую
-        prefs.setBool('isTutorialShownDashboard', true);
-        _apiService.markPageCompleted("dashboard", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
+      onSkip: () {
+        print("Tutorial skipped for dashboard");
+        prefs.setBool('isTutorialShownDashboard', true).then((_) {
+          _apiService.markPageCompleted("dashboard", "index").catchError((e) {
+            print('Error marking page completed on skip for dashboard: $e');
+          });
         });
         setState(() {
-          _isTaskScreenTutorialCompleted = true;
+          _isTutorialShown = true;
         });
         return true;
       },
       onFinish: () async {
+        print("Tutorial finished for dashboard");
         await prefs.setBool('isTutorialShownDashboard', true);
         try {
           await _apiService.markPageCompleted("dashboard", "index");
         } catch (e) {
-          print('Error marking page completed on finish: $e');
+          print('Error marking page completed on finish for dashboard: $e');
         }
         setState(() {
-          _isTaskScreenTutorialCompleted = true;
+          _isTutorialShown = true;
         });
       },
       onClickTarget: (target) async {
@@ -417,7 +529,6 @@ void showTutorial() async {
             targets.indexWhere((t) => t.identify == target.identify);
         if (currentIndex < targets.length - 1) {
           final nextTarget = targets[currentIndex + 1];
-
           if (nextTarget.keyTarget != null) {
             await Future.delayed(Duration(milliseconds: 300));
             _scrollToTarget(nextTarget.keyTarget!);
@@ -426,7 +537,6 @@ void showTutorial() async {
       },
     ).show(context: context);
   }
-}
 
   void _scrollToTarget(GlobalKey key) {
     final RenderObject? renderObject = key.currentContext?.findRenderObject();
@@ -438,86 +548,6 @@ void showTutorial() async {
       );
     } else {
       print("Error: Unable to find render object for key");
-    }
-  }
-
-  Future<void> _initializeData() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
-
-      if (isFirstTime) {
-        await Future.wait([
-          _loadUserRoles(),
-          Future.delayed(const Duration(seconds: 3)),
-        ]);
-
-        await prefs.setBool('isFirstTime', false);
-      } else {
-        await _loadUserRoles();
-      }
-
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error in initialization: $e');
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadUserRoles() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-
-      if (userId.isEmpty) {
-        setState(() {
-          userRoles = ['No user ID found'];
-        });
-        return;
-      }
-
-      String? storedRoles = prefs.getString('userRoles');
-      if (storedRoles != null) {
-        setState(() {
-          userRoles = storedRoles.split(',');
-        });
-        return;
-      }
-
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      if (mounted) {
-        setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ??
-              ['No role assigned'];
-        });
-
-        await prefs.setString('userRoles', userRoles.join(','));
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initTutorialTargets();
-      });
-    } catch (e) {
-      print('Error loading user roles!');
-      if (mounted) {
-        setState(() {
-          userRoles = ['Error loading roles'];
-        });
-      }
     }
   }
 
@@ -641,49 +671,29 @@ void showTutorial() async {
         Divider(thickness: 1, color: Colors.grey[300]),
         GraphicsDashboard(lineChartKey: keyAdminGraphics),
         Divider(thickness: 1, color: Colors.grey[300]),
-        ProcessSpeedGauge(
-          key: keyAdminProcessSpeed,
-        ),
+        ProcessSpeedGauge(key: keyAdminProcessSpeed),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChart(
-          key: keyAdminDealStats,
-        ),
+        DealStatsChart(key: keyAdminDealStats),
       ];
     } else if (userRoles.contains('manager')) {
       return [
-        LeadConversionChartManager(
-          key: keyAdminLeadConversion,
-        ),
+        LeadConversionChartManager(key: keyAdminLeadConversion),
         Divider(thickness: 1, color: Colors.grey[300]),
-        GoalCompletionChart(
-          key: keyManagerGoalComplietion,
-        ),
+        GoalCompletionChart(key: keyManagerGoalComplietion),
         Divider(thickness: 1, color: Colors.grey[300]),
-        GraphicsDashboardManager(
-          lineChartKey: keyAdminGraphics,
-        ),
+        GraphicsDashboardManager(lineChartKey: keyAdminGraphics),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(
-          key: keyAdminTaskChart,
-        ),
+        TaskChartWidgetManager(key: keyAdminTaskChart),
         Divider(thickness: 1, color: Colors.grey[300]),
-        ProcessSpeedGaugeManager(
-          key: keyAdminProcessSpeed,
-        ),
+        ProcessSpeedGaugeManager(key: keyAdminProcessSpeed),
         Divider(thickness: 1, color: Colors.grey[300]),
-        DealStatsChartManager(
-          key: keyAdminDealStats,
-        ),
+        DealStatsChartManager(key: keyAdminDealStats),
       ];
     } else {
       return [
-        GoalCompletionChart(
-          key: keyManagerGoalComplietion,
-        ),
+        GoalCompletionChart(key: keyManagerGoalComplietion),
         Divider(thickness: 1, color: Colors.grey[300]),
-        TaskChartWidgetManager(
-          key: keyAdminTaskChart,
-        ),
+        TaskChartWidgetManager(key: keyAdminTaskChart),
       ];
     }
   }

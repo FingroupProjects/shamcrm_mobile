@@ -5863,7 +5863,7 @@ String getRecordingUrl(String recordPath) {
   //_________________________________ END_____API_SCREEN__EVENT____________________________________________//a
 
     //_________________________________ START_____API_SCREEN__TUTORIAL____________________________________________//a
-// В ApiService замените метод на этот
+
 Future<Map<String, dynamic>> getTutorialProgress() async {
   final organizationId = await getSelectedOrganization();
   
