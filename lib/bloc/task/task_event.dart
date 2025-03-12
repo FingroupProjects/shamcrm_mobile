@@ -17,10 +17,11 @@ class FetchTasks extends TaskEvent {
   final bool? hasDeal;
   final bool? urgent;
   final DateTime? deadlinefromDate;
-  final DateTime? deadlinetoDate;  
+  final DateTime? deadlinetoDate;
   final String? project;
   final List<String>?
       authors; // Изменено с String? author на List<String>? authors
+  final String? department; // Добавьте это
   FetchTasks(
     this.statusId, {
     this.query,
@@ -36,6 +37,7 @@ class FetchTasks extends TaskEvent {
     this.urgent,
     this.project,
     this.authors,
+    this.department,
   });
 }
 

@@ -4,10 +4,14 @@ import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart'
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
+import 'package:crm_task_manager/screens/task/task_details/department_list.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/department/department_bloc.dart'; // Импорт BLoC для Department
+import 'package:crm_task_manager/api/service/api_service.dart'; // Импорт ApiService
 
 class UserFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onUsersSelected;
@@ -18,14 +22,15 @@ class UserFilterScreen extends StatefulWidget {
   final int? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
-  final bool? initialIsOverdue; // Added
-  final bool? initialHasFile; // Added
-  final bool? initialHasDeal; // Added
-  final bool? initialIsUrgent; // Added
+  final bool? initialIsOverdue;
+  final bool? initialHasFile;
+  final bool? initialHasDeal;
+  final bool? initialIsUrgent;
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
   final VoidCallback? onResetFilters;
-  final List<String>? initialAuthors; // Added
+  final List<String>? initialAuthors;
+  final String? initialDepartment; // Добавлено для начального значения отдела
 
   UserFilterScreen({
     Key? key,
@@ -37,14 +42,15 @@ class UserFilterScreen extends StatefulWidget {
     this.initialStatuses,
     this.initialFromDate,
     this.initialToDate,
-    this.initialIsOverdue, // Added
-    this.initialHasFile, // Added
-    this.initialHasDeal, // Added
-    this.initialIsUrgent, // Added
+    this.initialIsOverdue,
+    this.initialHasFile,
+    this.initialHasDeal,
+    this.initialIsUrgent,
     this.initialDeadlineFromDate,
     this.initialDeadlineToDate,
     this.onResetFilters,
-    this.initialAuthors, // Added
+    this.initialAuthors,
+    this.initialDepartment, // Добавлено
   }) : super(key: key);
 
   @override
@@ -53,7 +59,7 @@ class UserFilterScreen extends StatefulWidget {
 
 class _UserFilterScreenState extends State<UserFilterScreen> {
   List _selectedUsers = [];
-  List<String> _selectedAuthors = []; // Added
+  List<String> _selectedAuthors = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -63,6 +69,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   bool _hasFile = false;
   bool _hasDeal = false;
   bool _isUrgent = false;
+  String? _selectedDepartment; // Добавлено для хранения выбранного отдела
 
   @override
   void initState() {
@@ -71,13 +78,14 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
-    _selectedAuthors = widget.initialAuthors ?? []; // Initialize authors
-    _isOverdue = widget.initialIsOverdue ?? false; // Initialize from props
-    _hasFile = widget.initialHasFile ?? false; // Initialize from props
-    _hasDeal = widget.initialHasDeal ?? false; // Initialize from props
-    _isUrgent = widget.initialIsUrgent ?? false; // Initialize from props
-     _deadlinefromDate = widget.initialDeadlineFromDate;
+    _selectedAuthors = widget.initialAuthors ?? [];
+    _isOverdue = widget.initialIsOverdue ?? false;
+    _hasFile = widget.initialHasFile ?? false;
+    _hasDeal = widget.initialHasDeal ?? false;
+    _isUrgent = widget.initialIsUrgent ?? false;
+    _deadlinefromDate = widget.initialDeadlineFromDate;
     _deadlinetoDate = widget.initialDeadlineToDate;
+    _selectedDepartment = widget.initialDepartment; // Инициализация отдела
   }
 
   void _selectDateRange() async {
@@ -94,15 +102,14 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             scaffoldBackgroundColor: Colors.white,
             dialogBackgroundColor: Colors.white,
             colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Цвет кружков начальной и конечной даты
-              onPrimary: Colors.white, // Цвет текста на выделенных датах
-              onSurface: Colors.black, // Цвет обычного текста
-              secondary: Colors.blue
-                  .withOpacity(0.1), // Цвет фона выделенного диапазона
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+              secondary: Colors.blue.withOpacity(0.1),
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, // Цвет кнопок
+                foregroundColor: Colors.blue,
               ),
             ),
           ),
@@ -119,7 +126,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   }
 
   void _selectDeadline() async {
-       final DateTimeRange? pickedRange = await showDateRangePicker(
+    final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
@@ -132,15 +139,14 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             scaffoldBackgroundColor: Colors.white,
             dialogBackgroundColor: Colors.white,
             colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Цвет кружков начальной и конечной даты
-              onPrimary: Colors.white, // Цвет текста на выделенных датах
-              onSurface: Colors.black, // Цвет обычного текста
-              secondary: Colors.blue
-                  .withOpacity(0.1), // Цвет фона выделенного диапазона
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+              secondary: Colors.blue.withOpacity(0.1),
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, // Цвет кнопок
+                foregroundColor: Colors.blue,
               ),
             ),
           ),
@@ -155,6 +161,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       });
     }
   }
+
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
       title: Text(
@@ -186,7 +193,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
+              color: Color(0xff1E2E52),
               fontFamily: 'Gilroy'),
         ),
         backgroundColor: Colors.white,
@@ -198,7 +205,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               setState(() {
                 widget.onResetFilters?.call();
                 _selectedUsers.clear();
-                _selectedAuthors.clear(); // Added
+                _selectedAuthors.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
@@ -208,7 +215,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 _isUrgent = false;
                 _deadlinefromDate = null;
                 _deadlinetoDate = null;
-
+                _selectedDepartment = null; // Сброс отдела
               });
             },
             style: TextButton.styleFrom(
@@ -234,6 +241,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             onPressed: () async {
               print('Applying filters with authors: $_selectedAuthors');
               print('Applying filters with deadline: $_deadlinetoDate');
+              print('Applying filters with department: $_selectedDepartment');
               // Очищаем кэш перед применением фильтров
               await TaskCache.clearAllTasks();
 
@@ -250,23 +258,28 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 'deadlinefromDate': _deadlinefromDate,
                 'deadlinetoDate': _deadlinetoDate,
                 'authors': _selectedAuthors,
+                'department': _selectedDepartment, // Добавляем ID отдела
               };
 
               // Проверяем, есть ли хотя бы один активный фильтр
               final bool hasFilters = _selectedUsers.isNotEmpty ||
                   _selectedStatuses != null ||
-                  (_fromDate != null && _toDate != null) ||_isOverdue ||_hasFile ||_hasDeal ||_isUrgent ||  (_deadlinefromDate != null && _deadlinetoDate != null) ||_selectedAuthors.isNotEmpty;
+                  (_fromDate != null && _toDate != null) ||
+                  _isOverdue ||
+                  _hasFile ||
+                  _hasDeal ||
+                  _isUrgent ||
+                  (_deadlinefromDate != null && _deadlinetoDate != null) ||
+                  _selectedAuthors.isNotEmpty ||
+                  _selectedDepartment != null;
 
               if (hasFilters) {
-                // Если есть хотя бы один фильтр, вызываем метод с передачей всех фильтров
                 print('APPLYING FILTERS');
                 widget.onUsersSelected?.call(filters);
               } else {
-                // Если ни один фильтр не выбран
                 print('NOTHING!!!!!!');
               }
 
-              // Закрываем экран фильтров после применения
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(
@@ -322,9 +335,8 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                 ),
               ),
             ),
-              const SizedBox(height: 8),
-                    // Deadline selector
-                    Card(
+            const SizedBox(height: 8),
+            Card(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
@@ -392,52 +404,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                         ),
                       ),
                     ),
-                    // Card(
-                    //   shape: RoundedRectangleBorder(
-                    //       borderRadius: BorderRadius.circular(12)),
-                    //   color: Colors.white,
-                    //   child: Padding(
-                    //     padding: const EdgeInsets.all(8),
-                    //     child: AuthorMultiSelectWidget(
-                    //       selectedAuthors: _selectedAuthors,
-                    //       onSelectAuthors:
-                    //           (List<AuthorData> selectedAuthorsData) {
-                    //         setState(() {
-                    //           _selectedAuthors = selectedAuthorsData
-                    //               .map((author) => author.id.toString())
-                    //               .toList();
-                    //         });
-                    //       },
-                    //     ),
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 8),
-                    // Deadline selector
-                    // Card(
-                    //   shape: RoundedRectangleBorder(
-                    //       borderRadius: BorderRadius.circular(12)),
-                    //   color: Colors.white,
-                    //   child: GestureDetector(
-                    //     onTap: _selectDeadline,
-                    //     child: Container(
-                    //       padding: const EdgeInsets.all(12),
-                    //       child: Row(
-                    //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //         children: [
-                    //           Text(
-                    //             _deadline != null
-                    //                 ? "${_deadline!.day.toString().padLeft(2, '0')}.${_deadline!.month.toString().padLeft(2, '0')}.${_deadline!.year}"
-                    //                 : AppLocalizations.of(context)!
-                    //                     .translate('select_deadline'),
-                    //             style: TextStyle(
-                    //                 color: Colors.black54, fontSize: 16),
-                    //           ),
-                    //           Icon(Icons.event, color: Colors.black54),
-                    //         ],
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
+                    const SizedBox(height: 8),
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -454,6 +421,27 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
                                   .toList();
                             });
                           },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Добавляем DepartmentWidget после AuthorMultiSelectWidget
+                    Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: BlocProvider(
+                          create: (context) => DepartmentBloc(ApiService()),
+                          child: DepartmentWidget(
+                            selectedDepartment: _selectedDepartment,
+                            onChanged: (departmentId) {
+                              setState(() {
+                                _selectedDepartment = departmentId;
+                              });
+                            },
+                          ),
                         ),
                       ),
                     ),

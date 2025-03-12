@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -42,8 +43,7 @@ class PinnedMessageWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Закрепленное сообщение",
+                  Text(AppLocalizations.of(context)!.translate('pinned_message'), 
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: ChatSmsStyles.messageBubbleSenderColor,

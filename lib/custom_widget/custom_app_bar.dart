@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomAppBar extends StatefulWidget {
@@ -117,6 +118,7 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
   final List<String>? initialAuthors; // Add this
+  final String? initialDepartment;
 
   CustomAppBar({
     super.key,
@@ -207,6 +209,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerDealDaysWithoutActivity,
     this.initialManagerDealHasTasks,
     this.onLeadsDealSelected,
+    this.initialDepartment,
   });
 
   @override
@@ -227,6 +230,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _hasNewNotification = false;
   late PusherChannelsClient socketClient;
   late StreamSubscription<ChannelReadEvent> notificationSubscription;
+  final AudioPlayer _audioPlayer = AudioPlayer();
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
@@ -300,6 +304,15 @@ class _CustomAppBarState extends State<CustomAppBar>
     super.dispose();
   }
 
+    Future<void> _playSound() async {
+  try {
+    await _audioPlayer.setAsset('assets/audio/get.mp3');
+    await _audioPlayer.play();
+  } catch (e) {
+    print('Error playing sound: $e');
+  }
+}
+
   Future<void> _loadNotificationState() async {
     final prefs = await SharedPreferences.getInstance();
     bool hasNewNotification = prefs.getBool('hasNewNotification') ?? false;
@@ -313,7 +326,6 @@ class _CustomAppBarState extends State<CustomAppBar>
         '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
-    final baseUrlSocket = await ApiService().getSocketBaseUrl();
     final enteredDomainMap = await ApiService().getEnteredDomain();
     String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
     String? enteredDomain = enteredDomainMap['enteredDomain'];
@@ -351,8 +363,7 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     socketClient.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
-      notificationSubscription =
-          myPresenceChannel.bind('notification.created').listen((event) {
+      notificationSubscription = myPresenceChannel.bind('notification.created').listen((event) {
         debugPrint('Received notification: ${event.data}');
         setState(() {
           _hasNewNotification = true;
@@ -1141,6 +1152,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             initialIsUrgent: widget.initialTaskIsUrgent,
             onResetFilters: widget.onResetFilters,
             initialAuthors: widget.initialAuthors,
+            initialDepartment: widget.initialDepartment,
             initialDeadlineFromDate: widget.initialDeadlineFromDate,
             initialDeadlineToDate: widget.initialDeadlineToDate),
       ),

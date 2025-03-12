@@ -791,8 +791,18 @@
       "completed_events": "Completed events",
       "completed_events_description": "Here are stored events that have already been completed",
       "tutorial_event_screen_search_description": "Use the search bar to quickly find notes",
-        "tutorial_event_screen_filtr_title": "Filter",
-  "tutorial_event_screen_filtr_description": "Adjust filters to narrow down the list of events."
+      "tutorial_event_screen_filtr_title": "Filter",
+      "tutorial_event_screen_filtr_description": "Adjust filters to narrow down the list of events.",
+      "open_url_source": "Open",
+      "copy_url_source_text": "Link copied!",
+      "edited_sms": "Edited",
+      "voice_message": "Voice message",
+      "edit_message": "Message editing",
+      "in_answer": "In reply",
+      "pinned_message": "Pinned message"
+
+
+
 
 
 
