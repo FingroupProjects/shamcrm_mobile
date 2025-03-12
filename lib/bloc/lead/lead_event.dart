@@ -7,13 +7,13 @@ class FetchLeadStatuses extends LeadEvent {}
 class FetchLeads extends LeadEvent {
   final int statusId;
   final String? query;
-  final List<int>? managerIds; 
-  final List<int>? regionsIds; 
-  final List<int>? sourcesIds; 
-  final int? statusIds; 
-  final DateTime? fromDate; 
-  final DateTime? toDate; 
-  final bool? hasSuccessDeals ;
+  final List<int>? managerIds;
+  final List<int>? regionsIds;
+  final List<int>? sourcesIds;
+  final int? statusIds;
+  final DateTime? fromDate;
+  final DateTime? toDate;
+  final bool? hasSuccessDeals;
   final bool? hasInProgressDeals;
   final bool? hasFailureDeals;
   final bool? hasNotices;
@@ -21,7 +21,6 @@ class FetchLeads extends LeadEvent {
   final bool? hasChat;
   final bool? hasDeal;
   final int? daysWithoutActivity;
-
 
   FetchLeads(
     this.statusId, {
@@ -68,19 +67,22 @@ class FetchAllLeads extends LeadEvent {}
 class CreateLeadStatus extends LeadEvent {
   final String title;
   final String color;
-  final AppLocalizations localizations;  
-
+  final AppLocalizations localizations;
+  final bool? isSuccess;
+  final bool? isFailure;
 
   CreateLeadStatus({
     required this.title,
     required this.color,
     required this.localizations,
+    this.isSuccess,
+    this.isFailure,
   });
 }
 
 class CreateLead extends LeadEvent {
   final String name;
-  final int leadStatusId;
+  final int leadStatusId;   
   final String phone;
   final int? regionId;
   final int? managerId;
@@ -93,8 +95,7 @@ class CreateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
-  final AppLocalizations localizations;  
-
+  final AppLocalizations localizations;
 
   CreateLead({
     required this.name,
@@ -111,8 +112,7 @@ class CreateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
-    required this.localizations,  
-
+    required this.localizations,
   });
 }
 
@@ -133,8 +133,7 @@ class UpdateLead extends LeadEvent {
   final String? description;
   final String? waPhone;
   final List<Map<String, String>>? customFields;
-  final AppLocalizations localizations;  
-
+  final AppLocalizations localizations;
 
   UpdateLead({
     required this.leadId,
@@ -152,33 +151,30 @@ class UpdateLead extends LeadEvent {
     this.description,
     this.waPhone,
     this.customFields,
-    required this.localizations,  
-
+    required this.localizations,
   });
 }
 
 class DeleteLead extends LeadEvent {
   final int leadId;
-  final AppLocalizations localizations;  
-
+  final AppLocalizations localizations;
 
   DeleteLead(
     this.leadId,
-    this.localizations,  
-    );
+    this.localizations,
+  );
 }
 
 class DeleteLeadStatuses extends LeadEvent {
   final int leadStatusId;
-    final AppLocalizations localizations;  
-
+  final AppLocalizations localizations;
 
   DeleteLeadStatuses(
     this.leadStatusId,
-    this.localizations,  
-
-);
+    this.localizations,
+  );
 }
+
 // Event для изменения статуса лида
 class UpdateLeadStatusEdit extends LeadEvent {
   final int leadStatusId;

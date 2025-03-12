@@ -118,6 +118,7 @@ class CustomAppBar extends StatefulWidget {
   final DateTime? initialDeadlineFromDate;
   final DateTime? initialDeadlineToDate;
   final List<String>? initialAuthors; // Add this
+  final String? initialDepartment;
 
   CustomAppBar({
     super.key,
@@ -208,6 +209,7 @@ class CustomAppBar extends StatefulWidget {
     this.initialManagerDealDaysWithoutActivity,
     this.initialManagerDealHasTasks,
     this.onLeadsDealSelected,
+    this.initialDepartment,
   });
 
   @override
@@ -1150,6 +1152,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             initialIsUrgent: widget.initialTaskIsUrgent,
             onResetFilters: widget.onResetFilters,
             initialAuthors: widget.initialAuthors,
+            initialDepartment: widget.initialDepartment,
             initialDeadlineFromDate: widget.initialDeadlineFromDate,
             initialDeadlineToDate: widget.initialDeadlineToDate),
       ),

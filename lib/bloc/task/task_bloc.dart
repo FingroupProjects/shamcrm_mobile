@@ -147,6 +147,7 @@ Future<void> _fetchTasks(FetchTasks event, Emitter<TaskState> emit) async {
       authors: event.authors,
       deadlinefromDate: event.deadlinefromDate,
       deadlinetoDate: event.deadlinetoDate,
+      department: event.department, // Добавляем передачу department
     );
 
     // Сохраняем задачи в кэш

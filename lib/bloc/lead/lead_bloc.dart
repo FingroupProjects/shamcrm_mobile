@@ -24,7 +24,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<UpdateLeadStatusEdit>(_updateLeadStatusEdit);
     on<FetchLeadStatus>(_fetchLeadStatus);
   }
-Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) async {
+  Future<void> _fetchLeadStatus(
+      FetchLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
     try {
       final leadStatus = await apiService.getLeadStatus(event.leadStatusId);
@@ -33,6 +34,7 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
       emit(LeadError('Failed to fetch deal status: ${e.toString()}'));
     }
   }
+
   // Метод для загрузки лидов с учётом кэша
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
@@ -55,27 +57,24 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
         emit(LeadDataLoaded(cachedLeads, currentPage: 1, leadCounts: {}));
       }
 
-      final leads = await apiService.getLeads(
-        event.statusId,
-        page: 1,
-        perPage: 20,
-        search: event.query,
-        managers: event.managerIds,
-        regions: event.regionsIds,
-        sources: event.sourcesIds,
-        statuses: event.statusIds,
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        hasSuccessDeals: event.hasSuccessDeals,
-        hasInProgressDeals: event.hasInProgressDeals,
-        hasFailureDeals: event.hasFailureDeals,
-        hasNotices: event.hasNotices,
-        hasContact: event.hasContact,
-        hasChat: event.hasChat,
-        hasDeal: event.hasDeal,
-        daysWithoutActivity: event.daysWithoutActivity
-
-      );
+      final leads = await apiService.getLeads(event.statusId,
+          page: 1,
+          perPage: 20,
+          search: event.query,
+          managers: event.managerIds,
+          regions: event.regionsIds,
+          sources: event.sourcesIds,
+          statuses: event.statusIds,
+          fromDate: event.fromDate,
+          toDate: event.toDate,
+          hasSuccessDeals: event.hasSuccessDeals,
+          hasInProgressDeals: event.hasInProgressDeals,
+          hasFailureDeals: event.hasFailureDeals,
+          hasNotices: event.hasNotices,
+          hasContact: event.hasContact,
+          hasChat: event.hasChat,
+          hasDeal: event.hasDeal,
+          daysWithoutActivity: event.daysWithoutActivity);
       // Сохраняем лиды в кэш
       await LeadCache.cacheLeadsForStatus(event.statusId, leads);
 
@@ -289,8 +288,8 @@ Future<void> _fetchLeadStatus(FetchLeadStatus event, Emitter<LeadState> emit) as
     }
 
     try {
-      final result =
-          await apiService.createLeadStatus(event.title, event.color);
+      final result = await apiService.createLeadStatus(
+          event.title, event.color, event.isFailure, event.isSuccess);
 
       if (result['success']) {
         emit(LeadSuccess(result['message']));

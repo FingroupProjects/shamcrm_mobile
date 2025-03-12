@@ -84,7 +84,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _initialUrgent = false;
   List<String> _selectedAuthors = []; // Add this
   List<String> _initialSelectedAuthors = []; // Add this
-
+  String? _selectedDepartment;
+  String? _initialSelectedDepartment;
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
 
@@ -344,6 +345,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       project: _selectedProject,
       authors:
           _selectedAuthors, // Изменено с author: _selectedAuthor на authors: _selectedAuthors
+      department: _selectedDepartment, // Убедитесь, что это есть
     ));
   }
 
@@ -379,6 +381,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _intialDeadlineFromDate = filterData['deadlinefromDate'];
       _intialDeadlineToDate = filterData['deadlinetoDate'];
       _initialSelectedAuthors = filterData['authors'] ?? [];
+      _selectedDepartment = filterData['department'];
+      _initialSelectedDepartment = filterData['department'];
+      print('Selected Department: $_selectedDepartment'); // Добавьте это
     });
     print('Filter Data received: $filterData'); // В начале метода
     print('Selected Authors: $_selectedAuthors'); // После установки значений
@@ -402,6 +407,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       deadlinetoDate: _deadlinetoDate,
       project: _selectedProject,
       authors: _selectedAuthors,
+      department: _selectedDepartment,
     ));
   }
 
@@ -498,6 +504,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _intialDeadlineFromDate = null;
       _intialDeadlineToDate = null;
       _initialSelectedAuthors = []; // Add this
+      _selectedDepartment = null;
+      _initialSelectedDepartment = null;
     });
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
@@ -579,6 +587,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialUsers: _initialselectedUsers,
             initialStatuses: _initialSelStatus,
             initialAuthors: _initialSelectedAuthors, // Add this
+            initialDepartment: _initialSelectedDepartment,
             initialFromDate: _intialFromDate,
             initialToDate: _intialToDate,
             initialDeadlineFromDate: _intialDeadlineFromDate,
@@ -639,6 +648,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       deadlinefromDate: _fromDate,
                       deadlinetoDate: _toDate,
                       authors: _selectedAuthors,
+                      department: _selectedDepartment,
                     ));
                   }
                 } else if (_selectedUserIds != null &&
