@@ -1,14 +1,48 @@
 import 'dart:convert';
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/process_speed/ProcessSpeed_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/task_chart/task_chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_event.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/conversion/conversion_event.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/dealStats/dealStats_event.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/lead_chart/chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/process_speed/ProcessSpeed_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/process_speed/ProcessSpeed_event.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_event.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
+import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
+import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/notification_cache.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
+import 'package:crm_task_manager/screens/deal/deal_cache.dart';
+import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
+import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -362,13 +396,42 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     return null;
   }
 
-  void _onOrganizationChanged(String? newOrganization) {
+  Future<void> _onOrganizationChanged(String? newOrganization) async {
     setState(() {
       _selectedOrganization = newOrganization;
     });
     if (newOrganization != null) {
       ApiService().saveSelectedOrganization(newOrganization);
+
+      await DealCache.clearDealStatuses();
+      await DealCache.clearAllDeals();
+
+      await LeadCache.clearLeadStatuses();
+      await LeadCache.clearAllLeads();
+
+      await TaskCache.clearTaskStatuses();
+      await TaskCache.clearAllTasks();
+
+
+      await NotificationCacheHandler.clearCache();
+      
     }
+      BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
+      BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
+      BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+
+      context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
+      context.read<DashboardChartBloc>().add(LoadLeadChartData());
+      context.read<DashboardChartBlocManager>().add(LoadLeadChartDataManager());
+      context.read<ProcessSpeedBloc>().add(LoadProcessSpeedData());
+      context.read<DashboardConversionBloc>().add(LoadLeadConversionData());
+      context.read<DashboardConversionBlocManager>().add(LoadLeadConversionDataManager());
+      context.read<DealStatsBloc>().add(LoadDealStatsData());
+      context.read<DealStatsManagerBloc>().add(LoadDealStatsManagerData());
+      context.read<UserBlocManager>().add(LoadUserData());
+      context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
+      context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
+      context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
   }
 
   void _openSupportChat() async {
@@ -476,3 +539,4 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     );
   }
 }
+
