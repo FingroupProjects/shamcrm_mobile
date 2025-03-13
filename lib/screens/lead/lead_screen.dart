@@ -944,7 +944,6 @@ void _showStatusOptions(BuildContext context, int index) {
     final leadStatus = _tabTitles[
         index]; // Assuming _tabTitles holds the relevant data for the lead
 
-    // Show the Edit Lead Status Screen as a modal dialog
     showDialog(
       context: context,
       builder: (BuildContext context) {

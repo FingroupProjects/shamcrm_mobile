@@ -52,7 +52,6 @@ class _LeadColumnState extends State<LeadColumn> {
     super.initState();
     _leadBloc = LeadBloc(_apiService)..add(FetchLeads(widget.statusId));
     _checkPermission();
-    // Убираем _loadFeatureState и _initTutorialTargets из initState
   }
 
   @override
