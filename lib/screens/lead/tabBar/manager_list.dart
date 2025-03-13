@@ -63,7 +63,6 @@ void _autoSelectCurrentUserAsManager(List<ManagerData> managers) {
   }
   
   for (var manager in managers) {
-    print('Checking manager: ${manager.id} - ${manager.name} ${manager.lastname}'); // Логируем каждого менеджера
     if (manager.id.toString() == currentUserId) {
       print('Found matching manager: ${manager.name} ${manager.lastname}'); // Логируем найденного менеджера
       WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
@@ -80,12 +81,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
 
   String? selectedManager;
   String selectedDialCode = '+992';
-  String selectedWhatsAppDialCode = '+992'; // Новая переменная для WhatsApp
-
-  List<String> countryCodes = ['+992', '+7', '+996', '+998', '+1'];
+  String selectedWhatsAppDialCode = '+992';
   bool _isPhoneEdited = false;
-  bool _isWhatsAppEdited =
-      false; // Новая переменная для отслеживания изменений WhatsApp
+  bool _isWhatsAppEdited = false; 
 
   List<CustomField> customFields = [];
 

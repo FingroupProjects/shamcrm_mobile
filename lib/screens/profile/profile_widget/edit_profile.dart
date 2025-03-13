@@ -16,6 +16,8 @@ import 'dart:io';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../custom_widget/country_data_list.dart';
+
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({Key? key}) : super(key: key);
 
@@ -48,19 +50,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   final TextEditingController phoneController = TextEditingController();
   String selectedDialCode = '+992'; // Default country code
-  List<String> countryCodes = [
-    '+992',
-    '+7',
-    '+996',
-    '+998',
-    '+1'
-  ]; // Country codes list
-  final Map<String, int> phoneNumberLengths = {
-    '+992': 9,
-    '+7': 10,
-    '+998': 9,
-    '+996': 9,
-  };
 
   // Функция валидации email
   bool isValidEmail(String email) {
