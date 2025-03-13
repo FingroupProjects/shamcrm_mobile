@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -81,7 +82,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _canExportContact = false;
   bool _isExportContactEnabled = false;
 
-
   final ApiService _apiService = ApiService();
   String? selectedOrganization;
 
@@ -94,22 +94,75 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   final GlobalKey keyLeadContactPerson = GlobalKey();
   late ScrollController _scrollController;
 
-
   List<TargetFocus> targets = [];
-  bool _isTutorialShown = false; 
-
+  bool _isTutorialShown = false;
+  bool _isTutorialInProgress = false; // Добавлено для защиты от повторного вызова
+  Map<String, dynamic>? tutorialProgress; // Добавлено для данных с сервера
   @override
 
-  void initState() {
+@override
+void initState() {
   super.initState();
-   _scrollController = ScrollController(); 
-  _checkPermissions();
+  _scrollController = ScrollController();
+  _checkPermissions().then((_) {
     context.read<OrganizationBloc>().add(FetchOrganizations());
-    _loadSelectedOrganization(); 
+    _loadSelectedOrganization();
     context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: int.parse(widget.leadId)));
-  }
+  });
+}
+Future<void> _fetchTutorialProgress() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final progress = await _apiService.getTutorialProgress();
+    setState(() {
+      tutorialProgress = progress['result'];
+    });
+    await prefs.setString('tutorial_progress', json.encode(progress['result']));
 
+    bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
+    setState(() {
+      _isTutorialShown = isTutorialShown;
+    });
+
+    // Инициализируем targets с актуальными значениями разрешений
+    _initTutorialTargets();
+
+    if (tutorialProgress != null &&
+        tutorialProgress!['leads']?['view'] == false &&
+        !isTutorialShown &&
+        !_isTutorialInProgress &&
+        targets.isNotEmpty &&
+        mounted) {
+      showTutorial();
+    }
+  } catch (e) {
+    print('Error fetching tutorial progress: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final savedProgress = prefs.getString('tutorial_progress');
+    if (savedProgress != null) {
+      setState(() {
+        tutorialProgress = json.decode(savedProgress);
+      });
+      bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      _initTutorialTargets();
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['leads']?['view'] == false &&
+          !isTutorialShown &&
+          !_isTutorialInProgress &&
+          targets.isNotEmpty &&
+          mounted) {
+        showTutorial();
+      }
+    }
+  }
+}
 void _initTutorialTargets() {
+  targets.clear(); // Очищаем список перед добавлением
   targets.addAll([
     createTarget(
       identify: "LeadHistory",
@@ -183,50 +236,80 @@ void _initTutorialTargets() {
 
 
 void showTutorial() async {
+  if (_isTutorialInProgress) {
+    print('Tutorial already in progress, skipping');
+    return;
+  }
+
+  if (targets.isEmpty) {
+    print('No targets available for tutorial, skipping');
+    return;
+  }
+
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
 
+  if (tutorialProgress == null ||
+      tutorialProgress!['leads']?['view'] == true ||
+      isTutorialShown ||
+      _isTutorialShown) {
+    print('Tutorial conditions not met');
+    return;
+  }
+
+  setState(() {
+    _isTutorialInProgress = true;
+  });
   await Future.delayed(const Duration(milliseconds: 700));
 
-  if (!isTutorialShown) {
-    TutorialCoachMark(
-      targets: targets,
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-      onClickTarget: (target) {
-          if (target.identify == "keyNavigateChat") {
-          _scrollController.animateTo(
+  TutorialCoachMark(
+    targets: targets,
+    textSkip: AppLocalizations.of(context)!.translate('skip'),
+    textStyleSkip: TextStyle(
+      color: Colors.white,
+      fontFamily: 'Gilroy',
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      shadows: [
+        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+      ],
+    ),
+    colorShadow: Color(0xff1E2E52),
+    onClickTarget: (target) {
+      if (target.identify == "keyNavigateChat") {
+        _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: Duration(milliseconds: 500),
           curve: Curves.easeInOut,
         );
       }
-      },
-      onSkip: () {
-        prefs.setBool('isTutorialShownLeadDetails', true);
-        return true;
-      },
-      onFinish: () {
-        prefs.setBool('isTutorialShownLeadDetails', true);
-      },
-    ).show(context: context);
-  }
-
-  
+    },
+    onSkip: () {
+      prefs.setBool('isTutorialShownLeadDetails', true);
+      _apiService.markPageCompleted("leads", "view").catchError((e) {
+        print('Error marking page completed on skip: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+      return true;
+    },
+    onFinish: () {
+      prefs.setBool('isTutorialShownLeadDetails', true);
+      _apiService.markPageCompleted("leads", "view").catchError((e) {
+        print('Error marking page completed on finish: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+    },
+  ).show(context: context);
 }
-
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -246,9 +329,7 @@ void showTutorial() async {
       _isExportContactEnabled = prefs.getBool('switchContact') ?? false;
     });
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-  });
+ await _fetchTutorialProgress();
   }
 
   // Обновление данных лида

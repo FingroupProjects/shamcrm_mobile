@@ -19,14 +19,12 @@ class DealColumn extends StatefulWidget {
   final int? managerId;
   final bool isDealScreenTutorialCompleted;
 
-  
-
   DealColumn({
     required this.statusId,
     required this.title,
     required this.onStatusId,
     this.managerId,
-    required this.isDealScreenTutorialCompleted
+    required this.isDealScreenTutorialCompleted,
   });
 
   @override
@@ -39,96 +37,178 @@ class _DealColumnState extends State<DealColumn> {
   late DealBloc _dealBloc;
   late ScrollController _scrollController;
 
-  // Добавляем ключи для подсказок
+  // Ключи для подсказок
   final GlobalKey keyDealCard = GlobalKey();
   final GlobalKey keyFloatingActionButton = GlobalKey();
+  final GlobalKey keyDropdown = GlobalKey();
   List<TargetFocus> targets = [];
-  final GlobalKey keyDropdown = GlobalKey(); 
 
-bool _isDealCardTutorialShown = false;
-bool _isStatusTutorialShown = false;
-bool _isFabTutorialShown = false;
-bool _isFabTutorialInProgress = false;
-bool _isTutorialInProgress = false; 
+  // Флаги для подсказок
+  bool _isDealCardTutorialShown = false;
+  bool _isStatusTutorialShown = false;
+  bool _isFabTutorialShown = false;
+  bool _isFabTutorialInProgress = false;
+  bool _isTutorialInProgress = false;
 
-  @override
+  bool _isTutorialShown = false; // Единый флаг для туториала
+  int _tutorialStep = 0; // Шаги для порядка показа
+bool _isInitialized = false; // Флаг для отслеживания инициализации
+@override
   void initState() {
     super.initState();
     _dealBloc = DealBloc(_apiService)..add(FetchDeals(widget.statusId));
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _checkCreatePermission();
-    _loadFeatureState();
+    // Убираем вызов _initTutorialTargets() и логику туториала из initState
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _initTutorialTargets();
-      });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _initTutorialTargets(); // Переносим сюда
+
+      // Если туториал DealScreen завершен, запускаем через 500мс
+      if (widget.isDealScreenTutorialCompleted && !_isTutorialShown && !_isTutorialInProgress) {
+        Future.delayed(Duration(milliseconds: 500), () {
+          if (mounted) {
+            _tutorialStep = 0;
+            showTutorial();
+          }
+        });
+      }
+      _isInitialized = true; // Устанавливаем флаг, чтобы не повторять
+    }
+  }
+void _initTutorialTargets() {
+    targets.clear();
+    targets.addAll([
+      createTarget(
+        identify: "DealCard",
+        keyTarget: keyDealCard,
+        title: AppLocalizations.of(context)!.translate('dealCard'),
+        description: AppLocalizations.of(context)!.translate('dealCardDescription'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.below,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      createTarget(
+        identify: "Dropdown",
+        keyTarget: keyDropdown,
+        title: AppLocalizations.of(context)!.translate('statusManagement'),
+        description: AppLocalizations.of(context)!.translate('statusManagementDescription'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      if (_canCreateDeal)
+        createTarget(
+          identify: "FloatingActionButton",
+          keyTarget: keyFloatingActionButton,
+          title: AppLocalizations.of(context)!.translate('addDeal'),
+          description: AppLocalizations.of(context)!.translate('addDealDescription'),
+          align: ContentAlign.top,
+          context: context,
+        ),
+    ]);
+  }
+  // Загрузка состояния подсказок
+  Future<void> _loadFeatureState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDealCardTutorialShown =
+          prefs.getBool('isDealCardTutorialShow') ?? false;
+      _isStatusTutorialShown = prefs.getBool('isDropdownTutorialShow') ?? false;
+      _isFabTutorialShown = prefs.getBool('isDealFabTutorialShow') ?? false;
     });
   }
 
-// Инициализация подсказок
-void _initTutorialTargets() {
-   targets.addAll([
-    createTarget(
-      identify: "DealCard",
-      keyTarget: keyDealCard,
-      title: AppLocalizations.of(context)!.translate('dealCard'), 
-      description: AppLocalizations.of(context)!.translate('dealCardDescription'), 
-      align: ContentAlign.bottom,
-      context: context,
-      contentPosition: ContentPosition.below,
-      contentPadding: EdgeInsets.only(top: 50),
-    ),
-    createTarget(
-      identify: "Dropdown",
-      keyTarget: keyDropdown,
-      title: AppLocalizations.of(context)!.translate('statusManagement'), 
-      description: AppLocalizations.of(context)!.translate('statusManagementDescription'), 
-      align: ContentAlign.bottom,
-      context: context,
-    ),
-    createTarget(
-      identify: "FloatingActionButton",
-      keyTarget: keyFloatingActionButton,
-      title: AppLocalizations.of(context)!.translate('addDeal'), 
-      description: AppLocalizations.of(context)!.translate('addDealDescription'), 
-      align: ContentAlign.top,
-      context: context,
-    ),
-  ]);
-}
+  // // Метод для запуска подсказок после DealScreen
+  // void _startColumnTutorial() async {
+  //   if (_isTutorialInProgress) return;
 
-// Загрузка состояния подсказок
-Future<void> _loadFeatureState() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  setState(() {
-    _isDealCardTutorialShown = prefs.getBool('isDealCardTutorialShow') ?? false;
-    _isStatusTutorialShown = prefs.getBool('isDropdownTutorialShow') ?? false;
-    _isFabTutorialShown = prefs.getBool('isDealFabTutorialShow') ?? false;
-  });
-}
+  //   await Future.delayed(Duration(milliseconds: 500)); // Задержка 500 мс
 
-// Показ подсказок
-void showTutorial(String tutorialType) async {
+  //   // Проверяем состояние данных DealBloc
+  //   final currentState = _dealBloc.state;
+  //   if (currentState is DealDataLoaded) {
+  //     final deals = currentState.deals
+  //         .where((deal) => deal.statusId == widget.statusId)
+  //         .toList();
+  //     if (deals.isNotEmpty &&
+  //         !_isDealCardTutorialShown &&
+  //         !_isStatusTutorialShown) {
+  //       showTutorial("DealCardAndStatusDropdown");
+  //     } else if (deals.isEmpty &&
+  //         !_isFabTutorialShown &&
+  //         !_isFabTutorialInProgress &&
+  //         _canCreateDeal) {
+  //       showTutorial("FloatingActionButton");
+  //     }
+  //   }
+  // }
+
+  // Показ подсказок
+ void showTutorial() async {
     if (_isTutorialInProgress) {
-    return; 
-  }
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+      print('Tutorial already in progress, skipping');
+      return;
+    }
 
-  if (widget.isDealScreenTutorialCompleted && 
-      tutorialType == "DealCardAndStatusDropdown" && 
-      !_isDealCardTutorialShown && 
-      !_isStatusTutorialShown) {
-    _isTutorialInProgress = true;
-    
-        await Future.delayed(const Duration(milliseconds: 500));
+    if (targets.isEmpty) {
+      print('No targets available for tutorial, skipping');
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownDealColumn') ?? false;
+
+    if (isTutorialShown || _isTutorialShown) {
+      print('Tutorial conditions not met');
+      return;
+    }
+
+    setState(() {
+      _isTutorialInProgress = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    List<TargetFocus> currentTargets = [];
+    bool isLastStep = false;
+
+    switch (_tutorialStep) {
+      case 0: // DealCard и Dropdown вместе
+        currentTargets = targets
+            .where((t) => t.identify == "DealCard" || t.identify == "Dropdown")
+            .toList();
+        break;
+      case 1: // FloatingActionButton
+        if (_canCreateDeal) {
+          currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
+          isLastStep = true;
+        }
+        break;
+    }
+
+    // Если нет карточек, сразу показываем FAB
+    if (_dealBloc.state is DealDataLoaded) {
+      final deals = (_dealBloc.state as DealDataLoaded).deals.where((deal) => deal.statusId == widget.statusId).toList();
+      if (deals.isEmpty && _tutorialStep == 0 && _canCreateDeal) {
+        currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
+        isLastStep = true;
+      }
+    }
+
+    if (currentTargets.isEmpty) {
+      setState(() {
+        _isTutorialInProgress = false;
+      });
+      return;
+    }
 
     TutorialCoachMark(
-      targets: [
-        targets.firstWhere((t) => t.identify == "DealCard"),
-        targets.firstWhere((t) => t.identify == "Dropdown"),
-      ],
+      targets: currentTargets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
         color: Colors.white,
@@ -144,69 +224,30 @@ void showTutorial(String tutorialType) async {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        prefs.setBool('isDealCardTutorialShow', true);
-        prefs.setBool('isDropdownTutorialShow', true);
+        prefs.setBool('isTutorialShownDealColumn', true);
         setState(() {
-          _isDealCardTutorialShown = true;
-          _isStatusTutorialShown = true;
-           _isTutorialInProgress = false;
+          _isTutorialShown = true;
+          _isTutorialInProgress = false;
         });
         return true;
       },
       onFinish: () {
-        prefs.setBool('isDealCardTutorialShow', true);
-        prefs.setBool('isDropdownTutorialShow', true);
-        setState(() {
-          _isDealCardTutorialShown = true;
-          _isStatusTutorialShown = true;
-           _isTutorialInProgress = false;
-        });
-      },
-    ).show(context: context);
- } else if (widget.isDealScreenTutorialCompleted && 
-             tutorialType == "FloatingActionButton" && 
-             !_isFabTutorialShown && 
-             !_isFabTutorialInProgress) {
-    _isTutorialInProgress = true;
-        await Future.delayed(const Duration(milliseconds: 500));
-
-    _isFabTutorialInProgress = true;
-    TutorialCoachMark(
-      targets: [targets.firstWhere((t) => t.identify == "FloatingActionButton")],
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-      onSkip: () {
-        prefs.setBool('isDealFabTutorialShow', true);
-        setState(() {
-          _isFabTutorialShown = true;
-           _isTutorialInProgress = false; 
-        });
-        _isFabTutorialInProgress = false;
-        return true;
-      },
-      onFinish: () {
-        prefs.setBool('isDealFabTutorialShow', true);
-        setState(() {
-          _isFabTutorialShown = true;
-           _isTutorialInProgress = false; 
-        });
-        _isFabTutorialInProgress = false;
+        if (isLastStep) {
+          prefs.setBool('isTutorialShownDealColumn', true);
+          setState(() {
+            _isTutorialShown = true;
+            _isTutorialInProgress = false;
+          });
+        } else {
+          setState(() {
+            _tutorialStep++;
+            _isTutorialInProgress = false;
+          });
+          showTutorial(); // Переходим к следующему шагу
+        }
       },
     ).show(context: context);
   }
-}
 
   @override
   void dispose() {
@@ -264,12 +305,6 @@ void showTutorial(String tutorialType) async {
                   .toList();
 
               if (deals.isNotEmpty) {
-               if (deals.isNotEmpty && !_isDealCardTutorialShown && !_isStatusTutorialShown && !_isTutorialInProgress) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showTutorial("DealCardAndStatusDropdown");
-                });
-              }
-
                 return RefreshIndicator(
                   color: Color(0xff1E2E52),
                   backgroundColor: Colors.white,
@@ -287,12 +322,8 @@ void showTutorial(String tutorialType) async {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 8),
                               child: DealCard(
-                                key: index == 0
-                                    ? keyDealCard
-                                    : null, // Добавляем ключ для первой карточки
-                                dropdownKey: index == 0
-                                    ? keyDropdown
-                                    : null, // Передавайте ключ только для первой карточки
+                                key: index == 0 ? keyDealCard : null,
+                                dropdownKey: index == 0 ? keyDropdown : null,
                                 deal: deals[index],
                                 title: widget.title,
                                 statusId: widget.statusId,
@@ -311,13 +342,6 @@ void showTutorial(String tutorialType) async {
                   ),
                 );
               } else {
-                // Если нет сделок, показываем подсказку для кнопки добавления
-             if (deals.isEmpty && !_isFabTutorialShown && !_isTutorialInProgress) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showTutorial("FloatingActionButton");
-                });
-              }
-
                 return RefreshIndicator(
                   backgroundColor: Colors.white,
                   color: Color(0xff1E2E52),
@@ -332,7 +356,8 @@ void showTutorial(String tutorialType) async {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              AppLocalizations.of(context)!.translate('no_deal_in_selected_status'),
+                              AppLocalizations.of(context)!
+                                  .translate('no_deal_in_selected_status'),
                               style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -376,7 +401,7 @@ void showTutorial(String tutorialType) async {
         ),
         floatingActionButton: _canCreateDeal
             ? FloatingActionButton(
-                key: keyFloatingActionButton, // Добавляем ключ для кнопки
+                key: keyFloatingActionButton,
                 onPressed: () {
                   Navigator.push(
                     context,

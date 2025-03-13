@@ -261,12 +261,9 @@ void showTutorial() async {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown =
-        prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
+    bool isTutorialShown = prefs.getBool('isTutorialShownLeadSearchIconAppBar') ?? false;
 
-    if (isTutorialShown ||
-        tutorialProgress == null ||
-        _hasLeadIndexPermission) {
+    if (isTutorialShown || tutorialProgress == null || _hasLeadIndexPermission) {
       print('Tutorial not shown in showTutorial for leads');
       return;
     }
@@ -298,6 +295,7 @@ void showTutorial() async {
         });
         setState(() {
           _isTutorialShown = true;
+          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг
         });
         return true;
       },
@@ -311,11 +309,11 @@ void showTutorial() async {
         }
         setState(() {
           _isTutorialShown = true;
+          _isLeadScreenTutorialCompleted = true; // Устанавливаем флаг
         });
       },
     ).show(context: context);
   }
-
   
 Future<void> _searchLeads(String query, int currentStatusId) async {
   final leadBloc = BlocProvider.of<LeadBloc>(context);
@@ -946,7 +944,6 @@ void _showStatusOptions(BuildContext context, int index) {
     final leadStatus = _tabTitles[
         index]; // Assuming _tabTitles holds the relevant data for the lead
 
-    // Show the Edit Lead Status Screen as a modal dialog
     showDialog(
       context: context,
       builder: (BuildContext context) {
