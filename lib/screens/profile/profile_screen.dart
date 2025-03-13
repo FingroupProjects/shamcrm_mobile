@@ -124,12 +124,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
-  final prefs = await SharedPreferences.getInstance();
-  final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
-  await prefs.setString('cached_organizations', jsonList);
-}
-
+  Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = jsonEncode(organizations.map((org) => org.toJson()).toList());
+    await prefs.setString('cached_organizations', jsonList);
+  }
 
   Future<List<Organization>> _getOrganizationsFromCache() async {
     final prefs = await SharedPreferences.getInstance();
@@ -295,11 +294,17 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     if (isTutorialShown || _hasSettingsIndexPermission) return;
 
     List<TargetFocus> visibleTargets = targets.where((target) {
-      if (target.identify == "profileToggleFeature") {
-        return _hasPermissionToAddLeadAndSwitch;
+      // Условие для profileToggleFeature
+      if (target.identify == "profileToggleFeature" && !_hasPermissionToAddLeadAndSwitch) {
+        return false;
       }
-      if (target.identify == "profileUpdateWidget1C") {
-        return _hasPermissionForOneC;
+      // Условие для profileUpdateWidget1C
+      if (target.identify == "profileUpdateWidget1C" && !_hasPermissionForOneC) {
+        return false;
+      }
+      // Проверяем, существует ли ключ в дереве виджетов
+      if (target.keyTarget?.currentContext == null) {
+        return false;
       }
       return true;
     }).toList();
@@ -320,10 +325,9 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
         ],
       ),
       colorShadow: Color(0xff1E2E52),
-      onSkip: ()  {
-                print("Tutorial skipped");
-
-         prefs.setBool('isTutorialShownProfile', true);
+      onSkip: () {
+        print("Tutorial skipped");
+        prefs.setBool('isTutorialShownProfile', true);
         _apiService.markPageCompleted("settings", "index").catchError((e) {
           print('Error marking page completed on skip: $e');
         });
@@ -412,10 +416,8 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       await TaskCache.clearTaskStatuses();
       await TaskCache.clearAllTasks();
 
-
       await NotificationCacheHandler.clearCache();
-      
-    }
+
       BlocProvider.of<DealBloc>(context).add(FetchDealStatuses());
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
       BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
@@ -432,6 +434,7 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
       context.read<DashboardTaskChartBloc>().add(LoadTaskChartData());
       context.read<DashboardTaskChartBlocManager>().add(LoadTaskChartDataManager());
       context.read<ProcessSpeedBlocManager>().add(LoadProcessSpeedDataManager());
+    }
   }
 
   void _openSupportChat() async {
@@ -539,4 +542,3 @@ Future<void> _saveOrganizationsToCache(List<Organization> organizations) async {
     );
   }
 }
-

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
@@ -21,11 +23,10 @@ class EventScreen extends StatefulWidget {
   _EventScreenState createState() => _EventScreenState();
 }
 
-class _EventScreenState extends State<EventScreen>
-    with TickerProviderStateMixin {
+class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  late ScrollController _tabScrollController; // Для вкладок
-  late ScrollController _listScrollController; // Для списка событий
+  late ScrollController _tabScrollController;
+  late ScrollController _listScrollController;
   late final List<Map<String, dynamic>> _tabTitles;
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
@@ -39,7 +40,7 @@ class _EventScreenState extends State<EventScreen>
   int? _selectedManagerId;
   bool _showCustomTabBar = true;
   final TextEditingController _searchController = TextEditingController();
-  bool _hasPermissionToAddEvent = true;
+  bool _hasPermissionToAddEvent = false; // Изначально false
   final ApiService _apiService = ApiService();
 
   List<ManagerData> _selectedManagers = [];
@@ -55,295 +56,23 @@ class _EventScreenState extends State<EventScreen>
   DateTime? _intialToDate;
   DateTime? _intialNoticeFromDate;
   DateTime? _intialNoticeToDate;
-  // Добавляем ключи для подсказок
+
+  // Ключи для туториала
   final GlobalKey keyEventCard = GlobalKey();
   final GlobalKey keyFloatingActionButton = GlobalKey();
-  List<TargetFocus> targets = [];
-  // final GlobalKey keyDropdown = GlobalKey(); // Добавляем ключ для dropdown
-
-  bool _isEventCardTutorialShown = false;
-  bool _isFabTutorialShown = false;
-  bool _isInProgressTabTutorialShown = false;
-  bool _isCompletedTabTutorialShown = false;
-  bool _isSearchIconTutorialShown = false; // Добавлено для поиска
-  bool _isFiltrIconTutorialShown = false; // Добавлено для фильтра
-
-  // Флаги для отслеживания текущего состояния подсказок
-  bool _isEventCardTutorialInProgress = false;
-  bool _isFabTutorialInProgress = false;
-  bool _isInProgressTabTutorialInProgress = false;
-  bool _isCompletedTabTutorialInProgress = false;
-  bool _isSearchIconTutorialInProgress = false; // Добавлено для поиска
-  bool _isFiltrIconTutorialInProgress = false; // Добавлено для фильтра
-  bool _isEventScreenTutorialCompleted = false;
-
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyFiltrIcon = GlobalKey();
+  List<TargetFocus> targets = [];
 
-  void _initTutorialTargets() {
-    targets.addAll([
-      createTarget(
-        identify: "EventCard",
-        keyTarget: keyEventCard,
-        title: AppLocalizations.of(context)!.translate('EventCard'),
-        description:
-            AppLocalizations.of(context)!.translate('evetnCardDescription'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.below,
-        contentPadding: EdgeInsets.only(top: 50),
-      ),
-      createTarget(
-        identify: "FloatingActionButton",
-        keyTarget: keyFloatingActionButton,
-        title: AppLocalizations.of(context)!.translate('addEvent'),
-        description:
-            AppLocalizations.of(context)!.translate('addEventDescription'),
-        align: ContentAlign.top,
-        context: context,
-      ),
-      createTarget(
-        identify: "InProgressTab",
-        keyTarget: _tabKeys[0],
-        title: AppLocalizations.of(context)!.translate('events_in_progress'),
-        description: AppLocalizations.of(context)!
-            .translate('events_in_progress_description'),
-        align: ContentAlign.bottom,
-        context: context,
-      ),
-      createTarget(
-        identify: "CompletedTab",
-        keyTarget: _tabKeys[1],
-        title: AppLocalizations.of(context)!.translate('completed_events'),
-        description: AppLocalizations.of(context)!
-            .translate('completed_events_description'),
-        align: ContentAlign.bottom,
-        context: context,
-      ),
-      createTarget(
-        identify: "EventSearchIcon",
-        keyTarget: keySearchIcon,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_search_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_event_screen_search_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-      createTarget(
-        identify: "EventFiltrIcon",
-        keyTarget: keyFiltrIcon,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_event_screen_filtr_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_event_screen_filtr_description'),
-        align: ContentAlign.bottom,
-        context: context,
-        contentPosition: ContentPosition.above,
-      ),
-    ]);
-  }
-
-// Загрузка состояния подсказок
-  Future<void> _loadFeatureState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isEventCardTutorialShown = prefs.getBool('isNoticeCardTutorialShow') ?? false;
-      _isFabTutorialShown = prefs.getBool('isNoticeFabTutorialShow') ?? false;
-      _isInProgressTabTutorialShown = prefs.getBool('isInProgressTabTutorialShowNotice') ?? false;
-      _isCompletedTabTutorialShown = prefs.getBool('isCompletedTabTutorialShowNotice') ?? false;
-      _isSearchIconTutorialShown = prefs.getBool('isSearchIconTutorialShown') ?? false;
-      _isFiltrIconTutorialShown = prefs.getBool('isFiltrIconTutorialShown') ?? false;
-      _isEventScreenTutorialCompleted = prefs.getBool('isEventScreenTutorialCompleted') ?? false;
-    });
-  }
-
-// Показ подсказок
-  void showTutorial(String tutorialType) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    TargetFocus? targetFocus;
-    for (var target in targets) {
-      if (target.identify == tutorialType) {
-        targetFocus = target;
-        break;
-      }
-    }
-
-    if (targetFocus == null) return;
-
-    bool isShown = false;
-    bool isInProgress = false;
-    Function()? onFinish = () {};
-
-    switch (tutorialType) {
-      case "EventCard":
-        isShown = _isEventCardTutorialShown;
-        isInProgress = _isEventCardTutorialInProgress;
-        if (isShown || isInProgress) return;
-        _isEventCardTutorialInProgress = true;
-        onFinish = () {
-          prefs.setBool('isNoticeCardTutorialShow', true);
-          setState(() {
-            _isEventCardTutorialShown = true;
-            _isEventCardTutorialInProgress = false;
-          });
-        };
-        break;
-      case "FloatingActionButton":
-        isShown = _isFabTutorialShown;
-        isInProgress = _isFabTutorialInProgress;
-        if (isShown || isInProgress) return;
-        _isFabTutorialInProgress = true;
-        onFinish = () {
-          prefs.setBool('isNoticeFabTutorialShow', true);
-          setState(() {
-            _isFabTutorialShown = true;
-            _isFabTutorialInProgress = false;
-          });
-        };
-        break;
-      case "EventSearchIcon":
-        isShown = _isSearchIconTutorialShown;
-        isInProgress = _isSearchIconTutorialInProgress;
-        if (isShown || isInProgress) return;
-        _isSearchIconTutorialInProgress = true;
-        onFinish = () {
-          prefs.setBool('isSearchIconTutorialShown', true);
-          setState(() {
-            _isSearchIconTutorialShown = true;
-            _isSearchIconTutorialInProgress = false;
-          });
-          if (!_isFiltrIconTutorialShown && !_isFiltrIconTutorialInProgress) {
-            showTutorial("EventFiltrIcon");
-          }
-        };
-        break;
-      case "EventFiltrIcon":
-        isShown = _isFiltrIconTutorialShown;
-        isInProgress = _isFiltrIconTutorialInProgress;
-        if (isShown || isInProgress) return;
-        _isFiltrIconTutorialInProgress = true;
-        onFinish = () {
-          prefs.setBool('isFiltrIconTutorialShown', true);
-          setState(() {
-            _isFiltrIconTutorialShown = true;
-            _isFiltrIconTutorialInProgress = false;
-            _isEventScreenTutorialCompleted = true;
-          });
-          // Instead of directly accessing events, call the check method
-          // which will handle obtaining the events properly
-          _checkAndRedirectAfterTutorial();
-        };
-        break;
-      case "InProgressTab":
-        isShown = _isInProgressTabTutorialShown;
-        isInProgress = _isInProgressTabTutorialInProgress;
-        if (isShown || isInProgress) return;
-        _isInProgressTabTutorialInProgress = true;
-        onFinish = () {
-          prefs.setBool('isInProgressTabTutorialShowNotice', true);
-          setState(() {
-            _isInProgressTabTutorialShown = true;
-          });
-          _isInProgressTabTutorialInProgress = false;
-        };
-        break;
-      case "CompletedTab":
-        isShown = _isCompletedTabTutorialShown;
-        isInProgress = _isCompletedTabTutorialInProgress;
-        if (isShown || isInProgress) return;
-        _isCompletedTabTutorialInProgress = true;
-        onFinish = () {
-          prefs.setBool('isCompletedTabTutorialShowNotice', true);
-          setState(() {
-            _isCompletedTabTutorialShown = true;
-          });
-          _isCompletedTabTutorialInProgress = false;
-        };
-        break;
-    }
-
-    TutorialCoachMark(
-      targets: [targetFocus],
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-      alignSkip: Alignment.bottomLeft,
-      onFinish: () {
-        if (onFinish != null) onFinish();
-      },
-      onSkip: () {
-        // Пропускаем все подсказки
-        prefs.setBool('isNoticeCardTutorialShow', true);
-        prefs.setBool('isNoticeFabTutorialShow', true);
-        prefs.setBool('isInProgressTabTutorialShowNotice', true);
-        prefs.setBool('isCompletedTabTutorialShowNotice', true);
-        prefs.setBool('isSearchIconTutorialShown', true);
-        prefs.setBool('isFiltrIconTutorialShown', true);
-
-        setState(() {
-          _isEventCardTutorialShown = true;
-          _isFabTutorialShown = true;
-          _isInProgressTabTutorialShown = true;
-          _isCompletedTabTutorialShown = true;
-          _isSearchIconTutorialShown = true;
-          _isFiltrIconTutorialShown = true;
-          _isEventScreenTutorialCompleted = true;
-
-          _isEventCardTutorialInProgress = false;
-          _isFabTutorialInProgress = false;
-          _isInProgressTabTutorialInProgress = false;
-          _isCompletedTabTutorialInProgress = false;
-          _isSearchIconTutorialInProgress = false;
-          _isFiltrIconTutorialInProgress = false;
-        });
-        _checkAndRedirectAfterTutorial();
-        return true;
-      },
-    ).show(context: context);
-  }
-
-void _checkAndRedirectAfterTutorial() {
-  if (_isEventScreenTutorialCompleted) {
-    // Use a post-frame callback to ensure state is updated
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_eventBloc.state is EventDataLoaded) {
-        final events = (_eventBloc.state as EventDataLoaded).events;
-        
-        // Если есть карточки, показываем только подсказку карточки
-        if (events.isNotEmpty && !_isEventCardTutorialShown && !_isEventCardTutorialInProgress) {
-          showTutorial("EventCard");
-        } 
-        // Только если карточек нет, показываем подсказку FAB
-        else if (events.isEmpty && !_isFabTutorialShown && !_isFabTutorialInProgress && _hasPermissionToAddEvent) {
-          showTutorial("FloatingActionButton");
-        }
-      }
-    });
-  }
-}
+  bool _isTutorialShown = false; // Единый флаг для туториала
+  bool _isTutorialInProgress = false; // Защита от повторного вызова
+  Map<String, dynamic>? tutorialProgress; // Данные с сервера
+int _tutorialStep = 0; // Добавляем шаг туториала
   @override
   void initState() {
     super.initState();
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _eventBloc = context.read<EventBloc>();
-    _loadFeatureState();
-    _checkPermission();
+    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
 
     _tabScrollController = ScrollController();
     _listScrollController = ScrollController();
@@ -373,25 +102,245 @@ void _checkAndRedirectAfterTutorial() {
       }
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Инициализация целей подсказок
-      setState(() {
-        _initTutorialTargets();
-      });
-
-      // Показываем подсказку поиска при первом запуске
-      if (!_isSearchIconTutorialShown && !_isSearchIconTutorialInProgress) {
-        showTutorial("EventSearchIcon");
-      }
-    });
+    _checkPermissions(); // Проверяем разрешения и запускаем туториал
   }
 
-  Future<void> _checkPermission() async {
-    bool hasPermission = await _apiService.hasPermission('notice.create');
+  Future<void> _checkPermissions() async {
+    final hasPermission = await _apiService.hasPermission('notice.create');
     setState(() {
       _hasPermissionToAddEvent = hasPermission;
     });
+    await _fetchTutorialProgress();
   }
+
+ Future<void> _fetchTutorialProgress() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final progress = await _apiService.getTutorialProgress();
+    setState(() {
+      tutorialProgress = progress['result'];
+    });
+    await prefs.setString('tutorial_progress', json.encode(progress['result']));
+
+    bool isTutorialShown = prefs.getBool('isTutorialShownNoticeIndex') ?? false;
+    setState(() {
+      _isTutorialShown = isTutorialShown;
+    });
+
+    _initTutorialTargets();
+
+    if (tutorialProgress != null &&
+        tutorialProgress!['notices']?['index'] == false &&
+        !isTutorialShown &&
+        !_isTutorialInProgress &&
+        targets.isNotEmpty &&
+        mounted) {
+      _tutorialStep = 0; // Начинаем с первого шага
+      showTutorial(); // Запускаем туториал
+    }
+  } catch (e) {
+    print('Error fetching tutorial progress: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final savedProgress = prefs.getString('tutorial_progress');
+    if (savedProgress != null) {
+      setState(() {
+        tutorialProgress = json.decode(savedProgress);
+      });
+      bool isTutorialShown = prefs.getBool('isTutorialShownNoticeIndex') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      _initTutorialTargets();
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['notices']?['index'] == false &&
+          !isTutorialShown &&
+          !_isTutorialInProgress &&
+          targets.isNotEmpty &&
+          mounted) {
+        _tutorialStep = 0; // Начинаем с первого шага
+        showTutorial(); // Запускаем туториал
+      }
+    }
+  }
+}
+  void _initTutorialTargets() {
+    targets.clear();
+    targets.addAll([
+      createTarget(
+        identify: "EventCard",
+        keyTarget: keyEventCard,
+        title: AppLocalizations.of(context)!.translate('EventCard'),
+        description: AppLocalizations.of(context)!.translate('evetnCardDescription'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.below,
+        contentPadding: EdgeInsets.only(top: 50),
+      ),
+      if (_hasPermissionToAddEvent)
+        createTarget(
+          identify: "FloatingActionButton",
+          keyTarget: keyFloatingActionButton,
+          title: AppLocalizations.of(context)!.translate('addEvent'),
+          description: AppLocalizations.of(context)!.translate('addEventDescription'),
+          align: ContentAlign.top,
+          context: context,
+        ),
+      createTarget(
+        identify: "InProgressTab",
+        keyTarget: _tabKeys[0],
+        title: AppLocalizations.of(context)!.translate('events_in_progress'),
+        description: AppLocalizations.of(context)!.translate('events_in_progress_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      createTarget(
+        identify: "CompletedTab",
+        keyTarget: _tabKeys[1],
+        title: AppLocalizations.of(context)!.translate('completed_events'),
+        description: AppLocalizations.of(context)!.translate('completed_events_description'),
+        align: ContentAlign.bottom,
+        context: context,
+      ),
+      createTarget(
+        identify: "EventSearchIcon",
+        keyTarget: keySearchIcon,
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_event_screen_search_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+      createTarget(
+        identify: "EventFiltrIcon",
+        keyTarget: keyFiltrIcon,
+        title: AppLocalizations.of(context)!.translate('tutorial_event_screen_filtr_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_event_screen_filtr_description'),
+        align: ContentAlign.bottom,
+        context: context,
+        contentPosition: ContentPosition.above,
+      ),
+    ]);
+  }
+
+  void showTutorial() async {
+  if (_isTutorialInProgress) {
+    print('Tutorial already in progress, skipping');
+    return;
+  }
+
+  if (targets.isEmpty) {
+    print('No targets available for tutorial, skipping');
+    return;
+  }
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownNoticeIndex') ?? false;
+
+  if (tutorialProgress == null ||
+      tutorialProgress!['notices']?['index'] == true ||
+      isTutorialShown ||
+      _isTutorialShown) {
+    print('Tutorial conditions not met');
+    return;
+  }
+
+  setState(() {
+    _isTutorialInProgress = true;
+  });
+  await Future.delayed(const Duration(milliseconds: 500));
+
+  // Определяем текущую цель в зависимости от шага
+  List<TargetFocus> currentTargets = [];
+  bool isLastStep = false;
+
+  switch (_tutorialStep) {
+    case 0: // Поиск
+      currentTargets = targets.where((t) => t.identify == "EventSearchIcon").toList();
+      break;
+    case 1: // Фильтр
+      currentTargets = targets.where((t) => t.identify == "EventFiltrIcon").toList();
+      break;
+    case 2: // Статусы
+      currentTargets = targets
+          .where((t) => t.identify == "InProgressTab" || t.identify == "CompletedTab")
+          .toList();
+      break;
+    case 3: // Карточка или Кнопка "Добавить"
+      if (_eventBloc.state is EventDataLoaded) {
+        final events = (_eventBloc.state as EventDataLoaded).events;
+        if (events.isEmpty && _hasPermissionToAddEvent) {
+          currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
+          isLastStep = true; // Если нет карточек, это последний шаг
+        } else {
+          currentTargets = targets.where((t) => t.identify == "EventCard").toList();
+        }
+      }
+      break;
+    case 4: // Кнопка "Добавить" (если были карточки)
+      if (_hasPermissionToAddEvent) {
+        currentTargets = targets.where((t) => t.identify == "FloatingActionButton").toList();
+        isLastStep = true; // Это последний шаг
+      }
+      break;
+  }
+
+  if (currentTargets.isEmpty) {
+    setState(() {
+      _isTutorialInProgress = false;
+    });
+    return;
+  }
+
+  TutorialCoachMark(
+    targets: currentTargets,
+    textSkip: AppLocalizations.of(context)!.translate('skip'),
+    textStyleSkip: TextStyle(
+      color: Colors.white,
+      fontFamily: 'Gilroy',
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      shadows: [
+        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+      ],
+    ),
+    colorShadow: Color(0xff1E2E52),
+    alignSkip: Alignment.bottomLeft,
+    onFinish: () {
+      if (isLastStep) {
+        prefs.setBool('isTutorialShownNoticeIndex', true);
+        _apiService.markPageCompleted("notices", "index").catchError((e) {
+          print('Error marking page completed on finish: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+          _isTutorialInProgress = false;
+        });
+      } else {
+        setState(() {
+          _tutorialStep++;
+          _isTutorialInProgress = false;
+        });
+        showTutorial(); // Переходим к следующему шагу
+      }
+    },
+    onSkip: () {
+      prefs.setBool('isTutorialShownNoticeIndex', true);
+      _apiService.markPageCompleted("notices", "index").catchError((e) {
+        print('Error marking page completed on skip: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+      return true;
+    },
+  ).show(context: context);
+}
 
   @override
   void didChangeDependencies() {
@@ -422,17 +371,15 @@ void _checkAndRedirectAfterTutorial() {
   }
 
   Future<void> _searchEvents(String query, int currentStatusId) async {
-    print('ПОИСК+++++++++++++++++++++++++++++++++++++++++++++++');
-
     context.read<EventBloc>().add(FetchEvents(
-          query: query,
-          managerIds: _selectedManagers.map((manager) => manager.id).toList(),
-          statusIds: _selectedStatuses,
-          fromDate: _fromDate,
-          toDate: _toDate,
-          noticefromDate: _NoticefromDate,
-          noticetoDate: _NoticetoDate,
-        ));
+      query: query,
+      managerIds: _selectedManagers.map((manager) => manager.id).toList(),
+      statusIds: _selectedStatuses,
+      fromDate: _fromDate,
+      toDate: _toDate,
+      noticefromDate: _NoticefromDate,
+      noticetoDate: _NoticetoDate,
+    ));
   }
 
   void _resetFilters() {
@@ -446,8 +393,6 @@ void _checkAndRedirectAfterTutorial() {
       _NoticetoDate = null;
       _initialselectedManagers = [];
       _initialSelStatus = null;
-      _intialFromDate = null;
-      _intialToDate = null;
       _intialFromDate = null;
       _intialToDate = null;
       _intialNoticeFromDate = null;
@@ -477,8 +422,8 @@ void _checkAndRedirectAfterTutorial() {
       _intialNoticeToDate = managers['noticetoDate'];
     });
 
-    final leadBloc = BlocProvider.of<EventBloc>(context);
-    leadBloc.add(FetchEvents(
+    final eventBloc = BlocProvider.of<EventBloc>(context);
+    eventBloc.add(FetchEvents(
       managerIds: _selectedManagers.map((manager) => manager.id).toList(),
       statusIds: _selectedStatuses,
       fromDate: _fromDate,
@@ -493,7 +438,6 @@ void _checkAndRedirectAfterTutorial() {
     setState(() {
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatusId;
-
       _initialSelStatus = selectedStatusId;
     });
 
@@ -509,7 +453,6 @@ void _checkAndRedirectAfterTutorial() {
       _showCustomTabBar = false;
       _fromDate = fromDate;
       _toDate = toDate;
-
       _intialFromDate = fromDate;
       _intialToDate = toDate;
     });
@@ -522,13 +465,11 @@ void _checkAndRedirectAfterTutorial() {
     ));
   }
 
-  Future _handleNoticeDateSelected(
-      DateTime? noticefromDate, DateTime? noticetoDate) async {
+  Future _handleNoticeDateSelected(DateTime? noticefromDate, DateTime? noticetoDate) async {
     setState(() {
       _showCustomTabBar = false;
       _NoticefromDate = noticefromDate;
       _NoticetoDate = noticetoDate;
-
       _intialNoticeFromDate = noticefromDate;
       _intialNoticeToDate = noticetoDate;
     });
@@ -541,14 +482,12 @@ void _checkAndRedirectAfterTutorial() {
     ));
   }
 
-  Future _handleStatusAndDateSelected(
-      int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
+  Future _handleStatusAndDateSelected(int? selectedStatus, DateTime? fromDate, DateTime? toDate) async {
     setState(() {
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatus;
       _fromDate = fromDate;
       _toDate = toDate;
-
       _initialSelStatus = selectedStatus;
       _intialFromDate = fromDate;
       _intialToDate = toDate;
@@ -563,14 +502,12 @@ void _checkAndRedirectAfterTutorial() {
     ));
   }
 
-  Future _handleNoticeStatusAndDateSelected(int? selectedStatus,
-      DateTime? noticefromDate, DateTime? noticetoDate) async {
+  Future _handleNoticeStatusAndDateSelected(int? selectedStatus, DateTime? noticefromDate, DateTime? noticetoDate) async {
     setState(() {
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatus;
       _NoticefromDate = noticefromDate;
       _NoticetoDate = noticetoDate;
-
       _initialSelStatus = selectedStatus;
       _intialNoticeFromDate = noticefromDate;
       _intialNoticeToDate = noticetoDate;
@@ -585,21 +522,14 @@ void _checkAndRedirectAfterTutorial() {
     ));
   }
 
-  Future _handleDateNoticeStatusAndDateSelected(
-      int? selectedStatus,
-      DateTime? noticefromDate,
-      DateTime? noticetoDate,
-      DateTime? fromDate,
-      DateTime? toDate) async {
+  Future _handleDateNoticeStatusAndDateSelected(int? selectedStatus, DateTime? noticefromDate, DateTime? noticetoDate, DateTime? fromDate, DateTime? toDate) async {
     setState(() {
       _showCustomTabBar = false;
       _selectedStatuses = selectedStatus;
-
       _fromDate = fromDate;
       _toDate = toDate;
       _NoticefromDate = noticefromDate;
       _NoticetoDate = noticetoDate;
-
       _initialSelStatus = selectedStatus;
       _intialFromDate = fromDate;
       _intialToDate = toDate;
@@ -618,16 +548,13 @@ void _checkAndRedirectAfterTutorial() {
     ));
   }
 
-  Future _handleDateNoticeAndDateSelected(DateTime? noticefromDate,
-      DateTime? noticetoDate, DateTime? fromDate, DateTime? toDate) async {
+  Future _handleDateNoticeAndDateSelected(DateTime? noticefromDate, DateTime? noticetoDate, DateTime? fromDate, DateTime? toDate) async {
     setState(() {
       _showCustomTabBar = false;
-
       _fromDate = fromDate;
       _toDate = toDate;
       _NoticefromDate = noticefromDate;
       _NoticetoDate = noticetoDate;
-
       _intialFromDate = fromDate;
       _intialToDate = toDate;
       _intialNoticeFromDate = noticefromDate;
@@ -686,10 +613,8 @@ void _checkAndRedirectAfterTutorial() {
           onDateRangeEventSelected: _handleDateSelected,
           onNoticeDateRangeEventSelected: _handleNoticeDateSelected,
           onStatusAndDateRangeEventSelected: _handleStatusAndDateSelected,
-          onNoticeStatusAndDateRangeEventSelected:
-              _handleNoticeStatusAndDateSelected,
-          onDateNoticeStatusAndDateRangeSelected:
-              _handleDateNoticeStatusAndDateSelected,
+          onNoticeStatusAndDateRangeEventSelected: _handleNoticeStatusAndDateSelected,
+          onDateNoticeStatusAndDateRangeSelected: _handleDateNoticeStatusAndDateSelected,
           onDateNoticeAndDateRangeSelected: _handleDateNoticeAndDateSelected,
           initialManagersEvent: _initialselectedManagers,
           initialManagerEventStatuses: _initialSelStatus,
@@ -722,20 +647,16 @@ void _checkAndRedirectAfterTutorial() {
                     _toDate == null &&
                     _NoticefromDate == null &&
                     _NoticetoDate == null) {
-                  print("IF SEARCH EMPTY AND NO FILTERS");
                   setState(() {
                     _showCustomTabBar = true;
                   });
                   final eventBloc = BlocProvider.of<EventBloc>(context);
                   eventBloc.add(FetchEvents());
                 } else {
-                  print("IF SEARCH EMPTY BUT FILTERS EXIST");
                   final taskBloc = BlocProvider.of<EventBloc>(context);
                   taskBloc.add(FetchEvents(
                     managerIds: _selectedManagers.isNotEmpty
-                        ? _selectedManagers
-                            .map((manager) => manager.id)
-                            .toList()
+                        ? _selectedManagers.map((manager) => manager.id).toList()
                         : null,
                     statusIds: _selectedStatuses,
                     fromDate: _fromDate,
@@ -744,15 +665,11 @@ void _checkAndRedirectAfterTutorial() {
                     noticetoDate: _NoticetoDate,
                   ));
                 }
-              } else if (_selectedManagerIds != null &&
-                  _selectedManagerIds!.isNotEmpty) {
-                print("ELSE IF SEARCH NOT EMPTY");
+              } else if (_selectedManagerIds != null && _selectedManagerIds!.isNotEmpty) {
                 final taskBloc = BlocProvider.of<EventBloc>(context);
                 taskBloc.add(FetchEvents(
                   managerIds: _selectedManagerIds,
-                  query: _searchController.text.isNotEmpty
-                      ? _searchController.text
-                      : null,
+                  query: _searchController.text.isNotEmpty ? _searchController.text : null,
                 ));
               }
             }
@@ -762,13 +679,11 @@ void _checkAndRedirectAfterTutorial() {
       ),
       floatingActionButton: _hasPermissionToAddEvent
           ? FloatingActionButton(
-              key: keyFloatingActionButton, // Add the key here
+              key: keyFloatingActionButton,
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => NoticeAddScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => NoticeAddScreen()),
                 ).then((_) => _loadEvents());
               },
               backgroundColor: Color(0xff1E2E52),
@@ -778,7 +693,7 @@ void _checkAndRedirectAfterTutorial() {
                 height: 24,
               ),
             )
-          : null, // Если нет разрешения, просто null
+          : null,
       body: isClickAvatarIcon
           ? ProfileScreen()
           : Column(
@@ -834,36 +749,58 @@ void _checkAndRedirectAfterTutorial() {
             ),
     );
   }
-Widget _buildEventsList(List<NoticeEvent> events) {
-  final localizations = AppLocalizations.of(context);
 
-  // Единая логика проверки для показа подсказок
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    // Только если предыдущие подсказки (поиск и фильтр) уже показаны
-    if (_isSearchIconTutorialShown && _isFiltrIconTutorialShown) {
-      // Если есть карточки, показываем только подсказку карточки
-      if (events.isNotEmpty && !_isEventCardTutorialShown && !_isEventCardTutorialInProgress) {
-        showTutorial("EventCard");
-      } 
-      // Только если карточек нет, показываем подсказку FAB
-      else if (events.isEmpty && !_isFabTutorialShown && !_isFabTutorialInProgress && _hasPermissionToAddEvent) {
-        showTutorial("FloatingActionButton");
+  Widget _buildEventsList(List<NoticeEvent> events) {
+    final localizations = AppLocalizations.of(context);
+
+    if (_isSearching ||
+        _selectedManagers.isNotEmpty ||
+        _selectedStatuses != null ||
+        _fromDate != null ||
+        _toDate != null ||
+        _NoticefromDate != null ||
+        _NoticetoDate != null) {
+      if (events.isEmpty) {
+        return Center(
+          child: Text(
+            localizations?.translate('no_events') ?? 'Нет событий',
+            style: TextStyle(
+              color: Color(0xff99A4BA),
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+        );
       }
-    }
-  });
 
-  // Если активен поиск или фильтр, отображаем все события без разделения на вкладки
-  if (_isSearching ||
-      _selectedManagers.isNotEmpty ||
-      _selectedStatuses != null ||
-      _fromDate != null ||
-      _toDate != null ||
-      _NoticefromDate != null ||
-      _NoticetoDate != null) {
-    if (events.isEmpty) {
+      return ListView.builder(
+        controller: _listScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: EventCard(
+              key: index == 0 ? keyEventCard : null,
+              event: events[index],
+              onStatusUpdated: () {
+                _loadEvents();
+              },
+            ),
+          );
+        },
+      );
+    }
+
+    final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
+
+    if (filteredEvents.isEmpty) {
       return Center(
         child: Text(
-          localizations?.translate('no_events') ?? 'Нет событий',
+          localizations?.translate('no_events_in_section')?.replaceAll(
+                  '{section}', _tabTitles[_currentTabIndex]['title']) ??
+              'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
           style: TextStyle(
             color: Color(0xff99A4BA),
             fontSize: 14,
@@ -872,18 +809,18 @@ Widget _buildEventsList(List<NoticeEvent> events) {
         ),
       );
     }
- 
+
     return ListView.builder(
       controller: _listScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: events.length,
+      itemCount: filteredEvents.length,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: EventCard(
             key: index == 0 ? keyEventCard : null,
-            event: events[index],
+            event: filteredEvents[index],
             onStatusUpdated: () {
               _loadEvents();
             },
@@ -893,46 +830,9 @@ Widget _buildEventsList(List<NoticeEvent> events) {
     );
   }
 
-  // Иначе разделяем события на вкладки
-  final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
-
-  if (filteredEvents.isEmpty) {
-    return Center(
-      child: Text(
-        localizations?.translate('no_events_in_section')?.replaceAll(
-                '{section}', _tabTitles[_currentTabIndex]['title']) ??
-            'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
-        style: TextStyle(
-          color: Color(0xff99A4BA),
-          fontSize: 14,
-          fontFamily: 'Gilroy',
-        ),
-      ),
-    );
-  }
-
-  return ListView.builder(
-    controller: _listScrollController,
-    physics: const AlwaysScrollableScrollPhysics(),
-    padding: const EdgeInsets.all(16),
-    itemCount: filteredEvents.length,
-    itemBuilder: (context, index) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: EventCard(
-          key: index == 0 ? keyEventCard : null,
-          event: filteredEvents[index],
-          onStatusUpdated: () {
-            _loadEvents();
-          },
-        ),
-      );
-    },
-  );
-}
   @override
   void dispose() {
-    _tabScrollController.dispose(); // Не забудьте освободить ресурсы
+    _tabScrollController.dispose();
     _listScrollController.dispose();
     _tabController.dispose();
     _searchController.dispose();
@@ -945,7 +845,7 @@ Widget _buildEventsList(List<NoticeEvent> events) {
     return Container(
       height: 45,
       child: SingleChildScrollView(
-        controller: _tabScrollController, // Используем отдельный контроллер
+        controller: _tabScrollController,
         scrollDirection: Axis.horizontal,
         child: Row(
           children: List.generate(_tabTitles.length, (index) {
@@ -966,7 +866,7 @@ Widget _buildEventsList(List<NoticeEvent> events) {
     bool isActive = _tabController.index == index;
 
     return GestureDetector(
-      key: _tabKeys[index], // Apply the key to the tab button
+      key: _tabKeys[index],
       onTap: () {
         _tabController.animateTo(index);
       },
@@ -1002,12 +902,10 @@ Widget _buildEventsList(List<NoticeEvent> events) {
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position =
-          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
 
-      if (position.dx < 0 ||
-          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
+      if (position.dx < 0 || (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
         double targetOffset = _tabScrollController.offset +
             position.dx -
             (MediaQuery.of(context).size.width / 2) +

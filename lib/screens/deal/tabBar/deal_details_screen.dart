@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
@@ -69,24 +71,23 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   final ApiService _apiService = ApiService();
   final GlobalKey keyDealEdit = GlobalKey();
   final GlobalKey keyDealTasks = GlobalKey();
-  final GlobalKey keyDealDelete = GlobalKey(); 
-
+  final GlobalKey keyDealDelete = GlobalKey();
   final GlobalKey keyDealHistory = GlobalKey();
+
   List<TargetFocus> targets = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _checkPermissions();
+  bool _isTutorialShown = false;
+  bool _isTutorialInProgress = false; // Защита от повторного вызова
+  Map<String, dynamic>? tutorialProgress; // Данные с сервера
+@override
+void initState() {
+  super.initState();
+  _checkPermissions().then((_) {
     context.read<DealByIdBloc>().add(FetchDealByIdEvent(dealId: int.parse(widget.dealId)));
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initTargets();
-      showTutorial();
-    });
-  }
+  });
+}
 
   void _initTargets() {
+    targets.clear(); // Очищаем список перед добавлением
     targets = [
       createTarget(
         identify: 'keyDealEdit',
@@ -131,38 +132,71 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   void showTutorial() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!isTutorialShown) {
-      TutorialCoachMark(
-        targets: targets,
-        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
-        textStyleSkip: TextStyle(
-          color: Colors.white,
-          fontFamily: 'Gilroy',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          shadows: [
-            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-          ],
-        ),
-        colorShadow: Color(0xff1E2E52),
-        onSkip: () {
-          prefs.setBool('isTutorialShownDealDetails', true);
-          return true;
-        },
-        onFinish: () {
-          prefs.setBool('isTutorialShownDealDetails', true);
-        },
-      ).show(context: context);
-    }
+  if (_isTutorialInProgress) {
+    print('Tutorial already in progress, skipping');
+    return;
   }
+
+  if (targets.isEmpty) {
+    print('No targets available for tutorial, skipping');
+    return;
+  }
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
+
+  if (tutorialProgress == null ||
+      tutorialProgress!['deals']?['view'] == true ||
+      isTutorialShown ||
+      _isTutorialShown) {
+    print('Tutorial conditions not met');
+    return;
+  }
+
+  setState(() {
+    _isTutorialInProgress = true;
+  });
+  await Future.delayed(const Duration(milliseconds: 500));
+
+  TutorialCoachMark(
+    targets: targets,
+    textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
+    textStyleSkip: TextStyle(
+      color: Colors.white,
+      fontFamily: 'Gilroy',
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      shadows: [
+        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+      ],
+    ),
+    colorShadow: Color(0xff1E2E52),
+    onSkip: () {
+      prefs.setBool('isTutorialShownDealDetails', true);
+      _apiService.markPageCompleted("deals", "view").catchError((e) {
+        print('Error marking page completed on skip: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+      return true;
+    },
+    onFinish: () {
+      prefs.setBool('isTutorialShownDealDetails', true);
+      _apiService.markPageCompleted("deals", "view").catchError((e) {
+        print('Error marking page completed on finish: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+    },
+  ).show(context: context);
+}
 
   void _showFullTextDialog(String title, String content) {
     showDialog(
@@ -220,7 +254,57 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       },
     );
   }
+Future<void> _fetchTutorialProgress() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final progress = await _apiService.getTutorialProgress();
+    setState(() {
+      tutorialProgress = progress['result'];
+    });
+    await prefs.setString('tutorial_progress', json.encode(progress['result']));
 
+    bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
+    setState(() {
+      _isTutorialShown = isTutorialShown;
+    });
+
+    // Инициализируем targets с актуальными разрешениями
+    _initTargets();
+
+    if (tutorialProgress != null &&
+        tutorialProgress!['deals']?['view'] == false &&
+        !isTutorialShown &&
+        !_isTutorialInProgress &&
+        targets.isNotEmpty &&
+        mounted) {
+      showTutorial();
+    }
+  } catch (e) {
+    print('Error fetching tutorial progress: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final savedProgress = prefs.getString('tutorial_progress');
+    if (savedProgress != null) {
+      setState(() {
+        tutorialProgress = json.decode(savedProgress);
+      });
+      bool isTutorialShown = prefs.getBool('isTutorialShownDealDetails') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      _initTargets();
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['deals']?['view'] == false &&
+          !isTutorialShown &&
+          !_isTutorialInProgress &&
+          targets.isNotEmpty &&
+          mounted) {
+        showTutorial();
+      }
+    }
+  }
+}
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
@@ -231,6 +315,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       _canDeleteDeal = canDelete;
       _canReadTasks = canReadTasks;
     });
+    await _fetchTutorialProgress();
   }
 
   String formatDate(String? dateString) {
