@@ -798,7 +798,10 @@
     "voice_message": "Ovozli xabar",
     "edit_message": "Xabarni tahrirlash",
     "in_answer": "Javob sifatida",
-    "pinned_message": "Mahkamlangan xabar"
+    "pinned_message": "Mahkamlangan xabar",
+      "department": "Bo'lim",
+  "select_department": "Bo'limni tanlang",
+  "task_by_deal": "Bitim:"
 
 
 

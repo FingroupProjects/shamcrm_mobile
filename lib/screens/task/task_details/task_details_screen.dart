@@ -172,12 +172,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false; 
+  bool _isTutorialInProgress = false; // Добавлено для защиты от повторного вызова
+  Map<String, dynamic>? tutorialProgress; // Добавлено для данных с сервера
 
   @override
   void initState() {
     super.initState();
     _checkPermissions();
     context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
+    _fetchTutorialProgress(); // Загружаем данные туториала и инициализируем targets
   }
 
   void _initTutorialTargets() {
@@ -233,56 +236,134 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
 
 void showTutorial() async {
+  if (_isTutorialInProgress) {
+    print('Tutorial already in progress, skipping');
+    return;
+  }
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
 
+  if (tutorialProgress == null ||
+      tutorialProgress!['tasks']?['view'] == true ||
+      isTutorialShown ||
+      _isTutorialShown) {
+    print('Tutorial conditions not met');
+    return;
+  }
+
+  setState(() {
+    _isTutorialInProgress = true;
+  });
   await Future.delayed(const Duration(milliseconds: 500));
 
-
-  if (!isTutorialShown)  {
-    TutorialCoachMark(
-      targets: targets,
-      textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5),color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5),color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5),color: Colors.black),
-        ],
-      ),
-      colorShadow: Color(0xff1E2E52),
-        onSkip: () {
-        prefs.setBool('isTutorialShownTasksDet', true);
-        return true;
-      },
-      onFinish: () {
-        prefs.setBool('isTutorialShownTasksDet', true);
-      },
-    ).show(context: context);
-  }
+  TutorialCoachMark(
+    targets: targets,
+    textSkip: AppLocalizations.of(context)!.translate('skip'),
+    textStyleSkip: TextStyle(
+      color: Colors.white,
+      fontFamily: 'Gilroy',
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      shadows: [
+        Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+        Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+        Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+      ],
+    ),
+    colorShadow: Color(0xff1E2E52),
+    onSkip: () {
+      prefs.setBool('isTutorialShownTasksDet', true);
+      _apiService.markPageCompleted("tasks", "view").catchError((e) {
+        print('Error marking page completed on skip: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+      return true;
+    },
+    onFinish: () {
+      prefs.setBool('isTutorialShownTasksDet', true);
+      _apiService.markPageCompleted("tasks", "view").catchError((e) {
+        print('Error marking page completed on finish: $e');
+      });
+      setState(() {
+        _isTutorialShown = true;
+        _isTutorialInProgress = false;
+      });
+    },
+  ).show(context: context);
+  print('Showing tutorial for TaskDetails');
 }
 
+Future<void> _fetchTutorialProgress() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final progress = await _apiService.getTutorialProgress();
+    setState(() {
+      tutorialProgress = progress['result'];
+    });
+    await prefs.setString('tutorial_progress', json.encode(progress['result']));
 
+    bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+    setState(() {
+      _isTutorialShown = isTutorialShown;
+    });
+
+    // Инициализируем targets перед проверкой условий
+    _initTutorialTargets();
+
+    // Проверяем условия и запускаем туториал
+    if (tutorialProgress != null &&
+        tutorialProgress!['tasks']?['view'] == false &&
+        !isTutorialShown &&
+        !_isTutorialInProgress &&
+        targets.isNotEmpty && // Добавляем проверку на непустой список
+        mounted) {
+      showTutorial();
+    }
+  } catch (e) {
+    print('Error fetching tutorial progress: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final savedProgress = prefs.getString('tutorial_progress');
+    if (savedProgress != null) {
+      setState(() {
+        tutorialProgress = json.decode(savedProgress);
+      });
+      bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      // Инициализируем targets перед проверкой условий
+      _initTutorialTargets();
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['tasks']?['view'] == false &&
+          !isTutorialShown &&
+          !_isTutorialInProgress &&
+          targets.isNotEmpty && // Добавляем проверку на непустой список
+          mounted) {
+        showTutorial();
+      }
+    }
+  }
+}
   // Метод для проверки разрешений
   Future<void> _checkPermissions() async {
     final canEdit = await _apiService.hasPermission('task.update');
     final canDelete = await _apiService.hasPermission('task.delete');
-    
     setState(() {
       _canEditTask = canEdit;
       _canDeleteTask = canDelete;
     });
 
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _initTutorialTargets(); 
-  });
+  // WidgetsBinding.instance.addPostFrameCallback((_) {
+  //   _initTutorialTargets(); 
+  // });
 
 
   }

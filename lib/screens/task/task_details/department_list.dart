@@ -1,4 +1,4 @@
-  import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/bloc/department/department_event.dart';
 import 'package:crm_task_manager/bloc/department/department_state.dart';
@@ -24,6 +24,21 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
   void initState() {
     super.initState();
     context.read<DepartmentBloc>().add(FetchDepartment());
+  }
+
+  // Метод для вычисления высоты overlay в зависимости от количества элементов
+  double _calculateOverlayHeight(List<Department> departments) {
+    const double itemHeight = 80.0; // Примерная высота одного элемента (можно подстроить)
+    const int maxItemsWithoutScroll = 5; // Максимум элементов без скролла
+    const double maxHeight = 400.0; // Максимальная высота с прокруткой (5 элементов)
+
+    if (departments.length <= maxItemsWithoutScroll) {
+      // Если элементов меньше или равно 5, высота подстраивается под количество
+      return departments.length * itemHeight;
+    } else {
+      // Если больше 5, фиксированная высота с прокруткой
+      return maxHeight;
+    }
   }
 
   @override
@@ -57,17 +72,15 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
       },
       child: BlocBuilder<DepartmentBloc, DepartmentState>(
         builder: (context, state) {
-          if (state is DepartmentLoaded) {
-            List<Department> departmentList = state.departments;
+          List<Department> departmentList = state is DepartmentLoaded ? state.departments : [];
 
-            if (widget.selectedDepartment != null && departmentList.isNotEmpty) {
-              try {
-                selectedDepartmentData = departmentList.firstWhere(
-                  (department) => department.id.toString() == widget.selectedDepartment,
-                );
-              } catch (e) {
-                selectedDepartmentData = null;
-              }
+          if (widget.selectedDepartment != null && departmentList.isNotEmpty) {
+            try {
+              selectedDepartmentData = departmentList.firstWhere(
+                (department) => department.id.toString() == widget.selectedDepartment,
+              );
+            } catch (e) {
+              selectedDepartmentData = null;
             }
           }
 
@@ -75,7 +88,7 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.translate('Отделение'),
+                AppLocalizations.of(context)!.translate('department'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -87,9 +100,9 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
               Container(
                 child: CustomDropdown<Department>.search(
                   closeDropDownOnClearFilterSearch: true,
-                  items: state is DepartmentLoaded ? state.departments : [],
+                  items: departmentList,
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
-                  overlayHeight: 400,
+                  overlayHeight: _calculateOverlayHeight(departmentList), // Динамическая высота
                   enabled: true,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: Color(0xffF4F7FD),
@@ -106,20 +119,26 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.name,
-                      style: TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
+                    return SizedBox(
+                      height: 48.0, // Фиксированная высота элемента (должна совпадать с itemHeight)
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          item.name,
+                          style: TextStyle(
+                            color: Color(0xff1E2E52),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                          ),
+                        ),
                       ),
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     if (state is DepartmentLoading) {
                       return Text(
-                        AppLocalizations.of(context)!.translate('Выберите отделение'),
+                        AppLocalizations.of(context)!.translate('select_department'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -129,7 +148,7 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
                       );
                     }
                     return Text(
-                      selectedItem.name ?? AppLocalizations.of(context)!.translate('Выберите отделение'),
+                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_department'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -139,7 +158,7 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('Выберите отделение'),
+                    AppLocalizations.of(context)!.translate('select_department'),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -148,7 +167,7 @@ class _DepartmentWidgetState extends State<DepartmentWidget> {
                     ),
                   ),
                   excludeSelected: false,
-                  initialItem: (state is DepartmentLoaded && state.departments.contains(selectedDepartmentData))
+                  initialItem: (state is DepartmentLoaded && departmentList.contains(selectedDepartmentData))
                       ? selectedDepartmentData
                       : null,
                   onChanged: (value) {

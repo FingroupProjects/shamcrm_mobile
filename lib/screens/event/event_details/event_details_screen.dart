@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
@@ -27,8 +29,8 @@ import 'package:voice_message_package/voice_message_package.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final int noticeId;
-final String? source; // Новый параметр для источника входа
-EventDetailsScreen({required this.noticeId, this.source});
+  final String? source; // Новый параметр для источника входа
+  EventDetailsScreen({required this.noticeId, this.source});
   @override
   _EventDetailsScreenState createState() => _EventDetailsScreenState();
 }
@@ -53,14 +55,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   List<TargetFocus> targets = [];
   final ApiService apiService =
       ApiService(); // Создаем экземпляр здесь или получаем через провайдер
+  bool _isTutorialShown = false;
+  bool _isTutorialInProgress = false; // Защита от повторного вызова
+  Map<String, dynamic>? tutorialProgress; // Данные с сервера
+
   @override
   void initState() {
     super.initState();
-    context.read<NoticeBloc>().add(FetchNoticeEvent(noticeId: widget.noticeId));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initTargets();
-      showTutorial();
-      _setupAudioPlayer(); // Инициализируем слушатели для аудиоплеера
+    _checkPermissions().then((_) {
+      context
+          .read<NoticeBloc>()
+          .add(FetchNoticeEvent(noticeId: widget.noticeId));
+      _setupAudioPlayer(); // Инициализируем аудиоплеер после проверки разрешений
     });
   }
 
@@ -97,31 +103,33 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
 // Перемещаем инициализацию целей после построения виджета
   void _initTargets() {
+    targets.clear(); // Очищаем список перед добавлением
     double screenHeight = MediaQuery.of(context).size.height;
     double boxHeight = screenHeight * 0.1;
 
-    targets = [
-      createTarget(
-        identify: 'keyNoticeEdit',
-        keyTarget: keyNoticeEdit,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_Notice_edit_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_Notice_edit_description'),
-        align: ContentAlign.bottom,
-        context: context,
-      ),
-      createTarget(
-        identify: 'keyNoticeDelete',
-        keyTarget: keyNoticeDelete,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_Notice_delete_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_Notice_delete_description'),
-        align: ContentAlign.bottom,
-        context: context,
-      ),
-      // Обновленная конфигурация для keyNoticeFinish с увеличенным радиусом и отступом
+    targets.addAll([
+      if (_canEditNotice)
+        createTarget(
+          identify: 'keyNoticeEdit',
+          keyTarget: keyNoticeEdit,
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_edit_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_edit_description'),
+          align: ContentAlign.bottom,
+          context: context,
+        ),
+      if (_canDeleteNotice)
+        createTarget(
+          identify: 'keyNoticeDelete',
+          keyTarget: keyNoticeDelete,
+          title: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_delete_title'),
+          description: AppLocalizations.of(context)!
+              .translate('tutorial_Notice_delete_description'),
+          align: ContentAlign.bottom,
+          context: context,
+        ),
       TargetFocus(
         identify: 'keyNoticeFinish',
         keyTarget: keyNoticeFinish,
@@ -129,24 +137,28 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           TargetContent(
             align: ContentAlign.top,
             child: Container(
-              margin: EdgeInsets.only(
-                  top:
-                      120), // Добавляем отступ сверху, чтобы подсказка была за пределами кружка
+              margin: EdgeInsets.only(top: 120),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   SizedBox(height: boxHeight),
                   Text(
-                      AppLocalizations.of(context)!
-                          .translate('tutorial_Notice_Finish_title'),
-                      style: _titleStyle),
+                    AppLocalizations.of(context)!
+                        .translate('tutorial_Notice_Finish_title'),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Padding(
                     padding: EdgeInsets.zero,
                     child: Text(
-                        AppLocalizations.of(context)!
-                            .translate('tutorial_Notice_Finish_description'),
-                        style: _descriptionStyle),
+                      AppLocalizations.of(context)!
+                          .translate('tutorial_Notice_Finish_description'),
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -154,66 +166,100 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
         ],
         shape: ShapeLightFocus.Circle,
-        radius: 40, // Уменьшаем радиус кружка
-        paddingFocus: 10, // Уменьшаем внутренний отступ фокуса
+        radius: 40,
+        paddingFocus: 10,
       ),
-      // createTarget(
-      //   identify: 'keyNoticeHistory',
-      //   keyTarget: keyNoticeHistory,
-      //   title: AppLocalizations.of(context)!
-      //       .translate('tutorial_Notice_history_title'),
-      //   description: AppLocalizations.of(context)!
-      //       .translate('tutorial_Notice_history_description'),
-      //   align: ContentAlign.top,
-      //   context: context,
-      // ),
-    ];
+      createTarget(
+        identify: 'keyDealHistory',
+        keyTarget: keyDealHistory,
+        title: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_history_title'),
+        description: AppLocalizations.of(context)!
+            .translate('tutorial_Notice_history_description'),
+        align: ContentAlign.top,
+        context: context,
+      ),
+    ]);
   }
 
   void showTutorial() async {
+    if (_isTutorialInProgress) {
+      print('Tutorial already in progress, skipping');
+      return;
+    }
+
+    if (targets.isEmpty) {
+      print('No targets available for tutorial, skipping');
+      return;
+    }
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isTutorialShown =
         prefs.getBool('isTutorialShownNoticeDetails') ?? false;
 
+    if (tutorialProgress == null ||
+        tutorialProgress!['notices']?['view'] == true ||
+        isTutorialShown ||
+        _isTutorialShown) {
+      print('Tutorial conditions not met');
+      return;
+    }
+
+    setState(() {
+      _isTutorialInProgress = true;
+    });
     await Future.delayed(const Duration(milliseconds: 500));
 
-    if (!isTutorialShown) {
-      TutorialCoachMark(
-        targets: targets,
-        textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
-        textStyleSkip: TextStyle(
-          color: Colors.white,
-          fontFamily: 'Gilroy',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          shadows: [
-            Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-            Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-            Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-            Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-          ],
-        ),
-        colorShadow: Color(0xff1E2E52),
-        hideSkip: false,
-        alignSkip: Alignment.bottomRight,
-        focusAnimationDuration: Duration(milliseconds: 300),
-        pulseAnimationDuration: Duration(milliseconds: 500),
-        onClickTarget: (target) {
-          print("Target clicked: \${target.identify}");
-        },
-        onClickOverlay: (target) {
-          print("Overlay clicked: \${target.identify}");
-        },
-        onSkip: () {
-          print(AppLocalizations.of(context)!.translate('tutorial_skip'));
-          return true;
-        },
-        onFinish: () {
-          print("Tutorial finished");
-          prefs.setBool('isTutorialShownNoticeDetails', true);
-        },
-      ).show(context: context);
-    }
+    TutorialCoachMark(
+      targets: targets,
+      textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
+      textStyleSkip: TextStyle(
+        color: Colors.white,
+        fontFamily: 'Gilroy',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        shadows: [
+          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
+          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+        ],
+      ),
+      colorShadow: Color(0xff1E2E52),
+      hideSkip: false,
+      alignSkip: Alignment.bottomRight,
+      focusAnimationDuration: Duration(milliseconds: 300),
+      pulseAnimationDuration: Duration(milliseconds: 500),
+      onClickTarget: (target) {
+        print("Target clicked: ${target.identify}");
+      },
+      onClickOverlay: (target) {
+        print("Overlay clicked: ${target.identify}");
+      },
+      onSkip: () {
+        print(AppLocalizations.of(context)!.translate('tutorial_skip'));
+        prefs.setBool('isTutorialShownNoticeDetails', true);
+        _apiService.markPageCompleted("notices", "view").catchError((e) {
+          print('Error marking page completed on skip: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+          _isTutorialInProgress = false;
+        });
+        return true;
+      },
+      onFinish: () {
+        print("Tutorial finished");
+        prefs.setBool('isTutorialShownNoticeDetails', true);
+        _apiService.markPageCompleted("notices", "view").catchError((e) {
+          print('Error marking page completed on finish: $e');
+        });
+        setState(() {
+          _isTutorialShown = true;
+          _isTutorialInProgress = false;
+        });
+      },
+    ).show(context: context);
   }
 
   TargetFocus createTarget({
@@ -278,6 +324,63 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       _canEditNotice = canEdit;
       _canDeleteNotice = canDelete;
     });
+    await _fetchTutorialProgress();
+  }
+
+  Future<void> _fetchTutorialProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progress = await _apiService.getTutorialProgress();
+      setState(() {
+        tutorialProgress = progress['result'];
+      });
+      await prefs.setString(
+          'tutorial_progress', json.encode(progress['result']));
+
+      bool isTutorialShown =
+          prefs.getBool('isTutorialShownNoticeDetails') ?? false;
+      setState(() {
+        _isTutorialShown = isTutorialShown;
+      });
+
+      // Инициализируем targets с актуальными разрешениями
+      _initTargets();
+
+      if (tutorialProgress != null &&
+          tutorialProgress!['notices']?['view'] ==
+              false && // Предполагаемый ключ
+          !isTutorialShown &&
+          !_isTutorialInProgress &&
+          targets.isNotEmpty &&
+          mounted) {
+        showTutorial();
+      }
+    } catch (e) {
+      print('Error fetching tutorial progress: $e');
+      final prefs = await SharedPreferences.getInstance();
+      final savedProgress = prefs.getString('tutorial_progress');
+      if (savedProgress != null) {
+        setState(() {
+          tutorialProgress = json.decode(savedProgress);
+        });
+        bool isTutorialShown =
+            prefs.getBool('isTutorialShownNoticeDetails') ?? false;
+        setState(() {
+          _isTutorialShown = isTutorialShown;
+        });
+
+        _initTargets();
+
+        if (tutorialProgress != null &&
+            tutorialProgress!['notices']?['view'] == false &&
+            !isTutorialShown &&
+            !_isTutorialInProgress &&
+            targets.isNotEmpty &&
+            mounted) {
+          showTutorial();
+        }
+      }
+    }
   }
 
   String formatDate(String? dateString) {
@@ -652,7 +755,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   //   );
   // }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(
@@ -686,6 +789,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     // Условный рендеринг NoticeHistorySection
                     if (widget.source != 'Lead')
                       NoticeHistorySection(
+                        key: keyDealHistory,
                         leadId: notice.lead!.id,
                         noteId: notice.id,
                       ),
@@ -701,6 +805,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       ),
     );
   }
+
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
       backgroundColor: Colors.white,
@@ -834,120 +939,121 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildDetailsList(Notice notice) {
-  late final int leadId = notice.lead!.id;
-  final List<Map<String, String>> details = [
-    {
-      'label': AppLocalizations.of(context)!.translate('title'),
-      'value': notice.title
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('lead_name'),
-      'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('body'),
-      'value': notice.body
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('date'),
-      'value': notice.date != null
-          ? formatDate(notice.date.toString())
-          : AppLocalizations.of(context)!.translate('call_recording'),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('assignee'),
-      'value': notice.users
-          .map((user) => '${user.name} ${user.lastname ?? ''}')
-          .join(', '),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('author_details'),
-      'value': notice.author != null
-          ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-          : AppLocalizations.of(context)!.translate('call_recording'),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('created_at_details'),
-      'value': formatDate(notice.createdAt.toString())
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('is_finished'),
-      'value': notice.isFinished
-          ? AppLocalizations.of(context)!.translate('finished')
-          : AppLocalizations.of(context)!.translate('in_progress'),
-    },
-  ];
+    late final int leadId = notice.lead!.id;
+    final List<Map<String, String>> details = [
+      {
+        'label': AppLocalizations.of(context)!.translate('title'),
+        'value': notice.title
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('lead_name'),
+        'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('body'),
+        'value': notice.body
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('date'),
+        'value': notice.date != null
+            ? formatDate(notice.date.toString())
+            : AppLocalizations.of(context)!.translate('call_recording'),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('assignee'),
+        'value': notice.users
+            .map((user) => '${user.name} ${user.lastname ?? ''}')
+            .join(', '),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': notice.author != null
+            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
+            : AppLocalizations.of(context)!.translate('call_recording'),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': formatDate(notice.createdAt.toString())
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('is_finished'),
+        'value': notice.isFinished
+            ? AppLocalizations.of(context)!.translate('finished')
+            : AppLocalizations.of(context)!.translate('in_progress'),
+      },
+    ];
 
-  if (notice.call != null) {
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('caller'),
-      'value': notice.call!.caller,
-    });
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('internal_number'),
-      'value': notice.call!.internalNumber ??
-          AppLocalizations.of(context)!.translate('not_specified'),
-    });
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('call_duration'),
-      'value': notice.call!.callDuration != null
-          ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-          : AppLocalizations.of(context)!.translate('not_specified'),
-    });
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('call_ringing_duration'),
-      'value': notice.call!.callRingingDuration != null
-          ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-          : AppLocalizations.of(context)!.translate('not_specified'),
-    });
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('call_recording'),
-      'value': '',
-    });
-  }
+    if (notice.call != null) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('caller'),
+        'value': notice.call!.caller,
+      });
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('internal_number'),
+        'value': notice.call!.internalNumber ??
+            AppLocalizations.of(context)!.translate('not_specified'),
+      });
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('call_duration'),
+        'value': notice.call!.callDuration != null
+            ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+            : AppLocalizations.of(context)!.translate('not_specified'),
+      });
+      details.add({
+        'label':
+            AppLocalizations.of(context)!.translate('call_ringing_duration'),
+        'value': notice.call!.callRingingDuration != null
+            ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+            : AppLocalizations.of(context)!.translate('not_specified'),
+      });
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('call_recording'),
+        'value': '',
+      });
+    }
 
-  if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('conclusions'),
-      'value': notice.conclusion!,
-    });
-  }
+    if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('conclusions'),
+        'value': notice.conclusion!,
+      });
+    }
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: details.length,
-        itemBuilder: (context, index) {
-          // Устанавливаем одинаковый отступ для всех элементов, кроме блока звонка
-          if (notice.call != null && index >= details.length - 5) {
-            // Предполагаем, что последние 5 элементов — это поля звонка
-            return _buildDetailItem(
-              details[index]['label']!,
-              details[index]['value']!,
-              leadId,
-              notice,
-              index,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: details.length,
+          itemBuilder: (context, index) {
+            // Устанавливаем одинаковый отступ для всех элементов, кроме блока звонка
+            if (notice.call != null && index >= details.length - 5) {
+              // Предполагаем, что последние 5 элементов — это поля звонка
+              return _buildDetailItem(
+                details[index]['label']!,
+                details[index]['value']!,
+                leadId,
+                notice,
+                index,
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: _buildDetailItem(
+                details[index]['label']!,
+                details[index]['value']!,
+                leadId,
+                notice,
+                index,
+              ),
             );
-          }
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: _buildDetailItem(
-              details[index]['label']!,
-              details[index]['value']!,
-              leadId,
-              notice,
-              index,
-            ),
-          );
-        },
-      ),
-      const SizedBox(height: 0), // Убираем лишнее пространство после списка
-    ],
-  );
-}
+          },
+        ),
+        const SizedBox(height: 0), // Убираем лишнее пространство после списка
+      ],
+    );
+  }
 
   void _showUsersDialog(String users) {
     List<String> userList =
