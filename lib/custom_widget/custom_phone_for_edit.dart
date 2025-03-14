@@ -2,25 +2,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class Country {
-  final String name;
-  final String flag;
-  final String dialCode;
-
-  Country({
-    required this.name,
-    required this.flag,
-    required this.dialCode,
-  });
-}
-
-List<Country> countries = [
-  Country(name: "TJ", flag: "🇹🇯", dialCode: "+992"),
-  Country(name: "RU", flag: "🇷🇺", dialCode: "+7"),
-  Country(name: "UZ", flag: "🇺🇿", dialCode: "+998"),
-  Country(name: "KG", flag: "🇰🇬", dialCode: "+996"),
-  Country(name: "KZ", flag: "🇰🇿", dialCode: "+7"),
-];
+import 'country_data_list.dart';
 
 class CustomPhoneNumberInput extends StatefulWidget {
   final TextEditingController controller;
@@ -43,13 +25,6 @@ class CustomPhoneNumberInput extends StatefulWidget {
 
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
-
-  final Map<String, int> phoneNumberLengths = {
-    '+992': 9,
-    '+7': 10,
-    '+998': 9,
-    '+996': 9,
-  };
 
   @override
   void initState() {
@@ -98,15 +73,20 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               child: DropdownButton<Country>(
                 value: selectedCountry,
                 dropdownColor: Colors.white,
+                borderRadius: BorderRadius.circular(6), 
+                menuMaxHeight: 500, 
+                itemHeight: 48, 
                 items: countries.map((Country country) {
                   return DropdownMenuItem<Country>(
                     value: country,
                     child: Row(
                       children: [
                         const SizedBox(width: 8),
-                        Text(country.flag),
-                        const SizedBox(width: 8),
-                        Text(country.dialCode),
+                        Text(country.flag, style: const TextStyle(fontSize: 24)), 
+                        const SizedBox(width: 4),
+                        Text(country.dialCode, style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy',fontWeight: FontWeight.w500)), 
+                        const SizedBox(width: 4),
+                        Text(country.name, style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy',fontWeight: FontWeight.w500)), 
                       ],
                     ),
                   );
