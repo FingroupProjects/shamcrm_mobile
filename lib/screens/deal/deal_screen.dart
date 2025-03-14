@@ -59,7 +59,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _showCustomTabBar = true;
   String _lastSearchQuery = "";
 
-  List<ManagerData> _selectedManagers = [];
+List<ManagerData> _selectedManagers = [];
   List<LeadData> _selectedLeads = [];
   int? _selectedStatuses;
   DateTime? _fromDate;
@@ -77,27 +77,25 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   final GlobalKey keySearchIcon = GlobalKey();
   final GlobalKey keyMenuIcon = GlobalKey();
+
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
+  bool _isDealScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
-  bool _hasDealIndexPermission = false;
-  bool _isPermissionsChecked = false;
-  bool _isDealScreenTutorialCompleted =
-      false; // Уже есть в вашем коде, используем его
+
   @override
   void initState() {
     super.initState();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     _scrollController = ScrollController();
+
     DealCache.getDealStatuses().then((cachedStatuses) {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
           _tabTitles = cachedStatuses
               .map((status) => {'id': status['id'], 'title': status['title']})
               .toList();
-
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
           _tabController.index = _currentTabIndex;
 
           _tabController.addListener(() {
@@ -108,45 +106,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           });
         });
       } else {
-        // Если статусов в кэше нет — запрос через API
-        final leadBloc = BlocProvider.of<DealBloc>(context);
-        leadBloc.add(FetchDealStatuses());
+        final dealBloc = BlocProvider.of<DealBloc>(context);
+        dealBloc.add(FetchDealStatuses());
       }
     });
 
-    // Проверка лидов в кэше для начального статуса
-    DealCache.getDealsForStatus(widget.initialStatusId).then((cachedLeads) {
-      if (cachedLeads.isNotEmpty) {
-        print('Leads loaded from cache.');
+    DealCache.getDealsForStatus(widget.initialStatusId).then((cachedDeals) {
+      if (cachedDeals.isNotEmpty) {
+        print('Deals loaded from cache.');
       }
     });
-
     _checkPermissions();
-    _checkPermissionsAndTutorial(); // Replace _checkPermissions with this
-  }
-
-  // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('dealStatus.read');
-    final canCreate = await _apiService.hasPermission('dealStatus.create');
-    final canDelete = await _apiService.hasPermission('dealStatus.delete');
-    // final canDelete = await _apiService.hasPermission('dealStatus.delete');
-    setState(() {
-      _canReadDealStatus = canRead;
-      _canCreateDealStatus = canCreate;
-      _canDeleteDealStatus = canDelete;
-    });
-    //    WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _initTutorialTargets();
-    //       if (!_isTutorialShown) {
-    //      WidgetsBinding.instance.addPostFrameCallback((_) {
-    //        showTutorial();
-    //        setState(() {
-    //          _isTutorialShown = true;
-    //        });
-    //      });
-    //     }
-    // });
   }
 
   @override
@@ -158,14 +128,13 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   void _initTutorialTargets() {
+    targets.clear();
     targets.addAll([
       createTarget(
         identify: "DealSearchIcon",
         keyTarget: keySearchIcon,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_search_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_deal_screen_search_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_deal_screen_search_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -173,10 +142,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       createTarget(
         identify: "DealMenuIcon",
         keyTarget: keyMenuIcon,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_menu_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_deal_screen_menu_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_deal_screen_menu_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -184,78 +151,64 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     ]);
   }
 
-  Future<void> _checkPermissionsAndTutorial() async {
-    if (_isPermissionsChecked) {
-      print('Permissions already checked for deals, skipping');
-      return;
-    }
-
-    _isPermissionsChecked = true;
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('dealStatus.read');
+    final canCreate = await _apiService.hasPermission('dealStatus.create');
+    final canDelete = await _apiService.hasPermission('dealStatus.delete');
+    setState(() {
+      _canReadDealStatus = canRead;
+      _canCreateDealStatus = canCreate;
+      _canDeleteDealStatus = canDelete;
+    });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
       print('Tutorial Progress for deals: $progress');
 
-      setState(() {
-        tutorialProgress = progress['result'];
-        _hasDealIndexPermission =
-            progress['result']['deals']?['index'] ?? false;
-      });
-      await prefs.setString(
-          'tutorial_progress', json.encode(progress['result']));
+      if (progress is Map<String, dynamic> && progress['result'] is Map<String, dynamic>) {
+        setState(() {
+          tutorialProgress = progress['result'];
+        });
+      } else {
+        setState(() {
+          tutorialProgress = null;
+        });
+      }
 
-      bool isTutorialShown =
-          prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
-      print('isTutorialShown for deals: $isTutorialShown');
-
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isTutorialShown = prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
 
-      if (!isTutorialShown &&
-          tutorialProgress != null &&
-          !_hasDealIndexPermission &&
+      if (tutorialProgress != null &&
+          tutorialProgress!['deals']?['index'] == false &&
+          !_isTutorialShown &&
           mounted) {
-        print('Scheduling tutorial display for deals');
+        _initTutorialTargets();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _initTutorialTargets();
             showTutorial();
-          } else {
-            print('Widget not mounted, skipping tutorial for deals');
           }
         });
       } else {
-        print('Tutorial not shown for deals. Reasons:');
-        print('isTutorialShown: $isTutorialShown');
+        print('Tutorial not shown for DealScreen. Reasons:');
         print('tutorialProgress: $tutorialProgress');
-        print('hasDealIndexPermission: $_hasDealIndexPermission');
-        print('mounted: $mounted');
+        print('deals/index: ${tutorialProgress?['deals']?['index']}');
+        print('isTutorialShown: $_isTutorialShown');
       }
     } catch (e) {
-      print('Error fetching tutorial progress for deals: $e');
+      print('Error fetching tutorial progress: $e');
     }
   }
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown for deals, skipping');
+      print('Tutorial already shown for DealScreen, skipping');
       return;
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown =
-        prefs.getBool('isTutorialShownDealSearchIconAppBar') ?? false;
-
-    if (isTutorialShown ||
-        tutorialProgress == null ||
-        _hasDealIndexPermission) {
-      print('Tutorial not shown in showTutorial for deals');
-      return;
-    }
-
-    print('Showing tutorial for deals');
     await Future.delayed(const Duration(milliseconds: 500));
 
     TutorialCoachMark(
@@ -275,33 +228,25 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Tutorial skipped for deals");
+        print('Tutorial skipped for DealScreen');
         prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
-        _apiService.markPageCompleted("deals", "index").catchError((e) {
-          print('Error marking page completed on skip for deals: $e');
-        });
         setState(() {
           _isTutorialShown = true;
-          _isDealScreenTutorialCompleted = true; // Устанавливаем флаг
+          _isDealScreenTutorialCompleted = true; // Устанавливаем флаг для DealColumn
         });
         return true;
       },
-      onFinish: () async {
-        print("Tutorial finished for deals");
-        await prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
-        try {
-          await _apiService.markPageCompleted("deals", "index");
-        } catch (e) {
-          print('Error marking page completed on finish for deals: $e');
-        }
+      onFinish: () {
+        print('Tutorial finished for DealScreen');
+        prefs.setBool('isTutorialShownDealSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
-          _isDealScreenTutorialCompleted = true; // Устанавливаем флаг
+          _isDealScreenTutorialCompleted = true; // Устанавливаем флаг для DealColumn
         });
       },
     ).show(context: context);
   }
-
+  
   Future<void> _searchDeals(String query, int currentStatusId) async {
     final dealBloc = BlocProvider.of<DealBloc>(context);
     await DealCache.clearAllDeals();
