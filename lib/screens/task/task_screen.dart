@@ -93,10 +93,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _isTutorialShown = false;
 
   bool _isTaskScreenTutorialCompleted = false;
-
-  Map<String, dynamic>? tutorialProgress; // Для хранения прогресса туториалов
-  bool _isPermissionsChecked = false; // Флаг проверки прав
-  bool _hasTaskIndexPermission = false; // Право на tasks.index
+  Map<String, dynamic>? tutorialProgress;
 
   @override
   void initState() {
@@ -108,121 +105,24 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       if (cachedStatuses.isNotEmpty) {
         setState(() {
           _tabTitles = cachedStatuses;
-
-          // Инициализация TabController только один раз
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
-
-          int initialIndex = cachedStatuses
-              .indexWhere((status) => status['id'] == widget.initialStatusId);
+          _tabController = TabController(length: _tabTitles.length, vsync: this);
+          int initialIndex = cachedStatuses.indexWhere((status) => status['id'] == widget.initialStatusId);
           if (initialIndex != -1) {
             _currentTabIndex = initialIndex;
           }
           _tabController.index = _currentTabIndex;
-        });
-
-        // Добавляем слушатель для _tabController после его инициализации
-        _tabController.addListener(() {
-          setState(() {
-            _currentTabIndex = _tabController.index;
-          });
-          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          if (_scrollController.hasClients) {
+          _tabController.addListener(() {
+            setState(() {
+              _currentTabIndex = _tabController.index;
+            });
             _scrollToActiveTab();
-          }
+          });
         });
       } else {
         BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
-
-        print("Инициализация: отправлен запрос на получение статусов лидов");
       }
     });
     _checkPermissions();
-    _checkPermissionsAndTutorial(); // Обновленный метод
-  }
-
-  Future<void> _checkPermissionsAndTutorial() async {
-    if (_isPermissionsChecked) {
-      print('Permissions already checked, skipping');
-      return;
-    }
-
-    _isPermissionsChecked = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final progress = await _apiService.getTutorialProgress();
-      print('Tutorial Progress from server: $progress');
-
-      setState(() {
-        tutorialProgress = progress['result'];
-        _hasTaskIndexPermission =
-            progress['result']['tasks']?['index'] ?? false;
-      });
-      await prefs.setString(
-          'tutorial_progress', json.encode(progress['result']));
-
-      // Считываем состояние туториала и обновляем _isTutorialShown
-      bool isTutorialShown =
-          prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
-      print('isTutorialShown from prefs: $isTutorialShown');
-
-      setState(() {
-        _isTutorialShown = isTutorialShown;
-      });
-
-      // Показываем туториал только если он еще не был показан
-      if (!_isTutorialShown &&
-          tutorialProgress != null &&
-          !_hasTaskIndexPermission &&
-          mounted) {
-        print('Scheduling tutorial display');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _initTutorialTargets();
-            showTutorial();
-          } else {
-            print('Widget not mounted, skipping tutorial');
-          }
-        });
-      } else {
-        print('Tutorial not shown. Reasons:');
-        print('isTutorialShown: $_isTutorialShown');
-        print('tutorialProgress: $tutorialProgress');
-        print('hasTaskIndexPermission: $_hasTaskIndexPermission');
-        print('mounted: $mounted');
-      }
-    } catch (e) {
-      print('Error fetching tutorial progress: $e');
-    }
-  }
-
-  Future<void> _loadUserRoles() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String userId = prefs.getString('userID') ?? '';
-      if (userId.isEmpty) {
-        setState(() {
-          userRoles = ['No user ID found'];
-        });
-        return;
-      }
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(userId));
-      if (mounted) {
-        setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ??
-              ['No role assigned'];
-        });
-      }
-    } catch (e) {
-      print('Error loading user roles!');
-      if (mounted) {
-        setState(() {
-          userRoles = ['Error loading roles'];
-        });
-      }
-    }
   }
 
   @override
@@ -233,15 +133,66 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> _loadUserRoles() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = prefs.getString('userID') ?? '';
+      if (userId.isEmpty) {
+        setState(() { userRoles = ['No user ID found']; });
+        return;
+      }
+      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(userId));
+      if (mounted) {
+        setState(() {
+          userRoles = userProfile.role?.map((role) => role.name).toList() ?? ['No role assigned'];
+        });
+      }
+    } catch (e) {
+      print('Error loading user roles: $e');
+      if (mounted) {
+        setState(() { userRoles = ['Error loading roles']; });
+      }
+    }
+  }
+
+  Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('taskStatus.read');
+    final canCreate = await _apiService.hasPermission('taskStatus.create');
+    final canDelete = await _apiService.hasPermission('taskStatus.delete');
+    final hasPermission = await _apiService.hasPermission('task.create');
+    final progress = await _apiService.getTutorialProgress();
+
+    setState(() {
+      _canReadTaskStatus = canRead;
+      _canCreateTaskStatus = canCreate;
+      _canDeleteTaskStatus = canDelete;
+      _hasPermissionToAddTask = hasPermission;
+      showFilter = hasPermission;
+      tutorialProgress = progress['result'];
+    });
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isTutorialShown = prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
+    setState(() { _isTutorialShown = isTutorialShown; });
+
+    if (tutorialProgress != null && tutorialProgress!['tasks']?['index'] == false && !_isTutorialShown && mounted) {
+      _initTutorialTargets();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showTutorial();
+        }
+      });
+    }
+  }
+
   void _initTutorialTargets() {
+    targets.clear();
     targets.addAll([
       createTarget(
         identify: "TaskSearchIcon",
         keyTarget: keySearchIcon,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_search_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_search_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_task_screen_search_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -249,10 +200,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       createTarget(
         identify: "TaskMenuIcon",
         keyTarget: keyMenuIcon,
-        title: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_menu_title'),
-        description: AppLocalizations.of(context)!
-            .translate('tutorial_task_screen_menu_description'),
+        title: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_title'),
+        description: AppLocalizations.of(context)!.translate('tutorial_task_screen_menu_description'),
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
@@ -262,26 +211,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   void showTutorial() async {
     if (_isTutorialShown) {
-      print('Tutorial already shown, skipping');
+      print('Tutorial already shown for TaskScreen, skipping');
       return;
     }
-
-    print('Showing tutorial');
-    await Future.delayed(const Duration(milliseconds: 500));
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isTutorialShown =
-        prefs.getBool('isTutorialShownTaskSearchIconAppBar') ?? false;
-
-    if (isTutorialShown ||
-        tutorialProgress == null ||
-        _hasTaskIndexPermission) {
-      print('Tutorial not shown in showTutorial for tasks');
-      return;
-    }
-
-    print('Showing tutorial for leads');
     await Future.delayed(const Duration(milliseconds: 500));
+
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
@@ -299,26 +235,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
       colorShadow: Color(0xff1E2E52),
       onSkip: () {
-        print("Tutorial skipped");
+        print('Tutorial skipped for TaskScreen');
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
-        _apiService.markPageCompleted("tasks", "index").catchError((e) {
-          print('Error marking page completed on skip: $e');
-        });
         setState(() {
           _isTutorialShown = true;
+          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг для TaskColumn
         });
         return true;
       },
-      onFinish: () async {
-        print("Tutorial finished");
-        await prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
-        try {
-          await _apiService.markPageCompleted("tasks", "index");
-        } catch (e) {
-          print('Error marking page completed on finish: $e');
-        }
+      onFinish: () {
+        print('Tutorial finished for TaskScreen');
+        prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
         setState(() {
           _isTutorialShown = true;
+          _isTaskScreenTutorialCompleted = true; // Устанавливаем флаг для TaskColumn
         });
       },
     ).show(context: context);
@@ -518,35 +448,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _searchTasks(query, currentStatusId);
   }
 
-  // Метод для проверки разрешений
-  Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('taskStatus.read');
-    final canCreate = await _apiService.hasPermission('taskStatus.create');
-    final canDelete = await _apiService.hasPermission('taskStatus.delete');
-    bool hasPermission = await _apiService.hasPermission('task.create');
-
-    setState(() {
-      _canReadTaskStatus = canRead;
-      _canCreateTaskStatus = canCreate;
-      _canDeleteTaskStatus = canDelete;
-      _hasPermissionToAddTask = hasPermission;
-
-      // Логика отображения фильтра зависит от разрешения на создание задачи
-      showFilter = hasPermission;
-    });
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _initTutorialTargets();
-    //   if (!_isTutorialShown) {
-    //     WidgetsBinding.instance.addPostFrameCallback((_) {
-    //       showTutorial();
-    //       setState(() {
-    //         _isTutorialShown = true;
-    //       });
-    //     });
-    //   }
-    // });
-  }
+  // Метод для проверки разрешени
 
   FocusNode focusNode = FocusNode();
   TextEditingController textEditingController = TextEditingController();

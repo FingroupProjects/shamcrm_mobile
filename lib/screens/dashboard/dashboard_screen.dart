@@ -267,8 +267,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .translate('tutorial_dashboard_task_completion_description'),
         align: ContentAlign.bottom,
         context: context,
-        contentPosition: ContentPosition.below,
-        contentPadding: EdgeInsets.only(top: 10),
+        contentPosition: MediaQuery.of(context).size.height < 600
+            ? ContentPosition.above // На маленьких экранах текст выше
+            : ContentPosition.below,
+        contentPadding: EdgeInsets.only(
+          top: MediaQuery.of(context).size.height < 600
+              ? 5
+              : 10, // Меньший отступ для маленьких экранов
+        ),
       ),
       createTarget(
         identify: "dashboardAdminTaskChart",
@@ -291,7 +297,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         align: ContentAlign.bottom,
         context: context,
         contentPosition: ContentPosition.above,
-        contentPadding: EdgeInsets.only(top: 80),
+        contentPadding: EdgeInsets.only(
+          top: MediaQuery.of(context).size.height < 600
+              ? 20
+              : 80, // Адаптивный отступ
+        ),
       ),
       createTarget(
         identify: "dashboardAdminProcessSpeed",
